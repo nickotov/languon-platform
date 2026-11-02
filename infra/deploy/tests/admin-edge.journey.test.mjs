@@ -28,6 +28,7 @@ test(
         const directory = await mkdtemp(
             path.join(os.tmpdir(), 'languon-admin-edge-'),
         );
+
         try {
             await createFixtureFiles(directory);
             await runCommand('docker', ['network', 'create', network]);
@@ -49,6 +50,7 @@ test(
                 '-e',
                 fixtureServerSource(),
             ]);
+
             await runCommand('docker', [
                 'run',
                 '--detach',
@@ -85,13 +87,17 @@ test(
                 '/bin/sh',
                 '/etc/nginx/languon-edge-entrypoint.sh',
             ]);
+
             const published = await runCommand(
                 'docker',
                 ['port', edge, '8444/tcp'],
                 { capture: true },
             );
             const port = published.stdout.trim().match(/:(\d+)$/)?.[1];
-            if (!port) throw new Error('Admin edge port was not published.');
+            if (!port) {
+                throw new Error('Admin edge port was not published.');
+            }
+
             const origin = `https://127.0.0.1:${port}`;
             try {
                 await waitForEdge(origin);
@@ -99,6 +105,7 @@ test(
                 const logs = await runCommand('docker', ['logs', edge], {
                     capture: true,
                 }).catch(() => ({ stderr: '', stdout: '' }));
+
                 throw new Error(
                     `The private admin edge failed to start: ${logs.stdout}${logs.stderr}`,
                     { cause: error },
@@ -113,6 +120,7 @@ test(
                 '/healthz',
                 'edge:edge-pass',
             );
+
             assert.equal(staticResponse.status, 200);
             assert.deepEqual(JSON.parse(staticResponse.body), {
                 authorization: null,
@@ -126,6 +134,7 @@ test(
                 'edge:edge-pass',
                 ['X-Languon-Admin-Authorization: Bearer application-token'],
             );
+
             assert.equal(apiResponse.status, 200);
             assert.deepEqual(JSON.parse(apiResponse.body), {
                 authorization: 'Bearer application-token',
@@ -145,6 +154,7 @@ test(
                 ],
                 { capture: true },
             );
+
             assert.equal(copiedSecret.stdout.trim(), '400:nginx');
 
             await runCommand('docker', ['stop', fixture]);
@@ -154,10 +164,12 @@ test(
                 'edge:edge-pass',
                 ['X-Languon-Admin-Authorization: Bearer application-token'],
             );
+
             assert.ok(
                 [502, 504].includes(unavailable.status),
                 `expected an unavailable-upstream gateway response, received ${unavailable.status}`,
             );
+
             const privacyLogs = await runCommand('docker', ['logs', edge], {
                 capture: true,
             });
@@ -169,9 +181,11 @@ test(
             await runCommand('docker', ['rm', '--force', fixture]).catch(
                 () => {},
             );
+
             await runCommand('docker', ['network', 'rm', network]).catch(
                 () => {},
             );
+
             await rm(directory, { force: true, recursive: true });
         }
     },
@@ -183,6 +197,7 @@ async function assertLocalDocker() {
         undefined,
         'DOCKER_HOST must be unset',
     );
+
     const endpoint = await runCommand(
         'docker',
         [
@@ -193,6 +208,7 @@ async function assertLocalDocker() {
         ],
         { capture: true },
     );
+
     assert.match(endpoint.stdout.trim(), /^unix:\/\//);
 }
 
@@ -206,6 +222,7 @@ async function createFixtureFiles(directory) {
             '',
         ].join('\n'),
     );
+
     await runCommand(
         'openssl',
         [
@@ -225,16 +242,19 @@ async function createFixtureFiles(directory) {
         ],
         { capture: true },
     );
+
     const password = await runCommand(
         'openssl',
         ['passwd', '-apr1', '-salt', 'languon', 'edge-pass'],
         { capture: true },
     );
+
     await writeFile(
         path.join(directory, 'admin.htpasswd'),
         `edge:${password.stdout.trim()}\n`,
         { mode: 0o600 },
     );
+
     await chmod(path.join(directory, 'tls.key'), 0o600);
 }
 
@@ -247,9 +267,14 @@ async function waitForEdge(origin) {
         const response = await curl(origin, '/healthz', 'edge:wrong').catch(
             () => null,
         );
-        if (response?.status === 401) return;
+
+        if (response?.status === 401) {
+            return;
+        }
+
         await new Promise((resolve) => setTimeout(resolve, 250));
     }
+
     throw new Error('The private admin edge did not become ready.');
 }
 
@@ -270,6 +295,7 @@ async function curl(origin, pathname, credentials, headers = []) {
         { capture: true },
     );
     const separator = result.stdout.lastIndexOf('\n');
+
     return {
         body: result.stdout.slice(0, separator),
         status: Number(result.stdout.slice(separator + 1)),

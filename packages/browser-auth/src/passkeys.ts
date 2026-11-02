@@ -20,6 +20,7 @@ export async function getPasskey(
             'Passkeys are not supported in this browser or context.',
         );
     }
+
     const result = await navigator.credentials.get({
         publicKey: {
             challenge: fromBase64Url(options.challenge),
@@ -28,9 +29,11 @@ export async function getPasskey(
             userVerification: options.userVerification,
         },
     });
+
     if (!(result instanceof PublicKeyCredential)) {
         throw new Error('The browser did not return a passkey credential.');
     }
+
     const response = result.response;
     if (
         !(response instanceof AuthenticatorAssertionResponse) ||
@@ -40,7 +43,9 @@ export async function getPasskey(
             'The browser returned an invalid authentication response.',
         );
     }
+
     const authenticatorAttachment = attachment(result.authenticatorAttachment);
+
     return {
         ...(authenticatorAttachment ? { authenticatorAttachment } : {}),
         clientExtensionResults: extensionResults(result),
@@ -66,6 +71,7 @@ function attachment(
 
 function extensionResults(credential: PublicKeyCredential) {
     const extensions = credential.getClientExtensionResults();
+
     return extensions.credProps
         ? {
               credProps: {
@@ -81,6 +87,7 @@ function fromBase64Url(value: string): ArrayBuffer {
     const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
     const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
     const binary = atob(padded);
+
     return Uint8Array.from(binary, (character) => character.charCodeAt(0))
         .buffer;
 }
@@ -88,7 +95,10 @@ function fromBase64Url(value: string): ArrayBuffer {
 function toBase64Url(value: ArrayBuffer): string {
     const bytes = new Uint8Array(value);
     let binary = '';
-    for (const byte of bytes) binary += String.fromCharCode(byte);
+    for (const byte of bytes) {
+        binary += String.fromCharCode(byte);
+    }
+
     return btoa(binary)
         .replace(/\+/g, '-')
         .replace(/\//g, '_')

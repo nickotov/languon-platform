@@ -13,10 +13,22 @@ export function authoringFieldEnabled(
     field: DictionaryCardAuthoringField,
     effective: DictionaryCardEffectiveSettings,
 ) {
-    if (field === 'source' || field === 'translation') return true;
-    if (field === 'transcription') return effective.transcriptionEnabled;
-    if (field === 'definition') return effective.definitionEnabled;
-    if (field === 'example') return effective.exampleEnabled;
+    if (field === 'source' || field === 'translation') {
+        return true;
+    }
+
+    if (field === 'transcription') {
+        return effective.transcriptionEnabled;
+    }
+
+    if (field === 'definition') {
+        return effective.definitionEnabled;
+    }
+
+    if (field === 'example') {
+        return effective.exampleEnabled;
+    }
+
     return effective.exampleTranslationEnabled;
 }
 
@@ -44,8 +56,14 @@ export function applyAuthoringResult(
             suggestion.field === 'source' && suggestion.id === sourceId,
     );
     const values = { ...previous.draft.values };
-    if (source) values.source = source.value;
-    if (!values.source.trim()) values.source = proposal.source;
+    if (source) {
+        values.source = source.value;
+    }
+
+    if (!values.source.trim()) {
+        values.source = proposal.source;
+    }
+
     const finalSource = values.source.trim();
     const selectedSuggestions = { ...previous.selectedSuggestions };
 
@@ -62,17 +80,27 @@ export function applyAuthoringResult(
             delete selectedSuggestions[field as DictionaryCardAuthoringField];
         }
     }
+
     for (const suggestion of fresh) {
-        if (!authoringFieldEnabled(suggestion.field, effective)) continue;
-        if (suggestion.field === 'source' && suggestion !== source) continue;
+        if (!authoringFieldEnabled(suggestion.field, effective)) {
+            continue;
+        }
+
+        if (suggestion.field === 'source' && suggestion !== source) {
+            continue;
+        }
+
         if (
             suggestion.basisSource !== undefined &&
             suggestion.basisSource !== finalSource
-        )
+        ) {
             continue;
+        }
+
         values[suggestion.field] = suggestion.value;
         selectedSuggestions[suggestion.field] = suggestion.id;
     }
+
     return {
         draft: {
             ...previous.draft,

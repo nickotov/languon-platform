@@ -31,10 +31,15 @@ export async function recheckTextAiDispatch(
         .orderBy(desc(attempts.ordinal))
         .limit(1);
 
-    if (!receipt)
+    if (!receipt) {
         throw new Error('Provider dispatch requires its admitted receipt.');
+    }
+
     const authority = receipt.snapshot.routingAuthority;
-    if (!authority) return; // Immutable work admitted before managed routing drains.
+    if (!authority) {
+        return;
+    } // Immutable work admitted before managed routing drains.
+
     const current = await currentTextAiRouting(tx);
     const candidate = authority.candidates.find(
         (entry) => entry.routeId === receipt.routeId,
@@ -49,6 +54,7 @@ export async function recheckTextAiDispatch(
             fingerprint: candidate.fingerprint,
             now: input.now,
         }))
-    )
+    ) {
         throw new TextAiSelectionUnavailableError();
+    }
 }

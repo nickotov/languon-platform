@@ -109,6 +109,7 @@ run('DrizzleDictionaryStore', () => {
             .update(usersTable)
             .set({ status: 'deletion_pending', updatedAt: at })
             .where(eq(usersTable.id, targetOwnerId));
+
         await database.insert(accountDeletionRequestsTable).values({
             userId: targetOwnerId,
             scheduledAt: new Date(at.getTime() - 120_000),
@@ -116,12 +117,16 @@ run('DrizzleDictionaryStore', () => {
             nextAttemptAt: new Date(at.getTime() - 60_000),
             updatedAt: at,
         });
+
         const claim = await new DrizzleAccountPurgeStore(database).claimDue({
             now: at,
             workerId,
         });
-        if (!claim || claim.userId !== targetOwnerId)
+
+        if (!claim || claim.userId !== targetOwnerId) {
             throw new Error('Expected an actively leased deletion claim.');
+        }
+
         await database.transaction((tx) =>
             new DrizzleAiCreditTransactionParticipant(tx).purgeOwner(
                 targetOwnerId,
@@ -161,6 +166,7 @@ run('DrizzleDictionaryStore', () => {
             createdAt: now,
             updatedAt: now,
         });
+
         const read = async () =>
             (
                 await database
@@ -168,6 +174,7 @@ run('DrizzleDictionaryStore', () => {
                     .from(dictionaryCardsTable)
                     .where(eq(dictionaryCardsTable.id, cardId))
             )[0]!;
+
         expect((await read()).learningVersion).toBe(1);
         let aggregateVersion = dictionary.version;
         for (const patch of [
@@ -191,8 +198,10 @@ run('DrizzleDictionaryStore', () => {
                         : {}),
                 },
             });
+
             aggregateVersion = result.dictionaryVersion;
         }
+
         expect((await read()).learningVersion).toBe(3);
         expect((await read()).version).toBe(4);
     });
@@ -240,6 +249,7 @@ run('DrizzleDictionaryStore', () => {
                 updatedAt: now,
             },
         ]);
+
         await store.updateDictionary({
             context: { ...context(), now: new Date(now.getTime() + 1000) },
             ownerId,
@@ -250,19 +260,24 @@ run('DrizzleDictionaryStore', () => {
                 settings: { exampleLanguage: 'target' },
             },
         });
+
         const cards = await database
             .select()
             .from(dictionaryCardsTable)
             .where(eq(dictionaryCardsTable.dictionaryId, dictionary.id));
+
         expect(
             cards.find((card) => card.id === inheritedId)?.learningVersion,
         ).toBe(2);
+
         expect(
             cards.find((card) => card.id === archivedId)?.learningVersion,
         ).toBe(2);
+
         expect(
             cards.find((card) => card.id === protectedId)?.learningVersion,
         ).toBe(1);
+
         expect(
             cards.every(
                 (card) =>
@@ -271,6 +286,7 @@ run('DrizzleDictionaryStore', () => {
                     card.authorship === 'human',
             ),
         ).toBe(true);
+
         expect(
             await database.select().from(dictionaryCardRevisionsTable),
         ).toHaveLength(0);
@@ -282,6 +298,7 @@ run('DrizzleDictionaryStore', () => {
             await database.insert(dictionaryCardsTable).values(
                 Array.from({ length: 500 }, (_, within) => {
                     const index = offset + within;
+
                     return {
                         id: randomUUID(),
                         authorship: 'human' as const,
@@ -298,6 +315,7 @@ run('DrizzleDictionaryStore', () => {
                 }),
             );
         }
+
         await store.updateDictionary({
             context: context(),
             ownerId,
@@ -308,6 +326,7 @@ run('DrizzleDictionaryStore', () => {
                 settings: { exampleLanguage: 'target' },
             },
         });
+
         const [totals] = await database
             .select({
                 affected: sql<number>`count(*) filter (where ${dictionaryCardsTable.learningVersion} = 2)`,
@@ -316,6 +335,7 @@ run('DrizzleDictionaryStore', () => {
             })
             .from(dictionaryCardsTable)
             .where(eq(dictionaryCardsTable.dictionaryId, dictionary.id));
+
         expect(Number(totals?.affected)).toBe(5000);
         expect(Number(totals?.unchanged)).toBe(5000);
         expect(Number(totals?.authored)).toBe(0);
@@ -323,6 +343,7 @@ run('DrizzleDictionaryStore', () => {
         const plan =
             await database.execute(sql`explain (format json) select id from ${dictionaryCardsTable}
             where dictionary_id = ${dictionary.id} and id > ${'80000000-0000-0000-0000-000000000000'}::uuid order by id limit 500`);
+
         expect(JSON.stringify(plan)).toContain(
             'dictionary_cards_learning_scan_idx',
         );
@@ -389,6 +410,7 @@ run('DrizzleDictionaryStore', () => {
             dictionaryId: dictionary.id,
             ownerId,
         });
+
         expect(preview.eligibleCount).toBe(2);
         const deletionInput = {
             context: context(),
@@ -414,15 +436,18 @@ run('DrizzleDictionaryStore', () => {
         await expect(
             store.deleteDictionaryCards(deletionInput),
         ).resolves.toEqual(receipt);
+
         const remaining = await store.listCards({
             context: context(),
             dictionaryId: dictionary.id,
             ownerId,
             query: { lifecycle: 'archived', limit: 25 },
         });
+
         expect(remaining.data.map((card) => card.id)).toEqual([
             secondArchived.card.id,
         ]);
+
         await expect(
             store.deleteDictionaryCards({
                 context: context(),
@@ -461,6 +486,7 @@ run('DrizzleDictionaryStore', () => {
             targetLanguageTag: 'es',
             updatedAt: now,
         });
+
         const deleteRemaining = () =>
             store.deleteDictionaryCards({
                 context: context(),
@@ -482,15 +508,18 @@ run('DrizzleDictionaryStore', () => {
                     },
                 },
             });
+
         await expect(deleteRemaining()).rejects.toBeInstanceOf(
             DictionaryDeletionBusyError,
         );
+
         await expect(
             database
                 .select({ id: dictionaryCardsTable.id })
                 .from(dictionaryCardsTable)
                 .where(eq(dictionaryCardsTable.id, secondArchived.card.id)),
         ).resolves.toEqual([{ id: secondArchived.card.id }]);
+
         await database
             .delete(dictionaryGenerationJobsTable)
             .where(eq(dictionaryGenerationJobsTable.id, busyJobId));
@@ -569,6 +598,7 @@ run('DrizzleDictionaryStore', () => {
             targetLanguageTag: 'es',
             updatedAt: now,
         });
+
         const archived = await store.archiveCard({
             cardId: deleted.card.id,
             context: context(),
@@ -605,6 +635,7 @@ run('DrizzleDictionaryStore', () => {
                 .from(dictionaryGenerationJobsTable)
                 .where(eq(dictionaryGenerationJobsTable.id, jobId)),
         ).resolves.toEqual([]);
+
         await expect(
             database
                 .select({
@@ -628,9 +659,11 @@ run('DrizzleDictionaryStore', () => {
                 id: jobId,
             },
         ]);
+
         const generationStore = new DrizzleDictionaryGenerationStore(database, {
             generate: randomUUID,
         });
+
         await expect(
             generationStore.enqueue({
                 cardId: survivor.card.id,
@@ -701,10 +734,12 @@ run('DrizzleDictionaryStore', () => {
             targetLanguageTag: 'es',
             updatedAt: now,
         });
+
         await database
             .update(dictionaryCardRevisionsTable)
             .set({ acceptedGenerationJobId: jobId })
             .where(eq(dictionaryCardRevisionsTable.cardId, created.card.id));
+
         await database.insert(dictionaryDocumentUploadsTable).values({
             accountedPhysicalBytes: 12,
             capabilityExpiresAt,
@@ -721,6 +756,7 @@ run('DrizzleDictionaryStore', () => {
             ownerId,
             updatedAt: now,
         });
+
         const archived = await store.archiveCard({
             cardId: created.card.id,
             context: context(),
@@ -751,15 +787,18 @@ run('DrizzleDictionaryStore', () => {
                     },
                 },
             });
+
         await expect(deleteCard()).rejects.toBeInstanceOf(
             DictionaryDeletionBusyError,
         );
+
         await expect(
             database
                 .select({ id: dictionaryCardsTable.id })
                 .from(dictionaryCardsTable)
                 .where(eq(dictionaryCardsTable.id, created.card.id)),
         ).resolves.toEqual([{ id: created.card.id }]);
+
         await expect(
             database
                 .select({ id: dictionaryDocumentUploadsTable.id })
@@ -781,6 +820,7 @@ run('DrizzleDictionaryStore', () => {
                 updatedAt: capabilityExpiresAt,
             })
             .where(eq(dictionaryDocumentUploadsTable.id, uploadId));
+
         await expect(deleteCard()).resolves.toMatchObject({ deletedCount: 1 });
         await expect(
             database
@@ -788,6 +828,7 @@ run('DrizzleDictionaryStore', () => {
                 .from(dictionaryDocumentUploadsTable)
                 .where(eq(dictionaryDocumentUploadsTable.id, uploadId)),
         ).resolves.toEqual([]);
+
         await expect(
             database
                 .select({
@@ -869,6 +910,7 @@ run('DrizzleDictionaryStore', () => {
             updatedAt: now,
             userId: ownerId,
         });
+
         await database.insert(aiCreditGrantsTable).values({
             amount: 250n,
             createdAt: now,
@@ -877,6 +919,7 @@ run('DrizzleDictionaryStore', () => {
             source: 'purchase',
             sourceReference: `deletion-retention-${randomUUID()}`,
         });
+
         await database.insert(aiCreditHistoryTable).values({
             amount: 250n,
             createdAt: now,
@@ -885,12 +928,14 @@ run('DrizzleDictionaryStore', () => {
             kind: 'grant',
             ownerId,
         });
+
         const archived = await store.archiveDictionary({
             context: context(),
             dictionaryId: dictionary.id,
             ownerId,
             request: { expectedDictionaryVersion: published.version },
         });
+
         await store.deleteDictionaries({
             context: context(),
             fingerprint: `hmac-sha256:v1:${'M'.repeat(43)}`,
@@ -908,6 +953,7 @@ run('DrizzleDictionaryStore', () => {
                 },
             },
         });
+
         const [tombstone] = await database
             .select()
             .from(dictionaryIdempotencyKeysTable)
@@ -917,17 +963,20 @@ run('DrizzleDictionaryStore', () => {
                     idempotencyKey,
                 ),
             );
+
         expect(tombstone).toMatchObject({
             resultDictionaryId: null,
             resultPayload: null,
             state: 'completed',
         });
+
         await expect(
             database
                 .select({ id: dictionaryCardsTable.id })
                 .from(dictionaryCardsTable)
                 .where(eq(dictionaryCardsTable.id, child.card.id)),
         ).resolves.toEqual([]);
+
         await expect(
             store.readDictionary({
                 context: context(),
@@ -938,6 +987,7 @@ run('DrizzleDictionaryStore', () => {
             id: fork.id,
             sourceDictionaryId: null,
         });
+
         await expect(
             store.readSharedDictionary({
                 context: context(),
@@ -946,24 +996,28 @@ run('DrizzleDictionaryStore', () => {
                 verifiedShareDigest: shareDigest,
             }),
         ).rejects.toBeInstanceOf(SharedDictionaryNotFoundError);
+
         await expect(
             database
                 .select({ mode: aiCreditAccountsTable.mode })
                 .from(aiCreditAccountsTable)
                 .where(eq(aiCreditAccountsTable.userId, ownerId)),
         ).resolves.toEqual([{ mode: 'limited' }]);
+
         await expect(
             database
                 .select({ amount: aiCreditGrantsTable.amount })
                 .from(aiCreditGrantsTable)
                 .where(eq(aiCreditGrantsTable.id, creditGrantId)),
         ).resolves.toEqual([{ amount: 250n }]);
+
         await expect(
             database
                 .select({ amount: aiCreditHistoryTable.amount })
                 .from(aiCreditHistoryTable)
                 .where(eq(aiCreditHistoryTable.id, creditHistoryId)),
         ).resolves.toEqual([{ amount: 250n }]);
+
         await expect(
             store.createDictionary({
                 context: context(),
@@ -973,12 +1027,14 @@ run('DrizzleDictionaryStore', () => {
                 request,
             }),
         ).rejects.toBeInstanceOf(DictionaryIdempotencyConflictError);
+
         await purgeOwnerForDeletion(ownerId);
     });
 
     it('waits for generation admission before row locks', async () => {
         const archiveDictionary = async () => {
             const dictionary = await createDictionary();
+
             return store.archiveDictionary({
                 context: context(),
                 dictionaryId: dictionary.id,
@@ -999,9 +1055,11 @@ run('DrizzleDictionaryStore', () => {
             await tx.execute(
                 sql`select pg_advisory_xact_lock(${dictionaryGenerationAdmissionLock})`,
             );
+
             admissionReady();
             await admissionHeld;
         });
+
         await admissionAcquired;
         let completed = false;
         const admissionDeletion = store
@@ -1024,8 +1082,10 @@ run('DrizzleDictionaryStore', () => {
             })
             .then((receipt) => {
                 completed = true;
+
                 return receipt;
             });
+
         await new Promise((resolve) => setTimeout(resolve, 100));
         expect(completed).toBe(false);
         const rowProbe = database.transaction(async (tx) => {
@@ -1039,9 +1099,11 @@ run('DrizzleDictionaryStore', () => {
                 .from(dictionariesTable)
                 .where(eq(dictionariesTable.id, admissionTarget.id))
                 .for('update');
+
             expect(lockedOwner?.id).toBe(ownerId);
             expect(lockedDictionary?.id).toBe(admissionTarget.id);
         });
+
         try {
             await expect(
                 Promise.race([
@@ -1056,6 +1118,7 @@ run('DrizzleDictionaryStore', () => {
             await admissionBlocker;
             await rowProbe;
         }
+
         await expect(admissionDeletion).resolves.toMatchObject({
             deletedCount: 1,
         });
@@ -1088,6 +1151,7 @@ run('DrizzleDictionaryStore', () => {
             ownerId: otherOwnerId,
             request: { expectedDictionaryVersion: foreignSource.version },
         });
+
         for (const invalidTarget of [
             { id: active.id, version: active.version },
             { id: foreign.id, version: foreign.version },
@@ -1116,6 +1180,7 @@ run('DrizzleDictionaryStore', () => {
                     },
                 }),
             ).rejects.toBeInstanceOf(DictionaryVersionConflictError);
+
             await expect(
                 store.readDictionary({
                     context: context(),
@@ -1201,6 +1266,7 @@ run('DrizzleDictionaryStore', () => {
             targetLanguageTag: 'es',
             updatedAt: settledAt,
         });
+
         await database.insert(dictionaryGenerationProposalsTable).values({
             createdAt: settledAt,
             expiresAt: new Date(settledAt.getTime() + 60_000),
@@ -1211,6 +1277,7 @@ run('DrizzleDictionaryStore', () => {
             reviewState: 'reviewable',
             updatedAt: settledAt,
         });
+
         await database
             .update(dictionaryCardRevisionsTable)
             .set({ acceptedGenerationJobId: jobId })
@@ -1231,6 +1298,7 @@ run('DrizzleDictionaryStore', () => {
                 expectedDictionaryVersion: survivor.dictionaryVersion,
             },
         });
+
         await store.deleteDictionaryCards({
             context: context(),
             dictionaryId: dictionary.id,
@@ -1257,6 +1325,7 @@ run('DrizzleDictionaryStore', () => {
                 .from(dictionaryCardsTable)
                 .where(eq(dictionaryCardsTable.id, deleted.card.id)),
         ).resolves.toEqual([]);
+
         await expect(
             database
                 .select({ id: dictionaryCardRevisionsTable.id })
@@ -1265,12 +1334,14 @@ run('DrizzleDictionaryStore', () => {
                     eq(dictionaryCardRevisionsTable.cardId, deleted.card.id),
                 ),
         ).resolves.toEqual([]);
+
         await expect(
             database
                 .select({ jobId: dictionaryGenerationProposalsTable.jobId })
                 .from(dictionaryGenerationProposalsTable)
                 .where(eq(dictionaryGenerationProposalsTable.jobId, jobId)),
         ).resolves.toEqual([]);
+
         await expect(
             database
                 .select({
@@ -1284,15 +1355,18 @@ run('DrizzleDictionaryStore', () => {
         ).resolves.toEqual([
             { actualCostMicros: 41, id: jobId, inputPayload: null },
         ]);
+
         const readable = await new DrizzleDictionaryGenerationStore(database, {
             generate: randomUUID,
         }).read({ context: context(), jobId, ownerId });
+
         expect(readable).toMatchObject({
             id: jobId,
             kind: 'pasted-terms',
             proposal: null,
             state: 'failed',
         });
+
         await expect(
             database
                 .select({
@@ -1311,6 +1385,7 @@ run('DrizzleDictionaryStore', () => {
                     eq(dictionaryGenerationProviderUsageArchiveTable.id, jobId),
                 ),
         ).resolves.toEqual([]);
+
         await expect(
             database
                 .select({
@@ -1322,6 +1397,7 @@ run('DrizzleDictionaryStore', () => {
                     eq(dictionaryCardRevisionsTable.cardId, survivor.card.id),
                 ),
         ).resolves.toEqual([{ acceptedGenerationJobId: jobId }]);
+
         await expect(
             database
                 .select({
@@ -1373,15 +1449,18 @@ run('DrizzleDictionaryStore', () => {
             exampleEnabled: 'disabled',
             transcriptionNotation: 'custom',
         });
+
         expect(created.card.effectiveSettings).toMatchObject({
             exampleEnabled: false,
             exampleTranslationEnabled: false,
             transcriptionEnabled: false,
         });
+
         expect(created.card.values).toMatchObject({
             definition: 'inactive but preserved',
             transcription: '/pleɪn/',
         });
+
         await expect(
             store.readDictionary({
                 context: context(),
@@ -1398,6 +1477,7 @@ run('DrizzleDictionaryStore', () => {
             })
             .from(dictionaryCardsTable)
             .where(eq(dictionaryCardsTable.id, created.card.id));
+
         expect(typed).toEqual([
             {
                 source: 'plain',
@@ -1405,10 +1485,12 @@ run('DrizzleDictionaryStore', () => {
                 exampleEnabled: 'disabled',
             },
         ]);
+
         const revisions = await database
             .select()
             .from(dictionaryCardRevisionsTable)
             .where(eq(dictionaryCardRevisionsTable.cardId, created.card.id));
+
         expect(revisions).toHaveLength(1);
         expect(revisions[0]?.snapshot).toMatchObject({
             schemaVersion: 2,
@@ -1431,6 +1513,7 @@ run('DrizzleDictionaryStore', () => {
                 values: { translation: 'simple' },
             },
         });
+
         expect(updated.card.version).toBe(2);
         expect(
             await database
@@ -1440,6 +1523,7 @@ run('DrizzleDictionaryStore', () => {
                     eq(dictionaryCardRevisionsTable.cardId, created.card.id),
                 ),
         ).toHaveLength(2);
+
         await expect(
             database
                 .update(dictionaryCardRevisionsTable)
@@ -1461,6 +1545,7 @@ run('DrizzleDictionaryStore', () => {
                 translationContext: '  financial services\nand banking  ',
             },
         });
+
         expect(dictionary).toMatchObject({
             translationContext: 'financial services\nand banking',
             version: createdDictionary.version + 1,
@@ -1494,6 +1579,7 @@ run('DrizzleDictionaryStore', () => {
                 },
             },
         });
+
         expect(inherited.card.translationContext).toBeNull();
         await expect(
             database
@@ -1529,6 +1615,7 @@ run('DrizzleDictionaryStore', () => {
                 translationContext: '  river edge  ',
             },
         });
+
         expect(overridden.card).toMatchObject({
             authorship: 'human',
             translationContext: 'river edge',
@@ -1547,6 +1634,7 @@ run('DrizzleDictionaryStore', () => {
                 translationContext: null,
             },
         });
+
         expect(returnedToInheritance.card.translationContext).toBeNull();
         expect(returnedToInheritance.card.version).toBe(
             overridden.card.version + 1,
@@ -1558,6 +1646,7 @@ run('DrizzleDictionaryStore', () => {
                 .set({ translationContext: ' context with outer whitespace ' })
                 .where(eq(dictionaryCardsTable.id, inherited.card.id)),
         ).rejects.toMatchObject({ cause: { code: '23514' } });
+
         await expect(
             database
                 .update(dictionariesTable)
@@ -1577,29 +1666,36 @@ run('DrizzleDictionaryStore', () => {
             columns.find(
                 (row) => row.table_name === table && row.column_name === name,
             );
+
         expect(column('dictionary_cards', 'source')).toMatchObject({
             data_type: 'text',
             is_nullable: 'NO',
         });
+
         expect(column('dictionary_cards', 'translation')).toMatchObject({
             data_type: 'text',
             is_nullable: 'NO',
         });
+
         expect(
             column('dictionary_cards', 'definition_enabled_override'),
         ).toMatchObject({ udt_name: 'dictionary_enablement' });
+
         expect(
             column('dictionary_cards', 'definition_language_role_override'),
         ).toMatchObject({ udt_name: 'dictionary_language_role' });
+
         expect(
             column('dictionary_cards', 'transcription_notation_override'),
         ).toMatchObject({ udt_name: 'dictionary_transcription_notation' });
+
         expect(
             column('dictionary_settings', 'definition_language_role'),
         ).toMatchObject({
             udt_name: 'dictionary_language_role',
             is_nullable: 'NO',
         });
+
         expect(
             columns
                 .filter((row) =>
@@ -1629,11 +1725,13 @@ run('DrizzleDictionaryStore', () => {
                 'dictionary_card_revisions_positive_versions',
             ]),
         );
+
         const indexes = await database.execute(sql`
             select indexname from pg_indexes
             where schemaname = 'public'
               and tablename in ('dictionaries', 'dictionary_settings', 'dictionary_cards', 'dictionary_card_revisions')
         `);
+
         expect(indexes.map((row) => row.indexname)).toEqual(
             expect.arrayContaining([
                 'dictionaries_owner_lifecycle_updated_idx',
@@ -1660,6 +1758,7 @@ run('DrizzleDictionaryStore', () => {
                 },
             }),
         ).rejects.toBeInstanceOf(DictionaryVersionConflictError);
+
         await expect(
             store.readDictionary({
                 context: context(),
@@ -1699,6 +1798,7 @@ run('DrizzleDictionaryStore', () => {
                 },
             },
         });
+
         await expect(
             store.updateCard({
                 context: context(),
@@ -1713,6 +1813,7 @@ run('DrizzleDictionaryStore', () => {
                 },
             }),
         ).rejects.toBeInstanceOf(DictionaryVersionConflictError);
+
         await expect(
             store.readCard({
                 context: context(),
@@ -1786,6 +1887,7 @@ run('DrizzleDictionaryStore', () => {
                 overrides,
             },
         });
+
         expect(second.duplicateSource).toBe(true);
 
         const key = `dictionary-expiry-${randomUUID()}`;
@@ -1814,6 +1916,7 @@ run('DrizzleDictionaryStore', () => {
                 targetLanguage: 'fr',
             },
         });
+
         expect(replacement.id).not.toBe(original.id);
         expect(replacement.name).toBe('After expiry');
     });
@@ -1880,6 +1983,7 @@ run('DrizzleDictionaryStore', () => {
                 values: { translation: 'igual' },
             },
         });
+
         expect(noOp.card.version).toBe(created.card.version);
         await expect(
             limitedStore.updateCard({
@@ -1935,6 +2039,7 @@ run('DrizzleDictionaryStore', () => {
             (result): result is PromiseRejectedResult =>
                 result.status === 'rejected',
         );
+
         expect(fulfilled).toHaveLength(1);
         expect(rejected).toHaveLength(1);
         expect(rejected[0]?.reason).toMatchObject({
@@ -1949,6 +2054,7 @@ run('DrizzleDictionaryStore', () => {
             ownerId,
             request: { expectedDictionaryVersion: created.version },
         });
+
         await expect(create('J')).rejects.toMatchObject({
             name: 'DictionaryOwnerCapacityError',
             resource: 'dictionaries',
@@ -1985,9 +2091,11 @@ run('DrizzleDictionaryStore', () => {
                 },
             },
         });
+
         await database.execute(
             sql`update dictionary_card_revisions set snapshot = '{"malformed":true}'::jsonb where card_id = ${created.card.id}`,
         );
+
         await expect(
             store.readCard({
                 context: context(),
@@ -2003,6 +2111,7 @@ run('DrizzleDictionaryStore', () => {
                 },
             },
         });
+
         await expect(
             store.listCards({
                 context: context(),
@@ -2062,6 +2171,7 @@ run('DrizzleDictionaryStore', () => {
                 expectedDictionaryVersion: created.dictionaryVersion,
             },
         });
+
         await expect(
             store.updateDictionary({
                 context: context(),
@@ -2159,11 +2269,13 @@ run('DrizzleDictionaryStore', () => {
             ownerId,
             query: { lifecycle: 'active', limit: 50 },
         });
+
         expect(cards.data.map(({ id }) => id)).toEqual([
             first.card.id,
             last.card.id,
             appended.card.id,
         ]);
+
         expect(new Set(cards.data.map(({ position }) => position)).size).toBe(
             3,
         );
@@ -2264,6 +2376,7 @@ run('DrizzleDictionaryStore', () => {
             ownerId,
             query: { lifecycle: 'active', limit: 50, search: 'orchard' },
         });
+
         expect(search.data.map(({ id }) => id)).toEqual([first.card.id]);
         const reordered = await store.reorderCards({
             context: context(),
@@ -2274,6 +2387,7 @@ run('DrizzleDictionaryStore', () => {
                 orderedCardIds: [second.card.id, first.card.id],
             },
         });
+
         expect(
             (
                 await store.listCards({
@@ -2284,6 +2398,7 @@ run('DrizzleDictionaryStore', () => {
                 })
             ).data.map(({ id }) => id),
         ).toEqual([second.card.id, first.card.id]);
+
         await expect(
             store.reorderCards({
                 context: context(),
@@ -2330,18 +2445,22 @@ run('DrizzleDictionaryStore', () => {
             query: { limit: 25 },
             verifiedShareDigest: `hmac-sha256:v1:${'B'.repeat(43)}`,
         });
+
         expect(publicDictionary.dictionary).not.toHaveProperty(
             'translationContext',
         );
+
         expect(publicDictionary.dictionary.cards[0]).not.toHaveProperty(
             'translationContext',
         );
+
         expect(fork).toMatchObject({
             name: 'Independent copy',
             sourceDictionaryId: dictionary.id,
             visibility: 'private',
             translationContext: null,
         });
+
         expect(fork).not.toHaveProperty('ownerId');
         const forkCards = await store.listCards({
             context: context(),
@@ -2349,25 +2468,30 @@ run('DrizzleDictionaryStore', () => {
             ownerId: otherOwnerId,
             query: { lifecycle: 'active', limit: 50 },
         });
+
         expect(forkCards.data.map(({ id }) => id)).not.toEqual([
             second.card.id,
             first.card.id,
             third.card.id,
         ]);
+
         expect(forkCards.data.map(({ values }) => values.source)).toEqual([
             'river',
             'orchard apple',
             'mountain',
         ]);
+
         expect(
             forkCards.data.every((card) => card.translationContext === null),
         ).toBe(true);
+
         const archived = await store.archiveDictionary({
             context: context(),
             dictionaryId: published.id,
             ownerId,
             request: { expectedDictionaryVersion: published.version },
         });
+
         expect(archived.visibility).toBe('private');
         expect(
             await store.findSharedCandidate({
@@ -2375,12 +2499,15 @@ run('DrizzleDictionaryStore', () => {
                 shareId: 'abcdefghijklmnopqrstuvwxyz123456',
             }),
         ).toBeNull();
+
         const indexes = await database.execute(
             sql`select indexname from pg_indexes where tablename = 'dictionary_cards'`,
         );
+
         expect(indexes.map((row) => row.indexname)).toContain(
             'dictionary_cards_search_idx',
         );
+
         expect(
             await database
                 .select()
@@ -2455,6 +2582,7 @@ run('DrizzleDictionaryStore', () => {
             query: { limit: 1 },
             verifiedShareDigest: digest,
         });
+
         expect(ownerPage.nextCursor).not.toBeNull();
         expect(publicPage.nextCursor).not.toBeNull();
 
@@ -2483,6 +2611,7 @@ run('DrizzleDictionaryStore', () => {
                 },
             }),
         ).rejects.toBeInstanceOf(DictionaryVersionConflictError);
+
         await expect(
             store.readSharedDictionary({
                 context: context(),
@@ -2512,12 +2641,14 @@ run('DrizzleDictionaryStore', () => {
                 ${now.toISOString()}::timestamptz
             from generate_series(1, 10000) gs
         `);
+
         const firstPage = await store.listCards({
             context: context(),
             dictionaryId: dictionary.id,
             ownerId,
             query: { lifecycle: 'active', limit: 100 },
         });
+
         expect(firstPage.data).toHaveLength(100);
         expect(firstPage.nextCursor).not.toBeNull();
         const plan = await database.execute(sql`
@@ -2527,6 +2658,7 @@ run('DrizzleDictionaryStore', () => {
             order by sort_key, id
             limit 101
         `);
+
         expect(JSON.stringify(plan)).toContain(
             'dictionary_cards_active_order_idx',
         );
@@ -2542,6 +2674,7 @@ run('DrizzleDictionaryStore', () => {
             ownerId,
             request: { expectedDictionaryVersion: 1, orderedCardIds },
         });
+
         await expect(
             store.createCard({
                 context: context(),
@@ -2588,6 +2721,7 @@ run('DrizzleDictionaryStore', () => {
             query: { limit: 25 },
             verifiedShareDigest: `hmac-sha256:v1:${'F'.repeat(43)}`,
         });
+
         expect(publicPage.dictionary.cards).toHaveLength(25);
         expect(publicPage.nextCursor).not.toBeNull();
         const fork = await store.forkSharedDictionary({
@@ -2599,6 +2733,7 @@ run('DrizzleDictionaryStore', () => {
             sourceDictionaryId: published.id,
             verifiedShareDigest: `hmac-sha256:v1:${'F'.repeat(43)}`,
         });
+
         await expect(
             store.listCards({
                 context: context(),
@@ -2631,6 +2766,7 @@ run('DrizzleDictionaryStore', () => {
             const promise = new Promise<void>((done) => {
                 resolve = done;
             });
+
             return { promise, resolve };
         });
         const holderClients = ready.map(() => createTestPostgresClient());
@@ -2654,6 +2790,7 @@ run('DrizzleDictionaryStore', () => {
             await tx.execute(
                 sql`select id from users where id = ${otherOwnerId}::uuid for update`,
             );
+
             ownerLocked();
             await ownerReleased;
         });
@@ -2662,10 +2799,12 @@ run('DrizzleDictionaryStore', () => {
                 await tx.execute(
                     sql`select pg_advisory_xact_lock(1281979471, ${2000 + index})`,
                 );
+
                 slot.resolve();
                 await released;
             }),
         );
+
         await Promise.all([ownerReady, ...ready.map(({ promise }) => promise)]);
         const attempt = store
             .forkSharedDictionary({
@@ -2681,6 +2820,7 @@ run('DrizzleDictionaryStore', () => {
                 () => ({ status: 'resolved' as const }),
                 (error: unknown) => ({ error, status: 'rejected' as const }),
             );
+
         try {
             const outcome = await Promise.race([
                 attempt,
@@ -2688,6 +2828,7 @@ run('DrizzleDictionaryStore', () => {
                     setTimeout(() => resolve({ status: 'timeout' }), 500);
                 }),
             ]);
+
             expect(outcome.status).toBe('rejected');
             if (outcome.status === 'rejected') {
                 expect(outcome.error).toBeInstanceOf(DictionaryRateLimitError);
@@ -2722,9 +2863,11 @@ run('DrizzleDictionaryStore', () => {
             await tx.execute(
                 sql`select id from dictionaries where id = ${dictionary.id}::uuid for update`,
             );
+
             locked();
             await released;
         });
+
         await lockReady;
         const controller = new AbortController();
         const pending = store.createCard({
@@ -2755,10 +2898,12 @@ run('DrizzleDictionaryStore', () => {
                 },
             },
         });
+
         await new Promise((resolve) => setTimeout(resolve, 25));
         const rejected = expect(pending).rejects.toMatchObject({
             name: 'AbortError',
         });
+
         controller.abort();
         release();
         await Promise.all([blocker, rejected]);
@@ -2811,17 +2956,20 @@ run('DrizzleDictionaryStore', () => {
                 },
             ],
         });
+
         const cards = await database
             .select()
             .from(dictionaryCardsTable)
             .where(
                 eq(dictionaryCardsTable.dictionaryId, imported.dictionary.id),
             );
+
         expect(cards).toHaveLength(2);
         expect(cards.map((card) => card.authorship)).toEqual([
             'human',
             'human',
         ]);
+
         expect(
             await database
                 .select()
@@ -2889,6 +3037,7 @@ run('DrizzleDictionaryStore', () => {
             .where(
                 eq(dictionaryCardsTable.dictionaryId, imported.dictionary.id),
             );
+
         expect(counts).toEqual({ cards: 10_000, revisions: 10_000 });
     }, 120_000);
 
@@ -2902,6 +3051,7 @@ run('DrizzleDictionaryStore', () => {
                 ownerRevisionCapacity: 1,
             },
         );
+
         await expect(
             bounded.previewDictionaryImport({
                 context: context(),
@@ -2919,6 +3069,7 @@ run('DrizzleDictionaryStore', () => {
                 },
             }),
         ).resolves.toMatchObject({ remainingRows: 1 });
+
         await expect(
             bounded.importDictionary({
                 context: context(),
@@ -2938,14 +3089,17 @@ run('DrizzleDictionaryStore', () => {
                 },
             }),
         ).rejects.toBeInstanceOf(DictionaryOwnerCapacityError);
+
         const [dictionaryCount] = await database
             .select({ value: count() })
             .from(dictionariesTable)
             .where(eq(dictionariesTable.ownerId, ownerId));
+
         expect(dictionaryCount?.value).toBe(0);
         expect(await database.select().from(dictionaryCardsTable)).toHaveLength(
             0,
         );
+
         expect(
             await database.select().from(dictionaryCardRevisionsTable),
         ).toHaveLength(0);
@@ -2975,14 +3129,17 @@ run('DrizzleDictionaryStore', () => {
         expect(
             settled.filter((result) => result.status === 'fulfilled'),
         ).toHaveLength(1);
+
         const rejected = settled.find((result) => result.status === 'rejected');
         expect(rejected).toMatchObject({
             reason: expect.any(DictionaryVersionConflictError),
         });
+
         const cards = await database
             .select()
             .from(dictionaryCardsTable)
             .where(eq(dictionaryCardsTable.dictionaryId, dictionary.id));
+
         expect(cards).toHaveLength(1);
         await expect(
             store.readDictionary({
@@ -3026,6 +3183,7 @@ run('DrizzleDictionaryStore', () => {
                 target: input.target,
             }),
         ).resolves.toBeUndefined();
+
         await expect(
             store.importDictionary({ ...input, context: context() }),
         ).resolves.toEqual(imported);
@@ -3119,6 +3277,7 @@ run('DrizzleDictionaryStore', () => {
                 duplicateRowIndex: null,
             }),
         ]);
+
         expect(exported).toEqual(['active']);
     });
 });

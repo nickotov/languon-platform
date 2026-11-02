@@ -49,9 +49,34 @@ beforeEach(() => {
         value: vi.fn(),
     });
 });
+
 afterEach(() =>
     Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView'),
 );
+
+it('opens review in an editor root mounted after the saved reply', async () => {
+    const user = userEvent.setup();
+    const onReview = vi.fn();
+    const { container } = render(
+        <WorkspaceProposal
+            content='Proposed wording'
+            turnId='turn-1'
+            rootId='late-editor-review'
+            onReview={onReview}
+            onAccept={vi.fn(async () => 'applied' as const)}
+        />,
+    );
+    const root = document.createElement('div');
+    root.id = 'late-editor-review';
+    container.append(root);
+    await user.click(screen.getByRole('button', { name: 'Use in document' }));
+    expect(onReview).toHaveBeenCalledOnce();
+    expect(
+        within(root).getByRole('region', {
+            name: 'Use tutor reply in document',
+        }),
+    ).toBeVisible();
+});
 
 it('restores a persisted anchor for its preview and Show target without accepting a proposal', async () => {
     const user = userEvent.setup();
@@ -67,20 +92,24 @@ it('restores a persisted anchor for its preview and Show target without acceptin
             workspace={context}
         />,
     );
+
     const trigger = screen.getByRole('button', { name: 'Use in document' });
     await user.click(trigger);
     expect(
         await screen.findByRole('button', { name: 'Show target' }),
     ).toBeVisible();
+
     expect(screen.getByText('The 15 characters you selected')).toBeVisible();
     expect(
         within(
             screen.getByRole('region', { name: 'Use tutor reply in document' }),
         ).getByText(originalText),
     ).toBeVisible();
+
     expect(
         screen.queryByText('You didn’t select a passage for this question'),
     ).toBeNull();
+
     expect(restore).toHaveBeenCalledWith(anchor);
     expect(accept).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Show target' }));
@@ -88,6 +117,7 @@ it('restores a persisted anchor for its preview and Show target without acceptin
     await user.click(
         screen.getByRole('button', { name: 'Cancel', exact: true }),
     );
+
     expect(trigger).toHaveFocus();
 });
 
@@ -104,18 +134,21 @@ it('keeps the persisted original passage visible when changed content prevents r
             workspace={context}
         />,
     );
+
     await user.click(screen.getByRole('button', { name: 'Use in document' }));
     await waitFor(() =>
         expect(
             screen.getByRole('button', { name: 'Replace', exact: true }),
         ).toBeEnabled(),
     );
+
     expect(screen.getByText('The 15 characters you selected')).toBeVisible();
     expect(
         within(
             screen.getByRole('region', { name: 'Use tutor reply in document' }),
         ).getByText(originalText),
     ).toBeVisible();
+
     expect(screen.queryByRole('button', { name: 'Show target' })).toBeNull();
     expect(accept).not.toHaveBeenCalled();
 });
@@ -126,6 +159,7 @@ it('shows only one proposal review when choosing between two tutor replies', asy
             string | null
         >(null);
         const accept = vi.fn(async () => 'applied' as const);
+
         return (
             <>
                 <WorkspaceProposal
@@ -147,6 +181,7 @@ it('shows only one proposal review when choosing between two tutor replies', asy
             </>
         );
     }
+
     const user = userEvent.setup();
     render(<Replies />);
     const triggers = screen.getAllByRole('button', { name: 'Use in document' });
@@ -156,17 +191,20 @@ it('shows only one proposal review when choosing between two tutor replies', asy
             screen.getByRole('region', { name: 'Use tutor reply in document' }),
         ).getByText('First proposal'),
     ).toBeVisible();
+
     await user.click(triggers[1]!);
     expect(
         within(
             screen.getByRole('region', { name: 'Use tutor reply in document' }),
         ).queryByText('First proposal'),
     ).toBeNull();
+
     expect(
         within(
             screen.getByRole('region', { name: 'Use tutor reply in document' }),
         ).getByText('Second proposal'),
     ).toBeVisible();
+
     expect(
         screen.getAllByRole('region', { name: 'Use tutor reply in document' }),
     ).toHaveLength(1);
@@ -209,6 +247,7 @@ it('requires explicit acceptance for inline edits and falls back to comparison i
     const inline = screen.getByRole('region', {
         name: 'Use tutor reply in document',
     });
+
     expect(inline.parentElement?.id).toBe('inline-root');
     expect(accept).not.toHaveBeenCalled();
     changed = true;
@@ -227,9 +266,11 @@ it('requires explicit acceptance for inline edits and falls back to comparison i
             />
         </I18nProvider>,
     );
+
     const review = screen.getByRole('region', {
         name: 'Use tutor reply in document',
     });
+
     expect(review.parentElement?.id).toBe('review-root');
     expect(within(review).getByText('My newer wording')).toBeVisible();
     expect(accept).not.toHaveBeenCalled();
@@ -265,10 +306,12 @@ it('keeps inline intent while a persisted target is being restored asynchronousl
             />
         </>,
     );
+
     await user.click(screen.getByRole('button', { name: 'Show in text' }));
     expect(
         screen.getByRole('button', { name: 'Replace', exact: true }),
     ).toBeDisabled();
+
     await act(async () => resolve('restored-target'));
     await waitFor(() =>
         expect(
@@ -276,41 +319,57 @@ it('keeps inline intent while a persisted target is being restored asynchronousl
                 .parentElement?.id,
         ).toBe('restored-inline-root'),
     );
+
     expect(accept).not.toHaveBeenCalled();
 });
 
-it('previews supported Markdown as document nodes and explains heading mapping', async () => {
+it('preserves H1 and explains deeper heading mapping in rich proposal review', async () => {
     const user = userEvent.setup();
     const accept = vi.fn(async () => 'applied' as const);
     render(
         <WorkspaceProposal
             content={
-                '# French tenses\n\n**Present** and *past*\n\n- First\n- Second'
+                '# French tenses\n\n**Present** and *past*\n\n- First\n- Second\n\n#### Minor details'
             }
             turnId='formatted'
             onAccept={accept}
         />,
     );
+
     await user.click(screen.getByRole('button', { name: 'Use in document' }));
     const review = screen.getByRole('region', {
         name: 'Use tutor reply in document',
     });
+
     expect(
         within(review).getByRole('heading', {
-            level: 2,
+            level: 1,
             name: 'French tenses',
         }),
     ).toBeVisible();
+
+    expect(
+        within(review).getByRole('heading', {
+            level: 3,
+            name: 'Minor details',
+        }),
+    ).toBeVisible();
+
     expect(within(review).getByText('Present').tagName).toBe('STRONG');
     expect(within(review).getByText('past').tagName).toBe('EM');
     expect(within(review).getAllByRole('listitem')).toHaveLength(2);
     expect(
         within(review).getByText(/Heading levels are adapted/),
     ).toBeVisible();
-    expect(review.querySelector('p p, p h2, p ul, ins p')).toBeNull();
+
+    expect(
+        review.querySelector('p p, p h1, p h2, p h3, p ul, ins p'),
+    ).toBeNull();
+
     await user.click(
         within(review).getByRole('button', { name: 'Append', exact: true }),
     );
+
     expect(accept).toHaveBeenCalledWith(
         expect.any(String),
         'append',
@@ -332,6 +391,7 @@ it('rejects unsupported formatting until the user explicitly chooses plain text'
             onAccept={accept}
         />,
     );
+
     await user.click(screen.getByRole('button', { name: 'Use in document' }));
     const review = screen.getByRole('region', {
         name: 'Use tutor reply in document',
@@ -340,13 +400,16 @@ it('rejects unsupported formatting until the user explicitly chooses plain text'
         name: 'Append',
         exact: true,
     });
+
     expect(append).toBeDisabled();
     expect(
         within(review).getByText(/Formatted insertion is unavailable/),
     ).toBeVisible();
+
     await user.click(
         within(review).getByRole('checkbox', { name: 'Insert as plain text' }),
     );
+
     expect(append).toBeEnabled();
     expect(within(review).getByText('```js')).toBeVisible();
     await user.click(append);
@@ -370,17 +433,21 @@ it('keeps an invalid proposal open with an accurate error rather than claiming i
             onAccept={accept}
         />,
     );
+
     await user.click(screen.getByRole('button', { name: 'Use in document' }));
     const review = screen.getByRole('region', {
         name: 'Use tutor reply in document',
     });
+
     await user.click(
         within(review).getByRole('button', { name: 'Append', exact: true }),
     );
+
     expect(review).toBeVisible();
     expect(within(review).getByRole('status')).toHaveTextContent(
         'The document would exceed its limits',
     );
+
     expect(
         screen.queryByText('Added to working draft. You can undo this edit.'),
     ).toBeNull();
@@ -395,6 +462,7 @@ it('routes unsupported inline content to full review without offering unguarded 
         proposalRootId: 'invalid-review-root',
         getProposalPosition: () => ({ top: 100, left: 0, width: 600 }),
     };
+
     render(
         <>
             <div id='invalid-inline-root' />
@@ -410,17 +478,21 @@ it('routes unsupported inline content to full review without offering unguarded 
             />
         </>,
     );
+
     await user.click(screen.getByRole('button', { name: 'Show in text' }));
     const review = screen.getByRole('region', {
         name: 'Use tutor reply in document',
     });
+
     expect(review.parentElement?.id).toBe('invalid-review-root');
     expect(
         within(review).getByRole('checkbox', { name: 'Insert as plain text' }),
     ).toBeVisible();
+
     expect(
         within(review).getByRole('button', { name: 'Replace', exact: true }),
     ).toBeDisabled();
+
     expect(accept).not.toHaveBeenCalled();
 });
 
@@ -433,13 +505,16 @@ it('renders unsafe links literally with an explicit error and no active anchor',
             onAccept={vi.fn(async () => 'applied' as const)}
         />,
     );
+
     await user.click(screen.getByRole('button', { name: 'Use in document' }));
     const review = screen.getByRole('region', {
         name: 'Use tutor reply in document',
     });
+
     expect(
         within(review).getByText(/unsupported or unsafe link/),
     ).toBeVisible();
+
     expect(within(review).queryByRole('link')).toBeNull();
     expect(
         within(review).getByRole('button', { name: 'Append', exact: true }),
@@ -453,6 +528,7 @@ it('uses rich document rendering for inline suggestions without nesting paragrap
         inlineProposalRootId: 'rich-inline-root',
         getProposalPosition: () => ({ top: 100, left: 0, width: 600 }),
     };
+
     render(
         <>
             <div id='rich-inline-root' />
@@ -466,10 +542,12 @@ it('uses rich document rendering for inline suggestions without nesting paragrap
             />
         </>,
     );
+
     await user.click(screen.getByRole('button', { name: 'Show in text' }));
     const review = screen.getByRole('region', {
         name: 'Use tutor reply in document',
     });
+
     expect(review.parentElement?.id).toBe('rich-inline-root');
     expect(within(review).getByText('New wording').tagName).toBe('STRONG');
     expect(review.querySelector('p p, ins p')).toBeNull();
@@ -479,6 +557,7 @@ it('previews GFM tables and discloses alignment and link-title normalization', a
     const user = userEvent.setup();
     const content =
         '| Tense | Example |\n| :--- | ---: |\n| Present | [Example](https://example.com "More information") |';
+
     render(
         <WorkspaceProposal
             content={content}
@@ -486,19 +565,23 @@ it('previews GFM tables and discloses alignment and link-title normalization', a
             onAccept={vi.fn(async () => 'applied' as const)}
         />,
     );
+
     await user.click(screen.getByRole('button', { name: 'Use in document' }));
     const review = screen.getByRole('region', {
         name: 'Use tutor reply in document',
     });
+
     expect(within(review).getByRole('table')).toBeVisible();
     expect(
         within(review).getByRole('link', { name: 'Example' }),
     ).toHaveAttribute('href', 'https://example.com');
+
     expect(
         within(review).getByText(
             /Table alignment and link tooltips are adapted/,
         ),
     ).toBeVisible();
+
     expect(
         within(review).getByRole('button', { name: 'Append', exact: true }),
     ).toBeEnabled();

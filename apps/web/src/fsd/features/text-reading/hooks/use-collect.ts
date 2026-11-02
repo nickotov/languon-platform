@@ -31,9 +31,14 @@ export function useCollect(props: TextReadingProps) {
     const operation = useRef<TextSelectionRequest | null>(null);
     const active = useRef<AbortController | null>(null);
     const jobs = useCollectionJobs(props, (task) => {
-        if (task.state === 'success')
+        if (task.state === 'success') {
             setMarks((previous) => [...previous, task.selection]);
-        if (operation.current?.operationId !== task.body.operationId) return;
+        }
+
+        if (operation.current?.operationId !== task.body.operationId) {
+            return;
+        }
+
         setDictionaryId(task.dictionaryId);
         setFailureCode(task.failureCode);
         setStep(task.state);
@@ -43,6 +48,7 @@ export function useCollect(props: TextReadingProps) {
         () => () => active.current?.abort(),
         [props.collectionActorKey, props.shareKey, props.requestWithSession],
     );
+
     const direction =
         selection?.selection.side === 'translation'
             ? ([
@@ -61,8 +67,14 @@ export function useCollect(props: TextReadingProps) {
     };
 
     const onSelection = (value: ReadingSelection | null) => {
-        if (!['closed', 'trigger', 'success', 'adding'].includes(step)) return;
-        if (!value && step === 'adding') return;
+        if (!['closed', 'trigger', 'success', 'adding'].includes(step)) {
+            return;
+        }
+
+        if (!value && step === 'adding') {
+            return;
+        }
+
         setSelection(value);
         setStep(value ? 'trigger' : 'closed');
         operation.current = null;
@@ -71,8 +83,10 @@ export function useCollect(props: TextReadingProps) {
     const load = async () => {
         if (!props.requestWithSession) {
             setStep('signin');
+
             return;
         }
+
         active.current?.abort();
         const control = new AbortController();
         active.current = control;
@@ -92,10 +106,15 @@ export function useCollect(props: TextReadingProps) {
                         control.signal,
                     ),
                 );
-                if (control.signal.aborted) return;
+
+                if (control.signal.aborted) {
+                    return;
+                }
+
                 all.push(...response.data);
                 cursor = response.nextCursor ?? undefined;
             } while (cursor);
+
             setDictionaries(
                 all.filter(
                     (item) =>
@@ -103,9 +122,12 @@ export function useCollect(props: TextReadingProps) {
                         item.targetLanguage === direction[1],
                 ),
             );
+
             setStep('pick');
         } catch {
-            if (!control.signal.aborted) setStep('error');
+            if (!control.signal.aborted) {
+                setStep('error');
+            }
         }
     };
 
@@ -127,7 +149,11 @@ export function useCollect(props: TextReadingProps) {
         const body = task.terminal
             ? { ...task.body, operationId: crypto.randomUUID() }
             : task.body;
-        if (task.terminal) jobs.dismiss(task.body.operationId);
+
+        if (task.terminal) {
+            jobs.dismiss(task.body.operationId);
+        }
+
         operation.current = body;
         setSelection(task.selection);
         setStep('adding');
@@ -140,14 +166,21 @@ export function useCollect(props: TextReadingProps) {
             !selection ||
             !props.source ||
             selection.kind !== 'valid'
-        )
+        ) {
             return;
-        if (isInflight(target)) return;
+        }
+
+        if (isInflight(target)) {
+            return;
+        }
+
         if (props.previewExpired) {
             setFailureCode('generation_proposal_expired');
             setStep('error');
+
             return;
         }
+
         const prior = operation.current;
         const body =
             prior && !confirmDuplicate
@@ -159,6 +192,7 @@ export function useCollect(props: TextReadingProps) {
                       target,
                       confirmDuplicate,
                   };
+
         operation.current = body;
         setStep('adding');
         void jobs.run(body, selection);
@@ -204,11 +238,15 @@ export function useCollect(props: TextReadingProps) {
                 (item) =>
                     item.body.operationId === operation.current?.operationId,
             );
-            if (task) retryOperation(task);
-            else if (operation.current && selection) {
+
+            if (task) {
+                retryOperation(task);
+            } else if (operation.current && selection) {
                 setStep('adding');
                 void jobs.run(operation.current, selection);
-            } else void load();
+            } else {
+                void load();
+            }
         },
         confirmDuplicate: () => {
             if (operation.current) {
@@ -217,7 +255,10 @@ export function useCollect(props: TextReadingProps) {
             }
         },
         chooseAgain: () => {
-            if (operation.current) jobs.dismiss(operation.current.operationId);
+            if (operation.current) {
+                jobs.dismiss(operation.current.operationId);
+            }
+
             operation.current = null;
             void load();
         },
@@ -226,7 +267,11 @@ export function useCollect(props: TextReadingProps) {
                 (item) =>
                     item.body.operationId === operation.current?.operationId,
             );
-            if (task) await jobs.cancel(task);
+
+            if (task) {
+                await jobs.cancel(task);
+            }
+
             setStep('pick');
             operation.current = null;
         },

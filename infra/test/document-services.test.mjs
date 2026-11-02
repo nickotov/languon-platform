@@ -18,14 +18,17 @@ test('document disposable services remain isolated, pinned, and private', async 
         compose,
         /heifeng\/minio@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e/,
     );
+
     assert.match(
         compose,
         /heifeng\/mc@sha256:aead63c77f9db9107f1696fb08ecb0faeda23729cde94b0f663edf4fe09728e3/,
     );
+
     assert.match(
         compose,
         /clamav\/clamav@sha256:629a3050df6a706aedb31859fbb8139e9aaf8f56b0ffefbf251b8358a7c9e76c/,
     );
+
     assert.match(compose, /mc version enable/);
     assert.match(compose, /mc anonymous set none/);
     assert.match(compose, /admin policy attach document-test document-api/);
@@ -34,6 +37,7 @@ test('document disposable services remain isolated, pinned, and private', async 
         compose,
         /MINIO_API_CORS_ALLOW_ORIGIN:.*http:\/\/127\.0\.0\.1:3333.*http:\/\/localhost:3333/,
     );
+
     assert.match(compose, /127\.0\.0\.1:\$\{DOCUMENT_TEST_CLAMAV_PORT/);
     assert.match(compose, /TCPAddr 0\.0\.0\.0/);
     assert.match(compose, /StreamMaxLength 25M/);
@@ -52,6 +56,7 @@ test('document disposable services remain isolated, pinned, and private', async 
         new URL('./document-storage-worker-policy.json', import.meta.url),
         'utf8',
     );
+
     assert.doesNotMatch(apiPolicy, /DeleteObject/);
     assert.match(workerPolicy, /s3:DeleteObjectVersion/);
     assert.doesNotMatch(apiPolicy + workerPolicy, /s3:\*/);
@@ -69,6 +74,7 @@ test('generates disposable clean and infected document fixtures at runtime', asy
         await assert.doesNotReject(() =>
             readFile(`${outputDirectory}/terms.txt`, 'utf8'),
         );
+
         assert.equal(
             await readFile(`${outputDirectory}/infected-eicar.txt`, 'utf8'),
             'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*',

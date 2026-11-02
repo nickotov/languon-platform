@@ -45,14 +45,17 @@ export function ConversationPreferences({
             ),
         })),
     ];
+
     if (
         value.replyLanguage !== 'auto' &&
         !options.some((option) => option.value === value.replyLanguage)
-    )
+    ) {
         options.push({
             value: value.replyLanguage,
             label: value.replyLanguage,
         });
+    }
+
     const toneLabels = {
         en: ['Balanced', 'Friendly', 'Formal'],
         ru: ['Сбалансированный', 'Дружелюбный', 'Формальный'],
@@ -165,6 +168,7 @@ export function ConversationPreferences({
             ],
         },
     ];
+
     return (
         <div
             className={styles.controls}

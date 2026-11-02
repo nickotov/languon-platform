@@ -33,6 +33,33 @@ export function SentenceHistory({
     const [tab, setTab] = useState<'ai' | 'manual'>('ai');
     const { formatDate } = useI18n();
     const rows = tab === 'ai' ? c.attempts : c.reviews;
+
+    function selectAiHistory() {
+        setTab('ai');
+    }
+
+    function selectManualHistory() {
+        setTab('manual');
+    }
+
+    function loadMore() {
+        if (tab === 'ai') {
+            void c.loadMoreAttempts();
+        } else {
+            void c.loadMoreReviews();
+        }
+    }
+
+    function retryHistory() {
+        if (!rows.length) {
+            void c.refresh();
+
+            return;
+        }
+
+        loadMore();
+    }
+
     const content = (
         <>
             <div className={styles.historyContent}>
@@ -44,14 +71,14 @@ export function SentenceHistory({
                     <Button
                         variant={tab === 'ai' ? 'primary' : 'secondary'}
                         aria-pressed={tab === 'ai'}
-                        onClick={() => setTab('ai')}
+                        onClick={selectAiHistory}
                     >
                         {t('AI checks')}
                     </Button>
                     <Button
                         variant={tab === 'manual' ? 'primary' : 'secondary'}
                         aria-pressed={tab === 'manual'}
-                        onClick={() => setTab('manual')}
+                        onClick={selectManualHistory}
                     >
                         {t('Manual reviews')}
                     </Button>
@@ -67,13 +94,7 @@ export function SentenceHistory({
                 {c.error ? (
                     <SentenceErrorNotice
                         error={c.error}
-                        onRetry={() =>
-                            void (rows.length
-                                ? tab === 'ai'
-                                    ? c.loadMoreAttempts()
-                                    : c.loadMoreReviews()
-                                : c.refresh())
-                        }
+                        onRetry={retryHistory}
                     />
                 ) : null}
                 {!c.loading && !c.error && rows.length === 0 ? (
@@ -133,11 +154,7 @@ export function SentenceHistory({
                         fullWidth
                         variant='secondary'
                         loading={c.loading}
-                        onClick={() =>
-                            void (tab === 'ai'
-                                ? c.loadMoreAttempts()
-                                : c.loadMoreReviews())
-                        }
+                        onClick={loadMore}
                     >
                         {t('Load more')}
                     </Button>
@@ -145,8 +162,12 @@ export function SentenceHistory({
             </div>
         </>
     );
-    if (!open) return null;
-    if (inline)
+
+    if (!open) {
+        return null;
+    }
+
+    if (inline) {
         return (
             <section className={styles.inlineHistory}>
                 <h3 className={styles.historyTitle}>
@@ -155,6 +176,8 @@ export function SentenceHistory({
                 {content}
             </section>
         );
+    }
+
     return (
         <Dialog
             variant={compact ? 'sheet' : 'dialog'}
@@ -181,6 +204,7 @@ function HistoryResult({
     function toggle(event: SyntheticEvent<HTMLDetailsElement>) {
         setExpanded(event.currentTarget.open);
     }
+
     return (
         <details className={styles.itemDetails} onToggle={toggle}>
             <summary className={styles.detailsAction}>

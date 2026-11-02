@@ -17,6 +17,7 @@ import { showToast } from '@/fsd/shared/ui';
 import { useConversation } from './use-conversation';
 import { useAssistantNavigation } from './use-assistant-navigation';
 import { useConversationDeletion } from './use-conversation-deletion';
+import { useBlockReferences } from './use-block-references';
 import { useWorkspacePassage } from './use-workspace-passage';
 import { useWorkspaceAutoSend } from './use-workspace-auto-send';
 import { workspaceCopy } from '../lib/workspace-copy';
@@ -31,6 +32,7 @@ async function hashEditorContent(content: string): Promise<string> {
         'SHA-256',
         new TextEncoder().encode(content),
     );
+
     return Array.from(new Uint8Array(digest), (byte) =>
         byte.toString(16).padStart(2, '0'),
     ).join('');
@@ -74,9 +76,11 @@ export function useAssistantPanel(
         cancelDelete,
         confirmDelete,
     } = deletion;
+
     function closeDeletedDraft() {
         setEditingDraft(null);
     }
+
     const [defaultsSaved, setDefaultsSaved] = useState(false);
     const [defaultsFailure, setDefaultsFailure] = useState<{
         error: unknown;
@@ -93,6 +97,7 @@ export function useAssistantPanel(
     const [proposalTargets, setProposalTargets] = useState(
         () => new Map<string, string>(),
     );
+
     attachmentSnapshot.current = chat.attachments;
     const attach = useCallback(
         (attachment: CopiedAttachment) => {
@@ -102,15 +107,18 @@ export function useAssistantPanel(
                 locale,
                 props.workspace?.referenceLimit,
             );
+
             attachmentSnapshot.current = result.attachments;
             chat.setAttachments(result.attachments);
             setAttachmentError(result.error);
-            if (result.error && props.workspace)
+            if (result.error && props.workspace) {
                 showToast({
                     content: result.error,
                     dismissLabel: 'Dismiss',
                     tone: 'warning',
                 });
+            }
+
             return !result.error;
         },
         [chat.setAttachments, locale, props.workspace],
@@ -119,17 +127,48 @@ export function useAssistantPanel(
     const lastPassage = useRef<string | null>(null);
     const lastRequest = useRef<string | null>(null);
     const workspaceRequest = props.workspace?.request;
+    const blockReferences = useBlockReferences(
+        chat.id,
+        props.request ?? workspaceRequest,
+        props.blocks,
+    );
+    const composerRequest = props.request ?? workspaceRequest;
     useEffect(() => {
-        if (!workspaceRequest || workspaceRequest.id === lastRequest.current)
+        if (!composerRequest || composerRequest.id === lastRequest.current) {
             return;
-        lastRequest.current = workspaceRequest.id;
-        if (workspaceRequest.prompt !== undefined)
-            chat.setQuestion(workspaceRequest.prompt);
+        }
+
+        lastRequest.current = composerRequest.id;
+        if (composerRequest.prompt !== undefined) {
+            chat.setQuestion(composerRequest.prompt);
+        }
+
         setAttachmentError((current) =>
             current === workspaceCopy(locale).selectionChanged ? null : current,
         );
+
         setHistory(false);
-    }, [workspaceRequest, chat.setQuestion, locale]);
+        setEditingDraft(null);
+        setPicker(false);
+    }, [composerRequest, chat.setQuestion, locale]);
+
+    const lastGenericPassage = useRef<string | null>(null);
+    useEffect(() => {
+        const request = props.request;
+        if (!request || lastGenericPassage.current === request.id) {
+            return;
+        }
+
+        lastGenericPassage.current = request.id;
+        if (request.passage) {
+            attach({
+                id: request.id,
+                label: copy.selection,
+                content: request.passage,
+            });
+        }
+    }, [props.request, copy.selection, attach]);
+
     const [unread, setUnread] = useState(false);
     const active = Boolean(chat.active);
     const wasActive = useRef(active);
@@ -142,8 +181,10 @@ export function useAssistantPanel(
     const onBusyChange = props.workspace?.onBusyChange;
     useEffect(() => {
         onBusyChange?.(busy || active);
+
         return () => onBusyChange?.(false);
     }, [busy, active, onBusyChange]);
+
     const detail = chat.detail.data;
     const manualPreferences = detail?.conversation.preferences;
     const preferences =
@@ -154,6 +195,7 @@ export function useAssistantPanel(
         setDefaultsFailure(null);
         setDefaultsSaved(false);
     }, [chat.id, preferencesIdentity]);
+
     const unavailable =
         chat.stream.unavailable || chat.detail.isError || chat.list.isError;
 
@@ -168,18 +210,31 @@ export function useAssistantPanel(
             chat.create.mutate(undefined);
         }
     }, [props.folded, chat.id, chat.list.isSuccess, chat.create.mutate]);
+
     useEffect(() => {
-        if (!props.folded) setUnread(false);
-        else if (wasActive.current && !active) setUnread(true);
+        if (!props.folded) {
+            setUnread(false);
+        } else if (wasActive.current && !active) {
+            setUnread(true);
+        }
+
         wasActive.current = active;
     }, [active, props.folded]);
+
     useEffect(() => {
         setAttachmentError(null);
     }, [chat.id]);
+
     useEffect(() => {
         const passage = props.selectedPassage;
-        if (props.workspace) return;
-        if (!passage || passage.id === lastPassage.current) return;
+        if (props.workspace) {
+            return;
+        }
+
+        if (!passage || passage.id === lastPassage.current) {
+            return;
+        }
+
         lastPassage.current = passage.id;
         attach({
             id: passage.id,
@@ -197,6 +252,7 @@ export function useAssistantPanel(
             setPicker(false);
         });
     }
+
     function create() {
         navigation.request(() => {
             chat.create.mutate(undefined);
@@ -206,8 +262,12 @@ export function useAssistantPanel(
             setPicker(false);
         });
     }
+
     function createWithoutPortrait() {
-        if (!manualPreferences) return;
+        if (!manualPreferences) {
+            return;
+        }
+
         const next = {
             ...manualPreferences,
             portrait: {
@@ -216,6 +276,7 @@ export function useAssistantPanel(
                     manualPreferences.portrait?.inheritedFields ?? [],
             },
         };
+
         navigation.request(() => {
             chat.create.mutate(next);
             workspaceSelection.remove();
@@ -224,33 +285,52 @@ export function useAssistantPanel(
             setPicker(false);
         });
     }
+
     function toggleHistory() {
         setHistory((value) => !value);
     }
+
     function backToChat() {
         setHistory(false);
         setEditingDraft(null);
     }
+
     function remove() {
-        if (chat.id) deleteFromHistory(chat.id);
+        if (chat.id) {
+            deleteFromHistory(chat.id);
+        }
     }
+
     function send() {
+        if (blockReferences.missing) {
+            return;
+        }
+
         if (props.workspace) {
-            if (preparationLock.current) return;
+            if (preparationLock.current) {
+                return;
+            }
+
             let snapshot;
             try {
                 snapshot = props.workspace.getSnapshot(
                     workspaceSelection.passage?.targetId ?? null,
                 );
-                if (!snapshot.editorTarget)
+
+                if (!snapshot.editorTarget) {
                     throw new Error('The document editor is still loading.');
+                }
             } catch (error) {
                 preparationFailed.current = true;
-                if (workspaceSelection.passage)
+                if (workspaceSelection.passage) {
                     setAttachmentError(workspaceCopy(locale).selectionChanged);
-                else setLocalError(error);
+                } else {
+                    setLocalError(error);
+                }
+
                 return;
             }
+
             const editorLimit = props.workspace.editorLimit ?? 40_000;
             if (
                 workspaceSelection.passage &&
@@ -258,28 +338,52 @@ export function useAssistantPanel(
                     snapshot.editorTarget.originalText
             ) {
                 setAttachmentError(workspaceCopy(locale).selectionChanged);
+
                 return;
             }
+
             if (Array.from(snapshot.content).length > editorLimit) {
                 setAttachmentError(
                     `Editor text exceeds the ${editorLimit.toLocaleString('en-US')}-character tutor limit. Shorten the document before sending.`,
                 );
+
                 return;
             }
+
             const targetId = snapshot.targetId;
             const question = chat.question;
             const copiedAttachments = [...chat.attachments];
             const selectedPassage = workspaceSelection.passage;
+            const referencedIds = blockReferences.selected.map(
+                (item) => item.id,
+            );
+
+            if (blockReferences.missing) {
+                return;
+            }
+
             setAttachmentError(null);
             preparationLock.current = true;
             setPreparing(true);
             void (async () => {
                 let editorTarget;
+                let workingBranch;
                 try {
-                    await props.workspace?.beforeSend?.();
+                    workingBranch = await props.workspace?.beforeSend?.();
+                    if (
+                        workingBranch &&
+                        props.workspace?.getSnapshot(targetId ?? null)
+                            .content !== snapshot.content
+                    ) {
+                        throw new Error(
+                            'The document changed while preparing this request. Send it again using the current document.',
+                        );
+                    }
+
                     const documentHash = await hashEditorContent(
                         snapshot.content,
                     );
+
                     editorTarget = {
                         ...snapshot.editorTarget,
                         documentHash,
@@ -289,26 +393,33 @@ export function useAssistantPanel(
                     setLocalError(error);
                     preparationLock.current = false;
                     setPreparing(false);
+
                     return;
                 }
+
                 preparationFailed.current = false;
                 setLocalError(null);
                 try {
                     await chat.submit.mutateAsync({
                         content: question,
                         copiedAttachments,
+                        blockReferences: referencedIds,
                         editorContext: {
+                            ...(workingBranch ? { workingBranch } : {}),
                             content: snapshot.content,
                             selectedText: selectedPassage?.content,
                             editorTarget,
                         },
                         onAccepted(turn) {
-                            if (targetId)
+                            if (targetId) {
                                 setProposalTargets((previous) =>
                                     new Map(previous).set(turn.id, targetId),
                                 );
+                            }
+
                             props.workspace?.onSent?.();
                             workspaceSelection.sent(selectedPassage?.id);
+                            blockReferences.sent(referencedIds);
                         },
                     });
                 } catch {
@@ -318,13 +429,22 @@ export function useAssistantPanel(
                     setPreparing(false);
                 }
             })();
+
             return;
         }
+
         chat.submit.mutate({
             content: chat.question,
+            blockReferences: blockReferences.selected.map((item) => item.id),
+            onAccepted() {
+                blockReferences.sent(
+                    blockReferences.selected.map((item) => item.id),
+                );
+            },
             draftContext: chat.useDraft ? props.currentDraft : undefined,
         });
     }
+
     useWorkspaceAutoSend({
         request: workspaceRequest,
         question: chat.question,
@@ -332,6 +452,7 @@ export function useAssistantPanel(
         ready: Boolean(chat.id && detail && !busy && !active && !unavailable),
         send,
     });
+
     async function acceptProposal(
         text: string,
         action: 'insert' | 'append' | 'replace',
@@ -343,9 +464,12 @@ export function useAssistantPanel(
         let targetId =
             trackedTargetId ??
             (turnId ? proposalTargets.get(turnId) : undefined);
-        if (!targetId && action !== 'append' && anchor)
+
+        if (!targetId && action !== 'append' && anchor) {
             targetId =
                 (await props.workspace?.restoreTarget?.(anchor)) ?? undefined;
+        }
+
         if (!targetId && action !== 'append') {
             props.workspace?.onConflictProposal?.(
                 text,
@@ -354,15 +478,18 @@ export function useAssistantPanel(
                 anchor,
                 format,
             );
+
             return 'missing';
         }
+
         const result = props.workspace?.onAcceptProposal(
             text,
             action,
             targetId,
             format,
         );
-        if (result === 'changed' || result === 'missing')
+
+        if (result === 'changed' || result === 'missing') {
             props.workspace?.onConflictProposal?.(
                 text,
                 action,
@@ -370,8 +497,11 @@ export function useAssistantPanel(
                 anchor,
                 format,
             );
+        }
+
         return result;
     }
+
     function propose(message?: ConversationUIMessage) {
         const explanation = message?.parts
             .filter((part) => part.type === 'text')
@@ -382,8 +512,10 @@ export function useAssistantPanel(
             explanation,
             locale,
         );
+
         chat.submit.mutate({ content });
     }
+
     function continueResponse() {
         const content = {
             en: 'Continue your previous response from where it stopped.',
@@ -391,40 +523,54 @@ export function useAssistantPanel(
             fr: 'Continue ta réponse précédente à partir de là où elle s’est arrêtée.',
             es: 'Continúa tu respuesta anterior desde donde se detuvo.',
         }[locale];
+
         chat.submit.mutate({ content });
     }
+
     function retry(turn: ConversationTurn) {
         const message = detail?.messages.find(
             (item) => item.turnId === turn.id && item.role === 'user',
         );
-        if (message)
-            chat.submit.mutate({ content: message.content, retryOf: turn.id });
+
+        if (message) {
+            chat.submit.mutate({
+                content: message.content,
+                retryOf: turn.id,
+                blockReferences: message.blockReferences ?? [],
+            });
+        }
     }
+
     function context() {
         setPicker((value) => !value);
     }
+
     function closePicker() {
         setPicker(false);
     }
+
     function removeAttachment(id: string) {
         const remaining = attachmentSnapshot.current.filter(
             (item) => item.id !== id,
         );
+
         attachmentSnapshot.current = remaining;
         chat.setAttachments(remaining);
         setAttachmentError(null);
     }
+
     function removeWorkspacePassage() {
         workspaceSelection.remove();
         setAttachmentError((current) =>
             current === workspaceCopy(locale).selectionChanged ? null : current,
         );
     }
+
     function updatePreferences(value: NonNullable<typeof preferences>) {
         defaultsRevision.current += 1;
         setDefaultsFailure(null);
         setDefaultsSaved(false);
-        if (manualPreferences && preferences)
+        if (manualPreferences && preferences) {
             chat.updatePreferences(
                 mergeDisplayedPreferences(
                     manualPreferences,
@@ -432,9 +578,14 @@ export function useAssistantPanel(
                     value,
                 ),
             );
+        }
     }
+
     async function saveDefaults(value: NonNullable<typeof preferences>) {
-        if (defaultsLock.current) return;
+        if (defaultsLock.current) {
+            return;
+        }
+
         defaultsLock.current = true;
         const revision = ++defaultsRevision.current;
         setDefaultsPending(true);
@@ -444,36 +595,56 @@ export function useAssistantPanel(
             await requestWithSession((token) =>
                 conversationApi.saveDefaults(token, value),
             );
-            if (defaultsRevision.current === revision) setDefaultsSaved(true);
+
+            if (defaultsRevision.current === revision) {
+                setDefaultsSaved(true);
+            }
         } catch (error) {
-            if (defaultsRevision.current === revision)
+            if (defaultsRevision.current === revision) {
                 setDefaultsFailure({ error, preferences: value });
+            }
         } finally {
             defaultsLock.current = false;
             setDefaultsPending(false);
         }
     }
+
     async function defaults() {
-        if (manualPreferences) await saveDefaults(manualPreferences);
+        if (manualPreferences) {
+            await saveDefaults(manualPreferences);
+        }
     }
+
     function retryDefaults() {
-        if (defaultsFailure) void saveDefaults(defaultsFailure.preferences);
+        if (defaultsFailure) {
+            void saveDefaults(defaultsFailure.preferences);
+        }
     }
+
     function reload() {
         setLocalError(null);
         void chat.stream.reconnect();
         void chat.refresh();
     }
+
     function retrySubmission() {
         if (preparationFailed.current) {
             send();
+
             return;
         }
-        if (chat.submit.variables) chat.submit.mutate(chat.submit.variables);
-        else if (!chat.id) create();
-        else reload();
+
+        if (chat.submit.variables) {
+            chat.submit.mutate(chat.submit.variables);
+        } else if (!chat.id) {
+            create();
+        } else {
+            reload();
+        }
     }
+
     const error = localError || chat.submit.error || chat.create.error;
+
     return {
         chat,
         detail,
@@ -494,6 +665,7 @@ export function useAssistantPanel(
         retryDefaults,
         updatePreferences,
         attachmentError,
+        blockReferences,
         workspacePassage: workspaceSelection.passage,
         removeWorkspacePassage,
         requestWithSession,

@@ -19,6 +19,7 @@ describe('dictionary generation HTTP routes', () => {
             info: { title: 'Dictionary generation routes', version: '1' },
             openapi: '3.1.0',
         });
+
         expect(
             document.paths?.[
                 '/dictionaries/{dictionaryId}/card-authoring-generations'
@@ -91,6 +92,7 @@ describe('dictionary generation HTTP routes', () => {
                 method: 'POST',
             },
         );
+
         expect(response.status, await response.clone().text()).toBe(202);
         expect(enqueueCardAuthoring).toHaveBeenCalledWith(
             'valid.token.value',
@@ -221,9 +223,11 @@ describe('dictionary generation HTTP routes', () => {
         await expect(tooManyRows.json()).resolves.toMatchObject({
             error: { code: 'invalid_request' },
         });
+
         await expect(rowTooLong.json()).resolves.toMatchObject({
             error: { code: 'invalid_request' },
         });
+
         expect(enqueuePastedTerms).not.toHaveBeenCalled();
     });
 

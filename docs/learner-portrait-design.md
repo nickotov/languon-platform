@@ -359,21 +359,21 @@ These are source observations, not runtime verification or new decisions.
 This consolidates confirmed outcomes for final design review; it is not test
 execution evidence or an implementation plan.
 
-| ID | Observable result |
-| --- | --- |
-| POR-01 | Dashboard/settings offer the optional guided interview and manual creation on desktop and mobile-sized web layouts. |
-| POR-02 | Questions provide options, custom answers, skip/pause/early review; partial information remains useful and unknown information is not invented. |
-| POR-03 | Confirmed editable items and their readable summary agree; manual Save needs no AI call, and an empty portrait cannot be saved. |
-| POR-04 | Interview output is a draft; only explicit approval replaces the approved portrait, independently of use enablement. |
-| POR-05 | Global off and per-chat exclusion prevent new portrait supply; original manual settings persist and older history is not represented as forgotten. |
-| POR-06 | Existing-chat adoption preserves settings; new-chat inheritance and manual override labels follow LP-22/29, with independent chat mode. |
-| POR-07 | Approved changes affect the next message; in-flight work retains its initial context and charging policy. |
-| POR-08 | One unfinished interview resumes across devices; stale proposals cannot overwrite newer approvals without conflict review. |
-| POR-09 | Approval/discard removes interview state; 14-day inactivity expiry preserves the approved portrait; confirmed deletion cannot be undone by pending work. |
-| POR-10 | The interviewer cannot inspect other chats/activity, infer diagnoses, publish changes, or silently enable use; off-topic requests offer the bounded Knowledge redirect. |
-| POR-11 | Custom answers allow 200 characters; interviewer chat allows 1,000; chat-derived answer summaries allow 200 and remain reviewable. Ordinary-chat limits are unchanged. |
-| POR-12 | The server-only flag enables interview-only zero user charge while preserving provider accounting and execution limits; flag-off behavior follows existing rules. |
-| POR-13 | Failures preserve editable unfinished work until its expiry; paid/free notices match the operation policy and manual actions never invoke AI. |
+| ID     | Observable result                                                                                                                                                                 |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POR-01 | Dashboard/settings offer the optional guided interview and manual creation on desktop and mobile-sized web layouts.                                                               |
+| POR-02 | Questions provide options, custom answers, skip/pause/early review; partial information remains useful and unknown information is not invented.                                   |
+| POR-03 | Confirmed editable items and their readable summary agree; manual Save needs no AI call, and an empty portrait cannot be saved.                                                   |
+| POR-04 | Interview output is a draft; only explicit approval replaces the approved portrait, independently of use enablement.                                                              |
+| POR-05 | Global off and per-chat exclusion prevent new portrait supply; original manual settings persist and older history is not represented as forgotten.                                |
+| POR-06 | Existing-chat adoption preserves settings; new-chat inheritance and manual override labels follow LP-22/29, with independent chat mode.                                           |
+| POR-07 | Approved changes affect the next message; in-flight work retains its initial context and charging policy.                                                                         |
+| POR-08 | One unfinished interview resumes across devices; stale proposals cannot overwrite newer approvals without conflict review.                                                        |
+| POR-09 | Approval/discard removes interview state; 14-day inactivity expiry preserves the approved portrait; confirmed deletion cannot be undone by pending work.                          |
+| POR-10 | The interviewer cannot inspect other chats/activity, infer diagnoses, publish changes, or silently enable use; off-topic requests offer the bounded Knowledge redirect.           |
+| POR-11 | Custom answers allow 200 characters; interviewer chat allows 1,000; chat-derived answer summaries allow 200 and remain reviewable. Ordinary-chat limits are unchanged.            |
+| POR-12 | The server-only flag enables interview-only zero user charge while preserving provider accounting and execution limits; flag-off behavior follows existing rules.                 |
+| POR-13 | Failures preserve editable unfinished work until its expiry; paid/free notices match the operation policy and manual actions never invoke AI.                                     |
 | POR-14 | Known/studied/explanation languages remain distinct; proficiency is self-described, age use is limited, and future recipient context is not confused with the requesting account. |
 
 Verification planning must cover these outcomes with focused contract and

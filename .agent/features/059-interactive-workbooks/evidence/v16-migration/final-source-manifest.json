@@ -1,0 +1,2057 @@
+{
+    "base": "22333ec8de75cb1d5baebc9539fa8813d322d4f0",
+    "branch": "feature/interactive-workbooks",
+    "scope": "Affected runtime, contracts, prompts, tests and verification configuration. Delivery/design/docs have separate evidence identities.",
+    "trackedPatchSha256": "943d79ce8148e7bca8ed3cbee7d4dbfe11919be1f839570954f899297f87ba4f",
+    "contentSha256": "1c675f16a851e87e5c69b22b65932b6a87065a1a5e9a46f9d3719ae51062070f",
+    "files": [
+        {
+            "path": ".prettierignore",
+            "bytes": 3019,
+            "mode": 420,
+            "sha256": "e6de73ab1ada4de8b482c529747a9ac145aecc9957ce1dad8ff6c174ffdfb8fb"
+        },
+        {
+            "path": "apps/backend/drizzle/0147_block_proposal_updates.sql",
+            "bytes": 180,
+            "mode": 420,
+            "sha256": "a98dd82fc540d4a02771b5c814aad56c5c032724a98b668b68dcf6281bb8f05d"
+        },
+        {
+            "path": "apps/backend/drizzle/0148_block_proposal_change_authority.sql",
+            "bytes": 5463,
+            "mode": 420,
+            "sha256": "9a6772428b7c4e31402bc4bb3fa47d5e46f43b93afe091433a86bfd21aab6956"
+        },
+        {
+            "path": "apps/backend/drizzle/0149_knowledge-snippet-speech-lifecycle.sql",
+            "bytes": 1978,
+            "mode": 420,
+            "sha256": "d37125a3f2e1eb7cd4b9a18455115d187d0929bf847745edc6d8929a118c2934"
+        },
+        {
+            "path": "apps/backend/drizzle/0150_knowledge-block-ai-actions.sql",
+            "bytes": 3916,
+            "mode": 420,
+            "sha256": "4e2e5460c7665a12cace3ad19f8011b360d4485f63536b2718a8fc8fea4772d2"
+        },
+        {
+            "path": "apps/backend/drizzle/0151_knowledge-block-ai-authority.sql",
+            "bytes": 52769,
+            "mode": 420,
+            "sha256": "d92d1d18bd344e019dfce183776455edbb9199ff8ae1c69259e6620a49bc693c"
+        },
+        {
+            "path": "apps/backend/drizzle/0152_block_proposal_dependencies.sql",
+            "bytes": 112,
+            "mode": 420,
+            "sha256": "3992179d078b03294da79e126c773eb3a9a9770f2e888ef4001badf293fe2035"
+        },
+        {
+            "path": "apps/backend/drizzle/0153_block_proposal_source_authority.sql",
+            "bytes": 6213,
+            "mode": 420,
+            "sha256": "553b0705847c84bbfea05468b9162fb0de51a6fbb000f7e32c864abf4795d449"
+        },
+        {
+            "path": "apps/backend/drizzle/0154_knowledge-audio-draft-speech-lifecycle.sql",
+            "bytes": 2002,
+            "mode": 420,
+            "sha256": "415a4d2edca82c97ba893bbf91d13a37baf9495de029622b7de302866328f2a3"
+        },
+        {
+            "path": "apps/backend/drizzle/0155_retain-field-action-source-identity.sql",
+            "bytes": 132,
+            "mode": 420,
+            "sha256": "69bf396bf4dd85f702fd18939fa4f458d59aadb4676bac71db09ffb1595d4881"
+        },
+        {
+            "path": "apps/backend/drizzle/0156_knowledge-speech-source-binding.sql",
+            "bytes": 299,
+            "mode": 420,
+            "sha256": "e45e796e9a11f36b64fda6d2442faef5234eaf7b67d04a1ce6b6bd925472e48c"
+        },
+        {
+            "path": "apps/backend/drizzle/0157_knowledge-speech-live-source-authority.sql",
+            "bytes": 21898,
+            "mode": 420,
+            "sha256": "3f7779e1cb29420e09d265a0ac464cc8d6c9133fe64bff831130ce04cb57ac9a"
+        },
+        {
+            "path": "apps/backend/drizzle/0158_retain-knowledge-speech-payer-identity.sql",
+            "bytes": 97,
+            "mode": 420,
+            "sha256": "61cedbdd048ec61013571d4177e909d20b179faa0c406b22d01887db7d10bbb7"
+        },
+        {
+            "path": "apps/backend/drizzle/0159_knowledge-proposal-speech-erasure.sql",
+            "bytes": 2182,
+            "mode": 420,
+            "sha256": "ea38ad8e45c52d0dc470046736b51c5406eaae42e73adddd3363129c8fd9f5d2"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0147_snapshot.json",
+            "bytes": 722191,
+            "mode": 420,
+            "sha256": "a7270c760a39aac4f5d7a1fe1e5a9420f1f930e474f56aef1f185698fbae14d0"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0148_snapshot.json",
+            "bytes": 722191,
+            "mode": 420,
+            "sha256": "9b208709fe40c3cfa522fab989edab2efd946d0df09bf07a2f75a97f864ed279"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0149_snapshot.json",
+            "bytes": 722191,
+            "mode": 420,
+            "sha256": "ef94f61575a6ead67cc199f365b468e0182b03e0693721165369eb82c27f2120"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0150_snapshot.json",
+            "bytes": 729556,
+            "mode": 420,
+            "sha256": "9fae1e02bfbf9e34f56f901128a20f3caa3ae6386fefd42a3603b5b9f7a3a9d3"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0151_snapshot.json",
+            "bytes": 729556,
+            "mode": 420,
+            "sha256": "1f3c14530fd048987bfd055e7d84e305f168884a5528d7643e84a23f7bac8f47"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0152_snapshot.json",
+            "bytes": 729763,
+            "mode": 420,
+            "sha256": "a0e41697807c2e6b57ec51899d6d0ab5ae56cd7fda62f9199d3da66429823c85"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0153_snapshot.json",
+            "bytes": 729763,
+            "mode": 420,
+            "sha256": "c7c0fecfb389d7a38c61fb4dd1f4d34aa1c75ee647b4be43ab5c7eeb7ce3137e"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0154_snapshot.json",
+            "bytes": 729763,
+            "mode": 420,
+            "sha256": "f587729fa31bb6c4ac6046e826e4f22cb8b894612184d38596199b9c7577f86a"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0155_snapshot.json",
+            "bytes": 729285,
+            "mode": 420,
+            "sha256": "d49ded3f4906587acb0ab97e1e54ed039da6f19193f9728eb3452c8921779cd2"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0156_snapshot.json",
+            "bytes": 729872,
+            "mode": 420,
+            "sha256": "fcd9e17caffd89b43bd6da4fac174a04336af486d9ade909a4a7ad9573d48421"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0157_snapshot.json",
+            "bytes": 729872,
+            "mode": 420,
+            "sha256": "e3d82508f11e53e6f575eb894d2f4f7ba61a2ca5fee45521980bb6efdffa0d9c"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0158_snapshot.json",
+            "bytes": 729450,
+            "mode": 420,
+            "sha256": "82b9f04c02a947172e36a8c1cd7a7de73f7e79a87c56307a275b6acb5e6301b8"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0159_snapshot.json",
+            "bytes": 729450,
+            "mode": 420,
+            "sha256": "a45aac23fd9e33edaa786f83279387942d02fca004aacb78904ec4602393f7aa"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/_journal.json",
+            "bytes": 24625,
+            "mode": 420,
+            "sha256": "351c180dfac6e2d611076e9db07eef966ff5845b78d66c9d9106601275b77f3a"
+        },
+        {
+            "path": "apps/backend/src/app.ts",
+            "bytes": 5983,
+            "mode": 420,
+            "sha256": "2aa1f53f4cbf2322519530cac6554c3dbe4a95672d0573d641ba998d0de5a48f"
+        },
+        {
+            "path": "apps/backend/src/index.ts",
+            "bytes": 36313,
+            "mode": 420,
+            "sha256": "bc09a218d693c88a98123e87abdead3a2cf1e768c3c2beacdb5b697c722bd8ac"
+        },
+        {
+            "path": "apps/backend/src/infrastructure/database/schema.ts",
+            "bytes": 16389,
+            "mode": 420,
+            "sha256": "96b559553ad77301156bc1750314895d3b83ec5ace29586d0ca1e716a8a47dea"
+        },
+        {
+            "path": "apps/backend/src/infrastructure/worker/dictionary-worker-command.ts",
+            "bytes": 28800,
+            "mode": 420,
+            "sha256": "5951c49921670dd099593fe1de6399b39af3b2985196295cf2de1f0c614d973d"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/application/conversation-source-context.ts",
+            "bytes": 8128,
+            "mode": 420,
+            "sha256": "3f985ced0c3e3a4d8907e999c6d6b41b262fac08744255ee24684a31bd15fbe9"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/application/learning-block-source-material.test.ts",
+            "bytes": 10365,
+            "mode": 420,
+            "sha256": "cf2d1e6646c920202931e73de5b0f87894d7b929f0deac7f859396aa1a5123d8"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/application/learning-block-tool-contract.ts",
+            "bytes": 1877,
+            "mode": 420,
+            "sha256": "9ed31777379f42283ced3225969b3f288f4ccdab556451fd08b2e961a68b7f97"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/application/ports/conversation-store.ts",
+            "bytes": 5054,
+            "mode": 420,
+            "sha256": "6cf67e9bacd4d5f3f48bfb4fba3779f07e4f70c18af6e95ac11581b258d66175"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/application/tutor-context-budget.ts",
+            "bytes": 4970,
+            "mode": 420,
+            "sha256": "6f69de1cf199fe5bf7f59657617f87f3299d0e6c800cb859ea2cbc3673199863"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/ai/contextual-block-tools.ts",
+            "bytes": 2524,
+            "mode": 420,
+            "sha256": "e7dc161ac2d6743159bbd1c78ffb25a593f9a2cd61c70ca0d1ddeeb1887b79ce"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-runner.test.ts",
+            "bytes": 38101,
+            "mode": 420,
+            "sha256": "54509c56f645cdd620f6b1937fd1e6ea5111db102d1788571dd4f2f7bbbe6898"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/block-proposal-content.test.ts",
+            "bytes": 2715,
+            "mode": 420,
+            "sha256": "25dbcd83b1b3b24531d5ef5268cd9db07c5e83643780b3141814751f64632537"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/block-proposal-content.ts",
+            "bytes": 3367,
+            "mode": 420,
+            "sha256": "015c871da8b6af2bd650cc715078cae3cf8643e81aa2cf8d3b76a018dec62513"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposal-schema.ts",
+            "bytes": 2380,
+            "mode": 420,
+            "sha256": "e732261d4ff96e7bd8b9504d19ee6549f49dcf15092a80b1910afd5ca7700eec"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposals.ts",
+            "bytes": 12761,
+            "mode": 420,
+            "sha256": "82f994595554dd02b2845df192e65dd9bf8ca55164526132239f7d01b6899d47"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/drizzle-conversation-store.ts",
+            "bytes": 8205,
+            "mode": 420,
+            "sha256": "be9f486f14466aaa51a66272bbbf28e47980e6bf9354cd67d3180b6dfd796753"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/interface/http/conversation-block-proposal.routes.ts",
+            "bytes": 3483,
+            "mode": 420,
+            "sha256": "b8bc5754b5791f8aafb5f9808231284ff2c6714c51eda595200c991840e9d2e8"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/application/block-field-service.ts",
+            "bytes": 4591,
+            "mode": 420,
+            "sha256": "ad1b7f8c56a9fb2de08301ef11e4db3619e8bee708c9444f56399b8f2ced59c3"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/application/exercise-evaluation-service.ts",
+            "bytes": 5354,
+            "mode": 420,
+            "sha256": "1e24dd764cf0e7b0f580d493c6863721933485cdda5d02f31c1f9ab8d779d6e3"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/application/ports/block-field-action-store.ts",
+            "bytes": 185,
+            "mode": 420,
+            "sha256": "6684033e515fae32580de6e951909b8ba8f795f1d89b7c6a55cb3cde1b1c4376"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/application/ports/exercise-evaluation-store.ts",
+            "bytes": 1680,
+            "mode": 420,
+            "sha256": "d38e5869a7e353f3a17cbe97c886f9e253de5da352fc3c226da490c601a22bbf"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/domain/knowledge.test.ts",
+            "bytes": 4995,
+            "mode": 420,
+            "sha256": "fa236dfe22943afd6f54c5420af584c54065308f396bd3dfe0c04ed8e96f7038"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/domain/learning-block-text.ts",
+            "bytes": 3036,
+            "mode": 420,
+            "sha256": "c3f4480ad419ddbecc3fe8ff37f22aa166c091065c4aacb64d1eac3b890096e6"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/domain/workbook-learning.test.ts",
+            "bytes": 9756,
+            "mode": 420,
+            "sha256": "11d197ea4cb7835fb21a858e55a90757ab90b551dd209c1fed3a807e78e69960"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/domain/workbook-learning.ts",
+            "bytes": 7410,
+            "mode": 420,
+            "sha256": "018f6ce517e3acbbc033e4d4cf0ae35ab9f6160cbdfe44c9fe7eba3f413f3ff2"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/ai/block-field-provider.ts",
+            "bytes": 6088,
+            "mode": 420,
+            "sha256": "a1e3f8c2f8e1e35ddbc700fbed6f79f4d3d6852ed3446901944d65b9dd94ef11"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/ai/exercise-evaluation-provider.ts",
+            "bytes": 6218,
+            "mode": 420,
+            "sha256": "a3343457596a300d57199db72465a3b1735f6c67502d0736aaa307c8594b904d"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/ai/knowledge-action-agents.ts",
+            "bytes": 1298,
+            "mode": 420,
+            "sha256": "4b0b7614346508afab0679e39ad58780032470bd4ea830522695d70cf4404514"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/block-copy-selection.test.ts",
+            "bytes": 3460,
+            "mode": 420,
+            "sha256": "8b2259bb4cbe16dd8e494e8ab0ae6a214327776a78e76e28a66d06df0ab18c5c"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/block-copy-selection.ts",
+            "bytes": 2567,
+            "mode": 420,
+            "sha256": "75a7ec53570514ede1f352a2e1eb1e3ec1594e7a2f9ae7697c45565229723d83"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/block-copy-store.test.ts",
+            "bytes": 11955,
+            "mode": 420,
+            "sha256": "e3e47c608b30125a5f0fccf557294d269616c089611ddbbccc17299241c0e376"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/block-copy-store.ts",
+            "bytes": 8462,
+            "mode": 420,
+            "sha256": "f059c1134c8364a7984b615bc22b95fdddeb340e1f7bbba7bcf74e406a288283"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/block-field-actions.database.test.ts",
+            "bytes": 44042,
+            "mode": 420,
+            "sha256": "8a6280f80bcce0fdc11f3a420b31c9b9e9d33f212bcbed53e61b7423b4e897af"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/block-field-source-schema.ts",
+            "bytes": 1300,
+            "mode": 420,
+            "sha256": "d39d67660596c41e5ad968fc49ba1263418a0ae0c2ddbd52fa76b1325a34eb9e"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/block-field-source.sql",
+            "bytes": 4353,
+            "mode": 420,
+            "sha256": "f44c15ccb2ad2dc09baac9cef5a831fd4f7a50ce7e0b8eda3c2b54959e8fe26b"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/block-field-source.ts",
+            "bytes": 2120,
+            "mode": 420,
+            "sha256": "8ac18bc41460598d12a1d1c57879f942d9f1064a7066e1ee590da7cba8a2ebc7"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/block-field-store.ts",
+            "bytes": 5665,
+            "mode": 420,
+            "sha256": "f88922f013569b69986967528a4bc9e130baf8edb88ca4e40a1e5b3b7bb6e872"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-publication.ts",
+            "bytes": 1129,
+            "mode": 420,
+            "sha256": "5a1a67ac27c9c158f71b9b6fc402d08521a79a66f4ff457b6f190620bd53496f"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source-schema.ts",
+            "bytes": 1871,
+            "mode": 420,
+            "sha256": "6afaf28525a559a02479d1ab1aaa43971743d2361994dc94df1686be27b9e606"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source.sql",
+            "bytes": 9995,
+            "mode": 420,
+            "sha256": "0e7959da098be0fc672c84e3cb3161f8fb9fdb32f71e4c7ce20587f553ea8e01"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source.ts",
+            "bytes": 6560,
+            "mode": 420,
+            "sha256": "d11e7c6ead3bfa08e6652ad308fa0cc55a88bc4d74c03d06626e975823b98452"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-store.ts",
+            "bytes": 8330,
+            "mode": 420,
+            "sha256": "cfd1067ace3b8f3f369339b0089749a75ef8f10923d592a51cbfc760387e04c5"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-learning-purge.sql",
+            "bytes": 5058,
+            "mode": 420,
+            "sha256": "13e2d1ef68d4f311ba8ee886d2fb83deec56116154dadeb24119cedb9b59057b"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learner-store.test.ts",
+            "bytes": 21074,
+            "mode": 420,
+            "sha256": "9a84e405e365972f01ebf74ab7dfc333dbc8c687028d7500438cfa9cc573723a"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-source-accounting.sql",
+            "bytes": 31406,
+            "mode": 420,
+            "sha256": "335d298f0402f4dfc70a5dae24afcfbe67520d91955838d092cdce8ee23106b9"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-source-binding.ts",
+            "bytes": 5131,
+            "mode": 420,
+            "sha256": "5f44096da1ad638c48d05b90eb2936b8abdfdd799af4ab211160072527c49136"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/library-copy-source.ts",
+            "bytes": 3013,
+            "mode": 420,
+            "sha256": "aee993835e62488d794a569719748db1fa1aa8caa63a52d5b07094132040e0df"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/library-copy.database.test.ts",
+            "bytes": 28194,
+            "mode": 420,
+            "sha256": "eef5036e5c725a4b39d4e6017b1568632fdf6e70f204f046cd60a581cac251dc"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/media-grants.test.ts",
+            "bytes": 1308,
+            "mode": 420,
+            "sha256": "6c764ef8b04589ffb835a25e62973c43dcd4020d932d6f89a57f1c9f8f27e106"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/media-grants.ts",
+            "bytes": 3287,
+            "mode": 420,
+            "sha256": "26a5ff2f0151511bb486bd452239205e0ac9ab30cc4e072402d0f2f3c01ff72a"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/media-store.test.ts",
+            "bytes": 8866,
+            "mode": 420,
+            "sha256": "ad069678fc647170923866fb9ca381b3a55038c35b62e1143a53494eae2e9b9d"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/pinned-note-access.ts",
+            "bytes": 6278,
+            "mode": 420,
+            "sha256": "ec4c931fd0ef1f2da564e8d744db698f3cc22650c67fedf07cfff29fd7913d08"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/private-translation-lifecycle.sql",
+            "bytes": 1853,
+            "mode": 420,
+            "sha256": "0d8364dd124a45bb1d4cfa90e491dade7210bd3e94ba2ae8537badad56a2b831"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/private-translation-lifecycle.ts",
+            "bytes": 3336,
+            "mode": 420,
+            "sha256": "dedf7c99c8863f9495f65dd4fbc42057e575e68e2fe05672633c2d34da9098c0"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/workbook-copy.test.ts",
+            "bytes": 6391,
+            "mode": 420,
+            "sha256": "42e565e3a0b60348bde982601dbc4568376b26663bb71b3e2a8663008797e62f"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/workbook-copy.ts",
+            "bytes": 2206,
+            "mode": 420,
+            "sha256": "6cef15be74ca679097de3c9e1de7b16c6a734eaada68d50def06b71e290786aa"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/interface/http/block-field-routes.test.ts",
+            "bytes": 6720,
+            "mode": 420,
+            "sha256": "716e5d0dcdc0a62b99361a0ed0e78dc055829d9de3135896b3f3dc95d6896c4a"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/interface/http/block-field-routes.ts",
+            "bytes": 9344,
+            "mode": 420,
+            "sha256": "76200b6f8c5904b4bdaf7b11f9932c90aaddf91f32c4509e30a58fe29a9b1f22"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/interface/http/exercise-evaluation-routes.test.ts",
+            "bytes": 10456,
+            "mode": 420,
+            "sha256": "ad76f7bbc2051783b65a5801da48771fb3c53df5d3a4ca52d0be6d78f2bbf8c0"
+        },
+        {
+            "path": "apps/backend/src/modules/knowledge/interface/http/exercise-evaluation-routes.ts",
+            "bytes": 10162,
+            "mode": 420,
+            "sha256": "5a6290497a224d83f395a4840907a0536376277c6bfc2450530da44a48c659a7"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/application/ports.ts",
+            "bytes": 5827,
+            "mode": 420,
+            "sha256": "442c584751cd3ea999f67a7e1634848ebc2bfac963959e9ad569c5cb212b01d4"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/application/speech-worker.ts",
+            "bytes": 7820,
+            "mode": 420,
+            "sha256": "f8b8603962c67f98eee97f984c9d7ea2891a854ecaa3c6a73518f711e08907e4"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/domain/knowledge-snippet-text.ts",
+            "bytes": 1336,
+            "mode": 420,
+            "sha256": "907087aab90f8e486a8286066f59464bfe5b5c43ecee0b605d776d9b052273a8"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/domain/knowledge-speech-text.test.ts",
+            "bytes": 2705,
+            "mode": 420,
+            "sha256": "5c8502b0c2c84a8ec0290fa939fe907a192abccebbaa0397b56cfd53b443de42"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/domain/knowledge-speech-text.ts",
+            "bytes": 1516,
+            "mode": 420,
+            "sha256": "97c35e7aeebeb897b9eac6fdec706b1e530667bd70e30bfe2baacc064bd23341"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/infrastructure/composition.ts",
+            "bytes": 3180,
+            "mode": 420,
+            "sha256": "cc3261904e28027f73b58e3374e0156c61579dd2e6701fce79c20cff4f969c9f"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/infrastructure/drizzle-speech-store.ts",
+            "bytes": 70508,
+            "mode": 420,
+            "sha256": "9789eec185957a7747c96c8502948c1b03702ff30729d4288baf86da20fa18bc"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/infrastructure/knowledge-audio-draft-source.ts",
+            "bytes": 1709,
+            "mode": 420,
+            "sha256": "532b405330f383a6622f1822d939adda4d4bb6859934dccd43977e4e67973ea1"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/infrastructure/knowledge-snippet-source.ts",
+            "bytes": 9163,
+            "mode": 420,
+            "sha256": "34a45bc90ee4a9446e54b72008d4c895ddd08ac9c726104e062ef1aa057bbfc4"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/infrastructure/knowledge-speech-lifecycle.ts",
+            "bytes": 1921,
+            "mode": 420,
+            "sha256": "c672941f3195aab5d32a8528f7545fed1d9418bcc67163db8b930f74b973a894"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/infrastructure/knowledge-speech-purge.sql",
+            "bytes": 2002,
+            "mode": 420,
+            "sha256": "415a4d2edca82c97ba893bbf91d13a37baf9495de029622b7de302866328f2a3"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/infrastructure/knowledge-speech-worker-authority.sql",
+            "bytes": 14785,
+            "mode": 420,
+            "sha256": "e383f9655653b2415d944c0f438f7b328d86b5dc763508811de13e1f3c7a9466"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/infrastructure/knowledge-speech-worker-authority.ts",
+            "bytes": 2413,
+            "mode": 420,
+            "sha256": "fd3d8e08a82b9e67eb9083d1194ff22cc191613edc9589d696bd0b82f9ab59e5"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/infrastructure/provider-observation.ts",
+            "bytes": 3445,
+            "mode": 420,
+            "sha256": "1775c0887b7a7f9567592b02a02599fc25d3bb0f088e2abdc64985d9df8fad38"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/infrastructure/schema.ts",
+            "bytes": 9759,
+            "mode": 420,
+            "sha256": "3f6a97044fb1b274c34b788be95eea3e959262d261827ad0014712211916d9a9"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/infrastructure/source-resolver.ts",
+            "bytes": 11332,
+            "mode": 420,
+            "sha256": "a5e8d8cd2f2581442a87202c9c0d8d0af95c5f09e9de1a702129d7be36a4b8d7"
+        },
+        {
+            "path": "apps/backend/src/modules/speech/infrastructure/speech-accounting-guards.sql",
+            "bytes": 25973,
+            "mode": 420,
+            "sha256": "56c43d29942b0ff87a788d8035fcd42c317917ff343f866604fb3c79fe273295"
+        },
+        {
+            "path": "apps/backend/src/modules/text-ai/application/text-ai-provider-catalog.ts",
+            "bytes": 10408,
+            "mode": 420,
+            "sha256": "8afe13577c359a6f070c9a0acb3a24e59691980696b943923ef8781d0e75af21"
+        },
+        {
+            "path": "apps/backend/src/modules/text-ai/infrastructure/text-ai-composition.ts",
+            "bytes": 2445,
+            "mode": 420,
+            "sha256": "de0df80a880ae725c4e273adb9062c83f59385e8bcf6588125afe99fe043ce4a"
+        },
+        {
+            "path": "apps/backend/src/modules/texts/application/ports/texts-ai-provider.ts",
+            "bytes": 2924,
+            "mode": 420,
+            "sha256": "d9a6a8c26bda20a979c03631ba7df581ef87fbfabb51d2f8e4f1d8d3d914ee8c"
+        },
+        {
+            "path": "apps/backend/src/modules/texts/application/ports/texts-job-store.ts",
+            "bytes": 2709,
+            "mode": 420,
+            "sha256": "ab0f4b44fc2e73c88ab22b70460249765ec3de2e4a2d29767576f2b5b281cf62"
+        },
+        {
+            "path": "apps/backend/src/modules/texts/application/texts-worker-service.ts",
+            "bytes": 8535,
+            "mode": 420,
+            "sha256": "f87bf75a1755cc147369adc01e6609e919a3340abcfcd1496cfb3251c6944394"
+        },
+        {
+            "path": "apps/backend/src/modules/texts/infrastructure/ai/texts-agents.ts",
+            "bytes": 1333,
+            "mode": 420,
+            "sha256": "18107475256dc3a66804b186d5f9438cc45b407fc50bdc42bd91aa4f39bd8d4b"
+        },
+        {
+            "path": "apps/backend/src/modules/texts/infrastructure/ai/texts-ai-provider.ts",
+            "bytes": 11250,
+            "mode": 420,
+            "sha256": "c695f0e95de7ec10ae5eba59602bdc12e2f388bfbc0acdf295117019632c34b6"
+        },
+        {
+            "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/drizzle-texts-job-store.ts",
+            "bytes": 4609,
+            "mode": 420,
+            "sha256": "0193fbf441e1e2f6563279dbb52a277a859481612c92139d9b9825e59674fee0"
+        },
+        {
+            "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/knowledge-action-admission.ts",
+            "bytes": 7318,
+            "mode": 420,
+            "sha256": "323e3057f92904c0f97dc840aba49487bb7e9c57562f826f5144235e1b90e2c5"
+        },
+        {
+            "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-admission.ts",
+            "bytes": 17856,
+            "mode": 420,
+            "sha256": "0b06a3deae796fff44562b1dde88d8c7940cddb3824e3513a52251358a56dd8a"
+        },
+        {
+            "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-execution.ts",
+            "bytes": 12032,
+            "mode": 420,
+            "sha256": "5b934a7a88e6d750e79a17d03dc4de64901e19da8e365a897043e5ff06d32e80"
+        },
+        {
+            "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-schema.ts",
+            "bytes": 8208,
+            "mode": 420,
+            "sha256": "40ef3ecdd51c977c26d787e025deb47010d57856637a4ec0c69668e49473a804"
+        },
+        {
+            "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-support.ts",
+            "bytes": 8894,
+            "mode": 420,
+            "sha256": "8d54acb66267aa76fdb8ca53feb1099a2c336c0493a5d16c6ec02b53c5380571"
+        },
+        {
+            "path": "apps/backend/src/modules/texts/infrastructure/texts-ai-composition.ts",
+            "bytes": 2901,
+            "mode": 420,
+            "sha256": "f372b7f00cfaa0e54503afc217e6e0d34c4980abd9df74d7ff0a37493d334a59"
+        },
+        {
+            "path": "apps/backend/tests/integration/modules/conversations/conversation-production-execution.test.ts",
+            "bytes": 31599,
+            "mode": 420,
+            "sha256": "3a1f0232a64999b7d0412e5791641432c4e84379052184072d3abef95710cdfa"
+        },
+        {
+            "path": "apps/backend/tests/integration/modules/conversations/conversation-store.test.ts",
+            "bytes": 134019,
+            "mode": 420,
+            "sha256": "c830bda0c36c3d50e4d4ee6f5ce50bf0c35bd69472227ef92b88f3e6776e295d"
+        },
+        {
+            "path": "apps/backend/tests/integration/modules/knowledge/knowledge-account-purge.test.ts",
+            "bytes": 37070,
+            "mode": 420,
+            "sha256": "41578c56ff4bc16f8b1e6f50695c618c4a4695bb6def2fc14f6135e3b21208e2"
+        },
+        {
+            "path": "apps/backend/tests/integration/modules/speech/knowledge-speech-execution.test.ts",
+            "bytes": 56284,
+            "mode": 420,
+            "sha256": "19d789452484a8ffe1afa75c3721dc13403368860314bc7c12e465e86e61a3ba"
+        },
+        {
+            "path": "apps/backend/tests/integration/modules/speech/shared-speech-store.test.ts",
+            "bytes": 71161,
+            "mode": 420,
+            "sha256": "e70f31f32e95d065085b1dd4753adda600e746285e4a622d48c58c4666db1932"
+        },
+        {
+            "path": "apps/backend/tests/support/contextual-assistant-fixture.ts",
+            "bytes": 38043,
+            "mode": 420,
+            "sha256": "a072a4055b22fce21b7a9b17a5da445826889ccbe0fc32afa8fe91fc60aa69f8"
+        },
+        {
+            "path": "apps/backend/tests/support/contextual-fixture-block.ts",
+            "bytes": 3126,
+            "mode": 420,
+            "sha256": "292c2e7ebfd93f8098d6ee8c21b0f5e74d7a2c0d77899d79733429e969d296aa"
+        },
+        {
+            "path": "apps/backend/tests/support/knowledge-private-translation-fixture.ts",
+            "bytes": 14933,
+            "mode": 420,
+            "sha256": "0c893448ef994f6b4eac98374498c37036912cc49c5a0a9dffb485475767812a"
+        },
+        {
+            "path": "apps/backend/tests/support/knowledge-speech-browser-fixture.ts",
+            "bytes": 5683,
+            "mode": 420,
+            "sha256": "6e9f6641b98dbdd3de7236150806f1e4d23adc290659b973b0490f212276bc2b"
+        },
+        {
+            "path": "apps/backend/tests/unit/mastra/knowledge-action-registration.test.ts",
+            "bytes": 1141,
+            "mode": 420,
+            "sha256": "dc58e740510886e5fd34000c575b5d479936664e1031f521cec28ad294dcc7f7"
+        },
+        {
+            "path": "apps/backend/tests/unit/modules/conversations/conversation-worker-service.test.ts",
+            "bytes": 16534,
+            "mode": 420,
+            "sha256": "3b807bd97a714e575a3d9b31b718681d0364d72e33657769fd93da1d8c42b01b"
+        },
+        {
+            "path": "apps/backend/tests/unit/modules/dictionaries/infrastructure/ai/dictionary-text-provider-wire-contract.test.ts",
+            "bytes": 12917,
+            "mode": 420,
+            "sha256": "284fa338889afb18701fcfb8bef2e63d2401694058dfd24e4f4064745c058215"
+        },
+        {
+            "path": "apps/backend/tests/unit/modules/speech/knowledge-snippet-text.test.ts",
+            "bytes": 5324,
+            "mode": 420,
+            "sha256": "47bdd7d98293ab8e858ea106cedf201d9f8d03f76719412f9546f0f47e65264f"
+        },
+        {
+            "path": "apps/backend/tests/unit/modules/text-ai/infrastructure/knowledge-admission-gate.test.ts",
+            "bytes": 1787,
+            "mode": 420,
+            "sha256": "70a0279d703deaec92ce2855a6fd909a6072a7e6ac3f2baa41985d2c2a566df4"
+        },
+        {
+            "path": "apps/backend/tests/unit/support/contextual-fixture-block.test.ts",
+            "bytes": 3008,
+            "mode": 420,
+            "sha256": "38b10c57493550aee77872d56e698f49fe71751e9a74335ea8ffd016c2cfc640"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/knowledge/hooks/use-knowledge-audio-urls.ts",
+            "bytes": 3539,
+            "mode": 420,
+            "sha256": "f98bd2bc3bbc8b21d4ed3d860f67f2b0456f7b7b54e7d89be8685e7d0be29f67"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/knowledge/index.ts",
+            "bytes": 461,
+            "mode": 420,
+            "sha256": "ad79a6a2c9554a3ec440bbbe962fb246cd5fa9c27fa431bee1c393f4a6569908"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/knowledge/ui/knowledge-body/knowledge-body.module.css",
+            "bytes": 2341,
+            "mode": 420,
+            "sha256": "168a47673746c7b1bbfae3a32ee0d1a2ef71277e6b6482873d4f1eca3029749a"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/hooks/use-block-expansion.ts",
+            "bytes": 582,
+            "mode": 420,
+            "sha256": "b4eb3112d45df134ebe3ae5085f30b30f513bd59094bec3287770bb91faeae05"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/hooks/use-exercise-practice.ts",
+            "bytes": 2530,
+            "mode": 420,
+            "sha256": "3a93b9b0fd62be14b709389437f69ac5f68e6ed4aa817673de6f5c44f516c977"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/hooks/use-exercise-revision.ts",
+            "bytes": 515,
+            "mode": 420,
+            "sha256": "d50922b974d48ef219f4ba59a23613ed597dac1e526a39eef90d5972f2fddc80"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/index.ts",
+            "bytes": 875,
+            "mode": 420,
+            "sha256": "3173afbe645610b2e07c01e304fb819a87c6911b471ddcdddfffd711ce17ec55"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/lib/check-prepared-answer.ts",
+            "bytes": 898,
+            "mode": 420,
+            "sha256": "ec40ee03a772c40a2b4903eb27b95a461ec184276ddd83329182e04d6bae1e2e"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/lib/exercise-practice-identity.ts",
+            "bytes": 457,
+            "mode": 420,
+            "sha256": "8a5a3e720965cfdbd68e2a326a132b78aaa38f59cd2ec36410bb41677388822f"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/lib/learning-answer-equals.ts",
+            "bytes": 403,
+            "mode": 420,
+            "sha256": "c5da603b25497e8d0719dbaf025b4377891dbdad54b5e9ff19e28a1e2be698d3"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/lib/learning-block-metadata.ts",
+            "bytes": 872,
+            "mode": 420,
+            "sha256": "a2c90ee1327f2612a7644c1f786d9108855661a701b4cf9336695f5fb63d14fa"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/types.ts",
+            "bytes": 5278,
+            "mode": 420,
+            "sha256": "5760d8955d448c1044d8dd58df69854294644df5af5d5428823a3f5263632e92"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/bilingual-block/bilingual-block.module.css",
+            "bytes": 3379,
+            "mode": 420,
+            "sha256": "72e81caabc9a1f1c15ec86318b9b1945c7c916c788e0b836afc839a918705f79"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/bilingual-block/bilingual-block.tsx",
+            "bytes": 8376,
+            "mode": 420,
+            "sha256": "2d1b0da1c645103d5be14cc9e215986aaedbab3cb788bc6be8ae74f6a6fef4a1"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/bilingual-block/bilingual-preview.tsx",
+            "bytes": 2493,
+            "mode": 420,
+            "sha256": "d927345f88ae5881c8a14b6e44c650447292ecda9ab907500c5b71050aca8ab6"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/bilingual-block/private-study-panel.tsx",
+            "bytes": 2834,
+            "mode": 420,
+            "sha256": "06cfbcc67cc137b493c05eddd78718d3de1e18abd715882fe56149c808975f36"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/block-layout.module.css",
+            "bytes": 4350,
+            "mode": 420,
+            "sha256": "00c22e195e7c1820a37cb2ab247ef6206644fb8bc55d5c12eee80ba1fc8db71e"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/block-play-button/block-play-button.module.css",
+            "bytes": 399,
+            "mode": 420,
+            "sha256": "bece0afed1febb331994d792acf54bdadb85600006d25936ca22e823fa8a2cc4"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/block-play-button/block-play-button.tsx",
+            "bytes": 1519,
+            "mode": 420,
+            "sha256": "ac0d8220899f7f806594c7c8e760cd97603cf41a3ab0e20554960925d0b24adf"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-actions.tsx",
+            "bytes": 3486,
+            "mode": 420,
+            "sha256": "d916913a6d364cd1e9ee918f142700fca6acd52610ac9da52ddaf51c903ded17"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-answer-fields.tsx",
+            "bytes": 2998,
+            "mode": 420,
+            "sha256": "e5865c3a2bae70b8a1185c8764df1e2b5730e4fbed011115e6b9706e55f92a9b"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-block.module.css",
+            "bytes": 4117,
+            "mode": 420,
+            "sha256": "ee63decb54fc0dee9ed9fef47a1e7eb6234ca4c2d0876206c72bbe5d21c404f1"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-block.tsx",
+            "bytes": 9560,
+            "mode": 420,
+            "sha256": "5537b359dce70ba4146694db3bb1bc6ac3fcbe94583a624dbc014b31252e7c16"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-hint.tsx",
+            "bytes": 3600,
+            "mode": 420,
+            "sha256": "7c56bbcc93d1e9dc1afbc68afba99f87b2d3d5cb2eb576f8f0f617ce5ce8743c"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-preview.tsx",
+            "bytes": 2605,
+            "mode": 420,
+            "sha256": "c20871fa65a182f96d2dffcdf2093d3cceb14d5f5aa9082fb5659505e3c3416a"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/grammar-block/grammar-block.module.css",
+            "bytes": 2105,
+            "mode": 420,
+            "sha256": "89b7f715eef0e282ee4b681f78896fd627a0eed8062eae0e893f681db1c487b4"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/grammar-block/grammar-block.tsx",
+            "bytes": 4937,
+            "mode": 420,
+            "sha256": "6eb12e3e829f9db4691e38555cc0c45052cb90b1d76e89015fc46d4b89889aec"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/learning-block-view/learning-block-view.stories.tsx",
+            "bytes": 5179,
+            "mode": 420,
+            "sha256": "734c14420b827bac5fd445fec32403264ff21fcfffffa0d1fe882f770caa8517"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/learning-block-view/learning-block-view.tsx",
+            "bytes": 4052,
+            "mode": 420,
+            "sha256": "ce73fde8dfe461b3eb800641489049ffb4026f8bf703483232da8c5740b03cd9"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/learning-exercise-set/learning-exercise-set.module.css",
+            "bytes": 1516,
+            "mode": 420,
+            "sha256": "d527f624c5e6b347a533befc8303fae50bfa2870fdc58bdece7f7d276634ac78"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/learning-exercise-set/learning-exercise-set.tsx",
+            "bytes": 6693,
+            "mode": 420,
+            "sha256": "69b97090ed9e7cf52d18d3bb3469576e2ec8345b1d6bf6a96062fff9f6ade5cf"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/audio-player.tsx",
+            "bytes": 4196,
+            "mode": 420,
+            "sha256": "c13f53ecb4a5fd86c1e6d954d50e224171f6d8e3913ac8cbe2139646e174b8b4"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/media-block.module.css",
+            "bytes": 2524,
+            "mode": 420,
+            "sha256": "6b26014896c9c02552ef5f0fc94f413dd91df998e1aef32202da949916386720"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/media-block.tsx",
+            "bytes": 8667,
+            "mode": 420,
+            "sha256": "5c564a5793c333cab8e06957ff991585466b98e6b0096e65dd355b5eeebbc604"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/transcript.module.css",
+            "bytes": 695,
+            "mode": 420,
+            "sha256": "f915331bdf2168671903b537b88315485b7ee7969d1310e16ed468cadf8cf83d"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/transcript.tsx",
+            "bytes": 2529,
+            "mode": 420,
+            "sha256": "f3b4017abcb4b7c5c1263f061ae6bb6aff33e04916d6e74e2232d84c891fdc0c"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/video-player.tsx",
+            "bytes": 5036,
+            "mode": 420,
+            "sha256": "140a49619e62f28b4018639f532eac936ad61f3c6491a18ae6fd564317b01728"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/vocabulary-block/vocabulary-block.module.css",
+            "bytes": 2428,
+            "mode": 420,
+            "sha256": "7a454eaaa46dc2e9aa5bf413a554cd10b4306409e75d73353316a4a0ff9b3412"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/vocabulary-block/vocabulary-block.tsx",
+            "bytes": 5942,
+            "mode": 420,
+            "sha256": "9e1a52ae6cc7628a811b9d16ac2ff77a57c35b3537da8b0ec9ed7611174eab48"
+        },
+        {
+            "path": "apps/web/src/fsd/features/flashcard-training/ui/training-launcher/training-launcher.tsx",
+            "bytes": 7779,
+            "mode": 420,
+            "sha256": "ba056ad959c2b52a58b4ef6ba00334202a36e432175005b791694653b41d79f2"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/api/block-field-ai-api.ts",
+            "bytes": 3301,
+            "mode": 420,
+            "sha256": "61cff2c1ab576de355778cce7964d1d050892f96d9889e78b866b83bd4bd190f"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/api/block-proposals-api.ts",
+            "bytes": 3129,
+            "mode": 420,
+            "sha256": "de0045663a1b5a91ee4141850695b8f74a7e95a2818c67607596a98ee4268b04"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/api/library-copy-api.ts",
+            "bytes": 4019,
+            "mode": 420,
+            "sha256": "b708ad3674d8e2264145afb258740278a198738226f28dcd747b55bccb736557"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/hooks/use-bilingual-block-draft.ts",
+            "bytes": 4434,
+            "mode": 420,
+            "sha256": "9f7dbd31ecb63da72578291a2af78b4ce95513daabf19d2f4d7eb745def36cd9"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/hooks/use-block-field-ai.ts",
+            "bytes": 7706,
+            "mode": 420,
+            "sha256": "abeee0cd8237477a660260c7a205a4d39d4ca959075ae8e47ec7b4529f369c24"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/hooks/use-block-form-draft.ts",
+            "bytes": 7108,
+            "mode": 420,
+            "sha256": "985eac42627a7b620d64e1631d5579db3f576c0290108034aeeae8cfda0ccd45"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/hooks/use-proposal-audio.ts",
+            "bytes": 1755,
+            "mode": 420,
+            "sha256": "05ac251db639ee9d722f5ed1dd8e10cbc6f9093573e46d9433593f055a8b48e7"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/index.ts",
+            "bytes": 1540,
+            "mode": 420,
+            "sha256": "526260a69dfdae63acd1510af7123bf5d1e5afcdbdeca3a881bb53d8079d220b"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/lib/adjacent-exercise-group.ts",
+            "bytes": 1137,
+            "mode": 420,
+            "sha256": "898b6b6c1b6b7bbe79835d3fecc435412e25620cc48e9d2424625922519ce312"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/lib/apply-learning-block-edit.ts",
+            "bytes": 2233,
+            "mode": 420,
+            "sha256": "01a2b36109149e756eec2c1eb1fc8954dde4585f2ee5826c5e507ceb8cb2db11"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/lib/authoring-block-group.ts",
+            "bytes": 1854,
+            "mode": 420,
+            "sha256": "a6dd90c5002a344ea5eb7971a99d5ed577bca0dc7ef091cd4cba2ce9a0491cd2"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/lib/block-field-target.ts",
+            "bytes": 1542,
+            "mode": 420,
+            "sha256": "1b00c9269865d91d63f728a00b27c6267acb9213735a813b49f31a04d8b10856"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/lib/exercise-group-drag.ts",
+            "bytes": 4327,
+            "mode": 420,
+            "sha256": "0b2fe210baec59d293404a9936f57135136b979c986fd2463482abdb9134fa51"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/lib/knowledge-document-groups.ts",
+            "bytes": 2798,
+            "mode": 420,
+            "sha256": "657ceb449587aeb49ae5f86da0f90e9dcb0cbb8ce81813ffdc77eff04f494a31"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/lib/learning-block-copy.ts",
+            "bytes": 2597,
+            "mode": 420,
+            "sha256": "cdf5073aeb137f84f81301c036c9473c6d1c62d3b25582015c0f8c1e6db57259"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/lib/learning-block-form.ts",
+            "bytes": 22005,
+            "mode": 420,
+            "sha256": "c249b69ecc97a0318f7fe883db78f4ece7bf50586703014c742119140e9c1ce7"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/lib/learning-block-text.ts",
+            "bytes": 2759,
+            "mode": 420,
+            "sha256": "174563af8ee16800c723368bc535c9be2e5d836594168a16a3c2626de07010ed"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/lib/library-copy-source.ts",
+            "bytes": 623,
+            "mode": 420,
+            "sha256": "391bfa1db357aee69f0db19001bf01326628dc4e36b6163012745532a8cb8400"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/lib/move-learning-block.ts",
+            "bytes": 1460,
+            "mode": 420,
+            "sha256": "e805f142b553b8932c941b50fd662c301e47b5c0c165c2f9e09adf3cbea06572"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/lib/positioned-learning-blocks.ts",
+            "bytes": 1471,
+            "mode": 420,
+            "sha256": "a4f3aa7f70780a0f3481040d2da3a62d8bc2fcbc2bc001ac8039eb64128ee74b"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-copy/block-copy-labels.ts",
+            "bytes": 3721,
+            "mode": 420,
+            "sha256": "0b64d2a1e770b1708b59fe4f40c8484f42e0c99adacd9ee86d521c47d8fc8d2f"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-copy/block-copy.module.css",
+            "bytes": 966,
+            "mode": 420,
+            "sha256": "c0bff85b74e6a14942cda63a7293de2b5f78f437e4d24fc4eabb45ed69350dfb"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-copy/copy-blocks-to-note.tsx",
+            "bytes": 6340,
+            "mode": 420,
+            "sha256": "4409dbee9419b109c23194a0d17a5456dd462a7a441336e2928c3fa43c8eeda3"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/block-proposal-card.module.css",
+            "bytes": 3663,
+            "mode": 420,
+            "sha256": "a458e1a893c56f4b79d4fb1f0f6a192c4542af9950775e1a2c3212b4c0335f8e"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/block-proposal-card.tsx",
+            "bytes": 12023,
+            "mode": 420,
+            "sha256": "c9abeeb2943189b4ac4f01869c5a569a882b0e31532de7cb5897bed666719aac"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/block-proposal-labels.ts",
+            "bytes": 5158,
+            "mode": 420,
+            "sha256": "c89165bbc7b846dca6110a710c612503f43ea0c6b0c9febd87e6b50151029d99"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/knowledge-block-proposals.tsx",
+            "bytes": 5478,
+            "mode": 420,
+            "sha256": "2392ed15289bd8fd18c06382e60b63b13e939c02de3a75ca08f7f0fb987ebae9"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-document-view/knowledge-document-view.module.css",
+            "bytes": 507,
+            "mode": 420,
+            "sha256": "64f1743e9ed9fc9e6cbaa4670094e63fc855271b11e7afeb2df5d74c4a0aaed6"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-document-view/knowledge-document-view.tsx",
+            "bytes": 2700,
+            "mode": 420,
+            "sha256": "89b533a94e95cb07e2e80e62a15e56f336a97d406bdcd07ec2004b5a3a43d107"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-document-view/reader-learning-block.tsx",
+            "bytes": 7780,
+            "mode": 420,
+            "sha256": "ee0b4edbcff88c2078456d53927eae79728c966fc1ab62b338963dfc6c48e9f8"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/knowledge-editor.module.css",
+            "bytes": 5251,
+            "mode": 420,
+            "sha256": "eb4ca24b1b359d64ca1a8abd98ee96d289f86ac80c4f13c2d8bab49befea680a"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/knowledge-editor.tsx",
+            "bytes": 10523,
+            "mode": 420,
+            "sha256": "c950b211802ce93548b050fc1855b589a29789d6c2dd87c8ea20e194f5e17245"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/workspace-editor-chrome.module.css",
+            "bytes": 6255,
+            "mode": 420,
+            "sha256": "45d98c406cff1668491f6a6edb4204d6430ce9a0bb332516acef073f8ca4751d"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/knowledge-note-form.tsx",
+            "bytes": 7049,
+            "mode": 420,
+            "sha256": "994decc0062de3a9299b779618eaf7cf4c639af5d31ff830ade30bb20d6129b1"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/author-exercise-summary.tsx",
+            "bytes": 1696,
+            "mode": 420,
+            "sha256": "8d5cf0559a363bfab178e370e65176398951f0c7e3dc47a3e18783ef0c4af1ca"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-actions.tsx",
+            "bytes": 6810,
+            "mode": 420,
+            "sha256": "0327f677296f580ee760dd441109691c2d165b97b3377c0b79db0607cdd27395"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-authoring-context.tsx",
+            "bytes": 5794,
+            "mode": 420,
+            "sha256": "1e98b5b1e523233891bd32acf55444b0bf3a697900419042a24c83e334e75378"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-authoring-menu-actions.tsx",
+            "bytes": 1455,
+            "mode": 420,
+            "sha256": "21788d5a5b1de5f0f1fa293e69b273b0633fe820bc405c0e001d49320d1ff0dc"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-footer.tsx",
+            "bytes": 2362,
+            "mode": 420,
+            "sha256": "e27aa1cb65ef29d2f298121b43ec0ba15ddc3312ff979bc8132b5ec4b0bf8e63"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-form.tsx",
+            "bytes": 7345,
+            "mode": 420,
+            "sha256": "8a32d79c62f26d067d8cfe609283853d2f8309e7599fcca3e0c90bd87bae1212"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-panel.module.css",
+            "bytes": 2835,
+            "mode": 420,
+            "sha256": "88ad5e1a80cab1d46c60aa69933b3bd36cd1f2129066d705f5784d1efab2490c"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-panel.tsx",
+            "bytes": 3444,
+            "mode": 420,
+            "sha256": "f3a359de01271a15196c0ff11454622dc6c8e1da70bc18b709095e2584dfe5ef"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-field-ai-action.module.css",
+            "bytes": 2133,
+            "mode": 420,
+            "sha256": "60aa4241994492e849c288a8a46e8840aa55d097239fb4836864c9305dd22893"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-field-ai-action.tsx",
+            "bytes": 5329,
+            "mode": 420,
+            "sha256": "102be389aebed5525006b5b744c677ce0bbdcacf48bb57294e2c8ccfd93f7889"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-field-input.tsx",
+            "bytes": 2775,
+            "mode": 420,
+            "sha256": "186779e8a34a2858c9d77d2a64e1657c37e3fc52ef5179927cbd85873f17070e"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-form-dialog.tsx",
+            "bytes": 5218,
+            "mode": 420,
+            "sha256": "437fefe1d439814e33243444f36890fa5dd6c0b4e0085caeb9e1a204d25a49b7"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-form-fields.tsx",
+            "bytes": 2405,
+            "mode": 420,
+            "sha256": "9b16566c17c829a158f64d8d11520a1d7642735a40e4a7acbc0071543ecb3687"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-group-row.tsx",
+            "bytes": 3900,
+            "mode": 420,
+            "sha256": "a8659229a4fbaf95caf64021c6a628c08d6af225ae11a3f7502b05321b339faf"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-labels.ts",
+            "bytes": 2713,
+            "mode": 420,
+            "sha256": "30a0b28aaa020f7e227536e261a102fdbe700d85918cf9ac53732b4544313b2b"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-language-settings.tsx",
+            "bytes": 2362,
+            "mode": 420,
+            "sha256": "2d4bcb6a4fab0812e7f98a9b33f86c130f1fc16ad54778f9bd90c9580b5e7345"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-locales.ts",
+            "bytes": 20119,
+            "mode": 420,
+            "sha256": "b8300b166c8485b6036c2d48adfdcae85bfe4361c39858d6177dd1a2730ca13e"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/exercise-set-dialog.tsx",
+            "bytes": 3501,
+            "mode": 420,
+            "sha256": "786ccc48932814f0ae13e0a7e8f483401a6e25362ae35eae8005b2040091e118"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/exercise-set-fields.tsx",
+            "bytes": 5190,
+            "mode": 420,
+            "sha256": "ac14724bfe0d6647ae867127f99572d7553435f390fdc49bd5ac04b940aba8b1"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-authoring.module.css",
+            "bytes": 6081,
+            "mode": 420,
+            "sha256": "3272cd9d93e850f9869a7ad6a2cb0eed69bf433ab6c1a8a2b6fa7dc6b62daab4"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-authoring.tsx",
+            "bytes": 8204,
+            "mode": 420,
+            "sha256": "3f03c848a05c10ffcc52300bfc425609aee11075dd915756772b143bacf00162"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-node-view.tsx",
+            "bytes": 9479,
+            "mode": 420,
+            "sha256": "2d6e374063af533a0651af5b0ff007e49342eb4d1616b2d4f841b2e4751c830c"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-node.module.css",
+            "bytes": 3429,
+            "mode": 420,
+            "sha256": "83283a8868aa235e093b43e7e40b9e7dcd2a902b00eece2ea82d21f678f10ba1"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-node.tsx",
+            "bytes": 1211,
+            "mode": 420,
+            "sha256": "711a0c7d684ab791f82b28f59ebd1aa95185d6654afba8c91f5a6cf303ddae02"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-text-gaps.ts",
+            "bytes": 7942,
+            "mode": 420,
+            "sha256": "b37110e5a0809c824dd360ed12618e724465edc52050ab3f6bc51e38e4f9e6da"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-copy-preview.tsx",
+            "bytes": 2036,
+            "mode": 420,
+            "sha256": "b40025ed5eee8436b59cdc4cfeadeb3f593642498275e4722c33d0356f94e0ad"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-copy.module.css",
+            "bytes": 1841,
+            "mode": 420,
+            "sha256": "94c465adc4669ce6bd25e91cec1923be649ece8cb78da87ef4f97df96a256e2c"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-labels.ts",
+            "bytes": 4111,
+            "mode": 420,
+            "sha256": "ff4de74f2e37e612e1a3289bd5557c176ae19ca55365ba76089ca05c7aee7430"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-save-dialog.tsx",
+            "bytes": 8560,
+            "mode": 420,
+            "sha256": "765f5d1d383b40bb8926f4d0703f48867e19d4883ccbcc53f0198750bffde9a5"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-save-fields.tsx",
+            "bytes": 4226,
+            "mode": 420,
+            "sha256": "f9cb01b60b90d1237650946acd5545f107414e691e5ce6dd5cc7d4e04f4c6931"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-save-footer.tsx",
+            "bytes": 1851,
+            "mode": 420,
+            "sha256": "000446f203b10526822760799a4f45b9042b88a047060d966362f58ea22a8eec"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/proposal-block-content/proposal-block-content.module.css",
+            "bytes": 391,
+            "mode": 420,
+            "sha256": "ad84c655dd7354cd72e295266e25b122c0a6b8e9f27e8454b9b89b21f1088a5e"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/proposal-block-content/proposal-block-content.tsx",
+            "bytes": 3427,
+            "mode": 420,
+            "sha256": "b97a2cf3f164caa736d3af0dbe207a236888a4df62727065b726f359ce0b7320"
+        },
+        {
+            "path": "apps/web/src/fsd/features/speech-playback/hooks/use-speech-player.ts",
+            "bytes": 1879,
+            "mode": 420,
+            "sha256": "13d0a0d79372a2a08eade432697d2944c50140e1363f18f32ac5a020659277ab"
+        },
+        {
+            "path": "apps/web/src/fsd/features/speech-playback/index.ts",
+            "bytes": 259,
+            "mode": 420,
+            "sha256": "e7ec07ab0622049c1b04d8d3335d531204308b79603a08638803c15cffc43ba1"
+        },
+        {
+            "path": "apps/web/src/fsd/features/speech-playback/model/speech-player.ts",
+            "bytes": 8593,
+            "mode": 420,
+            "sha256": "787e8ebbf875711b7edd60b7fb28cb6643a69c241a4f844648a02b841de95982"
+        },
+        {
+            "path": "apps/web/src/fsd/features/workbook-learning/api/learning-api.ts",
+            "bytes": 6473,
+            "mode": 420,
+            "sha256": "cdb8e282fb93c1992d1fafe7ad434baf22d1184fc61e8655182f24a74f83e171"
+        },
+        {
+            "path": "apps/web/src/fsd/features/workbook-learning/hooks/use-exercise-evaluation.ts",
+            "bytes": 6463,
+            "mode": 420,
+            "sha256": "2c008bf58d5c03bf58108091a57c4f363be5ad4fe7dcadd30fc3da777219ad08"
+        },
+        {
+            "path": "apps/web/src/fsd/features/workbook-learning/hooks/use-note-audio.ts",
+            "bytes": 1145,
+            "mode": 420,
+            "sha256": "b9d844eb10170f235211976385864aafe98772609ad2af5e58d64085aa5a0b93"
+        },
+        {
+            "path": "apps/web/src/fsd/features/workbook-learning/hooks/use-workbook-learning.ts",
+            "bytes": 8661,
+            "mode": 420,
+            "sha256": "03389e683373fed34c43804e963d1bb2fbbbcaa9b732c600ad553963aeaf3fdc"
+        },
+        {
+            "path": "apps/web/src/fsd/features/workbook-learning/index.ts",
+            "bytes": 482,
+            "mode": 420,
+            "sha256": "700cfd3827ba856688a4c05ed91d14add7f0e7743e7daccc47bb628c192a0f69"
+        },
+        {
+            "path": "apps/web/src/fsd/features/workbook-learning/lib/exercise-source.ts",
+            "bytes": 1941,
+            "mode": 420,
+            "sha256": "8caf3c82fc88590acbc979931cda53e70146fba0201fa4b8704a7ed7eb8aa0e6"
+        },
+        {
+            "path": "apps/web/src/fsd/features/workbook-learning/lib/labels.ts",
+            "bytes": 5388,
+            "mode": 420,
+            "sha256": "e5543944b89d7536642ee153d8a46af347c1bdf37de2646d99271c8daea0dad9"
+        },
+        {
+            "path": "apps/web/src/fsd/features/workbook-learning/lib/learner-answer.ts",
+            "bytes": 424,
+            "mode": 420,
+            "sha256": "9ad35caf96efcff4962ddb4477b511c21c2b3e9baf67b5718f9d15977a477222"
+        },
+        {
+            "path": "apps/web/src/fsd/features/workbook-learning/lib/private-exercise-view.ts",
+            "bytes": 2825,
+            "mode": 420,
+            "sha256": "75470818304642798a6ef8630ffdfe214914f4bb7db815cc4f10a6d4686327ab"
+        },
+        {
+            "path": "apps/web/src/fsd/features/workbook-learning/ui/learning-progress/learning-progress.tsx",
+            "bytes": 2732,
+            "mode": 420,
+            "sha256": "dae6f1e97e953f102e807fc58b53a0e0323978adc1d9efade497f330745360a1"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/knowledge/hooks/use-knowledge-learning-integrations.ts",
+            "bytes": 7698,
+            "mode": 420,
+            "sha256": "d362a75a9c51cf87a8e6d4a807fec2cd2d6cc71a53e51c481b39f4b6649c31c8"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/knowledge/hooks/use-owned-block-practice.ts",
+            "bytes": 1927,
+            "mode": 420,
+            "sha256": "c45a52ddb8162fcb76725080f9532f65823e7dda400a5ff5abe89dca37b8c35e"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/knowledge/lib/saved-exercise-material.ts",
+            "bytes": 1589,
+            "mode": 420,
+            "sha256": "32b28ba1ef734a5868679be9385114395d928f4c4e21915d09477b873ed1cb03"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/knowledge/ui/knowledge-detail-page/knowledge-detail-page.tsx",
+            "bytes": 13238,
+            "mode": 420,
+            "sha256": "755a6f38b00b068f6bdf06b72fb943883ce237e1b342846d93f2c7a66a2827a2"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/knowledge/ui/knowledge-detail-page/note-preview.tsx",
+            "bytes": 3179,
+            "mode": 420,
+            "sha256": "750230ee29666e8d62264fcaddc679431bf7f78450258d881f9823f7545a7b28"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/knowledge/ui/knowledge-detail-page/workspace-header.tsx",
+            "bytes": 8394,
+            "mode": 420,
+            "sha256": "d2b525267d44be9adf2ca3b2c295aa7903e9123132bdd045966d792ce7c98f7a"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/knowledge/ui/knowledge-practice-page/knowledge-practice-page.tsx",
+            "bytes": 6180,
+            "mode": 420,
+            "sha256": "127b421c8dceb9f2058ab2b91451445a4ad717356081619344805dced0c20884"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/knowledge/ui/shared-knowledge-page/shared-note-learning.tsx",
+            "bytes": 5430,
+            "mode": 420,
+            "sha256": "72df8de97dc687e4680a546827b4267713a3a0f9b00f2615b160cf613e71724b"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/workbooks/ui/learning-note/learning-note.tsx",
+            "bytes": 6723,
+            "mode": 420,
+            "sha256": "595728003f6e942d8e47d3ab0994c6b410b416f7eee01ff8a00e2282664b8114"
+        },
+        {
+            "path": "apps/web/src/fsd/shared/i18n/messages/knowledge.ts",
+            "bytes": 56872,
+            "mode": 420,
+            "sha256": "a7f16c025128fc8a237f86ab8b0da9895d0833650983a3242be681c23b5499ef"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/lib/messages-copy.ts",
+            "bytes": 5430,
+            "mode": 420,
+            "sha256": "c75af72ace8aae99063ef5d707c3c79389399ccff95ff002cc65c0be986a0cc5"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/assistant-panel.tsx",
+            "bytes": 16504,
+            "mode": 420,
+            "sha256": "b540b50b2b9254c3e5fe82070683b9246e5c2aa543e84f04ee44a568f36f2017"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-messages.tsx",
+            "bytes": 8620,
+            "mode": 420,
+            "sha256": "379bd7fb9f32b1d611460b903c6e1f42fab6d7b08637c71258b7be91e73e0d7d"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-message.tsx",
+            "bytes": 10020,
+            "mode": 420,
+            "sha256": "e7ce0acb1d6d49530be935d2789c212144ea3a543a5e37314e82ea695f9de82b"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-activity/tutor-activity.tsx",
+            "bytes": 1510,
+            "mode": 420,
+            "sha256": "fd2b48b872eba08973e11eef4fa22e5004a99e7771601f6c8d336d759c92ae03"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-private-translation/hooks/use-private-translation.ts",
+            "bytes": 5182,
+            "mode": 420,
+            "sha256": "391d4324ef5749b24d7ac649d1cc99ed0d4304656736a3d26727d90e73ce840d"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-private-translation/index.ts",
+            "bytes": 387,
+            "mode": 420,
+            "sha256": "2a152c4a6bd8f3f1d60f5ad220f4c9d1d83b3d6cf25b6a93e4c170c3f446ee58"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-private-translation/lib/copy.ts",
+            "bytes": 3364,
+            "mode": 420,
+            "sha256": "451e3c67100a08ef638dd0ff602151805f4b6a312f06f1ea802143a309e8f07d"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-private-translation/ui/knowledge-bilingual-study/knowledge-bilingual-study.tsx",
+            "bytes": 4557,
+            "mode": 420,
+            "sha256": "6bac2f25876de17f0b508c56c0ae1af5e86260af7e31aeb616546b0008593ef3"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-speech/hooks/use-knowledge-audio-preparation.ts",
+            "bytes": 9931,
+            "mode": 420,
+            "sha256": "9c71680f0f487ac598d1d339694a654d40812f5f60450622e52bce3359c7fb0b"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-speech/hooks/use-knowledge-block-playback.tsx",
+            "bytes": 4210,
+            "mode": 420,
+            "sha256": "69cb7dfd306d0b8f9599010131b87f8ec8f35bd58aab19ec0a41d7c8f6f2e489"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-speech/index.ts",
+            "bytes": 565,
+            "mode": 420,
+            "sha256": "e7aca6f56a748cee8a979d84c1641bb4bfcbaaf79dcfd529a23ab8168b1027ff"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-speech/lib/audio-preparation-copy.ts",
+            "bytes": 4552,
+            "mode": 420,
+            "sha256": "5c7fd3cba4662efb58c18ed595daa99d3328e09072928a20aee888b71d0fc391"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-speech/lib/snippet-selector.ts",
+            "bytes": 1626,
+            "mode": 420,
+            "sha256": "72d2a1fa221270571651b562513c834e7b0499453b870ee2bfae0646af298520"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-speech/ui/knowledge-audio-preparation/knowledge-audio-preparation.module.css",
+            "bytes": 677,
+            "mode": 420,
+            "sha256": "06d8fdab80c9559acb855b1ab41a7fff429694b414d92b46b8a7734befb8e18c"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-speech/ui/knowledge-audio-preparation/knowledge-audio-preparation.tsx",
+            "bytes": 6868,
+            "mode": 420,
+            "sha256": "dcdd3948be3b4a104c4b6731ffa4b6991321a42e6ad41cab2be7ad1fde7c5201"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-transcription/hooks/use-audio-transcription-props.ts",
+            "bytes": 2348,
+            "mode": 420,
+            "sha256": "6870f45c008831e2ca61ea2b5aaedf428221df6bd5524f1d509b981f4c66ed76"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-transcription/hooks/use-knowledge-transcription.ts",
+            "bytes": 12903,
+            "mode": 420,
+            "sha256": "ed98d62908261c89dd4785bc928580372ac5887a4194994949a5a1ba47de0cb0"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-transcription/index.ts",
+            "bytes": 363,
+            "mode": 420,
+            "sha256": "f60a91424fdf02f5026a68e0973e0b12c91cba492b7f781e81f8b8a16ac1fb98"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-transcription/lib/copy.ts",
+            "bytes": 7331,
+            "mode": 420,
+            "sha256": "7bc264109a45a03ff5414d1286917e9bde1d01841594fa688f856c5146e44ab6"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-transcription/lib/transcription-proposal.ts",
+            "bytes": 1890,
+            "mode": 420,
+            "sha256": "d96a2ab37652da1ebe5cbc2459238fe703d92447356b4f4b4f25abcfa1ddf5b4"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-transcription/types.ts",
+            "bytes": 1240,
+            "mode": 420,
+            "sha256": "62db9576c66ccfe60de66926bd17fa0ae75ab6535d5965991d8fccb7d0b35254"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-transcription/ui/knowledge-audio-transcription/knowledge-audio-transcription.tsx",
+            "bytes": 590,
+            "mode": 420,
+            "sha256": "caa0a869272e7daf4b2283e18e791f8b5971167464499f19bc54c7f342546d5c"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-transcription/ui/knowledge-transcription/knowledge-transcription.tsx",
+            "bytes": 6711,
+            "mode": 420,
+            "sha256": "365e83ea705fe10f783e1b4c95796973cf084c7ff0f1e1a064d313470189f650"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-vocabulary/ui/knowledge-vocabulary-practice/knowledge-vocabulary-practice.module.css",
+            "bytes": 520,
+            "mode": 420,
+            "sha256": "ea5ef2d87d91f58efa1d976873b888f0ccbe984a9ce2041ff473dcc13fdeb8b3"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-vocabulary/ui/knowledge-vocabulary-practice/knowledge-vocabulary-practice.tsx",
+            "bytes": 6000,
+            "mode": 420,
+            "sha256": "7dd88c8765ead9e5f88e69b16ad7ff9437704e83d9f78a4b64c0372bc5df0171"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/knowledge-vocabulary/ui/knowledge-vocabulary-practice/vocabulary-training.tsx",
+            "bytes": 4452,
+            "mode": 420,
+            "sha256": "f83498c3da12c23fdd061e72eed5846a7daeebe647b652c164d7a1b370361088"
+        },
+        {
+            "path": "apps/web/tests/e2e/interactive-workbooks.journeys.spec.ts",
+            "bytes": 74484,
+            "mode": 420,
+            "sha256": "05145779dd110df2150cca7ae78346477b4822470adbbdda059adb6890924194"
+        },
+        {
+            "path": "apps/web/tests/exercise-evaluation.test.tsx",
+            "bytes": 5942,
+            "mode": 420,
+            "sha256": "f0690e78da7b8c5fe0554a4c39c759e2d60edad460624805a21d8c7991a59e43"
+        },
+        {
+            "path": "apps/web/tests/knowledge-audio-preparation.test.tsx",
+            "bytes": 8197,
+            "mode": 420,
+            "sha256": "45ad6d847a2c5507ff8fb02e467fd9772d9fa497d3aecc6d4efa5b2c119166c7"
+        },
+        {
+            "path": "apps/web/tests/knowledge-author-library-menu.test.tsx",
+            "bytes": 3830,
+            "mode": 420,
+            "sha256": "d4bd3c2a9d68fdcd9eadd9f53fbead3c227340c5f9cbbcd69f25762c08e2350f"
+        },
+        {
+            "path": "apps/web/tests/knowledge-bilingual-study.test.tsx",
+            "bytes": 8682,
+            "mode": 420,
+            "sha256": "620c0b82d61afd8c7ff327959e8f9221fc8746094057ec74493e3dd90af4a6c7"
+        },
+        {
+            "path": "apps/web/tests/knowledge-block-controls.test.tsx",
+            "bytes": 8355,
+            "mode": 420,
+            "sha256": "29c4ba5ae7c1e19942e7fd372468e1c888f10c32a978942ec71922aafc3a6619"
+        },
+        {
+            "path": "apps/web/tests/knowledge-block-copy.test.tsx",
+            "bytes": 13412,
+            "mode": 420,
+            "sha256": "7bddae10840cd474e4802f88dee4cf69a003ffc5a682004221de090e9b7e6802"
+        },
+        {
+            "path": "apps/web/tests/knowledge-block-field-authoring.test.tsx",
+            "bytes": 16372,
+            "mode": 420,
+            "sha256": "cab9c754c892d0362c6b6169de4c02f94b3296c8768b536ea6050f27b98eb072"
+        },
+        {
+            "path": "apps/web/tests/knowledge-block-groups.test.tsx",
+            "bytes": 16299,
+            "mode": 420,
+            "sha256": "8cebb60fb71e987f08b308f16bf87afc7b170b8f318be563f7c37c381d263ba9"
+        },
+        {
+            "path": "apps/web/tests/knowledge-block-language-defaults.test.tsx",
+            "bytes": 7392,
+            "mode": 420,
+            "sha256": "96498341276bcbc61847a9cd7624ecffd993485ca223224a511dbe648536f57b"
+        },
+        {
+            "path": "apps/web/tests/knowledge-block-proposals.test.tsx",
+            "bytes": 14216,
+            "mode": 420,
+            "sha256": "57cb604c53eede99b84fb702625feb297f36014b5f791289b8c22e80e9ce3d02"
+        },
+        {
+            "path": "apps/web/tests/knowledge-block-reply.test.tsx",
+            "bytes": 4214,
+            "mode": 420,
+            "sha256": "727d696f3dbba6213039a7f0112cff9a2c9dbbb6877cb3fecb4774fbb09e4aa2"
+        },
+        {
+            "path": "apps/web/tests/knowledge-block-rerender.test.tsx",
+            "bytes": 2149,
+            "mode": 420,
+            "sha256": "b79b2d8791de9ef076af81af81afd66440f6b2f8ecb3e5bd35c3f9f4fa16d917"
+        },
+        {
+            "path": "apps/web/tests/knowledge-document-groups.test.tsx",
+            "bytes": 8089,
+            "mode": 420,
+            "sha256": "06f0f146c61602302a3a3652a6a1e59b9412d975b333359e6f8aefd5c93dd5f8"
+        },
+        {
+            "path": "apps/web/tests/knowledge-learning-block-editor.test.tsx",
+            "bytes": 21830,
+            "mode": 420,
+            "sha256": "1bbca217ac43a877c82cd3758b1a34c061fa6074c4068bc40563e425049a232e"
+        },
+        {
+            "path": "apps/web/tests/knowledge-library-copy.test.tsx",
+            "bytes": 15835,
+            "mode": 420,
+            "sha256": "7c675cd028ba6fca5795b85ad6b1cd1372852e498b61dfb4e51c1cb926f97a51"
+        },
+        {
+            "path": "apps/web/tests/knowledge-proposal-audio.test.tsx",
+            "bytes": 5261,
+            "mode": 420,
+            "sha256": "8f3b45f177732cc9791e3a607c54deebea8a3ab139d7fbede6abccb55ff3b983"
+        },
+        {
+            "path": "apps/web/tests/knowledge-snippet-selector.test.ts",
+            "bytes": 3192,
+            "mode": 420,
+            "sha256": "3959bcbced81b4ecebcaadadc1f7e4c385c0f54a9f845fa551840eaa6ea1560d"
+        },
+        {
+            "path": "apps/web/tests/knowledge-transcription.test.tsx",
+            "bytes": 25961,
+            "mode": 420,
+            "sha256": "a356fa3b306bb5300810fc13a2c740376b0085c7647317fd28c49ae589b94319"
+        },
+        {
+            "path": "apps/web/tests/learning-block-context-text.test.ts",
+            "bytes": 1356,
+            "mode": 420,
+            "sha256": "80f59d59b6f02acb49cf38998b2fac7573c779fb615c55bce4bea2018cf55577"
+        },
+        {
+            "path": "apps/web/tests/learning-blocks.test.tsx",
+            "bytes": 42468,
+            "mode": 420,
+            "sha256": "fb3e68ef9b739fe612aad00f3f7b2d6217ee0447fe7e1be55a11e30d1d37f533"
+        },
+        {
+            "path": "apps/web/tests/speech-player.test.ts",
+            "bytes": 9523,
+            "mode": 420,
+            "sha256": "49d7fae7233792fc7be68287b80f18064ae9035561a427d64b555de1868d7676"
+        },
+        {
+            "path": "apps/web/tests/workbook-audio.test.tsx",
+            "bytes": 3385,
+            "mode": 420,
+            "sha256": "e3345460287218f2d82b65fa935d0ac95a433138753ebe96cf8e7ec1e356bb64"
+        },
+        {
+            "path": "apps/web/tests/workbook-learning.test.tsx",
+            "bytes": 10869,
+            "mode": 420,
+            "sha256": "5db4e6ecb87d034053e2230f4064cb6ca47530111d8712078072b5c713474403"
+        },
+        {
+            "path": "eslint.config.mjs",
+            "bytes": 12116,
+            "mode": 420,
+            "sha256": "50c8917e2bb03f2d6235882c2eacee6a965890311021fbac0a0a87ee9526b42e"
+        },
+        {
+            "path": "infra/deploy/sql/dictionary-worker-role.sql",
+            "bytes": 16648,
+            "mode": 420,
+            "sha256": "eeb2f555ac4fafbda2236fe34f6aa31e4364a813cc99c3c01bf3264271c0eb37"
+        },
+        {
+            "path": "packages/contracts/src/index.ts",
+            "bytes": 1466,
+            "mode": 420,
+            "sha256": "72092c575c4b92778d7eb53fba0f9683f566cba9eb4a0da8d4414c38f129f6de"
+        },
+        {
+            "path": "packages/contracts/src/knowledge-block-field-ai.ts",
+            "bytes": 4839,
+            "mode": 420,
+            "sha256": "98ae612c7c1c2b1e60ca9b1b2e1c0a03ec2dbefbe6e0b9d1ad7be316a682aebc"
+        },
+        {
+            "path": "packages/contracts/src/knowledge-block-proposals.test.ts",
+            "bytes": 1690,
+            "mode": 420,
+            "sha256": "b4379e564d7b4ffacbe2e737ba46c7dfe2482caa684d68054709e49515714aee"
+        },
+        {
+            "path": "packages/contracts/src/knowledge-block-proposals.ts",
+            "bytes": 2181,
+            "mode": 420,
+            "sha256": "aaf90e89294823bfcaaac57891968c6f9a29bc7abc6f9a5dd94e0f7db6c1d5ca"
+        },
+        {
+            "path": "packages/contracts/src/knowledge-exercise-evaluation.test.ts",
+            "bytes": 4794,
+            "mode": 420,
+            "sha256": "5b3afd0273adbcbd82b7e506501a676dedcdf5e5f1edd7fbcdc7f9fd9236c14d"
+        },
+        {
+            "path": "packages/contracts/src/knowledge-exercise-evaluation.ts",
+            "bytes": 4119,
+            "mode": 420,
+            "sha256": "c075ef1355bbb3e98f69080137e6bb74dcc233913cd66abe247e5a5be934d30c"
+        },
+        {
+            "path": "packages/contracts/src/knowledge-interactive.test.ts",
+            "bytes": 7667,
+            "mode": 420,
+            "sha256": "4fc1d57e7d6cd45d094cb204d580a3cf055c7c4f4808eea3fd02fb23e2856ec6"
+        },
+        {
+            "path": "packages/contracts/src/knowledge-interactive.ts",
+            "bytes": 7203,
+            "mode": 420,
+            "sha256": "97f16459a99da3059d0b1f6d3533ef6be53140ca40985cccab8bb867127f1506"
+        },
+        {
+            "path": "packages/contracts/src/knowledge-library-copy.test.ts",
+            "bytes": 4932,
+            "mode": 420,
+            "sha256": "6a3e238291044ec2d3919acffc7d44b82b13bbc79d46ca1f80f25cb299b710a3"
+        },
+        {
+            "path": "packages/contracts/src/knowledge-library-copy.ts",
+            "bytes": 4708,
+            "mode": 420,
+            "sha256": "418e113fba9b5d2cc6589178196570563b2d87a616d0b8d29043e5eeb54954f1"
+        },
+        {
+            "path": "packages/contracts/src/learning-blocks.test.ts",
+            "bytes": 11052,
+            "mode": 420,
+            "sha256": "f5bcb2763dcf4c1ea5476d278a7505b7d4a6876aeb7e103ee165b0e8ef0742ac"
+        },
+        {
+            "path": "packages/contracts/src/learning-blocks.ts",
+            "bytes": 13127,
+            "mode": 420,
+            "sha256": "2645c61520b9612839c8ed7965348e2f60d04d201d0e1bb4fd5c03570ff989b9"
+        },
+        {
+            "path": "packages/contracts/src/speech/index.ts",
+            "bytes": 10828,
+            "mode": 420,
+            "sha256": "4b67b4c0ee83c2e256e92ca5eac28a8d9396cc57dda4ec1ff3a90335750ffe79"
+        },
+        {
+            "path": "packages/contracts/src/workbook-learning.ts",
+            "bytes": 6938,
+            "mode": 420,
+            "sha256": "8ab43ee54f2b383cf8d684a3a71e32a8abcdd4545a2079ba8b48063c0e3807a1"
+        },
+        {
+            "path": "packages/prompts/src/index.ts",
+            "bytes": 2357,
+            "mode": 420,
+            "sha256": "68553fd74e20b3523edee082788f09c1160c63ffa2eba09c7321a5ce8543a6a2"
+        },
+        {
+            "path": "packages/prompts/src/local/knowledge-block-field.ts",
+            "bytes": 891,
+            "mode": 420,
+            "sha256": "13029c5131b53cc721e739c16a69c1468bc726b45049b61505af97b6ed658fc6"
+        },
+        {
+            "path": "packages/prompts/src/local/knowledge-exercise-evaluation.ts",
+            "bytes": 1362,
+            "mode": 420,
+            "sha256": "7eaeed65da509b7d607ecd99a638c1f5a3c7eed6f768e8f9a2f7cce195643dc2"
+        },
+        {
+            "path": "scripts/critical-flows/registry.mjs",
+            "bytes": 29724,
+            "mode": 420,
+            "sha256": "83ace00c01b8cc5c05dde3d999c19f712e636ae870ae9a37bb880325917e828d"
+        },
+        {
+            "path": "scripts/dev-doctor.mjs",
+            "bytes": 5708,
+            "mode": 420,
+            "sha256": "80ec0c70b3966ed87d65644b5b3fe3cd442aa5133a99e75d1254c98d9c171c6c"
+        },
+        {
+            "path": "scripts/dev-readiness/checks.mjs",
+            "bytes": 12427,
+            "mode": 420,
+            "sha256": "93b8406a9b019e43c3d72c4a99c869b5ff56f7a17c88605a717c05ca3b9a5d19"
+        },
+        {
+            "path": "scripts/dev-readiness/checks.test.mjs",
+            "bytes": 18892,
+            "mode": 420,
+            "sha256": "b76b2913f6e0f4eefb5fc7f09974406a95e487fd3e69259c2a413c372f280eaa"
+        },
+        {
+            "path": "scripts/dev-readiness/worker.mjs",
+            "bytes": 3753,
+            "mode": 420,
+            "sha256": "acfec4fa53d10a59d72fe926bbf5845922dac9272958f3c528e6a7d22f0d110a"
+        }
+    ],
+    "trackingState": "Snapshot before staging: trackedPatchSha256 covers then-tracked changes; all new files and their modes are included in files/contentSha256. Staging/committing changes Git inclusion, not these verified source bytes.",
+    "stagedPatchSha256": "cce2b58262d085164d40bd57d8985209d5f6a3fa50981a68bfa533da52957d18",
+    "stagedPatchScope": "Only the339 runtime/test/configuration file paths in files; excludes delivery/design/docs. This is not the full repository staged patch.",
+    "stagedPatchCommand": [
+        "git",
+        "diff",
+        "--cached",
+        "--binary",
+        "22333ec8de75cb1d5baebc9539fa8813d322d4f0",
+        "--",
+        ".",
+        ":(exclude).agent/**",
+        ":(exclude)docs/**"
+    ]
+}

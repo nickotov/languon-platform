@@ -7,13 +7,19 @@ import {
     useState,
     type ChangeEvent,
     type MouseEvent,
+    type ReactNode,
 } from 'react';
 import {
     KnowledgeNoteContentSchema,
     type KnowledgeWorkingContent,
+    type LearningBlock,
 } from '@languon/contracts';
+import type { LearningBlockViewProps } from '@/fsd/entities/learning-blocks';
+import type { KnowledgeBlockFieldAiContext } from '../../api/block-field-ai-api';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Input } from '@/fsd/shared/ui';
+import type { KnowledgeBlockCopyContext } from '../../api/block-copy-api';
+import type { KnowledgeLibraryContext } from '../../api/library-copy-api';
+import { Input, type MenuItem } from '@/fsd/shared/ui';
 import {
     KnowledgeEditor,
     type KnowledgeEditorHandle,
@@ -26,10 +32,35 @@ export type KnowledgeTutorAction =
     'explain' | 'correct' | 'translate' | 'simplify' | 'rephrase' | 'examples';
 
 export type KnowledgeWorkspaceEditorOptions = {
+    blockAccents?: boolean | undefined;
+    languageDefaults?:
+        | { content?: string | undefined; translation?: string | undefined }
+        | undefined;
+    renderBlockMenu?:
+        ((block: LearningBlock, items: MenuItem[]) => ReactNode) | undefined;
+    renderAudioPreparation?:
+        | ((
+              block: Extract<LearningBlock, { type: 'audio' }>,
+              onAccept: (
+                  block: Extract<LearningBlock, { type: 'audio' }>,
+              ) => void,
+          ) => ReactNode)
+        | undefined;
+    fieldAi?: KnowledgeBlockFieldAiContext | undefined;
+    blockViewOptions?:
+        | ((
+              block: LearningBlock,
+          ) => Omit<Partial<LearningBlockViewProps>, 'block' | 'labels'>)
+        | undefined;
+    blockCopy?: KnowledgeBlockCopyContext | undefined;
+    library?: KnowledgeLibraryContext | undefined;
+    uploadAudio?: ((file: File) => Promise<{ assetId: string }>) | undefined;
+    preparationTools?: ReactNode;
     toolbarRootId: string;
     editorId: string;
     proposalRootId: string;
     inlineProposalRootId?: string;
+    onMentionBlock?: ((blockId: string) => void) | undefined;
     onAskTutor(passage: string): void;
     onAskOutline(): void;
     onTutorAction?(action: KnowledgeTutorAction, passage: string): void;
@@ -60,24 +91,30 @@ export const KnowledgeNoteForm = forwardRef<
     const [editorValid, setEditorValid] = useState(true);
     const valid =
         editorValid && KnowledgeNoteContentSchema.safeParse(value).success;
+
     useEffect(() => {
         onValidityChange?.(valid);
     }, [onValidityChange, valid]);
+
     function field<Key extends keyof KnowledgeWorkingContent>(
         key: Key,
         next: KnowledgeWorkingContent[Key],
     ) {
         onChange((current) => ({ ...current, [key]: next }));
     }
+
     function changeTitle(event: ChangeEvent<HTMLInputElement>) {
         field('title', event.target.value);
     }
+
     function changeWorkspaceTitle(title: string) {
         field('title', title);
     }
+
     function changeBody(body: KnowledgeWorkingContent['body']) {
         field('body', body);
     }
+
     function focusDocument(event: MouseEvent<HTMLElement>) {
         if (workspace && event.target === event.currentTarget) {
             event.currentTarget
@@ -85,11 +122,13 @@ export const KnowledgeNoteForm = forwardRef<
                 ?.focus();
         }
     }
+
     const EditorContainer = workspace ? 'article' : 'div';
     const formClassName = workspace ? styles.workspaceForm : styles.form;
     const explanationClassName = workspace
         ? styles.article
         : styles.explanation;
+
     return (
         <div className={formClassName}>
             {!workspace && (
@@ -155,6 +194,7 @@ export const KnowledgeNoteForm = forwardRef<
                         label={t('knowledge.document')}
                         onValidityChange={setEditorValid}
                     />
+                    {workspace?.preparationTools}
                 </div>
             </EditorContainer>
             {error && (

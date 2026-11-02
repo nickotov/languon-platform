@@ -51,6 +51,7 @@ export function useDictionaryLibrary(requestWithSession: RequestWithSession) {
                 createAttempt.current,
                 fingerprint,
             );
+
             return requestWithSession((token) =>
                 dictionaryApi.createDictionary(
                     token,
@@ -67,6 +68,7 @@ export function useDictionaryLibrary(requestWithSession: RequestWithSession) {
             void queryClient.invalidateQueries({
                 queryKey: ['dictionaries-navigation'],
             });
+
             setCreateOpen(false);
             router.push(href(`/dictionaries/${dictionary.id}`));
         },
@@ -92,6 +94,7 @@ export function useDictionaryLibrary(requestWithSession: RequestWithSession) {
                     ? t('dictionary.library.archivedOutcome')
                     : t('dictionary.library.restoredOutcome'),
             );
+
             void queryClient.invalidateQueries({ queryKey: ['dictionaries'] });
             void queryClient.invalidateQueries({
                 queryKey: ['dictionaries-navigation'],
@@ -104,6 +107,7 @@ export function useDictionaryLibrary(requestWithSession: RequestWithSession) {
         requestWithSession,
         setMessage,
     });
+
     function submitCreate(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
@@ -118,47 +122,58 @@ export function useDictionaryLibrary(requestWithSession: RequestWithSession) {
     function openCreate() {
         setCreateOpen(true);
     }
+
     function closeCreate() {
         setCreateOpen(false);
     }
+
     function changeSearch(event: ChangeEvent<HTMLInputElement>) {
         deletion.clearSelection();
         setSearch(event.currentTarget.value);
     }
+
     function clearSearch() {
         deletion.clearSelection();
         setSearch('');
     }
+
     function selectActive() {
         deletion.clearSelection();
         setLifecycle('active');
     }
+
     function selectArchived() {
         setLifecycle('archived');
     }
+
     function switchLifecycle() {
         deletion.clearSelection();
         setLifecycle(lifecycle === 'active' ? 'archived' : 'active');
     }
+
     function changeSource(event: ChangeEvent<HTMLSelectElement>) {
         setCreateSourceLanguage(
             event.currentTarget
                 .value as CreateDictionaryRequest['sourceLanguage'],
         );
     }
+
     function changeTarget(event: ChangeEvent<HTMLSelectElement>) {
         setCreateTargetLanguage(
             event.currentTarget
                 .value as CreateDictionaryRequest['targetLanguage'],
         );
     }
+
     function retryLoad() {
         void languages.refetch();
         void dictionaries.refetch();
     }
+
     function loadMore() {
         void dictionaries.fetchNextPage();
     }
+
     function reloadConflict() {
         lifecycleMutation.reset();
         void dictionaries.refetch();

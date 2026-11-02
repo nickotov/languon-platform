@@ -69,14 +69,20 @@ export function useAuthoringMutation({
                   },
         ) => {
             const versions = cards.data?.pages[0];
-            if (!versions) throw new Error('Dictionary unavailable');
+            if (!versions) {
+                throw new Error('Dictionary unavailable');
+            }
+
             if (action.kind === 'cancel') {
-                if (!authoringJobId)
+                if (!authoringJobId) {
                     throw new Error('Card authoring job unavailable');
+                }
+
                 return requestWithSession((token) =>
                     dictionaryApi.cancelGenerationJob(token, authoringJobId),
                 );
             }
+
             if (action.kind === 'accept') {
                 const generation =
                     action.generation ??
@@ -86,8 +92,11 @@ export function useAuthoringMutation({
                               format: authoringReviewJob.format,
                           }
                         : undefined);
-                if (!generation)
+
+                if (!generation) {
                     throw new Error('Card authoring proposal unavailable');
+                }
+
                 return requestWithSession((token) =>
                     dictionaryApi.acceptGenerationJob(
                         token,
@@ -139,6 +148,7 @@ export function useAuthoringMutation({
                 authoringAttempt.current,
                 fingerprint,
             );
+
             authoringAttempt.current = attempt;
             const response = await actionConsent.run((confirmedQuoteId) =>
                 requestWithSession((token) => {
@@ -146,11 +156,14 @@ export function useAuthoringMutation({
                         ...base,
                         ...(confirmedQuoteId ? { confirmedQuoteId } : {}),
                     };
+
                     if (action.successor) {
-                        if (!authoringReviewJob)
+                        if (!authoringReviewJob) {
                             throw new Error(
                                 'Card authoring proposal unavailable',
                             );
+                        }
+
                         return regenerateCardAuthoring(
                             token,
                             {
@@ -162,6 +175,7 @@ export function useAuthoringMutation({
                             attempt.key,
                         );
                     }
+
                     if (editing && editing !== 'new') {
                         return dictionaryApi.enqueueCardAuthoringUpdateGeneration(
                             token,
@@ -175,6 +189,7 @@ export function useAuthoringMutation({
                             attempt.key,
                         );
                     }
+
                     return dictionaryApi.enqueueCardAuthoringGeneration(
                         token,
                         dictionaryId,
@@ -183,16 +198,22 @@ export function useAuthoringMutation({
                     );
                 }),
             );
+
             authoringAttempt.current = null;
+
             return response;
         },
         onMutate: () => ({ session: editingSession.current }),
         onError: (_error, _action, attempt) => {
-            if (attempt?.session !== editingSession.current)
+            if (attempt?.session !== editingSession.current) {
                 cardAuthoringAction.reset();
+            }
         },
         onSuccess: async (response, _action, attempt) => {
-            if (response.job.kind !== 'card-authoring') return;
+            if (response.job.kind !== 'card-authoring') {
+                return;
+            }
+
             if (attempt?.session !== editingSession.current) {
                 if (
                     response.job.state === 'queued' ||
@@ -202,12 +223,18 @@ export function useAuthoringMutation({
                 } else if (response.job.state === 'review') {
                     authoringCleanup.current.discardJobIds.add(response.job.id);
                 }
+
                 void flushCardAuthoringCleanup();
+
                 return;
             }
+
             if (response.job.state === 'accepted') {
                 await queueCardAuthoringCleanup();
-                if (attempt.session !== editingSession.current) return;
+                if (attempt.session !== editingSession.current) {
+                    return;
+                }
+
                 setEditing(null);
                 setAuthoringJobId(null);
                 setAuthoringReviewJob(null);
@@ -220,6 +247,7 @@ export function useAuthoringMutation({
                         ? t('dictionary.card.savedDuplicate')
                         : t('dictionary.card.saved'),
                 );
+
                 await Promise.all([
                     queryClient.invalidateQueries({
                         queryKey: ['dictionary-cards', dictionaryId],
@@ -231,15 +259,19 @@ export function useAuthoringMutation({
                         queryKey: ['dictionaries'],
                     }),
                 ]);
+
                 return;
             }
+
             setAuthoringJobId(response.job.id);
             queryClient.setQueryData(
                 ['dictionary-card-authoring-job', response.job.id],
                 response.job,
             );
-            if (response.job.state === 'review')
+
+            if (response.job.state === 'review') {
                 setAuthoringReviewJob(response.job);
+            }
         },
     });
 

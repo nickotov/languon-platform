@@ -95,11 +95,13 @@ export function createInterviewAdmission(options: {
             at: now,
         });
         const operatorFunded = chargingPolicy.funding === 'operator';
-        if (!operatorFunded && !paidAcknowledged)
+        if (!operatorFunded && !paidAcknowledged) {
             throw new InterviewAccountingError(
                 'billing_notice_required',
                 'Review the current interview credit notice before continuing.',
             );
+        }
+
         const input = { ownerId: operation.ownerId, operationId: operation.id };
         const execution = await new DrizzleTextAiAdmissionParticipant(
             tx,
@@ -112,39 +114,48 @@ export function createInterviewAdmission(options: {
                 legacyBudget: defaultTextAiProviderBudgetPolicy,
             })
             .catch((error: unknown) => {
-                if (error instanceof TextAiSelectionUnavailableError)
+                if (error instanceof TextAiSelectionUnavailableError) {
                     throw new InterviewAccountingError(
                         'model_unavailable',
                         'AI is unavailable right now. Try again later or edit your draft manually.',
                     );
+                }
+
                 throw error;
             });
+
         if (
             !execution.snapshot?.creditPricing ||
             !execution.snapshot.supportedFormats.includes(
                 'portrait-interview:v1',
             )
-        )
+        ) {
             throw new InterviewAccountingError(
                 'model_unavailable',
                 'AI is unavailable right now. Try again later or edit your draft manually.',
             );
+        }
+
         if (
             !operatorFunded &&
             execution.snapshot.routingAuthority?.tariffPublished === false
-        )
+        ) {
             throw new InterviewAccountingError(
                 'model_unavailable',
                 'AI is not configured for this action. Try again later.',
             );
+        }
+
         if (
             execution.snapshot.perCallMaxOutputTokens <
             INTERVIEW_MIN_OUTPUT_TOKENS
-        )
+        ) {
             throw new InterviewAccountingError(
                 'model_unavailable',
                 'AI cannot complete this interview response. Your draft is kept; try again later or edit manually.',
             );
+        }
+
         const account = operatorFunded
             ? null
             : await new DrizzleAiCreditTransactionParticipant(
@@ -174,11 +185,14 @@ export function createInterviewAdmission(options: {
                 .cachedInputCreditsPerMillionTokens ??
                 execution.snapshot.creditPricing.inputCreditsPerMillionTokens,
         ].every((rate) => rate === 0);
-        if (funding === 'customer' && !budget && !zeroCustomerTariff)
+
+        if (funding === 'customer' && !budget && !zeroCustomerTariff) {
             throw new InterviewAccountingError(
                 'action_budget_unconfigured',
                 'Configure an AI action budget before starting paid work.',
             );
+        }
+
         const pinnedCandidate =
             execution.snapshot.routingAuthority?.candidates.find(
                 (candidate) =>
@@ -194,24 +208,29 @@ export function createInterviewAdmission(options: {
                 meter: 'text-tokens',
                 at: now,
             }));
+
         try {
             execution.budget = reviewedTextProviderBudget(
                 providerPrice,
                 execution.budget,
                 { read: 'input-price-upper-bound', write: 'none' },
             );
+
             if (
                 !settings.maxProviderCostUsdPerAction ||
                 !settings.maxProviderCostUsdPerAccountDay ||
                 !settings.maxProviderCostUsdPerDay
-            )
+            ) {
                 throw new OperatorBudgetUnavailableError(
                     'Operator spending limits must be configured.',
                 );
+            }
+
             const inputLimitTotal = Math.min(
                 execution.budget.maxInputTokensPerAttempt,
                 inputTokenLimit * 2,
             );
+
             execution.budget.maxCostMicrosPerAttempt = Math.min(
                 execution.budget.maxCostMicrosPerAttempt,
                 Number(parseFixed(settings.maxProviderCostUsdPerAction, 6)),
@@ -230,13 +249,16 @@ export function createInterviewAdmission(options: {
             if (
                 error instanceof ProviderCostAdmissionUnavailableError ||
                 error instanceof OperatorBudgetUnavailableError
-            )
+            ) {
                 throw new InterviewAccountingError(
                     'model_unavailable',
                     'Reviewed provider pricing and operator spending limits must be configured before interviews are enabled.',
                 );
+            }
+
             throw error;
         }
+
         const tariff = {
             ...(execution.snapshot.creditPricing
                 .cachedInputCreditsPerMillionTokens != null
@@ -295,11 +317,13 @@ export function createInterviewAdmission(options: {
             at: now,
         }).catch((error: unknown) => {
             // Allowance admission can reject before a reservation is attempted.
-            if (error instanceof AiCreditInsufficientBalanceError)
+            if (error instanceof AiCreditInsufficientBalanceError) {
                 throw new InterviewAccountingError(
                     'credits_exhausted',
                     'You do not have enough AI credits for input and any output.',
                 );
+            }
+
             throw error;
         });
         const action = await new DrizzleActionAccountingParticipant(tx)
@@ -320,16 +344,20 @@ export function createInterviewAdmission(options: {
                 deadlineAt: new Date(now.getTime() + 15 * 60_000),
             })
             .catch((error: unknown) => {
-                if (error instanceof AiCreditInsufficientBalanceError)
+                if (error instanceof AiCreditInsufficientBalanceError) {
                     throw new InterviewAccountingError(
                         'credits_exhausted',
                         'You do not have enough AI credits for input and any output.',
                     );
-                if (error instanceof OperatorBudgetUnavailableError)
+                }
+
+                if (error instanceof OperatorBudgetUnavailableError) {
                     throw new InterviewAccountingError(
                         'capacity_unavailable',
                         'The AI spending allowance is currently unavailable. Try again later.',
                     );
+                }
+
                 throw error;
             });
         const modelOutputLimit = Math.min(
@@ -346,26 +374,33 @@ export function createInterviewAdmission(options: {
                       tariff,
                   })
                 : modelOutputLimit;
-        if (creditOutputLimit < 1)
+
+        if (creditOutputLimit < 1) {
             throw new InterviewAccountingError(
                 'credits_exhausted',
                 'You do not have enough AI credits for input and any output.',
             );
+        }
+
         const outputTokenLimit = providerAffordableOutputTokens({
             inputTokens: inputTokenLimit,
             outputLimit: creditOutputLimit,
             budget: execution.budget,
         });
-        if (outputTokenLimit < 1)
+
+        if (outputTokenLimit < 1) {
             throw new InterviewAccountingError(
                 'capacity_unavailable',
                 'The AI request exceeds the available execution allowance. Try again later.',
             );
+        }
+
         const capacity = await readTextAiCapacity(tx, {
             actorId: input.ownerId,
             now,
             budget: execution.budget,
         });
+
         if (
             capacity.globalQueued >= 100 ||
             capacity.actorQueued >= 5 ||
@@ -374,11 +409,13 @@ export function createInterviewAdmission(options: {
                 true,
                 execution.budget,
             )
-        )
+        ) {
             throw new InterviewAccountingError(
                 'capacity_unavailable',
                 'AI capacity is currently unavailable. Try again later.',
             );
+        }
+
         return {
             ...execution,
             chargingPolicy,
@@ -401,18 +438,22 @@ export function createInterviewAccounting(input: {
     leaseToken?: string;
     execution: InterviewExecution;
 }): TutorAccountingPort {
-    if (usesActionAccounting(input.execution))
+    if (usesActionAccounting(input.execution)) {
         return createInterviewActionAccounting({
             ...input,
             execution: input.execution,
             withTransaction: (work) => input.database.transaction(work),
         });
+    }
+
     const snapshot = input.execution.snapshot;
     if (
         !snapshot?.creditPricing ||
         !snapshot.supportedFormats.includes('portrait-interview:v1')
-    )
+    ) {
         throw new Error('Interview execution is unavailable.');
+    }
+
     const selected: TextAiExecutionSnapshot = snapshot;
     const pricing = snapshot.creditPricing;
     const policy = input.execution.budget;
@@ -428,6 +469,7 @@ export function createInterviewAccounting(input: {
                 .from(usersTable)
                 .where(eq(usersTable.id, input.ownerId))
                 .for('update');
+
             const [row] = await tx
                 .select()
                 .from(calls)
@@ -439,7 +481,11 @@ export function createInterviewAccounting(input: {
                     ),
                 )
                 .for('update');
-            if (!row || row.state === 'settled') return;
+
+            if (!row || row.state === 'settled') {
+                return;
+            }
+
             await settleInterviewCall(
                 tx,
                 row,
@@ -450,35 +496,45 @@ export function createInterviewAccounting(input: {
             );
         });
     }
+
     return {
         async admit(call) {
-            if (call.purpose !== 'answer')
+            if (call.purpose !== 'answer') {
                 throw new InterviewAccountingError(
                     'invalid_call',
                     'Interview memory calls are not enabled.',
                 );
+            }
+
             await input.withOperation(async (tx) => {
                 await assertLiveInterviewOperation(
                     tx,
                     input.operationId,
                     input.ownerId,
                 );
+
                 await lockTextAiCapacity(tx);
                 const previous = await tx
                     .select()
                     .from(calls)
                     .where(eq(calls.operationId, input.operationId));
-                if (previous.some((row) => row.id === call.callId))
+
+                if (previous.some((row) => row.id === call.callId)) {
                     throw new Error('Provider dispatch cannot be replayed.');
+                }
+
                 const memoryCalls = previous.filter(
                     (row) => row.purpose !== 'actor',
                 ).length;
+
                 if (
                     previous.length >= 2 ||
                     (call.purpose !== 'answer' &&
                         (memoryCalls >= 2 || previous.length >= 4))
-                )
+                ) {
                     throw new Error('Interview provider-call limit reached.');
+                }
+
                 const inputTokens = inputTokenLimit;
                 const outputCap = Math.min(
                     selected.perCallMaxOutputTokens,
@@ -493,8 +549,10 @@ export function createInterviewAccounting(input: {
                     call.maxOutputTokens > outputCap ||
                     !Number.isSafeInteger(outputTokens) ||
                     outputTokens <= 0
-                )
+                ) {
                     throw new Error('Interview request exceeds model limits.');
+                }
+
                 const reservedCost = textAiProviderUsageCostMicros(policy, {
                     inputTokens,
                     outputTokens,
@@ -519,30 +577,36 @@ export function createInterviewAccounting(input: {
                     }),
                     { input: 0, output: 0, cost: 0 },
                 );
+
                 if (
                     totals.input + inputTokens >
                         policy.maxInputTokensPerAttempt ||
                     totals.output + outputTokens >
                         Math.min(10_000, policy.maxOutputTokensPerAttempt) ||
                     totals.cost + reservedCost > policy.maxCostMicrosPerAttempt
-                )
+                ) {
                     throw new Error('Interview response budget reached.');
+                }
+
                 const capacity = await readTextAiCapacity(tx, {
                     actorId: input.ownerId,
                     now: new Date(),
                     budget: policy,
                 });
+
                 if (
                     !textAiProviderBudgetAllows(
                         capacity.providerUsage,
                         true,
                         policy,
                     )
-                )
+                ) {
                     throw new InterviewAccountingError(
                         'capacity_unavailable',
                         'AI capacity is currently unavailable. Try again later.',
                     );
+                }
+
                 const id = randomUUID(),
                     now = new Date();
                 const credit = new DrizzleAiCreditTransactionParticipant(tx);
@@ -561,6 +625,7 @@ export function createInterviewAccounting(input: {
                     reservedCostMicros: reservedCost,
                     ...policy,
                 });
+
                 if (!(
                     input.execution.chargingPolicy?.funding === 'operator' ||
                     input.execution.interviewCreditsBypass === true
@@ -587,13 +652,16 @@ export function createInterviewAccounting(input: {
                             if (
                                 error instanceof
                                 AiCreditInsufficientBalanceError
-                            )
+                            ) {
                                 throw new InterviewAccountingError(
                                     'credits_exhausted',
                                     'You do not have enough AI credits to continue this response.',
                                 );
+                            }
+
                             throw error;
                         });
+
                     await credit.markProviderDispatched({
                         dispatchedAt: now,
                         ownerId: input.ownerId,
@@ -614,8 +682,10 @@ async function settleInterviewCall(
     operatorFunded: boolean,
     usage?: TutorCallUsage,
 ) {
-    if (!snapshot.creditPricing)
+    if (!snapshot.creditPricing) {
         throw new Error('Pinned credit pricing is missing.');
+    }
+
     const valid =
         usage &&
         Number.isSafeInteger(usage.inputTokens) &&
@@ -658,8 +728,11 @@ async function settleInterviewCall(
                     eq(aiCreditReservationsTable.ownerId, row.ownerId),
                 ),
             );
-        if (!reservation)
+
+        if (!reservation) {
             throw new Error('Pinned credit reservation is missing.');
+        }
+
         await credit.settleAttempt({
             ownerId: row.ownerId,
             reservationId: row.reservationId,
@@ -671,6 +744,7 @@ async function settleInterviewCall(
             measuredCredits: measured === null ? null : BigInt(measured),
         });
     }
+
     await tx
         .update(calls)
         .set({
@@ -703,8 +777,10 @@ export async function settleInterruptedInterviewCalls(
                 : 'failure',
             new Date(),
         );
+
         return;
     }
+
     const execution = turn.execution as unknown as InterviewExecution;
     const rows = await tx
         .select()
@@ -716,10 +792,16 @@ export async function settleInterruptedInterviewCalls(
             ),
         )
         .for('update');
+
     for (const row of rows) {
-        if (row.state === 'settled') continue;
-        if (!execution.snapshot)
+        if (row.state === 'settled') {
+            continue;
+        }
+
+        if (!execution.snapshot) {
             throw new Error('Pinned execution is missing.');
+        }
+
         await settleInterviewCall(
             tx,
             row,

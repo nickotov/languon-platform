@@ -7,8 +7,11 @@ export function syncGenerationUrl(
     const url = new URL(window.location.href);
     if (target) {
         url.searchParams.set('generationCard', target.cardId);
-        if (target.jobId) url.searchParams.set('generationJob', target.jobId);
-        else url.searchParams.delete('generationJob');
+        if (target.jobId) {
+            url.searchParams.set('generationJob', target.jobId);
+        } else {
+            url.searchParams.delete('generationJob');
+        }
     } else {
         url.searchParams.delete('generationCard');
         url.searchParams.delete('generationJob');
@@ -19,16 +22,22 @@ export function syncGenerationUrl(
 
 export function syncBatchGenerationUrl(jobId: string | null) {
     const url = new URL(window.location.href);
-    if (jobId) url.searchParams.set('batchGenerationJob', jobId);
-    else url.searchParams.delete('batchGenerationJob');
+    if (jobId) {
+        url.searchParams.set('batchGenerationJob', jobId);
+    } else {
+        url.searchParams.delete('batchGenerationJob');
+    }
 
     window.history.replaceState(window.history.state, '', url);
 }
 
 export function syncDocumentGenerationUrl(jobId: string | null) {
     const url = new URL(window.location.href);
-    if (jobId) url.searchParams.set('documentGenerationJob', jobId);
-    else url.searchParams.delete('documentGenerationJob');
+    if (jobId) {
+        url.searchParams.set('documentGenerationJob', jobId);
+    } else {
+        url.searchParams.delete('documentGenerationJob');
+    }
 
     window.history.replaceState(window.history.state, '', url);
 }

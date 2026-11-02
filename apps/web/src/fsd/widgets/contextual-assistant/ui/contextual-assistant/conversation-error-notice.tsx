@@ -32,9 +32,15 @@ export function ConversationErrorNotice({
             {actionLabel}
         </Button>
     );
+
+    if (failureCode === 'generation_failed') {
+        message = copy.generationFailed;
+    }
+
     if (failureCode === 'model_unavailable') {
         message = copy.modelUnavailable;
     }
+
     if (failureCode === 'credits_exhausted') {
         message = copy.creditsExhausted;
         action = (
@@ -43,15 +49,19 @@ export function ConversationErrorNotice({
             </ButtonLink>
         );
     }
+
     if (
         failureCode === 'capacity_unavailable' ||
         failureCode === 'rate_limited'
-    )
+    ) {
         message = copy.capacityUnavailable;
+    }
+
     if (failureCode === 'context_too_large') {
         message = copy.contextTooLarge;
         action = <></>;
     }
+
     return (
         <div>
             <p role='alert' className={styles.error}>

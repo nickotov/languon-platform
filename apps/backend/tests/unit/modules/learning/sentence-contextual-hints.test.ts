@@ -51,6 +51,7 @@ const draft = {
         { entryId, normalizedHint: 'rester', hintForm: 'infinitive' as const },
     ],
 };
+
 describe('contextual sentence hints', () => {
     it.each([1, 2])(
         'rejects a private reference split across hints with %i dictionary occurrences',
@@ -65,6 +66,7 @@ describe('contextual sentence hints', () => {
                     },
                 ],
             };
+
             expect(() =>
                 validateSentenceGeneration(catInput, {
                     sourceText: `The ${Array.from({ length: occurrences }, () => 'cat').join(' ')} sleeps.`,
@@ -100,6 +102,7 @@ describe('contextual sentence hints', () => {
             ).toThrow('Combined hints reveal full reference translation');
         },
     );
+
     it('rejects a helper in the source script instead of the required target script', () => {
         const russianInput = {
             ...input,
@@ -125,10 +128,12 @@ describe('contextual sentence hints', () => {
                 { text: '.', entryId: null, contextualHint: null },
             ],
         };
+
         expect(
             validateSentenceGeneration(russianInput, russianDraft).hints[1]
                 ?.text,
         ).toBe('à l’intérieur');
+
         expect(() =>
             validateSentenceGeneration(russianInput, {
                 ...russianDraft,
@@ -146,23 +151,28 @@ describe('contextual sentence hints', () => {
             }),
         ).toThrow();
     });
+
     it('keeps a whole idiom hint independent of dictionary targets and coverage', () => {
         const content = validateSentenceGeneration(input, draft);
         expect(content.targets.map((entry) => entry.entryId)).toEqual([
             entryId,
         ]);
+
         expect(content.hints).toEqual([
             { id: 'hint-1', text: 'rester', kind: 'dictionary' },
             { id: 'hint-2', text: 'à l’intérieur', kind: 'contextual' },
             { id: 'hint-3', text: 'pleuvoir des cordes', kind: 'contextual' },
         ]);
+
         expect(content.segments[5]).toMatchObject({
             text: 'raining cats and dogs',
             target: null,
             contextualHintId: 'hint-3',
         });
+
         expect(content.segments[1]?.target?.entryId).toBe(entryId);
     });
+
     it('retains legacy generation without inventing extra hints', () => {
         const legacy = {
             ...draft,
@@ -170,14 +180,17 @@ describe('contextual sentence hints', () => {
                 ({ contextualHint: _hint, ...segment }) => segment,
             ),
         };
+
         expect(
             validateSentenceGeneration(
                 { ...input, generationPolicyVersion: 1 },
                 legacy,
             ).hints,
         ).toEqual([{ id: 'hint-1', text: 'rester' }]);
+
         expect(() => validateSentenceGeneration(input, legacy)).toThrow();
     });
+
     it('rejects helper hints that reveal the full answer or overlap a dictionary target', () => {
         for (const segments of [
             draft.segments.map((segment, index) =>
@@ -214,11 +227,13 @@ describe('contextual sentence hints', () => {
                       }
                     : segment,
             ),
-        ])
+        ]) {
             expect(() =>
                 validateSentenceGeneration(input, { ...draft, segments }),
             ).toThrow();
+        }
     });
+
     it('requires useful assistance, not only null dispositions', () => {
         expect(() =>
             validateSentenceGeneration(input, {
@@ -230,6 +245,7 @@ describe('contextual sentence hints', () => {
             }),
         ).toThrow();
     });
+
     it('reuses a lexical hint across repeated occurrences without merging their spans', () => {
         const repeated = {
             ...draft,
@@ -245,11 +261,14 @@ describe('contextual sentence hints', () => {
         expect(
             content.hints.filter((hint) => hint.kind === 'contextual'),
         ).toHaveLength(1);
+
         expect(content.segments[3]?.contextualHintId).toBe(
             content.segments[5]?.contextualHintId,
         );
+
         expect(content.segments[3]?.id).not.toBe(content.segments[5]?.id);
     });
+
     it('rejects more than forty helper hints and split grapheme boundaries', () => {
         const helpers = Array.from({ length: 41 }, (_, index) => ({
             text: ' word',
@@ -267,6 +286,7 @@ describe('contextual sentence hints', () => {
                 segments,
             }),
         ).toThrow();
+
         expect(() =>
             validateSentenceGeneration(input, {
                 ...draft,

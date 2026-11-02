@@ -57,6 +57,10 @@ export interface DictionaryWorkerRuntimeOptions {
         processNext(signal: AbortSignal): Promise<boolean>;
         releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
     };
+    transcriptionService?: {
+        processNext(signal: AbortSignal): Promise<boolean>;
+        releaseWorkerLeases(signal: AbortSignal): Promise<unknown>;
+    };
     supportedFormats: readonly string[];
     workerId: string;
     logger?: DictionaryWorkerLogger;
@@ -66,8 +70,10 @@ function delay(milliseconds: number, signal?: AbortSignal): Promise<void> {
     return new Promise((resolve) => {
         if (signal?.aborted) {
             resolve();
+
             return;
         }
+
         const finish = () => {
             clearTimeout(timer);
             signal?.removeEventListener('abort', finish);
@@ -141,17 +147,21 @@ export class DictionaryWorkerRuntime {
         this.#logger = options.logger ?? console;
         this.#operationalObservationIntervalMs =
             options.operationalObservationIntervalMs ?? 60_000;
+
         if (
             this.#operationalObservationIntervalMs < 10_000 ||
             this.#operationalObservationIntervalMs > 300_000
-        )
+        ) {
             throw new Error(
                 'Dictionary worker operational observation interval is invalid.',
             );
+        }
+
         let resolveShutdownComplete: () => void = () => undefined;
         this.#shutdownComplete = new Promise<void>((resolve) => {
             resolveShutdownComplete = resolve;
         });
+
         this.#resolveShutdownComplete = resolveShutdownComplete;
     }
 
@@ -176,25 +186,36 @@ export class DictionaryWorkerRuntime {
         } catch (error) {
             if (this.#controller.signal.aborted) {
                 await this.#shutdownComplete;
+
                 return;
             }
+
             throw error;
         }
+
         if (this.#controller.signal.aborted) {
             await this.#shutdownComplete;
+
             return;
         }
+
         this.#logger.info(
             `Dictionary worker ${this.#options.workerId} ready with concurrency ${this.#options.concurrency}.`,
         );
+
         this.#loops = Array.from(
             { length: this.#options.concurrency },
             (_, index) => this.#poll(index),
         );
+
         const operationalLoop = this.#options.service.observeOperationalState
             ? this.#observeOperationalState()
             : undefined;
-        if (operationalLoop) this.#operationalLoop = operationalLoop;
+
+        if (operationalLoop) {
+            this.#operationalLoop = operationalLoop;
+        }
+
         await Promise.race([
             Promise.allSettled([
                 ...this.#loops,
@@ -205,8 +226,12 @@ export class DictionaryWorkerRuntime {
     }
 
     async shutdown(signal: string): Promise<{ forced: boolean }> {
-        if (this.#shutdownPromise) return this.#shutdownPromise;
+        if (this.#shutdownPromise) {
+            return this.#shutdownPromise;
+        }
+
         this.#shutdownPromise = this.#performShutdown(signal);
+
         return this.#shutdownPromise;
     }
 
@@ -214,6 +239,7 @@ export class DictionaryWorkerRuntime {
         this.#logger.info(
             `Dictionary worker ${this.#options.workerId} stopping after ${signal}.`,
         );
+
         this.#controller.abort();
         let forced = false;
         if (this.#loops.length || this.#operationalLoop) {
@@ -225,6 +251,7 @@ export class DictionaryWorkerRuntime {
                 this.#options.drainTimeoutMs,
             ));
         }
+
         const releaseController = new AbortController();
         const releaseTimer = setTimeout(
             () => releaseController.abort(),
@@ -245,6 +272,7 @@ export class DictionaryWorkerRuntime {
                         this.#options.selectionService,
                         this.#options.conversationService,
                         this.#options.portraitInterviewService,
+                        this.#options.transcriptionService,
                     ]
                         .filter((service) => service !== undefined)
                         .map((service) =>
@@ -255,21 +283,27 @@ export class DictionaryWorkerRuntime {
                             ),
                         ),
                 ]).then((results) => {
-                    if (results.some((result) => result.status === 'rejected'))
+                    if (
+                        results.some((result) => result.status === 'rejected')
+                    ) {
                         throw new Error('Worker lease release failed.');
+                    }
                 }),
                 this.#options.readinessTimeoutMs,
             );
         } finally {
             clearTimeout(releaseTimer);
         }
+
         if (!released) {
             forced = true;
             this.#logger.error(
                 'Dictionary worker could not confirm lease release before shutdown.',
             );
         }
+
         this.#resolveShutdownComplete();
+
         return { forced };
     }
 
@@ -285,6 +319,7 @@ export class DictionaryWorkerRuntime {
                     this.#nextPortraitMaintenanceAt = Date.now() + 60_000;
                     await this.#options.portraitMaintenance.tick();
                 }
+
                 const dictionary = () =>
                     this.#options.service.processNext({
                         signal,
@@ -298,12 +333,19 @@ export class DictionaryWorkerRuntime {
                             signal,
                         });
                     } catch {
-                        if (signal.aborted) return false;
+                        if (signal.aborted) {
+                            return false;
+                        }
+
                         this.#logger.error(
                             'Sentence preparation coordination failed; polling will retry.',
                         );
                     }
-                    if (signal.aborted) return false;
+
+                    if (signal.aborted) {
+                        return false;
+                    }
+
                     return this.#options.sentenceService!.processNext(signal);
                 };
                 const services = [
@@ -342,6 +384,13 @@ export class DictionaryWorkerRuntime {
                           ]
                         : []),
                 ];
+
+                if (this.#options.transcriptionService) {
+                    services.push(() =>
+                        this.#options.transcriptionService!.processNext(signal),
+                    );
+                }
+
                 const first = turn++ % services.length;
                 let processed = false;
                 // Each slot rotates the first domain and tries idle fallbacks sequentially.
@@ -353,14 +402,19 @@ export class DictionaryWorkerRuntime {
                     processed =
                         await services[(first + offset) % services.length]!();
                 }
+
                 if (!processed && !signal.aborted) {
                     await delay(this.#options.pollIntervalMs, signal);
                 }
             } catch {
-                if (signal.aborted) break;
+                if (signal.aborted) {
+                    break;
+                }
+
                 this.#logger.error(
                     `Dictionary worker loop ${index} failed; polling will retry.`,
                 );
+
                 await delay(this.#options.pollIntervalMs, signal);
             }
         }
@@ -375,17 +429,25 @@ export class DictionaryWorkerRuntime {
                     signal,
                     windowMs: this.#operationalObservationIntervalMs,
                 });
-                if (signal.aborted) return;
+
+                if (signal.aborted) {
+                    return;
+                }
+
                 this.#logger.info(
                     'Dictionary worker operational measurement.',
                     sanitizeOperationalMeasurement(measurement),
                 );
             } catch {
-                if (signal.aborted) return;
+                if (signal.aborted) {
+                    return;
+                }
+
                 this.#logger.error(
                     'Dictionary worker operational measurement failed; observation will retry.',
                 );
             }
+
             await delay(this.#operationalObservationIntervalMs, signal);
         }
     }

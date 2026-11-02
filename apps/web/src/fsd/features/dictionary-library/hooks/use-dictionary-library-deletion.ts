@@ -51,6 +51,7 @@ export function useDictionaryLibraryDeletion({
                     count: preview.eligibleCount,
                     snapshot: preview.snapshot,
                 });
+
                 setDeletionConfirmation('');
             } else {
                 setMessage(t('dictionary.deletion.noneAvailable'));
@@ -60,7 +61,10 @@ export function useDictionaryLibraryDeletion({
 
     const deleteDictionaries = useMutation({
         mutationFn: () => {
-            if (!deletion) throw new Error('Deletion unavailable');
+            if (!deletion) {
+                throw new Error('Deletion unavailable');
+            }
+
             const body =
                 deletion.kind === 'all'
                     ? {
@@ -83,6 +87,7 @@ export function useDictionaryLibraryDeletion({
                 deletionAttempt.current,
                 fingerprint,
             );
+
             return requestWithSession((token) =>
                 dictionaryApi.deleteDictionaries(
                     token,
@@ -98,6 +103,7 @@ export function useDictionaryLibraryDeletion({
                           deletion.targets.map((dictionary) => dictionary.id),
                       )
                     : 'all';
+
             removeDeletedDictionaryCaches(queryClient, deletedDictionaryIds);
             deletionAttempt.current = null;
             setDeletion(null);
@@ -108,6 +114,7 @@ export function useDictionaryLibraryDeletion({
                     count: receipt.deletedCount,
                 }),
             );
+
             await queryClient.invalidateQueries({ queryKey: ['dictionaries'] });
             document.getElementById('archived-dictionaries-filter')?.focus();
         },
@@ -129,6 +136,7 @@ export function useDictionaryLibraryDeletion({
             selected,
             list.map((dictionary) => dictionary.id),
         );
+
         setSelected(update.selected);
         setSelectionLimitReached(update.limitReached);
     }
@@ -137,7 +145,11 @@ export function useDictionaryLibraryDeletion({
         const targets = dictionary
             ? [dictionary]
             : list.filter((entry) => selected.has(entry.id));
-        if (!targets.length) return;
+
+        if (!targets.length) {
+            return;
+        }
+
         deleteDictionaries.reset();
         setDeletion({ kind: 'selected', targets });
         setDeletionConfirmation('');
@@ -149,7 +161,10 @@ export function useDictionaryLibraryDeletion({
     }
 
     function closeDeletion() {
-        if (deleteDictionaries.isPending) return;
+        if (deleteDictionaries.isPending) {
+            return;
+        }
+
         setDeletion(null);
         setDeletionConfirmation('');
         deleteDictionaries.reset();

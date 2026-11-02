@@ -55,6 +55,7 @@ describe('AI credit domain', () => {
                 at,
             ),
         ).toBe('limited');
+
         expect(
             effectiveAiCreditPolicy(
                 {
@@ -64,6 +65,7 @@ describe('AI credit domain', () => {
                 at,
             ),
         ).toBe('unlimited');
+
         expect(
             effectiveAiCreditPolicy(
                 { mode: 'unlimited', unlimitedUntil: null },
@@ -137,6 +139,7 @@ describe('AI credit domain', () => {
                 outputTokens: 45,
             }),
         ).toBe(258n);
+
         expect(() =>
             calculateAiCreditUsage({
                 inputCreditsPerToken: 1n,
@@ -151,12 +154,15 @@ describe('AI credit domain', () => {
         expect(
             validateAdminCreditAdjustment(maximumAdminCreditAdjustment),
         ).toBe(maximumAdminCreditAdjustment);
+
         expect(
             validateAdminCreditAdjustment(-maximumAdminCreditAdjustment),
         ).toBe(-maximumAdminCreditAdjustment);
+
         expect(() => validateAdminCreditAdjustment(0n)).toThrow(
             AiCreditInvalidAmountError,
         );
+
         expect(() =>
             validateAdminCreditAdjustment(maximumAdminCreditAdjustment + 1n),
         ).toThrow(AiCreditInvalidAmountError);
@@ -198,10 +204,12 @@ describe('AI credit domain', () => {
         expect(resolveAiCreditMeasurement('unlimited', false)).toBe(
             'unmetered',
         );
+
         expect(resolveAiCreditMeasurement('limited', false)).toBe('estimated');
         expect(resolveAiCreditMeasurement('unlimited', true)).toBe(
             'provider_reported',
         );
+
         expect(
             settleAiCreditReservation({
                 measuredCredits: 900n,
@@ -215,6 +223,7 @@ describe('AI credit domain', () => {
             measurement: 'provider_reported',
             releasedCredits: 0n,
         });
+
         expect(
             settleAiCreditReservation({
                 measuredCredits: null,
@@ -234,6 +243,7 @@ describe('AI credit domain', () => {
                 reservedCredits: 100n,
             }),
         ).toThrow(AiCreditInvalidAmountError);
+
         expect(() =>
             settleAiCreditReservation({
                 measuredCredits: 101n,
@@ -242,6 +252,7 @@ describe('AI credit domain', () => {
                 reservedCredits: 100n,
             }),
         ).toThrow(AiCreditUsageExceedsReservationError);
+
         expect(
             settleAiCreditReservation({
                 measuredCredits: null,

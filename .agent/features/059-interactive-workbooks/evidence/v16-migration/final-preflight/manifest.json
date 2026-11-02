@@ -1,0 +1,111 @@
+{
+    "recordedAt": "2026-10-30",
+    "note": "Original staged preflight logs are preserved. web-unit-final-serial and terminal static/build logs are final. Local runtime doctor remains blocked only on restarting the existing worker for fresh v4 evidence; no live provider execution is claimed.",
+    "files": [
+        {
+            "path": "web-unit.log",
+            "sha256": "3530ace1555af593045e29a3ab717f5b0ddbad0d8eae7d36f052609ef33ba064",
+            "bytes": 592
+        },
+        {
+            "path": "backend-unit.log",
+            "sha256": "e5e8d269ebbf3e68dba040b696e7bc489d34cb8c65cb6b52e0d1a3a14f3edd47",
+            "bytes": 367
+        },
+        {
+            "path": "contracts-prompts.log",
+            "sha256": "41d467ae448250131257f052603f037e32cdf1bf64377308a0cccab20f7bcea0",
+            "bytes": 889
+        },
+        {
+            "path": "production-build.log",
+            "sha256": "0609f0636f23143e832c0234908845ebb0d2ea5c9f8acec14cab8ae0723be16e",
+            "bytes": 22099
+        },
+        {
+            "path": "root-lint.log",
+            "sha256": "2dc5edac3484c4a993487a7aa2ad77f604808bef32e4f2ec7d1743e217214cd7",
+            "bytes": 68
+        },
+        {
+            "path": "critical-tooling.log",
+            "sha256": "80142ccd787eedc5ef950083f958235ed946c75f028e23c41e5b11e706afa4c1",
+            "bytes": 1728
+        },
+        {
+            "path": "user-flow-validation.log",
+            "sha256": "3b3746f4e1f67e2ecae0876c5307288d8d6cf97c113a1f093977b6b708f963d9",
+            "bytes": 1446
+        },
+        {
+            "path": "workbook-flow-mapping.log",
+            "sha256": "e8abedd6d846b83cb655000e7efe54317011ef8c5479124b9f08c0d749eb1fa1",
+            "bytes": 179
+        },
+        {
+            "path": "root-typecheck.log",
+            "sha256": "da5cb2fdf99fee2d45ad824b757454617156af2ba3b13a33682777b53ad40151",
+            "bytes": 7439
+        },
+        {
+            "path": "web-unit-final-serial.log",
+            "sha256": "10f1b53b5267cfd30d644635a215f598239c34841d2ace23a7a5ba8219e96b59",
+            "bytes": 247
+        },
+        {
+            "path": "web-timeout-cases.log",
+            "sha256": "eef2e67cd767832e23bba2ce242f1febf596209c6575e3c9ffc55bb3039b233e",
+            "bytes": 233
+        },
+        {
+            "path": "web-build-final.log",
+            "sha256": "f18e518aa93bcaec2115d346d24779659f7968bf62bfb0aed705a3cb5ae744a4",
+            "bytes": 1891
+        },
+        {
+            "path": "typecheck-terminal.log",
+            "sha256": "b52226a2e2faab61f7de5e1acbf2f9c30964f5e57c601b98ccb22c911f0ea54b",
+            "bytes": 7439
+        },
+        {
+            "path": "lint-terminal.log",
+            "sha256": "2dc5edac3484c4a993487a7aa2ad77f604808bef32e4f2ec7d1743e217214cd7",
+            "bytes": 68
+        },
+        {
+            "path": "guides-terminal.log",
+            "sha256": "3e0302374cc8c823bef784706ddd49ed07970cd079946bf358df4b9d7cdb9145",
+            "bytes": 1450
+        },
+        {
+            "path": "setup-docs-terminal.log",
+            "sha256": "2a9175a0856a621aa3cf48760c82dcb73fe07f77005e65d223e573cdc3d431e9",
+            "bytes": 191
+        },
+        {
+            "path": "mapping-terminal.log",
+            "sha256": "e8abedd6d846b83cb655000e7efe54317011ef8c5479124b9f08c0d749eb1fa1",
+            "bytes": 179
+        },
+        {
+            "path": "styles-final.log",
+            "sha256": "7c0e88fb551317883000ef903c6aef5a0247b668f439d81eb3a62dd3fa236a1d",
+            "bytes": 261
+        },
+        {
+            "path": "local-configuration-readiness.log",
+            "sha256": "1de85a4d1e54090e64da62d50fac06a8ab251417534ab6b4215a2a62fb82933e",
+            "bytes": 1189
+        },
+        {
+            "path": "local-worker-restart-required.log",
+            "sha256": "1be1715c43d2fdb3c2c22a5649f3f49cd74fb63a0745c00ee090c9167f298427",
+            "bytes": 1487
+        },
+        {
+            "path": "local-forward-migrations.log",
+            "sha256": "1d00a9ec205204f0ccb3c2a42c7a870903af1446d9fdd7eddcd1739fdc79726c",
+            "bytes": 245
+        }
+    ]
+}

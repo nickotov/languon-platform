@@ -25,12 +25,14 @@ describe('administration operator command', () => {
             email: 'owner@example.com',
             reason: 'Initial owner bootstrap',
         });
+
         expect(
             readsAdministrationRequestFromStandardInput([
                 '--',
                 '--request-stdin',
             ]),
         ).toBe(true);
+
         expect(
             readsAdministrationRequestFromStandardInput(['--request-stdin']),
         ).toBe(true);
@@ -83,6 +85,7 @@ describe('administration operator command', () => {
             email: 'owner@example.com',
             reason: 'Owner rotation completed',
         });
+
         expect(() =>
             parseAdministrationRequest({
                 command: 'list',
@@ -101,6 +104,7 @@ describe('administration operator command', () => {
                 'Owner rotation completed',
             ]),
         ).toThrow();
+
         expect(() =>
             parseAdministrationCommand([
                 'list',
@@ -108,6 +112,7 @@ describe('administration operator command', () => {
                 'owner@example.com',
             ]),
         ).toThrow(/does not accept options/);
+
         expect(() =>
             parseAdministrationCommand(['list', '--password', 'secret']),
         ).toThrow(/Unknown option/);

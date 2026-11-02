@@ -18,6 +18,7 @@ export const adminMcpApi = {
             page: String(parsed.page),
             pageSize: String(parsed.pageSize),
         });
+
         return authorized(
             `/admin/mcp/audit?${params}`,
             adminMcpAuditResponseSchema,

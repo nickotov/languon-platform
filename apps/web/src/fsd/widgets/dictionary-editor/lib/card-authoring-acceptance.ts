@@ -23,6 +23,7 @@ export function cardAuthoringAcceptance(
             ),
         };
     }
+
     if (generation.format === 'card-authoring:v2') {
         return {
             format: generation.format,
@@ -30,5 +31,6 @@ export function cardAuthoringAcceptance(
             selectedSuggestions,
         };
     }
+
     return { format: generation.format, candidate: draft, selectedSuggestions };
 }

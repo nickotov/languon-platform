@@ -20,37 +20,53 @@ export function RecordingPreview({
         setRequested(false);
         setError(null);
     }, [recording?.id]);
+
     useEffect(() => {
-        if (!recording || !requested) return;
+        if (!recording || !requested) {
+            return;
+        }
+
         const controller = new AbortController();
         let objectUrl: string | null = null;
         setLoading(true);
         adminApi
             .speechRecordingContent(recording.id, controller.signal)
             .then((blob) => {
-                if (controller.signal.aborted) return;
+                if (controller.signal.aborted) {
+                    return;
+                }
+
                 objectUrl = URL.createObjectURL(blob);
                 setUrl(objectUrl);
             })
             .catch((caught: unknown) => {
-                if (!controller.signal.aborted)
+                if (!controller.signal.aborted) {
                     setError(
                         caught instanceof Error
                             ? caught.message
                             : t('speech.previewFailed'),
                     );
+                }
             })
             .finally(() => {
-                if (!controller.signal.aborted) setLoading(false);
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
             });
+
         return () => {
             controller.abort();
-            if (objectUrl) URL.revokeObjectURL(objectUrl);
+            if (objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+            }
+
             setUrl(null);
         };
     }, [recording, requested, t]);
+
     const handleLoad = () => setRequested(true);
     const ready = recording?.state === 'ready';
+
     return (
         <Modal
             title={t('speech.preview')}

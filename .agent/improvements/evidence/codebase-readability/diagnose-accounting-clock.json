@@ -1,0 +1,29 @@
+{
+  "reviewer": "backend-platform",
+  "checkedAt": "2026-11-01T09:41:38.593506+00:00",
+  "path": "apps/backend/tests/integration/database/ai-accounting.test.ts",
+  "baselineSha256": "e9405ecbf082b746315ed5d44c257fed71bbb242f38a2ad4fe69b8453fdf2233",
+  "reviewedSha256": "a3fdc0f433bf7432f22a9174be92ecefb0e3cd611231abce21fd6ab9c37d735e",
+  "baselineFileUnchangedBeforeRemediation": true,
+  "failureEvidence": {
+    "report": "test-results/critical-flows/afeaba9a-e36c-44c1-8704-357f7e1ff153/ai-execution-contracts.json",
+    "log": "/private/tmp/languon-bl019-final-critical.log",
+    "tests": 791,
+    "passed": 790,
+    "failed": 1,
+    "location": "ai-accounting.test.ts:527"
+  },
+  "rootCause": "Fixed October2026 report/invoice interval excluded real SQL-clock November1 expense facts. Report correctly filters occurredAt >=from and <to; missing unknown facts made completeness true and adjustment0.4 rather than0.099998.",
+  "sqlClockConstraints": [
+    "Text dispatch uses date_trunc(milliseconds,clock_timestamp()) for attempt.created_at; immutable expense occurredAt derives from that attempt timestamp.",
+    "Text dispatch rejects expired action deadline and conversation live lease against real clock_timestamp().",
+    "Speech dispatch and ready settlement require live real-clock lease/queue/billing constraints; immutable speech expense occurredAt derives from provider_dispatched_at."
+  ],
+  "rejectedAlternative": "vi.setSystemTime(at) would backdate JS-created leases/deadlines without changing SQL clock or expense provenance.",
+  "review": "Independent remediation review: failing report fixture now obtains a real database clock reference, aligns only its manual payment/deposit/balance/bill dates and shared invoice/report period to reference \u00b11day. Existing payment helper defaults to original at for all other callers. Exact amounts, measured/estimated/unknown counts, pending snapshot, refresh and cached-read assertions unchanged. No Date/fake timer, production accounting, SQL guards, deadline, or report semantics changes; two-day window respects366-day query limit.",
+  "verdict": "No material findings. Current accounting fixture passes all10 real-DB file cases; overall final evidence approval pending.",
+  "runtimeChanges": false,
+  "execution": "Read-only source/diff/log/report inspection; no tests/runtime executed",
+  "timestampFollowup": "Timestamp parsing followup independently reviewed: raw postgres query result is typed string and explicitly converted with new Date(clock[0]!.now) before getTime/toISOString; two-day DB-clock window, assertions and all prior fixture semantics unchanged. Root real disposable DB file report9330ada1-d32f-4d4a-9a96-f7b13bc8d840 inspected:10 passed,0 failed/skipped/retries, cleanup passed. No final runtime approval implied.",
+  "followupReviewedAt": "2026-11-01T09:44:54.306083+00:00"
+}

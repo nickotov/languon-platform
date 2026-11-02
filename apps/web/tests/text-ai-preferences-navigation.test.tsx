@@ -22,6 +22,7 @@ describe('unsaved model preference navigation', () => {
         requestGuardedNavigation(navigate);
         expect(navigate).toHaveBeenCalledTimes(2);
     });
+
     it('keeps editing without navigation, then permits one deliberate discard', () => {
         const navigate = vi.fn();
         const { result } = renderHook(useModelPreferenceNavigation);
@@ -37,6 +38,7 @@ describe('unsaved model preference navigation', () => {
         expect(navigate).toHaveBeenCalledOnce();
         expect(result.current.dirty).toBe(false);
     });
+
     it('guards native document leave and releases it after deliberate discard', () => {
         const { result } = renderHook(useModelPreferenceNavigation);
         act(() => result.current.setDirty(true));
@@ -63,11 +65,13 @@ describe('SPA traversal fallback without Navigation API', () => {
             '',
             '/navigation-origin',
         );
+
         window.history.pushState(
             { __NA: true, marker: 'profile' },
             '',
             '/profile',
         );
+
         const dispatcher = renderHook(useHistoryPositionTracking);
         const nextListener = vi.fn();
         window.addEventListener('popstate', nextListener);
@@ -87,12 +91,14 @@ describe('SPA traversal fallback without Navigation API', () => {
         await waitFor(() =>
             expect(window.location.pathname).toBe('/navigation-origin'),
         );
+
         expect(nextListener).toHaveBeenCalledOnce();
         unmount();
         window.removeEventListener('popstate', nextListener);
         dispatcher.unmount();
         stopTracking();
     });
+
     it('restores a Forward traversal and a multi-step Back without sentinel entries', async () => {
         const { trackHistoryPositions, readHistoryPosition } =
             await import('@/fsd/shared/lib/navigation/history-position');
@@ -127,12 +133,14 @@ describe('SPA traversal fallback without Navigation API', () => {
                 profilePosition! - 2,
             ),
         );
+
         expect(nextListener).toHaveBeenCalledOnce();
         unmount();
         window.removeEventListener('popstate', nextListener);
         dispatcher.unmount();
         stopTracking();
     });
+
     it('preserves Next metadata and only restores methods still owned by the tracker', async () => {
         const { trackHistoryPositions, readHistoryPosition } =
             await import('@/fsd/shared/lib/navigation/history-position');
@@ -147,16 +155,19 @@ describe('SPA traversal fallback without Navigation API', () => {
             '',
             '/tracked',
         );
+
         expect(readHistoryPosition(window.history.state)).toBe(position + 1);
         window.history.replaceState(
             { __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: ['updated'] },
             '',
             '/replaced',
         );
+
         expect(readHistoryPosition(window.history.state)).toBe(position + 1);
         expect(window.history.state.__PRIVATE_NEXTJS_INTERNALS_TREE).toEqual([
             'updated',
         ]);
+
         const newerWrapper = vi.fn();
         window.history.pushState = newerWrapper;
         stopTracking();
@@ -164,6 +175,7 @@ describe('SPA traversal fallback without Navigation API', () => {
         expect(window.history.replaceState).toBe(originalReplace);
         window.history.pushState = originalPush;
     });
+
     it('installs once after Strict Mode effects and cancels queued setup after unmount', async () => {
         const { useHistoryPositionTracking, readHistoryPosition } =
             await import('@/fsd/shared/lib/navigation/history-position');
@@ -172,12 +184,15 @@ describe('SPA traversal fallback without Navigation API', () => {
         function Wrapper({ children }: { children: ReactNode }) {
             return <StrictMode>{children}</StrictMode>;
         }
+
         const mounted = renderHook(useHistoryPositionTracking, {
             wrapper: Wrapper,
         });
+
         await act(async () => {
             await Promise.resolve();
         });
+
         const position = readHistoryPosition(window.history.state)!;
         window.history.pushState({ __NA: true }, '', '/strict-tracked');
         expect(readHistoryPosition(window.history.state)).toBe(position + 1);
@@ -189,9 +204,11 @@ describe('SPA traversal fallback without Navigation API', () => {
         await act(async () => {
             await Promise.resolve();
         });
+
         expect(window.history.pushState).toBe(originalPush);
         expect(window.history.replaceState).toBe(originalReplace);
     });
+
     it('installs the global dispatcher during layout before the router passive listener', () => {
         const add = vi.spyOn(window, 'addEventListener');
         const router = vi.fn();
@@ -199,21 +216,26 @@ describe('SPA traversal fallback without Navigation API', () => {
             useHistoryPositionTracking();
             useEffect(() => {
                 window.addEventListener('popstate', router);
+
                 return () => window.removeEventListener('popstate', router);
             }, []);
+
             return children;
         }
+
         const mounted = renderHook(useModelPreferenceNavigation, {
             wrapper: Root,
         });
         const registrations = add.mock.calls.filter(
             (call) => call[0] === 'popstate',
         );
+
         expect(registrations).toHaveLength(2);
         expect(registrations[0]?.[1]).toHaveProperty(
             'name',
             'dispatchTraversalGuards',
         );
+
         expect(registrations[0]?.[2]).toBe(true);
         expect(registrations[1]?.[1]).toBe(router);
         mounted.unmount();

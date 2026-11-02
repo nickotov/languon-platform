@@ -63,6 +63,7 @@ export function Sidebar({
             {rail ? null : t('shell.home')}
         </Link>
     );
+
     return (
         <div className={styles.sidebarContent}>
             <div className={brandClass}>

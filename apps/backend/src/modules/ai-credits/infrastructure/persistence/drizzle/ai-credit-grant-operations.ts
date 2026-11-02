@@ -174,10 +174,14 @@ export async function revokePurchaseGrantAvailable(
         )
         .limit(1);
 
-    if (!lot || lot.source !== 'purchase')
+    if (!lot || lot.source !== 'purchase') {
         throw new AiCreditReservationStateError();
-    if (lot.remainingCredits < input.amount)
+    }
+
+    if (lot.remainingCredits < input.amount) {
         throw new AiCreditInsufficientBalanceError();
+    }
+
     const removalId = randomUUID();
     const inserted = await persistence.transaction
         .insert(aiCreditAdminRemovalsTable)
@@ -194,7 +198,10 @@ export async function revokePurchaseGrantAvailable(
         })
         .returning({ id: aiCreditAdminRemovalsTable.id });
 
-    if (inserted.length === 0) throw new AiCreditIdempotencyConflictError();
+    if (inserted.length === 0) {
+        throw new AiCreditIdempotencyConflictError();
+    }
+
     await persistence.transaction
         .insert(aiCreditAdminRemovalAllocationsTable)
         .values({
@@ -391,10 +398,12 @@ export async function purgeOwner(
     ownerId: string,
     authorization?: { workerId: string; fencingToken: number },
 ) {
-    if (!authorization)
+    if (!authorization) {
         throw new Error(
             'Financial purge requires the expected deletion worker and fencing token.',
         );
+    }
+
     await persistence.transaction.execute(
         sql`select languon_purge_ai_credit_owner(${ownerId}::uuid,${authorization.workerId},${authorization.fencingToken}::integer)`,
     );

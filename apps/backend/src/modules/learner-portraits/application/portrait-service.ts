@@ -40,12 +40,15 @@ export class PortraitService {
     ): Promise<PortraitState> {
         const input = SavePortraitDraftRequestSchema.parse(request);
         const items = validateReusablePortraitItems(input.items);
+
         return this.store.run(userId, async (session) => {
             const current = await this.current(session, at);
             this.version(current, input.expectedVersion);
             // Explicitly supplying the latest approved version acknowledges conflict review.
-            if (input.baseApprovedVersion !== current.approvedVersion)
+            if (input.baseApprovedVersion !== current.approvedVersion) {
                 throw new PortraitConflictError();
+            }
+
             const next: PortraitState = {
                 ...current,
                 version: current.version + 1,
@@ -58,8 +61,10 @@ export class PortraitService {
                     expiresAt: portraitExpiry(at),
                 },
             };
+
             await session.touchInterview(at);
             await session.save(PortraitStateSchema.parse(next), at);
+
             return next;
         });
     }
@@ -70,18 +75,28 @@ export class PortraitService {
         at = new Date(),
     ): Promise<PortraitState> {
         const input = ApprovePortraitRequestSchema.parse(request);
+
         return this.store.run(userId, async (session) => {
             const current = await this.current(session, at);
             this.version(current, input.expectedVersion);
-            if (input.expectedApprovedVersion !== current.approvedVersion)
+            if (input.expectedApprovedVersion !== current.approvedVersion) {
                 throw new PortraitConflictError();
+            }
+
             const draft = current.draft;
-            if (!draft) throw new PortraitDraftUnavailableError();
-            if (draft.baseApprovedVersion !== current.approvedVersion)
+            if (!draft) {
+                throw new PortraitDraftUnavailableError();
+            }
+
+            if (draft.baseApprovedVersion !== current.approvedVersion) {
                 throw new PortraitConflictError();
+            }
+
             const items = validateReusablePortraitItems(draft.items);
-            if (!hasMeaningfulPortraitItems(items))
+            if (!hasMeaningfulPortraitItems(items)) {
                 throw new PortraitNotMeaningfulError();
+            }
+
             const next: PortraitState = {
                 ...current,
                 version: current.version + 1,
@@ -95,8 +110,10 @@ export class PortraitService {
                 },
                 draft: null,
             };
+
             await session.clearInterview();
             await session.save(PortraitStateSchema.parse(next), at);
+
             return next;
         });
     }
@@ -107,17 +124,22 @@ export class PortraitService {
         at = new Date(),
     ): Promise<PortraitState> {
         const input = SetPortraitUseRequestSchema.parse(request);
+
         return this.store.run(userId, async (session) => {
             const current = await this.current(session, at);
             this.version(current, input.expectedVersion);
-            if (input.enabled && !current.approved)
+            if (input.enabled && !current.approved) {
                 throw new PortraitNotMeaningfulError();
+            }
+
             const next = {
                 ...current,
                 version: current.version + 1,
                 useEnabled: input.enabled,
             };
+
             await session.save(PortraitStateSchema.parse(next), at);
+
             return next;
         });
     }
@@ -128,6 +150,7 @@ export class PortraitService {
         at = new Date(),
     ): Promise<PortraitState> {
         const input = DeletePortraitRequestSchema.parse(request);
+
         return this.store.run(userId, async (session) => {
             const current = await this.current(session, at);
             this.version(current, input.expectedVersion);
@@ -139,8 +162,10 @@ export class PortraitService {
                 approved: null,
                 draft: null,
             };
+
             await session.clearInterview();
             await session.save(PortraitStateSchema.parse(next), at);
+
             return next;
         });
     }
@@ -151,6 +176,7 @@ export class PortraitService {
         at = new Date(),
     ): Promise<PortraitState> {
         const input = DiscardPortraitInterviewRequestSchema.parse(request);
+
         return this.store.run(userId, async (session) => {
             const current = await this.current(session, at);
             this.version(current, input.expectedVersion);
@@ -160,14 +186,18 @@ export class PortraitService {
                 generation: current.generation + 1,
                 draft: null,
             };
+
             await session.clearInterview();
             await session.save(PortraitStateSchema.parse(next), at);
+
             return next;
         });
     }
 
     private version(state: PortraitState, expected: number): void {
-        if (state.version !== expected) throw new PortraitConflictError();
+        if (state.version !== expected) {
+            throw new PortraitConflictError();
+        }
     }
 
     private async current(
@@ -178,16 +208,20 @@ export class PortraitService {
         if (
             !state.draft ||
             new Date(state.draft.expiresAt).getTime() > at.getTime()
-        )
+        ) {
             return state;
+        }
+
         const next = {
             ...state,
             version: state.version + 1,
             generation: state.generation + 1,
             draft: null,
         };
+
         await session.clearInterview();
         await session.save(PortraitStateSchema.parse(next), at);
+
         return next;
     }
 }

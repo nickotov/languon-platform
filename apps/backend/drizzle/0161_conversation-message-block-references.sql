@@ -1,0 +1,1 @@
+ALTER TABLE "conversation_messages" ADD COLUMN "block_references" jsonb DEFAULT '[]'::jsonb NOT NULL;

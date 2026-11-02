@@ -49,8 +49,10 @@ function expectCustomError(action, code) {
         assert.ok(error instanceof CustomSectionsError);
         assert.equal(error.code, code);
         assert.ok(error.message.length > 0 && error.message.length < 256);
+
         return error;
     }
+
     assert.fail(`Expected CustomSectionsError with code ${code}`);
 }
 
@@ -85,6 +87,7 @@ test('canonical serialization is stable, pretty, closed, and newline-terminated'
 }
 `,
     );
+
     assert.deepEqual(parseCustomSections(serialized), source);
     assert.equal(
         serializeCustomSections(parseCustomSections(serialized)),
@@ -98,12 +101,14 @@ test('rejects malformed and oversized JSON without echoing untrusted input', () 
         () => parseCustomSections(`{"schema":"${secret}"`),
         'invalid-json',
     );
+
     assert.equal(malformed.message.includes(secret), false);
     assert.equal(
         malformed.issues?.some((issue) => issue.message.includes(secret)) ??
             false,
         false,
     );
+
     expectCustomError(
         () => parseCustomSections(' '.repeat(64 * 1024 + 1)),
         'document-too-large',
@@ -117,15 +122,18 @@ test('rejects unsupported schema, version, and extra or missing keys', () => {
             parseCustomSections(JSON.stringify({ ...empty, schema: 'other' })),
         'unsupported-schema',
     );
+
     expectCustomError(
         () => parseCustomSections(JSON.stringify({ ...empty, version: 2 })),
         'unsupported-version',
     );
+
     expectCustomError(
         () =>
             parseCustomSections(JSON.stringify({ ...empty, executable: 'sh' })),
         'invalid-shape',
     );
+
     expectCustomError(
         () =>
             parseCustomSections(
@@ -133,6 +141,7 @@ test('rejects unsupported schema, version, and extra or missing keys', () => {
             ),
         'invalid-shape',
     );
+
     expectCustomError(
         () =>
             parseCustomSections(
@@ -155,6 +164,7 @@ test('enforces canonical section IDs and bounded unique section names', () => {
             'invalid-section-id',
         );
     }
+
     for (const name of [
         '',
         ' padded',
@@ -168,6 +178,7 @@ test('enforces canonical section IDs and bounded unique section names', () => {
             'invalid-section-name',
         );
     }
+
     expectCustomError(
         () =>
             serializeCustomSections(
@@ -178,6 +189,7 @@ test('enforces canonical section IDs and bounded unique section names', () => {
             ),
         'duplicate-section-name',
     );
+
     expectCustomError(
         () =>
             serializeCustomSections(
@@ -202,6 +214,7 @@ test('enforces command ID syntax, unique membership, and every count limit', () 
             'invalid-command-id',
         );
     }
+
     expectCustomError(
         () =>
             serializeCustomSections(
@@ -217,10 +230,12 @@ test('enforces command ID syntax, unique membership, and every count limit', () 
             commandIds: [],
         }),
     );
+
     expectCustomError(
         () => serializeCustomSections(documentWith(manySections)),
         'too-many-sections',
     );
+
     expectCustomError(
         () =>
             serializeCustomSections(
@@ -235,6 +250,7 @@ test('enforces command ID syntax, unique membership, and every count limit', () 
             ),
         'too-many-section-members',
     );
+
     const totalLimit = Array.from({ length: 9 }, (_, sectionIndex) =>
         section({
             id: `section-${String(sectionIndex).padStart(8, '0')}-0000-0000-0000-000000000000`,
@@ -245,6 +261,7 @@ test('enforces command ID syntax, unique membership, and every count limit', () 
             ),
         }),
     );
+
     expectCustomError(
         () => serializeCustomSections(documentWith(totalLimit)),
         'too-many-total-members',
@@ -258,11 +275,13 @@ test('ordinary parse preserves missing IDs while import rejects them atomically'
     assert.deepEqual(missingCatalogCommandIds(source, new Set(['lint'])), [
         'removed',
     ]);
+
     const current = documentWith([section({ commandIds: ['lint'] })]);
     expectCustomError(
         () => parseImportedCustomSections(serialized, new Set(['lint'])),
         'unknown-command-ids',
     );
+
     assert.deepEqual(
         current,
         documentWith([section({ commandIds: ['lint'] })]),
@@ -278,6 +297,7 @@ test('import validates IDs only and accepts disabled current commands', () => {
         ]),
         source,
     );
+
     assert.deepEqual(
         parseImportedCustomSections(serialized, {
             commands: [{ id: 'disabled-task', enabled: false }],
@@ -317,6 +337,7 @@ test('creation, deletion, and membership mutations are immutable', () => {
         deleteSection(added, ids[0]),
         emptyCustomSectionsDocument(),
     );
+
     expectCustomError(
         () => deleteSection(emptyCustomSectionsDocument(), ids[0]),
         'section-not-found',
@@ -328,10 +349,12 @@ test('section ID creation prefixes a canonical caller-provided UUID', () => {
         createSectionId(() => '123e4567-e89b-12d3-a456-426614174000'),
         ids[0],
     );
+
     expectCustomError(
         () => createSectionId(() => 'NOT-A-UUID'),
         'invalid-section-id',
     );
+
     expectCustomError(
         () =>
             createSectionId(() => {
@@ -351,6 +374,7 @@ test('storage adapter loads, saves, and translates read/write failures safely', 
             values.set(key, value);
         },
     };
+
     assert.deepEqual(
         loadCustomSections(storage),
         emptyCustomSectionsDocument(),
@@ -370,6 +394,7 @@ test('storage adapter loads, saves, and translates read/write failures safely', 
             }),
         'storage-read-failed',
     );
+
     assert.equal(readError.message.includes('secret'), false);
     const writeError = expectCustomError(
         () =>
@@ -383,5 +408,6 @@ test('storage adapter loads, saves, and translates read/write failures safely', 
             ),
         'storage-write-failed',
     );
+
     assert.equal(writeError.message.includes('secret'), false);
 });

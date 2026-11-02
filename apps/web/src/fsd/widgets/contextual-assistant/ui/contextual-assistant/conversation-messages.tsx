@@ -1,3 +1,4 @@
+import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
 import { useMemo, useState, type ReactNode } from 'react';
 import { ArrowDown } from 'lucide-react';
 import type {
@@ -24,6 +25,7 @@ import type {
 import styles from './conversation-messages.module.css';
 
 export function ConversationMessages({
+    blocks,
     detail,
     uiMessages,
     active,
@@ -41,13 +43,14 @@ export function ConversationMessages({
     onReviewProposal,
     workspace,
 }: {
+    blocks?: KnowledgeBlockReference[] | undefined;
     detail: ConversationDetail;
     uiMessages: ConversationUIMessage[];
     active: boolean;
     pending?: boolean;
     onRetry(turn: ConversationTurn): void;
     onContinue?: (() => void) | undefined;
-    onPropose(message?: ConversationUIMessage): void;
+    onPropose?: ((message?: ConversationUIMessage) => void) | undefined;
     onSuggest?: (text: string) => void;
     children?: ReactNode;
     sourceKind?: ConversationSource['kind'] | undefined;
@@ -105,8 +108,11 @@ export function ConversationMessages({
                 previousVersion !== null &&
                 canonical.sourceVersion !== null &&
                 previousVersion !== canonical.sourceVersion;
-            if (canonical.role === 'user')
+
+            if (canonical.role === 'user') {
                 previousVersion = canonical.sourceVersion;
+            }
+
             return {
                 message,
                 changed,
@@ -131,14 +137,26 @@ export function ConversationMessages({
     const currentTool = answer?.parts.find(
         (part) =>
             (part.type === 'tool-read_source_context' ||
-                part.type === 'tool-propose_knowledge_note') &&
+                part.type === 'tool-propose_knowledge_note' ||
+                part.type === 'tool-propose_learning_blocks') &&
             part.state === 'input-available',
     );
-    let tool: 'reading' | 'preparing' | undefined;
-    if (currentTool?.type === 'tool-read_source_context') tool = 'reading';
-    if (currentTool?.type === 'tool-propose_knowledge_note') tool = 'preparing';
+    let tool: 'reading' | 'preparing' | 'preparingBlocks' | undefined;
+    if (currentTool?.type === 'tool-read_source_context') {
+        tool = 'reading';
+    }
+
+    if (currentTool?.type === 'tool-propose_knowledge_note') {
+        tool = 'preparing';
+    }
+
+    if (currentTool?.type === 'tool-propose_learning_blocks') {
+        tool = 'preparingBlocks';
+    }
+
     const responding = active || pending;
     const queued = pending || activeTurn?.status === 'queued';
+
     return (
         <div
             className={styles.frame}
@@ -168,6 +186,7 @@ export function ConversationMessages({
                         <TutorMessage
                             key={message.id}
                             message={message}
+                            blocks={blocks}
                             changed={changed}
                             turn={turn}
                             active={active || pending}

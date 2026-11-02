@@ -39,8 +39,10 @@ export function usePortraitEditorSession(
             review &&
             initial.draft &&
             initial.draft.baseApprovedVersion !== initial.approvedVersion
-        )
+        ) {
             return initial;
+        }
+
         return null;
     });
     const [pending, setPending] = useState(false);
@@ -66,8 +68,16 @@ export function usePortraitEditorSession(
     }
 
     async function save(locale: z.infer<typeof PortraitLocaleSchema>) {
-        if (pending || conflict || !valid || !meaningful || !management.ownerId)
+        if (
+            pending ||
+            conflict ||
+            !valid ||
+            !meaningful ||
+            !management.ownerId
+        ) {
             return;
+        }
+
         setPending(true);
         setError(false);
         let savedDraft: PortraitState | null = null;
@@ -80,27 +90,35 @@ export function usePortraitEditorSession(
                     locale,
                 }),
             );
-            if (useSessionStore.getState().user?.id !== management.ownerId)
+
+            if (useSessionStore.getState().user?.id !== management.ownerId) {
                 return;
+            }
+
             setBase(savedDraft);
             setPortraitStateCache(
                 management.client,
                 management.ownerId,
                 savedDraft,
             );
+
             const approved = await management.requestWithSession((token) =>
                 portraitApi.approve(token, {
                     expectedVersion: savedDraft!.version,
                     expectedApprovedVersion: savedDraft!.approvedVersion,
                 }),
             );
-            if (useSessionStore.getState().user?.id !== management.ownerId)
+
+            if (useSessionStore.getState().user?.id !== management.ownerId) {
                 return;
+            }
+
             setPortraitStateCache(
                 management.client,
                 management.ownerId,
                 approved,
             );
+
             await Promise.all([
                 management.client.invalidateQueries({
                     queryKey: [
@@ -115,6 +133,7 @@ export function usePortraitEditorSession(
                     queryKey: ['conversation', management.ownerId],
                 }),
             ]);
+
             router.push(
                 `/portrait?saved=${initial.approved ? 'update' : 'first'}`,
             );
@@ -124,13 +143,17 @@ export function usePortraitEditorSession(
             if (
                 cause instanceof PortraitApiError &&
                 cause.code === 'invalid_request'
-            )
+            ) {
                 reason = 'invalid';
+            }
+
             if (
                 cause instanceof PortraitApiError &&
                 cause.code === 'resource_limit'
-            )
+            ) {
                 reason = 'resource';
+            }
+
             setErrorReason(reason);
             if (
                 cause instanceof PortraitApiError &&
@@ -140,11 +163,13 @@ export function usePortraitEditorSession(
                     const refreshed = await management.requestWithSession(
                         (token) => portraitApi.read(token),
                     );
+
                     setPortraitStateCache(
                         management.client,
                         management.ownerId,
                         refreshed,
                     );
+
                     setLatest(refreshed);
                 } catch {
                     /* Retain all local edits until retry succeeds. */
@@ -154,6 +179,7 @@ export function usePortraitEditorSession(
             setPending(false);
         }
     }
+
     return {
         items,
         setItems,

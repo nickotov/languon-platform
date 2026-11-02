@@ -40,7 +40,10 @@ export async function clearLearnerPortraitInterview(
     ownerId: string,
     authorization?: PurgeAuthorization,
 ): Promise<void> {
-    if (authorization) await assertPurgeClaim(tx, ownerId, authorization);
+    if (authorization) {
+        await assertPurgeClaim(tx, ownerId, authorization);
+    }
+
     await tx.execute(
         sql`update learner_portrait_interview_operations set lease_token=null where owner_id=${ownerId}::uuid and state='queued'`,
     );
@@ -74,14 +77,16 @@ export async function clearLearnerPortraitInterview(
         );
 
     for (const operation of cancelled) {
-        if (authorization && usesActionAccounting(operation.execution))
+        if (authorization && usesActionAccounting(operation.execution)) {
             await recoverPurgeInterviewAction(
                 tx,
                 ownerId,
                 operation.id,
                 authorization,
             );
-        else await settleInterviewAction(tx, operation, 'failure', new Date());
+        } else {
+            await settleInterviewAction(tx, operation, 'failure', new Date());
+        }
     }
 
     await tx.execute(
@@ -155,8 +160,10 @@ export async function eraseOwnerLearnerPortrait(
     now: Date,
     authorization?: PurgeAuthorization,
 ): Promise<void> {
-    if (await portraitDeletionBusy(tx, ownerId, now, authorization))
+    if (await portraitDeletionBusy(tx, ownerId, now, authorization)) {
         throw new Error('Portrait work is not quiescent');
+    }
+
     await eraseTerminalOperations(tx, ownerId, now);
     await tx.execute(
         sql`delete from learner_portrait_interviews where owner_id=${ownerId}::uuid`,
@@ -176,7 +183,10 @@ export async function recoverExpiredPortraitOperations(
     authorization?: PurgeAuthorization,
 ): Promise<void> {
     await lockTextAiCapacity(tx);
-    if (authorization) await assertPurgeClaim(tx, ownerId, authorization);
+    if (authorization) {
+        await assertPurgeClaim(tx, ownerId, authorization);
+    }
+
     const ownerQuery = tx
         .select({ status: usersTable.status })
         .from(usersTable)
@@ -209,7 +219,10 @@ export async function recoverExpiredPortraitOperations(
         const purgeAction =
             authorization && usesActionAccounting(row.execution);
 
-        if (!purgeAction) await settleInterruptedInterviewCalls(tx, row);
+        if (!purgeAction) {
+            await settleInterruptedInterviewCalls(tx, row);
+        }
+
         const [session] = await tx
             .select({ expiresAt: interviews.expiresAt })
             .from(interviews)
@@ -238,13 +251,15 @@ export async function recoverExpiredPortraitOperations(
                 })
                 .where(eq(operations.id, row.id));
 
-            if (purgeAction)
+            if (purgeAction) {
                 await recoverPurgeInterviewAction(
                     tx,
                     ownerId,
                     row.id,
                     authorization,
                 );
+            }
+
             continue;
         }
 
@@ -253,12 +268,13 @@ export async function recoverExpiredPortraitOperations(
             context='{"locale":"en","approvedItems":null,"draftItems":null,"messages":[],"completedTopics":[]}'::jsonb,result=null
             where id=${row.id}::uuid`);
 
-        if (purgeAction)
+        if (purgeAction) {
             await recoverPurgeInterviewAction(
                 tx,
                 ownerId,
                 row.id,
                 authorization,
             );
+        }
     }
 }

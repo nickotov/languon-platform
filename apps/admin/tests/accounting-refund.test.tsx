@@ -13,6 +13,7 @@ import { accessTokenStore } from '../src/shared/auth/access-token-store';
 vi.mock('@refinedev/core', () => ({
     useTranslate: () => adminI18nProvider.translate,
 }));
+
 const paymentId = '00000000-0000-4000-8000-000000000042';
 beforeEach(() => {
     accessTokenStore.set('admin-token');
@@ -25,12 +26,14 @@ beforeEach(() => {
         }),
     );
 });
+
 afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     accessTokenStore.clear();
 });
+
 describe('cash-only refunds after account removal', () => {
     it('shows unavailable credit balances, prevents revocation and confirms cash refund without an account ID', async () => {
         const user = userEvent.setup();
@@ -50,6 +53,7 @@ describe('cash-only refunds after account removal', () => {
                 { headers: { 'Content-Type': 'application/json' } },
             ),
         );
+
         vi.stubGlobal('fetch', fetcher);
         const submit = vi.fn().mockResolvedValue(undefined);
         render(
@@ -60,40 +64,50 @@ describe('cash-only refunds after account removal', () => {
                 onClose={vi.fn()}
             />,
         );
+
         await user.click(screen.getByRole('combobox', { name: 'Record type' }));
         await user.click(screen.getByText('External refund'));
         fireEvent.change(screen.getByLabelText('Original payment record ID'), {
             target: { value: paymentId },
         });
+
         await waitFor(() =>
             expect(
                 screen.getAllByText('Unavailable after account removal'),
             ).toHaveLength(4),
         );
+
         expect(screen.getByText('10')).toBeInTheDocument();
         expect(screen.getByText('2')).toBeInTheDocument();
         expect(
             screen.getByLabelText('Available credits to revoke'),
         ).toHaveValue('0');
+
         expect(
             screen.getByLabelText('Available credits to revoke'),
         ).toBeDisabled();
+
         expect(
             screen.queryByLabelText('Customer user ID'),
         ).not.toBeInTheDocument();
+
         fireEvent.change(screen.getByLabelText('External reference'), {
             target: { value: 'external-refund-42' },
         });
+
         fireEvent.change(
             screen.getByLabelText('Amount (USD, up to 6 decimals)'),
             { target: { value: '1.25' } },
         );
+
         fireEvent.change(screen.getByLabelText('Reason for change'), {
             target: { value: 'Record external refund after account removal' },
         });
+
         fireEvent.click(
             screen.getByRole('button', { name: 'Save manual record' }),
         );
+
         await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
         expect(submit.mock.calls[0]?.[0]).toMatchObject({
             kind: 'refund',
@@ -101,6 +115,7 @@ describe('cash-only refunds after account removal', () => {
             amountUsd: '1.25',
             revokeAvailableCredits: '0',
         });
+
         expect(submit.mock.calls[0]?.[0]).not.toHaveProperty('ownerId');
     });
 });

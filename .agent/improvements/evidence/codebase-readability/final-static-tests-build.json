@@ -1,0 +1,203 @@
+{
+  "sourceInventorySha256": "7fb2625bbb18e264c08e9bcfa93329675fd85e71c8c53ecc47fae8d36676d8e4",
+  "results": [
+    {
+      "command": "pnpm format:check",
+      "log": "/private/tmp/languon-bl019-final-1.log",
+      "start": "2026-11-01T09:08:18.109Z",
+      "end": "2026-11-01T09:08:53.331Z",
+      "code": 0,
+      "logSha256": "b46e773ee55192a21f156f476652f0795cd7f4ce594e619d9a53a45b89c524f5",
+      "summaryLines": []
+    },
+    {
+      "command": "pnpm lint",
+      "log": "/private/tmp/languon-bl019-final-2.log",
+      "start": "2026-11-01T09:08:53.333Z",
+      "end": "2026-11-01T09:09:20.471Z",
+      "code": 0,
+      "logSha256": "2dc5edac3484c4a993487a7aa2ad77f604808bef32e4f2ec7d1743e217214cd7",
+      "summaryLines": []
+    },
+    {
+      "command": "pnpm typecheck",
+      "log": "/private/tmp/languon-bl019-final-3.log",
+      "start": "2026-11-01T09:09:20.472Z",
+      "end": "2026-11-01T09:10:39.307Z",
+      "code": 0,
+      "logSha256": "56715dd0477375435285645231d3f092e256d2e8516ddedcf131ca6c71b9d717",
+      "summaryLines": [
+        " Tasks:    14 successful, 14 total"
+      ]
+    },
+    {
+      "command": "pnpm test:critical-tooling",
+      "log": "/private/tmp/languon-bl019-final-4.log",
+      "start": "2026-11-01T09:10:39.308Z",
+      "end": "2026-11-01T09:10:43.647Z",
+      "code": 0,
+      "logSha256": "64e866fd5ca2ea18c5be9c7c857aa6a839f2bb6fd2f136cc4d9c6ebcdf29cfe8",
+      "summaryLines": [
+        " Tasks:    2 successful, 2 total"
+      ]
+    },
+    {
+      "command": "pnpm test:ai-smoke-tooling",
+      "log": "/private/tmp/languon-bl019-final-5.log",
+      "start": "2026-11-01T09:10:43.647Z",
+      "end": "2026-11-01T09:10:44.508Z",
+      "code": 0,
+      "logSha256": "7481513b96c9e99917f9a84542c8ab93dc95f78762e78c2e3613155dd97b1c3f",
+      "summaryLines": [
+        " Tasks:    2 successful, 2 total"
+      ]
+    },
+    {
+      "command": "pnpm test:diagrams",
+      "log": "/private/tmp/languon-bl019-final-6.log",
+      "start": "2026-11-01T09:10:44.509Z",
+      "end": "2026-11-01T09:10:44.908Z",
+      "code": 0,
+      "logSha256": "53d8264da4157d0c2b1f6d2735c014361c20930859894ec31faa6b8ad8916261",
+      "summaryLines": []
+    },
+    {
+      "command": "pnpm test:code-search",
+      "log": "/private/tmp/languon-bl019-final-7.log",
+      "start": "2026-11-01T09:10:44.908Z",
+      "end": "2026-11-01T09:10:45.299Z",
+      "code": 0,
+      "logSha256": "015f77b45612bb37de35a27a9d3b159a21725f4b6aa001267777833f7ae0a4b5",
+      "summaryLines": []
+    },
+    {
+      "command": "node --test scripts/create-feature.test.mjs",
+      "log": "/private/tmp/languon-bl019-final-8.log",
+      "start": "2026-11-01T09:10:45.300Z",
+      "end": "2026-11-01T09:10:45.398Z",
+      "code": 0,
+      "logSha256": "e8922477438e25637bacff6f28580280d7060520483e03c86c407322c317188c",
+      "summaryLines": []
+    },
+    {
+      "command": "pnpm test:agent-browser",
+      "log": "/private/tmp/languon-bl019-final-9.log",
+      "start": "2026-11-01T09:10:45.399Z",
+      "end": "2026-11-01T09:10:45.760Z",
+      "code": 0,
+      "logSha256": "5203726a2f3c670ac7a8e0c7088254b33106b903fd02929bc1f837f374eeab62",
+      "summaryLines": []
+    },
+    {
+      "command": "pnpm test:document-services",
+      "log": "/private/tmp/languon-bl019-final-10.log",
+      "start": "2026-11-01T09:10:45.760Z",
+      "end": "2026-11-01T09:10:46.245Z",
+      "code": 0,
+      "logSha256": "eb475128cff4f54ffe0f0cab94a3e49bd9a03e35f84eebf9f85eb2512bda0580",
+      "summaryLines": []
+    },
+    {
+      "command": "pnpm test:frontend-architecture",
+      "log": "/private/tmp/languon-bl019-final-11.log",
+      "start": "2026-11-01T09:10:46.246Z",
+      "end": "2026-11-01T09:10:47.272Z",
+      "code": 0,
+      "logSha256": "5adf8108edb596e582a21751c07a0259c0010427fbee15804b8c60e20b0ee6eb",
+      "summaryLines": []
+    },
+    {
+      "command": "pnpm test:readability",
+      "log": "/private/tmp/languon-bl019-final-12.log",
+      "start": "2026-11-01T09:10:47.272Z",
+      "end": "2026-11-01T09:10:48.302Z",
+      "code": 0,
+      "logSha256": "ded322d0e4c2a8c26c82ef323955a8bb828ee147bcc6df5223bd11b07bb72559",
+      "summaryLines": []
+    },
+    {
+      "command": "pnpm test:mastra-harness",
+      "log": "/private/tmp/languon-bl019-final-13.log",
+      "start": "2026-11-01T09:10:48.302Z",
+      "end": "2026-11-01T09:10:49.684Z",
+      "code": 0,
+      "logSha256": "1499c6002f199cf853eb6314297824117688eae12d983a97ce72d4ca3156a3e3",
+      "summaryLines": []
+    },
+    {
+      "command": "pnpm test:release-deployment",
+      "log": "/private/tmp/languon-bl019-final-14.log",
+      "start": "2026-11-01T09:10:49.684Z",
+      "end": "2026-11-01T09:10:51.951Z",
+      "code": 0,
+      "logSha256": "d9c18ba1649650786a7192455ff7b511b8a69547f8df5b773b17c5f1272387c3",
+      "summaryLines": []
+    },
+    {
+      "command": "pnpm exec turbo run test --concurrency=1",
+      "log": "/private/tmp/languon-bl019-final-15.log",
+      "start": "2026-11-01T09:10:51.952Z",
+      "end": "2026-11-01T09:14:15.262Z",
+      "code": 0,
+      "logSha256": "9c71125afbe8020112f99d38f97a03b54ab673c75a49d4db55c83bdacbb12302",
+      "summaryLines": [
+        "@languon/database:test:  Test Files  2 passed (2)",
+        "@languon/database:test:       Tests  5 passed (5)",
+        "@languon/prompts:test:  Test Files  1 passed (1)",
+        "@languon/prompts:test:       Tests  6 passed (6)",
+        "@languon/languages:test:  Test Files  1 passed (1)",
+        "@languon/languages:test:       Tests  3 passed (3)",
+        "@languon/contracts:test:  Test Files  28 passed (28)",
+        "@languon/contracts:test:       Tests  237 passed (237)",
+        "@languon/browser-auth:test:  Test Files  2 passed (2)",
+        "@languon/browser-auth:test:       Tests  7 passed (7)",
+        "@languon/backend:test:  Test Files  233 passed | 100 skipped (333)",
+        "@languon/backend:test:       Tests  1855 passed | 935 skipped (2790)",
+        "@languon/admin:test:  Test Files  20 passed (20)",
+        "@languon/admin:test:       Tests  106 passed (106)",
+        "@languon/web:test:  Test Files  187 passed (187)",
+        "@languon/web:test:       Tests  1303 passed (1303)",
+        " Tasks:    15 successful, 15 total"
+      ]
+    },
+    {
+      "command": "pnpm build",
+      "log": "/private/tmp/languon-bl019-final-16.log",
+      "start": "2026-11-01T09:14:15.263Z",
+      "end": "2026-11-01T09:16:25.004Z",
+      "code": 0,
+      "logSha256": "019e603a4c7ffb428311c25272aabfbd9870a960f30dbf3b1df28c78ecc39576",
+      "summaryLines": [
+        " Tasks:    9 successful, 9 total"
+      ]
+    },
+    {
+      "command": "pnpm critical-flows:check",
+      "log": "/private/tmp/languon-bl019-final-17.log",
+      "start": "2026-11-01T09:16:25.005Z",
+      "end": "2026-11-01T09:16:25.358Z",
+      "code": 0,
+      "logSha256": "dff021611ca468d52bed83be01ebca483141d647178014bfb6747615edcf9e58",
+      "summaryLines": []
+    },
+    {
+      "command": "pnpm docs:user-flows:check",
+      "log": "/private/tmp/languon-bl019-final-18.log",
+      "start": "2026-11-01T09:16:25.358Z",
+      "end": "2026-11-01T09:16:27.023Z",
+      "code": 0,
+      "logSha256": "093a3fba1bfc5e751b66a523f733847317a2caea1e3b2b6eaa062dfc8b026b14",
+      "summaryLines": []
+    },
+    {
+      "command": "pnpm diagrams:check",
+      "log": "/private/tmp/languon-bl019-final-19.log",
+      "start": "2026-11-01T09:16:27.024Z",
+      "end": "2026-11-01T09:16:28.394Z",
+      "code": 1,
+      "logSha256": "16181e00035462ab59fe8d55ae8be2c89de244a2fecb40a0887fdca9195132b3",
+      "summaryLines": []
+    }
+  ],
+  "note": "Gate19 diagram source drift reconciled separately. Aggregate check pending. Normal opt-in DB/deployment skips are explicit and not runtime evidence."
+}

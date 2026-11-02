@@ -28,7 +28,10 @@ export function useLibrarySettings(requestWithSession: RequestWithSession) {
     const update = useMutation({
         mutationFn: async (values: SaveDictionarySettings) => {
             const current = dictionary.data?.dictionary;
-            if (!current) throw new Error('Dictionary unavailable');
+            if (!current) {
+                throw new Error('Dictionary unavailable');
+            }
+
             return requestWithSession((token) =>
                 dictionaryApi.updateDictionary(token, current.id, {
                     ...values,
@@ -42,6 +45,7 @@ export function useLibrarySettings(requestWithSession: RequestWithSession) {
                 ['dictionary', response.dictionary.id],
                 response,
             );
+
             void queryClient.invalidateQueries({ queryKey: ['dictionaries'] });
             void queryClient.invalidateQueries({
                 queryKey: ['dictionaries-navigation'],
@@ -55,7 +59,10 @@ export function useLibrarySettings(requestWithSession: RequestWithSession) {
     }
 
     function close() {
-        if (update.isPending) return;
+        if (update.isPending) {
+            return;
+        }
+
         update.reset();
         setSelected(null);
     }

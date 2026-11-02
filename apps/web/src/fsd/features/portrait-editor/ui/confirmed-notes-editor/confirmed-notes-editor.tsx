@@ -48,12 +48,15 @@ function NoteRow({
         'Supprimer la note',
         'Eliminar nota',
     );
+
     function handleChange(text: string) {
         onChange({ ...note, text });
     }
+
     function handleRemove() {
         onRemove(note.id);
     }
+
     return (
         <li className={styles.noteRow}>
             <ShortTextInput
@@ -87,7 +90,10 @@ export function ConfirmedNotesEditor({
     disabled?: boolean;
 }) {
     const notes = items.notes ?? [];
-    if (notes.length === 0) return null;
+    if (notes.length === 0) {
+        return null;
+    }
+
     const title = copy(
         locale,
         'Confirmed notes',
@@ -102,15 +108,18 @@ export function ConfirmedNotesEditor({
         'Les notes que vous avez confirmées dans l’entretien.',
         'Notas que confirmaste en la entrevista.',
     );
+
     function handleChange(note: Note) {
         onChange({
             ...items,
             notes: notes.map((item) => (item.id === note.id ? note : item)),
         });
     }
+
     function handleRemove(id: string) {
         onChange({ ...items, notes: notes.filter((note) => note.id !== id) });
     }
+
     return (
         <EditorSection
             title={title}

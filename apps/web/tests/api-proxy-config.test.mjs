@@ -14,6 +14,7 @@ test('development proxies /api without changing backend route paths', async () =
                 destination: 'http://localhost:4000/:path*',
             },
         ]);
+
         process.env.WEB_API_PROXY_TARGET = 'http://127.0.0.1:4005/';
         assert.deepEqual(await nextConfig.rewrites(), [
             {
@@ -21,6 +22,7 @@ test('development proxies /api without changing backend route paths', async () =
                 destination: 'http://127.0.0.1:4005/:path*',
             },
         ]);
+
         process.env.WEB_API_PROXY_TARGET = 'http://backend:4000';
         assert.deepEqual(await nextConfig.rewrites(), [
             {
@@ -28,6 +30,7 @@ test('development proxies /api without changing backend route paths', async () =
                 destination: 'http://backend:4000/:path*',
             },
         ]);
+
         for (const invalid of [
             'http://backend:4001',
             'http://backend',
@@ -41,12 +44,20 @@ test('development proxies /api without changing backend route paths', async () =
             process.env.WEB_API_PROXY_TARGET = invalid;
             await assert.rejects(nextConfig.rewrites(), /loopback HTTP origin/);
         }
+
         process.env.NODE_ENV = 'production';
         assert.deepEqual(await nextConfig.rewrites(), []);
     } finally {
-        if (oldEnvironment === undefined) delete process.env.NODE_ENV;
-        else process.env.NODE_ENV = oldEnvironment;
-        if (oldTarget === undefined) delete process.env.WEB_API_PROXY_TARGET;
-        else process.env.WEB_API_PROXY_TARGET = oldTarget;
+        if (oldEnvironment === undefined) {
+            delete process.env.NODE_ENV;
+        } else {
+            process.env.NODE_ENV = oldEnvironment;
+        }
+
+        if (oldTarget === undefined) {
+            delete process.env.WEB_API_PROXY_TARGET;
+        } else {
+            process.env.WEB_API_PROXY_TARGET = oldTarget;
+        }
     }
 });

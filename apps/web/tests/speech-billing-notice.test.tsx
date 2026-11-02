@@ -15,9 +15,11 @@ const transport = vi.hoisted(() => ({
     bytes: vi.fn(),
     availability: vi.fn(),
 }));
+
 vi.mock('@/fsd/features/speech-playback/api/speech-api', () => ({
     speechApi: () => transport,
 }));
+
 vi.mock('@/fsd/features/speech-playback/api/speech-availability', () => ({
     speechAvailability: async () => true,
 }));
@@ -46,6 +48,7 @@ function Control() {
     const control = useSpeechControl(source, (callback) =>
         callback('test-token'),
     );
+
     return (
         <>
             <button onClick={control.play}>Play</button>
@@ -53,6 +56,7 @@ function Control() {
         </>
     );
 }
+
 function control(locale: 'en' | 'ru' | 'fr' | 'es' = 'en') {
     return render(
         <QueryClientProvider client={new QueryClient()}>
@@ -74,10 +78,12 @@ beforeEach(() => {
             handle: null,
         },
     });
+
     transport.prepare.mockReset().mockResolvedValue(completed);
     transport.bytes
         .mockReset()
         .mockResolvedValue(new Blob(['tone'], { type: 'audio/wav' }));
+
     vi.stubGlobal(
         'Audio',
         class {
@@ -89,6 +95,7 @@ beforeEach(() => {
             removeAttribute = vi.fn();
         },
     );
+
     vi.stubGlobal(
         'URL',
         Object.assign(URL, {
@@ -97,6 +104,7 @@ beforeEach(() => {
         }),
     );
 });
+
 afterEach(() => {
     cleanup();
     speechPlayer.reset();
@@ -118,12 +126,14 @@ describe('speech billing notices', () => {
             fireEvent.click(
                 screen.getByRole('button', { name: 'Play', exact: true }),
             );
+
             await expect(screen.findByText(label)).resolves.toBeVisible();
             expect(
                 screen.queryByText('charged_success'),
             ).not.toBeInTheDocument();
         },
     );
+
     it('reports released generation without claiming the learner was charged', async () => {
         transport.prepare.mockResolvedValue({
             ...completed,
@@ -131,30 +141,37 @@ describe('speech billing notices', () => {
             playbackId: null,
             billingState: 'released_no_charge',
         });
+
         control();
         fireEvent.click(
             screen.getByRole('button', { name: 'Play', exact: true }),
         );
+
         await expect(
             screen.findByText('Pronunciation was not charged.'),
         ).resolves.toBeVisible();
+
         expect(
             screen.queryByText('released_no_charge'),
         ).not.toBeInTheDocument();
     });
+
     it('does not generate a billing event or notice for cached playback', async () => {
         transport.prepare.mockResolvedValue({
             ...completed,
             billingState: 'free',
         });
+
         control();
         fireEvent.click(
             screen.getByRole('button', { name: 'Play', exact: true }),
         );
+
         await waitFor(() => expect(transport.bytes).toHaveBeenCalledOnce());
         expect(
             screen.queryByText('Pronunciation generated.'),
         ).not.toBeInTheDocument();
+
         expect(
             screen.queryByText('Pronunciation was not charged.'),
         ).not.toBeInTheDocument();

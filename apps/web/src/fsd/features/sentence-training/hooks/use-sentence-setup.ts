@@ -21,15 +21,21 @@ export function useSentenceSetup({
         () => new SentenceSetup(api, initialExplanationLanguage),
         [api, identity, initialExplanationLanguage],
     );
+
     useEffect(() => {
-        if (enabled) store.enable();
+        if (enabled) {
+            store.enable();
+        }
+
         return () => store.stop();
     }, [store, enabled]);
+
     const snapshot = useSyncExternalStore(
         store.subscribe,
         store.getSnapshot,
         store.getSnapshot,
     );
+
     return {
         ...snapshot,
         setConfiguration: store.setConfiguration,

@@ -49,6 +49,7 @@ const boundedText = (maximum: number) =>
             (value) =>
                 ![...value].some((character) => {
                     const code = character.codePointAt(0)!;
+
                     return (
                         code <= 8 ||
                         code === 11 ||
@@ -161,19 +162,22 @@ export const DictionaryCardAuthoringGenerationInputPayloadSchema = z
                 if (
                     new Set(entries.map((entry) => entry.field)).size !==
                     entries.length
-                )
+                ) {
                     context.addIssue({
                         code: 'custom',
                         message: 'Excluded authoring fields must be unique',
                     });
+                }
+
                 entries.forEach((entry, index) => {
-                    if (new Set(entry.values).size !== entry.values.length)
+                    if (new Set(entry.values).size !== entry.values.length) {
                         context.addIssue({
                             code: 'custom',
                             path: [index, 'values'],
                             message:
                                 'Excluded authoring values must be unique per field',
                         });
+                    }
                 });
             })
             .default([]),
@@ -188,12 +192,13 @@ export const DictionaryCardAuthoringGenerationInputPayloadSchema = z
                             DictionaryCardAuthoringFieldSchema.options.length,
                     )
                     .superRefine((ids, context) => {
-                        if (new Set(ids).size !== ids.length)
+                        if (new Set(ids).size !== ids.length) {
                             context.addIssue({
                                 code: 'custom',
                                 message:
                                     'Discarded suggestion IDs must be unique',
                             });
+                        }
                     }),
             })
             .strict()
@@ -205,100 +210,120 @@ export const DictionaryCardAuthoringGenerationInputPayloadSchema = z
             input.format === dictionaryCardAuthoringGenerationFormatV1 &&
             !input.predecessor &&
             input.scope.kind !== 'all'
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['scope'],
                 message:
                     'Initial card authoring generation must target all fields',
             });
+        }
+
         if (
             input.format === dictionaryCardAuthoringGenerationFormatV1 &&
             input.scope.kind === 'field' &&
             input.scope.field === 'source'
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['scope', 'field'],
                 message: 'V1 card authoring does not support Source generation',
             });
+        }
+
         if (
             input.format !== dictionaryCardAuthoringGenerationFormatV1 &&
             !input.target
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['target'],
                 message: 'Card authoring generation requires a target',
             });
+        }
+
         if (
             input.format !== dictionaryCardAuthoringGenerationFormatV1 &&
             input.scope.kind === 'field' &&
             input.scope.field === 'exampleTranslation' &&
             input.draft.values.example === null
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['draft', 'values', 'example'],
                 message: 'Example translation generation requires an Example',
             });
+        }
+
         if (
             input.format === dictionaryCardAuthoringGenerationFormatV1 &&
             input.target
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['target'],
                 message:
                     'V1 card authoring generation does not support a target',
             });
+        }
+
         if (
             input.format === dictionaryCardAuthoringGenerationFormat &&
             input.translationContext === undefined
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['translationContext'],
                 message: 'Translation context snapshot is required for v3',
             });
+        }
+
         if (
             input.format === dictionaryCardAuthoringGenerationFormat &&
             input.draft.translationContext === undefined
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['draft', 'translationContext'],
                 message: 'Card translation context is required for v3',
             });
+        }
+
         if (
             input.format !== dictionaryCardAuthoringGenerationFormat &&
             input.translationContext !== undefined
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['translationContext'],
                 message: 'Translation context is not supported before v3',
             });
+        }
+
         if (
             input.format !== dictionaryCardAuthoringGenerationFormat &&
             input.draft.translationContext !== undefined
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['draft', 'translationContext'],
                 message: 'Card translation context is not supported before v3',
             });
+        }
+
         const requested = resolveDictionaryCardAuthoringFields(
             input.effectiveSettings,
             input.scope,
             input.format !== dictionaryCardAuthoringGenerationFormatV1,
         );
-        if (input.scope.kind === 'field' && requested.length === 0)
+
+        if (input.scope.kind === 'field' && requested.length === 0) {
             context.addIssue({
                 code: 'custom',
                 path: ['scope', 'field'],
                 message: 'The requested authoring field is not enabled',
             });
+        }
         // The store derives exclusions from actual predecessor history. A v2
         // successor may legitimately request a field that its predecessor did
         // not generate, in which case there is no prior value to exclude.
@@ -327,12 +352,13 @@ const DictionaryCardAuthoringProviderFieldContextSchema = z
         if (
             new Set(fieldContext.excludedValues).size !==
             fieldContext.excludedValues.length
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['excludedValues'],
                 message: 'Excluded provider values must be unique',
             });
+        }
     });
 
 export const DictionaryCardAuthoringProviderInputSchema = z
@@ -363,55 +389,66 @@ export const DictionaryCardAuthoringProviderInputSchema = z
                 if (
                     new Set(entries.map((entry) => entry.field)).size !==
                     entries.length
-                )
+                ) {
                     context.addIssue({
                         code: 'custom',
                         message: 'Provider field context must be unique',
                     });
+                }
             }),
         requestedFields: z
             .array(DictionaryCardAuthoringFieldSchema)
             .min(1)
             .max(DictionaryCardAuthoringFieldSchema.options.length)
             .superRefine((fields, context) => {
-                if (new Set(fields).size !== fields.length)
+                if (new Set(fields).size !== fields.length) {
                     context.addIssue({
                         code: 'custom',
                         message: 'Requested authoring fields must be unique',
                     });
+                }
             }),
     })
     .strict()
     .superRefine((input, context) => {
-        if (input.sourceLanguage === input.targetLanguage)
+        if (input.sourceLanguage === input.targetLanguage) {
             context.addIssue({
                 code: 'custom',
                 path: ['targetLanguage'],
                 message: 'Language pair must be distinct',
             });
+        }
+
         const contextFields = input.fieldContext.map((entry) => entry.field);
         if (
             contextFields.length !== input.requestedFields.length ||
             input.requestedFields.some(
                 (field) => !contextFields.includes(field),
             )
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['fieldContext'],
                 message:
                     'Provider context must contain exactly the requested fields',
             });
+        }
+
         const needsExistingExample =
             input.requestedFields.includes('exampleTranslation') &&
             !input.requestedFields.includes('example');
-        if (input.exampleForTranslation !== undefined && !needsExistingExample)
+
+        if (
+            input.exampleForTranslation !== undefined &&
+            !needsExistingExample
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['exampleForTranslation'],
                 message:
                     'Existing Example context is required only for field-local Example translation',
             });
+        }
     });
 
 const suggestionValueSchema = z.union([
@@ -450,12 +487,14 @@ export const DictionaryCardAuthoringProviderDeltaSchema = z
                         ].includes(suggestion.field)
                             ? dictionaryLimits.requiredCardValueCodePoints
                             : dictionaryLimits.optionalLongValueCodePoints;
-                        if ([...suggestion.value].length > maximum)
+
+                        if ([...suggestion.value].length > maximum) {
                             context.addIssue({
                                 code: 'custom',
                                 path: ['value'],
                                 message: `Suggestion exceeds the ${maximum} code point limit`,
                             });
+                        }
                     }),
             )
             .max(DictionaryCardAuthoringFieldSchema.options.length)
@@ -463,11 +502,12 @@ export const DictionaryCardAuthoringProviderDeltaSchema = z
                 if (
                     new Set(suggestions.map((item) => item.field)).size !==
                     suggestions.length
-                )
+                ) {
                     context.addIssue({
                         code: 'custom',
                         message: 'Provider suggestions must be unique by field',
                     });
+                }
             }),
     })
     .strict();
@@ -524,21 +564,24 @@ export const DictionaryCardAuthoringProposalPayloadSchema = z
                 if (
                     new Set(suggestions.map((item) => item.id)).size !==
                     suggestions.length
-                )
+                ) {
                     context.addIssue({
                         code: 'custom',
                         message: 'Authoring suggestion IDs must be unique',
                     });
+                }
+
                 DictionaryCardAuthoringFieldSchema.options.forEach((field) => {
                     if (
                         suggestions.filter((item) => item.field === field)
                             .length >
                         dictionaryCardAuthoringSuggestionLimitPerField
-                    )
+                    ) {
                         context.addIssue({
                             code: 'custom',
                             message: `Authoring suggestions for ${field} exceed the visible bound`,
                         });
+                    }
                 });
             }),
     })
@@ -548,11 +591,14 @@ export const DictionaryCardAuthoringProposalPayloadSchema = z
             ...(proposal.sourceSuggestions ?? []).map((item) => item.id),
             ...proposal.suggestions.map((item) => item.id),
         ];
-        if (new Set(ids).size !== ids.length)
+
+        if (new Set(ids).size !== ids.length) {
             context.addIssue({
                 code: 'custom',
                 message: 'Authoring suggestion IDs must be unique',
             });
+        }
+
         if (
             proposal.sourceResult?.kind === 'suggested' &&
             !(proposal.sourceSuggestions ?? []).some(
@@ -562,13 +608,14 @@ export const DictionaryCardAuthoringProposalPayloadSchema = z
                         ? proposal.sourceResult.suggestionId
                         : ''),
             )
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['sourceResult', 'suggestionId'],
                 message:
                     'Latest Source suggestion must reference retained history',
             });
+        }
     });
 
 export class DictionaryCardAuthoringSuggestionLimitError extends Error {
@@ -576,6 +623,7 @@ export class DictionaryCardAuthoringSuggestionLimitError extends Error {
         super(
             `Card authoring suggestions for ${field} reached the visible limit.`,
         );
+
         this.name = 'DictionaryCardAuthoringSuggestionLimitError';
     }
 }
@@ -612,49 +660,61 @@ export function mergeDictionaryCardAuthoringProposal(input: {
                     suggestion.value === input.source,
             )
         )
-    )
+    ) {
         throw new Error('Card authoring predecessor source does not match.');
+    }
+
     const requested = new Set(input.requestedFields);
     if (
         input.delta.suggestions.some(
             (suggestion) => !requested.has(suggestion.field),
         )
-    )
+    ) {
         throw new Error(
             'Card authoring provider returned an unrequested field.',
         );
+    }
+
     const suggestions = (input.predecessor?.suggestions ?? []).filter(
         (suggestion) => !discarded.has(suggestion.id),
     );
+
     for (const candidate of input.delta.suggestions) {
         const fieldSuggestions = suggestions.filter(
             (suggestion) => suggestion.field === candidate.field,
         );
+
         if (
             fieldSuggestions.some(
                 (suggestion) => suggestion.value === candidate.value,
             )
-        )
+        ) {
             throw new DictionaryCardAuthoringDuplicateSuggestionError(
                 candidate.field,
             );
+        }
+
         if (
             fieldSuggestions.length >=
             dictionaryCardAuthoringSuggestionLimitPerField
-        )
+        ) {
             throw new DictionaryCardAuthoringSuggestionLimitError(
                 candidate.field,
             );
+        }
+
         const basisSource =
             input.delta.sourceResult?.kind === 'suggested'
                 ? input.delta.sourceResult.value
                 : input.source;
+
         suggestions.push(
             usesModernCardAuthoringSemantics(input.format ?? '')
                 ? { ...candidate, basisSource, id: input.nextId() }
                 : { ...candidate, id: input.nextId() },
         );
     }
+
     const sourceSuggestions = (
         input.predecessor?.sourceSuggestions ?? []
     ).filter((suggestion) => !discarded.has(suggestion.id));
@@ -669,21 +729,26 @@ export function mergeDictionaryCardAuthoringProposal(input: {
                             ? input.delta.sourceResult.value
                             : ''),
                 )
-            )
+            ) {
                 throw new DictionaryCardAuthoringDuplicateSuggestionError(
                     'source',
                 );
+            }
+
             if (
                 sourceSuggestions.length >=
                 dictionaryCardAuthoringSuggestionLimitPerField
-            )
+            ) {
                 throw new DictionaryCardAuthoringSuggestionLimitError('source');
+            }
+
             const id = input.nextId();
             sourceSuggestions.push({
                 field: 'source',
                 id,
                 value: input.delta.sourceResult.value,
             });
+
             sourceResult = { kind: 'suggested', suggestionId: id };
         } else {
             sourceResult = input.delta.sourceResult ?? null;
@@ -694,6 +759,7 @@ export function mergeDictionaryCardAuthoringProposal(input: {
     ) {
         sourceResult = null;
     }
+
     return DictionaryCardAuthoringProposalPayloadSchema.parse({
         source: input.predecessor?.source ?? input.source,
         ...(usesModernCardAuthoringSemantics(input.format ?? '')
@@ -715,19 +781,45 @@ export function resolveDictionaryCardAuthoringFields(
         ...(useV2FieldSemantics ? (['source'] as const) : []),
         'translation',
     ];
-    if (settings.transcriptionEnabled) eligible.push('transcription');
-    if (settings.definitionEnabled) eligible.push('definition');
-    if (settings.exampleEnabled) eligible.push('example');
-    if (settings.exampleTranslationEnabled) eligible.push('exampleTranslation');
-    if (scope.kind === 'all') return eligible;
-    if (!eligible.includes(scope.field)) return [];
-    if (!useV2FieldSemantics) return [scope.field];
-    if (scope.field === 'translation')
+
+    if (settings.transcriptionEnabled) {
+        eligible.push('transcription');
+    }
+
+    if (settings.definitionEnabled) {
+        eligible.push('definition');
+    }
+
+    if (settings.exampleEnabled) {
+        eligible.push('example');
+    }
+
+    if (settings.exampleTranslationEnabled) {
+        eligible.push('exampleTranslation');
+    }
+
+    if (scope.kind === 'all') {
+        return eligible;
+    }
+
+    if (!eligible.includes(scope.field)) {
+        return [];
+    }
+
+    if (!useV2FieldSemantics) {
+        return [scope.field];
+    }
+
+    if (scope.field === 'translation') {
         return eligible.filter((field) => field !== 'source');
-    if (scope.field === 'example')
+    }
+
+    if (scope.field === 'example') {
         return eligible.filter(
             (field) => field === 'example' || field === 'exampleTranslation',
         );
+    }
+
     return [scope.field];
 }
 
@@ -739,6 +831,7 @@ export function dictionaryCardAuthoringProviderInput(
         input.scope,
         input.format !== dictionaryCardAuthoringGenerationFormatV1,
     );
+
     return DictionaryCardAuthoringProviderInputSchema.parse({
         sourceLanguage: input.context.sourceLanguage,
         targetLanguage: input.context.targetLanguage,
@@ -768,22 +861,28 @@ export function validateDictionaryCardAuthoringProviderDelta(
 ): DictionaryCardAuthoringProviderDelta {
     const delta = DictionaryCardAuthoringProviderDeltaSchema.parse(value);
     const sourceRequested = input.requestedFields.includes('source');
-    if (sourceRequested !== (delta.sourceResult != null))
+    if (sourceRequested !== (delta.sourceResult != null)) {
         throw new Error(
             'Card authoring provider must return Source exactly when requested.',
         );
+    }
+
     const fields = delta.suggestions.map((suggestion) => suggestion.field);
     const requestedValueFields = input.requestedFields.filter(
         (field) => field !== 'source',
     );
-    if (fields.some((field) => !requestedValueFields.includes(field)))
+
+    if (fields.some((field) => !requestedValueFields.includes(field))) {
         throw new Error(
             'Card authoring provider must not return unrequested fields.',
         );
+    }
+
     const suggestions = delta.suggestions.filter((suggestion) => {
         const context = input.fieldContext.find(
             (entry) => entry.field === suggestion.field,
         )!;
+
         return (
             suggestion.value !== context.currentValue &&
             !context.excludedValues.includes(suggestion.value)
@@ -793,17 +892,19 @@ export function validateDictionaryCardAuthoringProviderDelta(
     if (
         delta.sourceResult?.kind === 'suggested' &&
         delta.sourceResult.value === input.source
-    )
+    ) {
         sourceResult = { kind: 'unchanged' };
-    else if (
+    } else if (
         delta.sourceResult?.kind === 'suggested' &&
         input.fieldContext
             .find((entry) => entry.field === 'source')
             ?.excludedValues.includes(delta.sourceResult.value)
-    )
+    ) {
         throw new Error(
             'Card authoring Source suggestion must not repeat an earlier alternative.',
         );
+    }
+
     return { ...delta, sourceResult, suggestions };
 }
 

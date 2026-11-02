@@ -1,0 +1,160 @@
+{
+  "config": {
+    "argv": [
+      "/Users/nickkotov/.nvm/versions/node/v24.8.0/bin/node",
+      "/Users/nickkotov/projects/languon/apps/web/node_modules/@playwright/test/cli.js",
+      "test",
+      "--config",
+      "tests/e2e/support/contextual-assistant-playwright.config.ts",
+      "contextual-assistant.journeys.spec.ts",
+      "--grep",
+      "closing reconnects without duplicating",
+      "--retries=0",
+      "--reporter=list,json",
+      "--output",
+      "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/chat-lifecycle-artifacts"
+    ],
+    "configFile": "/Users/nickkotov/projects/languon/apps/web/tests/e2e/support/contextual-assistant-playwright.config.ts",
+    "rootDir": "/Users/nickkotov/projects/languon/apps/web/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/chat-lifecycle-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/Users/nickkotov/projects/languon/apps/web/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/(?:contextual-assistant|knowledge-workspace|interactive-workbooks|ai-accounting)\\.journeys\\.spec\\.ts/"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "contextual-assistant.journeys.spec.ts",
+      "file": "contextual-assistant.journeys.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "closing reconnects without duplicating a turn, Stop retains partials, and retry is explicit on narrow screens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 22280,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-29T22:27:43.857Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "tutor-initial-pill-390",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/chat-lifecycle-artifacts/contextual-assistant.journ-31b6b--explicit-on-narrow-screens/attachments/tutor-initial-pill-390-02c95d90d03fa4636f26f13075182e459856bf37.png"
+                    },
+                    {
+                      "name": "tutor-initial-full-sheet-mobile",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/chat-lifecycle-artifacts/contextual-assistant.journ-31b6b--explicit-on-narrow-screens/attachments/tutor-initial-full-sheet-mobile-d55e830a9115886b7f740be05dd3120131f8246c.png"
+                    },
+                    {
+                      "name": "tutor-expanded-sheet-mobile",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/chat-lifecycle-artifacts/contextual-assistant.journ-31b6b--explicit-on-narrow-screens/attachments/tutor-expanded-sheet-mobile-39d2f65e1beb9af1fe80e3dc7eae44030e5883b5.png"
+                    },
+                    {
+                      "name": "tutor-partial-sheet-mobile",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/chat-lifecycle-artifacts/contextual-assistant.journ-31b6b--explicit-on-narrow-screens/attachments/tutor-partial-sheet-mobile-267594b58dd9c6b986320c3f6a6fc62a7a6c1d07.png"
+                    },
+                    {
+                      "name": "tutor-folded-stream-mobile",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/chat-lifecycle-artifacts/contextual-assistant.journ-31b6b--explicit-on-narrow-screens/attachments/tutor-folded-stream-mobile-e55d8de2dcd13606821663cc74f1319e4b63d901.png"
+                    },
+                    {
+                      "name": "assistant-failure-retry-mobile",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/chat-lifecycle-artifacts/contextual-assistant.journ-31b6b--explicit-on-narrow-screens/attachments/assistant-failure-retry-mobile-24765cb216c54dd515981b3deb6d8ee5d98de84d.png"
+                    },
+                    {
+                      "name": "assistant-reconnected-mobile",
+                      "contentType": "image/png",
+                      "path": "/Users/nickkotov/projects/languon/test-results/critical-flows/a4685c8e-11b3-4774-9c3b-576c3cd263be/chat-lifecycle-artifacts/contextual-assistant.journ-31b6b--explicit-on-narrow-screens/attachments/assistant-reconnected-mobile-634511d6a669c4f9354c0099d5994459ae8c24d1.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e007b8e917c4c7adfa99-e2617151fc24ff16ad8f",
+          "file": "contextual-assistant.journeys.spec.ts",
+          "line": 1745,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-29T22:27:36.295Z",
+    "duration": 30252.896,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

@@ -90,6 +90,7 @@ export class AuthenticationHttpController implements AuthenticationHttpOperation
             ...input,
             context: context(metadata),
         });
+
         return {
             status: result.status,
             verification: flow(result.verification),
@@ -106,6 +107,7 @@ export class AuthenticationHttpController implements AuthenticationHttpOperation
             ...input,
             context: context(metadata),
         });
+
         return {
             status: result.status,
             verification: flow(result.verification),
@@ -132,6 +134,7 @@ export class AuthenticationHttpController implements AuthenticationHttpOperation
             ...input,
             context: context(metadata),
         });
+
         if (result.status === 'email_verification_required') {
             return {
                 response: {
@@ -140,6 +143,7 @@ export class AuthenticationHttpController implements AuthenticationHttpOperation
                 },
             };
         }
+
         return authenticatedResult(result);
     }
 
@@ -151,6 +155,7 @@ export class AuthenticationHttpController implements AuthenticationHttpOperation
             ...input,
             context: context(metadata),
         });
+
         return { recovery: flow(result.recovery), status: result.status };
     }
 
@@ -196,6 +201,7 @@ export class AuthenticationHttpController implements AuthenticationHttpOperation
             sessionId: claims.sessionId,
             userId: claims.userId,
         });
+
         return this.authentication.logoutAll({
             context: context(metadata),
             userId: claims.userId,
@@ -212,6 +218,7 @@ export class AuthenticationHttpController implements AuthenticationHttpOperation
             sessionId: claims.sessionId,
             userId: claims.userId,
         });
+
         return authenticatedResult(
             await this.authentication.changePassword({
                 ...input,
@@ -231,6 +238,7 @@ export class AuthenticationHttpController implements AuthenticationHttpOperation
                 sessionId: claims.sessionId,
                 userId: claims.userId,
             });
+
         return {
             session: {
                 authenticatedAt: session.authenticatedAt.toISOString(),

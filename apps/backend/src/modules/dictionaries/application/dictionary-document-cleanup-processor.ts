@@ -32,8 +32,9 @@ export class DictionaryDocumentCleanupProcessor {
             this.authorizationSweepLimit > 100 ||
             this.leaseDurationMs < 1_000 ||
             this.retryDelayMs < 100
-        )
+        ) {
             throw new Error('Invalid document cleanup processor settings.');
+        }
     }
 
     public async processNext(input: {
@@ -55,7 +56,10 @@ export class DictionaryDocumentCleanupProcessor {
             leaseDurationMs: this.leaseDurationMs,
             workerId: input.workerId,
         });
-        if (!claim) return expired > 0;
+
+        if (!claim) {
+            return expired > 0;
+        }
 
         const renewLease = async () => {
             const now = this.dependencies.clock.now();
@@ -68,7 +72,10 @@ export class DictionaryDocumentCleanupProcessor {
                 uploadId: claim.uploadId,
                 workerId: claim.workerId,
             });
-            if (!retained) throw new DictionaryDocumentCleanupFenceLostError();
+
+            if (!retained) {
+                throw new DictionaryDocumentCleanupFenceLostError();
+            }
         };
 
         try {
@@ -78,6 +85,7 @@ export class DictionaryDocumentCleanupProcessor {
                     objectKey: claim.objectKey,
                     signal: input.signal,
                 });
+
                 await renewLease();
                 const recorded =
                     await this.dependencies.store.recordCleanupTombstone({
@@ -90,8 +98,10 @@ export class DictionaryDocumentCleanupProcessor {
                         uploadId: claim.uploadId,
                         workerId: claim.workerId,
                     });
-                if (!recorded)
+
+                if (!recorded) {
                     throw new DictionaryDocumentCleanupFenceLostError();
+                }
 
                 // Re-list only after the persisted tombstone barrier. This
                 // catches every physical data version, including an upload that
@@ -101,10 +111,12 @@ export class DictionaryDocumentCleanupProcessor {
                         objectKey: claim.objectKey,
                         signal: input.signal,
                     });
+
                 await renewLease();
                 const deletedVersions = physicalVersions.filter(
                     (version) => version.kind === 'data',
                 );
+
                 for (const version of deletedVersions) {
                     await renewLease();
                     await this.dependencies.storage.deleteVersion({
@@ -113,6 +125,7 @@ export class DictionaryDocumentCleanupProcessor {
                         versionId: version.versionId,
                     });
                 }
+
                 for (const version of physicalVersions) {
                     if (
                         version.kind === 'tombstone' &&
@@ -126,11 +139,13 @@ export class DictionaryDocumentCleanupProcessor {
                         });
                     }
                 }
+
                 await renewLease();
                 const remaining = await this.dependencies.storage.listVersions({
                     objectKey: claim.objectKey,
                     signal: input.signal,
                 });
+
                 if (
                     remaining.some((version) => version.kind === 'data') ||
                     remaining.filter(
@@ -144,10 +159,12 @@ export class DictionaryDocumentCleanupProcessor {
                             version.kind === 'tombstone' &&
                             version.versionId !== tombstone.versionId,
                     )
-                )
+                ) {
                     throw new Error(
                         'Document data deletion could not be verified.',
                     );
+                }
+
                 await renewLease();
                 const retained =
                     await this.dependencies.store.recordDataVersionsDeleted({
@@ -160,8 +177,11 @@ export class DictionaryDocumentCleanupProcessor {
                         uploadId: claim.uploadId,
                         workerId: claim.workerId,
                     });
-                if (!retained)
+
+                if (!retained) {
                     throw new DictionaryDocumentCleanupFenceLostError();
+                }
+
                 return true;
             }
 
@@ -171,16 +191,22 @@ export class DictionaryDocumentCleanupProcessor {
                     objectKey: claim.objectKey,
                     signal: input.signal,
                 });
+
             await renewLease();
-            if (physicalVersions.some((version) => version.kind === 'data'))
+            if (physicalVersions.some((version) => version.kind === 'data')) {
                 throw new Error(
                     'A data version remained after the tombstone barrier.',
                 );
+            }
+
             const tombstones = physicalVersions.filter(
                 (version) => version.kind === 'tombstone',
             );
-            if (!claim.designatedTombstoneVersionId)
+
+            if (!claim.designatedTombstoneVersionId) {
                 throw new Error('The persisted cleanup tombstone is missing.');
+            }
+
             for (const tombstone of tombstones) {
                 await renewLease();
                 await this.dependencies.storage.deleteTombstone({
@@ -189,15 +215,19 @@ export class DictionaryDocumentCleanupProcessor {
                     versionId: tombstone.versionId,
                 });
             }
+
             await renewLease();
             const remaining = await this.dependencies.storage.listVersions({
                 objectKey: claim.objectKey,
                 signal: input.signal,
             });
-            if (remaining.length !== 0)
+
+            if (remaining.length !== 0) {
                 throw new Error(
                     'Document tombstone deletion could not be verified.',
                 );
+            }
+
             await renewLease();
             const completed = await this.dependencies.store.completeCleanup({
                 context: {
@@ -209,12 +239,21 @@ export class DictionaryDocumentCleanupProcessor {
                 uploadId: claim.uploadId,
                 workerId: claim.workerId,
             });
-            if (!completed) throw new DictionaryDocumentCleanupFenceLostError();
+
+            if (!completed) {
+                throw new DictionaryDocumentCleanupFenceLostError();
+            }
+
             return true;
         } catch (error) {
-            if (input.signal.aborted) throw input.signal.reason;
-            if (error instanceof DictionaryDocumentCleanupFenceLostError)
+            if (input.signal.aborted) {
+                throw input.signal.reason;
+            }
+
+            if (error instanceof DictionaryDocumentCleanupFenceLostError) {
                 return true;
+            }
+
             await this.dependencies.store.failCleanup({
                 context: {
                     now: this.dependencies.clock.now(),
@@ -228,6 +267,7 @@ export class DictionaryDocumentCleanupProcessor {
                 uploadId: claim.uploadId,
                 workerId: claim.workerId,
             });
+
             return true;
         }
     }

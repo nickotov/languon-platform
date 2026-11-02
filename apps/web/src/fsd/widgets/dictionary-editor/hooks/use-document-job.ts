@@ -32,6 +32,7 @@ export function useDocumentJob({
                     signal,
                 ),
             );
+
             return {
                 job: documentGenerationJobForDictionary(
                     response.job,
@@ -42,6 +43,7 @@ export function useDocumentJob({
         enabled: documentGenerationOpen && documentGenerationJobId !== null,
         refetchInterval: (query) => {
             const state = query.state.data?.job?.state;
+
             return state === 'awaiting-upload' ||
                 state === 'queued' ||
                 state === 'running'

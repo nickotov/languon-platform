@@ -48,6 +48,8 @@ export class DrizzleActionAccountingParticipant {
         budgetMilli: bigint;
         holdMaximumMilli?: bigint;
         outputLimit?: number;
+        usageMeter?: 'text-tokens' | 'audio-duration';
+        audioInputLimitMilliseconds?: number;
         operatorMaximumMicros?: bigint;
         operatorSettings?: OperatorBudgetSettings;
         at: Date;
@@ -55,10 +57,13 @@ export class DrizzleActionAccountingParticipant {
     }) {
         if (
             !Number.isSafeInteger(input.outputLimit ?? 10000) ||
-            (input.outputLimit ?? 10000) < 1 ||
+            (input.outputLimit ?? 10000) <
+                (input.usageMeter === 'audio-duration' ? 0 : 1) ||
             (input.outputLimit ?? 10000) > 10000
-        )
+        ) {
             throw new Error('Invalid action output allowance.');
+        }
+
         await this.lock(input.ownerId);
         const [previous] = await this.tx
             .select()
@@ -70,21 +75,27 @@ export class DrizzleActionAccountingParticipant {
             if (
                 previous.ownerId !== input.ownerId ||
                 previous.capability !== input.capability ||
+                previous.usageMeter !== (input.usageMeter ?? 'text-tokens') ||
+                previous.audioInputLimitMilliseconds !==
+                    (input.audioInputLimitMilliseconds ?? null) ||
                 previous.budgetMilli !== input.budgetMilli ||
                 previous.outputLimit !== (input.outputLimit ?? 10000) ||
                 previous.funding !== input.funding ||
                 previous.policyVersion !== input.policyVersion ||
                 JSON.stringify(previous.tariff) !== JSON.stringify(input.tariff)
-            )
+            ) {
                 throw new Error('Conflicting action admission identity.');
+            }
 
             return previous;
         }
 
-        if (input.operatorMaximumMicros === undefined)
+        if (input.operatorMaximumMicros === undefined) {
             throw new OperatorBudgetUnavailableError(
                 'Operator execution allowance is required.',
             );
+        }
+
         await new DrizzleOperatorBudgetParticipant(this.tx).reserveAction({
             actionId: input.id,
             ownerId: input.ownerId,
@@ -135,20 +146,26 @@ export class DrizzleActionAccountingParticipant {
                     : available
                 : 0n;
         const zeroTariff = [
+            input.tariff.audioCreditsPerMinute ?? '0',
             input.tariff.inputCreditsPerMillionTokens,
             input.tariff.outputCreditsPerMillionTokens,
             input.tariff.cachedInputCreditsPerMillionTokens ??
                 input.tariff.inputCreditsPerMillionTokens,
         ].every((rate) => parseCreditMilli(rate) === 0n);
 
-        if (input.funding === 'customer' && held <= 0n && !zeroTariff)
+        if (input.funding === 'customer' && held <= 0n && !zeroTariff) {
             throw new AiCreditInsufficientBalanceError();
+        }
+
         const [action] = await this.tx
             .insert(actions)
             .values({
                 id: input.id,
                 ownerId: input.ownerId,
                 capability: input.capability,
+                usageMeter: input.usageMeter ?? 'text-tokens',
+                audioInputLimitMilliseconds:
+                    input.audioInputLimitMilliseconds ?? null,
                 funding: input.funding,
                 policyVersion: input.policyVersion,
                 tariff: input.tariff,
@@ -162,7 +179,10 @@ export class DrizzleActionAccountingParticipant {
             .returning();
         let remaining = held;
         for (const grant of grants) {
-            if (remaining === 0n) break;
+            if (remaining === 0n) {
+                break;
+            }
+
             const allocated =
                 remaining < grant.remainingCredits
                     ? remaining
@@ -195,7 +215,9 @@ export class DrizzleActionAccountingParticipant {
             .where(and(eq(actions.id, actionId), eq(actions.ownerId, ownerId)))
             .for('update');
 
-        if (!action) throw new Error('Admitted action is missing.');
+        if (!action) {
+            throw new Error('Admitted action is missing.');
+        }
 
         return action;
     }
@@ -222,8 +244,10 @@ export class DrizzleActionAccountingParticipant {
             .from(actions)
             .where(eq(actions.id, input.actionId));
 
-        if (!admission || admission.ownerId !== input.ownerId)
+        if (!admission || admission.ownerId !== input.ownerId) {
             throw new Error('Admitted action is missing.');
+        }
+
         const witness = input.executionWitness;
         try {
             // SQL denial must roll back its savepoint before a legacy claimant
@@ -252,13 +276,17 @@ export class DrizzleActionAccountingParticipant {
                         'Route excluded before dispatch',
                         'Fallback cannot reduce confirmed allowance',
                     ].includes(cause.message)
-                )
+                ) {
                     throw new TextAiSelectionUnavailableError();
+                }
+
                 if (
                     cause.message ===
                     'Action affordable output allowance exhausted'
-                )
+                ) {
                     throw new AiCreditInsufficientBalanceError();
+                }
+
                 if (
                     typeof cause.message === 'string' &&
                     [
@@ -267,8 +295,9 @@ export class DrizzleActionAccountingParticipant {
                         'Action execution allowance is unavailable',
                         'Action input execution allowance exceeded',
                     ].includes(cause.message)
-                )
+                ) {
                     throw new OperatorBudgetUnavailableError(cause.message);
+                }
             }
 
             throw error;
@@ -279,10 +308,15 @@ export class DrizzleActionAccountingParticipant {
             .from(attempts)
             .where(eq(attempts.id, input.callId));
 
-        if (!attempt)
-            throw new Error('Provider dispatch authorization is missing.');
+        if (
+            !attempt ||
+            attempt.usageMeter !== 'text-tokens' ||
+            'usageMeter' in attempt.budget
+        ) {
+            throw new Error('Text provider dispatch authorization is missing.');
+        }
 
-        return attempt;
+        return { ...attempt, budget: attempt.budget };
     }
 
     async recordAttempt(input: {
@@ -307,9 +341,14 @@ export class DrizzleActionAccountingParticipant {
             )
             .for('update');
 
-        if (!attempt) throw new Error('Provider attempt is missing.');
-        if (action.state !== 'active' && attempt.state !== 'settled')
+        if (!attempt) {
+            throw new Error('Provider attempt is missing.');
+        }
+
+        if (action.state !== 'active' && attempt.state !== 'settled') {
             throw new Error('Action is already terminal.');
+        }
+
         const cacheRead = input.usage?.cacheReadTokens ?? 0;
         const cacheWrite = input.usage?.cacheWriteTokens ?? 0;
         const valid =
@@ -325,40 +364,7 @@ export class DrizzleActionAccountingParticipant {
             ) &&
             cacheRead + cacheWrite <= input.usage.inputTokens;
 
-        const observations =
-            input.usage &&
-            (input.usage.nativeUsage ||
-                input.usage.executionFacts ||
-                input.usage.calls)
-                ? {
-                      ...(input.usage.nativeUsage
-                          ? { usage: input.usage.nativeUsage }
-                          : {}),
-                      ...(input.usage.executionFacts
-                          ? {
-                                execution: {
-                                    ...(input.usage.executionFacts.endpointId
-                                        ? {
-                                              endpointId:
-                                                  input.usage.executionFacts
-                                                      .endpointId,
-                                          }
-                                        : {}),
-                                    ...(input.usage.executionFacts.serviceTier
-                                        ? {
-                                              serviceTier:
-                                                  input.usage.executionFacts
-                                                      .serviceTier,
-                                          }
-                                        : {}),
-                                },
-                            }
-                          : {}),
-                      ...(input.usage.calls
-                          ? { calls: input.usage.calls }
-                          : {}),
-                  }
-                : null;
+        const observations = buildProviderObservations(input.usage);
 
         await this.tx.execute(sql`select languon_settle_text_provider_attempt(
             ${attempt.id}::uuid, ${Boolean(input.successful && valid)},
@@ -382,4 +388,31 @@ export class DrizzleActionAccountingParticipant {
 
         return this.read(input.actionId, input.ownerId);
     }
+}
+
+function buildProviderObservations(usage: TextAiProviderUsage | undefined) {
+    if (!usage || !(usage.nativeUsage || usage.executionFacts || usage.calls)) {
+        return null;
+    }
+
+    return {
+        ...(usage.nativeUsage ? { usage: usage.nativeUsage } : {}),
+        ...(usage.executionFacts
+            ? {
+                  execution: {
+                      ...(usage.executionFacts.endpointId
+                          ? {
+                                endpointId: usage.executionFacts.endpointId,
+                            }
+                          : {}),
+                      ...(usage.executionFacts.serviceTier
+                          ? {
+                                serviceTier: usage.executionFacts.serviceTier,
+                            }
+                          : {}),
+                  },
+              }
+            : {}),
+        ...(usage.calls ? { calls: usage.calls } : {}),
+    };
 }

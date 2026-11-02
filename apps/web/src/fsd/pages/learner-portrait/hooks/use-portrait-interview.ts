@@ -71,6 +71,7 @@ export function usePortraitInterview() {
     const loadSequence = useRef(0);
     useEffect(() => {
         alive.current = true;
+
         return () => {
             alive.current = false;
         };
@@ -89,7 +90,10 @@ export function usePortraitInterview() {
 
     const load = useCallback(async () => {
         const ownerId = user?.id ?? null;
-        if (!isInterviewOwner(ownerId)) return;
+        if (!isInterviewOwner(ownerId)) {
+            return;
+        }
+
         const request = ownerScopedInterviewRequest(
             ownerId,
             requestWithSession,
@@ -99,6 +103,7 @@ export function usePortraitInterview() {
         const status = await request((token) =>
             portraitApi.readInterviewStatus(token),
         );
+
         if (!status.interview) {
             if (alive.current && sequence === loadSequence.current) {
                 setMissing(true);
@@ -106,23 +111,39 @@ export function usePortraitInterview() {
                 setOperationId(null);
                 setBusy(false);
             }
+
             return;
         }
+
         const next = await request((token) =>
             portraitApi.startInterview(token, {
                 expectedVersion: current.version,
                 locale,
             }),
         );
-        if (!alive.current || sequence !== loadSequence.current) return;
-        if (next.creditsBypass) paidAcknowledged.current = false;
-        if (user) setPortraitStateCache(queryClient, user.id, current);
+
+        if (!alive.current || sequence !== loadSequence.current) {
+            return;
+        }
+
+        if (next.creditsBypass) {
+            paidAcknowledged.current = false;
+        }
+
+        if (user) {
+            setPortraitStateCache(queryClient, user.id, current);
+        }
+
         setMissing(false);
         setSessionOwner(user?.id ?? null);
         setSession(next);
         const projection =
             next.activeOperation ?? next.latestCompletedOperation;
-        if (projection) observeBilling(projection);
+
+        if (projection) {
+            observeBilling(projection);
+        }
+
         setProposal(next.latestCompletedOperation ?? null);
         const cancelling = next.activeOperation?.state === 'cancelled';
         setOperationId(cancelling ? null : (next.activeOperation?.id ?? null));
@@ -135,14 +156,19 @@ export function usePortraitInterview() {
     }, [locale, queryClient, requestWithSession, user, observeBilling]);
 
     useEffect(() => {
-        if (!user) return;
+        if (!user) {
+            return;
+        }
+
         let cancelled = false;
         load().catch(() => {
-            if (!cancelled && isInterviewOwner(user.id))
+            if (!cancelled && isInterviewOwner(user.id)) {
                 setError(
                     'Unable to open the interview. Your saved work has been kept.',
                 );
+            }
         });
+
         return () => {
             cancelled = true;
         };
@@ -167,8 +193,10 @@ export function usePortraitInterview() {
             !isInterviewOwner(sessionOwner) ||
             busy ||
             operationId
-        )
+        ) {
             return false;
+        }
+
         const request = ownerScopedInterviewRequest(
             sessionOwner,
             requestWithSession,
@@ -178,6 +206,7 @@ export function usePortraitInterview() {
             JSON.stringify(pending.current.input) === JSON.stringify(input)
                 ? pending.current
                 : { input, key: crypto.randomUUID() };
+
         pending.current = staged;
         setBusy(true);
         setError(null);
@@ -197,72 +226,110 @@ export function usePortraitInterview() {
                     }),
                 ),
             );
-            if (!alive.current || !isInterviewOwner(sessionOwner)) return false;
+
+            if (!alive.current || !isInterviewOwner(sessionOwner)) {
+                return false;
+            }
+
             observeBilling(operation);
-            if (acknowledged) paidAcknowledged.current = true;
+            if (acknowledged) {
+                paidAcknowledged.current = true;
+            }
+
             pending.current = null;
             setNotice(false);
             setOperationId(operation.id);
+
             return true;
         } catch (cause) {
-            if (!alive.current || !isInterviewOwner(sessionOwner)) return false;
+            if (!alive.current || !isInterviewOwner(sessionOwner)) {
+                return false;
+            }
+
             setBusy(false);
             if (cause instanceof ActionConsentCancelledError) {
                 setError(null);
+
                 return false;
             }
+
             const code = (cause as { code?: string }).code;
             if (code === 'billing_notice_required') {
                 setSession((previous) =>
                     previous ? { ...previous, creditsBypass: false } : previous,
                 );
+
                 setNotice(true);
+
                 return false;
             }
+
             setError(code ?? 'Unable to send. Your text and draft are kept.');
+
             return false;
         }
     }
+
     async function confirmCost() {
         setNotice(false);
-        if (pending.current) await submit(pending.current.input, true);
+        if (pending.current) {
+            await submit(pending.current.input, true);
+        }
     }
+
     function cancelCost() {
         setNotice(false);
         pending.current = null;
     }
+
     async function reconnect() {
         const ownerId = user?.id ?? null;
-        if (!isInterviewOwner(ownerId)) return;
+        if (!isInterviewOwner(ownerId)) {
+            return;
+        }
+
         setError(null);
         setBusy(Boolean(operationId));
         setPollRevision((value) => value + 1);
         try {
             await load();
         } catch {
-            if (!isInterviewOwner(ownerId)) return;
+            if (!isInterviewOwner(ownerId)) {
+                return;
+            }
+
             setError('Unable to reconnect. Your unfinished work is kept.');
         }
     }
+
     async function stop() {
-        if (!operationId || !isInterviewOwner(sessionOwner)) return;
+        if (!operationId || !isInterviewOwner(sessionOwner)) {
+            return;
+        }
+
         const ownerId = sessionOwner;
         const request = ownerScopedInterviewRequest(
             ownerId,
             requestWithSession,
         );
+
         try {
             await request((token) =>
                 portraitApi.stopOperation(token, operationId),
             );
+
             await reconnect();
         } catch {
-            if (!isInterviewOwner(ownerId)) return;
+            if (!isInterviewOwner(ownerId)) {
+                return;
+            }
+
             setError(
                 'Unable to confirm stop. Reconnect to check the response.',
             );
         }
     }
+
     const switchLocale = useInterviewLocale({
         ownerId: sessionOwner,
         session,
@@ -279,9 +346,11 @@ export function usePortraitInterview() {
         onSession: setSession,
         onError: setError,
     });
+
     function dismissProposal() {
         setProposal(null);
     }
+
     return {
         actionConsent,
         billingProjection,

@@ -18,16 +18,21 @@ test('accepts the dedicated Texts targets and runs only the mapped journey', asy
     assert.doesNotThrow(() =>
         assertDisposableEnvironment(disposableEnvironment),
     );
+
     const original = { ...process.env };
     Object.assign(process.env, disposableEnvironment);
     try {
         await runTextsE2e(async (command) => calls.push(command));
     } finally {
         for (const name of Object.keys(disposableEnvironment)) {
-            if (original[name] === undefined) delete process.env[name];
-            else process.env[name] = original[name];
+            if (original[name] === undefined) {
+                delete process.env[name];
+            } else {
+                process.env[name] = original[name];
+            }
         }
     }
+
     assert.deepEqual(calls, [
         [
             'pnpm',
@@ -46,6 +51,7 @@ test('rejects a non-Texts database, default database port, and unconfirmed Redis
         () => assertDisposableEnvironment({}),
         /ALLOW_DISPOSABLE_DATABASE_TESTS=true/,
     );
+
     assert.throws(
         () =>
             assertDisposableEnvironment({
@@ -55,6 +61,7 @@ test('rejects a non-Texts database, default database port, and unconfirmed Redis
             }),
         /languon_auth_texts/,
     );
+
     assert.throws(
         () =>
             assertDisposableEnvironment({
@@ -64,6 +71,7 @@ test('rejects a non-Texts database, default database port, and unconfirmed Redis
             }),
         /non-default port/,
     );
+
     assert.throws(
         () =>
             assertDisposableEnvironment({

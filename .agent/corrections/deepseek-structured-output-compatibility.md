@@ -39,26 +39,26 @@ Follow `.agent/DELIVERY.md`.
 
 ## Verification
 
-| Check                    | Result                 |
-| ------------------------ | ---------------------- |
-| Tests                    | Pass: backend 597 passed, 158 skipped |
-| Lint/typecheck/build     | Pass: backend lint, typecheck, and build |
+| Check                    | Result                                                                                                               |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| Tests                    | Pass: backend 597 passed, 158 skipped                                                                                |
+| Lint/typecheck/build     | Pass: backend lint, typecheck, and build                                                                             |
 | Runtime/browser/database | Pass: sanitized live DeepSeek card-authoring request; browser/database not required for the final backend-only patch |
-| Documentation/user-flow  | Pass: all guide validation plus provider-management and credit-wallet mapping checks |
+| Documentation/user-flow  | Pass: all guide validation plus provider-management and credit-wallet mapping checks                                 |
 
 ## Outcome and evidence
 
 - Changes made: the curated text-model catalog now distinguishes native JSON Schema from prompt-injected structured output. DeepSeek selects Mastra inline schema injection; Kie retains native JSON Schema. A single catalog-to-generator options helper is shared by legacy worker and managed routing, and all four proposal generators apply the selected mode while retaining their existing Zod/domain validation.
 - Commands and results:
-  - Root-cause evidence: the exact failed job completed after three attempts with `provider_unavailable`; a sanitized direct DeepSeek probe returned HTTP 400 and `This response_format type is unavailable now` for `response_format.type=json_schema`.
-  - `pnpm --filter @languon/backend exec vitest run` with the seven affected catalog/router/generator/wire test files — pass, 42 tests.
-  - `pnpm --filter @languon/backend test` — pass, 86 files / 597 tests; 21 files / 158 tests skipped by their existing conditions.
-  - `pnpm --filter @languon/backend lint` — pass.
-  - `pnpm --filter @languon/backend typecheck` — pass.
-  - `pnpm --filter @languon/backend build` — pass.
-  - One sanitized live request through the final Mastra/card-authoring/catalog-helper path using `alarmer` — pass in about four seconds; one validated suggestion, 414 input tokens and 18 output tokens. The temporary smoke script was removed and neither the credential nor generated text was printed.
-  - `pnpm docs:user-flows:check`, `pnpm user-flow:e2e -- check ai-provider-management`, and `pnpm user-flow:e2e -- check ai-credit-wallet` — pass.
-  - `git diff --check` — pass. Final runtime/test patch SHA-256: `05b9bf12da16b3c48fa567978aa1ad7dc87949ff92a3cc8d94dc7038a76f28ba`, based on `ed211ed7e16cd635b66b3d76dfcc5a67611d6132`.
+    - Root-cause evidence: the exact failed job completed after three attempts with `provider_unavailable`; a sanitized direct DeepSeek probe returned HTTP 400 and `This response_format type is unavailable now` for `response_format.type=json_schema`.
+    - `pnpm --filter @languon/backend exec vitest run` with the seven affected catalog/router/generator/wire test files — pass, 42 tests.
+    - `pnpm --filter @languon/backend test` — pass, 86 files / 597 tests; 21 files / 158 tests skipped by their existing conditions.
+    - `pnpm --filter @languon/backend lint` — pass.
+    - `pnpm --filter @languon/backend typecheck` — pass.
+    - `pnpm --filter @languon/backend build` — pass.
+    - One sanitized live request through the final Mastra/card-authoring/catalog-helper path using `alarmer` — pass in about four seconds; one validated suggestion, 414 input tokens and 18 output tokens. The temporary smoke script was removed and neither the credential nor generated text was printed.
+    - `pnpm docs:user-flows:check`, `pnpm user-flow:e2e -- check ai-provider-management`, and `pnpm user-flow:e2e -- check ai-credit-wallet` — pass.
+    - `git diff --check` — pass. Final runtime/test patch SHA-256: `05b9bf12da16b3c48fa567978aa1ad7dc87949ff92a3cc8d94dc7038a76f28ba`, based on `ed211ed7e16cd635b66b3d76dfcc5a67611d6132`.
 - Documentation: no guide prose changed. Successful curated-provider generation is already the documented journey; the correction only restores that contract. Traceability remains valid.
 - Review: initial independent review found DSOR-REV-001 (medium), insufficient propagation coverage. Remediation centralized catalog mapping across legacy and managed routes and added coverage for all four generators; focused remediation review marked it resolved with no new findings. Focused security review found no material issues: fixed catalog URLs, hidden tracing, disabled tools, bounded requests, and local strict validation remain intact.
 

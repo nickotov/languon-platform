@@ -38,6 +38,7 @@ run('Sidebar independent text conversation sources', () => {
             },
         });
     });
+
     beforeEach(async () => {
         await resetTestDatabase(client);
         await migrateTestDatabase(client);
@@ -48,6 +49,7 @@ run('Sidebar independent text conversation sources', () => {
             { id: reader, status: 'active' },
         ]);
     }, 120_000);
+
     afterAll(async () => client?.end());
 
     const resolve = (
@@ -104,9 +106,11 @@ run('Sidebar independent text conversation sources', () => {
         await expect(resolve(owner, savedId)).resolves.toMatchObject({
             snapshot: { title: 'Independent saved', provenance: 'saved' },
         });
+
         await expect(resolve(owner, draftId)).resolves.toMatchObject({
             snapshot: { title: 'Independent draft', provenance: 'saved' },
         });
+
         await expect(resolve(reader, savedId)).rejects.toMatchObject({
             code: 'conversation_not_found',
         });
@@ -122,6 +126,7 @@ run('Sidebar independent text conversation sources', () => {
             version: 1,
             createdAt: new Date(),
         });
+
         await expect(
             resolve(reader, savedId, { locator: directLocator, kind: 'text' }),
         ).resolves.toMatchObject({ authority: { sourceOwnerId: owner } });
@@ -135,6 +140,7 @@ run('Sidebar independent text conversation sources', () => {
             createdAt: new Date(),
             updatedAt: new Date(),
         });
+
         await db.insert(textSharesTable).values({
             id: randomUUID(),
             ownerId: owner,
@@ -145,16 +151,19 @@ run('Sidebar independent text conversation sources', () => {
             version: 1,
             createdAt: new Date(),
         });
+
         await db
             .update(textsTable)
             .set({ folderId })
             .where(eq(textsTable.id, savedId));
+
         expect(
             await db
                 .select({ folderId: textsTable.folderId })
                 .from(textsTable)
                 .where(eq(textsTable.id, savedId)),
         ).toEqual([{ folderId }]);
+
         expect(
             await db
                 .select({ resourceId: textSharesTable.resourceId })
@@ -166,17 +175,26 @@ run('Sidebar independent text conversation sources', () => {
                     ),
                 ),
         ).toEqual([{ resourceId: folderId }]);
+
         await expect(
-            resolve(reader, savedId, { locator: folderLocator, kind: 'folder' }),
+            resolve(reader, savedId, {
+                locator: folderLocator,
+                kind: 'folder',
+            }),
         ).resolves.toMatchObject({ authority: { sourceOwnerId: owner } });
 
         await db
             .update(textsTable)
             .set({ folderId: null })
             .where(eq(textsTable.id, savedId));
+
         await expect(
-            resolve(reader, savedId, { locator: folderLocator, kind: 'folder' }),
+            resolve(reader, savedId, {
+                locator: folderLocator,
+                kind: 'folder',
+            }),
         ).rejects.toMatchObject({ code: 'conversation_not_found' });
+
         await expect(
             resolve(reader, savedId, { locator: directLocator, kind: 'text' }),
         ).resolves.toMatchObject({ authority: { sourceOwnerId: owner } });

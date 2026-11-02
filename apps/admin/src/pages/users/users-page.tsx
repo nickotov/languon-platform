@@ -35,6 +35,7 @@ export function UsersPage() {
         pagination: { currentPage: page, pageSize },
         resource: 'users',
     });
+
     return (
         <div className={styles.stack}>
             <header className={styles.heading}>
@@ -210,6 +211,7 @@ export function UsersPage() {
 
 export function StatusTag({ status }: { status: AdminUserSummary['status'] }) {
     const translate = useTranslate();
+
     return (
         <Tag
             color={
@@ -219,7 +221,7 @@ export function StatusTag({ status }: { status: AdminUserSummary['status'] }) {
                       ? 'red'
                       : status === 'deletion_pending'
                         ? 'orange'
-                      : 'gold'
+                        : 'gold'
             }
         >
             {translate(`status.${status}`)}

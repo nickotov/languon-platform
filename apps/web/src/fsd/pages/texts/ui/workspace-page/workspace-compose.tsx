@@ -24,8 +24,11 @@ export function WorkspaceCompose({ ws }: { ws: TextWorkspace }) {
     const hasText = Boolean(ws.input.sourceText.trim());
     const [tab, setTab] = useState('source');
     useEffect(() => {
-        if (ws.aiActive ?? ws.translation.active) setTab('translation');
+        if (ws.aiActive ?? ws.translation.active) {
+            setTab('translation');
+        }
     }, [ws.aiActive ?? ws.translation.active]);
+
     const tabItems = [
         { value: 'source', label: copy('source') },
         { value: 'translation', label: copy('translation') },
@@ -57,13 +60,17 @@ export function WorkspaceCompose({ ws }: { ws: TextWorkspace }) {
     }
 
     function sourceAction() {
-        if (locked) return <span />;
-        if (!hasText)
+        if (locked) {
+            return <span />;
+        }
+
+        if (!hasText) {
             return (
                 <Button variant='ghost' onClick={sample}>
                     {copy('sample')}
                 </Button>
             );
+        }
 
         return (
             <Button

@@ -32,6 +32,7 @@ describe('dictionary card ordering', () => {
             { card: 'b', sortKey: 2_048n },
             { card: 'c', sortKey: 3_072n },
         ]);
+
         expect(() => assertDictionaryCardCapacity(10_000)).not.toThrow();
         expect(() => assertDictionaryCardCapacity(10_001)).toThrow(
             DictionaryCardCapacityError,
@@ -88,6 +89,7 @@ describe('dictionary lifecycle and visibility', () => {
             share: null,
             visibility: 'private',
         });
+
         expect(restoreDictionary(archived)).toEqual(activePrivate);
     });
 

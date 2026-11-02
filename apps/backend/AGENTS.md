@@ -2,132 +2,124 @@
 
 ## Architecture
 
-Follow domain-driven design per business module. Dependency direction is:
+Use domain-driven design per business module with dependency direction:
 
 ```text
 interface/infrastructure -> application -> domain
 ```
 
-- `domain` contains entities, value objects, domain services, policies, and
-  repository contracts. It must not import Hono, PostgreSQL/Redis clients,
-  Mastra, Langfuse, model SDKs, or environment configuration.
-- `application` coordinates use cases and transaction boundaries. Use
-  constructor dependency injection and depend on domain or application ports.
-- `infrastructure` implements persistence, cache, AI, observability, messaging,
-  and other external adapters.
-- `interface` owns Hono routes, authentication/authorization boundaries,
-  request/response mapping, OpenAPI metadata, and transport errors.
+- `domain`: entities, value objects, domain services, policies and repository
+  contracts; no Hono, PostgreSQL/Redis clients, Mastra, Langfuse, model SDK or
+  environment configuration imports.
+- `application`: use cases and transaction boundaries; constructor dependency
+  injection through domain/application ports.
+- `infrastructure`: persistence, cache, AI, observability, messaging and other
+  external adapters.
+- `interface`: Hono routes, authentication/authorization boundaries,
+  request/response mapping, OpenAPI metadata and transport errors.
 
-Do not query PostgreSQL or Redis from domain or application code. Do not expose
-database rows, SDK types, or Hono contexts across layer boundaries.
+No PostgreSQL/Redis queries from domain/application code or database rows, SDK
+types or Hono contexts across layer boundaries.
 
 ## Persistence readability
 
-When adding or changing module Drizzle persistence implementations:
+For added/changed module Drizzle persistence implementations:
 
-- Keep each handwritten implementation file within 500 nonblank, noncomment
-  lines. The authoritative size and spacing rules are in
-  [`scripts/eslint-persistence-readability.mjs`](../../scripts/eslint-persistence-readability.mjs),
-  enforced by the normal ESLint commands. Declarative `schema.ts` files and
-  tests are excluded from this implementation-size policy.
-- Extract cohesive operations or responsibilities into clearly named internal
-  modules before reaching the limit. Keep the public store interface stable.
-  Use explicit typed dependencies and the existing transaction when extracting
-  persistence operations. Keep related queries and invariants together.
-- Separate validation, reads, decisions, writes and result construction with
-  blank lines where the logical stage changes. Separate methods visibly. Use
-  named intermediate values when nested expressions obscure intent, then run
-  ESLint and Prettier on the affected files.
+- Limit handwritten implementation files to 500 nonblank, noncomment lines.
+  [`scripts/eslint-persistence-readability.mjs`](../../scripts/eslint-persistence-readability.mjs)
+  owns size/spacing rules, enforced by normal ESLint commands. Declarative
+  `schema.ts` and tests are exempt from the size limit.
+- Before reaching the limit, extract cohesive operations/responsibilities into
+  clearly named internal modules with explicit typed dependencies and the existing
+  transaction. Preserve the public store interface; keep related queries/invariants
+  together.
+- Separate validation, reads, decisions, writes and result construction with blank
+  lines at logical stage changes; visibly separate methods. Name intermediate
+  values when nesting obscures intent. Run affected ESLint and Prettier.
 - Preserve transaction boundaries, lock ordering, query behavior, authorization,
-  idempotency, cancellation and settlement semantics during extraction. Verify
-  affected repository behavior against disposable infrastructure.
-- Do not compress code, remove useful whitespace, create numbered fragments,
-  introduce inheritance chains, or move unrelated logic into generic helper
-  files to satisfy the limit. A temporary exception requires a specific
-  rationale in the active work record and an exact, reviewed numeric allowance
-  in lint configuration; never disable the rule for an entire directory.
+  idempotency, cancellation and settlement semantics. Verify affected repository
+  behavior against disposable infrastructure.
+- Never satisfy the limit by compressing code, removing useful whitespace,
+  numbering fragments, introducing inheritance chains or moving unrelated logic
+  into generic helpers. Temporary exceptions need a specific active-record rationale
+  and exact reviewed numeric lint allowance; never disable directory-wide.
 
 ## API and validation
 
-- Validate path, query, header, body, environment, event, and external API data
-  with Zod at the boundary.
-- Define reusable boundary schemas in `@languon/contracts`; derive types from the
-  schemas.
-- Document externally reachable operations in OpenAPI and keep response status
-  codes and error shapes explicit.
+- Validate path, query, header, body, environment, event and external API data
+  with Zod at boundaries.
+- Put reusable boundary schemas in `@languon/contracts`; derive their types.
+- Document externally reachable operations in OpenAPI with explicit response
+  status codes and error shapes.
 - Map domain/application failures to transport failures in interface code.
-- Preserve request cancellation and avoid unbounded model or database work.
+- Preserve request cancellation; avoid unbounded model/database work.
 
 ## Environment configuration
 
-Expose backend configuration loaders through `src/config/environment.ts`; keep
-process-specific schemas separate and load them only at process startup. Define
-new settings in the owning schema and use `parseEnvironmentSchema` for sanitized
-fallback warnings and required/invalid-setting errors. Inject validated values
-into services instead of reading environment variables in generation code. Treat
-optional values without defaults as quiet; preserve conditional requirements and
-never print supplied values or credentials in diagnostics.
+Expose loaders through `src/config/environment.ts`; separate process-specific
+schemas and load only at process startup. Define settings in their owning schema;
+use `parseEnvironmentSchema` for sanitized fallback warnings and required/invalid
+setting errors. Inject validated values into services; no environment reads in
+generation code. Keep optional values without defaults quiet and conditional
+requirements intact. Never print supplied values/credentials in diagnostics.
 
 ## AI and prompts
 
-Keep Mastra agents, model providers, tool implementations, and Langfuse clients
-in infrastructure. Resolve prompt identifiers through `@languon/prompts` and
-retain deterministic local fallbacks for development and tests. Treat model
-output as untrusted input and validate structured results before domain use.
+Keep Mastra agents, model providers, tool implementations and Langfuse clients
+in infrastructure.
+Resolve prompt identifiers through `@languon/prompts`; retain deterministic local
+fallbacks for development/tests. Treat model output as untrusted; validate
+structured results before domain use.
 
 ### AI execution regression coverage
 
-For AI execution changes, apply the
+For AI execution changes, follow the
 [AI execution regression matrix](../../docs/operations/critical-workflows.md#ai-execution-regression-matrix).
-Exercise the production composition and admitted budget, replacing only external
-provider HTTP at that seam. Include reduced allowances, outgoing model limits,
-and unrelated-capability isolation when affected. Worker timing changes require
-slow success, bounded timeout and cancellation evidence using production defaults.
-Keep snapshot validation and fenced settlement real in integration coverage.
-For routing/provider/configuration changes, retain submission through real worker,
-router and SDK to persisted usable result/review readback and settlement for each
-changed provider family. Use selected production configuration and actual model
-IDs, including namespaced IDs; cover Free without a customer tariff and Paid with
-its tariff where affected. Verify success and failure persistence, including
-circuit-breaker writes, against disposable infrastructure as the matrix requires.
+Exercise production composition and admitted budget, replacing only external
+provider HTTP. Cover affected reduced allowances, outgoing model limits and
+unrelated-capability isolation. Worker timing changes require slow success,
+bounded timeout and cancellation evidence with production defaults. Keep snapshot
+validation and fenced settlement real in integration coverage.
 
-Run the registered backend execution stage, not only mocked-agent unit tests or
-browser fixtures. A successful isolated provider call does not establish that the
-reported failing execution path has been repaired. Admin probes, doctor readiness
-and admission/enqueue alone do not prove completion. Follow the matrix's live
-smoke rule when spending is explicitly authorized; otherwise record missing live
-evidence separately from deterministic results. Never require live credentials or
-paid calls for the deterministic gate.
+For routing/provider/configuration changes, retain submission through real worker,
+router and SDK to persisted usable result/review readback and settlement for every
+changed provider family. Use selected production configuration and actual model
+IDs, including namespaced IDs. Where affected, cover Free without a customer tariff
+and Paid with its tariff. Verify success/failure persistence, including circuit-breaker writes,
+against disposable infrastructure as the matrix requires.
+
+Run the registered backend execution stage: mocked-agent unit tests, browser
+fixtures, isolated provider success, admin probes, doctor readiness or
+admission/enqueue alone do not prove completion or repair of a reported failing
+execution path. Follow the matrix's live smoke rule when spending is explicitly
+authorized; otherwise record missing live evidence separately from deterministic
+results. Deterministic gates never require live credentials or paid calls.
 
 ### Mastra primitive registration
 
-Whenever backend work adds or materially changes a Mastra agent, tool,
-workflow, processor, or scorer, follow the registration checklist in
-[`docs/development.md`](../../docs/development.md#registering-mastra-primitives).
-Do not rely on filesystem discovery or create a Studio-only copy.
+For added/materially changed Mastra agents, tools, workflows, processors or scorers,
+follow [`docs/development.md`](../../docs/development.md#registering-mastra-primitives)'s
+registration checklist; do not rely on filesystem discovery or create Studio-only copies.
 
-Before completing that work:
+Before completion:
 
-1. Keep the primitive in its owning module's infrastructure layer and expose it
-   through a focused module composition factory.
-2. Register it in `apps/backend/src/mastra/composition.ts`; register standalone
-   tools in the canonical `tools` map and also attach tools to every agent that
-   may call them.
-3. If Studio must execute it, extend the development server policy only for its
-   exact ID, route, and validated request shape. Preserve model, prompt, tool,
-   step, concurrency, Host/Origin, and generic-proxy restrictions. Follow the
-   root feature/security workflow whenever this changes the execution boundary.
-4. Wire playground execution only to synthetic fixtures and isolated
-   playground infrastructure. Production user identity must come from verified
-   interface-layer authentication and a server-created request context, never
-   from a caller-selected Studio field.
-5. Run focused registry/policy tests and verify discovery plus a deterministic
-   execution in the real `pnpm dev:mastra` Studio/API journey. Update the Mastra
-   user-flow guide and mapped evidence when its observable journey changes.
+1. Keep primitives in their owning module's infrastructure, exposed through a
+   focused module composition factory.
+2. Register in `apps/backend/src/mastra/composition.ts`; put standalone tools in
+   the canonical `tools` map and attach tools to every agent that may call them.
+3. For Studio execution, extend development server policy only for the exact ID,
+   route and validated request shape. Preserve model, prompt, tool, step,
+   concurrency, Host/Origin and generic-proxy restrictions. Execution-boundary
+   changes follow root feature/security workflow.
+4. Use only synthetic fixtures and isolated playground infrastructure for
+   playground execution. Production user identity requires verified interface-layer
+   authentication and server-created request context, never caller-selected Studio fields.
+5. Run focused registry/policy tests; verify discovery and deterministic execution
+   in the real `pnpm dev:mastra` Studio/API journey. Update the Mastra user-flow
+   guide and mapped evidence for observable journey changes.
 
-Completion requires every intended playground primitive to be discoverable and
-executable through the canonical composition, or an explicit durable reason
-that the primitive is intentionally excluded from Studio.
+Every intended playground primitive must be discoverable/executable through
+canonical composition or have an explicit durable reason for Studio exclusion.
 
 ## Commands
 
@@ -139,7 +131,7 @@ pnpm --filter @languon/backend typecheck
 pnpm --filter @languon/backend build
 ```
 
-Use integration tests with disposable PostgreSQL/Redis for repositories,
-transactions, cache behavior, and migrations. Unit-test domain logic without
-infrastructure mocks. Any database change must use `$db-verification` and record
-forward migration, rollback when safe, and invariant evidence.
+Integration-test repositories, transactions, cache behavior and migrations against
+disposable PostgreSQL/Redis. Unit-test domain logic without infrastructure mocks.
+Every database change requires `$db-verification` and evidence of forward migration,
+rollback when safe, and invariants.

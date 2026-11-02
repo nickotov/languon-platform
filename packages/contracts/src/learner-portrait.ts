@@ -5,6 +5,7 @@ import { AssistantLanguageSchema } from './contextual-assistant';
 export function portraitSerializedByteLength(value: unknown): number {
     return new TextEncoder().encode(JSON.stringify(value)).byteLength;
 }
+
 export const PORTRAIT_ITEMS_MAX_BYTES = 30000;
 export const PORTRAIT_SUMMARY_MAX_BYTES = 10000;
 export const PORTRAIT_STATE_MAX_BYTES = 90000;
@@ -17,6 +18,7 @@ export function portraitCharacterCount(value: string): number {
         ),
     ).length;
 }
+
 export function portraitTextSchema(maximum: number) {
     return z
         .string()
@@ -26,6 +28,7 @@ export function portraitTextSchema(maximum: number) {
                 !/[\uD800-\uDFFF]/u.test(text) &&
                 !Array.from(text).some((character) => {
                     const code = character.codePointAt(0)!;
+
                     return (
                         code < 32 && code !== 9 && code !== 10 && code !== 13
                     );
@@ -37,6 +40,7 @@ export function portraitTextSchema(maximum: number) {
             `Use at most ${maximum} characters.`,
         );
 }
+
 export const PortraitAnswerSchema = portraitTextSchema(200).trim().min(1);
 export const PortraitInterviewChatSchema = portraitTextSchema(1000)
     .trim()
@@ -112,52 +116,62 @@ export const PortraitItemsSchema = z
     })
     .strict()
     .superRefine((items, context) => {
-        if (portraitSerializedByteLength(items) > PORTRAIT_ITEMS_MAX_BYTES)
+        if (portraitSerializedByteLength(items) > PORTRAIT_ITEMS_MAX_BYTES) {
             context.addIssue({
                 code: 'custom',
                 message:
                     'Portrait details exceed the storage limit. Shorten or remove some answers.',
             });
+        }
+
         if (
             items.mixedLanguageFrequency !== undefined &&
             items.mixedLanguage !== undefined &&
             items.mixedLanguage !== (items.mixedLanguageFrequency !== 'avoid')
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['mixedLanguage'],
                 message:
                     'Mixed-language settings must agree with the selected frequency.',
             });
+        }
+
         if (
             items.notes &&
             new Set(items.notes.map((note) => note.id.toLowerCase())).size !==
                 items.notes.length
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['notes'],
                 message: 'Each confirmed note must have a unique identifier.',
             });
+        }
+
         const languages = items.languages.map((item) =>
             item.language.toLowerCase(),
         );
-        if (new Set(languages).size !== languages.length)
+
+        if (new Set(languages).size !== languages.length) {
             context.addIssue({
                 code: 'custom',
                 path: ['languages'],
                 message: 'List each language once.',
             });
+        }
+
         if (
             new Set(
                 items.explanationLanguages.map((item) => item.toLowerCase()),
             ).size !== items.explanationLanguages.length
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['explanationLanguages'],
                 message: 'List each explanation language once.',
             });
+        }
     });
 export type PortraitItems = z.infer<typeof PortraitItemsSchema>;
 export const PortraitDocumentSchema = z

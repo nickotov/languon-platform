@@ -28,6 +28,7 @@ function inspectionClient(
             switch (command.constructor.name) {
                 case 'ListObjectVersionsCommand':
                     await listGate;
+
                     return {
                         IsTruncated: false,
                         Versions: [
@@ -88,6 +89,7 @@ describe('S3 dictionary document storage', () => {
         expect(send.mock.calls[0]?.[0].constructor.name).toBe(
             'ListObjectVersionsCommand',
         );
+
         expect(send.mock.calls[0]?.[0]).toMatchObject({
             input: {
                 Bucket: 'document-test',
@@ -107,6 +109,7 @@ describe('S3 dictionary document storage', () => {
             forcePathStyle: true,
             region: 'us-east-1',
         });
+
         try {
             const capability = await new S3DictionaryDocumentUploadStorage({
                 bucket: 'document-test',
@@ -122,6 +125,7 @@ describe('S3 dictionary document storage', () => {
             const signedHeaders = new URL(capability.url).searchParams.get(
                 'X-Amz-SignedHeaders',
             );
+
             expect(signedHeaders?.split(';')).toEqual(
                 expect.arrayContaining([
                     'content-type',
@@ -144,6 +148,7 @@ describe('S3 dictionary document storage', () => {
             sizeBytes: bytes.byteLength,
             versionId: 'version-1',
         };
+
         expect(
             reconcileUploadedDocumentVersion({
                 expectedChecksumSha256: checksumSha256,
@@ -152,6 +157,7 @@ describe('S3 dictionary document storage', () => {
                 versions: [version],
             }),
         ).toBe(version);
+
         expect(() =>
             reconcileUploadedDocumentVersion({
                 expectedChecksumSha256: checksumSha256,
@@ -172,6 +178,7 @@ describe('S3 dictionary document storage', () => {
                 }),
             ),
         ).resolves.toMatchObject({ detectedFormat: 'txt' });
+
         expect(
             vi
                 .mocked(client.send)
@@ -181,7 +188,7 @@ describe('S3 dictionary document storage', () => {
                 )?.[0],
         ).toMatchObject({ input: { Range: 'bytes=0-3' } });
 
-        for (const content of [Buffer.from('ban'), Buffer.from('banks')])
+        for (const content of [Buffer.from('ban'), Buffer.from('banks')]) {
             await expect(
                 inspect(
                     new S3DictionaryDocumentUploadStorage({
@@ -192,6 +199,7 @@ describe('S3 dictionary document storage', () => {
             ).rejects.toBeInstanceOf(
                 DictionaryDocumentUploadInspectionUnavailableError,
             );
+        }
 
         await expect(
             inspect(
@@ -221,6 +229,7 @@ describe('S3 dictionary document storage', () => {
         await expect(inspect(storage)).rejects.toBeInstanceOf(
             DictionaryDocumentUploadInspectionUnavailableError,
         );
+
         release();
         await expect(Promise.all(active)).resolves.toHaveLength(8);
     });

@@ -14,42 +14,50 @@ const response = (value: unknown, status = 200) =>
         status,
         headers: { 'Content-Type': 'application/json' },
     });
+
 afterEach(() => vi.unstubAllGlobals());
 describe('saved sentence library transport', () => {
     it('uses live shared capability only in headers and no-store authenticated requests', async () => {
         const fetchMock = vi
             .fn()
             .mockResolvedValue(response({ items: [], nextCursor: null }));
+
         vi.stubGlobal('fetch', fetchMock);
         const key = 'a'.repeat(43);
         const api = createLibraryApi(
             { kind: 'shared', shareId: id, shareKey: key },
             authenticate,
         );
+
         await api.list({
             direction: 'target-to-source',
             personalArchive: 'active',
             globalArchive: 'active',
             contentState: 'all',
         });
+
         const [url, init] = fetchMock.mock.calls[0]!;
         expect(String(url)).toContain(
             `/learning/shared-dictionaries/${id}/sentences/library?`,
         );
+
         expect(String(url)).not.toContain(key);
         expect(init).toMatchObject({
             method: 'GET',
             cache: 'no-store',
             credentials: 'include',
         });
+
         expect(new Headers(init.headers).get('X-Languon-Share-Key')).toBe(key);
     });
+
     it('keeps the operation identity and frozen snapshot intact when replaying an uncertain mutation', async () => {
         const fetchMock = vi
             .fn()
             .mockImplementation(async () =>
                 response({ operationId, affectedCount: 4 }),
             );
+
         vi.stubGlobal('fetch', fetchMock);
         const api = createLibraryApi(
             { kind: 'owner', dictionaryId: id },
@@ -63,12 +71,14 @@ describe('saved sentence library transport', () => {
                 snapshotToken: 'snapshot-token',
             },
         };
+
         await api.mutate(input);
         await api.mutate(input);
         expect(fetchMock.mock.calls[0]![1].body).toBe(
             fetchMock.mock.calls[1]![1].body,
         );
     });
+
     it('rejects outdated confirmation without hiding the domain failure', async () => {
         vi.stubGlobal(
             'fetch',
@@ -85,14 +95,17 @@ describe('saved sentence library transport', () => {
                 ),
             ),
         );
+
         const api = createLibraryApi(
             { kind: 'owner', dictionaryId: id },
             authenticate,
         );
+
         await expect(api.snapshot('archive', {})).rejects.toEqual(
             new LibraryApiError(409, 'version_conflict'),
         );
     });
+
     it('previews only with the dedicated free read endpoint and rejects invalid identifiers before transport', async () => {
         const fetchMock = vi.fn().mockResolvedValue(
             response(
@@ -106,19 +119,23 @@ describe('saved sentence library transport', () => {
                 404,
             ),
         );
+
         vi.stubGlobal('fetch', fetchMock);
         const api = createLibraryApi(
             { kind: 'owner', dictionaryId: id },
             authenticate,
         );
+
         await expect(api.detail(id)).rejects.toBeInstanceOf(LibraryApiError);
         expect(fetchMock.mock.calls[0]![0]).toContain(
             `/sentences/library/${id}`,
         );
+
         expect(fetchMock.mock.calls[0]![1]).toMatchObject({ method: 'GET' });
         expect(() => api.detail('bad-id')).toThrow();
         expect(fetchMock).toHaveBeenCalledTimes(1);
     });
+
     it('keeps contextual phrases together without exposing identities', () => {
         const detail = {
             item: {
@@ -159,6 +176,7 @@ describe('saved sentence library transport', () => {
                 kind: 'phrase',
             },
         ]);
+
         expect(display).not.toHaveProperty('creatorId');
     });
 });

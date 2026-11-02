@@ -18,6 +18,7 @@ describe('bounded accounting report worker', () => {
             onError,
             intervalMs: 1000,
         });
+
         await vi.advanceTimersByTimeAsync(1000);
         await vi.advanceTimersByTimeAsync(20000);
         expect(refreshNextReport).toHaveBeenCalledOnce();
@@ -25,6 +26,7 @@ describe('bounded accounting report worker', () => {
         const completion = worker.stop().then(() => {
             stopped = true;
         });
+
         expect(stopped).toBe(false);
         resolve(true);
         await completion;
@@ -32,6 +34,7 @@ describe('bounded accounting report worker', () => {
         expect(refreshNextReport).toHaveBeenCalledOnce();
         expect(onError).not.toHaveBeenCalled();
     });
+
     it('stops scheduling on abort and reports bounded task failures', async () => {
         vi.useFakeTimers();
         const controller = new AbortController();
@@ -45,6 +48,7 @@ describe('bounded accounting report worker', () => {
             intervalMs: 1000,
             signal: controller.signal,
         });
+
         await vi.advanceTimersByTimeAsync(1000);
         expect(onError).toHaveBeenCalledOnce();
         controller.abort();

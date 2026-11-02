@@ -34,6 +34,7 @@ const secondQuote = {
     maximumCredits: '0.025',
     approximateOutputTokens: 2,
 };
+
 function denied(quote = firstQuote) {
     return new ConversationApiError(409, {
         code: 'action_confirmation_required',
@@ -42,10 +43,12 @@ function denied(quote = firstQuote) {
         details: { quote },
     });
 }
+
 afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
 });
+
 it('preserves the validated quote through the real API error boundary', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
         new Response(
@@ -59,6 +62,7 @@ it('preserves the validated quote through the real API error boundary', async ()
             { status: 409, headers: { 'Content-Type': 'application/json' } },
         ),
     );
+
     await expect(
         conversationApi.submit('synthetic-token', firstQuote.id, {
             requestId: firstQuote.id,
@@ -84,6 +88,7 @@ it('preserves the original request/content across explicit confirmations and req
     const client = new QueryClient({
         defaultOptions: { mutations: { retry: false } },
     });
+
     function Provider({ children }: PropsWithChildren) {
         return (
             <QueryClientProvider client={client}>
@@ -91,6 +96,7 @@ it('preserves the original request/content across explicit confirmations and req
             </QueryClientProvider>
         );
     }
+
     const { result } = renderHook(
         () => {
             const pendingRequest = useRef<SubmitConversationTurnRequest | null>(
@@ -100,6 +106,7 @@ it('preserves the original request/content across explicit confirmations and req
             const [attachments, setAttachments] = useState<CopiedAttachment[]>(
                 [],
             );
+
             return {
                 ...useConversationAdmission({
                     id: 'conversation',
@@ -116,6 +123,7 @@ it('preserves the original request/content across explicit confirmations and req
         },
         { wrapper: Provider },
     );
+
     await act(async () => {
         await result.current.submit
             .mutateAsync({
@@ -125,6 +133,7 @@ it('preserves the original request/content across explicit confirmations and req
             })
             .catch(() => undefined);
     });
+
     await waitFor(() => expect(result.current.quote?.id).toBe(firstQuote.id));
     expect(submitTurn).toHaveBeenCalledTimes(1);
     act(() => result.current.setQuestion('Changed unsent draft'));
@@ -132,18 +141,21 @@ it('preserves the original request/content across explicit confirmations and req
         result.current.confirmQuote();
         result.current.confirmQuote();
     });
+
     await waitFor(() => expect(result.current.quote?.id).toBe(secondQuote.id));
     expect(submitTurn).toHaveBeenCalledTimes(2);
     expect(submitTurn.mock.calls[1]![0]).toMatchObject({
         ...submitTurn.mock.calls[0]![0],
         confirmedQuoteId: firstQuote.id,
     });
+
     act(() => result.current.confirmQuote());
     await waitFor(() => expect(submitTurn).toHaveBeenCalledTimes(3));
     expect(submitTurn.mock.calls[2]![0]).toMatchObject({
         ...submitTurn.mock.calls[0]![0],
         confirmedQuoteId: secondQuote.id,
     });
+
     await waitFor(() => expect(result.current.quote).toBeNull());
     expect(result.current.question).toBe('Changed unsent draft');
     expect(onAccepted).toHaveBeenCalledTimes(1);
@@ -160,13 +172,16 @@ it('shows the quoted allowance and explicit Send, Top up and keep editing choice
             onClose={close}
         />,
     );
+
     expect(screen.getByRole('dialog')).toHaveTextContent(
         'Approximate output tokens: 12',
     );
+
     expect(screen.getByRole('link', { name: 'Top up' })).toHaveAttribute(
         'href',
         '/profile?tab=credits',
     );
+
     expect(send).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Send' }));
     expect(send).toHaveBeenCalledTimes(1);
@@ -181,6 +196,7 @@ it('never continues a limited response until the learner explicitly requests a n
     expect(
         screen.getByText(/new action within your saved maximum budget/),
     ).toBeInTheDocument();
+
     expect(next).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     expect(next).toHaveBeenCalledTimes(1);

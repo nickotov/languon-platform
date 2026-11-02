@@ -18,6 +18,7 @@ export function authenticationRequestMetadata(
     }
 
     const suppliedCorrelationId = context.req.header('X-Correlation-ID');
+
     return {
         clientAddress: policy.clientAddress(
             directAddress,

@@ -90,11 +90,12 @@ export class AdminMcpQuotaStore {
             );
 
         if (existing) {
-            if (existing.payloadHash !== hash)
+            if (existing.payloadHash !== hash) {
                 throw new AdminMcpError(
                     'idempotency_conflict',
                     'Operation key already used for different input.',
                 );
+            }
 
             return {
                 id: existing.id,
@@ -113,20 +114,24 @@ export class AdminMcpQuotaStore {
                   ? actor.limits.creditGrants
                   : actor.limits.creditRevocations;
 
-        if (!limits)
+        if (!limits) {
             throw new AdminMcpError(
                 'permission_denied',
                 'Explicit limits are required.',
             );
+        }
+
         const perOperation =
             'perCheckUsd' in limits ? limits.perCheckUsd : limits.perOperation;
         const perDay = 'perDayUsd' in limits ? limits.perDayUsd : limits.perDay;
         const units = amountUnits(amount);
-        if (units <= 0n || units > amountUnits(perOperation))
+        if (units <= 0n || units > amountUnits(perOperation)) {
             throw new AdminMcpError(
                 'quota_exceeded',
                 'The operation exceeds the credential ceiling.',
             );
+        }
+
         const [usage] = await tx
             .select({
                 total: sql<string>`coalesce(sum(coalesce(${adminMcpReservationsTable.settledUnits},${adminMcpReservationsTable.reservedUnits})),0)::text`,
@@ -140,11 +145,13 @@ export class AdminMcpQuotaStore {
                 ),
             );
 
-        if (BigInt(usage?.total ?? '0') + units > amountUnits(perDay))
+        if (BigInt(usage?.total ?? '0') + units > amountUnits(perDay)) {
             throw new AdminMcpError(
                 'quota_exceeded',
                 'The credential daily ceiling is exhausted.',
             );
+        }
+
         if (kind === 'model-check') {
             // Include all days: an uncertain upstream outcome still occupies capacity.
             const [active] = await tx
@@ -161,11 +168,12 @@ export class AdminMcpQuotaStore {
             if (
                 (active?.count ?? 0) >=
                 (actor.limits.modelChecks?.concurrency ?? 1)
-            )
+            ) {
                 throw new AdminMcpError(
                     'quota_exceeded',
                     'The credential already has its maximum active checks.',
                 );
+            }
         }
 
         const id = randomUUID();
@@ -282,15 +290,18 @@ export class AdminMcpQuotaStore {
             .where(eq(adminMcpReservationsTable.id, id))
             .for('update');
 
-        if (!reservation)
+        if (!reservation) {
             throw new AdminMcpError('not_found', 'Reservation not found.');
+        }
+
         const units = amount === null ? null : amountUnits(amount);
         if (reservation.state === 'settled') {
-            if (reservation.settledUnits !== units)
+            if (reservation.settledUnits !== units) {
                 throw new AdminMcpError(
                     'idempotency_conflict',
                     'Reservation already settled differently.',
                 );
+            }
 
             return;
         }

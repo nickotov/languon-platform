@@ -116,7 +116,9 @@ export function EditorCardSheet({ model }: { model: EditorCardSheetModel }) {
         reloadAfterConflict,
     } = model;
 
-    if (!editing) return null;
+    if (!editing) {
+        return null;
+    }
 
     const isNewCard = editing === 'new';
 

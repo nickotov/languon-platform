@@ -32,6 +32,7 @@ const usageSchema = z.object({
     executionFacts: ProviderExecutionFactsSchema.optional(),
     calls: ProviderNativeCallObservationsSchema.optional(),
 });
+
 export type ProviderTokenUsage = TextAiProviderUsage;
 function consistent(
     values: Array<number | null | undefined>,
@@ -39,10 +40,14 @@ function consistent(
     const known = values.filter(
         (value): value is number => value !== undefined && value !== null,
     );
-    if (new Set(known).size > 1)
+
+    if (new Set(known).size > 1) {
         throw new Error('Conflicting provider cache meters.');
+    }
+
     return known[0];
 }
+
 /** Normalize only reported SDK meters; absent cache categories remain absent. */
 export function readProviderTokenUsage(
     value: unknown,
@@ -77,12 +82,15 @@ export function readProviderTokenUsage(
             ? undefined
             : parsed.inputTokens.cacheWrite,
     ]);
+
     if (
         inputTokens > limits.maxInputTokens ||
         outputTokens > limits.maxOutputTokens ||
         (cacheReadTokens ?? 0) + (cacheWriteTokens ?? 0) > inputTokens
-    )
+    ) {
         throw new Error('Provider usage exceeds the admitted meter bounds.');
+    }
+
     const nativeUsage = native
         ? {
               ...native,
@@ -104,6 +112,7 @@ export function readProviderTokenUsage(
                   },
               ]
             : undefined);
+
     return {
         inputTokens,
         outputTokens,

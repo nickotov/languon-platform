@@ -19,6 +19,7 @@ test(
             undefined,
             'DOCKER_HOST must be unset',
         );
+
         const endpoint = await runCommand(
             'docker',
             [
@@ -29,6 +30,7 @@ test(
             ],
             { capture: true },
         );
+
         assert.match(endpoint.stdout.trim(), /^unix:\/\//);
         const directory = await mkdtemp(
             path.join(os.tmpdir(), 'languon-redis-tls-'),
@@ -52,6 +54,7 @@ test(
                 '-out',
                 path.join(directory, 'ca.crt'),
             ]);
+
             await runCommand('openssl', [
                 'req',
                 '-newkey',
@@ -64,11 +67,13 @@ test(
                 '-out',
                 path.join(directory, 'server.csr'),
             ]);
+
             await writeFile(
                 path.join(directory, 'server.ext'),
                 'subjectAltName=DNS:localhost,IP:127.0.0.1\n',
                 { mode: 0o600 },
             );
+
             await runCommand('openssl', [
                 'x509',
                 '-req',
@@ -86,6 +91,7 @@ test(
                 '-out',
                 path.join(directory, 'server.crt'),
             ]);
+
             const acl = (
                 await readFile(
                     'infra/deploy/redis.production.acl.example',
@@ -94,9 +100,11 @@ test(
             )
                 .replace('replace-with-application-password', appPassword)
                 .replace('replace-with-health-only-password', healthPassword);
+
             await writeFile(path.join(directory, 'redis.acl'), acl, {
                 mode: 0o644,
             });
+
             await chmod(path.join(directory, 'server.key'), 0o644);
 
             await runCommand('docker', [
@@ -125,13 +133,17 @@ test(
                 '--aclfile',
                 '/tls/redis.acl',
             ]);
+
             const published = await runCommand(
                 'docker',
                 ['port', name, '6379/tcp'],
                 { capture: true },
             );
             const port = published.stdout.trim().match(/:(\d+)$/)?.[1];
-            if (!port) throw new Error('Redis test port was not published.');
+            if (!port) {
+                throw new Error('Redis test port was not published.');
+            }
+
             for (let attempt = 0; attempt < 20; attempt += 1) {
                 const ready = await runCommand(
                     'docker',
@@ -153,11 +165,17 @@ test(
                     ({ stdout }) => stdout.includes('PONG'),
                     () => false,
                 );
-                if (ready) break;
+
+                if (ready) {
+                    break;
+                }
+
                 await new Promise((resolve) => setTimeout(resolve, 250));
-                if (attempt === 19)
+                if (attempt === 19) {
                     throw new Error('Redis TLS did not become ready.');
+                }
             }
+
             await runCommand(
                 'pnpm',
                 [

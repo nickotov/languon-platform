@@ -16,6 +16,7 @@ describe('icon action menu', () => {
                 items={[{ label: 'Cards', onSelect: vi.fn() }]}
             />,
         );
+
         const trigger = screen.getByRole('button', { name: 'Train' });
         await user.tab();
         expect(trigger).toHaveFocus();
@@ -34,6 +35,7 @@ describe('icon action menu', () => {
             // Native dialogs capture this element as their return-focus target.
             opener = document.activeElement;
         }
+
         render(
             <Menu
                 label='Dictionary actions'
@@ -43,15 +45,19 @@ describe('icon action menu', () => {
                 ]}
             />,
         );
+
         const trigger = screen.getByRole('button', {
             name: 'Dictionary actions',
         });
+
         await user.click(trigger);
         await user.click(
             screen.getByRole('menuitem', { name: 'Practice history' }),
         );
+
         expect(opener).toBe(trigger);
     });
+
     it('keeps decorative icons out of names and restores focus after selection', async () => {
         const user = userEvent.setup();
         const onSelect = vi.fn();
@@ -71,9 +77,11 @@ describe('icon action menu', () => {
                 ]}
             />,
         );
+
         const trigger = screen.getByRole('button', {
             name: 'Dictionary actions',
         });
+
         await user.click(trigger);
         expect(screen.getByRole('menuitem', { name: 'Edit' })).toHaveFocus();
         await user.keyboard('{Enter}');
@@ -103,9 +111,11 @@ describe('icon action menu', () => {
                 />
             </>,
         );
+
         await user.click(
             screen.getByRole('button', { name: 'Dictionary actions' }),
         );
+
         expect(screen.getByRole('menu').parentElement).toBe(document.body);
         await user.keyboard('{End}');
         expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveFocus();
@@ -114,6 +124,7 @@ describe('icon action menu', () => {
         await user.click(screen.getByRole('button', { name: 'Outside' }));
         expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
+
     it('exposes checked layout options and keeps the menu open on activation', async () => {
         const user = userEvent.setup();
         const onSelect = vi.fn();
@@ -131,11 +142,13 @@ describe('icon action menu', () => {
                 ]}
             />,
         );
+
         await user.click(screen.getByRole('button', { name: 'Tutor options' }));
         const item = screen.getByRole('menuitemcheckbox', {
             name: 'Wide',
             checked: true,
         });
+
         expect(item).toHaveFocus();
         await user.keyboard('{Enter}');
         expect(onSelect).toHaveBeenCalledOnce();

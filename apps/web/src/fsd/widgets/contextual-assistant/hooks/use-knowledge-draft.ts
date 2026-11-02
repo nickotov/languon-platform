@@ -45,14 +45,23 @@ export function useKnowledgeDraft({
         setValid(true);
         setError(null);
     }, [discardRevision]);
+
     async function persist() {
-        if (discarding.current) return;
-        while (flight.current) await flight.current;
+        if (discarding.current) {
+            return;
+        }
+
+        while (flight.current) {
+            await flight.current;
+        }
+
         if (
             JSON.stringify(latest.current) ===
             JSON.stringify(stored.current.content)
-        )
+        ) {
             return;
+        }
+
         const next = latest.current;
         const saving = request((token) =>
             conversationApi.updateDraft(
@@ -67,32 +76,45 @@ export function useKnowledgeDraft({
             stored.current = updated;
             setSavedContent(updated.content);
         });
+
         flight.current = saving;
         try {
             await saving;
         } finally {
-            if (flight.current === saving) flight.current = null;
+            if (flight.current === saving) {
+                flight.current = null;
+            }
         }
     }
+
     function change(next: KnowledgeNoteContent) {
         latest.current = next;
         setContent(next);
         setError(null);
         operation.current = crypto.randomUUID();
     }
+
     const dirty =
         !valid || JSON.stringify(content) !== JSON.stringify(savedContent);
+
     useEffect(() => {
         onDirtyChange(draft.id, dirty);
+
         return () => onDirtyChange(draft.id, false);
     }, [draft.id, dirty, onDirtyChange]);
+
     useEffect(() => {
-        if (!valid) return;
+        if (!valid) {
+            return;
+        }
+
         const timer = setTimeout(() => {
             void persist().catch(() => setError('error'));
         }, 600);
+
         return () => clearTimeout(timer);
     }, [content, valid]);
+
     async function publish(mode: 'new' | 'update') {
         setBusy(true);
         setError(null);
@@ -114,12 +136,14 @@ export function useKnowledgeDraft({
                     shareKey,
                 ),
             );
+
             onPublished?.(
                 published.note.id,
                 published.note.title,
                 draft.conversationId,
                 draft.id,
             );
+
             await onChanged();
         } catch (cause) {
             setError(
@@ -131,17 +155,23 @@ export function useKnowledgeDraft({
             setBusy(false);
         }
     }
+
     function saveNew() {
         void publish('new');
     }
+
     function update() {
         void publish('update');
     }
+
     async function discard() {
         discarding.current = true;
         setBusy(true);
         try {
-            if (flight.current) await flight.current;
+            if (flight.current) {
+                await flight.current;
+            }
+
             await request((token) =>
                 conversationApi.deleteDraft(
                     token,
@@ -150,6 +180,7 @@ export function useKnowledgeDraft({
                     shareKey,
                 ),
             );
+
             await onChanged();
         } catch {
             discarding.current = false;
@@ -158,6 +189,7 @@ export function useKnowledgeDraft({
             setBusy(false);
         }
     }
+
     return {
         content,
         valid,

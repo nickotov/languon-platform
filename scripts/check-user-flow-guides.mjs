@@ -93,6 +93,7 @@ export function parseFrontmatter(content, filename) {
                     `${filename}:${lineIndex + 2}: list item has no parent key`,
                 );
             }
+
             const item = listItem[1].trim();
             assertNoControlCharacters(item, filename, activeList);
             metadata.get(activeList).push(item);
@@ -112,6 +113,7 @@ export function parseFrontmatter(content, filename) {
                 `${filename}: unsupported frontmatter key '${key}'`,
             );
         }
+
         if (metadata.has(key)) {
             throw new Error(`${filename}: duplicate frontmatter key '${key}'`);
         }
@@ -136,8 +138,10 @@ export function parseFrontmatter(content, filename) {
 function assertNoControlCharacters(value, filename, key) {
     const hasControlCharacter = [...value].some((character) => {
         const codePoint = character.codePointAt(0);
+
         return codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f);
     });
+
     if (hasControlCharacter) {
         throw new Error(
             `${filename}: '${key}' must not contain control characters`,
@@ -164,6 +168,7 @@ function requireScalar(metadata, key, filename) {
     if (typeof value !== 'string' || value.length === 0) {
         throw new Error(`${filename}: '${key}' must be a non-empty scalar`);
     }
+
     return value;
 }
 
@@ -176,6 +181,7 @@ function requireList(metadata, key, filename) {
     ) {
         throw new Error(`${filename}: '${key}' must be a non-empty list`);
     }
+
     return value;
 }
 
@@ -183,6 +189,7 @@ function assertValidDate(value, filename) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
         throw new Error(`${filename}: 'last_verified' must use YYYY-MM-DD`);
     }
+
     const date = new Date(`${value}T00:00:00Z`);
     if (
         Number.isNaN(date.valueOf()) ||
@@ -207,9 +214,13 @@ export function sectionsByHeading(body) {
     for (const line of body.split('\n')) {
         if (/^\s*(?:```|~~~)/.test(line)) {
             fenced = !fenced;
-            if (activeHeading) activeContent.push(line);
+            if (activeHeading) {
+                activeContent.push(line);
+            }
+
             continue;
         }
+
         const heading = fenced ? null : /^## ([^#].*)$/.exec(line);
         if (heading?.[1]) {
             saveActiveSection();
@@ -219,6 +230,7 @@ export function sectionsByHeading(body) {
             activeContent.push(line);
         }
     }
+
     saveActiveSection();
 
     return sections;
@@ -231,10 +243,12 @@ function assertSection(sections, heading, filename) {
             `${filename}: missing required '## ${heading}' section`,
         );
     }
+
     const substantiveContent = content
         .replace(/<!--[\s\S]*?-->/g, '')
         .replace(/^\s*(?:```|~~~).*$/gm, '')
         .trim();
+
     if (substantiveContent.length === 0) {
         throw new Error(
             `${filename}: required '## ${heading}' section is empty`,
@@ -251,10 +265,12 @@ function hasIndexLink(index, filename) {
             fenced = !fenced;
             continue;
         }
+
         const lineWithoutInlineCode = line.replace(/`[^`\n]*`/g, '');
         const targets = [
             ...lineWithoutInlineCode.matchAll(/\]\(([^)]+)\)/g),
         ].map((match) => match[1]);
+
         if (!fenced && targets.includes(`./${filename}`)) {
             return true;
         }
@@ -330,7 +346,9 @@ function validateE2eMetadata({
 }) {
     const e2eKeys = ['e2e_command', 'e2e_tests', 'e2e_scenarios'];
     const hasAnyE2eMetadata = e2eKeys.some((key) => metadata.has(key));
-    if (status !== 'current' && !hasAnyE2eMetadata) return undefined;
+    if (status !== 'current' && !hasAnyE2eMetadata) {
+        return undefined;
+    }
 
     const e2eCommandId = requireScalar(metadata, 'e2e_command', filename);
     const e2eCommand = e2eCommands.get(e2eCommandId);
@@ -341,6 +359,7 @@ function validateE2eMetadata({
             ].join(', ')})`,
         );
     }
+
     const testPaths = requireList(metadata, 'e2e_tests', filename);
     const scenarios = requireList(metadata, 'e2e_scenarios', filename);
     assertUnique(testPaths, 'e2e_tests', filename);
@@ -359,6 +378,7 @@ function validateE2eMetadata({
                 `${filename}: E2E test path '${testPath}' must be an exact path without glob syntax`,
             );
         }
+
         if (!/\.(?:e2e|spec|test)\.[cm]?[jt]sx?$/.test(testPath)) {
             throw new Error(
                 `${filename}: E2E test path '${testPath}' must name an e2e, spec, or test source file`,
@@ -372,21 +392,25 @@ function validateE2eMetadata({
                 `${filename}: E2E scenario '${scenario}' must be a kebab-case slug`,
             );
         }
+
         const documentedScenario = new RegExp(
             `(?:^|[^a-z0-9-])\`${escapeRegularExpression(scenario)}\`(?:$|[^a-z0-9-])`,
         );
         const coverageLine = coverageSection
             .split('\n')
             .find((line) => documentedScenario.test(line));
+
         if (!coverageLine) {
             throw new Error(
                 `${filename}: E2E coverage must document scenario '${scenario}' in backticks`,
             );
         }
+
         const explanation = coverageLine
             .replace(/`[a-z0-9]+(?:-[a-z0-9]+)*`/g, '')
             .replace(/[|#*_`:[\](){}>-]/g, '')
             .trim();
+
         if (!/[\p{L}\p{N}]{3}/u.test(explanation)) {
             throw new Error(
                 `${filename}: E2E coverage must explain what scenario '${scenario}' proves`,
@@ -435,6 +459,7 @@ export function validateE2eTestFiles(e2e, testFiles, filename) {
                 `${filename}: E2E test file '${testPath}' does not exist`,
             );
         }
+
         const revisionMarker = `@user-flow-revision ${e2e.feature} ${e2e.revision}`;
         const revisionCount = lineMarkerCount(content, revisionMarker);
         if (revisionCount !== 1) {
@@ -446,16 +471,21 @@ export function validateE2eTestFiles(e2e, testFiles, filename) {
         let fileScenarioCount = 0;
         for (const line of content.split('\n')) {
             const marker = featureMarker.exec(line.trim());
-            if (!marker) continue;
+            if (!marker) {
+                continue;
+            }
+
             const scenario = marker[1];
             if (!scenarioCounts.has(scenario)) {
                 throw new Error(
                     `${filename}: '${testPath}' marks undeclared scenario '${scenario}'`,
                 );
             }
+
             scenarioCounts.set(scenario, scenarioCounts.get(scenario) + 1);
             fileScenarioCount += 1;
         }
+
         if (fileScenarioCount === 0) {
             throw new Error(
                 `${filename}: '${testPath}' must contain at least one declared scenario marker`,
@@ -495,9 +525,11 @@ export function validateE2eMarkerRegistry(
                     `${diagnosticPath}: malformed user-flow marker '${escapedDiagnostic(normalizedLine)}'`,
                 );
             }
+
             const feature = scenario?.[1] ?? revision?.[1];
-            if (!feature || (selectedFeature && feature !== selectedFeature))
+            if (!feature || (selectedFeature && feature !== selectedFeature)) {
                 continue;
+            }
 
             const e2e = e2eByFeature.get(feature);
             if (!e2e) {
@@ -505,16 +537,19 @@ export function validateE2eMarkerRegistry(
                     `${diagnosticPath}: user-flow marker references unknown current guide '${feature}'`,
                 );
             }
+
             if (!e2e.testPaths.includes(testPath)) {
                 throw new Error(
                     `${diagnosticPath}: user-flow marker for '${feature}' is orphaned because the guide does not declare this test file`,
                 );
             }
+
             if (scenario && !e2e.scenarios.includes(scenario[2])) {
                 throw new Error(
                     `${diagnosticPath}: user-flow marker references undeclared scenario '${scenario[2]}' for '${feature}'`,
                 );
             }
+
             if (revision && revision[2] !== e2e.revision) {
                 throw new Error(
                     `${diagnosticPath}: user-flow revision '${revision[2]}' is stale; expected '${e2e.revision}'`,
@@ -537,8 +572,10 @@ async function readRepositoryTestFile(testPath, filename) {
             if (error && typeof error === 'object' && error.code === 'ENOENT') {
                 return undefined;
             }
+
             throw error;
         }
+
         if (pathStats.isSymbolicLink()) {
             throw new Error(
                 `${filename}: E2E test path '${testPath}' must not contain symbolic links`,
@@ -559,16 +596,19 @@ async function readRepositoryTestFile(testPath, filename) {
             `${filename}: E2E test path '${testPath}' resolves outside the repository`,
         );
     }
+
     if (!candidateStats.isFile()) {
         throw new Error(
             `${filename}: E2E test path '${testPath}' must be a regular file`,
         );
     }
+
     if (candidateStats.size > maximumTestFileBytes) {
         throw new Error(
             `${filename}: E2E test path '${testPath}' exceeds ${maximumTestFileBytes} bytes`,
         );
     }
+
     return readFile(candidateRealPath, 'utf8');
 }
 
@@ -586,16 +626,19 @@ export function validateGuide(content, filename, index) {
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(feature)) {
         throw new Error(`${filename}: 'feature' must be a kebab-case slug`);
     }
+
     if (filename !== expectedFilename) {
         throw new Error(
             `${filename}: filename must match feature slug '${expectedFilename}'`,
         );
     }
+
     if (!allowedStatuses.has(status)) {
         throw new Error(
             `${filename}: 'status' must be current, draft, or retired`,
         );
     }
+
     assertValidDate(lastVerified, filename);
     assertUnique(surfaces, 'surfaces', filename);
     assertUnique(sourcePaths, 'source_paths', filename);
@@ -605,6 +648,7 @@ export function validateGuide(content, filename, index) {
         if (!heading) {
             throw new Error(`${filename}: unsupported surface '${surface}'`);
         }
+
         assertSection(sections, heading, filename);
     }
 
@@ -615,9 +659,11 @@ export function validateGuide(content, filename, index) {
     if (!body.startsWith(`# ${title}\n`)) {
         throw new Error(`${filename}: first heading must be '# ${title}'`);
     }
+
     for (const heading of alwaysRequiredHeadings) {
         assertSection(sections, heading, filename);
     }
+
     if (!hasIndexLink(index, filename)) {
         throw new Error(`${filename}: guide is missing from README.md index`);
     }
@@ -642,8 +688,11 @@ export async function readE2eTestFiles(e2e) {
     const testFiles = new Map();
     for (const testPath of e2e.testPaths) {
         const content = await readRepositoryTestFile(testPath, e2e.feature);
-        if (content !== undefined) testFiles.set(testPath, content);
+        if (content !== undefined) {
+            testFiles.set(testPath, content);
+        }
     }
+
     return testFiles;
 }
 
@@ -671,6 +720,7 @@ async function scanTestFiles(directory, relativeDirectory = '') {
         if (error && typeof error === 'object' && error.code === 'ENOENT') {
             return files;
         }
+
         throw error;
     }
 
@@ -680,15 +730,20 @@ async function scanTestFiles(directory, relativeDirectory = '') {
             : entry.name;
         const absolutePath = join(directory, entry.name);
         if (entry.isDirectory()) {
-            if (ignoredTestScanDirectories.has(entry.name)) continue;
+            if (ignoredTestScanDirectories.has(entry.name)) {
+                continue;
+            }
+
             for (const [path, content] of await scanTestFiles(
                 absolutePath,
                 relativePath,
             )) {
                 files.set(path, content);
             }
+
             continue;
         }
+
         if (
             entry.isFile() &&
             /\.(?:e2e|spec|test)\.[cm]?[jt]sx?$/.test(entry.name)
@@ -697,9 +752,13 @@ async function scanTestFiles(directory, relativeDirectory = '') {
                 relativePath,
                 'test scan',
             );
-            if (content !== undefined) files.set(relativePath, content);
+
+            if (content !== undefined) {
+                files.set(relativePath, content);
+            }
         }
     }
+
     return files;
 }
 
@@ -732,6 +791,7 @@ export async function checkUserFlowGuides(options = {}) {
                 `docs/user-flows/${options.feature}.md does not exist`,
             );
         }
+
         throw new Error(
             'docs/user-flows must contain at least one feature guide',
         );
@@ -748,6 +808,7 @@ export async function checkUserFlowGuides(options = {}) {
                 filename,
                 index,
             );
+
             if (guide.e2e) {
                 e2eByFeature.set(guide.feature, guide.e2e);
                 validateE2eTestFiles(

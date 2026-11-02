@@ -2,16 +2,16 @@ import type { FlashcardItem, Presentation } from '../../types';
 import type { ReactNode } from 'react';
 import { Undo2 } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button, InlineAlert, Skeleton } from '@/fsd/shared/ui';
+import { Button, InlineAlert } from '@/fsd/shared/ui';
 import type { usePracticeSession } from '../../hooks/use-practice-session';
 import type { useTrainingDisplay } from '../../hooks/use-training-display';
 import { ConflictNotice } from '../conflict-notice/conflict-notice';
-import { Flashcard } from '../flashcard/flashcard';
-import { RatingButton } from '../rating-button/rating-button';
 import { ResultsPanel } from '../results-panel/results-panel';
 import { RetryButton } from '../retry-button/retry-button';
 import { SessionStatus } from '../session-status/session-status';
 import styles from './practice-content.module.css';
+import { CardSkeleton } from './card-skeleton';
+import { PracticeCardPhase } from './practice-card-phase';
 
 export function PracticeContent({
     session,
@@ -134,62 +134,15 @@ export function PracticeContent({
                 )}
                 {state.phase === 'loading' && <CardSkeleton />}
                 {cardPhase && (
-                    <>
-                        <div dir='ltr' className={styles.cardLayout}>
-                            <RatingButton
-                                rating='again'
-                                onRate={session.rate}
-                                disabled={blocked}
-                                loading={saving === 'again'}
-                            />
-                            <div className={styles.cardSlot}>
-                                {session.currentItem ? (
-                                    <Flashcard
-                                        key={`${state.round}-${state.index}-${session.currentItem.entryId}-${session.currentItem.learningVersion}`}
-                                        renderAudio={renderAudio}
-                                        item={session.currentItem}
-                                        face={state.face}
-                                        position={position}
-                                        onFlip={session.flip}
-                                        onRate={session.rate}
-                                        ratingDisabled={blocked}
-                                        flipDisabled={flipDisabled}
-                                        recoverSwipe={Boolean(
-                                            state.conflict ||
-                                            state.pending?.status === 'error',
-                                        )}
-                                    />
-                                ) : (
-                                    <div className={styles.loadingSlot}>
-                                        <CardSkeleton />
-                                    </div>
-                                )}
-                            </div>
-                            <RatingButton
-                                rating='known'
-                                onRate={session.rate}
-                                disabled={blocked}
-                                loading={saving === 'known'}
-                            />
-                        </div>
-                        <div dir='ltr' className={styles.mobileRatings}>
-                            <RatingButton
-                                mobile
-                                rating='again'
-                                onRate={session.rate}
-                                disabled={blocked}
-                                loading={saving === 'again'}
-                            />
-                            <RatingButton
-                                mobile
-                                rating='known'
-                                onRate={session.rate}
-                                disabled={blocked}
-                                loading={saving === 'known'}
-                            />
-                        </div>
-                        <div className={styles.undo}>{undo}</div>
-                    </>
+                    <PracticeCardPhase
+                        session={session}
+                        renderAudio={renderAudio}
+                        blocked={blocked}
+                        saving={saving}
+                        position={position}
+                        flipDisabled={flipDisabled}
+                        undo={undo}
+                    />
                 )}
                 {state.phase === 'results' && (
                     <ResultsPanel
@@ -237,21 +190,5 @@ function SkipNotice({
         >
             {t('training.removed')}
         </InlineAlert>
-    );
-}
-
-function CardSkeleton() {
-    const { t } = useI18n();
-
-    return (
-        <div className={styles.skeleton}>
-            <div className={styles.skeletonCard}>
-                <Skeleton width='30%' />
-                <div className={styles.skeletonFields}>
-                    <Skeleton lines={3} />
-                </div>
-            </div>
-            <p className={styles.saving}>{t('training.preparing')}</p>
-        </div>
     );
 }

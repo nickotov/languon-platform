@@ -27,7 +27,10 @@ export function HomePage({ dateLabel }: { dateLabel?: string }) {
                 {dateLabel && <p className={styles.date}>{dateLabel}</p>}
                 <h1 className={styles.title}>{greeting}</h1>
             </header>
-            <PortraitEntryCard variant='dashboard' requestWithSession={requestWithSession} />
+            <PortraitEntryCard
+                variant='dashboard'
+                requestWithSession={requestWithSession}
+            />
         </main>
     );
 }

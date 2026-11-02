@@ -3,7 +3,11 @@ import type { ProviderPricePublishRequest } from '@languon/contracts';
 export interface ProviderPriceTarget {
     providerId: string;
     modelId: string;
-    meter: 'text-tokens' | 'speech-characters' | 'speech-tokens';
+    meter:
+        | 'text-tokens'
+        | 'speech-characters'
+        | 'speech-tokens'
+        | 'audio-duration';
 }
 
 export type FetchedProviderPrice = Omit<

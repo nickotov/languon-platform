@@ -22,11 +22,13 @@ export function displayItem(item: SentenceLibraryItem): SavedSentence {
         version: item.version,
     };
 }
+
 export function displayDetail(detail: SentenceLibraryDetail): SavedSentence {
     const value = displayItem(detail.item);
     value.reference = detail.referenceTranslation;
     value.enrichment =
         detail.exercise.generationPolicyVersion === 2 ? 'rich' : 'legacy';
+
     for (const hint of detail.exercise.hints) {
         const segments = detail.exercise.segments.filter(
             (s) =>
@@ -41,21 +43,31 @@ export function displayDetail(detail: SentenceLibraryDetail): SavedSentence {
         ) {
             let end = first.end;
             for (const next of segments.slice(1)) {
-                if (next.start !== end) break;
+                if (next.start !== end) {
+                    break;
+                }
+
                 end = next.end;
             }
+
             source = Array.from(detail.item.sourceText)
                 .slice(first.start, end)
                 .join('');
         }
+
         const display: LibraryHint = {
             id: hint.id,
             source,
             target: hint.text,
             kind: /\s/.test(source) ? 'phrase' : 'word',
         };
-        if (hint.kind === 'contextual') value.contextHints.push(display);
-        else value.dictionaryHints.push(display);
+
+        if (hint.kind === 'contextual') {
+            value.contextHints.push(display);
+        } else {
+            value.dictionaryHints.push(display);
+        }
     }
+
     return value;
 }

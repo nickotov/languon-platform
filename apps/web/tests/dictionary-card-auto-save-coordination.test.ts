@@ -41,6 +41,7 @@ describe('editor proposal ownership during polling', () => {
         state.cardAuthoringAction.error = new ActionConsentCancelledError();
         expect(buildAiValue(state, vi.fn())?.error).toBeNull();
     });
+
     it('offers explicit reload for a changed accepted revision rather than claiming refresh failed', () => {
         const cause = new DictionaryApiError(409, {
             code: 'version_conflict',
@@ -51,11 +52,13 @@ describe('editor proposal ownership during polling', () => {
             new CardAutoSaveError(cause, true, true),
             (key) => key,
         );
+
         expect(feedback.conflict).toBe(true);
         expect(feedback.message).not.toBe(
             'dictionary.card.ai.savedRefreshFailed',
         );
     });
+
     it('accepts AI provenance when manually saving a corrected latest existing-card generation', () => {
         expect(shouldAcceptAuthoringProposal(true, 1, false, true)).toBe(true);
         expect(shouldAcceptAuthoringProposal(false, 1, false, true)).toBe(true);
@@ -65,16 +68,20 @@ describe('editor proposal ownership during polling', () => {
         expect(shouldAcceptAuthoringProposal(true, 1, false, false)).toBe(
             false,
         );
+
         expect(shouldAcceptAuthoringProposal(true, 0, false, false)).toBe(
             false,
         );
+
         expect(shouldAcceptAuthoringProposal(false, 1, true, true)).toBe(true);
     });
+
     it('does not relabel the retained proposal with the just-completed successor job ID', () => {
         const ai = buildAiValue(
             model({ id: 'new-job', state: 'review' }, 'prior-job'),
             vi.fn(),
         );
+
         expect(ai?.job?.id).toBe('new-job');
         expect(ai?.proposalJobId).toBe('prior-job');
         expect(ai?.proposal).toMatchObject({ id: 'proposal-prior-job' });
@@ -85,6 +92,7 @@ describe('editor proposal ownership during polling', () => {
             model({ id: 'new-job', state: 'review' }, 'new-job'),
             vi.fn(),
         );
+
         expect(ai?.proposalJobId).toBe('new-job');
         expect(ai?.proposal).toMatchObject({ id: 'proposal-new-job' });
     });
@@ -95,6 +103,7 @@ describe('editor proposal ownership during polling', () => {
                 model({ id: 'new-job', state }, 'prior-job'),
                 vi.fn(),
             );
+
             expect(ai?.job?.state).toBe(state);
             expect(ai?.proposalJobId).toBe('prior-job');
             expect(ai?.successorActive).toBe(state === 'running');
@@ -106,6 +115,7 @@ describe('editor proposal ownership during polling', () => {
             model({ id: 'new-job', state: 'review' }, null),
             vi.fn(),
         );
+
         expect(ai).not.toHaveProperty('proposalJobId');
         expect(ai?.proposal).toBeNull();
     });

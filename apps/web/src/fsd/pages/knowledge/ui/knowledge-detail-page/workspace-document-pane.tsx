@@ -4,6 +4,7 @@ import styles from './knowledge-detail-page.module.css';
 
 export function WorkspaceDocumentPane({ children }: { children: ReactNode }) {
     const placement = useCompanionLayout();
+
     return (
         <div
             className={styles.documentPane}

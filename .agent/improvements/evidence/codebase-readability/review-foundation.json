@@ -1,0 +1,652 @@
+{
+  "owner": "frontend-foundation-independent-review",
+  "reviewStage": "initial-source-review",
+  "independent": true,
+  "base": "252de64cc8fecfb9a213e5ec1fdac3b8e72f4caf",
+  "reviewedAt": "2026-11-01T00:03:06.592466+00:00",
+  "scopeManifest": "/private/tmp/languon-bl019-web-features-changed.json",
+  "scopeCount": 77,
+  "trackedChangedCount": 43,
+  "newHelperCount": 34,
+  "sourceWrites": false,
+  "verdict": "No material source findings; completion/evidence approval pending final gates.",
+  "findings": [],
+  "entries": [
+    {
+      "path": "apps/web/src/fsd/entities/knowledge/api/knowledge-media-api.ts",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "293b2df2b5f07cdc30844497bf3802fb9d1f0ae132ac053be8351a7bcc908eb9",
+      "afterHash": "433411da674db9462691fee88b6b6fcc5102e6024c4f5c83879ba474d4dc2a97",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "MIME alias helper preserves WAV/MP3 normalization, validation and upload transport order."
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-block.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "bd97e4a6e6986b96b917aa0b3537f387f2be6c2f75b650a8765cb3e3efe3d7ec",
+      "afterHash": "7fb82655b43e8c52a319c327e340e884400b7813828abb465f3fe2d569ec4f05",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Exercise results extracted with original result/hint/error/reference predicates, DOM and callbacks."
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-results.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "b31f211ce5cd1c8092dcba49f7a872eb69c5cdc939bf9d06709f30be1eabd490",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Results section retains answer/reference/hint conditional order and parent mutation ownership."
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/media-block.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "44d91c4c9100cbdfa1f4ed477b362fbf21e2330c88f9ebd96da77a23f3ffe976",
+      "afterHash": "b17f006ce50bb7dad571888c8f4ed645e8d6e83ddd9545f57d8b63199fa66f1b",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Explicit audio source branches retain the original source precedence and rendered controls."
+    },
+    {
+      "path": "apps/web/src/fsd/entities/texts/ui/text-status-badge/text-status-badge.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "189014315ba68451bbe69cd0970fcddab4552a85d0e63f27ce1cb96f2afe41ab",
+      "afterHash": "74b6efeea72b9b27095e3595497134e6a06565b917feefa1b24b7f81dfea7623",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Status label/icon/tone branches preserve all status outcomes."
+    },
+    {
+      "path": "apps/web/src/fsd/features/account-controls/ui/account-deletion-action.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "a87756daca7216e0d3f7d72c0819e6004a222cde9928124f78e675d635e4e87d",
+      "afterHash": "9f0d14d94866c865b0f43005b937e1e1cec14ced44b3bca0c37608d1ad0b657e",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Named deletion handlers retain confirmation, password, pending guards and mutation timing."
+    },
+    {
+      "path": "apps/web/src/fsd/features/account-controls/ui/account-handle-settings.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "28cefc24d4f1dd9c6e37329e18e6840489a243d97890049c49fd9c0ae2a8e19e",
+      "afterHash": "553edee221a0240c849ac3add0bcad05130c035268f3a1531b0514456e0af930",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Named handle input binding retains captured value, form submission and pending behavior."
+    },
+    {
+      "path": "apps/web/src/fsd/features/auth/ui/capability-state.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "2eac6f3629db0b33c246defbbbe4ca960a21dedc68595351ddb0befa7d6a5d8e",
+      "afterHash": "e7f7087cceb2f5517d05e0ef84ff01ba3fb9f14e8600425e3eef19a74b5b4bfb",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Capability message precedence remains unchanged."
+    },
+    {
+      "path": "apps/web/src/fsd/features/auth/ui/login-form.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "5864697be9f5090ae21da87338604f51b65b93fead607b62cf412550735c53e2",
+      "afterHash": "4774ffd4e92d78cf49b0ddd1979f14938fdef970a6c4c1d06a7bd9e09ed60a48",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Named login controls retain credential values, form flow and event timing."
+    },
+    {
+      "path": "apps/web/src/fsd/features/auth/ui/password-field.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "a51912e91ce996588e94abb125acda744e9a34accccae87d51658220f41c8ae9",
+      "afterHash": "2aefba9ca995b0e84b986577be5cc32028e898c6217d6d594dc40b76b0af3045",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Password visibility handler preserves native input identity and accessibility."
+    },
+    {
+      "path": "apps/web/src/fsd/features/auth/ui/security-settings.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "053689a531f8e449a5ba5a7da689e20fee7230721a12d62c9e4b0e50d8394e65",
+      "afterHash": "c4c47fa62aaf409b9d6a1be206faf83eb6121c0c95c0a18b2cc27db06afbc46b",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Auth state/query/mutation/cache ownership and hook order remain in parent; extracted panels retain passkey/security form semantics."
+    },
+    {
+      "path": "apps/web/src/fsd/features/auth/ui/verify-email-form.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "5451d338fd516fd1e344566d74ffe7db7ed12ac3b43ba0a491a5c8d55574113c",
+      "afterHash": "9c2533b024a8557dc0d10598bcc5e853f3ecceb79d5674cd88ee52aac737c145",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Verification/resend handlers retain validation, request ordering and retry behavior."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-batch-generation/ui/dictionary-batch-generation-panel/dictionary-batch-generation-panel.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "2ea8767501dc198f4fb16e1c81eeab87ae931f67fa29db9d1c3a5f27f30db663",
+      "afterHash": "cc64372a8547e7a1ecf648b91ed8577dfe04a10ecf1c480aa41e0b3589b77302",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Batch owner retains hydration effects and async authority; candidate policy/row extraction preserves fields, keys and commit payloads."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-card-authoring/hooks/use-authoring-auto-save.ts",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "d5be54746e34b3dae6888604cc19cea4e8cff1d394c9c6bddcad628e2a07eb10",
+      "afterHash": "05d625fe32fbd6ef0ec26bf6ff79c18b70fff6a16569957e2570a172b79bdb62",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Auto-save failure helper retains reload-required priority, saved fallback and existing freeze/retry behavior."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-card-authoring/lib/authoring-job-cleanup.ts",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "3be6c4f9fbd4ee9a72babfe9149d8e6b42634e231c8ba111b8046cc12b18bd38",
+      "afterHash": "77266c273c32065ba70f3a45db037fa8148fdc39e678619e5853c36aedb4efda",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Cleanup plan keeps active/review/fallback job precedence and cancellation/discard IDs."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-card-authoring/ui/authoring-field/authoring-field.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "454092f057608d2136e5252eb9109d551831ec317759a0b064f5e96eff8823ff",
+      "afterHash": "47508364f98d6cb06e6f242c037bf63b43dccf8e84d6c574f4402824c454b2f2",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Field language helper retains source/target/explanation-role resolution."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-card-authoring/ui/dictionary-card-form/dictionary-card-form.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "3418050c4d0c462656fec3a1599c91da751c67b6db7e50a85ee1547dd15191c6",
+      "afterHash": "68a696cc4905ae9b6a7b17b46388420c1f6a0a7e6a83399fb75545a2acd75d31",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Optional field section preserves field order and parent draft/form authority."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-document-generation/ui/dictionary-document-generation-panel/dictionary-document-generation-panel.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "1fdaf9f21a4c95c0cb3b75f68cb0fb3175be5fdd56c3c0047875f18372bf344d",
+      "afterHash": "250b8cec15fa7cacf3e09adcb15e3d74b9de449e4df379b0abed78d2099af091",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Document owner retains upload/hydration/effects and async authority; local candidate policy preserves document-specific payload rules."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-generation/lib/review-fields.ts",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "a7d29a678857b66ad09bd29a3b8068dcbabb0ec6c1e9610bcb0be85512363bee",
+      "afterHash": "09f09e3fbad77234f6d8bb699637c981052068f26a35e037f71bfa516b3dfe55",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Explicit review field decisions preserve language roles and existing values."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-generation/ui/review-footer/review-footer.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "ac695eed574a3e5c41906d27e1761321c6631960c7dc7d3cebaf9657291ade74",
+      "afterHash": "c25b0569e60a4acbecc508f83a3ebf096158f5766e9072d31450c0a2053eb4ed",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Named footer handlers retain conditional actions, locking and callbacks."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-interchange/ui/dictionary-export-panel/dictionary-export-panel.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "8c7a52200dcfccebe8135150a5a344ebed0897e63a6a4e465a2697baec14fffe",
+      "afterHash": "6206f2f9c44c3f8f30cb73adfe3114b2e186beb3ef4fe791d5c627b4b49ba338",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Export option section retains keyed rows, selection and rejected-promise handling."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-interchange/ui/dictionary-import-panel/dictionary-import-panel.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "971e9fd2928ccd8a890a0bac2186881c9991f5f6aede7094a0247051c1f15174",
+      "afterHash": "f64e1ba48481c8bf3cb802bfc4485eb9c354b1e1fbd262955e11bf797e587d22",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Import preview extraction keeps row keys and selection snapshots; parsing and upload lifecycle stay in owner."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-library/ui/dictionary-library/dictionary-library.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "8bf23c7070c7d138bb8fa6d6ff8243f526f2536f6c11c30d6ee3f41a53ea0bac",
+      "afterHash": "f15598b89cdb645194cc9c7c8f52b66d119fd654470fa6f5aaa916d9e83afd28",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Archived toolbar extraction preserves selection count, disabled actions and recovery state."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-sharing/ui/dictionary-sharing/dictionary-sharing.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "ad4640413adb653cb50d5cce52d9b70cf46acc684ce9f46d89349c4b8a2330a8",
+      "afterHash": "b7f4dd2ebd7fafdaf80793de140766561ed1c1e3af2ac24d354b41ad0ac73b74",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Named sharing controls preserve captured inputs and asynchronous action boundaries."
+    },
+    {
+      "path": "apps/web/src/fsd/features/flashcard-training/ui/practice-content/practice-content.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "6bf6f7f64196d82aa18b7960e41dfa1928699e950d18e6eb097ee28bb07ce895",
+      "afterHash": "a21a8e8812451a20e50ce25ac310037cac51daea28226ee639e5ffea44ff68e7",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Card-phase extraction preserves round/card/version keys, flipping, rating, undo and audio conditions."
+    },
+    {
+      "path": "apps/web/src/fsd/features/auth/ui/security-password-panel/security-password-panel.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "7966a8dabfd6745b6465f36393bc3d854335145d1904c9dc798bcff0b08c5a1b",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Password panel keeps existing form ID, required fields, pending guards and parent mutation handlers."
+    },
+    {
+      "path": "apps/web/src/fsd/features/auth/ui/security-provider-methods/security-provider-methods.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "b6940cd976a90717de41b4857c37a59a0b618a8b71c7c20c16f2454772d84635",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Provider panel preserves capability/auth-provider rendering without changing auth policy."
+    },
+    {
+      "path": "apps/web/src/fsd/features/auth/ui/security-sessions-panel/security-sessions-panel.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "5c357bafc765f51034af36131a9b287575f78733ddd7602a6fec59ed0baab4ec",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Session panel preserves labels, expiration visibility, logout guards and callbacks."
+    },
+    {
+      "path": "apps/web/src/fsd/features/auth/ui/security-passkeys-panel/security-passkeys-panel.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "5ea6b30250cce81bf4897c2b542d88f866b5d73c563e2e569f329ecc40ef0f8f",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Passkey panel retains registration guards, empty/error states and parent query/mutation authority."
+    },
+    {
+      "path": "apps/web/src/fsd/features/auth/ui/passkey-row/passkey-row.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "ece36be9aa990eb19929e7a22195eabe24bcba583e98a38bb9fc8ce1e02f3afc",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Passkey row preserves ID key, metadata, rename/revoke capture and pending guards."
+    },
+    {
+      "path": "apps/web/src/fsd/features/auth/ui/passkey-rename-dialog/passkey-rename-dialog.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "24629d969a20a73fb202e2e75034b297744207f6283d90e6e94414c38afbc762",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Rename dialog keeps form ID, autofocus, maximum length, submit and dismiss semantics."
+    },
+    {
+      "path": "apps/web/src/fsd/features/auth/ui/passkey-revoke-dialog/passkey-revoke-dialog.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "aade2de250fb1f73f4b586e70c5936ff40d09a15f3ccaa956e41f35caeb46617",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Revoke dialog keeps selected passkey name fallback, pending and cancellation semantics."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-batch-generation/lib/candidate-review.ts",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "6620c730fb03a6bd678314b53faf7eaad71643d78fa3a10f30c273e22382b665",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Batch policy retains field enablement, language coupling, disabled-null commit normalization and source/translation requirements."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-batch-generation/ui/dictionary-batch-generation-panel/candidate-row.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "6b206c0f70e3c63b2cd5b6959b9c4a949b15444961c14f0c5c8373b635cb6fbb",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Batch row retains input versus textarea choice, rows attribute, warning placement, field IDs and selection/removal timing."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-document-generation/lib/candidate-review.ts",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "0fd6d1849f34f713069a583e62759b7eb01d26e79c284ad538925340e0620fdf",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Document-local policy retains its distinct field enablement/language/commit rules without sibling-feature imports."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-document-generation/ui/dictionary-document-generation-panel/candidate-row.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "3f9a2232a376db35db01c1ac3e39f886e67152c6764f61e2d43717c7921cb87f",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Document row retains input/textarea props, IDs, warnings and field update normalization."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-card-authoring/lib/authoring-fields.ts",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "aecbcc568452f57f1ffd8b426cd4efd9ecec118145b2590925b13dc5e6bfaf41",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Pure authoring helpers retain language fallback and optional-field ordering."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-card-authoring/ui/dictionary-card-form/optional-card-fields.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "4067322a2fe2a757f08590248ae864d24ad41f7edfa6495a6bfa0b7c5ddb6b5e",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Optional fields map retains field keys and existing render function; no draft state relocated."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-library/ui/dictionary-library/archived-dictionary-selection.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "0f8a0b75c287048dbbcfe00d3f675a05884b55e4cc9489f1aa71d136ec36bf63",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Archived selection controls retain counts, native checkbox state, action guards and callbacks."
+    },
+    {
+      "path": "apps/web/src/fsd/features/dictionary-interchange/ui/dictionary-import-panel/import-preview-rows.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "7e9e0e91b52757a6568825a9501c8ee23e722e8793debb2831fad8c32e60ae9a",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Preview rows retain index keys, field bindings, selection state and native event value snapshot."
+    },
+    {
+      "path": "apps/web/src/fsd/features/flashcard-training/ui/practice-content/practice-card-phase.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "db29f148da933b8b24518e102b5a73f358ed753a1b6d8da47b3d6e4eec1f2286",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Practice card phase retains exercise key, flip/rating/undo conditions and audio callback behavior."
+    },
+    {
+      "path": "apps/web/src/fsd/features/flashcard-training/ui/practice-content/card-skeleton.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "b4908219b895d0f01ec56182bd6f819d54dad8a3f2c260ab6d46ff14f30e8b2e",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Skeleton retains original repeated nodes and translated accessible label."
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/lib/summary.ts",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "f76577c58c5de5ecd1881681f70d66ca75815bb9ce3f9d81496b8df1801be4cd",
+      "afterHash": "e5a6c4965e4b1cbc8cf4aa8fb15b0ae734f0cf86e0cb3b4378fcb983d69348e7",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Frequency summary preserves default and sometimes/helpful classification precedence."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-library/ui/archive-confirmation/archive-confirmation.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "85b96522c2ea884aece1aab018e7edec17e6233b6a87b41b659700213ea510f1",
+      "afterHash": "4b29f2dfe67aebc30ba6d39468b6049f47bd3b0b843a635a0c9eb8c88ca3786b",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Archive action/error branches preserve value/conflict/rate-limit precedence and optional actions."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-library/ui/library-list/library-list.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "296a9b6ddb2273943c7314fa346fe99a6a1cc68f4b80204a78875b73654a56dd",
+      "afterHash": "53e5aa6e43813fd4e8afc455d1ba7ff2fd4004d753fa294be92311cdeeb7ec75",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "List empty-state decision and toolbar extraction preserve list keys, selection and states."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-library/ui/library-states/library-states.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "c507dd63ea7e3df661678704828efc6ae1fb59e1bd53cbcc403b1496fc711049",
+      "afterHash": "a5bd7ba658b7853affd988f35fb2fad77f085428b553792100fe2b9a03f51693",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Explicit library states preserve copy, icons, grouping and actions."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-library/ui/sentence-detail/sentence-detail.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "29ead5f2575b7b22d25819f6fa0701d7d2458e02d39748850996cda991cba804",
+      "afterHash": "3173f93490983c9dd41188dfd1562f6cdc4b2ec79d99e504ba0dc75e0d05b7b2",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Detail content extraction retains parent expansion/dialog state and audio callback guards."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-library/ui/sentence-library/sentence-library.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "b1db1a2cd3ac3f76f07a61bb011b4ac6b7a9675965216f224d368e422ae9563f",
+      "afterHash": "abf0cbf7336d9f25e36a76ee74561f2f2f14be384b6e64a225b9f440542d1a08",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Library header extraction retains controls and parent state/mutation ownership."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-library/ui/library-list/library-selection-toolbar.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "da7b401d75326d96e6a5c844a70c7f5b340ed11f395fd0736fdef437b54eb4f5",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Selection toolbar narrows controller props while retaining count/selection/action guards."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-library/ui/sentence-detail/sentence-detail-content.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "a1720bae479609f8a52907446285cfef8f7f5db9fabb62aed0a64c6d30d9e349",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Detail content retains DOM, semantic text/audio nodes and parent-owned expansion state."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-library/ui/sentence-library/sentence-library-header.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "abcfc4b310acc915920caf8337b6dafe0d3cc6f848a72c70b9389e389a89c99a",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Header preserves search/filter/sort/archive controls and event value semantics."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-content/sentence-content.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "9dd06f296a5d6d981069ada8c6e8755875da43c8f9777d766d5bcc44456a41f3",
+      "afterHash": "e681a377eb5c7d9a0d3ca031de86db4f8c13ec8dba0bebe45cca20717ccaa94f",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Correction section and feedback helper retain original UTF16 split behavior, quote handling and segmentAnswer re-export."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-hints/sentence-hints.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "d14722d519fbd1f12fe926d94b6ddcf9d12d77baf32d1808acc7086c8def388d",
+      "afterHash": "c6042040cb879f109a1c527e1603fd1c99c1f70eec8b46769e55f99c789f054c",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Hint extraction preserves span roles, tab indices, ARIA, ref-map cleanup, hover timer and close/focus authority."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-history/sentence-history.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "89d9b6586d93129db77de0965734f29214d5b3d615e2839ef861f89c033b8610",
+      "afterHash": "c7439c688f2c826f069f2bc18632602d42cccc77eb3b534f434188c4ac5ae200",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Retry branching retains empty-row refresh versus active-tab loading behavior."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-job-status/sentence-job-status.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "20887e84ea8d67245cc844d00daa2c1e010662ad06724dc0789c0f8aae82974a",
+      "afterHash": "1df4461647aae9764e2a0574ed3edb606e04f538e3538705849e8d39cb5d98ff",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Status title preserves stopping, checking and preparing priority."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-practice-session/sentence-practice-session.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "d3550b63f909a62b4a4d82bbec97b4f6162f7b64227b1bf4f93a3e12b980b7f7",
+      "afterHash": "e08cc5e66fb4ecaccba8550cb9b58e4666ced806cbf27fe943539709c4cc94cf",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Lifecycle coordinator retains original hook/effect order/dependencies, draft/frame refs, fullscreen timing and close/focus authority."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-hints/hint-popover-content.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "a6b1d965c102b5da40d9f11e10da20e36ccaab037f0c9a5138d874c89263bc42",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Popover content forwards actual content ref without an extra DOM wrapper and preserves hint controls."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-hints/hint-word.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "4d2b86846edd876878e0221342aa8def404d0212232df72f807db9cc6f8dbca6",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Hint word retains key, class, roles, ARIA, hover/focus handlers and parent ref registration."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-practice-session/sentence-earlier-attempts.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "39039eaa4b5fe8cc4d9981248fb743fc7f0120aaccec5822ed2615a551aca09d",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Earlier attempts retains exercise key, details disclosure state, retry and audio guards."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-practice-session/sentence-practice-exercise.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "19cb21e969d11cc4f657dc2c1a8e476ffc722e8ac7c55e0cf1e12ae7c51c3335",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Exercise section retains textarea ref, draft limit, answer panel keys and native form controls."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-practice-session/sentence-practice-notices.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "18471c214b8bb0dd7cdd5507322a59c8a2867bcf8622d02da4846589a47ad1e3",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Notices retain action/error/job/fallback order and optional retry/preferences callbacks."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-practice-session/sentence-practice-reference.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "14d2b9c485afc70f96ae92ddb35102f1860823a517716afb4f592c800a8c80b6",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Reference section retains comparison priority and reference key/audio guards."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-content/ai-feedback-corrections.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "48381db7d09353c773ce017a150323397368b76b5e76c34301e168077853916c",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Correction rows preserve lang, IDs, keys, segment order and correction toggle behavior."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/lib/sentence-feedback.ts",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "04bd08f787917a47a2eaaec59b9d1b7d5006c7e28f52df923df5f23eb9772919",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Feedback segmentation preserves UTF16 split, quote detection and first-segment target resolution."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-preparation-notice/sentence-preparation-notice.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "ea37e180e9c088c6cf40aae1fb0cc52d00b5154ca550edb307b8cc2d8f2e925b",
+      "afterHash": "cd0ff615a5a61cb0a8d82a5cfe0b87dc4a431d92eaebb7d0d33d3b91a24987f7",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Preparation notices retain user/capacity/provider/failure and partial-completion priority."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-preparation-progress/sentence-preparation-progress.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "507042330afac919349466899bbaadda9627ca5a9a50e1f59ef16739bfb00588",
+      "afterHash": "a2716c04b8c9d0075fb0d92f365c117a5395107aff998faf9eccb81e93f8a747",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Preparation progress retains run-missing busy state, queued/running job and stopping decisions."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-preparation-rounds/sentence-preparation-rounds.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "be7fec1e325f461680c4134fb7b730442d0d9d2e5087e02af2a0c8a1f841a815",
+      "afterHash": "e83311c4af8eea5700813bc562ae33059e6f9d082d9b92811c753cdca5b3c3ff",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Round extraction retains round keys and completed/partial/pending conditions."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-reference-comparison/sentence-reference-comparison.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "8f9444b346ff5e61cd1c4f11db5b815ffcd833de3dd19422132bdc558c912100",
+      "afterHash": "d7c2fa3cf23feb1f18eb5d8cd0438f0dd7b02bf5ae7ecee1596321004ef34286",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Comparison toggle retains functional updates and match/difference/reference rendering."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-session-results/sentence-session-results.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "a0fef6ca892b39c8ffac18d2615f66afeb7f140f22258a46720f12a627f228ad",
+      "afterHash": "8f6258992fccd229c96bd486a56e4971ff59fce4c34a9c5ed4a4a1b0dcf958e8",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Results extraction retains owner disclosure state, latest-review comparison priority and audio/action guards."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-setup/sentence-setup.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "87924a2ca5e01daa54bce6999e30bca56c46d16d620d5e30c5aeac21665e085a",
+      "afterHash": "7d974e65ade510fc589caa386eac91f9ba7ffe5a415242e956bae31a31b80bcf",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Setup retains configuration/effects and synchronous requestSentenceFullscreen before parent onStart."
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-management/ui/text-share-dialog.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "f93141dfa3e10dce9fb417ec02655456f67461ffcd00d667931c4bc0f89f80ae",
+      "afterHash": "f725bb13556ad4b78051def8e163c094ab9c05f6790cd2913516f7a1e33ca87d",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Share capability extraction retains parent ref, clipboard call before await, fallback select, scoped capability URL and revoke state."
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-reading/lib/selection.ts",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": "fa65c4756385c4db2623ff055ea7416c6eae744a0aafbaf9c9bc1353909b515b",
+      "afterHash": "ef35f06c9c14cddf7f0418de417b7206982881b56c57defeca92d6fe9c49435d",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Selection branches retain UTF16 offsets, code-point length check, cross-block priority, geometry and Intl.Segmenter behavior."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-preparation-rounds/preparation-round.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "e4889b1b0b6937c0a9c79aa967ce5af96f204f43d92e2542a934beae31442f9d",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Preparation round retains li DOM, icon/class/label and zero-completed partial priority."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-session-results/last-sentence-review.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "2e8fabae2482fceb79d05e527b7a24670d3ca294a9d5c4aadd87e72b383bf5a6",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Last review retains details state authority, comparison/reference priority and conditional audio."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-setup/sentence-entry-selection.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "b6a8996c8f9fa0f2c3ff92dda38401841e9a730ce0ca1ab1ebf8a96f5d8e8bb9",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Entry choices retain entry-ID keys, selection array updates and exact limit predicates."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/ui/sentence-setup/sentence-setup-estimate.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "eda58526b32075a78e0b097a984eb3f4bb249beb46cd7b762bb24c0781f9659b",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Estimate section preserves all count/price/status conditions and existing copy."
+    },
+    {
+      "path": "apps/web/src/fsd/features/text-management/ui/text-share-capability.tsx",
+      "status": "reviewed-no-material-finding",
+      "beforeHash": null,
+      "afterHash": "6fec07c0b5a4e3e0720b55b9f366ccab5ab61e0dc4e098fb7cff7e29f1fd5201",
+      "coverage": "Complete baseline diff and current extracted body; relevant parent/caller context inspected.",
+      "reason": "Capability section retains native input ref, fragment URL link, no-referrer policy and direct copy callback."
+    }
+  ],
+  "coverageNotes": [
+    "All 77 complete diffs or new bodies reviewed, not sampled.",
+    "Checked DOM/native-control props and keys; parent hook/effect order and dependencies; state, ref and callback authority; candidate policy and commit normalization; credential/session and capability boundaries; fullscreen/clipboard gesture timing; UTF16 and code-point selection; autosave/retry and FSD/public exports.",
+    "Long auth/generation/practice coordinators retain state and lifecycle authority while cohesive panels, candidate policies and presentation sections were extracted. This avoids relocating closure-dependent orchestration to a controller hook.",
+    "Unchanged caller context inspected in dictionary training, knowledge vocabulary practice, dictionary editor batch/document sheets, authoring cleanup/use-card-authoring and text share hook. Public slice exports and segmentAnswer re-export retained."
+  ],
+  "identityChecks": {
+    "reviewStartToEndHashChanges": 0,
+    "authorLedgerAfterHashMismatches": 0
+  },
+  "evidenceAssessed": {
+    "authorStaticChecks": "web-features.json reports final 77-path Prettier and ESLint passed; earlier failed ESLint attempts retained in ledger.",
+    "rootReported": "Web typecheck and focused selections of 90, 174 and 88 tests passed; not reexecuted by reviewer.",
+    "reviewerExecuted": "Read-only source/diff/caller inspection and SHA256 baseline/current/author-ledger comparisons only."
+  },
+  "pending": [
+    "Root-scheduled final focused TextShare/selection evidence after latest extraction.",
+    "Final selected integration/full gates and rendered browser evidence for visible auth, dictionary and sentence/shared-text interactions.",
+    "Revalidate reviewed hashes for subsequent remediation or final evidence approval."
+  ]
+}

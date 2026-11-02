@@ -1,3 +1,4 @@
+import { syncLearningEpochs } from './learning-epochs';
 import { createHash, randomUUID } from 'node:crypto';
 import {
     KnowledgeNoteContentSchema,
@@ -6,6 +7,7 @@ import {
     type KnowledgeNoteContent,
 } from '@languon/contracts';
 import { and, eq } from 'drizzle-orm';
+import { assertKnowledgeMediaGrants } from './media-grants';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
 import { usersTable } from '../../../../users/infrastructure/persistence/drizzle/schema';
@@ -47,7 +49,9 @@ export async function lockKnowledgeOwner(
         .where(eq(usersTable.id, ownerId))
         .for('update');
 
-    if (owner?.status !== 'active') throw knowledgeUnavailable();
+    if (owner?.status !== 'active') {
+        throw knowledgeUnavailable();
+    }
 }
 
 export function knowledgeNote(
@@ -84,7 +88,9 @@ export async function getOwnedKnowledgeRow(
         )
         .for('update');
 
-    if (!row) throw knowledgeUnavailable();
+    if (!row) {
+        throw knowledgeUnavailable();
+    }
 
     return row;
 }
@@ -95,14 +101,19 @@ export async function getOwnedKnowledgeNote(
     noteId: string,
 ): Promise<KnowledgeNote> {
     const row = await getOwnedKnowledgeRow(tx, ownerId, noteId);
-    if (row.status !== 'saved') throw knowledgeUnavailable();
+    if (row.status !== 'saved') {
+        throw knowledgeUnavailable();
+    }
 
     return knowledgeNote(row);
 }
 
 function canonicalJson(value: unknown): string {
-    if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
-    if (value !== null && typeof value === 'object')
+    if (Array.isArray(value)) {
+        return `[${value.map(canonicalJson).join(',')}]`;
+    }
+
+    if (value !== null && typeof value === 'object') {
         return `{${Object.keys(value)
             .sort()
             .map(
@@ -110,6 +121,7 @@ function canonicalJson(value: unknown): string {
                     `${JSON.stringify(key)}:${canonicalJson((value as Record<string, unknown>)[key])}`,
             )
             .join(',')}}`;
+    }
 
     return JSON.stringify(value) ?? 'null';
 }
@@ -134,11 +146,12 @@ export async function readKnowledgeReceipt(
             ),
         );
 
-    if (receipt && receipt.fingerprint !== fingerprint)
+    if (receipt && receipt.fingerprint !== fingerprint) {
         throw new KnowledgeDomainError(
             'idempotency_conflict',
             'This operation ID was already used for a different request.',
         );
+    }
 
     return receipt;
 }
@@ -159,7 +172,9 @@ export async function replayKnowledgeNote(
             ),
         );
 
-    if (!revision) throw knowledgeUnavailable();
+    if (!revision) {
+        throw knowledgeUnavailable();
+    }
 
     return KnowledgeNoteSchema.parse({
         ...revision.content,
@@ -195,7 +210,10 @@ export class DrizzleKnowledgeTransactionParticipant {
             .where(eq(usersTable.id, ownerId))
             .for('share');
 
-        if (owner?.status !== 'active') throw knowledgeUnavailable();
+        if (owner?.status !== 'active') {
+            throw knowledgeUnavailable();
+        }
+
         const [row] = await this.tx
             .select()
             .from(knowledgeNotesTable)
@@ -207,7 +225,10 @@ export class DrizzleKnowledgeTransactionParticipant {
             )
             .for('share');
 
-        if (!row) throw knowledgeUnavailable();
+        if (!row) {
+            throw knowledgeUnavailable();
+        }
+
         if (row.status === 'saved') {
             const note = knowledgeNote(row);
 
@@ -227,7 +248,9 @@ export class DrizzleKnowledgeTransactionParticipant {
                 eq(knowledgeWorkingBranchesTable.id, row.preferredBranchId!),
             );
 
-        if (!branch) throw knowledgeUnavailable();
+        if (!branch) {
+            throw knowledgeUnavailable();
+        }
 
         return {
             title: branch.content.title,
@@ -244,7 +267,10 @@ export class DrizzleKnowledgeTransactionParticipant {
         title: string,
     ): Promise<void> {
         const row = await getOwnedKnowledgeRow(this.tx, ownerId, noteId);
-        if (!row.autoTitleEligible) return;
+        if (!row.autoTitleEligible) {
+            return;
+        }
+
         await this.tx
             .update(knowledgeNotesTable)
             .set({
@@ -253,14 +279,17 @@ export class DrizzleKnowledgeTransactionParticipant {
             })
             .where(eq(knowledgeNotesTable.id, noteId));
 
-        if (row.title !== 'Untitled') return;
+        if (row.title !== 'Untitled') {
+            return;
+        }
+
         const [branch] = await this.tx
             .select()
             .from(knowledgeWorkingBranchesTable)
             .where(eq(knowledgeWorkingBranchesTable.id, row.preferredBranchId!))
             .for('update');
 
-        if (branch?.content.title === 'Untitled')
+        if (branch?.content.title === 'Untitled') {
             await this.tx
                 .update(knowledgeWorkingBranchesTable)
                 .set({
@@ -269,6 +298,7 @@ export class DrizzleKnowledgeTransactionParticipant {
                     updatedAt: new Date(),
                 })
                 .where(eq(knowledgeWorkingBranchesTable.id, branch.id));
+        }
     }
 
     async publish(
@@ -277,19 +307,23 @@ export class DrizzleKnowledgeTransactionParticipant {
         now = new Date(),
     ): Promise<KnowledgeNote> {
         const content = KnowledgeNoteContentSchema.parse(input.content);
-        if (!knowledgeBodyPlainText(content.body))
+        if (!knowledgeBodyPlainText(content.body)) {
             throw new KnowledgeDomainError(
                 'invalid_request',
                 'Add document content before saving.',
             );
+        }
+
         if (
             (input.noteId === undefined) !==
             (input.expectedVersion === undefined)
-        )
+        ) {
             throw new KnowledgeDomainError(
                 'invalid_request',
                 'Updating a note requires its expected version.',
             );
+        }
+
         await lockKnowledgeOwner(this.tx, ownerId);
         const operation = input.noteId ? 'update' : 'create';
         const fingerprint = knowledgeFingerprint({
@@ -305,7 +339,10 @@ export class DrizzleKnowledgeTransactionParticipant {
             fingerprint,
         );
 
-        if (receipt) return replayKnowledgeNote(this.tx, ownerId, receipt);
+        if (receipt) {
+            return replayKnowledgeNote(this.tx, ownerId, receipt);
+        }
+
         const note = input.noteId
             ? await replaceKnowledgeContent(
                   this.tx,
@@ -337,6 +374,7 @@ async function createKnowledgeContent(
     now: Date,
 ): Promise<KnowledgeNote> {
     const id = randomUUID();
+    await assertKnowledgeMediaGrants(tx, id, content.body);
     const [row] = await tx
         .insert(knowledgeNotesTable)
         .values({
@@ -350,6 +388,7 @@ async function createKnowledgeContent(
         })
         .returning();
 
+    await syncLearningEpochs(tx, id, content.body, 1);
     await tx
         .insert(knowledgeNoteRevisionsTable)
         .values({ noteId: id, version: 1, content, createdAt: now });
@@ -381,11 +420,14 @@ export async function replaceKnowledgeContent(
     now: Date,
 ): Promise<KnowledgeNote> {
     const current = await getOwnedKnowledgeNote(tx, ownerId, noteId);
-    if (current.version !== expectedVersion)
+    await assertKnowledgeMediaGrants(tx, noteId, content.body);
+    if (current.version !== expectedVersion) {
         throw new KnowledgeDomainError(
             'version_conflict',
             'The knowledge note changed. Reload it before saving.',
         );
+    }
+
     const [row] = await tx
         .update(knowledgeNotesTable)
         .set({
@@ -403,11 +445,14 @@ export async function replaceKnowledgeContent(
         )
         .returning();
 
-    if (!row)
+    if (!row) {
         throw new KnowledgeDomainError(
             'version_conflict',
             'The knowledge note changed. Reload it before saving.',
         );
+    }
+
+    await syncLearningEpochs(tx, noteId, content.body, row.version);
     await tx
         .insert(knowledgeNoteRevisionsTable)
         .values({ noteId, version: row.version, content, createdAt: now });

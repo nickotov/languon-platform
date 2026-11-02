@@ -41,13 +41,16 @@ export function createAccountingRoutes(options: {
                 ? undefined
                 : c.json(errorResponse('The request is invalid.'), 400),
     });
+
     app.use('/admin/ai/accounting/*', async (c, next) => {
         c.header('Cache-Control', 'no-store');
         await next();
     });
+
     app.onError((error, c) => {
         if (error instanceof AccountingReportPendingError) {
             c.header('Retry-After', '2');
+
             return c.json(
                 errorResponse(
                     'The report is being prepared. Retry shortly.',
@@ -56,10 +59,11 @@ export function createAccountingRoutes(options: {
                 503,
             );
         }
+
         if (
             error instanceof AccountingConflictError ||
             error instanceof AiCreditIdempotencyConflictError
-        )
+        ) {
             return c.json(
                 errorResponse(
                     'The record conflicts with existing accounting facts.',
@@ -67,18 +71,24 @@ export function createAccountingRoutes(options: {
                 ),
                 409,
             );
+        }
+
         if (
             error instanceof AccountingInvalidRecordError ||
             error instanceof AiCreditInvalidAmountError ||
             error instanceof AiCreditInsufficientBalanceError
-        )
+        ) {
             return c.json(
                 errorResponse('The accounting record is invalid.'),
                 400,
             );
+        }
+
         const mapped = mapAdministrationHttpError(error);
+
         return c.json(mapped.response(randomUUID()), mapped.status);
     });
+
     const errors = {
         503: {
             content: {
@@ -142,7 +152,10 @@ export function createAccountingRoutes(options: {
         }),
         async (c) => {
             const origin = c.req.header('Origin');
-            if (!origin) throw new InvalidRequestOriginError();
+            if (!origin) {
+                throw new InvalidRequestOriginError();
+            }
+
             options.policy.assertCookieRequestOrigin(origin);
             const principal =
                 await options.administration.authorizeSensitiveOperation(
@@ -151,6 +164,7 @@ export function createAccountingRoutes(options: {
                     ),
                     randomUUID(),
                 );
+
             return c.json(
                 await options.store.record(
                     c.req.valid('json'),
@@ -161,6 +175,7 @@ export function createAccountingRoutes(options: {
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -194,7 +209,9 @@ export function createAccountingRoutes(options: {
                 ),
                 randomUUID(),
             );
+
             const query = c.req.valid('query');
+
             return c.json(
                 {
                     records: await options.store.list({
@@ -208,6 +225,7 @@ export function createAccountingRoutes(options: {
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -233,7 +251,9 @@ export function createAccountingRoutes(options: {
                 ),
                 randomUUID(),
             );
+
             const query = c.req.valid('query');
+
             return c.json(
                 await options.store.report(
                     new Date(query.from),
@@ -243,6 +263,7 @@ export function createAccountingRoutes(options: {
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -270,6 +291,7 @@ export function createAccountingRoutes(options: {
                 ),
                 randomUUID(),
             );
+
             return c.json(
                 await options.store.refundContext(
                     c.req.valid('param').paymentId,
@@ -278,5 +300,6 @@ export function createAccountingRoutes(options: {
             );
         },
     );
+
     return app;
 }

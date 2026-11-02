@@ -10,15 +10,22 @@ export function nextStreamingPrefix(
     visible: string,
     steps: number,
 ) {
-    if (!target.startsWith(visible)) return target;
+    if (!target.startsWith(visible)) {
+        return target;
+    }
+
     const budget = Math.max(
         1,
         Math.ceil((target.length - visible.length) / steps),
     );
+
     for (const part of graphemes.segment(target.slice(visible.length))) {
         const end = part.index + part.segment.length;
-        if (end >= budget) return target.slice(0, visible.length + end);
+        if (end >= budget) {
+            return target.slice(0, visible.length + end);
+        }
     }
+
     return target;
 }
 
@@ -32,7 +39,10 @@ export function useStreamingText(content: string, streaming: boolean) {
     const deadline = useRef(0);
     // Stable identity is required by the visibility/motion subscriptions below.
     const flush = useCallback(() => {
-        if (timer.current !== null) clearTimeout(timer.current);
+        if (timer.current !== null) {
+            clearTimeout(timer.current);
+        }
+
         timer.current = null;
         displayed.current = target.current;
         setVisible(target.current);
@@ -43,14 +53,22 @@ export function useStreamingText(content: string, streaming: boolean) {
         function preference() {
             setReduced(motion.matches);
         }
+
         function visibility() {
-            if (document.hidden) flush();
+            if (document.hidden) {
+                flush();
+            }
         }
+
         preference();
         motion.addEventListener('change', preference);
         document.addEventListener('visibilitychange', visibility);
+
         return () => {
-            if (timer.current !== null) clearTimeout(timer.current);
+            if (timer.current !== null) {
+                clearTimeout(timer.current);
+            }
+
             motion.removeEventListener('change', preference);
             document.removeEventListener('visibilitychange', visibility);
         };
@@ -65,23 +83,29 @@ export function useStreamingText(content: string, streaming: boolean) {
             !content.startsWith(displayed.current)
         ) {
             flush();
+
             return;
         }
+
         function tick() {
             const steps = Math.max(
                 1,
                 Math.ceil((deadline.current - performance.now()) / frameMs),
             );
+
             displayed.current = nextStreamingPrefix(
                 target.current,
                 displayed.current,
                 steps,
             );
+
             setVisible(displayed.current);
             timer.current = null;
-            if (displayed.current !== target.current)
+            if (displayed.current !== target.current) {
                 timer.current = setTimeout(tick, frameMs);
+            }
         }
+
         // New chunks update the target without cancelling the scheduled frame.
         // Otherwise a fast provider could starve painting until generation ends.
         if (displayed.current !== content && timer.current === null) {
@@ -89,5 +113,6 @@ export function useStreamingText(content: string, streaming: boolean) {
             timer.current = setTimeout(tick, frameMs);
         }
     }, [content, streaming, reduced, flush]);
+
     return streaming ? visible : content;
 }

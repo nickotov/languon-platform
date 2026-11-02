@@ -11,22 +11,32 @@ export function useTextWorkspaceExpiry(
         : Infinity;
 
     useEffect(() => {
-        if (job?.state !== 'completed') return;
+        if (job?.state !== 'completed') {
+            return;
+        }
+
         setNow(Date.now());
         const timer = window.setInterval(() => setNow(Date.now()), 1000);
+
         return () => window.clearInterval(timer);
     }, [job]);
+
     return expired || now >= expiresAt;
 }
 
 export function useTextWorkspaceUnload(unsaved: boolean) {
     useEffect(() => {
-        if (!unsaved) return;
+        if (!unsaved) {
+            return;
+        }
+
         function unload(event: BeforeUnloadEvent) {
             event.preventDefault();
             event.returnValue = '';
         }
+
         window.addEventListener('beforeunload', unload);
+
         return () => window.removeEventListener('beforeunload', unload);
     }, [unsaved]);
 }

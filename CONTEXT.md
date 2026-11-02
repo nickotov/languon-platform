@@ -127,8 +127,38 @@ _Avoid_: Knowledge note draft, which denotes an assistant's separate proposal.
 
 **Shared note**:
 The explicitly saved version of a note made readable through an unlisted link.
-Private working drafts and conversations are excluded; recipients can copy the
-saved note into their own Knowledge before editing or using the tutor.
+Private working drafts and conversations are excluded. Recipients must copy it
+before editing, but may practice and use read-only AI explanations on the original.
+This agreed extension awaits implementation and partial supersession of ADR-0042.
+
+**Workbook**:
+An ordered collection of knowledge notes with previous/next navigation. A note
+belongs to at most one workbook and may also stand alone.
+_Avoid_: Folder, when referring to this ordered learning collection.
+
+**Learning block**:
+A reusable unit of learning content with its own presentation and interactions,
+usable within a knowledge note or independently in another learning context.
+
+**Learner attempt**:
+A learner's saved response and feedback for an exercise, separate from the
+author's learning content; retrying allows another attempt.
+
+**Learner progress**:
+A signed-in learner's retained learning state, independent of the shared
+document and other learners' activity.
+
+**Note completion**:
+A learner's explicit mark that they have completed a knowledge note, distinct
+from opening it or answering its exercises correctly.
+
+**Library copy**:
+Learning-block content saved independently into the learner's dictionary or
+Texts collection, unaffected by later changes to the source block.
+
+**Grammar block**:
+A learning block presenting a grammar rule through optional formation patterns,
+translated examples and common mistakes, with related exercises kept distinct.
 
 **Note copy**:
 A new, independent note containing the copied document and metadata, without

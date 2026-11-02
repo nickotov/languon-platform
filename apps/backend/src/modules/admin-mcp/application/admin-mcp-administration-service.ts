@@ -26,11 +26,13 @@ export class AdminMcpAdministrationService {
     ) {
         return this.audited(actor, operation, raw, async () => {
             const schema = adminMcpReadSchemas[operation];
-            if (!schema)
+            if (!schema) {
                 throw new AdminMcpError(
                     'permission_denied',
                     'Unsupported administrative read.',
                 );
+            }
+
             requireAction(actor, operation);
             requirePermission(
                 actor,
@@ -40,6 +42,7 @@ export class AdminMcpAdministrationService {
                       ? 'financial-reports.read'
                       : 'providers.read',
             );
+
             const { reason, ...input } = schema
                 .extend({
                     reason: adminMcpReasonSchema.default(
@@ -55,6 +58,7 @@ export class AdminMcpAdministrationService {
                 value,
                 reason,
             );
+
             return value;
         });
     }
@@ -66,11 +70,13 @@ export class AdminMcpAdministrationService {
     ) {
         return this.audited(actor, operation, raw, async () => {
             const schema = adminMcpWriteSchemas[operation];
-            if (!schema)
+            if (!schema) {
                 throw new AdminMcpError(
                     'permission_denied',
                     'Unsupported administrative change.',
                 );
+            }
+
             requireAction(actor, operation);
             requirePermission(actor, permissionForWrite(operation));
             const input = schema.parse(raw);
@@ -79,6 +85,7 @@ export class AdminMcpAdministrationService {
                 operation,
                 input,
             );
+
             return { ...preview, limits: actor.limits };
         });
     }
@@ -89,6 +96,7 @@ export class AdminMcpAdministrationService {
                 .object({ previewId: z.uuid(), operationKey: z.uuid() })
                 .strict()
                 .parse(raw);
+
             // Stored preview authority is rechecked with credential, owner and versions at commit.
             return this.operations.apply(
                 actor,
@@ -108,6 +116,7 @@ export class AdminMcpAdministrationService {
             return await work();
         } catch (error) {
             await this.operations.recordRejected(actor, operation, raw, error);
+
             throw error;
         }
     }

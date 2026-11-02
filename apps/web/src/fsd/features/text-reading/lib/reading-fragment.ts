@@ -4,6 +4,7 @@ export function readingFragment(original: string) {
     const text = original.trim();
     // String lengths deliberately use UTF-16, matching the selection contract.
     const offsetOrigin = original.length - original.trimStart().length;
+
     return {
         text,
         offsetOrigin,

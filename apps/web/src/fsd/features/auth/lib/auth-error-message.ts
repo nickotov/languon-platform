@@ -28,11 +28,14 @@ export function localizedAuthError(error: unknown, t: Translate): string {
             seconds: error.detail.retryAfterSeconds ?? 0,
         });
     }
+
     if (error instanceof DOMException && error.name === 'NotAllowedError') {
         return t('error.passkeyCancelled');
     }
+
     if (error instanceof DOMException && error.name === 'InvalidStateError') {
         return t('error.passkeyUnavailable');
     }
+
     return t('error.generic');
 }

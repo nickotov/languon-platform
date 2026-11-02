@@ -1,0 +1,121 @@
+{
+  "scope": "E45 bounded owner-chat incident",
+  "coverage": "Union of passed registered flows; original failed commands/reports preserved, not reclassified.",
+  "source_manifest": "ed5b544c74a94061518662e92be08b2a663696b57b6d345e1955315b559acd4b",
+  "results": [
+    {
+      "id": "setup-to-generation",
+      "status": "passed",
+      "tests": 1,
+      "run": "59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac",
+      "report": "test-results/critical-flows/59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac/setup-to-generation.json",
+      "sha256": "958aa2ef7943eea461da1811087d49d5f81e0fe803de7677fd8b5b5e706d8a28"
+    },
+    {
+      "id": "admin-text-ai-routing",
+      "status": "passed",
+      "tests": 2,
+      "run": "3962ac15-b74e-4349-aa89-b74eb49595db",
+      "report": "test-results/critical-flows/3962ac15-b74e-4349-aa89-b74eb49595db/admin-text-ai-routing.json",
+      "sha256": "0e9f601d61f7c855801440896278115030304378b1d45bde97b2c413459d71d4"
+    },
+    {
+      "id": "authentication",
+      "status": "passed",
+      "tests": 3,
+      "run": "59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac",
+      "report": "test-results/critical-flows/59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac/authentication.json",
+      "sha256": "3719346388b85c9b9f148dd61feaccd90eb1072cfaa57ee289ca07ac3612b789"
+    },
+    {
+      "id": "admin-session-refresh",
+      "status": "passed",
+      "tests": 3,
+      "run": "59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac",
+      "report": "test-results/critical-flows/59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac/admin-session-refresh.json",
+      "sha256": "a9e9f2dcc51b11babbbb9fc30a8d3d9b66675dafa781e7b6bcb5011c7a053dac"
+    },
+    {
+      "id": "dictionary-generation",
+      "status": "passed",
+      "tests": 1,
+      "run": "59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac",
+      "report": "test-results/critical-flows/59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac/dictionary-generation.json",
+      "sha256": "05c90e62a673089b0e7bb0bab4677927c2444332f9eba3db3b4c03555f6c3f16"
+    },
+    {
+      "id": "sentence-practice",
+      "status": "passed",
+      "tests": 2,
+      "run": "59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac",
+      "report": "test-results/critical-flows/59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac/sentence-practice.json",
+      "sha256": "4d94b1d002f2ae3b1fe9844f2f1f45a22ed1529ad82a1c8e0b898ff2b7677d94"
+    },
+    {
+      "id": "text-generation",
+      "status": "passed",
+      "tests": 2,
+      "run": "59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac",
+      "report": "test-results/critical-flows/59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac/text-generation.json",
+      "sha256": "96ccc3d9f01f906fa25070b563368cb3197575900467c9d28dfddd59ecde04f9"
+    },
+    {
+      "id": "interactive-workbooks",
+      "status": "passed",
+      "tests": 2,
+      "run": "59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac",
+      "report": "test-results/critical-flows/59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac/interactive-workbooks.json",
+      "sha256": "3018d155cb3a32c8317817429dfed7cb55804bad14497b853f266de5dccd7386"
+    },
+    {
+      "id": "chat-lifecycle",
+      "status": "passed",
+      "tests": 1,
+      "run": "59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac",
+      "report": "test-results/critical-flows/59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac/chat-lifecycle.json",
+      "sha256": "98194d45911ed73bc74c045f609360425fad191d08ea4c78195af4cfa58fb941"
+    },
+    {
+      "id": "insufficient-credits",
+      "status": "passed",
+      "tests": 1,
+      "run": "59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac",
+      "report": "test-results/critical-flows/59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac/insufficient-credits.json",
+      "sha256": "e5921efc17f5f3258f7d567f45cccdc2cb789a30e85598b8aec88aa17e019149"
+    },
+    {
+      "id": "free-interview",
+      "status": "passed",
+      "tests": 1,
+      "run": "59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac",
+      "report": "test-results/critical-flows/59e374f4-e0b0-4c7e-b3eb-c073bf4d6cac/free-interview.json",
+      "sha256": "93ac2c73a9a2288e398cfc7e702f44f34db39fe625a3df44c353feb149d57627"
+    },
+    {
+      "id": "speech-playback",
+      "status": "passed",
+      "tests": 4,
+      "run": "0549232b-dae1-4e00-b251-4ba8ce65b6fb",
+      "report": "test-results/critical-flows/0549232b-dae1-4e00-b251-4ba8ce65b6fb/speech-playback.json",
+      "sha256": "16698a08bcb9c3eef183d89baa9f029875355208d39bfa632348b1b69adaf403"
+    },
+    {
+      "id": "admin-mcp",
+      "status": "passed",
+      "tests": 3,
+      "run": "0549232b-dae1-4e00-b251-4ba8ce65b6fb",
+      "report": "test-results/critical-flows/0549232b-dae1-4e00-b251-4ba8ce65b6fb/admin-mcp.json",
+      "sha256": "341fe6a35d10e5a372afdf01676cca18d61e4b9f83148e3631d2443b71fafc08"
+    },
+    {
+      "id": "ai-execution-contracts",
+      "status": "passed",
+      "tests": 748,
+      "run": "0549232b-dae1-4e00-b251-4ba8ce65b6fb",
+      "report": "test-results/critical-flows/0549232b-dae1-4e00-b251-4ba8ce65b6fb/ai-execution-contracts.json",
+      "sha256": "22a8e8a97eaad00f139e0315647e9c7789415e80b581f12c1e87bba5e2f2629c"
+    }
+  ],
+  "total_flows": 14,
+  "total_tests": 774
+}

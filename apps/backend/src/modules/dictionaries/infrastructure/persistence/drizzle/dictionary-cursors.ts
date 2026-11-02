@@ -17,13 +17,18 @@ export function decodeCursor<T>(
     cursor: string | undefined,
     guard: (value: unknown) => value is T,
 ): T | null {
-    if (!cursor) return null;
+    if (!cursor) {
+        return null;
+    }
+
     try {
         const value: unknown = JSON.parse(
             Buffer.from(cursor, 'base64url').toString('utf8'),
         );
 
-        if (guard(value)) return value;
+        if (guard(value)) {
+            return value;
+        }
     } catch {
         // Invalid cursors are deliberately handled as a stable request error.
     }
@@ -34,7 +39,10 @@ export function decodeCursor<T>(
 export function isDictionaryCursor(
     value: unknown,
 ): value is { id: string; updatedAt: string } {
-    if (!value || typeof value !== 'object') return false;
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+
     const cursor = value as Record<string, unknown>;
 
     return (
@@ -51,20 +59,20 @@ export function isCardCursor(value: unknown): value is {
     settingsVersion: number;
     sortKey: string;
 } {
-    return Boolean(
-        value &&
-        typeof value === 'object' &&
-        typeof (value as Record<string, unknown>).id === 'string' &&
-        uuidPattern.test(String((value as Record<string, unknown>).id)) &&
-        Number.isSafeInteger(
-            (value as Record<string, unknown>).dictionaryVersion,
-        ) &&
-        Number((value as Record<string, unknown>).dictionaryVersion) > 0 &&
-        Number.isSafeInteger(
-            (value as Record<string, unknown>).settingsVersion,
-        ) &&
-        Number((value as Record<string, unknown>).settingsVersion) > 0 &&
-        /^\d+$/.test(String((value as Record<string, unknown>).sortKey)),
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+
+    const cursor = value as Record<string, unknown>;
+
+    return (
+        typeof cursor.id === 'string' &&
+        uuidPattern.test(String(cursor.id)) &&
+        Number.isSafeInteger(cursor.dictionaryVersion) &&
+        Number(cursor.dictionaryVersion) > 0 &&
+        Number.isSafeInteger(cursor.settingsVersion) &&
+        Number(cursor.settingsVersion) > 0 &&
+        /^\d+$/.test(String(cursor.sortKey))
     );
 }
 

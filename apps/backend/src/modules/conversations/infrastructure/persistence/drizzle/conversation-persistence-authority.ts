@@ -60,12 +60,14 @@ export async function conversationAuthorize(
     // Mutation callbacks may acquire the Knowledge owner's exclusive fence.
     // Take that actor fence before source/chat locks, avoiding a SHARE upgrade
     // behind a reader that already holds the actor and is waiting on this chat.
-    if (write)
+    if (write) {
         await persistence.dependencies.sources.assertActiveActor(
             tx,
             access.ownerId,
             'update',
         );
+    }
+
     const [candidate] = sourceOverride
         ? []
         : await tx
@@ -73,7 +75,10 @@ export async function conversationAuthorize(
               .from(chats)
               .where(and(eq(chats.id, id), eq(chats.ownerId, access.ownerId)));
 
-    if (!sourceOverride && !candidate) throw conversationUnavailable();
+    if (!sourceOverride && !candidate) {
+        throw conversationUnavailable();
+    }
+
     const source = await persistence.dependencies.sources.resolve(
         tx,
         access.ownerId,
@@ -98,7 +103,9 @@ export async function conversationAuthorize(
           ? await chatQuery.for('update')
           : await chatQuery.for('share');
 
-    if (!chat) throw conversationUnavailable();
+    if (!chat) {
+        throw conversationUnavailable();
+    }
 
     return { chat, ...source };
 }

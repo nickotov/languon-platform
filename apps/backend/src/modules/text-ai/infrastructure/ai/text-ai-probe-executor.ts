@@ -44,15 +44,21 @@ export function createTextAiProbeExecutor(options: {
                 approvedMaximumCostUsd?: string;
             },
         ) {
-            if (request.kind === 'flow' && !options.flows[request.flowId ?? ''])
+            if (
+                request.kind === 'flow' &&
+                !options.flows[request.flowId ?? '']
+            ) {
                 throw new TextAiProbeUnavailableError(
                     'probe_route_unavailable',
                 );
+            }
+
             // These explicit checks use synthetic content only. Processing approval still gates learner activation separately.
             const flow = options.flows[request.flowId ?? ''];
             const revision = flow
                 ? textAiSyntheticFlowContractRevision(flow)
                 : 'quick:v1';
+
             return textAiProbeIdentity(request, options.credentials, revision);
         },
         async execute(
@@ -60,16 +66,21 @@ export function createTextAiProbeExecutor(options: {
             signal: AbortSignal,
         ): Promise<TextAiProbeResult> {
             const route = findTextAiModel(reservation.identity.routeId);
-            if (!route)
+            if (!route) {
                 throw new TextAiProbeUnavailableError(
                     'probe_route_unavailable',
                 );
+            }
+
             const apiKey =
                 options.credentials[route.credentialEnvironmentVariable];
-            if (!apiKey)
+
+            if (!apiKey) {
                 throw new TextAiProbeUnavailableError(
                     'probe_route_unavailable',
                 );
+            }
+
             const flow =
                 reservation.request.kind === 'flow'
                     ? options.flows[reservation.request.flowId ?? '']
@@ -88,24 +99,30 @@ export function createTextAiProbeExecutor(options: {
                         ),
                     'utf8',
                 ) + 4096;
+
             if (
                 route.providerId === 'evolink' &&
                 !reservation.price.nativeRules &&
                 parseFixed(reservation.price.minimumUsdPerRequest ?? '0', 6) <=
                     0n
-            )
+            ) {
                 throw new TextAiProbeUnavailableError('probe_prices_missing');
+            }
+
             if (
                 parseFixed(reservation.price.minimumUsdPerRequest ?? '0', 6) >
                 reservation.maximumCostMicros
-            )
+            ) {
                 throw new TextAiProbeUnavailableError('probe_limit_reached');
+            }
+
             const inputRate = [
                 reservation.price.inputUsdPerMillionTokens,
                 reservation.price.cacheReadUsdPerMillionTokens,
                 reservation.price.cacheWriteUsdPerMillionTokens,
             ].reduce((maximum, value) => {
                 const rate = parseFixed(value ?? '0', 6);
+
                 return rate > maximum ? rate : maximum;
             }, 0n);
             const outputRate = parseFixed(
@@ -115,8 +132,10 @@ export function createTextAiProbeExecutor(options: {
             const inputCost =
                 (BigInt(inputLimit) * inputRate + 999999n) / 1000000n;
             const remaining = reservation.maximumCostMicros - inputCost;
-            if (remaining <= 0n)
+            if (remaining <= 0n) {
                 throw new TextAiProbeUnavailableError('probe_limit_reached');
+            }
+
             const configuredBudget = {
                 inputCostMicrosPerMillionTokens: Number(inputRate),
                 outputCostMicrosPerMillionTokens: Number(outputRate),
@@ -151,11 +170,14 @@ export function createTextAiProbeExecutor(options: {
                           ? 2048
                           : Number((remaining * 1000000n) / outputRate),
                   );
+
             if (
                 outputLimit < 1 ||
                 inputLimit > route.requestLimits.maxInputTokens
-            )
+            ) {
                 throw new TextAiProbeUnavailableError('probe_limit_reached');
+            }
+
             const agent = new Agent({
                 id: 'admin-text-ai-probe',
                 name: 'Administrative synthetic model check',
@@ -171,10 +193,12 @@ export function createTextAiProbeExecutor(options: {
                 defaultOptions: { maxSteps: 1 },
                 defaultGenerateOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
             });
+
             // Registered only for this authorized admin operation; generic Studio has no probe authority.
             createCanonicalMastra({ administrativeProbe: agent }).getAgent(
                 'administrativeProbe',
             );
+
             agent.__registerPrimitives({ logger: noopLogger });
             const started = performance.now();
             let completedStepUsage: unknown;
@@ -199,22 +223,29 @@ export function createTextAiProbeExecutor(options: {
                           let text = '';
                           for await (const chunk of stream.fullStream) {
                               signal.throwIfAborted();
-                              if (chunk.type === 'error')
+                              if (chunk.type === 'error') {
                                   throw new Error('Streaming probe failed.');
+                              }
+
                               if (chunk.type === 'text-delta') {
                                   if (
                                       chunk.payload.text &&
                                       firstOutputMs === undefined
-                                  )
+                                  ) {
                                       firstOutputMs = Math.ceil(
                                           performance.now() - started,
                                       );
+                                  }
+
                                   text += chunk.payload.text;
                               }
                           }
+
                           const output = await stream.getFullOutput();
-                          if (output.error || output.finishReason === 'error')
+                          if (output.error || output.finishReason === 'error') {
                               throw new Error('Streaming probe failed.');
+                          }
+
                           return {
                               text,
                               object: undefined,
@@ -247,9 +278,11 @@ export function createTextAiProbeExecutor(options: {
                 } catch {
                     usage = null;
                 }
+
                 const valid = flow
                     ? flow.validate(flow.schema ? result.object : result.text)
                     : result.text.trim() === 'OK';
+
                 return {
                     ...((usage?.nativeUsage ??
                     readNativeTextObservation(result)?.usage)
@@ -319,6 +352,7 @@ export function createTextAiProbeExecutor(options: {
                         /* Unbounded or absent measurement remains unknown. */
                     }
                 }
+
                 return {
                     valid: false,
                     failure: signal.aborted

@@ -34,16 +34,22 @@ export function ShortTextInput({
                   'Máximo 200 caracteres.',
               )
             : undefined;
+
     function handleChange(event: ChangeEvent<HTMLInputElement>) {
         onChange(event.target.value);
     }
+
     function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
         if (event.key === 'Enter' && onEnter) {
             event.preventDefault();
-            if (!error) onEnter();
+            if (!error) {
+                onEnter();
+            }
         }
     }
+
     const errorProps = error ? { error } : {};
+
     return (
         <div className={styles.grow}>
             <Input

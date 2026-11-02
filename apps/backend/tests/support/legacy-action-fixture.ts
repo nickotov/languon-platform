@@ -18,12 +18,13 @@ export async function seedLegacyActionFixture(
         .from(settings)
         .orderBy(desc(settings.version))
         .limit(1);
+
     if (
         previous?.defaultMaxCreditsPerAction !== actionBudget ||
         previous.maxProviderCostUsdPerAction !== '1' ||
         previous.maxProviderCostUsdPerAccountDay !== '1000' ||
         previous.maxProviderCostUsdPerDay !== '10000'
-    )
+    ) {
         await db.insert(settings).values({
             id: randomUUID(),
             version: (previous?.version ?? 0) + 1,
@@ -34,6 +35,8 @@ export async function seedLegacyActionFixture(
             createdAt: at,
             reason: 'Synthetic whole-action execution allowance calibration',
         });
+    }
+
     for (const model of textAiModelCatalog) {
         const [previousPrice] = await db
             .select()
@@ -47,13 +50,16 @@ export async function seedLegacyActionFixture(
             )
             .orderBy(desc(prices.version))
             .limit(1);
+
         if (
             previousPrice &&
             (model.providerId === 'deepseek' ||
                 (previousPrice.data.cacheReadUsdPerMillionTokens !== null &&
                     previousPrice.data.cacheWriteUsdPerMillionTokens !== null))
-        )
+        ) {
             continue;
+        }
+
         await db.insert(prices).values({
             id: randomUUID(),
             providerId: model.providerId,

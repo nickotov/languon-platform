@@ -16,6 +16,7 @@ export default async function Page({
             shareId: values.shareId,
             shareVersion: Number(values.shareVersion),
         });
+
     return (
         <TextWorkspacePage
             folderId={values.folderId ?? null}

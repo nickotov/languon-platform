@@ -1,12 +1,18 @@
 'use client';
+import type { BlockInsertionBookmark } from '../../lib/block-insertion-bookmark';
+import { MessageSquarePlus } from 'lucide-react';
 
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TableKit } from '@tiptap/extension-table';
-import { KnowledgeLinkSchema, type KnowledgeBody } from '@languon/contracts';
+import {
+    KnowledgeLinkSchema,
+    type KnowledgeBody,
+    type LearningBlock,
+} from '@languon/contracts';
 import { useI18n } from '@/fsd/shared/i18n';
-import { InlineAlert } from '@/fsd/shared/ui';
+import { InlineAlert, type MenuItem } from '@/fsd/shared/ui';
 import {
     normalizeEditorDocument,
     toEditorDocument,
@@ -20,9 +26,25 @@ import { useKnowledgeEditorHandle } from '../../hooks/use-knowledge-editor-handl
 import { EditorToolbar } from './editor-toolbar';
 import styles from './knowledge-editor.module.css';
 import { WorkspaceEditorChrome } from './workspace-editor-chrome';
+import type { UploadBlockAudio } from '../learning-block-authoring/audio-block-upload';
+import { BlockAuthoringProvider } from '../learning-block-authoring/block-authoring-context';
+import { LearningBlockAuthoring } from '../learning-block-authoring/learning-block-authoring';
+import { LearningBlockTextGaps } from '../learning-block-authoring/learning-block-text-gaps';
+import { LearningBlockNode } from '../learning-block-authoring/learning-block-node';
+import { localizedBlockLabels } from '../learning-block-authoring/block-locales';
+import { ExerciseGroupDrag } from '../../lib/exercise-group-drag';
+import { ProseBlockDrag } from './prose-block-drag';
+import { rejectCopiedLearningBlockDrop } from '../../lib/learning-block-drop';
+import { pasteLearningBlock } from '../../lib/learning-block-paste';
 import type { KnowledgeWorkspaceEditorOptions } from '../knowledge-note-form/knowledge-note-form';
 
 export type KnowledgeEditorHandle = {
+    captureBlockInsertion(): BlockInsertionBookmark | null;
+    appendLearningBlock(block: LearningBlock): boolean;
+    replaceLearningBlock(
+        expected: LearningBlock,
+        replacement: LearningBlock,
+    ): 'applied' | 'changed' | 'missing' | 'invalid';
     getSnapshot(targetId?: string | null): {
         content: string;
         selectedPassage?: string;
@@ -58,6 +80,8 @@ export const KnowledgeEditor = forwardRef<
     KnowledgeEditorHandle,
     {
         value: KnowledgeBody;
+        getBlockActions?: ((block: LearningBlock) => MenuItem[]) | undefined;
+        uploadAudio?: UploadBlockAudio | undefined;
         onChange(value: KnowledgeBody): void;
         workspace?: KnowledgeWorkspaceEditorOptions | undefined;
         disabled?: boolean;
@@ -68,25 +92,31 @@ export const KnowledgeEditor = forwardRef<
 >(function KnowledgeEditor(
     {
         value,
+        getBlockActions,
         onChange,
         disabled = false,
         onValidityChange,
         toolbarVariant = 'full',
         label,
         workspace,
+        uploadAudio,
     },
     ref,
 ) {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
+    const blockLabels = useMemo(() => localizedBlockLabels(locale), [locale]);
     const [invalid, setInvalid] = useState(false);
-    const acceptedValue = useRef(JSON.stringify(value));
+    // The block parser canonicalizes field order. Compare the same projection
+    // on both sides so selecting a node cannot mark an unchanged draft dirty.
+    const acceptedValue = useRef(
+        JSON.stringify(normalizeEditorDocument(value.document)),
+    );
     const targets = useRef(new Map<string, KnowledgeEditorTarget>());
     const extensions = useMemo(
         () => [
             StarterKit.configure({
-                heading: { levels: [2, 3] },
+                heading: { levels: [1, 2, 3] },
                 codeBlock: false,
-                horizontalRule: false,
                 link: {
                     openOnClick: false,
                     autolink: false,
@@ -95,9 +125,44 @@ export const KnowledgeEditor = forwardRef<
                         KnowledgeLinkSchema.safeParse(url).success,
                 },
             }),
-            TableKit.configure({ table: { resizable: false } }),
+            TableKit.configure({
+                table: { resizable: false, allowTableNodeSelection: true },
+            }),
+            LearningBlockNode.configure({ labels: blockLabels }),
+            ExerciseGroupDrag,
+            ProseBlockDrag.configure({
+                label: (node) => {
+                    let headingKey:
+                        | 'knowledge.heading1'
+                        | 'knowledge.heading2'
+                        | 'knowledge.heading3' = 'knowledge.heading2';
+
+                    if (node.attrs.level === 1) {
+                        headingKey = 'knowledge.heading1';
+                    }
+
+                    if (node.attrs.level === 3) {
+                        headingKey = 'knowledge.heading3';
+                    }
+
+                    const names: Record<string, string> = {
+                        paragraph: t('knowledge.paragraph'),
+                        horizontalRule: t('knowledge.horizontalRule'),
+                        heading: t(headingKey),
+                        bulletList: t('knowledge.bulletList'),
+                        orderedList: t('knowledge.orderedList'),
+                        blockquote: t('knowledge.blockquote'),
+                        table: t('knowledge.table'),
+                    };
+
+                    return `${blockLabels.field('Select or drag block')}: ${names[node.type.name] ?? node.type.name}`;
+                },
+            }),
+            LearningBlockTextGaps.configure({
+                label: blockLabels.field('Write here…'),
+            }),
         ],
-        [],
+        [blockLabels, t],
     );
     const editor = useEditor({
         extensions,
@@ -107,6 +172,20 @@ export const KnowledgeEditor = forwardRef<
         enableContentCheck: true,
         editable: !disabled,
         editorProps: {
+            handleDrop: (_view, _event, slice, moved) =>
+                rejectCopiedLearningBlockDrop(slice, moved),
+            handlePaste: (view, event) => {
+                if (disabled) {
+                    return false;
+                }
+
+                const result = pasteLearningBlock(view, event);
+                if (result !== 'none') {
+                    setInvalid(result === 'invalid');
+                }
+
+                return result !== 'none';
+            },
             attributes: {
                 role: 'textbox',
                 'aria-multiline': 'true',
@@ -119,7 +198,10 @@ export const KnowledgeEditor = forwardRef<
             try {
                 const body = normalizeEditorDocument(current.getJSON());
                 const serialized = JSON.stringify(body);
-                if (serialized === acceptedValue.current) return;
+                if (serialized === acceptedValue.current) {
+                    return;
+                }
+
                 acceptedValue.current = serialized;
                 setInvalid(false);
                 onChange(body);
@@ -128,7 +210,10 @@ export const KnowledgeEditor = forwardRef<
             }
         },
         onTransaction: ({ transaction }) => {
-            if (!transaction.docChanged) return;
+            if (!transaction.docChanged) {
+                return;
+            }
+
             for (const [id, target] of targets.current) {
                 targets.current.set(
                     id,
@@ -143,31 +228,70 @@ export const KnowledgeEditor = forwardRef<
     useEffect(() => {
         editor?.setEditable(!disabled);
     }, [editor, disabled]);
+
     useEffect(() => {
         onValidityChange?.(!invalid);
     }, [invalid, onValidityChange]);
+
     useEffect(() => {
-        if (!editor) return;
-        const serialized = JSON.stringify(value);
-        if (serialized === acceptedValue.current) return;
-        try {
-            editor.commands.setContent(toEditorDocument(value.document), {
-                emitUpdate: false,
-                errorOnInvalidContent: true,
-            });
-            acceptedValue.current = serialized;
-            setInvalid(false);
-        } catch {
-            setInvalid(true);
+        if (!editor) {
+            return;
         }
+
+        const serialized = JSON.stringify(
+            normalizeEditorDocument(value.document),
+        );
+
+        if (serialized === acceptedValue.current) {
+            return;
+        }
+
+        let cancelled = false;
+        // React node views flush synchronously. Apply recovered content after
+        // this effect, and discard superseded/unmounted updates before dispatch.
+        queueMicrotask(() => {
+            if (cancelled || editor.isDestroyed) {
+                return;
+            }
+
+            try {
+                editor.commands.setContent(toEditorDocument(value.document), {
+                    emitUpdate: false,
+                    errorOnInvalidContent: true,
+                });
+
+                acceptedValue.current = serialized;
+                setInvalid(false);
+            } catch {
+                setInvalid(true);
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
     }, [editor, value]);
 
-    if (workspace && editor)
-        return (
+    const authoring =
+        editor && toolbarVariant !== 'tutor' ? (
+            <LearningBlockAuthoring
+                editor={editor}
+                disabled={disabled}
+                labels={blockLabels}
+                uploadAudio={uploadAudio ?? workspace?.uploadAudio}
+                library={workspace?.library}
+                blockCopy={workspace?.blockCopy}
+            />
+        ) : null;
+
+    let content;
+    if (workspace && editor) {
+        content = (
             <WorkspaceEditorChrome
                 editor={editor}
                 disabled={disabled}
                 workspace={workspace}
+                authoring={authoring}
             >
                 <EditorContent
                     editor={editor}
@@ -180,23 +304,59 @@ export const KnowledgeEditor = forwardRef<
                 )}
             </WorkspaceEditorChrome>
         );
+    } else {
+        content = (
+            <div className={styles.root} aria-busy={!editor}>
+                {editor && (
+                    <EditorToolbar
+                        editor={editor}
+                        disabled={disabled}
+                        variant={toolbarVariant}
+                        label={label}
+                    />
+                )}
+                <EditorContent editor={editor} className={styles.content} />
+                {authoring}
+                {invalid && (
+                    <InlineAlert tone='error'>
+                        {t('knowledge.editorError')}
+                    </InlineAlert>
+                )}
+            </div>
+        );
+    }
+
+    function blockActions(block: LearningBlock): MenuItem[] {
+        const actions = [...(getBlockActions?.(block) ?? [])];
+        if (workspace?.onMentionBlock) {
+            actions.push({
+                label: t('knowledge.addBlockToChat'),
+                icon: <MessageSquarePlus size={16} aria-hidden />,
+                onSelect() {
+                    workspace.onMentionBlock?.(block.id);
+                },
+            });
+        }
+
+        return actions;
+    }
+
+    const authoringEnabled = !disabled && toolbarVariant !== 'tutor';
 
     return (
-        <div className={styles.root} aria-busy={!editor}>
-            {editor && (
-                <EditorToolbar
-                    editor={editor}
-                    disabled={disabled}
-                    variant={toolbarVariant}
-                    label={label}
-                />
-            )}
-            <EditorContent editor={editor} className={styles.content} />
-            {invalid && (
-                <InlineAlert tone='error'>
-                    {t('knowledge.editorError')}
-                </InlineAlert>
-            )}
-        </div>
+        <BlockAuthoringProvider
+            enabled={authoringEnabled}
+            library={workspace?.library}
+            renderBlockMenu={workspace?.renderBlockMenu}
+            blockAccents={workspace?.blockAccents}
+            fieldAi={workspace?.fieldAi}
+            languageDefaults={workspace?.languageDefaults}
+            renderAudioPreparation={workspace?.renderAudioPreparation}
+            blockViewOptions={workspace?.blockViewOptions}
+            canDuplicateOnServer={Boolean(workspace?.blockCopy)}
+            additionalActions={blockActions}
+        >
+            {content}
+        </BlockAuthoringProvider>
     );
 });

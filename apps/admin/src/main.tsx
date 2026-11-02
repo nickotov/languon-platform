@@ -8,7 +8,9 @@ import { createRoot } from 'react-dom/client';
 import { AdminApp } from './app/admin-app';
 
 const root = document.querySelector('#root');
-if (!root) throw new Error('Admin root element is missing.');
+if (!root) {
+    throw new Error('Admin root element is missing.');
+}
 
 createRoot(root).render(
     <StrictMode>

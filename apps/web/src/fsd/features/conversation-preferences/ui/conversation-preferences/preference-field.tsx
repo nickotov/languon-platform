@@ -39,12 +39,16 @@ export function PreferenceField({
         );
         const nextValue =
             optionalField && selected === 'auto' ? undefined : selected;
+
         onChange({ ...value, [field.key]: nextValue });
     }
+
     function reset() {
         onChange(inheritPortraitField(value, field.key));
     }
+
     const canReset = showSource && origin === 'manual' && resettable;
+
     return (
         <div className={styles.field}>
             {showSource && (

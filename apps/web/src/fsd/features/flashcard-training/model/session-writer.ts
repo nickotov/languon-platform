@@ -33,17 +33,23 @@ export class SessionWriter {
             state.conflict ||
             this.busy ||
             !item
-        )
+        ) {
             return;
+        }
+
         if (!host.input.signedIn) {
             if (beforeAdvance) {
                 void this.rateLocally(rating, beforeAdvance);
+
                 return;
             }
+
             host.patch(acknowledgeRating(state, rating, null));
             void host.load();
+
             return;
         }
+
         const pending: Pending = {
             kind: 'rate',
             rating,
@@ -51,6 +57,7 @@ export class SessionWriter {
             operationId: crypto.randomUUID(),
             status: 'saving',
         };
+
         this.operation = {
             pending,
             ...(beforeAdvance ? { beforeAdvance } : {}),
@@ -64,18 +71,23 @@ export class SessionWriter {
                 configuration: host.input.configuration,
             },
         };
+
         void this.submit(this.operation);
     }
 
     public undo(): void {
         const state = this.host.getState();
         const acknowledged = state.lastAck;
-        if (!acknowledged || state.pending || state.conflict || this.busy)
-            return;
-        if (!acknowledged.attemptId) {
-            this.host.patch(restoreRating(state, acknowledged));
+        if (!acknowledged || state.pending || state.conflict || this.busy) {
             return;
         }
+
+        if (!acknowledged.attemptId) {
+            this.host.patch(restoreRating(state, acknowledged));
+
+            return;
+        }
+
         const pending: Pending = {
             kind: 'undo',
             entryId: acknowledged.entryId,
@@ -83,6 +95,7 @@ export class SessionWriter {
             operationId: crypto.randomUUID(),
             status: 'saving',
         };
+
         this.operation = { pending, acknowledged };
         void this.submit(this.operation);
     }
@@ -103,9 +116,13 @@ export class SessionWriter {
                 status: 'saving',
             },
         });
+
         try {
             await beforeAdvance;
-            if (!host.isCurrent(generation)) return;
+            if (!host.isCurrent(generation)) {
+                return;
+            }
+
             host.patch(acknowledgeRating(host.getState(), rating, null));
             void host.load();
         } finally {
@@ -120,9 +137,14 @@ export class SessionWriter {
             !pending ||
             pending.status !== 'error' ||
             this.busy
-        )
+        ) {
             return;
-        if (pending.retryAt && pending.retryAt > Date.now()) return;
+        }
+
+        if (pending.retryAt && pending.retryAt > Date.now()) {
+            return;
+        }
+
         void this.submit(this.operation);
     }
 
@@ -134,20 +156,32 @@ export class SessionWriter {
             pending: { ...operation.pending, status: 'saving' },
             announcement: 'savingRating',
         });
+
         try {
             if ('payload' in operation) {
                 const response = await host.input.api.rate(operation.payload);
-                if (!host.isCurrent(generation)) return;
+                if (!host.isCurrent(generation)) {
+                    return;
+                }
+
                 // A valid but unrelated response must never advance this card.
                 if (
                     response.entryId !== operation.payload.entryId ||
                     response.rating !== operation.payload.rating ||
                     response.learningVersion !==
                         operation.payload.expectedLearningVersion
-                )
+                ) {
                     throw new Error('Mismatched rating acknowledgment');
-                if (operation.beforeAdvance) await operation.beforeAdvance;
-                if (!host.isCurrent(generation)) return;
+                }
+
+                if (operation.beforeAdvance) {
+                    await operation.beforeAdvance;
+                }
+
+                if (!host.isCurrent(generation)) {
+                    return;
+                }
+
                 host.patch(
                     acknowledgeRating(
                         host.getState(),
@@ -160,31 +194,44 @@ export class SessionWriter {
                     operation.acknowledged.attemptId!,
                     operation.pending.operationId,
                 );
-                if (!host.isCurrent(generation)) return;
+
+                if (!host.isCurrent(generation)) {
+                    return;
+                }
+
                 const item =
                     host.getState().items[operation.acknowledged.entryId];
+
                 if (
                     response.attemptId !== operation.acknowledged.attemptId ||
                     response.entryId !== operation.acknowledged.entryId ||
                     response.learningVersion !== item?.learningVersion
-                )
+                ) {
                     throw new Error('Mismatched undo acknowledgment');
+                }
+
                 host.patch(
                     restoreRating(host.getState(), operation.acknowledged),
                 );
             }
+
             this.operation = null;
             void host.load();
             void host.refreshProgress();
         } catch (cause) {
-            if (!host.isCurrent(generation)) return;
+            if (!host.isCurrent(generation)) {
+                return;
+            }
+
             const error = toApiError(cause);
             const isUndo = operation.pending.kind === 'undo';
-            if (isAccessLoss(error)) host.unavailable();
-            else if (error.code === 'entry_not_found') {
+            if (isAccessLoss(error)) {
+                host.unavailable();
+            } else if (error.code === 'entry_not_found') {
                 host.patch(
                     removeEntries(host.getState(), [operation.pending.entryId]),
                 );
+
                 void host.load();
                 void host.refreshProgress();
             } else if (
@@ -199,6 +246,7 @@ export class SessionWriter {
                     conflict: 'undo',
                     announcement: 'undoUnavailable',
                 });
+
                 void host.refreshProgress();
             } else if (error.code === 'learning_version_conflict') {
                 // A rejected later rating is not an ACK. The prior confirmed
@@ -214,6 +262,7 @@ export class SessionWriter {
                     conflict: 'operation',
                     announcement: 'operationConflict',
                 });
+
                 void host.refreshProgress();
             } else {
                 host.patch({

@@ -2,7 +2,7 @@ import type {
     AdminSentenceLibrarySnapshotRequest,
     SentenceLibrarySnapshotRequest,
 } from '@languon/contracts';
-import { and, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, isNotNull, isNull, sql, type SQL } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import type { LearningAccess } from '../../../application/ports/learning-store';
 import { type SentenceLibraryAdminScope } from '../../../application/ports/sentence-library-store';
@@ -44,24 +44,31 @@ export async function sentenceLibrarySnapshotInternal(
             sql`select pg_advisory_xact_lock(hashtextextended(${`sentence-library-snapshots:${scope.actorId}`},0))`,
         );
 
-        const eligible =
-            input.operation === 'delete'
-                ? isNotNull(creator.archivedAt)
-                : input.operation.includes('global')
-                  ? input.operation === 'global-archive'
-                      ? isNull(global.archivedAt)
-                      : isNotNull(global.archivedAt)
-                  : input.operation === 'archive'
+        let eligible: SQL;
+        if (input.operation === 'delete') {
+            eligible = isNotNull(creator.archivedAt);
+        } else if (input.operation.includes('global')) {
+            eligible =
+                input.operation === 'global-archive'
+                    ? isNull(global.archivedAt)
+                    : isNotNull(global.archivedAt);
+        } else {
+            eligible =
+                input.operation === 'archive'
                     ? isNull(personal.archivedAt)
                     : isNotNull(personal.archivedAt);
+        }
+
         const selected = await sentenceLibraryMetadataRows(
             tx,
             scope,
             and(filterConditions(scope, input.query), eligible)!,
         ).limit(10001);
 
-        if (selected.length > 10000)
+        if (selected.length > 10000) {
             throw new SentenceCapacityUnavailableError(60);
+        }
+
         await pruneSentenceLibrarySnapshots(tx, context.now);
         await tx.execute(
             sql`delete from sentence_library_snapshots where id in (select id from sentence_library_snapshots where actor_id=${scope.actorId}::uuid and dictionary_id=${scope.dictionaryId}::uuid order by expires_at desc,id desc offset 4 limit 100)`,

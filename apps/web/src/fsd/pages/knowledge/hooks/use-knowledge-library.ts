@@ -15,8 +15,10 @@ export function useKnowledgeLibrary() {
     const [language, setLanguage] = useState('');
     useEffect(() => {
         const timeout = window.setTimeout(() => setQuery(search.trim()), 250);
+
         return () => window.clearTimeout(timeout);
     }, [search]);
+
     const notes = useInfiniteQuery({
         queryKey: ['knowledge', actorId, 'library', query, category, language],
         initialPageParam: 0,
@@ -48,6 +50,7 @@ export function useKnowledgeLibrary() {
         queryFn: ({ signal }) => dictionaryApi.listLanguages(signal),
         staleTime: Infinity,
     });
+
     return {
         notes,
         languages,

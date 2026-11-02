@@ -1,10 +1,11 @@
-import { createElement } from 'react';
+import { createElement, type ReactNode } from 'react';
 import { renderJSONContentToReactElement } from '@tiptap/static-renderer/json/react';
 import {
     KnowledgeBodySchema,
     type KnowledgeBody as Body,
     type KnowledgeMark,
     type KnowledgeNode,
+    type LearningBlock,
 } from '@languon/contracts';
 import styles from './knowledge-body.module.css';
 
@@ -14,33 +15,70 @@ type RenderNode = {
     attrs?: NonNullable<KnowledgeNode['attrs']>;
     marks?: KnowledgeMark[];
     content?: RenderNode[];
+    learningContent?: ReactNode;
 };
 
-function toRenderNode(node: KnowledgeNode): RenderNode {
+function toRenderNode(
+    node: KnowledgeNode,
+    renderLearningBlock?: (block: LearningBlock) => ReactNode,
+): RenderNode {
+    let learningContent: ReactNode;
+    if (node.type === 'learningBlock') {
+        if (!node.attrs?.block || !renderLearningBlock) {
+            throw new Error(
+                'Interactive content requires a learning-block renderer.',
+            );
+        }
+
+        learningContent = renderLearningBlock(node.attrs.block);
+    }
+
     return {
+        ...(node.type === 'learningBlock' ? { learningContent } : {}),
         type: node.type,
         ...(node.text !== undefined ? { text: node.text } : {}),
         ...(node.attrs ? { attrs: node.attrs } : {}),
         ...(node.marks ? { marks: node.marks } : {}),
-        ...(node.content ? { content: node.content.map(toRenderNode) } : {}),
+        ...(node.content
+            ? {
+                  content: node.content.map((child) =>
+                      toRenderNode(child, renderLearningBlock),
+                  ),
+              }
+            : {}),
     };
 }
 
-const renderDocument = renderJSONContentToReactElement<
-    KnowledgeMark,
-    RenderNode
->({
+function headingTag(level?: number) {
+    if (level === 1) {
+        return 'h1';
+    }
+
+    if (level === 3) {
+        return 'h3';
+    }
+
+    return 'h2';
+}
+
+// Mapping functions are React component types: retain their identities across updates.
+type DocumentMappings = Parameters<
+    typeof renderJSONContentToReactElement<KnowledgeMark, RenderNode>
+>[0];
+const documentMappings: DocumentMappings = {
     nodeMapping: {
+        learningBlock: ({ node }) => node.learningContent,
         doc: ({ children }) => <>{children}</>,
         text: ({ node }) => node.text ?? '',
         paragraph: ({ children }) => <p dir='auto'>{children}</p>,
         heading: ({ node, children }) =>
             createElement(
-                node.attrs?.level === 3 ? 'h3' : 'h2',
+                headingTag(node.attrs?.level),
                 { dir: 'auto' },
                 children,
             ),
         hardBreak: () => <br />,
+        horizontalRule: () => <hr />,
         bulletList: ({ children }) => <ul>{children}</ul>,
         orderedList: ({ node, children }) => (
             <ol start={node.attrs?.start ?? 1}>{children}</ol>
@@ -77,23 +115,33 @@ const renderDocument = renderJSONContentToReactElement<
                 <>{children}</>
             ),
     },
-});
+};
 
 /** Validated JSON becomes React nodes; stored HTML/attributes are never injected. */
 export function KnowledgeBody({
     body,
     language,
     className,
+    renderLearningBlock,
 }: {
     body: Body;
     language?: string;
     className?: string;
+    renderLearningBlock?: (block: LearningBlock) => ReactNode;
 }) {
     const parsed = KnowledgeBodySchema.parse(body);
+    // Reset the renderer's positional key counter while preserving mapping component types.
+    const renderDocument = renderJSONContentToReactElement<
+        KnowledgeMark,
+        RenderNode
+    >(documentMappings);
     const containerClass = [styles.prose, className].filter(Boolean).join(' ');
+
     return (
         <div className={containerClass} lang={language} dir='auto'>
-            {renderDocument({ content: toRenderNode(parsed.document) })}
+            {renderDocument({
+                content: toRenderNode(parsed.document, renderLearningBlock),
+            })}
         </div>
     );
 }

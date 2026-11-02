@@ -24,12 +24,14 @@ export function validateMigrationClassification(
             'Migration deployment classification must use schemaVersion 1.',
         );
     }
+
     const latest = journal?.entries?.at(-1)?.tag;
     if (!latest || classification.reviewedThrough !== latest) {
         throw new Error(
             `Migration deployment classification is stale: review through ${latest ?? 'the latest journal entry'}.`,
         );
     }
+
     if (
         !/^[a-f0-9]{64}$/.test(classification.reviewedMigrationsSha256 ?? '') ||
         classification.reviewedMigrationsSha256 !== reviewedMigrationsSha256
@@ -38,6 +40,7 @@ export function validateMigrationClassification(
             'Migration deployment classification does not match the reviewed migration content.',
         );
     }
+
     if (
         !['none', 'expand', 'migrate', 'contract'].includes(
             classification.compatibility,
@@ -47,11 +50,13 @@ export function validateMigrationClassification(
             'Migration compatibility must be none, expand, migrate, or contract.',
         );
     }
+
     if (classification.compatibility === 'contract') {
         throw new Error(
             'Contract migrations cannot precede blue/green traffic switching; ship them in a later release after the old application is retired.',
         );
     }
+
     if (
         typeof classification.rationale !== 'string' ||
         classification.rationale.trim().length < 20
@@ -60,6 +65,7 @@ export function validateMigrationClassification(
             'Migration classification requires a reviewed rationale.',
         );
     }
+
     return classification.compatibility;
 }
 
@@ -70,12 +76,20 @@ async function migrationContentHash(directory) {
             const childRelative = relative
                 ? `${relative}/${entry.name}`
                 : entry.name;
-            if (childRelative === 'deployment.json') continue;
+
+            if (childRelative === 'deployment.json') {
+                continue;
+            }
+
             const child = resolve(current, entry.name);
-            if (entry.isDirectory()) await visit(child, childRelative);
-            else if (entry.isFile()) files.push([childRelative, child]);
+            if (entry.isDirectory()) {
+                await visit(child, childRelative);
+            } else if (entry.isFile()) {
+                files.push([childRelative, child]);
+            }
         }
     }
+
     await visit(directory);
     const hash = createHash('sha256');
     for (const [relative, file] of files.sort(([a], [b]) =>
@@ -86,6 +100,7 @@ async function migrationContentHash(directory) {
             .update(await readFile(file))
             .update('\0');
     }
+
     return hash.digest('hex');
 }
 
@@ -99,6 +114,7 @@ export async function readMigrationClassification(paths = {}) {
     const contentHash = await migrationContentHash(
         dirname(paths.classificationPath ?? classificationPath),
     );
+
     return validateMigrationClassification(
         classification,
         journal,

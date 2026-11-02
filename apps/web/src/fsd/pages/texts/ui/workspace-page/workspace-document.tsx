@@ -20,6 +20,7 @@ export function WorkspaceDocument({
         Boolean(readingDocument?.alignment) &&
         (ws.mode === 'read' || Boolean(ws.proposal));
     const showCompose = !showRead && ws.mode !== 'edit';
+
     return (
         <main className={styles.body} id='reader-workspace'>
             {showCompose && <WorkspaceCompose ws={ws} />}

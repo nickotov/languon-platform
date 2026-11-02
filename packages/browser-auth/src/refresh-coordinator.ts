@@ -47,8 +47,12 @@ function delay(milliseconds: number): Promise<void> {
 }
 
 function isMessage(value: unknown): value is CoordinationMessage {
-    if (!value || typeof value !== 'object') return false;
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+
     const candidate = value as Partial<CoordinationMessage>;
+
     return (
         typeof candidate.senderId === 'string' &&
         (candidate.type === 'outcome' || candidate.type === 'refreshing')
@@ -62,6 +66,7 @@ export class BrowserRefreshCoordinator {
     private readonly listeners = new Set<
         (outcome: BrowserRefreshResult) => void
     >();
+
     private readonly lockName: string;
     private readonly locks: LockManagerLike | undefined;
     private readonly outcomeTimeoutMs: number;
@@ -73,16 +78,19 @@ export class BrowserRefreshCoordinator {
         if (!/^[a-z0-9][a-z0-9._-]{2,80}$/i.test(options.namespace)) {
             throw new Error('A stable browser refresh namespace is required.');
         }
+
         this.channel =
             options.channel ??
             (typeof BroadcastChannel === 'undefined'
                 ? undefined
                 : new BroadcastChannel(`${options.namespace}-session-v1`));
+
         this.locks =
             options.locks ??
             (typeof navigator !== 'undefined' && 'locks' in navigator
                 ? navigator.locks
                 : undefined);
+
         this.lockName = `${options.namespace}-refresh-v1`;
         this.outcomeTimeoutMs = options.outcomeTimeoutMs ?? 15_000;
         this.senderId = options.id ?? coordinatorId();
@@ -92,10 +100,14 @@ export class BrowserRefreshCoordinator {
     public refresh(
         action: () => Promise<AuthenticationSuccessResponse>,
     ): Promise<BrowserRefreshResult> {
-        if (this.inFlight) return this.inFlight;
+        if (this.inFlight) {
+            return this.inFlight;
+        }
+
         this.inFlight = this.coordinateRefresh(action).finally(() => {
             this.inFlight = null;
         });
+
         return this.inFlight;
     }
 
@@ -111,15 +123,19 @@ export class BrowserRefreshCoordinator {
         listener: (outcome: BrowserRefreshResult) => void,
     ): () => void {
         this.listeners.add(listener);
+
         return () => this.listeners.delete(listener);
     }
 
     public async settle(): Promise<void> {
-        if (this.inFlight) await this.inFlight;
+        if (this.inFlight) {
+            await this.inFlight;
+        }
     }
 
     public async runExclusive<T>(action: () => Promise<T>): Promise<T> {
         await this.settle();
+
         return this.locks
             ? this.locks.request(this.lockName, action)
             : await action();
@@ -135,19 +151,30 @@ export class BrowserRefreshCoordinator {
         if (!isMessage(event.data) || event.data.senderId === this.senderId) {
             return;
         }
+
         if (event.data.type === 'refreshing') {
             this.refreshingPeer = true;
+
             return;
         }
-        if (!('outcome' in event.data)) return;
+
+        if (!('outcome' in event.data)) {
+            return;
+        }
+
         if (event.data.outcome === null) {
             this.accept(null);
+
             return;
         }
+
         const parsed = AuthenticationSuccessResponseSchema.safeParse(
             event.data.outcome,
         );
-        if (parsed.success) this.accept(parsed.data);
+
+        if (parsed.success) {
+            this.accept(parsed.data);
+        }
     };
 
     private async coordinateRefresh(
@@ -162,13 +189,18 @@ export class BrowserRefreshCoordinator {
                 if (this.revision > revisionAtStart) {
                     return this.lastOutcome ?? null;
                 }
+
                 return this.performRefresh(action, revisionAtStart);
             });
         }
+
         if (this.refreshingPeer) {
             const peerOutcome = await this.waitForOutcome(revisionAtStart);
-            if (peerOutcome !== undefined) return peerOutcome;
+            if (peerOutcome !== undefined) {
+                return peerOutcome;
+            }
         }
+
         return this.performRefresh(action, revisionAtStart);
     }
 
@@ -180,18 +212,23 @@ export class BrowserRefreshCoordinator {
             senderId: this.senderId,
             type: 'refreshing',
         });
+
         try {
             const outcome = await action();
             if (this.revision > revisionAtStart) {
                 return this.lastOutcome ?? null;
             }
+
             this.publish(outcome);
+
             return outcome;
         } catch {
             if (this.revision > revisionAtStart) {
                 return this.lastOutcome ?? null;
             }
+
             this.publish(null);
+
             return null;
         }
     }
@@ -209,7 +246,9 @@ export class BrowserRefreshCoordinator {
         this.lastOutcome = outcome;
         this.refreshingPeer = false;
         this.revision += 1;
-        for (const listener of this.listeners) listener(outcome);
+        for (const listener of this.listeners) {
+            listener(outcome);
+        }
     }
 
     private async waitForOutcome(
@@ -220,8 +259,10 @@ export class BrowserRefreshCoordinator {
             if (this.revision > revisionAtStart) {
                 return this.lastOutcome ?? null;
             }
+
             await delay(20);
         }
+
         return undefined;
     }
 }

@@ -45,13 +45,15 @@ export async function sentencePreparationPruneInactive(
             .orderBy(asc(batches.ordinal))
             .limit(100);
 
-        if (ids.length)
+        if (ids.length) {
             await tx.delete(batches).where(
                 inArray(
                     batches.id,
                     ids.map((item) => item.id),
                 ),
             );
+        }
+
         // A content-free header preserves the operation identity after bounded pruning.
         await tx
             .update(preparations)
@@ -88,7 +90,7 @@ export async function sentencePreparationPruneExpired(
         .orderBy(asc(preparations.updatedAt), asc(preparations.id))
         .limit(1);
 
-    if (expired)
+    if (expired) {
         await modelPricingTransaction(persistence.database, async (tx) => {
             await lockSentenceLearner(tx, expired.learnerId);
             await sentencePreparationPruneInactive(
@@ -97,6 +99,7 @@ export async function sentencePreparationPruneExpired(
                 context.now,
             );
         });
+    }
 
     return expired;
 }

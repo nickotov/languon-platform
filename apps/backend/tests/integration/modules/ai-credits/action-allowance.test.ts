@@ -38,6 +38,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
         }, 60000);
+
         afterAll(async () => client?.end());
         beforeEach(async () => {
             await client`truncate users cascade`;
@@ -45,6 +46,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await db
                 .insert(usersTable)
                 .values({ id: ownerId, status: 'active' });
+
             await db.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                     ownerId,
@@ -56,6 +58,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             );
         });
+
         const request = (scope = 'dictionary-generation') => ({
             ownerId,
             scope,
@@ -89,14 +92,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await withActionQuotePersistence(db, () =>
                     db.transaction((tx) => authorizeActionAllowance(tx, input)),
                 );
+
                 throw new Error('Expected offer.');
             } catch (error) {
                 expect(error).toBeInstanceOf(
                     ActionAllowanceConfirmationRequired,
                 );
+
                 return error as ActionAllowanceConfirmationRequired;
             }
         };
+
         it.each([
             'dictionary-generation',
             'sentence-generation',
@@ -115,34 +121,42 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 id: rolledBackMarker,
                                 status: 'active',
                             });
+
                             return authorizeActionAllowance(tx, input);
                         }),
                     );
                 } catch (error) {
                     quoted = error as ActionAllowanceConfirmationRequired;
                 }
+
                 expect(quoted).toBeInstanceOf(
                     ActionAllowanceConfirmationRequired,
                 );
+
                 expect(quoted!.quote).toMatchObject({
                     maximumCredits: '0.12',
                     approximateOutputTokens: 20,
                 });
+
                 expect(
                     await db
                         .select()
                         .from(usersTable)
                         .where(eq(usersTable.id, rolledBackMarker)),
                 ).toHaveLength(0);
+
                 expect(
                     await db.select().from(aiCreditActionsTable),
                 ).toHaveLength(0);
+
                 expect(
                     await db.select().from(aiCreditActionAttemptsTable),
                 ).toHaveLength(0);
+
                 expect(
                     await db.select().from(aiCreditActionQuotesTable),
                 ).toHaveLength(1);
+
                 const accepted = await withActionAllowanceConsent(
                     quoted!.quote.id,
                     () =>
@@ -150,36 +164,43 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             authorizeActionAllowance(tx, input),
                         ),
                 );
+
                 expect(accepted).toEqual({
                     holdMaximumMilli: 120n,
                     outputLimit: 20,
                 });
             },
         );
+
         it('removes only expired offers in bounded maintenance batches', async () => {
             const first = await offer(request());
             const second = await offer(request());
             const current = await offer(request());
-            for (const expired of [first, second])
+            for (const expired of [first, second]) {
                 await db
                     .update(aiCreditActionQuotesTable)
                     .set({ expiresAt: new Date(at.getTime() - 1000) })
                     .where(eq(aiCreditActionQuotesTable.id, expired.quote.id));
+            }
+
             expect(
                 await db.transaction((tx) =>
                     removeExpiredActionQuotes(tx, at, 1),
                 ),
             ).toBe(1);
+
             expect(
                 await db.transaction((tx) =>
                     removeExpiredActionQuotes(tx, at, 1),
                 ),
             ).toBe(1);
+
             expect(
                 await db.transaction((tx) =>
                     removeExpiredActionQuotes(tx, at, 1),
                 ),
             ).toBe(0);
+
             expect(
                 await db.select().from(aiCreditActionQuotesTable),
             ).toMatchObject([{ id: current.quote.id }]);
@@ -192,10 +213,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 await db.select().from(aiCreditActionQuotesTable),
             ).toHaveLength(1);
+
             expect(await db.select().from(aiCreditActionsTable)).toHaveLength(
                 0,
             );
         });
+
         it('requires a refreshed offer after concurrent available-credit removal', async () => {
             const input = request();
             const first = await offer(input);
@@ -212,19 +235,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sourceReference: randomUUID(),
                 });
             });
+
             const refreshed = await withActionAllowanceConsent(
                 first.quote.id,
                 () => offer(input),
             );
+
             expect(refreshed.quote.id).not.toBe(first.quote.id);
             expect(refreshed.quote).toMatchObject({
                 maximumCredits: '0.11',
                 approximateOutputTokens: 10,
             });
+
             expect(await db.select().from(aiCreditActionsTable)).toHaveLength(
                 0,
             );
         });
+
         it('never increases accepted terms after top-up and retains a pending offer on retry', async () => {
             const input = request();
             const first = await offer(input);
@@ -238,6 +265,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sourceReference: randomUUID(),
                 }),
             );
+
             expect((await offer(input)).quote.id).toBe(first.quote.id);
             expect(
                 await withActionAllowanceConsent(first.quote.id, () =>
@@ -245,6 +273,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).toEqual({ holdMaximumMilli: 120n, outputLimit: 20 });
         });
+
         it('refreshes changed pricing authorization and rejects input without any affordable output', async () => {
             const input = request();
             const first = await offer(input);
@@ -252,6 +281,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ...input,
                 authorization: { ...input.authorization, tariffVersion: 2 },
             };
+
             expect(
                 (
                     await withActionAllowanceConsent(first.quote.id, () =>
@@ -259,6 +289,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     )
                 ).quote.id,
             ).not.toBe(first.quote.id);
+
             await expect(
                 db.transaction((tx) =>
                     authorizeActionAllowance(tx, {
@@ -267,6 +298,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     }),
                 ),
             ).rejects.toBeInstanceOf(AiCreditInsufficientBalanceError);
+
             expect(await db.select().from(aiCreditActionsTable)).toHaveLength(
                 0,
             );

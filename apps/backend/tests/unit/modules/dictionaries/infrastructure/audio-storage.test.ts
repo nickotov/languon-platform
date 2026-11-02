@@ -29,20 +29,27 @@ function fakeVersionedS3() {
                 checksum: command.input.Metadata!.sha256!,
                 mime: command.input.ContentType!,
             });
+
             return { VersionId: version };
         }
-        if (command instanceof ListObjectVersionsCommand)
+
+        if (command instanceof ListObjectVersionsCommand) {
             return {
                 Versions: [...versions].map(([VersionId, row]) => ({
                     Key: row.key,
                     VersionId,
                 })),
             };
+        }
+
         if (command instanceof DeleteObjectCommand) {
-            if (command.input.VersionId)
+            if (command.input.VersionId) {
                 versions.delete(command.input.VersionId);
+            }
+
             return {};
         }
+
         if (
             command instanceof GetObjectCommand ||
             command instanceof HeadObjectCommand
@@ -52,11 +59,14 @@ function fakeVersionedS3() {
                 : [...versions.values()].find(
                       (r) => r.key === command.input.Key,
                   );
+
             if (!row) {
                 const error = new Error('Missing');
                 error.name = 'NoSuchKey';
+
                 throw error;
             }
+
             return {
                 Body: Readable.from([row.body]),
                 ContentLength: row.body.length,
@@ -64,8 +74,10 @@ function fakeVersionedS3() {
                 Metadata: { sha256: row.checksum },
             };
         }
+
         throw new Error('Unexpected command');
     };
+
     return { client: { send } as unknown as Pick<S3Client, 'send'>, versions };
 }
 
@@ -91,11 +103,13 @@ describe('S3 audio storage contract', () => {
             'dictionary-audio/new',
             createFixtureAudio(),
         );
+
         expect(newRef.namespace).toBe('new-bucket');
         const pendingOld = await storage.putForReference(
             { ...oldRef, key: 'dictionary-audio/pending-old' },
             createFixtureAudio(),
         );
+
         expect(pendingOld.namespace).toBe('old-bucket');
         expect(await storage.read(pendingOld)).toEqual(createFixtureAudio());
         await storage.delete(pendingOld);
@@ -107,6 +121,7 @@ describe('S3 audio storage contract', () => {
             storage.delete({ ...oldRef, namespace: 'unconfigured' }),
         ).toThrow('retained');
     });
+
     it('round trips exact version with checksum and removes all versions without prefix-neighbor deletion', async () => {
         const fake = fakeVersionedS3();
         const storage = new S3AudioObjectStorage({
@@ -124,6 +139,7 @@ describe('S3 audio storage contract', () => {
         expect(await storage.read(neighbor)).toEqual(audio);
         expect(fake.versions.size).toBe(1);
     });
+
     it('rejects corrupt returned bytes and cross-storage references', async () => {
         const fake = fakeVersionedS3();
         const storage = new S3AudioObjectStorage({
@@ -134,12 +150,14 @@ describe('S3 audio storage contract', () => {
             'dictionary-audio/asset',
             createFixtureAudio(),
         );
+
         fake.versions.get(ref.versionId!)!.body = Buffer.from('corrupt');
         await expect(storage.read(ref)).rejects.toThrow('integrity');
         await expect(
             storage.delete({ ...ref, namespace: 'other' }),
         ).rejects.toThrow('identity');
     });
+
     it('does not report purge success when deletion leaves a physical version', async () => {
         const fake = fakeVersionedS3();
         const send = fake.client.send.bind(fake.client);
@@ -154,6 +172,7 @@ describe('S3 audio storage contract', () => {
             'dictionary-audio/asset',
             createFixtureAudio(),
         );
+
         await expect(storage.delete(ref)).rejects.toThrow('versions remain');
     });
 });

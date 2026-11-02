@@ -199,7 +199,7 @@
     .slot {
     position: absolute;
     inset-block: var(--size-48) 0;
-    inset-inline-end: 0;
+    inset-inline-end: var(--space-8);
     width: min(var(--size-380), calc(100% - var(--size-24)));
     height: auto;
     margin: 0;

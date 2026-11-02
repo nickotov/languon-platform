@@ -111,9 +111,11 @@ export class RefreshSession implements RefreshSessionProperties {
         if (this.revokedAt) {
             throw new RefreshSessionUnavailableError('revoked');
         }
+
         if (this.consumedAt) {
             throw new RefreshSessionUnavailableError('consumed');
         }
+
         if (input.now >= this.expiresAt) {
             throw new RefreshSessionUnavailableError('expired');
         }

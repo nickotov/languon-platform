@@ -68,17 +68,24 @@ export function SetupDialog({
 
     let blocked: string | undefined;
 
-    if (!activeCount) blocked = t('training.emptyHelp');
-    else if (setup.frontError || setup.backError)
+    if (!activeCount) {
+        blocked = t('training.emptyHelp');
+    } else if (setup.frontError || setup.backError) {
         blocked = t('training.chooseField');
-    else if (setup.scopeEmpty) blocked = t('training.selectOne');
+    } else if (setup.scopeEmpty) {
+        blocked = t('training.selectOne');
+    }
 
     function handleClose() {
-        if (!setup.starting) onClose();
+        if (!setup.starting) {
+            onClose();
+        }
     }
 
     async function handleStart() {
-        if (!setup.canStart) return;
+        if (!setup.canStart) {
+            return;
+        }
 
         const fullscreen = requestTrainingFullscreen();
 
@@ -86,7 +93,9 @@ export function SetupDialog({
 
         if (!payload) {
             void fullscreen.then((granted) => {
-                if (granted) exitTrainingFullscreen();
+                if (granted) {
+                    exitTrainingFullscreen();
+                }
             });
 
             return;

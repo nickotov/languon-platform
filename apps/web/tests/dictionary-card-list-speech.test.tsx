@@ -23,6 +23,7 @@ it('preserves exact saved field text when pronunciation controls are present', (
             exampleTranslationLanguage: 'target',
         },
     } as DictionaryCard;
+
     render(
         <DictionaryCardList
             cards={[card]}
@@ -43,21 +44,27 @@ it('preserves exact saved field text when pronunciation controls are present', (
             )}
         />,
     );
+
     expect(
         screen.queryByRole('button', { name: 'Play example' }),
     ).not.toBeInTheDocument();
+
     expect(
         screen.queryByRole('button', { name: 'Play exampleTranslation' }),
     ).not.toBeInTheDocument();
+
     expect(
         screen.getByRole('button', { name: 'Play translation' }),
     ).toBeInTheDocument();
+
     for (const value of Object.values(card.values)) {
         expect(screen.getByText(value!, { exact: true })).toBeInTheDocument();
     }
+
     expect(
         screen.getByRole('button', { name: 'Play source' }),
     ).toBeInTheDocument();
+
     expect(
         screen.getByText('casa', { exact: true }).closest('[lang]'),
     ).toHaveAttribute('lang', 'es');

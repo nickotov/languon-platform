@@ -65,12 +65,15 @@ describe('development harness Mastra primitives', () => {
         expect(Object.keys(development.listAgents())).toEqual([
             'developmentVerificationAgent',
         ]);
+
         expect(Object.keys(development.listWorkflows())).toEqual([
             'developmentVerificationWorkflow',
         ]);
+
         expect(Object.keys(development.listTools() ?? {})).toEqual([
             'development-principal-verification',
         ]);
+
         expect(Object.keys(development.listScorers() ?? {})).toEqual([
             'developmentPrincipalMatch',
         ]);
@@ -127,6 +130,7 @@ describe('development harness Mastra primitives', () => {
             input: { expectedPrincipalId: principalId },
             output: result.status === 'success' ? result.result : undefined!,
         });
+
         expect(score).toMatchObject({
             score: 1,
             reason: 'The verified principal matches the expected synthetic fixture.',
@@ -197,6 +201,7 @@ describe('development harness Mastra primitives', () => {
                 },
             },
         ]);
+
         expect(alternateAgent.model).toEqual([
             {
                 enabled: true,
@@ -229,6 +234,7 @@ describe('development harness Mastra primitives', () => {
                 },
             ),
         );
+
         vi.stubGlobal('fetch', fetchMock);
         const consoleCalls: unknown[][] = [];
         for (const method of ['error', 'info', 'log', 'warn'] as const) {
@@ -266,9 +272,11 @@ describe('development harness Mastra primitives', () => {
         expect(await verificationAgent.getDefaultOptions()).toMatchObject({
             maxSteps: 3,
         });
+
         expect(
             await verificationAgent.getDefaultGenerateOptionsLegacy(),
         ).toMatchObject({ maxRetries: 0, maxSteps: 3 });
+
         expect(
             await verificationAgent.getDefaultStreamOptionsLegacy(),
         ).toMatchObject({ maxRetries: 0, maxSteps: 3 });
@@ -286,6 +294,7 @@ describe('development harness Mastra primitives', () => {
                 requestContext: requestContext(),
             },
         );
+
         controller.abort(new DOMException('Stopped', 'AbortError'));
 
         await expect(execution).rejects.toMatchObject({ name: 'AbortError' });

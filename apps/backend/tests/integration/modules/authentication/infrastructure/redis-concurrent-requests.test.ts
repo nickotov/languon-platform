@@ -22,8 +22,10 @@ function latch() {
     const promise = new Promise<void>((resolve) => {
         release = resolve;
     });
+
     return { promise, release };
 }
+
 describe.runIf(redisIntegrationEnabled)(
     'shared Redis concurrent request leases',
     () => {
@@ -34,11 +36,15 @@ describe.runIf(redisIntegrationEnabled)(
             second = createTestRedisClient();
             await Promise.all([first.connect(), second.connect()]);
         });
+
         afterAll(async () => {
-            for (const namespace of namespaces)
+            for (const namespace of namespaces) {
                 await deleteNamespacedKeys(first, namespace);
+            }
+
             await Promise.all([first.quit(), second.quit()]);
         });
+
         function fixtures(label: string) {
             const namespace = uniqueAuthRedisNamespace(label);
             namespaces.add(namespace);
@@ -49,6 +55,7 @@ describe.runIf(redisIntegrationEnabled)(
                 limit: 8,
                 ttlMs: 300_000,
             };
+
             return {
                 namespace,
                 request,
@@ -62,6 +69,7 @@ describe.runIf(redisIntegrationEnabled)(
                 right: new RedisRateLimiter({ ...options, redis: second }),
             };
         }
+
         it('atomically enforces eight across two replica clients and isolates actors with opaque keys', async () => {
             const { left, right, request, namespace, key } =
                 fixtures('shared-cap');
@@ -88,10 +96,12 @@ describe.runIf(redisIntegrationEnabled)(
             const leases = decisions.flatMap((decision) =>
                 decision.status === 'fulfilled' ? [decision.value] : [],
             );
+
             expect(leases).toHaveLength(8);
             expect(
                 decisions.find((decision) => decision.status === 'rejected'),
             ).toMatchObject({ reason: { code: 'capacity_unavailable' } });
+
             expect(await first.zcard(key)).toBe(8);
             expect(await first.pttl(key)).toBeGreaterThan(240_000);
             expect(await first.pttl(key)).toBeLessThanOrEqual(300_000);
@@ -99,11 +109,13 @@ describe.runIf(redisIntegrationEnabled)(
                 { ownerId: 'different-private-actor' },
                 new AbortController().signal,
             );
+
             expect(other).not.toBeNull();
             const keys = await first.keys(`${namespace}:*`);
             expect(
                 keys.filter((value) => value.includes(':concurrent-request:')),
             ).toHaveLength(2);
+
             expect(
                 keys.every(
                     (value) =>
@@ -111,6 +123,7 @@ describe.runIf(redisIntegrationEnabled)(
                         !value.includes('different-private-actor'),
                 ),
             ).toBe(true);
+
             const existing = leases.find(Boolean)!;
             await Promise.all([existing.release(), existing.release()]);
             const replacement = await right.acquireLease(request);
@@ -126,6 +139,7 @@ describe.runIf(redisIntegrationEnabled)(
                 other!.release(),
             ]);
         });
+
         it('bounds source preprocessing per learner and globally across service replicas', async () => {
             const { left, right, namespace } = fixtures('submission-preflight');
             const serviceLeft = new ConversationService(
@@ -147,42 +161,52 @@ describe.runIf(redisIntegrationEnabled)(
                     signal(),
                 ),
             ];
+
             await expect(
                 serviceRight.admitSubmission(
                     { ownerId: 'preflight-user-0' },
                     signal(),
                 ),
             ).rejects.toMatchObject({ code: 'capacity_unavailable' });
-            for (let index = 1; index < 10; index++)
+
+            for (let index = 1; index < 10; index++) {
                 leases.push(
-                    await (index % 2 ? serviceLeft : serviceRight).admitSubmission(
+                    await (
+                        index % 2 ? serviceLeft : serviceRight
+                    ).admitSubmission(
                         { ownerId: `preflight-user-${index}` },
                         signal(),
                     ),
                 );
+            }
+
             await expect(
                 serviceRight.admitSubmission(
                     { ownerId: 'preflight-user-10' },
                     signal(),
                 ),
             ).rejects.toMatchObject({ code: 'capacity_unavailable' });
+
             const ownerKey = deriveOpaqueRedisKey(
                 namespace,
                 'concurrent-request',
                 'contextual-assistant-turn-submissions\0preflight-user-10',
                 secret,
             );
+
             expect(await first.zcard(ownerKey)).toBe(0);
             await leases[0]!.release();
             const replacement = await serviceRight.admitSubmission(
                 { ownerId: 'preflight-user-10' },
                 signal(),
             );
+
             await Promise.all([
                 ...leases.slice(1).map((lease) => lease!.release()),
                 replacement.release(),
             ]);
         });
+
         it('expires an abandoned lease and prevents its stale release from erasing a replacement', async () => {
             const { left, right, request, key } = fixtures('crash-ttl');
             const short = { ...request, limit: 1, ttlMs: 1000 };
@@ -198,6 +222,7 @@ describe.runIf(redisIntegrationEnabled)(
             await replacement!.release();
             expect(await left.acquireLease(short)).not.toBeNull();
         });
+
         it('cleans its token when abort happens after Redis admission commits but before its reply arrives', async () => {
             const { left, request, key } = fixtures('committed-abort');
             const committed = latch(),
@@ -220,6 +245,7 @@ describe.runIf(redisIntegrationEnabled)(
                             committed.release();
                             await deliver.promise;
                         }
+
                         return result;
                     },
                 );
@@ -232,6 +258,7 @@ describe.runIf(redisIntegrationEnabled)(
                 const rejected = expect(pending).rejects.toMatchObject({
                     name: 'AbortError',
                 });
+
                 await committed.promise;
                 expect(await first.zcard(key)).toBe(1);
                 controller.abort();
@@ -242,6 +269,7 @@ describe.runIf(redisIntegrationEnabled)(
                 instrumented.mockRestore();
             }
         });
+
         it('executes token-scoped release with the canonical restricted production ACL commands', async () => {
             const policy = await readFile(
                 new URL(
@@ -265,11 +293,13 @@ describe.runIf(redisIntegrationEnabled)(
             const cleanup = createAuthenticationRedisClient({
                 url: url.toString(),
             });
+
             url.username = user;
             url.password = password;
             const restricted = createAuthenticationRedisClient({
                 url: url.toString(),
             });
+
             await first.acl(
                 'SETUSER',
                 user,
@@ -277,6 +307,7 @@ describe.runIf(redisIntegrationEnabled)(
                 `>${password}`,
                 ...permissions,
             );
+
             try {
                 await Promise.all([cleanup.connect(), restricted.connect()]);
                 const limiter = new RedisRateLimiter({
@@ -305,6 +336,7 @@ describe.runIf(redisIntegrationEnabled)(
                 await first.acl('DELUSER', user);
             }
         });
+
         it('does not admit when Redis is unavailable or the caller is already aborted', async () => {
             const unavailable = createAuthenticationRedisClient({
                 url: 'redis://127.0.0.1:1/4',
@@ -319,17 +351,20 @@ describe.runIf(redisIntegrationEnabled)(
                     hmacSecret: secret,
                     requestTimeoutMs: 100,
                 });
+
                 await expect(
                     limiter.acquireLease(request),
                 ).rejects.toBeInstanceOf(RateLimitUnavailableError);
             } finally {
                 unavailable.disconnect(false);
             }
+
             const controller = new AbortController();
             controller.abort();
             await expect(
                 left.acquireLease({ ...request, signal: controller.signal }),
             ).rejects.toMatchObject({ name: 'AbortError' });
+
             expect(await first.zcard(key)).toBe(0);
         });
     },

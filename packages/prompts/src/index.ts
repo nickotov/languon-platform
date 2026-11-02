@@ -1,3 +1,5 @@
+import { knowledgeExerciseEvaluationPrompt } from './local/knowledge-exercise-evaluation';
+import { knowledgeBlockFieldPrompt } from './local/knowledge-block-field';
 import { learnerInterviewerPrompt } from './local/learner-interviewer';
 import { textTranslationPrompt, textDetectionPrompt } from './local/texts';
 import { sentenceGenerationPrompt } from './local/sentence-generation';
@@ -13,6 +15,9 @@ import { dictionaryCardAuthoringPrompt } from './local/dictionary-card-authoring
 import { contextualLanguageTutorPrompt } from './local/contextual-language-tutor';
 
 const localPrompts = {
+    [knowledgeExerciseEvaluationPrompt.name]:
+        knowledgeExerciseEvaluationPrompt.system,
+    [knowledgeBlockFieldPrompt.name]: knowledgeBlockFieldPrompt.system,
     [learnerInterviewerPrompt.name]: learnerInterviewerPrompt.system,
     [contextualLanguageTutorPrompt.name]: contextualLanguageTutorPrompt.system,
     [textTranslationPrompt.name]: textTranslationPrompt.system,

@@ -1,0 +1,128 @@
+{
+  "owner": "frontend-foundation",
+  "scope": "Three high-level diagram reconciliations under BL019 improvement; no implementation changes.",
+  "reviewed": "2026-11-01",
+  "entries": [
+    {
+      "path": "docs/diagrams/development-and-deployment.md",
+      "beforeHash": "5674b1028de77a0e139ae400dd0167f8a19699743080d5017729084f8da640d7",
+      "afterHash": "dc285c318787147474e514b3508bfe39994ad521cb1e2676a97f09fd71600749",
+      "addedSourcePaths": [
+        "infra/deploy/lib/worker-database-privileges.mjs"
+      ],
+      "mermaidUnchanged": true,
+      "fingerprintUnchanged": true,
+      "reviewed": "2026-11-01",
+      "claim": "Deployment privilege preflight is implemented in `worker-database-privileges.mjs`\nand invoked through the deployment controller. Its extraction preserves the same\nproduction-only worker credential check, allowed privileges and fail-closed\nvalidation before slot activation. Worker document-adapter selection and release\nargument parsing remain inside their existing process/CLI boundaries."
+    },
+    {
+      "path": "docs/diagrams/module-boundaries.md",
+      "beforeHash": "3d3c92de1e29b3bfb9cf28ec564ba198fe7cfd8cb5d11ab3f258dfdd3ca767f0",
+      "afterHash": "b2df99f62fd2329433fbabcb390ba50a876f3db9aeffc1c4887f7c70a9e89106",
+      "addedSourcePaths": [
+        "infra/deploy/lib/deployment.mjs",
+        "infra/deploy/lib/worker-database-privileges.mjs"
+      ],
+      "mermaidUnchanged": true,
+      "fingerprintUnchanged": true,
+      "reviewed": "2026-11-01",
+      "claim": "Deployment tooling keeps worker privilege queries and assertions in a focused\nlocal module, called by the deployment controller; those checks do not grant\napplication services SQL or deployment authority. The accounting participant\nkeeps observation construction private to its existing transaction boundary.\nFrontend panel, field-policy and presentation extractions remain inside their\nowning slices; they introduce no new app, layer or cross-slice relationship."
+    },
+    {
+      "path": "docs/diagrams/system-context.md",
+      "beforeHash": "30ed82765558d5ee8a07c7aaf67e58751780e6350b1f2e3cfebb5c29fde0b242",
+      "afterHash": "a874a4b6fd79fa5b0492b453c4e186130af79bbdce746698ca16d1ba64b9b049",
+      "addedSourcePaths": [],
+      "mermaidUnchanged": true,
+      "fingerprintUnchanged": true,
+      "reviewed": "2026-11-01",
+      "claim": "The worker document-adapter helper retains the configured deterministic or\nproduction adapter selection; it adds no process, storage service or external\nprovider. Knowledge HTTP error mapping remains within the same authenticated\nand capability-aware router. These local readability changes leave the system\nrelationships shown above unchanged."
+    }
+  ],
+  "reviewedInputs": [
+    {
+      "path": "apps/backend/src/infrastructure/worker/dictionary-worker-command.ts",
+      "beforeHash": "7fc0f3c49b81edd5df85f43e3e32a45f978b8fdd435339b1878bde16ca5fc5be",
+      "afterHash": "1e58bb709fd822b7a933769e08fde9bb4b534582ac745c4ea30f71ac6cb1c113",
+      "claim": "Complete diff and document configuration/composition caller: no storage -> unavailable; deterministic fixtures versus production Bubblewrap/ClamAV selection unchanged."
+    },
+    {
+      "path": "infra/deploy/lib/deployment.mjs",
+      "beforeHash": "9229e40c6062995725ca8ff705f3804a775cf1e5cefdd7d190a514b6a9a7d3aa",
+      "afterHash": "4f1a5130323be7281a15de71c1a736ed3eb09c92847304b443e14584143dfd3a",
+      "claim": "Complete extraction diff and verifyDictionaryWorkerDatabasePrivileges caller: production-only preflight with manifest-gated speech/model-price queries and same assertion."
+    },
+    {
+      "path": "infra/deploy/lib/worker-database-privileges.mjs",
+      "beforeHash": null,
+      "afterHash": "01b6c7c38398c92c1bc0b36bc2ba9c257df607782564f114d17bff54604d5441",
+      "claim": "Full 214-line body; extracted section byte-identical (ignoring trailing blank line) to baseline deployment module. Query/column privilege authority unchanged."
+    },
+    {
+      "path": "scripts/release-manifest.mjs",
+      "beforeHash": "fb0c24b2426b103a36b5b3a021677cf6cc6bd6cd90e00254410b0c49c1030101",
+      "afterHash": "69f39a817b9210d45ecef8bb13686b6269b1f2a419bb23110ae1fb371f788cc8",
+      "claim": "Complete diff: repeated CLI flags and image entry normalization retain same values and immutable manifest flow."
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant.ts",
+      "beforeHash": "1cb1d632ee89840b0d6217d61896f7cf40443d7044efee2ca20829e3cbbf50a6",
+      "afterHash": "69cf7ff676214c580a770d3b244c0568f578348d0446712f115feda7647e5edf",
+      "claim": "Complete diff and settlement caller: private buildProviderObservations preserves native usage/execution/calls optional fields and settlement SQL arguments."
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/knowledge.routes.ts",
+      "beforeHash": "c6933c71a852202e6412d56254022d3c8fb847f6a7c1284e7c947bea0a17eec9",
+      "afterHash": "a595a0edc016690e7dc11adce3624f367c0ce40fee1281bffe4c2d4043ab1a6e",
+      "claim": "Complete diff and router middleware/error-handler context: same domain-code statuses and same auth/origin/capability header boundaries."
+    }
+  ],
+  "requirements": [
+    "docs/diagrams/README.md",
+    "docs/document-metadata.md",
+    ".agents/skills/architecture-diagrams/SKILL.md",
+    ".agent/improvements/codebase-readability-refactoring.md"
+  ],
+  "acceptedADRsRead": [
+    "0005",
+    "0009",
+    "0010",
+    "0012",
+    "0039",
+    "0040",
+    "0042",
+    "0045",
+    "0050"
+  ],
+  "sourceSelectionRationale": "New deployment privilege module materially owns a readiness/least-privilege claim and is included in both relevant diagrams. Frontend private UI/policy helpers were reviewed in the independent 77-path source review and foundation audit; they do not add system/module edges and are not all duplicated into these high-level topology source lists.",
+  "discrepanciesRetained": [
+    "docs/architecture.md still calls document storage/scanner/parser planned; current worker composes gated real adapters. Existing system/development notes explicitly retain this distinction.",
+    "No production activation/deployment, provider readiness or new architecture is asserted."
+  ],
+  "checks": [
+    {
+      "check": "Byte comparison of new worker-database-privileges module to extracted baseline section",
+      "result": "passed"
+    },
+    {
+      "check": "Exact Mermaid body before/after comparison across three owned views",
+      "result": "passed; all unchanged"
+    },
+    {
+      "check": "Source path existence and body source links",
+      "result": "passed; 25/28/19 existing unique exact source paths, valid source links and one Mermaid block per view"
+    },
+    {
+      "check": "git diff --check -- docs/diagrams/development-and-deployment.md docs/diagrams/module-boundaries.md docs/diagrams/system-context.md",
+      "result": "passed"
+    },
+    {
+      "check": "pnpm exec prettier --check docs/diagrams/development-and-deployment.md docs/diagrams/module-boundaries.md docs/diagrams/system-context.md",
+      "result": "passed"
+    }
+  ],
+  "pending": [
+    "Root final catalog fingerprint stamping and diagrams:check after all diagram owners finish.",
+    "No viewer/services started; Mermaid and viewer presentation unchanged. Root retains any selected rendered evidence gate."
+  ]
+}

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { KnowledgeBody, TextAlignment } from '@languon/contracts';
 import type { SourceMaterial } from '../../../domain/conversation';
+import { learningBlockPlainText } from '../../../../knowledge/domain/learning-block-text';
 
 /** Budget JSON-escaped UTF-8 rather than UTF-16 units; never split a code point. */
 function textChunks(text: string, maxEncodedBytes: number) {
@@ -20,7 +21,9 @@ function textChunks(text: string, maxEncodedBytes: number) {
         bytes += size;
     }
 
-    if (chunk || !result.length) result.push(chunk);
+    if (chunk || !result.length) {
+        result.push(chunk);
+    }
 
     return result;
 }
@@ -43,7 +46,10 @@ function passageId(sourceId: string, version: string, index: number) {
 function labelPrefix(title: string, maxLength: number) {
     let label = '';
     for (const character of title) {
-        if (label.length + character.length > maxLength) break;
+        if (label.length + character.length > maxLength) {
+            break;
+        }
+
         label += character;
     }
 
@@ -89,8 +95,10 @@ export function textSourceMaterial(input: {
         }),
     };
 
-    if (Buffer.byteLength(JSON.stringify(complete), 'utf8') <= 8000)
+    if (Buffer.byteLength(JSON.stringify(complete), 'utf8') <= 8000) {
         return [complete];
+    }
+
     const pairs = input.alignment?.source.map((source, index) => ({
         pairId: source.pairId,
         sourceText: source.text,
@@ -132,6 +140,10 @@ export function noteSourceMaterial(input: {
     body: KnowledgeBody;
 }): SourceMaterial[] {
     const render = (node: KnowledgeBody['document']): string => {
+        if (node.type === 'learningBlock' && node.attrs?.block) {
+            return `${learningBlockPlainText(node.attrs.block)}\n`;
+        }
+
         if (node.type === 'text') {
             const link = node.marks?.find((mark) => mark.type === 'link');
 
@@ -140,7 +152,7 @@ export function noteSourceMaterial(input: {
 
         const text = (node.content ?? []).map(render).join('');
 
-        return `${text}${['paragraph', 'heading', 'tableCell', 'tableHeader', 'listItem', 'hardBreak'].includes(node.type) ? '\n' : ''}`;
+        return `${text}${['paragraph', 'heading', 'tableCell', 'tableHeader', 'listItem', 'hardBreak', 'horizontalRule'].includes(node.type) ? '\n' : ''}`;
     };
     const text = `${input.title}\n${input.summary}\n\n${render(input.body.document)}`;
 

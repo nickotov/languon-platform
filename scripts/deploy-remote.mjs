@@ -53,19 +53,26 @@ Options:
   --audit-path <path>             Save raw remote JSON output locally
   --ssh-port <number>             SSH port (default: 22)
 `);
+
     process.exit(status);
 }
 
 function expandPath(input) {
-    if (!input) return input;
+    if (!input) {
+        return input;
+    }
+
     if (input.startsWith('~/')) {
         return path.join(process.env.HOME || '', input.slice(2));
     }
+
     return input;
 }
 
 function parseArguments(values) {
-    if (values.includes('--help') || values.includes('-h')) usage(0);
+    if (values.includes('--help') || values.includes('-h')) {
+        usage(0);
+    }
 
     const options = new Map();
     let command = 'deploy';
@@ -80,10 +87,12 @@ function parseArguments(values) {
         if (!key.startsWith('--')) {
             fail(`Unexpected argument: ${key}`);
         }
+
         const value = values[index + 1];
         if (value === undefined || value.startsWith('--')) {
             fail(`Missing value for ${key}`);
         }
+
         options.set(key.slice(2), value);
         index += 1;
     }
@@ -112,7 +121,11 @@ function parseTrailingJson(stdout) {
         .split('\n')
         .reverse()
         .find((line) => line.trim().startsWith('{'));
-    if (!candidate) return;
+
+    if (!candidate) {
+        return;
+    }
+
     return JSON.parse(candidate);
 }
 
@@ -143,11 +156,14 @@ async function main() {
 
     const target =
         explicitTarget || (host && user ? `${user}@${host}` : envTarget);
+
     if (!target) {
         fail('Either --target, or both --host and --user are required.');
     }
 
-    if (!manifestPath) fail('--manifest is required.');
+    if (!manifestPath) {
+        fail('--manifest is required.');
+    }
 
     const manifestAbsolutePath = path.resolve(manifestPath);
     const manifest = await readReleaseManifest(manifestAbsolutePath, {
@@ -170,7 +186,9 @@ async function main() {
         runCommand('ssh', [...optionsForSsh, target, ...args], options);
 
     const home = process.env.HOME;
-    if (!home) fail('HOME is required for default SSH paths.');
+    if (!home) {
+        fail('HOME is required for default SSH paths.');
+    }
 
     const sshKey = expandPath(
         options.get('ssh-key') || path.join(home, '.ssh', 'id_ed25519'),
@@ -307,6 +325,7 @@ async function main() {
             localConfig,
             `${target}:${remoteConfig}`,
         ]);
+
         await runRemote(['chmod', '600', remoteConfig]);
     }
 

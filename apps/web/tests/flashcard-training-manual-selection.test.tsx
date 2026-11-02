@@ -29,6 +29,7 @@ const searched: EntriesPage = {
     entries: [pageOne.entries[1]!],
     nextCursor: null,
 };
+
 function api(): LearningApi {
     return {
         capabilities: vi.fn(),
@@ -46,6 +47,7 @@ function api(): LearningApi {
                 input.scope.type === 'manual'
                     ? input.scope.entryIds
                     : [first, second, third];
+
             return {
                 entryIds,
                 eligibleCount: entryIds.length,
@@ -55,16 +57,22 @@ function api(): LearningApi {
         }),
     };
 }
+
 function deferred<T>() {
     let resolve!: (value: T) => void;
     const promise = new Promise<T>((complete) => {
         resolve = complete;
     });
+
     return { promise, resolve };
 }
+
 async function settle() {
-    for (let index = 0; index < 5; index += 1) await Promise.resolve();
+    for (let index = 0; index < 5; index += 1) {
+        await Promise.resolve();
+    }
 }
+
 afterEach(() => vi.useRealTimers());
 
 describe('manual training selector', () => {
@@ -74,12 +82,14 @@ describe('manual training selector', () => {
         const { result, unmount } = renderHook(() =>
             useManualSelection(learningApi),
         );
+
         await act(settle);
         expect(learningApi.listEntries).toHaveBeenLastCalledWith({
             search: undefined,
             cursor: undefined,
             limit: 25,
         });
+
         act(() => result.current.next());
         await act(settle);
         expect(result.current.page).toBe(2);
@@ -88,6 +98,7 @@ describe('manual training selector', () => {
             cursor: 'cursor-two',
             limit: 25,
         });
+
         act(() => result.current.setSearch('merci'));
         act(() => vi.advanceTimersByTime(299));
         expect(learningApi.listEntries).toHaveBeenCalledTimes(2);
@@ -95,15 +106,18 @@ describe('manual training selector', () => {
             vi.advanceTimersByTime(1);
             await settle();
         });
+
         expect(result.current.page).toBe(1);
         expect(learningApi.listEntries).toHaveBeenLastCalledWith({
             search: 'merci',
             cursor: undefined,
             limit: 25,
         });
+
         expect(result.current.entries).toEqual(searched.entries);
         unmount();
     });
+
     it('ignores a late previous-page response after a debounced search replaces the request', async () => {
         vi.useFakeTimers();
         const learningApi = api();
@@ -112,9 +126,11 @@ describe('manual training selector', () => {
             .mockResolvedValueOnce(pageOne)
             .mockReturnValueOnce(oldPage.promise)
             .mockResolvedValueOnce(searched);
+
         const { result, unmount } = renderHook(() =>
             useManualSelection(learningApi),
         );
+
         await act(settle);
         act(() => result.current.next());
         act(() => result.current.setSearch('merci'));
@@ -122,18 +138,22 @@ describe('manual training selector', () => {
             vi.advanceTimersByTime(300);
             await settle();
         });
+
         await act(async () => {
             oldPage.resolve(pageTwo);
             await settle();
         });
+
         expect(result.current).toMatchObject({
             page: 1,
             query: 'merci',
             entries: searched.entries,
             status: 'ready',
         });
+
         unmount();
     });
+
     it('retains selections through Next, search, page selection and Previous into the exact Start scope', async () => {
         vi.useFakeTimers();
         const learningApi = api();
@@ -145,9 +165,11 @@ describe('manual training selector', () => {
                 activeCount: 3,
                 api: learningApi,
             });
+
             useEffect(() => {
                 setup.setScopeType('manual');
             }, [setup.setScopeType]);
+
             return (
                 <>
                     <ManualSelection
@@ -179,6 +201,7 @@ describe('manual training selector', () => {
                 </>
             );
         }
+
         const view = render(<SelectorHarness />);
         await act(settle);
         fireEvent.click(screen.getByRole('checkbox', { name: /bonjour/ }));
@@ -193,30 +216,37 @@ describe('manual training selector', () => {
             screen.getByRole('searchbox', { name: 'Search entries' }),
             { target: { value: 'merci' } },
         );
+
         await act(async () => {
             vi.advanceTimersByTime(300);
             await settle();
         });
+
         fireEvent.click(
             screen.getByRole('checkbox', {
                 name: 'Select all on this page (1)',
             }),
         );
+
         expect(screen.getByText('3 selected')).toBeInTheDocument();
         await act(async () => {
             fireEvent.click(
                 screen.getByRole('button', { name: 'Begin selection' }),
             );
+
             await settle();
         });
+
         expect(learningApi.prepare).toHaveBeenLastCalledWith(
             expect.objectContaining({
                 scope: { type: 'manual', entryIds: [first, third, second] },
             }),
         );
+
         expect(onStart).toHaveBeenCalledWith(
             expect.objectContaining({ entryIds: [first, third, second] }),
         );
+
         expect(learningApi.getPreferences).not.toHaveBeenCalled();
         view.unmount();
     });

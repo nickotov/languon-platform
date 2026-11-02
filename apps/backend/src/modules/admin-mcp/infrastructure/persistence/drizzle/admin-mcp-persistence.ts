@@ -45,11 +45,12 @@ export async function requireOwner(
         )
         .for('share');
 
-    if (!owner || !membership)
+    if (!owner || !membership) {
         throw new AdminMcpError(
             'unauthorized',
             'Active owner access is required.',
         );
+    }
 }
 
 export async function requireActor(
@@ -71,30 +72,40 @@ export async function requireActor(
         )
         .for('update');
 
-    if (!token)
+    if (!token) {
         throw new AdminMcpError(
             'unauthorized',
             'Invalid or inactive credential.',
         );
+    }
+
     if (
         JSON.stringify(token.allowedActions) !==
             JSON.stringify(actor.allowedActions) ||
         JSON.stringify(token.permissions) !==
             JSON.stringify(actor.permissions) ||
         JSON.stringify(token.limits) !== JSON.stringify(actor.limits)
-    )
+    ) {
         throw new AdminMcpError(
             'unauthorized',
             'Credential authority changed.',
         );
+    }
 }
 
 export function canonical(value: unknown): string {
-    if (value === undefined)
+    if (value === undefined) {
         throw new Error('Undefined payload values are not supported.');
-    if (value === null || typeof value !== 'object')
+    }
+
+    if (value === null || typeof value !== 'object') {
         return JSON.stringify(value);
-    if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
+    }
+
+    if (Array.isArray(value)) {
+        return `[${value.map(canonical).join(',')}]`;
+    }
+
     const object = value as Record<string, unknown>;
 
     return `{${Object.keys(object)

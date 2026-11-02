@@ -47,14 +47,17 @@ export function createLearningComposition(
             authenticate: async (accessToken) => {
                 const claims =
                     await dependencies.accessTokens.verify(accessToken);
+
                 await dependencies.authentication.requireActiveSession({
                     sessionId: claims.sessionId,
                     userId: claims.userId,
                 });
+
                 return { sessionId: claims.sessionId, userId: claims.userId };
             },
         },
     });
+
     return {
         service,
         routes: createLearningRoutes({ service, policy: dependencies.policy }),

@@ -76,46 +76,63 @@ function clock(value: unknown): number {
         value < 0 ||
         value > 2359 ||
         value % 100 >= 60
-    )
+    ) {
         throw new Error('Invalid UTC clock.');
+    }
+
     return Math.floor(value / 100) * 60 + (value % 100);
 }
+
 function overrides(pricing: Record<string, unknown>) {
     for (const [key, value] of Object.entries(pricing)) {
         if (rateKeys.includes(key as (typeof rateKeys)[number])) {
-            if (value != null) publishedRate(value);
+            if (value != null) {
+                publishedRate(value);
+            }
         } else if (key === 'discount') {
-            if (value !== 0)
+            if (value !== 0) {
                 throw new Error('Discount semantics require review.');
-        } else if (key !== 'overrides')
+            }
+        } else if (key !== 'overrides') {
             throw new Error('Unknown pricing component.');
+        }
     }
+
     const values = overridesSchema.parse(pricing.overrides ?? []);
     for (const value of values) {
         for (const key of Object.keys(value)) {
             if (
                 !conditionKeys.includes(key) &&
                 !rateKeys.includes(key as (typeof rateKeys)[number])
-            )
+            ) {
                 throw new Error('Unknown override condition.');
-            if (rateKeys.includes(key as (typeof rateKeys)[number]))
+            }
+
+            if (rateKeys.includes(key as (typeof rateKeys)[number])) {
                 publishedRate(value[key]);
+            }
         }
+
         if (
             value.min_prompt_tokens !== undefined &&
             (typeof value.min_prompt_tokens !== 'number' ||
                 !Number.isSafeInteger(value.min_prompt_tokens) ||
                 value.min_prompt_tokens < 0 ||
                 value.min_prompt_tokens >= 2_147_483_647)
-        )
+        ) {
             throw new Error('Invalid context threshold.');
-        if ((value.utc_start === undefined) !== (value.utc_end === undefined))
+        }
+
+        if ((value.utc_start === undefined) !== (value.utc_end === undefined)) {
             throw new Error('Incomplete time window.');
+        }
+
         if (value.utc_start !== undefined) {
             clock(value.utc_start);
             clock(value.utc_end);
         }
-        if (value.utc_days !== undefined)
+
+        if (value.utc_days !== undefined) {
             z.array(
                 z.enum([
                     'monday',
@@ -130,9 +147,12 @@ function overrides(pricing: Record<string, unknown>) {
                 .min(1)
                 .max(7)
                 .parse(value.utc_days);
+        }
     }
+
     return values;
 }
+
 function applies(
     value: Record<string, unknown>,
     input: number,
@@ -141,14 +161,18 @@ function applies(
     if (
         value.min_prompt_tokens !== undefined &&
         input <= (value.min_prompt_tokens as number)
-    )
+    ) {
         return false;
+    }
+
     const date = new Date(instant);
     if (
         value.utc_days !== undefined &&
         !(value.utc_days as string[]).includes(weekdays[date.getUTCDay()]!)
-    )
+    ) {
         return false;
+    }
+
     if (value.utc_start !== undefined) {
         const start = clock(value.utc_start),
             end = clock(value.utc_end);
@@ -157,52 +181,64 @@ function applies(
             !(start <= end
                 ? minute >= start && minute < end
                 : minute >= start || minute < end)
-        )
+        ) {
             return false;
+        }
     }
+
     return true;
 }
+
 function components(
     pricing: Record<string, unknown>,
     target: ProviderPriceTarget,
 ): ProviderNativeComponent[] {
     const input = publishedRate(pricing.prompt),
         output = publishedRate(pricing.completion);
+
     if (
         pricing.internal_reasoning != null &&
         publishedRate(pricing.internal_reasoning) !== output
-    )
+    ) {
         throw new Error('Distinct reasoning meter is not available.');
+    }
+
     if (
         pricing.input_cache_write_1h != null &&
         publishedRate(pricing.input_cache_write_1h) !==
             (pricing.input_cache_write == null
                 ? null
                 : publishedRate(pricing.input_cache_write))
-    )
+    ) {
         throw new Error('Cache TTL identity requires another reported meter.');
+    }
+
     const result: ProviderNativeComponent[] = [];
     const add = (
         meter: ProviderNativeComponent['meter'],
         rate: unknown,
         chargeWhen: 'positive-usage' | 'request' = 'positive-usage',
     ) => {
-        if (rate != null)
+        if (rate != null) {
             result.push({
                 meter,
                 pricePerUnit: publishedRate(rate),
                 unitQuantity: 1,
                 chargeWhen,
             });
+        }
     };
+
     if (target.meter === 'speech-characters') {
         if (
             !target.modelId.startsWith('elevenlabs/') ||
             output !== '0' ||
             pricing.input_cache_read != null ||
             pricing.input_cache_write != null
-        )
+        ) {
             throw new Error('Speech character units not established.');
+        }
+
         add('characters', input);
     } else if (target.meter === 'text-tokens') {
         add(
@@ -212,15 +248,21 @@ function components(
                 : 'inputTokens',
             input,
         );
+
         add('outputTokens', output);
         add('cacheReadTokens', pricing.input_cache_read);
         add('cacheWriteTokens', pricing.input_cache_write);
-    } else throw new Error('Unsupported OpenRouter speech meter.');
+    } else {
+        throw new Error('Unsupported OpenRouter speech meter.');
+    }
+
     add('requests', pricing.request, 'request');
+
     // Optional web/image/audio prices are scoped to services absent from the
     // server-owned text-only execution profile, not fees on every text request.
     return result;
 }
+
 function normalize(
     endpoint: z.infer<typeof endpointSchema>['data']['endpoints'][number],
     target: ProviderPriceTarget,
@@ -249,21 +291,27 @@ function normalize(
         : now.getTime();
     const end = timed ? start + 32 * 86_400_000 : start + 1;
     const points = new Set([start, end]);
-    if (timed)
+    if (timed) {
         for (let date = start; date < end; date += 86_400_000) {
             points.add(date);
             points.add(date + 86_400_000);
-            for (const value of changes)
+            for (const value of changes) {
                 if (value.utc_start !== undefined) {
                     points.add(date + clock(value.utc_start) * 60_000);
                     points.add(date + clock(value.utc_end) * 60_000);
                 }
+            }
         }
+    }
+
     const sorted = [...points].sort((a, b) => a - b);
     budget.remaining -=
         contexts.length * (sorted.length - 1) * Math.max(1, changes.length);
-    if (budget.remaining < 0)
+
+    if (budget.remaining < 0) {
         throw new Error('Published rule combinations exceed reviewed bounds.');
+    }
+
     const variants: ProviderNativeVariant[] = [];
     for (const [contextIndex, context] of contexts.entries()) {
         const groups = new Map<
@@ -273,28 +321,38 @@ function normalize(
                 windows: Array<{ from: string; until: string }>;
             }
         >();
+
         for (let position = 0; position < sorted.length - 1; position++) {
             const pricing = { ...endpoint.pricing };
-            for (const change of changes)
+            for (const change of changes) {
                 if (applies(change, context, sorted[position]!)) {
-                    for (const key of rateKeys)
-                        if (change[key] !== undefined)
+                    for (const key of rateKeys) {
+                        if (change[key] !== undefined) {
                             pricing[key] = change[key];
+                        }
+                    }
                 }
+            }
+
             const rates = components(pricing, target);
             const key = JSON.stringify(rates);
             const group = groups.get(key) ?? { components: rates, windows: [] };
-            if (timed)
+            if (timed) {
                 group.windows.push({
                     from: new Date(sorted[position]!).toISOString(),
                     until: new Date(sorted[position + 1]!).toISOString(),
                 });
+            }
+
             groups.set(key, group);
         }
+
         let groupIndex = 0;
         for (const group of groups.values()) {
-            if (!endpoint.tag && !single)
+            if (!endpoint.tag && !single) {
                 throw new Error('Endpoint identity is absent.');
+            }
+
             variants.push({
                 id: `endpoint-${index}-context-${contextIndex}-rate-${groupIndex++}`,
                 applies: {
@@ -330,6 +388,7 @@ function normalize(
             });
         }
     }
+
     return { variants, until: timed ? new Date(end).toISOString() : null };
 }
 
@@ -339,12 +398,16 @@ export class OpenRouterPriceSource implements ProviderPriceSource {
         private readonly fetcher: typeof fetch = fetch,
         private readonly now: () => Date = () => new Date(),
     ) {}
+
     async fetchPrices(
         targets: ProviderPriceTarget[],
         signal?: AbortSignal,
     ): Promise<ProviderPriceFetchResult[]> {
-        if (!targets.length) return [];
-        if (signal?.aborted)
+        if (!targets.length) {
+            return [];
+        }
+
+        if (signal?.aborted) {
             return targets.map((target) =>
                 sourceFailure(
                     target,
@@ -352,6 +415,8 @@ export class OpenRouterPriceSource implements ProviderPriceSource {
                     'Price retrieval was cancelled.',
                 ),
             );
+        }
+
         let catalog: z.infer<typeof catalogSchema>;
         try {
             catalog = catalogSchema.parse(
@@ -366,11 +431,13 @@ export class OpenRouterPriceSource implements ProviderPriceSource {
                 ),
             );
         }
+
         const results: ProviderPriceFetchResult[] = [];
         for (const target of targets) {
             const matching = catalog.data.filter(
                 (model) => model.id === target.modelId,
             );
+
             if (
                 target.providerId !== this.providerId ||
                 matching.length !== 1
@@ -382,8 +449,10 @@ export class OpenRouterPriceSource implements ProviderPriceSource {
                         'The exact model is absent or ambiguous in the official catalog.',
                     ),
                 );
+
                 continue;
             }
+
             const model = matching[0]!;
             if (
                 !model.architecture.input_modalities.includes('text') ||
@@ -399,8 +468,10 @@ export class OpenRouterPriceSource implements ProviderPriceSource {
                         'Published modalities do not match the configured execution meter.',
                     ),
                 );
+
                 continue;
             }
+
             try {
                 overrides(model.pricing);
             } catch {
@@ -411,8 +482,10 @@ export class OpenRouterPriceSource implements ProviderPriceSource {
                         'Published pricing keys or conditions need review.',
                     ),
                 );
+
                 continue;
             }
+
             const segments = target.modelId.split('/');
             if (
                 segments.length !== 2 ||
@@ -425,8 +498,10 @@ export class OpenRouterPriceSource implements ProviderPriceSource {
                         'The exact model identifier is not supported by the endpoint API.',
                     ),
                 );
+
                 continue;
             }
+
             const url = new URL(
                 `/api/v1/models/${segments.map(encodeURIComponent).join('/')}/endpoints`,
                 'https://openrouter.ai',
@@ -442,8 +517,10 @@ export class OpenRouterPriceSource implements ProviderPriceSource {
                         'Official endpoint prices are unavailable.',
                     ),
                 );
+
                 continue;
             }
+
             try {
                 const endpoints = endpointSchema.parse(raw);
                 if (endpoints.data.id !== target.modelId) {
@@ -454,16 +531,21 @@ export class OpenRouterPriceSource implements ProviderPriceSource {
                             'Endpoint response identifies another model.',
                         ),
                     );
+
                     continue;
                 }
+
                 const at = this.now();
                 const ordered = [...endpoints.data.endpoints].sort((a, b) =>
                     (a.tag ?? '').localeCompare(b.tag ?? ''),
                 );
-                if (ordered.length > 128)
+
+                if (ordered.length > 128) {
                     throw new Error(
                         'Endpoint variants exceed reviewed bounds.',
                     );
+                }
+
                 const budget = { remaining: 100_000 };
                 const cards = ordered.map((endpoint, index) =>
                     normalize(
@@ -484,6 +566,7 @@ export class OpenRouterPriceSource implements ProviderPriceSource {
                     validUntil: deadlines.sort()[0] ?? null,
                     variants: cards.flatMap((card) => card.variants),
                 };
+
                 results.push({
                     target,
                     status: 'available',
@@ -504,6 +587,7 @@ export class OpenRouterPriceSource implements ProviderPriceSource {
                 );
             }
         }
+
         return results;
     }
 }

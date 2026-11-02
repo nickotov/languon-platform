@@ -44,16 +44,20 @@ export class DictionaryDocumentService {
         request: CreateDictionaryDocumentUploadRequest,
         context: DictionaryRequestContext,
     ) {
-        if (!this.dependencies.authorizationEnabled)
+        if (!this.dependencies.authorizationEnabled) {
             throw new DictionaryGenerationNotAvailableError();
+        }
+
         const ownerId = await this.owner(accessToken, context);
         if (
             !this.dependencies.ocrAvailable &&
             ['image/jpeg', 'image/png', 'image/webp'].includes(
                 request.mediaType,
             )
-        )
+        ) {
             throw new DictionaryGenerationNotAvailableError();
+        }
+
         await this.limitEnqueue(ownerId, context);
         const now = this.dependencies.clock.now();
         const capabilityExpiresAt = new Date(
@@ -76,8 +80,11 @@ export class DictionaryDocumentService {
             instruction: request.instruction,
             ownerId,
         });
-        if (authorization.capabilityExpiresAt <= now)
+
+        if (authorization.capabilityExpiresAt <= now) {
             throw new DictionaryDocumentUploadConflictError();
+        }
+
         const capability = await this.dependencies.storage.authorizeCreate({
             checksumSha256: request.sha256,
             contentType: request.mediaType,
@@ -86,6 +93,7 @@ export class DictionaryDocumentService {
             signal: context.signal,
             sizeBytes: request.sizeBytes,
         });
+
         return {
             job: authorization.job,
             upload: {
@@ -113,19 +121,25 @@ export class DictionaryDocumentService {
                 ownerId,
                 uploadId,
             });
+
         if (authorization.verifiedStorageVersionId) {
             if (
                 request.versionId !== undefined &&
                 authorization.verifiedStorageVersionId !== request.versionId
-            )
+            ) {
                 throw new DictionaryDocumentUploadConflictError();
+            }
+
             return { job: authorization.job };
         }
+
         if (
             authorization.processingState !== 'authorized' ||
             authorization.capabilityExpiresAt <= operationContext.now
-        )
+        ) {
             throw new DictionaryDocumentUploadConflictError();
+        }
+
         let observation;
         try {
             observation = await this.dependencies.storage.inspectVersions({
@@ -139,15 +153,20 @@ export class DictionaryDocumentService {
         } catch (error) {
             if (
                 error instanceof DictionaryDocumentUploadInspectionConflictError
-            )
+            ) {
                 throw new DictionaryDocumentUploadConflictError();
+            }
+
             if (
                 error instanceof
                 DictionaryDocumentUploadInspectionUnavailableError
-            )
+            ) {
                 throw new DictionaryGenerationNotAvailableError();
+            }
+
             throw error;
         }
+
         const job = await this.dependencies.store.completeUpload({
             context: operationContext,
             detectedFormat: observation.detectedFormat,
@@ -156,6 +175,7 @@ export class DictionaryDocumentService {
             uploadId,
             versions: observation.versions,
         });
+
         return { job };
     }
 
@@ -171,10 +191,13 @@ export class DictionaryDocumentService {
             scope: 'owner',
             signal: context.signal,
         });
-        if (!decision.allowed)
+
+        if (!decision.allowed) {
             throw new DictionaryRateLimitError(
                 decision.retryAfterSeconds ?? 60,
             );
+        }
+
         return principal.userId;
     }
 
@@ -187,9 +210,11 @@ export class DictionaryDocumentService {
             scope: 'generation-enqueue',
             signal: context.signal,
         });
-        if (!decision.allowed)
+
+        if (!decision.allowed) {
             throw new DictionaryRateLimitError(
                 decision.retryAfterSeconds ?? 60,
             );
+        }
     }
 }

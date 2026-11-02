@@ -17,9 +17,11 @@ export function CreditBalance() {
         data?.mode === 'limited'
             ? compactCreditAmount(data.availableCredits, locale)
             : t('profile.balanceUnlimited');
+
     function refresh() {
         void balance.refetch();
     }
+
     return (
         <Card variant='outlined' className={styles.card}>
             <div className={styles.header}>

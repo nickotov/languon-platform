@@ -26,19 +26,28 @@ export function TutorModeControl({
     const name = useId();
     const legendId = `${name}-label`;
     function choose(event: ChangeEvent<HTMLInputElement>) {
-        if (disabled) return;
+        if (disabled) {
+            return;
+        }
+
         onChange({
             ...value,
             mode: event.currentTarget.value as ChatPreferences['mode'],
         });
     }
+
     function guardClick(event: MouseEvent<HTMLInputElement>) {
-        if (disabled) event.preventDefault();
-    }
-    function guardKey(event: KeyboardEvent<HTMLInputElement>) {
-        if (disabled && (event.key.startsWith('Arrow') || event.key === ' '))
+        if (disabled) {
             event.preventDefault();
+        }
     }
+
+    function guardKey(event: KeyboardEvent<HTMLInputElement>) {
+        if (disabled && (event.key.startsWith('Arrow') || event.key === ' ')) {
+            event.preventDefault();
+        }
+    }
+
     return (
         <fieldset
             className={styles.group}

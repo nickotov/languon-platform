@@ -28,6 +28,7 @@ async function fixture(t) {
             '{{FEATURE_NAME}} {{FEATURE_SLUG}} {{FEATURE_FOLDER}} {{DATE}}',
         );
     }
+
     return root;
 }
 
@@ -41,6 +42,7 @@ test('creates four artifacts with automatic prefix and stable logical slug', asy
         /^Sample Feature sample-feature 001-sample-feature \d{4}-\d{2}-\d{2}$/,
     );
 });
+
 test('uses max counter, keeps gaps, rejects duplicate slugs and supplied prefixes', async (t) => {
     const root = await fixture(t);
     await mkdir(join(root, '.agent/features/007-existing'));
@@ -50,12 +52,14 @@ test('uses max counter, keeps gaps, rejects duplicate slugs and supplied prefixe
         createFeature(root, ['008-next']),
         /omit the numeric prefix/,
     );
+
     await assert.rejects(createFeature(root, ['../escape']), /Usage/);
     assert.equal(
         basename(await createFeature(root, ['next', 'Custom title'])),
         '008-next',
     );
 });
+
 test('recognizes legacy duplicates and fails safely on a creation lock', async (t) => {
     const root = await fixture(t);
     await mkdir(join(root, '.agent/features/legacy'));
@@ -67,12 +71,14 @@ test('recognizes legacy duplicates and fails safely on a creation lock', async (
         'legacy',
     ]);
 });
+
 test('missing templates create no partial folder or lock', async (t) => {
     const root = await fixture(t);
     await rm(join(root, '.agent/templates/REVIEW.md'));
     await assert.rejects(createFeature(root, ['new']), /ENOENT/);
     assert.deepEqual(await readdir(join(root, '.agent/features')), []);
 });
+
 test('concurrent requests never allocate the same counter', async (t) => {
     const root = await fixture(t);
     const results = await Promise.allSettled([
@@ -86,8 +92,12 @@ test('concurrent requests never allocate the same counter', async (t) => {
         new Set(folders.map((name) => name.split('-')[0])).size,
         folders.length,
     );
-    for (const result of results)
-        if (result.status === 'rejected')
+
+    for (const result of results) {
+        if (result.status === 'rejected') {
             assert.match(result.reason.message, /in progress/);
+        }
+    }
+
     assert.ok(!folders.includes('.create-feature.lock'));
 });

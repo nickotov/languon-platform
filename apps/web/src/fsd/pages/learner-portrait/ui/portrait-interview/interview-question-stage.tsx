@@ -42,22 +42,26 @@ export function InterviewQuestionStage({
         !optionalAllowed &&
         coreDone &&
         (question.topic === 'hobbies' || question.topic === 'age');
+
     function goDeeper() {
         setDeeper(true);
         onQuestion(localInterviewQuestion('hobbies', locale));
     }
+
     function pickTopic(event: MouseEvent<HTMLButtonElement>) {
         const topic = event.currentTarget.dataset
             .topic as PortraitInterviewerOutput['topic'];
+
         onQuestion(localInterviewQuestion(topic, locale));
         setDeeper(topic === 'hobbies' || topic === 'age');
     }
+
     const topics = interviewAllTopics.map((topic) => ({
         topic,
         label: interviewText(locale, topic),
     }));
     const questionKey = `${question.topic}-${locale}-${session.context.messages.length}`;
-    if (question.topic === 'update')
+    if (question.topic === 'update') {
         return (
             <section className={styles.question}>
                 <h2>{question.message}</h2>
@@ -80,7 +84,9 @@ export function InterviewQuestionStage({
                 </div>
             </section>
         );
-    if (offerDeeper)
+    }
+
+    if (offerDeeper) {
         return (
             <section className={styles.question}>
                 <h2>{interviewText(locale, 'deeper')}</h2>
@@ -95,7 +101,9 @@ export function InterviewQuestionStage({
                 </div>
             </section>
         );
-    if (session.context.completedTopics.includes('age'))
+    }
+
+    if (session.context.completedTopics.includes('age')) {
         return (
             <section className={styles.question}>
                 <h2>{interviewText(locale, 'done')}</h2>
@@ -106,6 +114,8 @@ export function InterviewQuestionStage({
                 </div>
             </section>
         );
+    }
+
     return (
         <InterviewQuestion
             key={questionKey}

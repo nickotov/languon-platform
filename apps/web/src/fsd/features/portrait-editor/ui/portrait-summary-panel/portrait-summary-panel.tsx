@@ -53,6 +53,7 @@ export function PortraitSummaryPanel({
         'Añade al menos un idioma, objetivo o preferencia y aparecerá un resumen. No inventaremos información.',
     );
     const sectionClass = compact ? styles.compact : common.section;
+
     return (
         <section className={sectionClass} aria-labelledby={id}>
             <header className={common.header}>

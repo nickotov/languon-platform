@@ -1,0 +1,65 @@
+{
+  "reviewer": "backend-platform",
+  "checkedAt": "2026-11-01T09:18:10.162328+00:00",
+  "scope": "Three owned maintained architecture diagrams only",
+  "skill": ".agents/skills/architecture-diagrams/SKILL.md",
+  "metadataGuide": "docs/document-metadata.md",
+  "catalog": "docs/diagrams/README.md",
+  "files": [
+    {
+      "path": "docs/diagrams/ai-job-lifecycle.md",
+      "addedSourcePaths": [
+        "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts",
+        "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts",
+        "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-lifecycle.ts",
+        "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-transaction.ts",
+        "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts",
+        "docs/adr/0049-native-provider-pricing-and-accounting.md",
+        "docs/adr/0051-duration-based-transcription-accounting.md"
+      ],
+      "mermaid": "unchanged exact bytes",
+      "reviewed": "2026-11-01",
+      "afterSha256": "a7f06a9d36d4c56eb1cd2484d8435ea2779e7ab1d98dfd205535edd42888fa13",
+      "sourceReconciliation": "Worker adapter construction and sentence retry helper retain mode selection, lazy retry clock and bounded executor composition. Provider observation helper retains native usage/execution/call provenance; extracted Texts transaction retains pricing transaction then capacity lock then revision settings, lifecycle settles before terminal mutation; conversation prepared snapshot/material helpers retain live source checks and effective visible content; transcription context retains source ownership, live observation, credentials/data-control/billing/duration/expense guards. Existing diagram relationships remain true."
+    },
+    {
+      "path": "docs/diagrams/authentication.md",
+      "addedSourcePaths": [
+        "apps/backend/src/modules/authentication/infrastructure/rate-limit/redis-rate-limiter.ts"
+      ],
+      "mermaid": "unchanged exact bytes",
+      "reviewed": "2026-11-01",
+      "afterSha256": "1c97533a3fe38f2a67504691702bff181821b06876f922dd49eb69cd66059742",
+      "sourceReconciliation": "Existing session issuer and browser refresh coordinator preserve opaque credential rotation, memory JWT and coordinated refresh; composition wires RedisRateLimiter. Changed limiter retains optional awaited alias lookup inside original try and same timeout/cancellation/fail-closed boundary. No auth protocol or authority change; sequence unchanged."
+    },
+    {
+      "path": "docs/diagrams/speech-and-pricing.md",
+      "addedSourcePaths": [
+        "apps/backend/src/modules/speech/infrastructure/source-resolver.ts",
+        "apps/backend/src/modules/speech/infrastructure/audio/safe-audio-download.ts",
+        "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts",
+        "docs/adr/0049-native-provider-pricing-and-accounting.md",
+        "docs/adr/0051-duration-based-transcription-accounting.md"
+      ],
+      "mermaid": "unchanged exact bytes",
+      "reviewed": "2026-11-01",
+      "afterSha256": "8599166e005d6324a779068c853fe07aa0e9274bca939b5ce2dec1f3bdcede86",
+      "sourceReconciliation": "Speech store state decisions retain ready/unknown/queued/failed precedence and deadline closure before late publication. Source resolver retains effective example language and source-authority checks; MP3 variables are renamed with same frame arithmetic, byte/duration bounds and failures. Worker document helper leaves speech alternation untouched; transcription-context extraction retains native-duration admission and source/lease authority. Existing diagram relationships unchanged; diagram remains a focused high-level view rather than exhaustive native price-card depiction."
+    }
+  ],
+  "acceptedAdrsRead": [
+    "ADR-0001",
+    "ADR-0031",
+    "ADR-0045",
+    "ADR-0049",
+    "ADR-0050",
+    "ADR-0051"
+  ],
+  "sourceDiscrepancies": [],
+  "verification": "Read full assigned diagrams, relevant accepted ADRs, changed input diffs and extracted helper bodies/callers. Exact Mermaid-body equality asserted. No source changes or provider/service/test execution.",
+  "pending": [
+    "Root final fingerprint stamp after all diagram reconciliations",
+    "Root diagrams:check and applicable rendered freshness/presentation evidence"
+  ],
+  "fingerprints": "Existing source_fingerprint values deliberately not stamped by worker"
+}

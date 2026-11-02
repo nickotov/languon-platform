@@ -22,6 +22,7 @@ import styles from '../common.module.css';
 
 export function PortraitManualPage() {
     const management = usePortraitManagement();
+
     return (
         <PortraitPageState management={management}>
             <PortraitManual key={management.ownerId} management={management} />
@@ -36,13 +37,20 @@ function PortraitManual({ management }: { management: PortraitManagement }) {
     const isUpdate = Boolean(approved);
     const summaryLocale = approved?.locale ?? locale;
     let blocker: string | null = null;
-    if (editor.conflict) blocker = portraitCopy(locale, 'chooseAll');
-    else if (!editor.meaningful) blocker = portraitCopy(locale, 'nothing');
-    else if (!editor.valid) blocker = portraitCopy(locale, 'invalid');
-    else if (editor.unchanged) blocker = portraitCopy(locale, 'noChanges');
+    if (editor.conflict) {
+        blocker = portraitCopy(locale, 'chooseAll');
+    } else if (!editor.meaningful) {
+        blocker = portraitCopy(locale, 'nothing');
+    } else if (!editor.valid) {
+        blocker = portraitCopy(locale, 'invalid');
+    } else if (editor.unchanged) {
+        blocker = portraitCopy(locale, 'noChanges');
+    }
+
     function save() {
         void editor.save(summaryLocale);
     }
+
     return (
         <main className={`${styles.page} ${styles.wide}`}>
             <ButtonLink

@@ -8,10 +8,22 @@ function isEnabled(
     field: DictionaryCardAuthoringField,
     settings: DictionaryCardEffectiveSettings,
 ) {
-    if (field === 'source' || field === 'translation') return true;
-    if (field === 'transcription') return settings.transcriptionEnabled;
-    if (field === 'definition') return settings.definitionEnabled;
-    if (field === 'example') return settings.exampleEnabled;
+    if (field === 'source' || field === 'translation') {
+        return true;
+    }
+
+    if (field === 'transcription') {
+        return settings.transcriptionEnabled;
+    }
+
+    if (field === 'definition') {
+        return settings.definitionEnabled;
+    }
+
+    if (field === 'example') {
+        return settings.exampleEnabled;
+    }
+
     return settings.exampleTranslationEnabled;
 }
 
@@ -25,12 +37,25 @@ export function isFieldAffectedByGeneration(
         | 'card-authoring:v3'
         | undefined,
 ) {
-    if (!scope || !isEnabled(field, settings)) return false;
-    if (scope.kind === 'all') return true;
-    if (format !== 'card-authoring:v2' && format !== 'card-authoring:v3')
+    if (!scope || !isEnabled(field, settings)) {
+        return false;
+    }
+
+    if (scope.kind === 'all') {
+        return true;
+    }
+
+    if (format !== 'card-authoring:v2' && format !== 'card-authoring:v3') {
         return field === scope.field;
-    if (scope.field === 'translation') return field !== 'source';
-    if (scope.field === 'example')
+    }
+
+    if (scope.field === 'translation') {
+        return field !== 'source';
+    }
+
+    if (scope.field === 'example') {
         return field === 'example' || field === 'exampleTranslation';
+    }
+
     return field === scope.field;
 }

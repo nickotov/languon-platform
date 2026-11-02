@@ -78,6 +78,7 @@ const review: SentenceManualReview = {
     referenceTranslation: 'Hello',
     createdAt: '2026-10-04T00:00:00.000Z',
 };
+
 function deferred<T>() {
     let resolve!: (value: T) => void;
     let reject!: (error: unknown) => void;
@@ -85,8 +86,10 @@ function deferred<T>() {
         resolve = yes;
         reject = no;
     });
+
     return { promise, resolve, reject };
 }
+
 function api(overrides: Partial<SentenceApi> = {}): SentenceApi {
     return {
         capabilities: vi.fn(async () => ({ sentencesEnabled: true })),
@@ -114,6 +117,7 @@ function api(overrides: Partial<SentenceApi> = {}): SentenceApi {
         ...overrides,
     };
 }
+
 const network = () =>
     new ApiError(0, {
         code: 'service_unavailable',
@@ -125,6 +129,7 @@ const flush = async () => {
     await Promise.resolve();
     await Promise.resolve();
 };
+
 afterEach(() => vi.useRealTimers());
 
 describe('explicit regeneration from a prepared round', () => {
@@ -142,15 +147,18 @@ describe('explicit regeneration from a prepared round', () => {
         expect(next.mock.calls[0]![0]).toMatchObject({
             preparedBatchId: first,
         });
+
         await store.skip();
         expect(store.getSnapshot().phase).toBe('completed');
         await store.generateNew();
         expect(prepare.mock.calls.at(-1)![0]).not.toHaveProperty(
             'preparedBatchId',
         );
+
         expect(next.mock.calls.at(-1)![0]).not.toHaveProperty(
             'preparedBatchId',
         );
+
         store.reset();
     });
 });
@@ -188,6 +196,7 @@ describe('sentence session admission and recovery', () => {
         },
         createdAt: '2026-10-04T00:00:00.000Z',
     };
+
     it('keeps the last sentence editable until its successful final AI check, then preserves the final draft and feedback in results', async () => {
         const service = oneWordApi({
             check: vi.fn(async () =>
@@ -203,24 +212,28 @@ describe('sentence session admission and recovery', () => {
             roundComplete: true,
             phase: 'exercise',
         });
+
         store.setDraft('Hello');
         await store.check();
         expect(store.getSnapshot()).toMatchObject({
             phase: 'completed',
             counts: { checked: 1, manuallyReviewed: 0, skipped: 0 },
         });
+
         expect(store.getSnapshot().roundItems[0]).toMatchObject({
             answer: 'Hello',
             attempt: successfulAttempt,
             outcome: 'ai-checked',
             skipped: false,
         });
+
         store.setDraft('Unreviewed edit');
         await store.next();
         expect(store.getSnapshot().draft).toBe('Hello');
         expect(service.next).toHaveBeenCalledTimes(1);
         store.stop();
     });
+
     it('does not complete a failed final check or allow reference disclosure while its outcome is unknown', async () => {
         vi.useFakeTimers();
         const check = vi
@@ -239,6 +252,7 @@ describe('sentence session admission and recovery', () => {
             phase: 'exercise',
             uncertain: true,
         });
+
         await store.revealReference();
         await store.skip();
         expect(service.revealReference).not.toHaveBeenCalled();
@@ -246,6 +260,7 @@ describe('sentence session admission and recovery', () => {
         expect(store.getSnapshot().counts.skipped).toBe(0);
         store.stop();
     });
+
     it('compares only the exact captured answer, acknowledges no later edit, and re-compares locally without another review or AI score', async () => {
         const pending =
             deferred<Awaited<ReturnType<SentenceApi['revealReference']>>>();
@@ -263,6 +278,7 @@ describe('sentence session admission and recovery', () => {
             comparison: { kind: 'match', answer: 'HELLO!', reference: 'Hello' },
             counts: { checked: 0, manuallyReviewed: 1 },
         });
+
         store.setDraft('Hello');
         await store.recompare();
         expect(store.getSnapshot()).toMatchObject({
@@ -270,6 +286,7 @@ describe('sentence session admission and recovery', () => {
             comparison: { kind: 'match', answer: 'Hello' },
             counts: { checked: 0, manuallyReviewed: 1 },
         });
+
         expect(service.revealReference).toHaveBeenCalledTimes(1);
         expect(service.check).not.toHaveBeenCalled();
         expect(store.getSnapshot().roundItems[0]).toMatchObject({
@@ -277,8 +294,10 @@ describe('sentence session admission and recovery', () => {
             comparison: { answer: 'Hello' },
             outcome: 'manual-reviewed',
         });
+
         store.stop();
     });
+
     it('fences all answer and advancement actions after an unknown reference transaction until its identical operation is recovered', async () => {
         const revealReference = vi
             .fn<SentenceApi['revealReference']>()
@@ -300,6 +319,7 @@ describe('sentence session admission and recovery', () => {
             reference: null,
             counts: { manuallyReviewed: 0 },
         });
+
         await store.check();
         await store.skip();
         await store.next();
@@ -313,16 +333,19 @@ describe('sentence session admission and recovery', () => {
         expect(revealReference.mock.calls[1]).toEqual(
             revealReference.mock.calls[0],
         );
+
         expect(store.getSnapshot()).toMatchObject({
             referenceUncertain: false,
             uncertain: false,
             comparison: { kind: 'match', answer: 'Hello' },
             counts: { manuallyReviewed: 1, checked: 0 },
         });
+
         await store.check();
         expect(check).toHaveBeenCalledTimes(1);
         store.stop();
     });
+
     it('retains reference uncertainty through a later known capacity response and clears it only on successful recovery or reset', async () => {
         const revealReference = vi
             .fn<SentenceApi['revealReference']>()
@@ -344,18 +367,21 @@ describe('sentence session admission and recovery', () => {
             referenceUncertain: true,
             uncertain: true,
         });
+
         await store.check();
         expect(service.check).not.toHaveBeenCalled();
         await store.retry();
         expect(revealReference.mock.calls[2]).toEqual(
             revealReference.mock.calls[0],
         );
+
         expect(store.getSnapshot()).toMatchObject({
             referenceUncertain: false,
             uncertain: false,
             comparison: { kind: 'reference-only' },
             counts: { manuallyReviewed: 1 },
         });
+
         store.stop();
         expect(store.getSnapshot()).toMatchObject({
             referenceUncertain: false,
@@ -363,6 +389,7 @@ describe('sentence session admission and recovery', () => {
             reference: null,
         });
     });
+
     it('reveals without grading an answer and completes a final empty reference reveal separately from AI scores', async () => {
         const service = oneWordApi();
         const store = new SentenceSession(service);
@@ -374,10 +401,12 @@ describe('sentence session admission and recovery', () => {
             acknowledgedAnswer: '',
             counts: { manuallyReviewed: 1, checked: 0, skipped: 0 },
         });
+
         expect(store.getSnapshot().roundItems[0]?.reference).toEqual(review);
         expect(service.check).not.toHaveBeenCalled();
         store.stop();
     });
+
     it('records final skipping once, keeps its draft, and never admits an additional sentence', async () => {
         const service = oneWordApi();
         const store = new SentenceSession(service);
@@ -396,9 +425,11 @@ describe('sentence session admission and recovery', () => {
                 },
             ],
         });
+
         expect(service.next).toHaveBeenCalledTimes(1);
         store.stop();
     });
+
     it('shows results when saved review is exhausted without pretending that every scoped word was practiced', async () => {
         const next = vi
             .fn<SentenceApi['next']>()
@@ -417,9 +448,11 @@ describe('sentence session admission and recovery', () => {
             roundEligibleCount: 10,
             counts: { presented: 1, skipped: 1, checked: 0 },
         });
+
         expect(store.getSnapshot().roundItems).toHaveLength(1);
         store.stop();
     });
+
     it('preflights the whole exact sequence before resetting results, then reauthorizes each original exercise in order in a fresh session', async () => {
         const otherEntry = '10000000-0000-4000-8000-000000000004';
         const other: SentenceExercise = {
@@ -460,12 +493,14 @@ describe('sentence session admission and recovery', () => {
             replayLoading: true,
             roundItems: originalItems,
         });
+
         expect(next).toHaveBeenCalledTimes(2);
         expect(prepare.mock.calls[1]![0]).toMatchObject({
             mode: 'review-only',
             replayExerciseIds: [first, second],
             scope: { type: 'manual', entryIds: [third, otherEntry] },
         });
+
         preflight.resolve(prepared);
         await replaying;
         expect(store.getSnapshot().sessionId).not.toBe(originalSession);
@@ -484,26 +519,31 @@ describe('sentence session admission and recovery', () => {
                 manuallyReviewed: 0,
             },
         });
+
         expect(next.mock.calls[2]![0]).toMatchObject({
             replayExerciseId: first,
             visitedExerciseIds: [],
             mode: 'review-only',
         });
+
         expect(next.mock.calls[2]![0]).not.toHaveProperty('replayExerciseIds');
         await store.skip();
         expect(next.mock.calls[3]![0]).toMatchObject({
             replayExerciseId: second,
             visitedExerciseIds: [first],
         });
+
         await store.skip();
         expect(store.getSnapshot()).toMatchObject({
             phase: 'completed',
             replayPosition: 2,
             counts: { presented: 2, skipped: 2 },
         });
+
         expect(
             store.getSnapshot().roundItems.map((item) => item.exercise.id),
         ).toEqual([first, second]);
+
         prepare.mockResolvedValue(prepared);
         next.mockResolvedValueOnce({
             kind: 'exercise',
@@ -512,6 +552,7 @@ describe('sentence session admission and recovery', () => {
                 id: '10000000-0000-4000-8000-000000000005',
             },
         });
+
         await store.generateNew();
         expect(store.getSnapshot()).toMatchObject({
             phase: 'exercise',
@@ -519,12 +560,15 @@ describe('sentence session admission and recovery', () => {
             replayPosition: null,
             counts: { presented: 1, skipped: 0 },
         });
+
         expect(next.mock.calls[4]![0]).toMatchObject({
             mode: 'new-only',
             scope: { type: 'manual', entryIds: [third, otherEntry] },
         });
+
         store.stop();
     });
+
     it('keeps results after a non-access preflight failure and never substitutes cached or other saved examples after an exact replay becomes stale', async () => {
         const prepare = vi
             .fn<SentenceApi['prepare']>()
@@ -559,6 +603,7 @@ describe('sentence session admission and recovery', () => {
             replayError: { code: 'model_unavailable' },
             roundItems: [{ exercise }],
         });
+
         expect(next).toHaveBeenCalledTimes(1);
         await store.repeatExact();
         expect(store.getSnapshot()).toMatchObject({
@@ -568,9 +613,11 @@ describe('sentence session admission and recovery', () => {
             reference: null,
             comparison: null,
         });
+
         expect(next).toHaveBeenCalledTimes(2);
         store.stop();
     });
+
     it('starts new examples for exactly the previous round words with fresh session and disclosure counters', async () => {
         const next = vi
             .fn<SentenceApi['next']>()
@@ -590,6 +637,7 @@ describe('sentence session admission and recovery', () => {
             scope: { type: 'manual', entryIds: [third] },
             visitedExerciseIds: [],
         });
+
         expect(next.mock.calls[1]![0]).not.toHaveProperty('replayExerciseId');
         expect(store.getSnapshot().sessionId).not.toBe(oldSession);
         expect(store.getSnapshot()).toMatchObject({
@@ -605,8 +653,10 @@ describe('sentence session admission and recovery', () => {
                 manuallyReviewed: 0,
             },
         });
+
         store.stop();
     });
+
     it('keeps completed results through fresh preparation and admission failure, then allows exact replay instead', async () => {
         const preparing =
             deferred<Awaited<ReturnType<SentenceApi['prepare']>>>();
@@ -636,6 +686,7 @@ describe('sentence session admission and recovery', () => {
             roundItems: original.roundItems,
             counts: original.counts,
         });
+
         preparing.resolve(prepared);
         await flush();
         expect(store.getSnapshot()).toMatchObject({
@@ -644,6 +695,7 @@ describe('sentence session admission and recovery', () => {
             roundItems: original.roundItems,
             counts: original.counts,
         });
+
         admission.reject(
             new ApiError(503, {
                 code: 'model_unavailable',
@@ -651,6 +703,7 @@ describe('sentence session admission and recovery', () => {
                 message: 'Unavailable',
             }),
         );
+
         await generating;
         expect(store.getSnapshot()).toMatchObject({
             phase: 'completed',
@@ -660,17 +713,21 @@ describe('sentence session admission and recovery', () => {
             roundItems: original.roundItems,
             counts: original.counts,
         });
+
         await store.repeatExact();
         expect(next.mock.calls[2]![0]).toMatchObject({
             mode: 'review-only',
             replayExerciseId: first,
         });
+
         expect(store.getSnapshot()).toMatchObject({
             phase: 'exercise',
             replaying: true,
         });
+
         store.stop();
     });
+
     it('restores completed results after unknown fresh admission and recovers the identical paid operation before showing the new exercise', async () => {
         vi.useFakeTimers();
         const next = vi
@@ -696,6 +753,7 @@ describe('sentence session admission and recovery', () => {
             roundItems: oldItems,
             counts: { manuallyReviewed: 1 },
         });
+
         await store.repeatExact();
         expect(next).toHaveBeenCalledTimes(4);
         await store.retry();
@@ -705,9 +763,11 @@ describe('sentence session admission and recovery', () => {
             uncertain: false,
             counts: { presented: 1, manuallyReviewed: 0 },
         });
+
         expect(store.getSnapshot().roundItems[0]?.exercise.id).toBe(second);
         store.stop();
     });
+
     it('retains visible completed items, counters and session while fresh generation is queued or running and switches only for its accepted exercise', async () => {
         vi.useFakeTimers();
         const next = vi
@@ -746,6 +806,7 @@ describe('sentence session admission and recovery', () => {
             counts: original.counts,
             sessionId: original.sessionId,
         });
+
         await vi.advanceTimersByTimeAsync(10);
         expect(store.getSnapshot()).toMatchObject({
             phase: 'completed',
@@ -755,6 +816,7 @@ describe('sentence session admission and recovery', () => {
             counts: original.counts,
             sessionId: original.sessionId,
         });
+
         await vi.advanceTimersByTimeAsync(10);
         expect(store.getSnapshot()).toMatchObject({
             phase: 'exercise',
@@ -774,10 +836,12 @@ describe('sentence session admission and recovery', () => {
             draft: '',
             roundItems: [{ exercise: { id: second } }],
         });
+
         expect(store.getSnapshot().sessionId).not.toBe(original.sessionId);
         expect(next).toHaveBeenCalledTimes(2);
         store.stop();
     });
+
     it('restores completed results when a newly admitted generation is cancelled before producing an example', async () => {
         const next = vi
             .fn<SentenceApi['next']>()
@@ -798,6 +862,7 @@ describe('sentence session admission and recovery', () => {
             counts: original.counts,
             sessionId: original.sessionId,
         });
+
         await store.cancel();
         expect(store.getSnapshot()).toMatchObject({
             phase: 'completed',
@@ -805,8 +870,10 @@ describe('sentence session admission and recovery', () => {
             roundItems: original.roundItems,
             counts: original.counts,
         });
+
         store.stop();
     });
+
     it('recovers a known fresh generation job by reading it without admitting a second generation or inheriting old counters', async () => {
         vi.useFakeTimers();
         const next = vi
@@ -842,6 +909,7 @@ describe('sentence session admission and recovery', () => {
             job: { state: 'queued' },
             counts: { manuallyReviewed: 1 },
         });
+
         await store.retry();
         expect(next).toHaveBeenCalledTimes(2);
         expect(getJob).toHaveBeenCalledTimes(4);
@@ -851,8 +919,10 @@ describe('sentence session admission and recovery', () => {
             counts: { presented: 1, manuallyReviewed: 0 },
             exercise: { id: second },
         });
+
         store.stop();
     });
+
     it('erases protected result snapshots on revoked fresh admission and fences an in-flight reference read after access loss', async () => {
         const next = vi
             .fn<SentenceApi['next']>()
@@ -876,6 +946,7 @@ describe('sentence session admission and recovery', () => {
             comparison: null,
             draft: '',
         });
+
         store.stop();
         const read =
             deferred<Awaited<ReturnType<SentenceApi['revealReference']>>>();
@@ -895,6 +966,7 @@ describe('sentence session admission and recovery', () => {
                 progress: progressRead,
             }),
         );
+
         await concurrent.start(configuration);
         await flush();
         const revealing = concurrent.recompare();
@@ -908,8 +980,10 @@ describe('sentence session admission and recovery', () => {
             comparison: null,
             draft: '',
         });
+
         concurrent.stop();
     });
+
     it('recovers exhausted read-only preparation without admitting work before preparation succeeds', async () => {
         vi.useFakeTimers();
         const prepare = vi
@@ -931,6 +1005,7 @@ describe('sentence session admission and recovery', () => {
         expect(store.getSnapshot().exercise).toEqual(exercise);
         store.stop();
     });
+
     it('finishes after all five distinct words appear, including skipped sentences, without another admission', async () => {
         const exercises = Array.from(
             { length: 6 },
@@ -949,8 +1024,10 @@ describe('sentence session admission and recovery', () => {
             }),
         );
         const next = vi.fn<SentenceApi['next']>();
-        for (const item of exercises)
+        for (const item of exercises) {
             next.mockResolvedValueOnce({ kind: 'exercise', exercise: item });
+        }
+
         const service = api({
             next,
             prepare: vi.fn(async () => ({
@@ -971,15 +1048,20 @@ describe('sentence session admission and recovery', () => {
             roundEntryCount: 1,
             roundComplete: false,
         });
+
         await store.next();
         expect(store.getSnapshot().roundEntryCount).toBe(1);
-        for (let index = 0; index < 4; index++) await store.next();
+        for (let index = 0; index < 4; index++) {
+            await store.next();
+        }
+
         expect(store.getSnapshot()).toMatchObject({
             roundEntryCount: 5,
             roundEligibleCount: 5,
             roundComplete: true,
             exercise: exercises[5],
         });
+
         expect(service.check).not.toHaveBeenCalled();
         expect(service.revealReference).not.toHaveBeenCalled();
         await store.next();
@@ -992,17 +1074,21 @@ describe('sentence session admission and recovery', () => {
                 id: '10000000-0000-4000-8000-000000000500',
             },
         });
+
         await store.changeMode('new-only');
         expect(next.mock.calls[6]![0]).toMatchObject({
             mode: 'new-only',
             visitedExerciseIds: [],
         });
+
         expect(store.getSnapshot()).toMatchObject({
             roundEntryCount: 1,
             roundComplete: false,
         });
+
         store.stop();
     });
+
     it('retries transient generation transport errors with the identical operation and stops retrying after reset', async () => {
         vi.useFakeTimers();
         const next = vi
@@ -1025,6 +1111,7 @@ describe('sentence session admission and recovery', () => {
         expect(next).toHaveBeenCalledTimes(3);
         expect(store.getSnapshot().phase).toBe('idle');
     });
+
     it('synchronously prevents duplicate paid generation and checking before React rerenders', async () => {
         const pending = deferred<Awaited<ReturnType<SentenceApi['next']>>>();
         const checkPending = deferred<SentenceJob>();
@@ -1048,14 +1135,17 @@ describe('sentence session admission and recovery', () => {
         checkPending.resolve(
             job({ state: 'failed', failureCode: 'provider_timeout' }),
         );
+
         await checking;
         store.stop();
     });
+
     it('finishes a maximum one hundred word batch only after its final entry appears', async () => {
         const count = 100;
         let presented = 0;
         const next = vi.fn<SentenceApi['next']>(async () => {
             const index = ++presented;
+
             return {
                 kind: 'exercise',
                 exercise: {
@@ -1082,13 +1172,18 @@ describe('sentence session admission and recovery', () => {
                 })),
             }),
         );
+
         await store.start(configuration);
-        for (let index = 1; index < 99; index++) await store.next();
+        for (let index = 1; index < 99; index++) {
+            await store.next();
+        }
+
         expect(store.getSnapshot()).toMatchObject({
             roundEntryCount: 99,
             roundComplete: false,
             phase: 'exercise',
         });
+
         expect(next).toHaveBeenCalledTimes(99);
         await store.next();
         expect(next.mock.calls[99]![0].visitedExerciseIds).toHaveLength(99);
@@ -1097,11 +1192,13 @@ describe('sentence session admission and recovery', () => {
             roundComplete: true,
             phase: 'exercise',
         });
+
         await store.next();
         expect(next).toHaveBeenCalledTimes(count);
         expect(store.getSnapshot().phase).toBe('completed');
         store.stop();
     });
+
     it('replays the exact unknown check payload and keeps a terminal retry as a new operation', async () => {
         const check = vi
             .fn<SentenceApi['check']>()
@@ -1131,12 +1228,15 @@ describe('sentence session admission and recovery', () => {
         expect(check.mock.calls[4]![1].operationId).not.toBe(
             check.mock.calls[3]![1].operationId,
         );
+
         expect({ ...check.mock.calls[4]![1], operationId: 'same' }).toEqual({
             ...check.mock.calls[0]![1],
             operationId: 'same',
         });
+
         store.stop();
     });
+
     it('fences old target completions after cleanup and clears private answer/reference buffers', async () => {
         const pending = deferred<Awaited<ReturnType<SentenceApi['next']>>>();
         const store = new SentenceSession(
@@ -1154,6 +1254,7 @@ describe('sentence session admission and recovery', () => {
             progress: null,
         });
     });
+
     it('free reference has no check/model/credit dependency and retries exact IDs separately', async () => {
         const reveal = vi
             .fn<SentenceApi['revealReference']>()
@@ -1173,8 +1274,10 @@ describe('sentence session admission and recovery', () => {
             checked: 0,
             manuallyReviewed: 1,
         });
+
         store.stop();
     });
+
     it('blocks checking until the requested manual disclosure is confirmed', async () => {
         const pending = deferred<{ review: SentenceManualReview }>();
         const service = api({ revealReference: vi.fn(() => pending.promise) });
@@ -1190,6 +1293,7 @@ describe('sentence session admission and recovery', () => {
         expect(service.check).toHaveBeenCalledTimes(1);
         store.stop();
     });
+
     it('clears protected content on live access loss and never retries an access-revoked job', async () => {
         const store = new SentenceSession(
             api({
@@ -1198,6 +1302,7 @@ describe('sentence session admission and recovery', () => {
                 ),
             }),
         );
+
         await store.start(configuration);
         store.setDraft('Hello');
         await store.revealReference();
@@ -1209,9 +1314,11 @@ describe('sentence session admission and recovery', () => {
             reference: null,
             canRetry: false,
         });
+
         expect(store.getSnapshot().error?.code).toBe('dictionary_not_found');
         store.stop();
     });
+
     it('only accepts the latest progress read within the same session', async () => {
         const older = deferred<SentenceProgressResponse>();
         const newer = deferred<SentenceProgressResponse>();
@@ -1223,6 +1330,7 @@ describe('sentence session admission and recovery', () => {
                     .mockImplementationOnce(() => newer.promise),
             }),
         );
+
         await store.start(configuration);
         await store.revealReference();
         newer.resolve(progress(3));
@@ -1232,6 +1340,7 @@ describe('sentence session admission and recovery', () => {
         expect(store.getSnapshot().progress?.usedCount).toBe(3);
         store.stop();
     });
+
     it('does not revive a cancelled job when an older running poll resolves later', async () => {
         vi.useFakeTimers();
         const pending = deferred<SentenceJob>();
@@ -1259,6 +1368,7 @@ describe('sentence session admission and recovery', () => {
         expect(service.getJob).toHaveBeenCalledTimes(1);
         store.stop();
     });
+
     it('automatically recovers a polling failure by reading the known job without resubmitting admission', async () => {
         vi.useFakeTimers();
         const getJob = vi
@@ -1279,6 +1389,7 @@ describe('sentence session admission and recovery', () => {
         expect(getJob).toHaveBeenCalledTimes(2);
         store.stop();
     });
+
     it('cancels a pending polling retry without issuing another read or reviving the job', async () => {
         vi.useFakeTimers();
         const getJob = vi
@@ -1296,8 +1407,10 @@ describe('sentence session admission and recovery', () => {
             busy: false,
             job: { state: 'cancelled' },
         });
+
         store.stop();
     });
+
     it('respects capacity Retry-After and replays the same operation automatically', async () => {
         vi.useFakeTimers();
         const check = vi
@@ -1328,11 +1441,13 @@ describe('sentence session admission and recovery', () => {
         expect(check.mock.calls[1]).toEqual(check.mock.calls[0]);
         store.stop();
     });
+
     it('preserves overlimit Unicode input, rejects it before payment and uses the dictionary-front explanation language', async () => {
         const service = api();
         const store = new SentenceSession(service);
         const { explanationLanguage: _ignored, ...withoutLanguage } =
             configuration;
+
         await store.start(withoutLanguage);
         store.setDraft('😀'.repeat(4001));
         await store.check();
@@ -1346,6 +1461,7 @@ describe('sentence session admission and recovery', () => {
         expect(payload.explanationLanguage).toBe('fr');
         store.stop();
     });
+
     it('acknowledges drafts only after a stored AI attempt, preserving unsaved draft status on definitive rejection', async () => {
         const service = api({
             check: vi.fn().mockRejectedValue(
@@ -1366,11 +1482,14 @@ describe('sentence session admission and recovery', () => {
             acknowledgedAnswer: null,
             busy: false,
         });
+
         expect(store.getSnapshot().draft).not.toBe(
             store.getSnapshot().acknowledgedAnswer,
         );
+
         store.stop();
     });
+
     it('retains truthful last-good progress after failures and retries without another paid operation', async () => {
         const read = vi
             .fn<SentenceApi['progress']>()
@@ -1387,6 +1506,7 @@ describe('sentence session admission and recovery', () => {
             progress: { usedCount: 2 },
             progressLoading: false,
         });
+
         expect(store.getSnapshot().progressError?.code).toBe('network_timeout');
         await store.retryProgress();
         expect(store.getSnapshot()).toMatchObject({
@@ -1394,14 +1514,17 @@ describe('sentence session admission and recovery', () => {
             progressError: null,
             progressLoading: false,
         });
+
         expect(service.next).toHaveBeenCalledTimes(1);
         expect(service.check).not.toHaveBeenCalled();
         store.stop();
     });
+
     it('exposes a failed initial progress read as unavailable rather than fabricated zero values', async () => {
         const store = new SentenceSession(
             api({ progress: vi.fn().mockRejectedValue(network()) }),
         );
+
         await store.start(configuration);
         await flush();
         expect(store.getSnapshot().progress).toBeNull();
@@ -1409,6 +1532,7 @@ describe('sentence session admission and recovery', () => {
         expect(store.getSnapshot().progressError?.code).toBe('network_timeout');
         store.stop();
     });
+
     it('keeps session counts and manual reviews across mode changes and only clears visited IDs when restarting review', async () => {
         const service = api();
         const store = new SentenceSession(service);
@@ -1421,21 +1545,25 @@ describe('sentence session admission and recovery', () => {
             presented: 1,
             manuallyReviewed: 1,
         });
+
         expect(vi.mocked(service.next).mock.calls[1]![0]).toMatchObject({
             mode: 'new-only',
             visitedExerciseIds: [first],
         });
+
         await store.restartReview();
         expect(vi.mocked(service.next).mock.calls[2]![0]).toMatchObject({
             mode: 'review-only',
             visitedExerciseIds: [],
             sessionId,
         });
+
         expect(store.getSnapshot().counts.manuallyReviewed).toBe(1);
         await store.revealReference();
         expect(store.getSnapshot().counts.manuallyReviewed).toBe(1);
         store.stop();
     });
+
     it('counts completed assisted AI attempts and their ratings once, independently of manual review totals', async () => {
         const attempt = {
             id: third,
@@ -1472,6 +1600,7 @@ describe('sentence session admission and recovery', () => {
         const store = new SentenceSession(
             api({ check: vi.fn(async () => completed) }),
         );
+
         await store.start(configuration);
         store.setDraft('Hello');
         await store.check();
@@ -1483,6 +1612,7 @@ describe('sentence session admission and recovery', () => {
             manuallyReviewed: 0,
             ratings: { perfect: 1 },
         });
+
         await store.revealReference();
         expect(store.getSnapshot().counts).toMatchObject({
             checked: 1,
@@ -1490,6 +1620,7 @@ describe('sentence session admission and recovery', () => {
             manuallyReviewed: 1,
             ratings: { perfect: 1 },
         });
+
         store.stop();
     });
 });
@@ -1506,24 +1637,28 @@ describe('sentence query stores', () => {
             ...configuration,
             scope: { type: 'manual', entryIds: [] },
         });
+
         setup.setSelectedEntryIds([ids[0]!, ...ids]);
         expect(setup.getSnapshot().selectedEntryIds).toEqual(ids.slice(0, 100));
         expect(setup.getSnapshot().configuration.scope).toEqual({
             type: 'manual',
             entryIds: ids.slice(0, 100),
         });
+
         setup.setSelectedEntryIds([...ids.slice(0, 99), ids[100]!]);
         expect(setup.getSnapshot().selectedEntryIds).toHaveLength(100);
         expect(setup.getSnapshot().selectedEntryIds).toContain(ids[100]);
         expect(setup.getSnapshot().selectedEntryIds).not.toContain(ids[99]);
         setup.stop();
     });
+
     it('starts sentence setup in target-to-source direction', () => {
         const setup = new SentenceSetup(api());
         expect(setup.getSnapshot().configuration.direction).toBe(
             'target-to-source',
         );
     });
+
     it('invalidates prepared entries, chosen IDs and both history streams while fencing inflight protected reads', async () => {
         const entryRead =
             deferred<Awaited<ReturnType<SentenceApi['listEntries']>>>();
@@ -1546,6 +1681,7 @@ describe('sentence query stores', () => {
             ],
             nextCursor: 'next',
         });
+
         reviewRead.resolve({ reviews: [review], nextCursor: 'next' });
         await flush();
         expect(setup.getSnapshot()).toMatchObject({
@@ -1555,17 +1691,20 @@ describe('sentence query stores', () => {
             entriesLoading: false,
             hasMore: false,
         });
+
         expect(history.getSnapshot()).toMatchObject({
             attempts: [],
             reviews: [],
             loading: false,
             hasMoreReviews: false,
         });
+
         await setup.loadMore();
         await history.loadMoreReviews();
         expect(service.listEntries).toHaveBeenCalledTimes(1);
         expect(service.manualReviews).toHaveBeenCalledTimes(1);
     });
+
     it('fences stale setup results after switching search and direction', async () => {
         vi.useFakeTimers();
         const oldPrepare =
@@ -1591,6 +1730,7 @@ describe('sentence query stores', () => {
             ...configuration,
             direction: 'target-to-source',
         });
+
         store.setSearch('new');
         await vi.advanceTimersByTimeAsync(250);
         oldPrepare.resolve(await api().prepare(configuration));
@@ -1598,13 +1738,16 @@ describe('sentence query stores', () => {
             entries: [{ entryId: first, source: 'old', translation: 'old' }],
             nextCursor: null,
         });
+
         await flush();
         expect(store.getSnapshot().prepared?.direction).toBe(
             'target-to-source',
         );
+
         expect(store.getSnapshot().entries).toEqual([]);
         store.stop();
     });
+
     it('clears both personal history streams on authorization loss', async () => {
         const service = api({
             manualReviews: vi
@@ -1629,6 +1772,7 @@ describe('sentence query stores', () => {
             reviews: [],
             hasMoreReviews: false,
         });
+
         store.stop();
     });
 });

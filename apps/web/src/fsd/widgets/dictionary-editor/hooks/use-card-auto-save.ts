@@ -38,8 +38,9 @@ export function useCardAutoSave(
     const cardAutoSave = useMutation({
         onMutate: () => ({ session: context.editingSession.current }),
         onError: (_error, _input, attempt) => {
-            if (attempt?.session !== context.editingSession.current)
+            if (attempt?.session !== context.editingSession.current) {
                 cardAutoSave.reset();
+            }
         },
         mutationFn: async (input: {
             draft: DictionaryCardDraft;
@@ -48,8 +49,10 @@ export function useCardAutoSave(
         }) => {
             const card = context.editing;
             const versions = context.cards.data?.pages[0];
-            if (!card || card === 'new' || !versions)
+            if (!card || card === 'new' || !versions) {
                 throw new Error('Card unavailable');
+            }
+
             const session = context.editingSession.current;
             if (saver.current?.session !== session) {
                 saver.current = {
@@ -60,25 +63,30 @@ export function useCardAutoSave(
                     ),
                 };
             }
+
             const response = await saver.current.save({
                 ...input,
                 card,
                 dictionaryVersion: versions.dictionaryVersion,
                 settingsVersion: versions.settingsVersion,
             });
+
             if (context.editingSession.current !== session) {
                 throw new CardAutoSaveError(
                     new Error('The editing session closed.'),
                     false,
                 );
             }
+
             context.setEditing(response.card);
             if (!input.selectedSuggestions.length) {
                 context.authoringCleanup.current.discardJobIds.add(
                     input.generation.jobId,
                 );
+
                 void context.flushCardAuthoringCleanup();
             }
+
             context.setAuthoringJobId(null);
             context.setAuthoringReviewJob(null);
             context.authoringAttempt.current = null;
@@ -105,10 +113,12 @@ export function useCardAutoSave(
                           }
                         : data,
             );
+
             context.queryClient.setQueryData(
                 ['dictionary-card', context.dictionaryId, response.card.id],
                 response,
             );
+
             context.setOutcome(
                 context.t(
                     response.unchanged
@@ -118,6 +128,7 @@ export function useCardAutoSave(
                           : 'dictionary.card.saved',
                 ),
             );
+
             void Promise.all([
                 context.queryClient.invalidateQueries({
                     queryKey: ['dictionary-cards', context.dictionaryId],
@@ -129,8 +140,10 @@ export function useCardAutoSave(
                     queryKey: ['dictionaries'],
                 }),
             ]);
+
             return response;
         },
     });
+
     return { cardAutoSave };
 }

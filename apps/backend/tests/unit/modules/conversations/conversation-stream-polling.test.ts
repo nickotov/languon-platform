@@ -51,6 +51,7 @@ const detail: ConversationDetail = {
     turns: [],
     drafts: [],
 };
+
 function fixture(
     readEvents = async (): Promise<ConversationEvent[]> => [
         {
@@ -96,6 +97,7 @@ function fixture(
             refreshTokenTtlSeconds: 3600,
         }),
     });
+
     return {
         app,
         authenticate,
@@ -107,9 +109,11 @@ function fixture(
         service,
     };
 }
+
 afterEach(() => {
     vi.useRealTimers();
 });
+
 describe('durable conversation stream polling policy', () => {
     it('polls active turns every125ms then returns to idle cadence on completion', async () => {
         vi.useFakeTimers();
@@ -117,6 +121,7 @@ describe('durable conversation stream polling policy', () => {
         const { app, readDetail, events, authenticate } = fixture(
             async () => [],
         );
+
         readDetail.mockResolvedValue(activeDetail);
         events.mockResolvedValueOnce([
             {
@@ -127,6 +132,7 @@ describe('durable conversation stream polling policy', () => {
                 createdAt: turn.createdAt,
             },
         ]);
+
         const response = await app.request(
             `/conversations/${conversationId}/events`,
             {
@@ -150,6 +156,7 @@ describe('durable conversation stream polling policy', () => {
                     createdAt: turn.createdAt,
                 },
             ]);
+
             await vi.advanceTimersByTimeAsync(125);
             expect(events).toHaveBeenCalledTimes(3);
             await reader.read();
@@ -163,6 +170,7 @@ describe('durable conversation stream polling policy', () => {
             await reader.cancel();
         }
     });
+
     it('seeds active cadence from initial detail before any turn event arrives', async () => {
         vi.useFakeTimers();
         const { app, readDetail, events } = fixture(async () => []);
@@ -170,6 +178,7 @@ describe('durable conversation stream polling policy', () => {
             ...detail,
             turns: [{ ...turn, status: 'queued' }],
         });
+
         const response = await app.request(
             `/conversations/${conversationId}/events`,
             {
@@ -185,6 +194,7 @@ describe('durable conversation stream polling policy', () => {
             await reader.cancel();
         }
     });
+
     it('drains saturated replay promptly with a fresh authorization check and forward cursor', async () => {
         vi.useFakeTimers();
         const batch: ConversationEvent[] = Array.from(
@@ -207,7 +217,10 @@ describe('durable conversation stream polling policy', () => {
         );
         const reader = response.body!.getReader();
         try {
-            for (let index = 0; index < 100; index++) await reader.read();
+            for (let index = 0; index < 100; index++) {
+                await reader.read();
+            }
+
             await vi.advanceTimersByTimeAsync(0);
             expect(events).toHaveBeenCalledTimes(2);
             expect(events.mock.calls[1]?.[2]).toBe(100);
@@ -218,11 +231,13 @@ describe('durable conversation stream polling policy', () => {
             await reader.cancel();
         }
     });
+
     it('revalidates active streams before reading another batch after session revocation', async () => {
         vi.useFakeTimers();
         const { app, readDetail, events, authenticate, release } = fixture(
             async () => [],
         );
+
         readDetail.mockResolvedValue({ ...detail, turns: [turn] });
         const response = await app.request(
             `/conversations/${conversationId}/events`,
@@ -238,9 +253,11 @@ describe('durable conversation stream polling policy', () => {
         expect(new TextDecoder().decode((await reader.read()).value)).toContain(
             '"status":401',
         );
+
         expect(release).toHaveBeenCalledTimes(1);
         await reader.cancel();
     });
+
     it('never spins on unchanged zero-id snapshots while a turn is active', async () => {
         vi.useFakeTimers();
         const activeDetail = { ...detail, turns: [turn] };
@@ -272,6 +289,7 @@ describe('durable conversation stream polling policy', () => {
             await reader.cancel();
         }
     });
+
     it('does not busy-loop a full non-progressing replay page', async () => {
         vi.useFakeTimers();
         const { app, events } = fixture(async () =>
@@ -291,13 +309,17 @@ describe('durable conversation stream polling policy', () => {
         );
         const reader = response.body!.getReader();
         try {
-            for (let index = 0; index < 100; index++) await reader.read();
+            for (let index = 0; index < 100; index++) {
+                await reader.read();
+            }
+
             await vi.advanceTimersByTimeAsync(124);
             expect(events).toHaveBeenCalledTimes(1);
         } finally {
             await reader.cancel();
         }
     });
+
     it('does not emit an in-flight batch that returns after stream expiry', async () => {
         vi.useFakeTimers();
         let entered!: () => void, resume!: () => void;
@@ -310,6 +332,7 @@ describe('durable conversation stream polling policy', () => {
         const { app, release } = fixture(async () => {
             entered();
             await waiting;
+
             return [
                 {
                     id: 1,
@@ -326,6 +349,7 @@ describe('durable conversation stream polling policy', () => {
                 headers: { Authorization: 'Bearer a.b.c' },
             },
         );
+
         await started;
         await vi.advanceTimersByTimeAsync(240_000);
         expect(release).toHaveBeenCalledTimes(1);
@@ -333,6 +357,7 @@ describe('durable conversation stream polling policy', () => {
         expect(await response.text()).toBe('');
         expect(release).toHaveBeenCalledTimes(1);
     });
+
     it('fails before polling when stream capacity or Redis admission is unavailable', async () => {
         for (const mode of [
             'full',
@@ -341,17 +366,22 @@ describe('durable conversation stream polling policy', () => {
         ] as const) {
             const { app, acquireLease, events, readDetail, consume } =
                 fixture();
-            if (mode === 'full') acquireLease.mockResolvedValueOnce(null);
-            else if (mode === 'quota-unavailable')
+
+            if (mode === 'full') {
+                acquireLease.mockResolvedValueOnce(null);
+            } else if (mode === 'quota-unavailable') {
                 consume.mockRejectedValueOnce(new RateLimitUnavailableError());
-            else
+            } else {
                 acquireLease.mockRejectedValueOnce(
                     new Error('Private Redis connection details'),
                 );
+            }
+
             const response = await app.request(
                 `/conversations/${conversationId}/events`,
                 { headers: { Authorization: 'Bearer a.b.c' } },
             );
+
             expect(response.status).toBe(503);
             expect(await response.json()).toMatchObject({
                 error: {
@@ -361,10 +391,12 @@ describe('durable conversation stream polling policy', () => {
                             : 'service_unavailable',
                 },
             });
+
             expect(events).not.toHaveBeenCalled();
             expect(readDetail).not.toHaveBeenCalled();
         }
     });
+
     it('separately rate limits new streams without acquiring a lease or polling', async () => {
         const { app, consume, acquireLease, events } = fixture();
         consume.mockResolvedValueOnce({
@@ -373,23 +405,28 @@ describe('durable conversation stream polling policy', () => {
             remaining: 239,
             retryAfterSeconds: 0,
         });
+
         consume.mockResolvedValueOnce({
             allowed: false,
             limit: 12,
             remaining: 0,
             retryAfterSeconds: 60,
         });
+
         const response = await app.request(
             `/conversations/${conversationId}/events`,
             { headers: { Authorization: 'Bearer a.b.c' } },
         );
+
         expect(response.status).toBe(429);
         expect(await response.json()).toMatchObject({
             error: { code: 'rate_limited' },
         });
+
         expect(acquireLease).not.toHaveBeenCalled();
         expect(events).not.toHaveBeenCalled();
     });
+
     it('releases a lease exactly once when initial source setup rejects', async () => {
         const { app, release, readDetail, events } = fixture();
         readDetail.mockRejectedValueOnce(
@@ -398,14 +435,17 @@ describe('durable conversation stream polling policy', () => {
                 'Source unavailable',
             ),
         );
+
         const response = await app.request(
             `/conversations/${conversationId}/events`,
             { headers: { Authorization: 'Bearer a.b.c' } },
         );
+
         expect(response.status).toBe(404);
         expect(release).toHaveBeenCalledTimes(1);
         expect(events).not.toHaveBeenCalled();
     });
+
     it('releases immediately when the request aborts during initial source setup', async () => {
         const { app, release, readDetail, events } = fixture();
         let entered!: () => void, resume!: () => void;
@@ -415,11 +455,14 @@ describe('durable conversation stream polling policy', () => {
         const started = new Promise<void>((resolve) => {
             entered = resolve;
         });
+
         readDetail.mockImplementationOnce(async () => {
             entered();
             await pendingSetup;
+
             return detail;
         });
+
         const controller = new AbortController();
         const response = app.request(
             `/conversations/${conversationId}/events`,
@@ -428,6 +471,7 @@ describe('durable conversation stream polling policy', () => {
                 headers: { Authorization: 'Bearer a.b.c' },
             },
         );
+
         await started;
         controller.abort();
         expect(release).toHaveBeenCalledTimes(1);
@@ -436,6 +480,7 @@ describe('durable conversation stream polling policy', () => {
         expect(release).toHaveBeenCalledTimes(1);
         expect(events).not.toHaveBeenCalled();
     });
+
     it('releases at the finite stream deadline and keeps polling admission uncharged', async () => {
         vi.useFakeTimers();
         const { app, release, consume } = fixture();
@@ -449,20 +494,25 @@ describe('durable conversation stream polling policy', () => {
         expect(release).toHaveBeenCalledTimes(1);
         expect(consume).toHaveBeenCalledTimes(2);
     });
+
     it('does not expose release outages or create an unhandled stream error', async () => {
         const { app, release } = fixture(async () => {
             throw new Error('Transient source failure');
         });
+
         release.mockRejectedValueOnce(
             new Error('Private Redis release details'),
         );
+
         const response = await app.request(
             `/conversations/${conversationId}/events`,
             { headers: { Authorization: 'Bearer a.b.c' } },
         );
+
         expect(await response.text()).toBe('');
         expect(release).toHaveBeenCalledTimes(1);
     });
+
     it('does not start a source poll after a stalled session check outlives the stream lease', async () => {
         vi.useFakeTimers();
         const { app, release, authenticate, events } = fixture();
@@ -473,16 +523,20 @@ describe('durable conversation stream polling policy', () => {
         const started = new Promise<void>((resolve) => {
             entered = resolve;
         });
+
         authenticate.mockResolvedValueOnce({ userId: conversationId });
         authenticate.mockImplementationOnce(async () => {
             entered();
             await waiting;
+
             return { userId: conversationId };
         });
+
         const response = await app.request(
             `/conversations/${conversationId}/events`,
             { headers: { Authorization: 'Bearer a.b.c' } },
         );
+
         await started;
         await vi.advanceTimersByTimeAsync(240_000);
         expect(release).toHaveBeenCalledTimes(1);
@@ -491,6 +545,7 @@ describe('durable conversation stream polling policy', () => {
         expect(events).not.toHaveBeenCalled();
         expect(release).toHaveBeenCalledTimes(1);
     });
+
     it('charges each connection once, revalidates every poll, and sends one empty snapshot followed by heartbeats', async () => {
         vi.useFakeTimers();
         const { app, authenticate, consume, events, release, acquireLease } =
@@ -501,30 +556,37 @@ describe('durable conversation stream polling policy', () => {
                     `/conversations/${conversationId}/events`,
                     { headers: { Authorization: 'Bearer a.b.c' } },
                 );
+
                 return response.body!.getReader();
             }),
         );
+
         try {
-            for (const reader of readers)
+            for (const reader of readers) {
                 expect(
                     new TextDecoder().decode((await reader.read()).value),
                 ).toContain('"type":"snapshot"');
+            }
+
             for (let poll = 0; poll < 3; poll++) {
                 await vi.advanceTimersByTimeAsync(1000);
                 for (const reader of readers) {
                     const frame = new TextDecoder().decode(
                         (await reader.read()).value,
                     );
+
                     expect(frame).toContain('event: heartbeat');
                     expect(frame).not.toContain('"type":"snapshot"');
                 }
             }
+
             expect(consume).toHaveBeenCalledTimes(8);
             expect(
                 consume.mock.calls.filter(
                     ([request]) => request.scope === 'contextual-assistant',
                 ),
             ).toHaveLength(4);
+
             expect(
                 consume.mock.calls.filter(
                     ([request]) =>
@@ -532,18 +594,22 @@ describe('durable conversation stream polling policy', () => {
                         'contextual-assistant-stream-admission',
                 ),
             ).toHaveLength(4);
+
             expect(acquireLease).toHaveBeenCalledTimes(4);
             expect(acquireLease.mock.calls[0]?.[0]).toMatchObject({
                 limit: 8,
                 ttlMs: 300_000,
             });
+
             expect(events).toHaveBeenCalledTimes(16);
             expect(authenticate).toHaveBeenCalledTimes(20);
         } finally {
             await Promise.all(readers.map((reader) => reader.cancel()));
         }
+
         expect(release).toHaveBeenCalledTimes(4);
     });
+
     it.each([
         [new Error('Disposable database transient failure'), undefined],
         [
@@ -570,7 +636,10 @@ describe('durable conversation stream polling policy', () => {
             if (status) {
                 expect(body).toContain('event: unavailable');
                 expect(body).toContain(`"status":${status}`);
-            } else expect(body).not.toContain('unavailable');
+            } else {
+                expect(body).not.toContain('unavailable');
+            }
+
             expect(release).toHaveBeenCalledTimes(1);
         },
     );

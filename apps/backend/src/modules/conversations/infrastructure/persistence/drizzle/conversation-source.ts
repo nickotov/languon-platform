@@ -1,3 +1,6 @@
+import { projectConversationDictionaryCards } from './conversation-dictionary-material';
+import { readSharedConversationNote } from './conversation-knowledge-share';
+import { learningBlockSourceMaterial } from '../../../application/learning-block-source-material';
 import { createHash } from 'node:crypto';
 import { and, eq, or, ilike } from 'drizzle-orm';
 import type { ConversationSource, KnowledgeBody } from '@languon/contracts';
@@ -35,6 +38,10 @@ export interface ConversationSourceDependencies {
         digest: string,
     ): boolean | Promise<boolean>;
     verifyTextShare(key: string, digest: string): boolean | Promise<boolean>;
+    verifyKnowledgeShare?(
+        key: string,
+        digest: string,
+    ): boolean | Promise<boolean>;
     readNote(
         tx: ConversationsTransaction,
         ownerId: string,
@@ -62,7 +69,9 @@ export class ConversationSourceResolver {
             .from(usersTable)
             .where(eq(usersTable.id, ownerId));
         const [actor] = lock === 'none' ? await query : await query.for(lock);
-        if (actor?.status !== 'active') throw conversationUnavailable();
+        if (actor?.status !== 'active') {
+            throw conversationUnavailable();
+        }
     }
 
     async resolve(
@@ -78,21 +87,33 @@ export class ConversationSourceResolver {
         snapshot: ConversationSourceSnapshot;
         authority: SourceAuthority;
     }> {
-        if (!actorVerified)
+        if (!actorVerified) {
             await this.assertActiveActor(
                 tx,
                 ownerId,
                 lockRows ? 'share' : 'none',
             );
+        }
+
         if (source.kind === 'knowledge') {
-            const note = await this.dependencies.readNote(
-                tx,
-                ownerId,
-                source.id,
-            );
+            const shared = source.shareLocator
+                ? await readSharedConversationNote(
+                      tx,
+                      source,
+                      access,
+                      this.dependencies.verifyKnowledgeShare,
+                  )
+                : undefined;
+            const note =
+                shared?.note ??
+                (await this.dependencies.readNote(tx, ownerId, source.id));
+
+            if (source.view === 'saved' && note.version < 1) {
+                throw conversationUnavailable();
+            }
 
             return {
-                authority: { sourceOwnerId: ownerId },
+                authority: shared?.authority ?? { sourceOwnerId: ownerId },
                 snapshot: {
                     title: note.title || 'Untitled',
                     description: note.summary,
@@ -109,6 +130,19 @@ export class ConversationSourceResolver {
                           })
                         : [],
                     scope: 'complete',
+                    ...(includeMaterial
+                        ? {
+                              learningBlocks: learningBlockSourceMaterial(
+                                  (note.body.document.content ?? []).flatMap(
+                                      (node) =>
+                                          node.type === 'learningBlock' &&
+                                          node.attrs?.block
+                                              ? [node.attrs.block]
+                                              : [],
+                                  ),
+                              ),
+                          }
+                        : {}),
                 },
             };
         }
@@ -122,11 +156,16 @@ export class ConversationSourceResolver {
                 .from(dictionariesTable)
                 .where(eq(dictionariesTable.id, source.id));
 
-            if (!candidate) throw conversationUnavailable();
+            if (!candidate) {
+                throw conversationUnavailable();
+            }
+
             // resolve() verified this actor already; shared resources still need
             // their separate source owner's lifecycle check and lock.
-            if (candidate.ownerId !== ownerId)
+            if (candidate.ownerId !== ownerId) {
                 await this.owner(tx, candidate.ownerId, lockRows);
+            }
+
             const dictionaryQuery = tx
                 .select()
                 .from(dictionariesTable)
@@ -139,8 +178,10 @@ export class ConversationSourceResolver {
                 !dictionary ||
                 dictionary.ownerId !== candidate.ownerId ||
                 dictionary.lifecycle !== 'active'
-            )
+            ) {
                 throw conversationUnavailable();
+            }
+
             const authority: SourceAuthority = {
                 sourceOwnerId: dictionary.ownerId,
             };
@@ -159,8 +200,10 @@ export class ConversationSourceResolver {
                               access.key,
                               dictionary.shareKeyDigest,
                           )))
-                )
+                ) {
                     throw conversationUnavailable();
+                }
+
                 authority.share = {
                     digest: dictionary.shareKeyDigest,
                     version: dictionary.shareKeyVersion!,
@@ -220,103 +263,28 @@ export class ConversationSourceResolver {
                       .limit(query ? 100 : 10001)
                 : [];
 
-            if (!query && cards.length > 10000)
+            if (!query && cards.length > 10000) {
                 throw new ConversationError(
                     'source_too_large',
                     'This source has too many cards for a conversation. Use a smaller source.',
                 );
-            const visible = (override: string | null, defaultValue: boolean) =>
-                override ? override === 'enabled' : defaultValue;
-            const material = cards.map((card) => {
-                const copiedCard = {
-                    source: card.source,
-                    translation: card.translation,
-                    sourceLanguage: dictionary.sourceLanguageTag,
-                    targetLanguage: dictionary.targetLanguageTag,
-                    ...(visible(
-                        card.definitionEnabledOverride,
-                        settings?.definitionEnabled ?? false,
-                    )
-                        ? {
-                              definition: card.definition,
-                              definitionLanguage:
-                                  (card.definitionLanguageRoleOverride ??
-                                      settings?.definitionLanguageRole ??
-                                      'source') === 'source'
-                                      ? dictionary.sourceLanguageTag
-                                      : dictionary.targetLanguageTag,
-                          }
-                        : {}),
-                    ...(visible(
-                        card.transcriptionEnabledOverride,
-                        settings?.transcriptionEnabled ?? false,
-                    )
-                        ? {
-                              transcription: card.transcription,
-                              transcriptionNotation:
-                                  card.transcriptionNotationOverride ??
-                                  settings?.transcriptionNotation ??
-                                  'ipa',
-                              ...((card.transcriptionNotationOverride ??
-                                  settings?.transcriptionNotation ??
-                                  'ipa') === 'custom'
-                                  ? {
-                                        transcriptionCustomLabel:
-                                            card.customNotationLabelOverride ??
-                                            settings?.customNotationLabel ??
-                                            null,
-                                    }
-                                  : {}),
-                          }
-                        : {}),
-                    ...(visible(
-                        card.exampleEnabledOverride,
-                        settings?.exampleEnabled ?? true,
-                    )
-                        ? {
-                              example: card.example,
-                              exampleLanguage:
-                                  (card.exampleLanguageRoleOverride ??
-                                      settings?.exampleLanguageRole ??
-                                      'source') === 'source'
-                                      ? dictionary.sourceLanguageTag
-                                      : dictionary.targetLanguageTag,
-                          }
-                        : {}),
-                    ...(visible(
-                        card.exampleEnabledOverride,
-                        settings?.exampleEnabled ?? true,
-                    ) &&
-                    visible(
-                        card.exampleTranslationEnabledOverride,
-                        settings?.exampleTranslationEnabled ?? true,
-                    )
-                        ? {
-                              exampleTranslation: card.exampleTranslation,
-                              exampleTranslationLanguage:
-                                  (card.exampleLanguageRoleOverride ??
-                                      settings?.exampleLanguageRole ??
-                                      'source') === 'source'
-                                      ? dictionary.targetLanguageTag
-                                      : dictionary.sourceLanguageTag,
-                          }
-                        : {}),
-                };
+            }
 
-                return {
-                    id: card.id,
-                    label: card.source,
-                    kind: 'dictionary-card' as const,
-                    card: copiedCard,
-                    content: JSON.stringify(copiedCard),
-                };
-            });
+            const material = projectConversationDictionaryCards(
+                dictionary,
+                settings,
+                cards,
+            );
 
-            if (Buffer.byteLength(JSON.stringify(material), 'utf8') > 4_000_000)
+            if (
+                Buffer.byteLength(JSON.stringify(material), 'utf8') > 4_000_000
+            ) {
                 throw new ConversationError(
                     'source_too_large',
                     'This source is too large for a conversation. Use a smaller source.',
                 );
+            }
+
             const revision = createHash('sha256')
                 .update(JSON.stringify(material))
                 .digest('hex')
@@ -336,14 +304,26 @@ export class ConversationSourceResolver {
             };
         }
 
+        if (
+            source.shareKind &&
+            !['text', 'folder'].includes(source.shareKind)
+        ) {
+            throw conversationUnavailable();
+        }
+
         const [candidate] = await tx
             .select()
             .from(textsTable)
             .where(eq(textsTable.id, source.id));
 
-        if (!candidate) throw conversationUnavailable();
-        if (candidate.ownerId !== ownerId)
+        if (!candidate) {
+            throw conversationUnavailable();
+        }
+
+        if (candidate.ownerId !== ownerId) {
             await this.owner(tx, candidate.ownerId, lockRows);
+        }
+
         const folderQuery =
             candidate.folderId === null
                 ? undefined
@@ -372,8 +352,10 @@ export class ConversationSourceResolver {
             (document.folderId !== null &&
                 (folder?.lifecycle !== 'active' ||
                     folder.ownerId !== document.ownerId))
-        )
+        ) {
             throw conversationUnavailable();
+        }
+
         const authority: SourceAuthority = { sourceOwnerId: document.ownerId };
         if (document.ownerId !== ownerId) {
             const shareQuery = tx
@@ -382,7 +364,10 @@ export class ConversationSourceResolver {
                 .where(
                     and(
                         eq(textSharesTable.locator, source.shareLocator ?? ''),
-                        eq(textSharesTable.kind, source.shareKind ?? 'text'),
+                        eq(
+                            textSharesTable.kind,
+                            source.shareKind === 'folder' ? 'folder' : 'text',
+                        ),
                     ),
                 );
             const [share] = lockRows
@@ -404,8 +389,10 @@ export class ConversationSourceResolver {
                           access.key,
                           share.keyDigest,
                       )))
-            )
+            ) {
                 throw conversationUnavailable();
+            }
+
             authority.share = {
                 id: share.id,
                 digest: share.keyDigest,
@@ -447,6 +434,8 @@ export class ConversationSourceResolver {
             .from(usersTable)
             .where(eq(usersTable.id, id));
         const [owner] = lockRows ? await query.for('share') : await query;
-        if (owner?.status !== 'active') throw conversationUnavailable();
+        if (owner?.status !== 'active') {
+            throw conversationUnavailable();
+        }
     }
 }

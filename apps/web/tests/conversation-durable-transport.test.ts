@@ -104,6 +104,7 @@ describe('durable AI SDK UI transport', () => {
                         type: 'snapshot',
                         data: initial,
                     });
+
                     receive(event);
                     receive(event); // A replayed ID must not append the text/tool output twice.
                     await new Promise<void>((resolve) =>
@@ -128,7 +129,11 @@ describe('durable AI SDK UI transport', () => {
                     if (part.type === 'data-reconcile') {
                         chat.messages = conversationUIMessages(part.data);
                     }
-                    if (part.type !== 'data-canonical') return;
+
+                    if (part.type !== 'data-canonical') {
+                        return;
+                    }
+
                     canonical = reduceConversationEvent(canonical, part.data)!;
                 },
             });
@@ -145,6 +150,7 @@ describe('durable AI SDK UI transport', () => {
                 },
             },
         );
+
         await vi.waitFor(() => expect(chat.messages[0]?.id).toBe(messageId));
         expect(submit).toHaveBeenCalledTimes(1);
         expect(submit.mock.calls[0]?.[2].requestId).toBe(requestId);
@@ -159,11 +165,13 @@ describe('durable AI SDK UI transport', () => {
                 state: 'done',
             }),
         ]);
+
         expect(
             chat.messages[0]?.parts.find(
                 (part) => part.type === 'tool-read_source_context',
             ),
         ).toMatchObject({ state: 'output-available', providerExecuted: true });
+
         await chat.stop();
         transport.close();
         await completion;
@@ -182,6 +190,7 @@ describe('durable AI SDK UI transport', () => {
                     type: 'snapshot',
                     data: { ...initial, messages: [message] },
                 });
+
                 await new Promise<void>((resolve) =>
                     signal.addEventListener('abort', () => resolve(), {
                         once: true,
@@ -189,6 +198,7 @@ describe('durable AI SDK UI transport', () => {
                 );
             },
         );
+
         const transport = new DurableChatTransport({
             request: (operation) => operation('local-token'),
             onAdmitted: vi.fn(),
@@ -203,9 +213,11 @@ describe('durable AI SDK UI transport', () => {
             type: 'data-canonical',
             data: { type: 'snapshot' },
         });
+
         await reader.cancel();
         expect(submit).not.toHaveBeenCalled();
     });
+
     it('recovers a transient SSE failure from its cursor without admission or duplicated answer/tool parts', async () => {
         const submit = vi.spyOn(conversationApi, 'submit');
         const connections: boolean[] = [];
@@ -247,9 +259,12 @@ describe('durable AI SDK UI transport', () => {
                         type: 'snapshot',
                         data: initial,
                     });
+
                     receive(partial);
+
                     throw new TypeError('Network connection interrupted');
                 }
+
                 expect(after).toBe(2);
                 receive(partial); // The old message/tool state must not be processed twice.
                 receive(finished);
@@ -271,11 +286,18 @@ describe('durable AI SDK UI transport', () => {
                 transport,
                 sendAutomaticallyWhen: () => false,
                 onData(part) {
-                    if (part.type === 'data-connection')
+                    if (part.type === 'data-connection') {
                         connections.push(part.data.reconnecting);
-                    if (part.type === 'data-reconcile')
+                    }
+
+                    if (part.type === 'data-reconcile') {
                         chat.messages = conversationUIMessages(part.data);
-                    if (part.type !== 'data-canonical') return;
+                    }
+
+                    if (part.type !== 'data-canonical') {
+                        return;
+                    }
+
                     received.push(part.data.id);
                     canonical = reduceConversationEvent(canonical, part.data)!;
                 },
@@ -286,6 +308,7 @@ describe('durable AI SDK UI transport', () => {
                 () => expect(canonical.turns[0]?.status).toBe('succeeded'),
                 { timeout: 3500 },
             );
+
             expect(events).toHaveBeenCalledTimes(2);
             expect(events.mock.calls.map((call) => call[2])).toEqual([0, 2]);
             expect(received).toEqual([1, 2, 3, 4]);
@@ -301,16 +324,19 @@ describe('durable AI SDK UI transport', () => {
                     state: 'done',
                 }),
             ]);
+
             expect(
                 chat.messages[0]?.parts.filter(
                     (part) => part.type === 'tool-read_source_context',
                 ),
             ).toHaveLength(1);
+
             expect(
                 chat.messages[0]?.parts.find(
                     (part) => part.type === 'tool-read_source_context',
                 ),
             ).toMatchObject({ state: 'output-available' });
+
             expect(submit).not.toHaveBeenCalled();
         } finally {
             await chat.stop();
@@ -331,6 +357,7 @@ describe('durable AI SDK UI transport', () => {
                     type: 'snapshot',
                     data: initial,
                 });
+
                 await new Promise<void>((resolve) =>
                     signal.addEventListener('abort', () => resolve(), {
                         once: true,
@@ -338,6 +365,7 @@ describe('durable AI SDK UI transport', () => {
                 );
             },
         );
+
         const reconciliations = vi.fn();
         const transport = new DurableChatTransport({
             request: (operation) => operation('local-token'),
@@ -373,11 +401,13 @@ describe('durable AI SDK UI transport', () => {
                 },
             });
         }
+
         const text = (index = 0) =>
             chat.messages[index]?.parts
                 .filter((part) => part.type === 'text')
                 .map((part) => part.text)
                 .join('');
+
         try {
             await vi.waitFor(() => expect(receive).toBeDefined());
             update(2, 'Hel');
@@ -389,6 +419,7 @@ describe('durable AI SDK UI transport', () => {
                 id: 999,
                 conversationId: '397ec960-17c8-47b8-836d-a1627a361c45',
             });
+
             update(2, 'Old replay');
             update(3, 'Repeated ID');
             update(4, 'Hello world');
@@ -400,6 +431,7 @@ describe('durable AI SDK UI transport', () => {
                 type: 'snapshot',
                 data: initial,
             });
+
             expect(reconciliations).toHaveBeenCalledTimes(1);
             // A canonical restart/truncation replaces text rather than appending it.
             update(5, 'New');
@@ -408,16 +440,19 @@ describe('durable AI SDK UI transport', () => {
             await vi.waitFor(() =>
                 expect(chat.messages[0]?.metadata?.status).toBe('incomplete'),
             );
+
             expect(text()).toBe('New answer');
             expect(
                 chat.messages[0]?.parts.filter((part) => part.type === 'text'),
             ).toHaveLength(1);
+
             update(
                 7,
                 'Another turn',
                 'complete',
                 'c7dfeec2-cc5f-4eb4-97b8-02201737ff8a',
             );
+
             await vi.waitFor(() => expect(text(1)).toBe('Another turn'));
             expect(text()).toBe('New answer');
             expect(chat.messages).toHaveLength(2);
@@ -441,14 +476,17 @@ describe('durable AI SDK UI transport', () => {
             id: 'answer',
             delta: 'First',
         });
+
         const appended = projection.project({
             ...first,
             id: 3,
             data: { ...first.data, content: 'First second' },
         });
+
         expect(appended.filter((chunk) => chunk.type === 'text-delta')).toEqual(
             [{ type: 'text-delta', id: 'answer', delta: ' second' }],
         );
+
         expect(
             appended.some(
                 (chunk) =>
@@ -457,6 +495,7 @@ describe('durable AI SDK UI transport', () => {
                     chunk.type === 'start',
             ),
         ).toBe(false);
+
         const rebuilt = projection.project({
             ...first,
             id: 4,
@@ -467,10 +506,12 @@ describe('durable AI SDK UI transport', () => {
                 content: 'First second',
             },
         });
+
         expect(rebuilt).toContainEqual({ type: 'reset-step' });
         expect(rebuilt.filter((chunk) => chunk.type === 'text-delta')).toEqual([
             { type: 'text-delta', id: 'answer', delta: 'First second' },
         ]);
+
         expect(
             rebuilt.some(
                 (chunk) =>
@@ -506,6 +547,7 @@ describe('durable AI SDK UI transport', () => {
                     type: 'snapshot',
                     data: snapshot,
                 });
+
                 await new Promise<void>((resolve) =>
                     signal.addEventListener('abort', () => resolve(), {
                         once: true,
@@ -513,6 +555,7 @@ describe('durable AI SDK UI transport', () => {
                 );
             },
         );
+
         const transport = new DurableChatTransport({
             request: (operation) => operation('local-token'),
             onAdmitted: vi.fn(),
@@ -522,8 +565,9 @@ describe('durable AI SDK UI transport', () => {
                 id: conversationId,
                 transport,
                 onData(part) {
-                    if (part.type === 'data-reconcile')
+                    if (part.type === 'data-reconcile') {
                         chat.messages = conversationUIMessages(part.data);
+                    }
                 },
             });
         const completion = chat.resumeStream();
@@ -538,16 +582,20 @@ describe('durable AI SDK UI transport', () => {
                     status: 'complete',
                 },
             });
+
             await vi.waitFor(() =>
                 expect(chat.messages[1]?.metadata?.status).toBe('complete'),
             );
+
             expect(chat.messages.map((item) => item.id)).toEqual([
                 historicalId,
                 messageId,
             ]);
+
             expect(chat.messages[0]?.parts[0]).toMatchObject({
                 text: 'Earlier answer',
             });
+
             expect(
                 chat.messages[1]?.parts.filter((part) => part.type === 'text'),
             ).toEqual([
@@ -583,6 +631,7 @@ describe('durable AI SDK UI transport', () => {
                 transport,
                 onError,
             });
+
             await chat.resumeStream();
             expect(onError).toHaveBeenCalledExactlyOnceWith(error);
             expect(chat.status).toBe('error');

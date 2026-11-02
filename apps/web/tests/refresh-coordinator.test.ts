@@ -15,6 +15,7 @@ class ChannelHub {
     create(): FakeChannel {
         const channel = new FakeChannel(this);
         this.channels.add(channel);
+
         return channel;
     }
 }
@@ -25,19 +26,27 @@ class FakeChannel {
     addEventListener(_type: 'message', listener: Listener) {
         this.listeners.add(listener);
     }
+
     removeEventListener(_type: 'message', listener: Listener) {
         this.listeners.delete(listener);
     }
+
     close() {
         this.hub.channels.delete(this);
     }
+
     postMessage(data: unknown) {
         for (const channel of this.hub.channels) {
-            if (channel !== this) channel.deliver(data);
+            if (channel !== this) {
+                channel.deliver(data);
+            }
         }
     }
+
     private deliver(data: unknown) {
-        for (const listener of this.listeners) listener({ data });
+        for (const listener of this.listeners) {
+            listener({ data });
+        }
     }
 }
 
@@ -49,6 +58,7 @@ class SerialLocks {
             () => undefined,
             () => undefined,
         );
+
         return result;
     }
 }
@@ -164,6 +174,7 @@ describe('RefreshCoordinator', () => {
         await expect(
             first.refresh(async () => Promise.reject(new Error('401'))),
         ).resolves.toBeNull();
+
         expect(listener).toHaveBeenCalledWith(null);
         first.destroy();
         second.destroy();
@@ -201,6 +212,7 @@ describe('RefreshCoordinator', () => {
         await expect(
             Promise.all([firstRefresh, secondRefresh]),
         ).resolves.toEqual([response, response]);
+
         expect(firstAction).toHaveBeenCalledOnce();
         expect(secondAction).not.toHaveBeenCalled();
         first.destroy();
@@ -238,8 +250,11 @@ describe('RefreshCoordinator', () => {
 
             await new Promise((wait) => setTimeout(wait, 5));
             coordinator.publishAuthenticated(newerResponse);
-            if (resolution === 'success') resolve(response);
-            else reject(new Error('old refresh failed'));
+            if (resolution === 'success') {
+                resolve(response);
+            } else {
+                reject(new Error('old refresh failed'));
+            }
 
             await expect(olderRefresh).resolves.toEqual(newerResponse);
             coordinator.destroy();

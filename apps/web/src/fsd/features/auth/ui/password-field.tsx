@@ -24,6 +24,15 @@ export function PasswordField({
 
     const [visible, setVisible] = useState(false);
 
+    function toggleVisibility() {
+        setVisible((current) => !current);
+    }
+
+    const toggleLabel = t('password.toggleLabel', {
+        action: visible ? t('common.hide') : t('common.show'),
+        label: label.toLowerCase(),
+    });
+
     return (
         <div className={styles.fieldGroup}>
             <label className={styles.label} htmlFor={inputId}>
@@ -45,12 +54,9 @@ export function PasswordField({
                     type={visible ? 'text' : 'password'}
                 />
                 <button
-                    aria-label={t('password.toggleLabel', {
-                        action: visible ? t('common.hide') : t('common.show'),
-                        label: label.toLowerCase(),
-                    })}
+                    aria-label={toggleLabel}
                     className={styles.passwordToggle}
-                    onClick={() => setVisible((current) => !current)}
+                    onClick={toggleVisibility}
                     type='button'
                 >
                     {visible ? (

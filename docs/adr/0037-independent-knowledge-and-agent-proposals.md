@@ -5,7 +5,7 @@ title: 'Independent knowledge and agent proposals'
 status: accepted
 date: 2026-10-18
 supersedes: 'ADR-0026 only for contextual-conversation Auto model selection; other selection guarantees remain active'
-superseded_in_part_by: 'ADR-0046 contextual Auto/Flash-only model routing replaced by administrator-owned policies'
+superseded_in_part_by: 'ADR-0046 contextual Auto/Flash-only model routing replaced by administrator-owned policies; ADR-0050 restricted prose-only document format'
 ---
 
 # ADR-0037: Independent knowledge and agent proposals

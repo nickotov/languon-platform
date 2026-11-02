@@ -21,6 +21,7 @@ describe('chat Markdown proposal import', () => {
             expect(() => parseProposalMarkdown(source)).toThrow(
                 ProposalMarkdownError,
             );
+
             expect(JSON.stringify(proposalPlainTextDocument(source))).toContain(
                 source.split('\n')[0],
             );
@@ -34,22 +35,26 @@ describe('chat Markdown proposal import', () => {
             ),
         ).not.toThrow();
     });
+
     it('formats the French reply and maps unsupported heading levels', () => {
         const result = parseProposalMarkdown(
             '# Времена во французском: обзор с примерами\n\n\nФранцузская система строится на **времени** и *виде*.\n\n## 1. Настоящее\n\n### Exemple\n\n#### Détail',
         );
+
         expect(result.headingMapped).toBe(true);
         const nodes = result.document.content!;
         expect(
             nodes
                 .filter((node) => node.type === 'heading')
                 .map((node) => node.attrs?.level),
-        ).toEqual([2, 2, 3, 3]);
+        ).toEqual([1, 2, 3, 3]);
+
         expect(
             nodes
                 .flatMap((node) => node.content ?? [])
                 .find((node) => node.text === 'времени')?.marks,
         ).toEqual([{ type: 'bold' }]);
+
         expect(
             nodes
                 .flatMap((node) => node.content ?? [])
@@ -61,11 +66,13 @@ describe('chat Markdown proposal import', () => {
         const { document, headingMapped } = parseProposalMarkdown(
             '3. Trois\n   - **très** bien\n   - `mot`\n\n> Citation  \n> ligne [source](https://example.com/path?q=1&x=2)',
         );
+
         expect(headingMapped).toBe(false);
         expect(document.content?.[0]).toMatchObject({
             type: 'orderedList',
             attrs: { start: 3 },
         });
+
         const json = JSON.stringify(document);
         expect(json).toContain('bulletList');
         expect(json).toContain('hardBreak');
@@ -77,6 +84,7 @@ describe('chat Markdown proposal import', () => {
         const { document } = parseProposalMarkdown(
             '| Temps | Exemple |\n| --- | --- |\n| Présent | **Je parle** |\n| Passé | ~~Je vais~~ |',
         );
+
         expect(document.content?.[0]?.type).toBe('table');
         expect(document.content?.[0]?.content).toHaveLength(3);
         expect(JSON.stringify(document)).toContain('strike');
@@ -87,6 +95,7 @@ describe('chat Markdown proposal import', () => {
         const result = parseProposalMarkdown(
             '| Left | Right |\n| :--- | ---: |\n| \\| pipe | [mot](https://example.com "Tooltip") |',
         );
+
         expect(result.formattingAdjusted).toBe(true);
         expect(JSON.stringify(result.document)).toContain('| pipe');
         expect(JSON.stringify(result.document)).toContain('mot');
@@ -120,9 +129,11 @@ describe('chat Markdown proposal import', () => {
                 ).document,
             ),
         ).toContain('https://example.com');
+
         expect(() => parseProposalMarkdown('**`mot`**')).toThrow(
             ProposalMarkdownError,
         );
+
         expect(() =>
             parseProposalMarkdown('[`mot`](https://example.com)'),
         ).toThrow(ProposalMarkdownError);
@@ -132,6 +143,7 @@ describe('chat Markdown proposal import', () => {
         const { document } = parseProposalMarkdown(
             '\\# literal \\*stars\\* &amp; &lt;tag&gt; $x + y$\nnext line',
         );
+
         expect(document.content).toHaveLength(1);
         expect(document.content?.[0]?.content).toEqual([
             {
@@ -144,7 +156,6 @@ describe('chat Markdown proposal import', () => {
     it.each([
         'Before\n\n```js\ncode\n```\n\nAfter',
         '    indented code',
-        'Before\n\n---\n\nAfter',
         '![image](https://example.com/image.png)',
         '- [x] task',
         '<div>HTML</div>',
@@ -154,6 +165,7 @@ describe('chat Markdown proposal import', () => {
         expect(() => parseProposalMarkdown(markdown)).toThrow(
             ProposalMarkdownError,
         );
+
         try {
             parseProposalMarkdown(markdown);
         } catch (error) {
@@ -188,6 +200,7 @@ describe('chat Markdown proposal import', () => {
         const document = proposalPlainTextDocument(
             '# Heading\r\n\r\n**bold**\n',
         );
+
         expect(document.content).toEqual([
             {
                 type: 'paragraph',
@@ -200,6 +213,7 @@ describe('chat Markdown proposal import', () => {
             },
             { type: 'paragraph' },
         ]);
+
         expect(
             proposalPlainTextDocument('> '.repeat(20) + 'quote').content?.[0]
                 ?.content?.[0]?.text,
@@ -219,6 +233,7 @@ describe('chat Markdown proposal import', () => {
                 ProposalMarkdownError,
             );
         }
+
         expect(() => parseProposalMarkdown('😀 accents é')).not.toThrow();
     });
 
@@ -227,8 +242,36 @@ describe('chat Markdown proposal import', () => {
         expect(() => parseProposalMarkdown(source)).toThrow(
             ProposalMarkdownError,
         );
+
         expect(() =>
             parseProposalMarkdown('>    '.repeat(13) + 'text'),
         ).toThrow(ProposalMarkdownError);
     });
+});
+
+it('preserves H1–H3 and horizontal rules while mapping only H4–H6', () => {
+    const source = '# Title\n\n---\n\n## Section\n\n### Detail';
+    const result = parseProposalMarkdown(source);
+    expect(result.headingMapped).toBe(false);
+    expect(result.document.content?.map((node) => node.type)).toEqual([
+        'heading',
+        'horizontalRule',
+        'heading',
+        'heading',
+    ]);
+
+    expect(
+        result.document.content
+            ?.filter((node) => node.type === 'heading')
+            .map((node) => node.attrs?.level),
+    ).toEqual([1, 2, 3]);
+
+    const mapped = parseProposalMarkdown(
+        '#### Four\n\n##### Five\n\n###### Six',
+    );
+
+    expect(mapped.headingMapped).toBe(true);
+    expect(mapped.document.content?.map((node) => node.attrs?.level)).toEqual([
+        3, 3, 3,
+    ]);
 });

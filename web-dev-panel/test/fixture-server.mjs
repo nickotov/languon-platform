@@ -17,4 +17,5 @@ const application = createWebDevPanelServer({
 for (const signal of ['SIGINT', 'SIGTERM']) {
     process.once(signal, () => application.close().catch(() => {}));
 }
+
 await application.start();

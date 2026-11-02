@@ -59,12 +59,15 @@ describe('verification-code crypto adapters', () => {
         expect(digester.matches({ ...binding, code: '0001', digest })).toBe(
             false,
         );
+
         expect(
             digester.matches({ ...binding, purpose: 'password_reset', digest }),
         ).toBe(false);
+
         expect(
             digester.matches({ ...binding, flowId: 'different-flow', digest }),
         ).toBe(false);
+
         expect(
             digester.matches({ ...binding, userId: 'different-user', digest }),
         ).toBe(false);

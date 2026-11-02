@@ -43,8 +43,10 @@ export async function sentencePracticeNext(
         access,
         context,
         async (tx, owned, id) => {
-            if (input.replayExerciseId && input.mode !== 'review-only')
+            if (input.replayExerciseId && input.mode !== 'review-only') {
                 throw new LearningInvalidRequestError();
+            }
+
             const hash = fingerprint({
                 dictionaryId: owned.dictionary.id,
                 ...normalized(input),
@@ -67,10 +69,14 @@ export async function sentencePracticeNext(
                 );
 
             if (prior) {
-                if (prior.invalidatedAt)
+                if (prior.invalidatedAt) {
                     throw new SentenceConflictError('stale_content');
-                if (prior.requestFingerprint !== hash)
+                }
+
+                if (prior.requestFingerprint !== hash) {
                     throw new SentenceConflictError('operation_conflict');
+                }
+
                 if (prior.exerciseId && input.replayExerciseId) {
                     const exact = await sentencePracticePool(
                         tx,
@@ -99,8 +105,9 @@ export async function sentencePracticeNext(
                     if (
                         prepared &&
                         !prepared.exerciseIds.includes(prior.exerciseId)
-                    )
+                    ) {
                         throw new SentenceConflictError('stale_content');
+                    }
 
                     return {
                         kind: 'exercise' as const,
@@ -127,7 +134,9 @@ export async function sentencePracticeNext(
                             ),
                         );
 
-                    if (!job) throw new SentenceUnavailableError();
+                    if (!job) {
+                        throw new SentenceUnavailableError();
+                    }
 
                     return {
                         kind: 'job' as const,
@@ -151,8 +160,10 @@ export async function sentencePracticeNext(
                     ),
                 );
 
-            if (manualConflict)
+            if (manualConflict) {
                 throw new SentenceConflictError('operation_conflict');
+            }
+
             const [conflict] = await tx
                 .select({ id: jobs.id })
                 .from(jobs)
@@ -163,7 +174,10 @@ export async function sentencePracticeNext(
                     ),
                 );
 
-            if (conflict) throw new SentenceConflictError('operation_conflict');
+            if (conflict) {
+                throw new SentenceConflictError('operation_conflict');
+            }
+
             const pool = await sentencePracticePool(
                 tx,
                 owned.dictionary,

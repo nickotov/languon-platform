@@ -32,6 +32,7 @@ function fixture() {
             limits: {},
         }),
     };
+
     return {
         store,
         service: new AdminMcpCredentialService(
@@ -40,6 +41,7 @@ function fixture() {
         ),
     };
 }
+
 describe('admin MCP credentials', () => {
     it('issues independent secrets once and persists only hashes with finite default lifetime', async () => {
         const { store, service } = fixture();
@@ -57,6 +59,7 @@ describe('admin MCP credentials', () => {
                 reason: 'Local setup',
             }),
         );
+
         expect(first.secret).not.toBe(second.secret);
         expect(first.token.expiresAt).toBe('2026-11-26T12:00:00.000Z');
         expect(first.token.permissions).toEqual([
@@ -64,11 +67,13 @@ describe('admin MCP credentials', () => {
             'financial-reports.read',
             'providers.read',
         ]);
+
         const stored = vi.mocked(store.insertToken).mock.calls[0]?.[0];
         expect(stored?.secretHash).toBe(hashAdminMcpSecret(first.secret));
         expect(stored).not.toHaveProperty('secret');
         expect(first.token).not.toHaveProperty('secretHash');
     });
+
     it('freezes action authority at issuance when a later catalog adds a tool', async () => {
         const { store, service } = fixture();
         const input = adminMcpIssueTokenSchema.parse({
@@ -94,6 +99,7 @@ describe('admin MCP credentials', () => {
             'users.lookup',
             'users.credits',
         ]);
+
         expect(replacement.token.allowedActions).toContain('users.new-tool');
         const originalActor = {
             tokenId: original.token.id,
@@ -102,12 +108,15 @@ describe('admin MCP credentials', () => {
             limits: original.token.limits,
             allowedActions: original.token.allowedActions,
         };
+
         expect(() =>
             requireAction(originalActor, 'users.lookup'),
         ).not.toThrow();
+
         expect(() =>
             requireAction(originalActor, 'users.new-tool'),
         ).toThrowError(expect.objectContaining({ code: 'permission_denied' }));
+
         expect(
             vi.mocked(store.insertToken).mock.calls[0]?.[0].allowedActions,
         ).not.toContain('users.new-tool');
@@ -131,23 +140,28 @@ describe('admin MCP credentials', () => {
             ).toBe(false);
         }
     });
+
     it('checks explicit frozen permissions without deriving group permissions', async () => {
         const { service } = fixture();
         const secret = `lmcp_${'a'.repeat(43)}`;
         await expect(
             service.authenticate(secret, 'users.read'),
         ).resolves.toMatchObject({ userId: owner });
+
         await expect(
             service.authenticate(secret, 'credits.grant'),
         ).rejects.toMatchObject({ code: 'permission_denied' });
     });
+
     it('rejects caller prose operation keys and credentials in persisted audit context', async () => {
         expect(() => requireOperationKey('customer@example.test')).toThrowError(
             expect.objectContaining({ code: 'idempotency_conflict' }),
         );
+
         expect(() =>
             requireOperationKey('27ff73de-3dfd-4c08-a233-f511c92c1a80'),
         ).not.toThrow();
+
         const secret = `lmcp_${'a'.repeat(43)}`;
         for (const value of [
             secret,
@@ -159,11 +173,14 @@ describe('admin MCP credentials', () => {
             ).toThrowError(
                 expect.objectContaining({ code: 'permission_denied' }),
             );
+
             expect(redactCredentialMaterial(value)).not.toContain(
                 'private-access-token',
             );
+
             expect(redactCredentialMaterial(value)).not.toContain(secret);
         }
+
         const { service } = fixture();
         await expect(
             service.issue(owner, {
@@ -181,13 +198,16 @@ describe('admin MCP credentials', () => {
         await expect(
             service.authenticate('not-a-credential'),
         ).rejects.toMatchObject({ code: 'unauthorized' });
+
         expect(store.authenticateHash).not.toHaveBeenCalled();
     });
+
     it('keeps decimal accounting exact and UTC day boundaries deterministic', () => {
         expect(amountUnits('0.000001')).toBe(1n);
         expect(amountUnits('0.1') + amountUnits('0.2')).toBe(
             amountUnits('0.3'),
         );
+
         expect(unitsAmount(1234567n)).toBe('1.234567');
         expect(utcDay(new Date('2026-10-27T23:59:59Z'))).toBe('2026-10-27');
         expect(() => amountUnits('1e3')).toThrow();

@@ -1,8 +1,11 @@
 import type { Ref, SyntheticEvent } from 'react';
 
 export const assignRef = <T>(ref: Ref<T> | undefined, value: T | null) => {
-    if (typeof ref === 'function') ref(value);
-    else if (ref) ref.current = value;
+    if (typeof ref === 'function') {
+        ref(value);
+    } else if (ref) {
+        ref.current = value;
+    }
 };
 
 export const composeHandlers =
@@ -13,12 +16,16 @@ export const composeHandlers =
     (event: E) => {
         childHandler?.(event);
 
-        if (!event.defaultPrevented) ownHandler(event);
+        if (!event.defaultPrevented) {
+            ownHandler(event);
+        }
     };
 
 /** Native hidePopover must finish before returning focus to its invoker. */
 export function restorePopoverFocus(anchor: HTMLElement | null) {
     queueMicrotask(() => {
-        if (anchor?.isConnected) anchor.focus({ preventScroll: true });
+        if (anchor?.isConnected) {
+            anchor.focus({ preventScroll: true });
+        }
     });
 }

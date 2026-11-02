@@ -25,7 +25,11 @@ const strategies: Readonly<Record<string, KieModelStrategy>> = Object.freeze({
         createInput: (text, profile) => {
             const language =
                 GEMINI_PRONUNCIATION_LANGUAGE_NAMES[profile.language];
-            if (!language) throw new Error('Unsupported speech language.');
+
+            if (!language) {
+                throw new Error('Unsupported speech language.');
+            }
+
             return {
                 temperature: 1,
                 speakers: [
@@ -60,7 +64,9 @@ export function resolveKieModelStrategy(
         profile.voice.length > 128 ||
         (definition.voices !== null &&
             !definition.voices.includes(profile.voice))
-    )
+    ) {
         throw new Error('Unsupported speech configuration.');
+    }
+
     return strategy;
 }

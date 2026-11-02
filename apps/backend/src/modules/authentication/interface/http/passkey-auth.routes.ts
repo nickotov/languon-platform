@@ -90,6 +90,7 @@ export function createPasskeyAuthRoutes(input: {
         if (mapped.retryAfterSeconds) {
             context.header('Retry-After', String(mapped.retryAfterSeconds));
         }
+
         return context.json(mapped.response(correlationId), mapped.status);
     });
 
@@ -99,6 +100,7 @@ export function createPasskeyAuthRoutes(input: {
         )) {
             context.header(name, value);
         }
+
         const origin = context.req.header('Origin');
         if (origin) {
             try {
@@ -110,6 +112,7 @@ export function createPasskeyAuthRoutes(input: {
                 // The operation maps a disallowed origin to a safe response.
             }
         }
+
         await next();
     });
 
@@ -132,6 +135,7 @@ export function createPasskeyAuthRoutes(input: {
         }),
         async (context) => {
             assertOrigin(context.req.header('Origin'));
+
             return context.json(
                 await input.operations.registrationOptions(
                     bearer(context.req.header('Authorization')),
@@ -159,6 +163,7 @@ export function createPasskeyAuthRoutes(input: {
         }),
         async (context) => {
             assertOrigin(context.req.header('Origin'));
+
             return context.json(
                 await input.operations.verifyRegistration(
                     bearer(context.req.header('Authorization')),
@@ -186,6 +191,7 @@ export function createPasskeyAuthRoutes(input: {
         }),
         async (context) => {
             assertOrigin(context.req.header('Origin'));
+
             return context.json(
                 await input.operations.authenticationOptions(
                     authenticationRequestMetadata(context, input.policy),
@@ -215,6 +221,7 @@ export function createPasskeyAuthRoutes(input: {
                 context.req.valid('json'),
                 authenticationRequestMetadata(context, input.policy),
             );
+
             context.header(
                 'Set-Cookie',
                 input.policy.createRefreshCookie(
@@ -222,11 +229,13 @@ export function createPasskeyAuthRoutes(input: {
                     result.response.session.expiresAt,
                 ),
             );
+
             return context.json(result.response, 200);
         },
     );
 
     registerManagementRoutes(app, input, bearer, assertOrigin);
+
     return app;
 }
 
@@ -277,6 +286,7 @@ function registerManagementRoutes(
         }),
         async (context) => {
             assertOrigin(context.req.header('Origin'));
+
             return context.json(
                 await input.operations.rename(
                     bearer(context.req.header('Authorization')),
@@ -303,6 +313,7 @@ function registerManagementRoutes(
         }),
         async (context) => {
             assertOrigin(context.req.header('Origin'));
+
             return context.json(
                 await input.operations.revoke(
                     bearer(context.req.header('Authorization')),

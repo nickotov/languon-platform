@@ -46,7 +46,10 @@ export function createDictionaryDocumentRoutes(dependencies: {
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, context) => {
-            if (result.success) return;
+            if (result.success) {
+                return;
+            }
+
             return context.json(
                 new DictionaryHttpError(
                     'invalid_request',
@@ -59,13 +62,19 @@ export function createDictionaryDocumentRoutes(dependencies: {
             );
         },
     });
+
     app.use('*', actionAllowanceRequestMiddleware);
     app.onError((error, context) => {
         const allowanceError = actionAllowanceErrorResponse(error, context);
-        if (allowanceError) return allowanceError;
+        if (allowanceError) {
+            return allowanceError;
+        }
+
         const mapped = mapDictionaryHttpError(error);
-        if (mapped.retryAfterSeconds)
+        if (mapped.retryAfterSeconds) {
             context.header('Retry-After', String(mapped.retryAfterSeconds));
+        }
+
         return context.json(
             mapped.response(
                 correlationId(context.req.header('X-Correlation-ID')),
@@ -73,6 +82,7 @@ export function createDictionaryDocumentRoutes(dependencies: {
             mapped.status,
         );
     });
+
     const bearer = (value: string | undefined) =>
         dependencies.policy.parseBearerAuthorization(value ?? null);
     const requestContext = (
@@ -82,6 +92,7 @@ export function createDictionaryDocumentRoutes(dependencies: {
             context,
             dependencies.policy,
         );
+
         return {
             clientAddress: metadata.clientAddress,
             signal: metadata.signal,

@@ -39,6 +39,7 @@ describe('HomeSessionActions', () => {
             status: 'bootstrapping',
             user: null,
         });
+
         vi.spyOn(authApi, 'capabilities').mockResolvedValue({
             email: { passwordRecovery: true, signUp: true, verification: true },
             passkeys: { authentication: true, registration: true },
@@ -57,12 +58,15 @@ describe('HomeSessionActions', () => {
         expect(
             await screen.findByRole('link', { name: 'Security settings' }),
         ).toHaveAttribute('href', '/profile?tab=security');
+
         expect(
             screen.getByRole('link', { name: 'Dictionaries' }),
         ).toHaveAttribute('href', '/dictionaries');
+
         expect(
             screen.getByRole('link', { name: 'Account settings' }),
         ).toHaveAttribute('href', '/profile');
+
         expect(screen.getByText(/learner@example.com/)).toBeInTheDocument();
     });
 });

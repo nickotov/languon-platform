@@ -67,7 +67,7 @@ export function createTextContentRoutes({
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
-            if (!result.success)
+            if (!result.success) {
                 return c.json(
                     {
                         error: {
@@ -78,13 +78,16 @@ export function createTextContentRoutes({
                     },
                     400,
                 );
+            }
         },
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
     });
+
     const ownedPaths = [
         '/text-folders',
         '/text-folders/*',
@@ -100,9 +103,11 @@ export function createTextContentRoutes({
                     ? context.req.path.startsWith(path.slice(0, -1))
                     : context.req.path === path,
             );
+
             return owned ? middleware(context, next) : next();
         });
     };
+
     useOwned(async (c, next) => {
         c.header('Cache-Control', 'private, no-store');
         c.header('Referrer-Policy', 'no-referrer');
@@ -115,9 +120,11 @@ export function createTextContentRoutes({
             c.header('Access-Control-Allow-Credentials', 'true');
             c.header('Vary', 'Origin');
         }
+
         await next();
     });
-    for (const path of ownedPaths)
+
+    for (const path of ownedPaths) {
         app.options(path, (c) => {
             const origin = c.req.header('Origin');
             policy.assertCookieRequestOrigin(origin ?? null);
@@ -126,13 +133,18 @@ export function createTextContentRoutes({
                 'Access-Control-Allow-Methods',
                 'GET, PATCH, PUT, POST, DELETE, OPTIONS',
             );
+
             c.header(
                 'Access-Control-Allow-Headers',
                 'Authorization, Content-Type, X-Correlation-ID, X-Languon-Share-Key',
             );
+
             c.header('Vary', 'Origin');
+
             return c.body(null, 204);
         });
+    }
+
     useOwned(
         bodyLimit({
             maxSize: 2_250_000,
@@ -149,6 +161,7 @@ export function createTextContentRoutes({
                 ),
         }),
     );
+
     app.onError((error, c) => {
         let code = 'internal_error';
         let message = 'The request could not be completed.';
@@ -187,22 +200,26 @@ export function createTextContentRoutes({
                 message = 'The service is temporarily unavailable.';
             }
         }
+
         return c.json(
             { error: { code, message, correlationId: randomUUID() } },
             status,
         );
     });
+
     const token = (c: Parameters<typeof authenticationRequestMetadata>[0]) =>
         policy.parseBearerAuthorization(c.req.header('Authorization') ?? null);
     const context = (
         c: Parameters<typeof authenticationRequestMetadata>[0],
     ) => {
         const metadata = authenticationRequestMetadata(c, policy);
+
         return {
             clientAddress: metadata.clientAddress,
             signal: metadata.signal,
         };
     };
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -217,9 +234,11 @@ export function createTextContentRoutes({
                 context(c),
                 c.req.valid('query'),
             );
+
             return c.json({ data: r.items, nextCursor: r.nextCursor }, 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -235,12 +254,14 @@ export function createTextContentRoutes({
                 null,
                 c.req.valid('query'),
             );
+
             return c.json(
                 { data: result.items, nextCursor: result.nextCursor },
                 200,
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -266,6 +287,7 @@ export function createTextContentRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -290,6 +312,7 @@ export function createTextContentRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -312,6 +335,7 @@ export function createTextContentRoutes({
                 201,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -338,6 +362,7 @@ export function createTextContentRoutes({
                 200,
             ),
     );
+
     for (const lifecycle of ['archived', 'active'] as const) {
         const operation = lifecycle === 'archived' ? 'archive' : 'restore';
         app.openapi(
@@ -366,6 +391,7 @@ export function createTextContentRoutes({
                     200,
                 ),
         );
+
         app.openapi(
             createRoute({
                 method: 'post',
@@ -393,6 +419,7 @@ export function createTextContentRoutes({
                 ),
         );
     }
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -411,9 +438,11 @@ export function createTextContentRoutes({
                 c.req.valid('param').folderId,
                 c.req.valid('query'),
             );
+
             return c.json({ data: r.items, nextCursor: r.nextCursor }, 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -434,6 +463,7 @@ export function createTextContentRoutes({
                 201,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -454,6 +484,7 @@ export function createTextContentRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'put',
@@ -478,6 +509,7 @@ export function createTextContentRoutes({
                 200,
             ),
     );
+
     for (const kind of ['text', 'folder'] as const) {
         const path =
             kind === 'text' ? '/texts/{id}/share' : '/text-folders/{id}/share';
@@ -499,12 +531,14 @@ export function createTextContentRoutes({
                     TextVersionRequestSchema.parse(c.req.valid('json'))
                         .expectedVersion,
                 );
+
                 return c.json(
                     { capability: { shareId: share.locator, key: share.key } },
                     200,
                 );
             },
         );
+
         app.openapi(
             createRoute({
                 method: 'delete',
@@ -525,13 +559,16 @@ export function createTextContentRoutes({
                     TextVersionRequestSchema.parse(c.req.valid('json'))
                         .expectedVersion,
                 );
+
                 return c.body(null, 204);
             },
         );
+
         const publicPath =
             kind === 'text'
                 ? '/shared-texts/{shareId}'
                 : '/shared-text-folders/{shareId}';
+
         app.openapi(
             createRoute({
                 method: 'get',
@@ -562,9 +599,11 @@ export function createTextContentRoutes({
                     },
                     c.req.valid('query'),
                 );
+
                 return c.json(result, 200);
             },
         );
+
         app.openapi(
             createRoute({
                 method: 'post',
@@ -588,6 +627,7 @@ export function createTextContentRoutes({
                               const value = CopySharedTextRequestSchema.parse(
                                   c.req.valid('json'),
                               );
+
                               return {
                                   idempotencyKey: value.operationId,
                                   ...(value.sharedFolderConfirmation
@@ -610,6 +650,7 @@ export function createTextContentRoutes({
                                   CopySharedTextFolderRequestSchema.parse(
                                       c.req.valid('json'),
                                   );
+
                               return {
                                   idempotencyKey: value.operationId,
                                   ...(value.newFolderName !== undefined
@@ -627,10 +668,12 @@ export function createTextContentRoutes({
                     },
                     request,
                 );
+
                 return c.json(result, 201);
             },
         );
     }
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -647,6 +690,7 @@ export function createTextContentRoutes({
             const request = CopySharedTextRequestSchema.parse(
                 c.req.valid('json'),
             );
+
             return c.json(
                 await service.copyShared(
                     token(c),
@@ -678,5 +722,6 @@ export function createTextContentRoutes({
             );
         },
     );
+
     return app;
 }

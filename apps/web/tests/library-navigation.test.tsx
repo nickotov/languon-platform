@@ -20,11 +20,13 @@ const resource: NavigationResource = {
 const owner = '10000000-0000-4000-8000-000000000001';
 const request = <T,>(operation: (token: string) => Promise<T>) =>
     operation('token');
+
 function wrapper({ children }: { children: ReactNode }) {
     const [client] = useState(
         () =>
             new QueryClient({ defaultOptions: { queries: { retry: false } } }),
     );
+
     return (
         <StrictMode>
             <QueryClientProvider client={client}>
@@ -33,6 +35,7 @@ function wrapper({ children }: { children: ReactNode }) {
         </StrictMode>
     );
 }
+
 beforeEach(() => {
     useSessionStore.setState({
         status: 'authenticated',
@@ -40,11 +43,13 @@ beforeEach(() => {
             ReturnType<typeof useSessionStore.getState>['user']
         >,
     });
+
     vi.spyOn(navigationApi, 'opened').mockResolvedValue({ resource });
     vi.spyOn(navigationApi, 'resources').mockResolvedValue({
         resources: [resource],
     });
 });
+
 describe('navigation domain client effects', () => {
     it('records a genuine successful open once despite Strict Mode and rerenders', async () => {
         const { rerender } = renderHook(
@@ -52,11 +57,13 @@ describe('navigation domain client effects', () => {
                 useRecordResourceOpen('text', resource.id, loaded, request),
             { initialProps: { loaded: false }, wrapper },
         );
+
         expect(navigationApi.opened).not.toHaveBeenCalled();
         rerender({ loaded: true });
         await waitFor(() =>
             expect(navigationApi.opened).toHaveBeenCalledOnce(),
         );
+
         rerender({ loaded: true });
         await act(async () => {});
         expect(navigationApi.opened).toHaveBeenCalledWith(
@@ -64,17 +71,21 @@ describe('navigation domain client effects', () => {
             'text',
             resource.id,
         );
+
         expect(navigationApi.opened).toHaveBeenCalledOnce();
     });
+
     it('never records inaccessible/unloaded or signed-out resource views', async () => {
         useSessionStore.setState({ status: 'signed-out', user: null });
         renderHook(
             () => useRecordResourceOpen('text', resource.id, true, request),
             { wrapper },
         );
+
         await act(async () => {});
         expect(navigationApi.opened).not.toHaveBeenCalled();
     });
+
     it('passes current resource retention to bounded server shortcuts without recording an open', async () => {
         const { result } = renderHook(
             () =>
@@ -89,14 +100,17 @@ describe('navigation domain client effects', () => {
                 ),
             { wrapper },
         );
+
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(navigationApi.resources).toHaveBeenCalledWith(
             'token',
             { kind: 'text', limit: 4, currentId: resource.id },
             expect.any(AbortSignal),
         );
+
         expect(navigationApi.opened).not.toHaveBeenCalled();
     });
+
     it('does not display another owner’s cached shortcut after switching accounts', async () => {
         const { result } = renderHook(
             () =>
@@ -106,9 +120,11 @@ describe('navigation domain client effects', () => {
                 ),
             { wrapper },
         );
+
         await waitFor(() =>
             expect(result.current.data?.resources).toEqual([resource]),
         );
+
         vi.mocked(navigationApi.resources).mockResolvedValue({ resources: [] });
         act(() =>
             useSessionStore.setState({
@@ -119,6 +135,7 @@ describe('navigation domain client effects', () => {
                 >,
             }),
         );
+
         expect(result.current.data?.resources).not.toEqual([resource]);
         await waitFor(() => expect(result.current.data?.resources).toEqual([]));
     });

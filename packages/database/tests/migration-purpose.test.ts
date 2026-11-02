@@ -39,12 +39,14 @@ describe('migration purpose', () => {
         expect(() =>
             assertAppliedMigrationPrefix(expected.slice(0, 2), expected),
         ).not.toThrow();
+
         expect(() =>
             assertAppliedMigrationPrefix(
                 [expected[0]!, expected[2]!],
                 expected,
             ),
         ).toThrow(MigrationHistoryMismatchError);
+
         expect(() =>
             assertAppliedMigrationPrefix(
                 [expected[0]!, expected[0]!],

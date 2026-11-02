@@ -24,7 +24,10 @@ export function useGenerationJob({
             generationTarget?.jobId,
         ],
         queryFn: async ({ signal }) => {
-            if (!generationTarget) return { job: null };
+            if (!generationTarget) {
+                return { job: null };
+            }
+
             if (!generationTarget.jobId) {
                 return requestWithSession((token) =>
                     dictionaryApi.readLatestCardGeneration(
@@ -35,6 +38,7 @@ export function useGenerationJob({
                     ),
                 );
             }
+
             const response = await requestWithSession((token) =>
                 dictionaryApi.readGenerationJob(
                     token,
@@ -42,6 +46,7 @@ export function useGenerationJob({
                     signal,
                 ),
             );
+
             return {
                 job: response.job.kind === 'single-card' ? response.job : null,
             };
@@ -49,6 +54,7 @@ export function useGenerationJob({
         enabled: generationTarget !== null,
         refetchInterval: (query) => {
             const state = query.state.data?.job?.state;
+
             return state === 'queued' || state === 'running' ? 1_000 : false;
         },
     });
@@ -77,8 +83,10 @@ export function useGenerationJob({
             !job ||
             job.kind !== 'single-card' ||
             generationTarget?.jobId === job.id
-        )
+        ) {
             return;
+        }
+
         const nextTarget = { cardId: job.cardId, jobId: job.id };
         setGenerationTarget(nextTarget);
         syncGenerationUrl(nextTarget);

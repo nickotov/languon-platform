@@ -11,7 +11,9 @@ const nextConfig = {
     reactStrictMode: true,
     transpilePackages: ['@languon/contracts'],
     async rewrites() {
-        if (process.env.NODE_ENV !== 'development') return [];
+        if (process.env.NODE_ENV !== 'development') {
+            return [];
+        }
 
         const target = new URL(
             process.env.WEB_API_PROXY_TARGET ?? 'http://localhost:4000',
@@ -19,6 +21,7 @@ const nextConfig = {
         const isLocalBackend =
             ['localhost', '127.0.0.1'].includes(target.hostname) ||
             (target.hostname === 'backend' && target.port === '4000');
+
         if (
             target.protocol !== 'http:' ||
             !isLocalBackend ||
@@ -32,6 +35,7 @@ const nextConfig = {
                 'WEB_API_PROXY_TARGET must be a credential-free loopback HTTP origin or http://backend:4000.',
             );
         }
+
         return [
             { source: '/api/:path*', destination: `${target.origin}/:path*` },
         ];
@@ -42,7 +46,7 @@ const nextConfig = {
                 headers: [
                     {
                         key: 'Content-Security-Policy',
-                        value: "frame-ancestors 'none'; media-src 'self' blob:",
+                        value: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; frame-src https://www.youtube-nocookie.com; media-src 'self' blob: https:",
                     },
                     { key: 'X-Frame-Options', value: 'DENY' },
                 ],

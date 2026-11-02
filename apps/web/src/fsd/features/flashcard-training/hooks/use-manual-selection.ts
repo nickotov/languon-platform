@@ -20,8 +20,10 @@ export function useManualSelection(api: LearningApi) {
             setQuery(search);
             setCursors([undefined]);
         }, 300);
+
         return () => clearTimeout(timer);
     }, [search]);
+
     useEffect(() => {
         let alive = true;
         setStatus('loading');
@@ -31,15 +33,21 @@ export function useManualSelection(api: LearningApi) {
             .listEntries({ search: query || undefined, cursor, limit: 25 })
             .then(
                 (page) => {
-                    if (!alive) return;
+                    if (!alive) {
+                        return;
+                    }
+
                     setEntries(page.entries);
                     setNextCursor(page.nextCursor);
                     setStatus('ready');
                 },
                 () => {
-                    if (alive) setStatus('error');
+                    if (alive) {
+                        setStatus('error');
+                    }
                 },
             );
+
         return () => {
             alive = false;
         };
@@ -48,12 +56,17 @@ export function useManualSelection(api: LearningApi) {
     function previous() {
         setCursors((values) => values.slice(0, -1));
     }
+
     function next() {
-        if (nextCursor) setCursors((values) => [...values, nextCursor]);
+        if (nextCursor) {
+            setCursors((values) => [...values, nextCursor]);
+        }
     }
+
     function retry() {
         setAttempt((value) => value + 1);
     }
+
     return {
         search,
         setSearch,

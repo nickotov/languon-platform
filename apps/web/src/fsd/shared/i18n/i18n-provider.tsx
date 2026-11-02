@@ -61,7 +61,9 @@ export function I18nProvider({
 export function useI18n(): I18nContextValue {
     const context = useContext(I18nContext);
 
-    if (!context) throw new Error('useI18n must be used within I18nProvider');
+    if (!context) {
+        throw new Error('useI18n must be used within I18nProvider');
+    }
 
     return context;
 }
@@ -81,7 +83,9 @@ export function useLocaleSensitiveState<State>(
 
     const setLocaleState = useCallback<Dispatch<SetStateAction<State>>>(
         (value) => {
-            if (currentLocale.current !== locale) return;
+            if (currentLocale.current !== locale) {
+                return;
+            }
 
             setState(value);
         },

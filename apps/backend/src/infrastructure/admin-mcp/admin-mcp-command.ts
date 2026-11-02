@@ -30,10 +30,14 @@ import { DrizzleAccountingStore } from '../../modules/ai-credits/infrastructure/
 import { DrizzleAiCreditTransactionParticipant } from '../../modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import { AdminMcpPriceActualizationService } from '../../modules/admin-mcp/application/admin-mcp-price-actualization-service';
 import { createProviderPriceSources } from '../../modules/ai-credits/infrastructure/pricing/provider-price-sources';
+import { loadKnowledgeTranscriptionEnvironment } from '../../config/knowledge-transcription-environment';
 import { modelPriceCatalog } from './price-actualization';
 
 const local = new URL('../../../../../.env.local', import.meta.url);
-if (existsSync(local)) loadEnvFile(local);
+if (existsSync(local)) {
+    loadEnvFile(local);
+}
+
 const env = loadAdminMcpEnvironment();
 const sql = createPostgresClient({
     databaseUrl: env.DATABASE_URL,
@@ -49,13 +53,16 @@ const credentials = new AdminMcpCredentialService(
     new DrizzleAdminMcpStore(database),
 );
 const providerKeys = loadTextAiProviderCredentials();
+const transcriptionCredentials = loadKnowledgeTranscriptionEnvironment();
 const fingerprint = createTextAiRouteFingerprint(providerKeys);
 const routing = new DrizzleTextAiRoutingStore(
     database,
     async (tx, request) => {
         const identity = fingerprint(request.routeId, request.flowId);
-        if (!identity)
+        if (!identity) {
             throw new TextAiProbeUnavailableError('probe_route_unavailable');
+        }
+
         await requireProbeReady(tx, { ...request, fingerprint: identity });
     },
     (providerId) =>
@@ -96,48 +103,57 @@ const app = createAdminMcpServer({
     credentials,
     administration,
     actualizePrices: (actor, input, secret, signal) =>
-        new AdminMcpPriceActualizationService({
-            sources: priceSources,
-            targets: async () =>
-                modelPriceCatalog(providerKeys).map((entry) => entry.target),
-            catalog: async () => modelPriceCatalog(providerKeys),
-            prices: () => new DrizzleProviderPriceStore(database).list(),
-            administration,
-            audit: administrationAdapter,
-            reauthenticate: () => credentials.authenticate(secret),
-        }).actualize(actor, input, signal),
+        createPriceActualizationService(secret).actualize(actor, input, signal),
     verifyPrices: (actor, input, secret, signal) =>
-        new AdminMcpPriceActualizationService({
-            sources: priceSources,
-            targets: async () =>
-                modelPriceCatalog(providerKeys).map((entry) => entry.target),
-            catalog: async () => modelPriceCatalog(providerKeys),
-            prices: () => new DrizzleProviderPriceStore(database).list(),
-            administration,
-            audit: administrationAdapter,
-            reauthenticate: () => credentials.authenticate(secret),
-        }).verify(actor, input, signal),
+        createPriceActualizationService(secret).verify(actor, input, signal),
     checks,
     port: env.ADMIN_MCP_PORT,
 });
+
+// Each operation needs a fresh reauthentication closure bound to its request credential.
+function createPriceActualizationService(
+    secret: string,
+): AdminMcpPriceActualizationService {
+    return new AdminMcpPriceActualizationService({
+        sources: priceSources,
+        targets: async () =>
+            modelPriceCatalog(providerKeys, transcriptionCredentials).map(
+                (entry) => entry.target,
+            ),
+        catalog: async () =>
+            modelPriceCatalog(providerKeys, transcriptionCredentials),
+        prices: () => new DrizzleProviderPriceStore(database).list(),
+        administration,
+        audit: administrationAdapter,
+        reauthenticate: () => credentials.authenticate(secret),
+    });
+}
+
 const server = serve({
     fetch: app.fetch,
     hostname: '127.0.0.1',
     port: env.ADMIN_MCP_PORT,
 });
+
 console.info(
     `Local admin MCP listening on http://127.0.0.1:${env.ADMIN_MCP_PORT}/mcp`,
 );
+
 let stopping = false;
 async function stop() {
-    if (stopping) return;
+    if (stopping) {
+        return;
+    }
+
     stopping = true;
     server.close();
     await Promise.all([sql.end(), reportsSql.end()]);
 }
+
 process.once('SIGTERM', () => {
     void stop();
 });
+
 process.once('SIGINT', () => {
     void stop();
 });

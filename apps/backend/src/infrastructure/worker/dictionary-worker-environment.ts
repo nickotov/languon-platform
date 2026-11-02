@@ -1,3 +1,4 @@
+import { knowledgeTranscriptionEnvironmentShape } from '../../config/knowledge-transcription-environment';
 import { textAiProviderEnvironmentShape } from '../../config/text-ai-provider-environment';
 import { z } from 'zod';
 import { aiGenerationEnvironmentShape } from '../../config/ai-generation-environment';
@@ -37,6 +38,7 @@ function parseFormats(value: string, name: string): string[] {
             `${name} must contain unique comma-separated composite formats.`,
         );
     }
+
     return formats.sort();
 }
 
@@ -70,6 +72,7 @@ const WorkerEnvironmentSchema = z.object({
     DICTIONARY_GENERATION_MODEL_BASE_URL: optionalValue,
     DICTIONARY_GENERATION_MODEL_ID: optionalValue,
     ...textAiProviderEnvironmentShape,
+    ...knowledgeTranscriptionEnvironmentShape,
     DICTIONARY_GENERATION_PROVIDER_MODE: z
         .enum(['unavailable', 'deterministic', 'mastra'])
         .default('unavailable'),
@@ -103,6 +106,7 @@ const WorkerEnvironmentSchema = z.object({
 });
 
 export interface DictionaryWorkerEnvironment {
+    transcriptionApiKey?: string;
     sentenceAiTimeoutMs: number;
     textAiTimeoutMs: number;
     appEnvironment: 'development' | 'test' | 'staging' | 'production';
@@ -167,10 +171,12 @@ export function loadDictionaryWorkerEnvironment(
             'Dictionary AI provider fixtures are available only in tests.',
         );
     }
+
     const deployed = ['staging', 'production'].includes(environment.APP_ENV);
     const databaseUrl =
         environment.DICTIONARY_WORKER_DATABASE_URL ??
         (!deployed ? environment.DATABASE_URL : undefined);
+
     if (!databaseUrl) {
         throw new Error(
             deployed
@@ -178,10 +184,12 @@ export function loadDictionaryWorkerEnvironment(
                 : 'Development/test dictionary workers require DICTIONARY_WORKER_DATABASE_URL or DATABASE_URL.',
         );
     }
+
     const database = new URL(databaseUrl);
     if (!['postgres:', 'postgresql:'].includes(database.protocol)) {
         throw new Error('DICTIONARY_WORKER_DATABASE_URL must use PostgreSQL.');
     }
+
     if (
         ['staging', 'production'].includes(environment.APP_ENV) &&
         ['localhost', '127.0.0.1'].includes(database.hostname)
@@ -190,6 +198,7 @@ export function loadDictionaryWorkerEnvironment(
             'Deployed dictionary workers require an explicit non-local PostgreSQL service.',
         );
     }
+
     if (
         environment.APP_ENV === 'production' &&
         database.searchParams.get('sslmode') !== 'verify-full'
@@ -198,6 +207,7 @@ export function loadDictionaryWorkerEnvironment(
             'Production dictionary workers require PostgreSQL sslmode=verify-full.',
         );
     }
+
     const supportedFormats = parseFormats(
         environment.DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS,
         'DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS',
@@ -209,25 +219,35 @@ export function loadDictionaryWorkerEnvironment(
     const unsupportedEnqueuedFormats = enqueuedFormats.filter(
         (format) => !supportedFormats.includes(format),
     );
+
     if (unsupportedEnqueuedFormats.length) {
         throw new Error(
             'DICTIONARY_JOB_API_ENQUEUED_FORMATS must be supported by this worker.',
         );
     }
+
+    const textFormats = supportedFormats.filter(
+        (format) => format !== 'knowledge-transcription:v1',
+    );
     const providerMode = environment.DICTIONARY_GENERATION_PROVIDER_MODE;
-    if (supportedFormats.length > 0 && providerMode === 'unavailable')
+    if (textFormats.length > 0 && providerMode === 'unavailable') {
         throw new Error(
             deployed
                 ? 'Worker-processable dictionary formats require Mastra provider mode until all queued work drains.'
                 : 'Worker-processable dictionary formats require an available provider until all queued work drains.',
         );
-    if (deployed && supportedFormats.length > 0 && providerMode !== 'mastra')
+    }
+
+    if (deployed && textFormats.length > 0 && providerMode !== 'mastra') {
         throw new Error(
             'Worker-processable dictionary formats require Mastra provider mode until all queued work drains.',
         );
+    }
+
     if (deployed && providerMode === 'deterministic') {
         throw new Error('Deterministic dictionary generation is local-only.');
     }
+
     const legacyModelValues = [
         environment.DICTIONARY_GENERATION_MODEL_API_KEY,
         environment.DICTIONARY_GENERATION_MODEL_BASE_URL,
@@ -236,11 +256,13 @@ export function loadDictionaryWorkerEnvironment(
         ...legacyModelValues,
         environment.DICTIONARY_GENERATION_MODEL_ID,
     ];
+
     if (providerMode !== 'mastra' && configuredModelValues.some(Boolean)) {
         throw new Error(
             'Dictionary generation model settings require provider mode mastra.',
         );
     }
+
     let provider: DictionaryWorkerEnvironment['provider'];
     if (providerMode === 'mastra') {
         const modelId = environment.DICTIONARY_GENERATION_MODEL_ID;
@@ -249,11 +271,13 @@ export function loadDictionaryWorkerEnvironment(
                 'Mastra dictionary generation requires a model ID.',
             );
         }
+
         if (!/^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._/-]*$/i.test(modelId)) {
             throw new Error(
                 'DICTIONARY_GENERATION_MODEL_ID must use provider/model format.',
             );
         }
+
         const catalogModel = findDictionaryTextModel(modelId);
         const usesLegacyModelConfiguration = legacyModelValues.some(Boolean);
         if (catalogModel && usesLegacyModelConfiguration) {
@@ -261,15 +285,20 @@ export function loadDictionaryWorkerEnvironment(
                 'Curated dictionary text models use their trusted catalog URL and provider credential; remove legacy DICTIONARY_GENERATION_MODEL_API_KEY and DICTIONARY_GENERATION_MODEL_BASE_URL.',
             );
         }
-        if (!catalogModel)
+
+        if (!catalogModel) {
             throw new Error(
                 'Dictionary generation model is unsupported; select a curated model.',
             );
+        }
+
         const apiKey = environment[catalogModel.credentialEnvironmentVariable];
-        if (!apiKey)
+        if (!apiKey) {
             throw new Error(
                 `Mastra dictionary generation with ${modelId} requires ${catalogModel.credentialEnvironmentVariable}.`,
             );
+        }
+
         provider = {
             apiKey,
             catalogModel,
@@ -279,27 +308,33 @@ export function loadDictionaryWorkerEnvironment(
     } else {
         provider = { mode: providerMode };
     }
+
     const providerBudget = loadDictionaryGenerationProviderBudgetPolicy(
         values,
         { requireExplicit: providerMode === 'mastra' },
     );
+
     assertDictionaryGenerationProviderBudgetSupportsFormats(
         providerBudget,
-        supportedFormats,
+        textFormats,
     );
+
     if (provider.mode === 'mastra') {
         const unsupportedFormats = supportedFormats.filter(
             (format) =>
                 format !== 'conversation:v1' &&
                 format !== 'portrait-interview:v1' &&
+                format !== 'knowledge-transcription:v1' &&
                 !provider.catalogModel.supportedFormats.includes(format),
         );
+
         if (unsupportedFormats.length > 0) {
             throw new Error(
                 `Dictionary text model ${provider.modelId} does not support worker formats: ${unsupportedFormats.join(', ')}.`,
             );
         }
     }
+
     const documentEnabled = supportedFormats.some((format) =>
         ['document-terms:v1', 'document-terms:v2'].includes(format),
     );
@@ -311,23 +346,29 @@ export function loadDictionaryWorkerEnvironment(
     let document: DictionaryWorkerEnvironment['document'] = {
         mode: 'unavailable',
     };
+
     if (documentEnabled) {
         const fingerprintSecret =
             environment.DICTIONARY_DOCUMENT_FINGERPRINT_HMAC_SECRET;
+
         if (
             environment.DICTIONARY_DOCUMENT_RUNTIME_MODE === 'unavailable' ||
             !documentStorage ||
             !fingerprintSecret ||
             Buffer.byteLength(fingerprintSecret, 'utf8') < 32
-        )
+        ) {
             throw new Error(
                 'Document runtime dependencies are required for document generation.',
             );
+        }
+
         if (environment.DICTIONARY_DOCUMENT_RUNTIME_MODE === 'deterministic') {
-            if (['staging', 'production'].includes(environment.APP_ENV))
+            if (['staging', 'production'].includes(environment.APP_ENV)) {
                 throw new Error(
                     'Deterministic document adapters are local/test-only.',
                 );
+            }
+
             document = {
                 fingerprintSecret,
                 mode: 'deterministic',
@@ -345,6 +386,7 @@ export function loadDictionaryWorkerEnvironment(
             const bubblewrapPath =
                 environment.DICTIONARY_DOCUMENT_SANDBOX_BWRAP_PATH ??
                 '/usr/bin/bwrap';
+
             if (
                 !scannerHost ||
                 !scannerPort ||
@@ -352,10 +394,12 @@ export function loadDictionaryWorkerEnvironment(
                 !applicationRoot.startsWith('/') ||
                 !parserEntryPath.startsWith(`${applicationRoot}/`) ||
                 !bubblewrapPath.startsWith('/')
-            )
+            ) {
                 throw new Error(
                     'Production document scanner and sandbox configuration is incomplete.',
                 );
+            }
+
             document = {
                 fingerprintSecret,
                 mode: 'production',
@@ -365,7 +409,11 @@ export function loadDictionaryWorkerEnvironment(
             };
         }
     }
+
     return {
+        ...(environment.OPENAI_API_KEY
+            ? { transcriptionApiKey: environment.OPENAI_API_KEY }
+            : {}),
         sentenceAiTimeoutMs: environment.SENTENCE_AI_TIMEOUT_MS,
         textAiTimeoutMs: environment.TEXT_AI_TIMEOUT_MS,
         appEnvironment: environment.APP_ENV,
@@ -374,7 +422,7 @@ export function loadDictionaryWorkerEnvironment(
         databaseUrl,
         document,
         drainTimeoutMs: environment.DICTIONARY_WORKER_DRAIN_TIMEOUT_MS,
-        includeProviderReadiness: supportedFormats.length > 0,
+        includeProviderReadiness: textFormats.length > 0,
         pollIntervalMs: environment.DICTIONARY_WORKER_POLL_INTERVAL_MS,
         providerFixtureMode: environment.DICTIONARY_AI_PROVIDER_FIXTURE_MODE,
         providerCredentials: {

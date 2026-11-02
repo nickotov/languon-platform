@@ -18,15 +18,20 @@ export function useTrainingCapabilities(api: LearningApi) {
                 }
             },
             () => {
-                if (alive) setStatus('error');
+                if (alive) {
+                    setStatus('error');
+                }
             },
         );
+
         return () => {
             alive = false;
         };
     }, [api, attempt]);
+
     function retry() {
         setAttempt((current) => current + 1);
     }
+
     return { status, enabled, retry };
 }

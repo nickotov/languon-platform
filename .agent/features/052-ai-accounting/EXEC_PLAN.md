@@ -241,7 +241,6 @@ no rates or pack values are invented.
   parentauthorization. Requiredfinalreviewmode expands affectedfinancial/worker/
   preparation/provenance paths; unchangedinitialsurfaces reusepreviousreview.
 
-
 ## Integration checkpoint 9 — bounded remediation and user scope correction
 
 - User questioned complexity and requested Luna. A Luna read-only review confirmed
@@ -268,7 +267,6 @@ no rates or pack values are invented.
   and portrait browser checks remain in progress. No production/provider calls.
 - AC9 remains failed pending final quiet-source load run. No development DB
   cutover, commit or merge. Existing development data remains preserved.
-
 
 ## Integration checkpoint 10 — Luna and bounded performance follow-up
 
@@ -307,7 +305,6 @@ no rates or pack values are invented.
 - The user directed preserving the100ms AC9 target and authorized the larger
   capacity-lock redesign. See checkpoint11 for implementation and final evidence.
 - No database cutover, commit or merge pending final review and remaining gates.
-
 
 ## Integration checkpoint 11 — bounded capacity-lock redesign and AC9 pass
 

@@ -7,6 +7,7 @@ const guards = new Map<symbol, NavigationGuard>();
 export function registerNavigationGuard(guard: NavigationGuard) {
     const id = Symbol();
     guards.set(id, guard);
+
     return () => {
         guards.delete(id);
     };
@@ -15,6 +16,9 @@ export function registerNavigationGuard(guard: NavigationGuard) {
 /** Palette and Create actions must honor the same draft guard as links. */
 export function requestGuardedNavigation(action: NavigationAction) {
     const active = [...guards.values()].at(-1);
-    if (active) active(action);
-    else action();
+    if (active) {
+        active(action);
+    } else {
+        action();
+    }
 }

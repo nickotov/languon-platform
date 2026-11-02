@@ -22,9 +22,12 @@ export function createSentenceAgents(options: {
             defaultStreamOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
             defaultOptions: { maxSteps: 1 },
         });
+
         agent.__registerPrimitives({ logger: noopLogger });
+
         return agent;
     };
+
     return {
         sentenceGenerationAgent: create('sentence-generation-agent'),
         sentenceCheckAgent: create('sentence-check-agent'),

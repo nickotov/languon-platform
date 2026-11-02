@@ -15,6 +15,7 @@ describe('auth API boundary', () => {
             'https://api.example.test',
         );
     });
+
     it('validates successful remote data against the shared schema', async () => {
         vi.spyOn(globalThis, 'fetch').mockResolvedValue(
             new Response(JSON.stringify({ email: { signUp: true } }), {
@@ -72,6 +73,7 @@ describe('auth API boundary', () => {
             '/api/auth/capabilities',
             expect.objectContaining({ credentials: 'include' }),
         );
+
         expect(String(fetchMock.mock.calls[0]?.[0])).not.toContain('token');
     });
 
@@ -136,12 +138,15 @@ describe('auth API boundary', () => {
                     },
                 ),
             );
+
         await expect(
             authApi.updateHandle({ handle: 'learner_42' }, 'aaa.bbb.ccc'),
         ).resolves.toEqual({ handle: 'learner_42' });
+
         await expect(
             authApi.scheduleAccountDeletion('aaa.bbb.ccc'),
         ).resolves.toMatchObject({ status: 'deletion_scheduled' });
+
         expect(fetchMock).toHaveBeenNthCalledWith(
             1,
             '/api/users/me/handle',
@@ -153,6 +158,7 @@ describe('auth API boundary', () => {
                 }),
             }),
         );
+
         expect(fetchMock).toHaveBeenNthCalledWith(
             2,
             '/api/users/me/deletion',

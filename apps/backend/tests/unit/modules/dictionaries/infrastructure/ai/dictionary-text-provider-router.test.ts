@@ -18,6 +18,7 @@ function snapshot(
     overrides: Partial<DictionaryAiExecutionSnapshot> = {},
 ): DictionaryAiExecutionSnapshot {
     const model = dictionaryAiModelCatalog[index]!;
+
     return {
         adapterRevision: model.adapterRevision,
         aggregateBudget: model.aggregateBudget,
@@ -34,6 +35,7 @@ function snapshot(
 
 function providers(label: string): DictionaryTextProviderSet {
     const result = { proposal: label } as never;
+
     return {
         card: { generate: vi.fn(async () => result) },
         cardAuthoring: { generate: vi.fn(async () => result) },
@@ -87,6 +89,7 @@ describe('dictionary text provider router', () => {
                     { headers: { 'Content-Type': 'application/json' } },
                 ),
         );
+
         vi.stubGlobal('fetch', fetchProvider);
         try {
             const router = new DictionaryTextProviderRouter({
@@ -127,24 +130,29 @@ describe('dictionary text provider router', () => {
                     ],
                 },
             });
+
             expect(result).toMatchObject({
                 delta: {
                     suggestions: [{ field: 'translation', value: 'Привет' }],
                 },
                 usage: { inputTokens: 100, outputTokens: 20 },
             });
+
             expect(fetchProvider).toHaveBeenCalledOnce();
             const options = fetchProvider.mock.calls[0] as unknown as [
                 unknown,
                 RequestInit,
             ];
+
             expect(JSON.parse(options[1].body as string).max_tokens).toBe(
                 8_192,
             );
+
             const resolved = router.resolve(execution, admittedBudget);
             expect(
                 router.resolve(execution, admittedBudget).cardAuthoring,
             ).toBe(resolved.cardAuthoring);
+
             expect(resolved.card.generate).toBeTypeOf('function');
             // Reduced admitted budgets can fund a chunk without requiring the
             // historical five-chunk maximum. Each dispatch still checks its input.
@@ -262,6 +270,7 @@ describe('dictionary text provider router', () => {
             credentials: { DEEPSEEK_API_KEY: 'deepseek-test-key' },
             factory: vi.fn(() => providers('unused')),
         });
+
         for (const invalid of [
             snapshot(0, { adapterRevision: 'openai-compatible:v2' }),
             snapshot(1),
@@ -278,13 +287,16 @@ describe('dictionary text provider router', () => {
                 /snapshot is unsupported/i,
             );
         }
+
         const mismatchedBudget: DictionaryGenerationProviderBudgetPolicy = {
             ...budget,
             maxOutputTokensPerAttempt: budget.maxOutputTokensPerAttempt - 1,
         };
+
         expect(() => router.resolve(snapshot(0), mismatchedBudget)).toThrow(
             /snapshot is unsupported/i,
         );
+
         expect(() =>
             new DictionaryTextProviderRouter({
                 credentials: {},

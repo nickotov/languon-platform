@@ -13,8 +13,10 @@ export function AccountingReportPanel({
     const [now, setNow] = useState(Date.now);
     useEffect(() => {
         const timer = window.setInterval(() => setNow(Date.now()), 10_000);
+
         return () => window.clearInterval(timer);
     }, []);
+
     const stale = now - Date.parse(report.generatedAt) > 60_000;
     const freshnessColor = stale ? 'orange' : 'green';
     const freshnessLabel = stale
@@ -96,6 +98,7 @@ export function AccountingReportPanel({
             dataIndex: 'estimatedRemainingUsd',
         },
     ];
+
     return (
         <Space direction='vertical' size='large' style={{ width: '100%' }}>
             <Card title={t('accounting.summary')}>
@@ -147,13 +150,17 @@ export function AccountingReportPanel({
         </Space>
     );
 }
+
 function ProviderBills({
     provider,
 }: {
     provider: AccountingReport['providers'][number];
 }) {
     const t = useTranslate();
-    if (provider.bills.length === 0) return null;
+    if (provider.bills.length === 0) {
+        return null;
+    }
+
     const columns = [
         { title: t('accounting.reference'), dataIndex: 'id' },
         { title: t('accounting.periodStart'), dataIndex: 'periodStart' },
@@ -166,6 +173,7 @@ function ProviderBills({
         },
         { title: t('accounting.unknown'), dataIndex: 'unknownCount' },
     ];
+
     return (
         <>
             <Typography.Title level={4}>

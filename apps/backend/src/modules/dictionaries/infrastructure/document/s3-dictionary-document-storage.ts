@@ -37,8 +37,12 @@ export interface S3DictionaryDocumentStorageOptions {
 }
 
 function checksumHex(value: string | undefined): string {
-    if (!value) return '';
+    if (!value) {
+        return '';
+    }
+
     const bytes = Buffer.from(value, 'base64');
+
     return bytes.byteLength === 32 ? bytes.toString('hex') : '';
 }
 
@@ -47,8 +51,10 @@ function checksumBase64(value: string): string {
 }
 
 function bodyIterable(body: unknown): AsyncIterable<Uint8Array> {
-    if (!body || typeof body !== 'object' || !(Symbol.asyncIterator in body))
+    if (!body || typeof body !== 'object' || !(Symbol.asyncIterator in body)) {
         throw new Error('S3 returned a non-streaming document body.');
+    }
+
     return body as AsyncIterable<Uint8Array>;
 }
 
@@ -64,8 +70,10 @@ async function detectFormat(
     if (
         sizeBytes < 1 ||
         sizeBytes > documentIngestionLimitsV1.upload.maximumFileBytes
-    )
+    ) {
         throw new Error('S3 document exceeds the completion inspection bound.');
+    }
+
     const expectedPrefixBytes = Math.min(sizeBytes, maximumMagicPrefixBytes);
     const response = await client.send(
         new GetObjectCommand({
@@ -76,41 +84,68 @@ async function detectFormat(
         }),
         { abortSignal: signal },
     );
+
     if (
         response.ContentLength !== expectedPrefixBytes ||
         response.ContentRange !==
             `bytes 0-${expectedPrefixBytes - 1}/${sizeBytes}`
-    )
+    ) {
         throw new Error('S3 returned invalid range metadata.');
+    }
+
     const content = bodyIterable(response.Body);
     const prefixChunks: Uint8Array[] = [];
     let prefixLength = 0;
     for await (const chunk of content) {
         signal.throwIfAborted();
         prefixLength += chunk.byteLength;
-        if (prefixLength > expectedPrefixBytes)
+        if (prefixLength > expectedPrefixBytes) {
             throw new Error('S3 document range exceeds its inspection bound.');
+        }
+
         prefixChunks.push(chunk);
     }
-    if (prefixLength !== expectedPrefixBytes)
+
+    if (prefixLength !== expectedPrefixBytes) {
         throw new Error('S3 returned an incomplete document range.');
+    }
+
     const fileType = await fileTypeFromBuffer(
         Buffer.concat(prefixChunks, prefixLength),
     );
-    if (fileType?.mime === 'application/pdf') return 'pdf';
-    if (fileType?.mime === 'image/jpeg') return 'jpeg';
-    if (fileType?.mime === 'image/png') return 'png';
-    if (fileType?.mime === 'image/webp') return 'webp';
+
+    if (fileType?.mime === 'application/pdf') {
+        return 'pdf';
+    }
+
+    if (fileType?.mime === 'image/jpeg') {
+        return 'jpeg';
+    }
+
+    if (fileType?.mime === 'image/png') {
+        return 'png';
+    }
+
+    if (fileType?.mime === 'image/webp') {
+        return 'webp';
+    }
+
     if (
         fileType?.mime === 'application/zip' &&
         contentType ===
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    )
+    ) {
         return 'docx';
-    if (fileType) return `unsupported:${fileType.mime}`;
+    }
+
+    if (fileType) {
+        return `unsupported:${fileType.mime}`;
+    }
+
     if (contentType === 'text/plain' || contentType === 'text/markdown') {
         return contentType === 'text/markdown' ? 'markdown' : 'txt';
     }
+
     return 'unsupported:unknown';
 }
 
@@ -131,8 +166,11 @@ export function reconcileUploadedDocumentVersion(input: {
             (!input.requestedVersionId ||
                 version.versionId === input.requestedVersionId),
     );
-    if (candidates.length !== 1)
+
+    if (candidates.length !== 1) {
         throw new DictionaryDocumentUploadInspectionConflictError();
+    }
+
     return candidates[0]!;
 }
 
@@ -157,8 +195,12 @@ async function listPhysicalVersions(
         const exactVersions = (page.Versions ?? []).filter(
             (version) => version.Key === objectKey,
         );
+
         for (const version of exactVersions) {
-            if (!version.VersionId) throw new Error('S3 omitted a version ID.');
+            if (!version.VersionId) {
+                throw new Error('S3 omitted a version ID.');
+            }
+
             const head = await options.client.send(
                 new HeadObjectCommand({
                     Bucket: options.bucket,
@@ -168,6 +210,7 @@ async function listPhysicalVersions(
                 }),
                 { abortSignal: signal },
             );
+
             versions.push({
                 checksumSha256: checksumHex(head.ChecksumSHA256),
                 ...(head.ContentType ? { contentType: head.ContentType } : {}),
@@ -180,8 +223,12 @@ async function listPhysicalVersions(
                 versionId: version.VersionId,
             });
         }
+
         for (const marker of page.DeleteMarkers ?? []) {
-            if (marker.Key !== objectKey || !marker.VersionId) continue;
+            if (marker.Key !== objectKey || !marker.VersionId) {
+                continue;
+            }
+
             versions.push({
                 checksumSha256: '0'.repeat(64),
                 isCurrent: marker.IsLatest === true,
@@ -190,15 +237,21 @@ async function listPhysicalVersions(
                 versionId: marker.VersionId,
             });
         }
-        if (versions.length > maximumListedVersions)
+
+        if (versions.length > maximumListedVersions) {
             throw new Error('S3 document has too many physical versions.');
+        }
+
         keyMarker = page.IsTruncated ? page.NextKeyMarker : undefined;
         versionIdMarker = page.IsTruncated
             ? page.NextVersionIdMarker
             : undefined;
-        if (page.IsTruncated && (!keyMarker || !versionIdMarker))
+
+        if (page.IsTruncated && (!keyMarker || !versionIdMarker)) {
             throw new Error('S3 returned an invalid version cursor.');
+        }
     } while (keyMarker && versionIdMarker);
+
     return versions;
 }
 
@@ -220,10 +273,13 @@ export class S3DictionaryDocumentUploadStorage implements DictionaryDocumentUplo
             600,
             Math.floor(remainingLifetimeMs / 1_000),
         );
-        if (expiresIn < 1)
+
+        if (expiresIn < 1) {
             throw new Error(
                 'Document upload capability expired before signing.',
             );
+        }
+
         const checksum = checksumBase64(input.checksumSha256);
         const command = new PutObjectCommand({
             Bucket: this.options.bucket,
@@ -238,7 +294,9 @@ export class S3DictionaryDocumentUploadStorage implements DictionaryDocumentUplo
             signableHeaders: new Set(['content-type', 'if-none-match']),
             unhoistableHeaders: new Set(['x-amz-checksum-sha256']),
         });
+
         input.signal.throwIfAborted();
+
         return {
             method: 'PUT' as const,
             requiredHeaders: {
@@ -256,8 +314,10 @@ export class S3DictionaryDocumentUploadStorage implements DictionaryDocumentUplo
         >[0],
     ) {
         input.signal.throwIfAborted();
-        if (this.activeInspections >= maximumConcurrentInspections)
+        if (this.activeInspections >= maximumConcurrentInspections) {
             throw new DictionaryDocumentUploadInspectionUnavailableError();
+        }
+
         this.activeInspections += 1;
         try {
             const versions = await listPhysicalVersions(
@@ -274,6 +334,7 @@ export class S3DictionaryDocumentUploadStorage implements DictionaryDocumentUplo
                     : {}),
                 versions,
             });
+
             return {
                 detectedFormat: await detectFormat(
                     this.options.client,
@@ -290,9 +351,12 @@ export class S3DictionaryDocumentUploadStorage implements DictionaryDocumentUplo
         } catch (error) {
             if (
                 error instanceof DictionaryDocumentUploadInspectionConflictError
-            )
+            ) {
                 throw error;
+            }
+
             input.signal.throwIfAborted();
+
             throw new DictionaryDocumentUploadInspectionUnavailableError();
         } finally {
             this.activeInspections -= 1;
@@ -329,6 +393,7 @@ export class S3PrivateDocumentStorage implements PrivateDocumentStorage {
             }),
             { abortSignal: signal },
         );
+
         return {
             content: bodyIterable(response.Body),
             reference: {
@@ -358,8 +423,11 @@ export class S3PrivateDocumentStorage implements PrivateDocumentStorage {
             }),
             { abortSignal: input.signal },
         );
-        if (!response.VersionId)
+
+        if (!response.VersionId) {
             throw new Error('S3 omitted the tombstone version ID.');
+        }
+
         return {
             checksumSha256: emptySha256,
             contentType: 'application/octet-stream',

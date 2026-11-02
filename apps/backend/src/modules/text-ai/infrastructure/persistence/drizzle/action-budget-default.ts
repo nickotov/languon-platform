@@ -16,17 +16,25 @@ export async function ensureActionBudgetDefault(
     known?: Preference,
 ): Promise<Preference | undefined> {
     let current = known;
-    if (!current)
+    if (!current) {
         [current] = await tx
             .select()
             .from(preferences)
             .where(eq(preferences.userId, userId));
-    if (current?.maxCreditsPerAction != null) return current;
+    }
+
+    if (current?.maxCreditsPerAction != null) {
+        return current;
+    }
+
     const settings = await new DrizzleCapabilityPolicyParticipant(
         tx,
     ).settings();
 
-    if (settings.defaultMaxCreditsPerAction === null) return current;
+    if (settings.defaultMaxCreditsPerAction === null) {
+        return current;
+    }
+
     const [copied] = await tx
         .insert(preferences)
         .values({
@@ -49,7 +57,10 @@ export async function ensureActionBudgetDefault(
         })
         .returning();
 
-    if (copied) return copied;
+    if (copied) {
+        return copied;
+    }
+
     // A simultaneous learner save (or another first admission) supplied it.
     const [latest] = await tx
         .select()

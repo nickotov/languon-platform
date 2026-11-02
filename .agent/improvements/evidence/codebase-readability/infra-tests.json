@@ -1,0 +1,63 @@
+{
+  "owner": "backend-conversations-texts/infra-tests",
+  "baseCommit": "252de64",
+  "scope": "Full read-only body audit of6 explicitly transferred infra tests; no tests/source edits or execution.",
+  "files": [
+    {
+      "path": "infra/deploy/tests/admin-edge.journey.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "assertLocalDocker, createFixtureFiles, fixtureServerSource and curl isolate pinned-image loopback edge resources; assertions verify Basic plus forwarded application bearer authority, secret file ownership and content-free failed-upstream logging, with container/network/temp cleanup in finally.",
+      "beforeSha256": "2f6732ef1322d603879ff61847c02411bea0ca51ca6751018a1197d31d1d9bdd",
+      "afterSha256": "2f6732ef1322d603879ff61847c02411bea0ca51ca6751018a1197d31d1d9bdd"
+    },
+    {
+      "path": "infra/deploy/tests/deployment.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "fixture records synthetic runner calls/environments and exposes explicit failure flags; deployment assertions cover migration/recovery/start/readiness/switch order, rollback-floor images, production backup/privilege gates, candidate-only cleanup, atomic upstream restoration, and preservation of committed slots after audit or cleanup failure.",
+      "beforeSha256": "b59b29de252260e3a19bb8f8cc5937afa7720cdda18d9b79c79eaf1bc4fe8a69",
+      "afterSha256": "b59b29de252260e3a19bb8f8cc5937afa7720cdda18d9b79c79eaf1bc4fe8a69"
+    },
+    {
+      "path": "infra/deploy/tests/dictionary-worker-overlap.journey.test.mjs",
+      "status": "deferred",
+      "reason": "Full body audited: release/fixture express expand/activate/steady/retire/rollback budget and lifecycle gates. Opt-in database proof is stale: minimal schema lacks dictionary_audio_blobs (grant script first fails there), current configuration/accounting tables/functions and required columns; readPrivileges decodes30 historical columns while current query/validator require configuration and credit fields. Assertions rejecting translation/users access also reflect retired role grants. Needs bounded harness actualization against current migrations, owned by root; not changed under read-only transfer.",
+      "beforeSha256": "33ab4f3b22bb655de5c22fbd5b3b1ac3c5fc7764af73b8ada492900ce6c9518e",
+      "afterSha256": "33ab4f3b22bb655de5c22fbd5b3b1ac3c5fc7764af73b8ada492900ce6c9518e"
+    },
+    {
+      "path": "infra/deploy/tests/manifest.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "valid/generationBudget fixtures keep immutable release identity explicit; tests assert exact image sets, destructive migration rejection, opt-in local registry, complete schema-v2 metadata, bidirectional lifecycle/retirement compatibility and preserved claimable budget envelopes across expand/activation/steady rollback.",
+      "beforeSha256": "63cd295863d5bd2c941ba0122ae977df012af4bb28a0bacef5df59770039527a",
+      "afterSha256": "63cd295863d5bd2c941ba0122ae977df012af4bb28a0bacef5df59770039527a"
+    },
+    {
+      "path": "infra/deploy/tests/production-redis-tls.journey.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Opt-in TLS proof rejects remote Docker contexts, generates disposable CA/SAN certificates, mounts reviewed production ACL with synthetic credentials and runs exact real rate-limiter integration test over rediss. Bounded readiness and container cleanup explicit; no source changes or execution performed.",
+      "beforeSha256": "b6ac03a4fd3ba124bc46e8f8554bba9dc1999172575e339a810a2450f534ab63",
+      "afterSha256": "b6ac03a4fd3ba124bc46e8f8554bba9dc1999172575e339a810a2450f534ab63"
+    },
+    {
+      "path": "infra/deploy/tests/stream-drain.journey.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "assertLocalDocker/upstream/compose helpers stage real blue/green streaming with pinned local fixture and production edge compose; assertions prove new traffic switch while old worker drains and exact original stream frames survive. Runtime/networks/compose stacks clean in finally; fixed ports/project prefix require centrally serialized execution.",
+      "beforeSha256": "da2ab6566948923582727f9571827b4e83bee72e38e41c1c3ad1db0a02be74e3",
+      "afterSha256": "da2ab6566948923582727f9571827b4e83bee72e38e41c1c3ad1db0a02be74e3"
+    }
+  ],
+  "findings": [
+    {
+      "id": "INFRA-AUDIT-1",
+      "severity": "medium",
+      "path": "infra/deploy/tests/dictionary-worker-overlap.journey.test.mjs",
+      "line": 769,
+      "problem": "Opt-in deployment database privilege proof retains a pre-expansion fixture and positional decoder incompatible with the current deployment role/query.",
+      "impact": "LANGUON_DEPLOY_DB_E2E=true cannot establish real deployment worker privilege evidence; fails during grant application before intended assertions.",
+      "origin": "Pre-existing at252de64; audited file unchanged.",
+      "suggestion": "Actualize as a bounded harness correction using reviewed current migrations/role grants, decode privilege columns by names and retain legitimate least-privilege assertions for current policy.",
+      "evidenceNeeded": "Centrally scheduled opt-in disposable database test with no skips, preserving current production policy.",
+      "disposition": "Reported to root; no implementation authorization in read-only transfer."
+    }
+  ]
+}

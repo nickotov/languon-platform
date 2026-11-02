@@ -14,6 +14,7 @@ const sentenceServicesEnabled =
     process.env.ADMIN_E2E_SENTENCE_SERVICES === 'true';
 const sentenceFixtureRunId =
     process.env.ADMIN_E2E_SENTENCE_RUN_ID ?? e2eRateLimitNamespace;
+
 process.env.ADMIN_E2E_SENTENCE_RUN_ID = sentenceFixtureRunId;
 
 if (!databaseUrl || !redisUrl) {
@@ -21,6 +22,7 @@ if (!databaseUrl || !redisUrl) {
         'ADMIN_E2E_DATABASE_URL and ADMIN_E2E_REDIS_URL must point to disposable local test services.',
     );
 }
+
 for (const [name, value] of [
     ['ADMIN_E2E_ADMIN_ORIGIN', adminOrigin],
     ['ADMIN_E2E_MCP_ORIGIN', mcpOrigin],
@@ -34,6 +36,7 @@ for (const [name, value] of [
         throw new Error(`${name} must point to a loopback service.`);
     }
 }
+
 const databaseName = new URL(databaseUrl).pathname.slice(1);
 if (
     !/(?:admin.*e2e|e2e.*admin).*test/i.test(databaseName) ||
@@ -80,6 +83,7 @@ export default defineConfig({
                 ADMIN_E2E_SYNTHETIC_PROBES: 'true',
                 DEEPSEEK_API_KEY: 'synthetic-test-key',
                 OPENROUTER_API_KEY: '',
+                OPENAI_API_KEY: '',
                 EVOLINK_API_KEY: '',
                 KIE_API_KEY: '',
                 APP_ENV: 'development',

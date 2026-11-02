@@ -138,6 +138,7 @@ function fixture(native = false) {
                 signal: new AbortController().signal,
                 idempotencyKey: 'synthetic-router-gateway',
             });
+
     return {
         credentials,
         witnesses,
@@ -149,6 +150,7 @@ function fixture(native = false) {
         baseFingerprint,
     };
 }
+
 function success() {
     return new Response(
         JSON.stringify({
@@ -178,6 +180,7 @@ function success() {
         { headers: { 'content-type': 'application/json' } },
     );
 }
+
 afterEach(() => vi.unstubAllGlobals());
 describe('production DictionaryTextProviderRouter gateway composition', () => {
     it('executes a native worker with matching current policy through the real SDK', async () => {
@@ -193,19 +196,24 @@ describe('production DictionaryTextProviderRouter gateway composition', () => {
                 ],
             },
         });
+
         expect(providerFetch).toHaveBeenCalledOnce();
     });
+
     it('rejects a native admission carrying an unhashed worker identity before HTTP', () => {
         const f = fixture(true);
         f.snapshot.routingAuthority!.candidates[0]!.fingerprint =
             f.baseFingerprint;
+
         const providerFetch = vi.fn();
         vi.stubGlobal('fetch', providerFetch);
         expect(() =>
             f.router.resolve(f.snapshot, model.aggregateBudget),
         ).toThrow('identity has changed');
+
         expect(providerFetch).not.toHaveBeenCalled();
     });
+
     it('rejects a stale native worker identity after credential rotation before HTTP', () => {
         const f = fixture(true);
         f.router.resolve(f.snapshot, model.aggregateBudget);
@@ -215,8 +223,10 @@ describe('production DictionaryTextProviderRouter gateway composition', () => {
         expect(() =>
             f.router.resolve(f.snapshot, model.aggregateBudget),
         ).toThrow('identity has changed');
+
         expect(providerFetch).not.toHaveBeenCalled();
     });
+
     it('uses its pinned price through router, generator and real SDK HTTP', async () => {
         const f = fixture();
         const providerFetch = vi.fn(
@@ -224,6 +234,7 @@ describe('production DictionaryTextProviderRouter gateway composition', () => {
                 expect(String(url)).toBe(
                     'https://openrouter.ai/api/v1/chat/completions',
                 );
+
                 expect(JSON.parse(String(init?.body))).toMatchObject({
                     model: 'openai/gpt-6-luna',
                     max_tokens: 10_000,
@@ -241,17 +252,21 @@ describe('production DictionaryTextProviderRouter gateway composition', () => {
                         },
                     },
                 });
+
                 return success();
             },
         );
+
         vi.stubGlobal('fetch', providerFetch);
         await expect(f.generate()).resolves.toMatchObject({
             delta: { suggestions: [{ field: 'translation', value: 'libro' }] },
             usage: { inputTokens: 12, outputTokens: 5 },
         });
+
         expect(providerFetch).toHaveBeenCalledOnce();
         expect(f.onProviderFailure).not.toHaveBeenCalled();
     });
+
     it('does not reuse a same-policy cached generator after provider-price revision changes', async () => {
         const f = fixture();
         const original = f.router.resolve(f.snapshot, model.aggregateBudget);
@@ -261,20 +276,25 @@ describe('production DictionaryTextProviderRouter gateway composition', () => {
             version: 2,
             inputUsdPerMillionTokens: '0.18',
         });
+
         expect(f.router.resolve(updated, model.aggregateBudget)).not.toBe(
             original,
         );
+
         vi.stubGlobal(
             'fetch',
             vi.fn(async (_url: unknown, init?: RequestInit) => {
                 expect(
                     JSON.parse(String(init?.body)).provider.max_price.prompt,
                 ).toBe(0.18);
+
                 return success();
             }),
         );
+
         await f.generate(updated);
     });
+
     it('fails before HTTP on credential drift even when the matching generator is cached', () => {
         const f = fixture();
         f.router.resolve(f.snapshot, model.aggregateBudget);
@@ -284,8 +304,10 @@ describe('production DictionaryTextProviderRouter gateway composition', () => {
         expect(() =>
             f.router.resolve(f.snapshot, model.aggregateBudget),
         ).toThrow('identity has changed');
+
         expect(providerFetch).not.toHaveBeenCalled();
     });
+
     it('awaits a safe runtime health write before returning a rejected provider failure', async () => {
         const f = fixture();
         vi.stubGlobal(
@@ -306,9 +328,11 @@ describe('production DictionaryTextProviderRouter gateway composition', () => {
                     ),
             ),
         );
+
         await expect(f.generate()).rejects.toMatchObject({
             executionOutcome: 'rejected',
         });
+
         expect(f.onProviderFailure).toHaveBeenCalledOnce();
         expect(f.witnesses).toEqual([
             {
@@ -321,6 +345,7 @@ describe('production DictionaryTextProviderRouter gateway composition', () => {
                 fencingToken: '3',
             },
         ]);
+
         expect(f.onProviderFailure.mock.calls[0]?.[0]).toMatchObject({
             routeId,
             flowId: 'card-authoring',
@@ -328,10 +353,12 @@ describe('production DictionaryTextProviderRouter gateway composition', () => {
             reason: 'authorization_failed',
             failure: { httpStatus: 401 },
         });
+
         expect(JSON.stringify(f.onProviderFailure.mock.calls)).not.toContain(
             'private-synthetic-body',
         );
     });
+
     it('does not let a learner-induced policy403 exclude shared credentials or authorize fallback', async () => {
         const f = fixture();
         const providerFetch = vi.fn(
@@ -349,11 +376,13 @@ describe('production DictionaryTextProviderRouter gateway composition', () => {
                     },
                 ),
         );
+
         vi.stubGlobal('fetch', providerFetch);
         await expect(f.generate()).rejects.toMatchObject({
             executionOutcome: 'ambiguous',
             category: 'provider_unavailable',
         });
+
         expect(f.onProviderFailure).not.toHaveBeenCalled();
         expect(providerFetch).toHaveBeenCalledOnce();
     });
@@ -363,6 +392,7 @@ describe('production DictionaryTextProviderRouter gateway composition', () => {
         f.onProviderFailure.mockRejectedValueOnce(
             new Error('Synthetic health store unavailable.'),
         );
+
         vi.stubGlobal(
             'fetch',
             vi.fn(
@@ -378,6 +408,7 @@ describe('production DictionaryTextProviderRouter gateway composition', () => {
                     ),
             ),
         );
+
         await expect(f.generate()).rejects.toBeDefined();
         expect(f.onProviderFailure).toHaveBeenCalledOnce();
     });

@@ -459,9 +459,11 @@ const rows = {
         'Eso es todo por ahora',
     ],
 } satisfies Record<string, string[]>;
+
 export function interviewText(locale: InterviewLocale, key: keyof typeof rows) {
     return rows[key][['en', 'ru', 'fr', 'es'].indexOf(locale)]!;
 }
+
 export const interviewCoreTopics: InterviewTopic[] = [
     'languages',
     'explanation-languages',
@@ -492,6 +494,7 @@ const levelRows = [
     ['Native', 'Родной', 'Langue maternelle', 'Nativo'],
     ['Unsure', 'Не уверен(а)', 'Je ne sais pas', 'No lo sé'],
 ];
+
 export function interviewLevelOptions(locale: InterviewLocale) {
     return interviewLevels.map((value, index) => ({
         value,
@@ -550,6 +553,7 @@ const errors: Record<string, string[]> = {
         'Respuesta detenida. Tu borrador no cambia.',
     ],
 };
+
 export function interviewErrorMessage(locale: InterviewLocale, code: string) {
     const fallback = [
         'Unable to continue right now. Your unfinished work is kept. Reconnect, or review and edit it by hand.',
@@ -557,6 +561,7 @@ export function interviewErrorMessage(locale: InterviewLocale, code: string) {
         'Impossible de continuer. Votre travail est conservé. Reconnectez-vous ou modifiez le brouillon manuellement.',
         'No se puede continuar ahora. Tu trabajo se conserva. Reconecta o edita el borrador a mano.',
     ];
+
     return (errors[code] ?? fallback)[
         ['en', 'ru', 'fr', 'es'].indexOf(locale)
     ]!;

@@ -36,6 +36,7 @@ export function assertDictionaryOwnerCapacity(
     ) {
         throw new DictionaryOwnerCapacityError('dictionaries');
     }
+
     if (
         retained.cards + additional.cards > limits.ownerRetainedCardCapacity ||
         retained.revisions + additional.revisions > limits.ownerRevisionCapacity
@@ -105,6 +106,7 @@ export function normalizeRequiredText(
     if (value.length === 0) {
         throw new InvalidDictionaryTextError(inputRules.field, 'blank');
     }
+
     if ([...value].length > inputRules.maximumCodePoints) {
         throw new InvalidDictionaryTextError(inputRules.field, 'too_long');
     }

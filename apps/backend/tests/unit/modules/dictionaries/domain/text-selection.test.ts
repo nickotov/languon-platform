@@ -15,6 +15,7 @@ const occurrence = {
     sourceLanguageTag: 'en',
     targetLanguageTag: 'fr',
 };
+
 describe('text selection contextual card authoring', () => {
     it('retains the exact occurrence and complete neighboring context independently of semantic dictionary context', () => {
         const longSentence = 'x'.repeat(5000) + ' bank.';
@@ -28,6 +29,7 @@ describe('text selection contextual card authoring', () => {
             defaultDictionarySettings,
             'Financial vocabulary',
         );
+
         expect(input.occurrenceContext).toEqual({
             sentence: longSentence,
             previousSentence: occurrence.previousSentence,
@@ -35,8 +37,10 @@ describe('text selection contextual card authoring', () => {
             startOffset: 5001,
             endOffset: 5005,
         });
+
         expect(input.translationContext).toBe('Financial vocabulary');
     });
+
     it('enables every requested card field and preserves dictionary field languages and transcription settings', () => {
         const settings = {
             ...defaultDictionarySettings,
@@ -55,6 +59,7 @@ describe('text selection contextual card authoring', () => {
             'example',
             'exampleTranslation',
         ]);
+
         expect(input.effectiveSettings).toMatchObject({
             definitionEnabled: true,
             exampleEnabled: true,
@@ -64,8 +69,10 @@ describe('text selection contextual card authoring', () => {
             exampleTranslationLanguage: 'source',
             transcriptionEnabled: false,
         });
+
         expect(settings.exampleEnabled).toBe(false);
     });
+
     it('rejects a phrase that does not identify the exact selected substring', () => {
         expect(() =>
             SelectionOccurrenceSchema.parse({
@@ -74,10 +81,12 @@ describe('text selection contextual card authoring', () => {
                 endOffset: 4,
             }),
         ).toThrow();
+
         expect(() =>
             SelectionOccurrenceSchema.parse({ ...occurrence, phrase: ' bank' }),
         ).toThrow();
     });
+
     it('requires all generated card fields before saving and rejects unrequested output', () => {
         const input = selectionProviderInput(
             occurrence,
@@ -99,11 +108,13 @@ describe('text selection contextual card authoring', () => {
                 },
             ],
         };
+
         expect(selectionCardValues(input, output)).toMatchObject({
             translation: 'banque',
             definition: 'A financial institution',
             transcription: null,
         });
+
         expect(() =>
             selectionCardValues(input, {
                 ...output,
@@ -111,6 +122,7 @@ describe('text selection contextual card authoring', () => {
             }),
         ).toThrow();
     });
+
     it.each([
         ['parasol', 'Le parasol est ouvert.', 'le parasol'],
         ['femme', 'La femme est arrivée.', 'la femme'],
@@ -148,6 +160,7 @@ describe('text selection contextual card authoring', () => {
                     },
                 ],
             });
+
             expect(values.source).toBe(canonical);
             expect(input.source).toBe(phrase);
             expect(input.occurrenceContext).toMatchObject({
@@ -155,12 +168,14 @@ describe('text selection contextual card authoring', () => {
                 startOffset,
                 endOffset: startOffset + phrase.length,
             });
+
             expect(
                 input.fieldContext.find((entry) => entry.field === 'source')
                     ?.currentValue,
             ).toBe(phrase);
         },
     );
+
     it('supports queued legacy inputs that did not request Source', () => {
         const current = selectionProviderInput(
             occurrence,
@@ -182,9 +197,11 @@ describe('text selection contextual card authoring', () => {
                 value: `generated ${field}`,
             })),
         };
+
         expect(selectionCardValues(legacy, delta).source).toBe(
             occurrence.phrase,
         );
+
         expect(() => selectionCardValues(current, delta)).toThrow(
             'Source exactly when requested',
         );

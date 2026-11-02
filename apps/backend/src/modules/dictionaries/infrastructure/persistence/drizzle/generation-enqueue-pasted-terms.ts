@@ -68,8 +68,9 @@ export async function enqueuePastedTerms(
             .for('share');
 
         if (replay) {
-            if (replay.requestFingerprint !== input.fingerprint)
+            if (replay.requestFingerprint !== input.fingerprint) {
                 throw new DictionaryIdempotencyConflictError();
+            }
 
             return readView(tx, replay, input.context.now);
         }
@@ -91,8 +92,10 @@ export async function enqueuePastedTerms(
             if (
                 !['pasted-terms', 'document-terms'].includes(priorJob.kind) ||
                 priorJob.dictionaryId !== input.dictionaryId
-            )
+            ) {
                 throw new DictionaryGenerationNotReviewableError();
+            }
+
             const priorProposal = await lockProposal(tx, priorJob.id);
             if (
                 !priorProposal ||
@@ -101,8 +104,10 @@ export async function enqueuePastedTerms(
                 (priorJob.kind === 'document-terms' &&
                     (!priorProposal.documentStagedAt ||
                         !priorProposal.documentPublishedAt))
-            )
+            ) {
                 throw new DictionaryGenerationNotReviewableError();
+            }
+
             if (priorProposal.expiresAt <= input.context.now) {
                 throw new DictionaryGenerationProposalExpiredError();
             }
@@ -116,8 +121,10 @@ export async function enqueuePastedTerms(
                     priorInput?.format !==
                         dictionaryPastedTermsGenerationFormat) ||
                 (priorJob.kind === 'document-terms' && priorInput !== null)
-            )
+            ) {
                 throw new DictionaryGenerationNotReviewableError();
+            }
+
             const failures = new Map(
                 parseDictionaryBatchGenerationProposal(priorProposal.payload)
                     .failures.filter((failure) => failure.retryable)
@@ -128,8 +135,9 @@ export async function enqueuePastedTerms(
             );
             const selectedInputs = rowIndexes.map((rowIndex) => {
                 const value = failures.get(rowIndex);
-                if (!value)
+                if (!value) {
                     throw new DictionaryGenerationCandidateConflictError();
+                }
 
                 return value;
             });
@@ -168,13 +176,18 @@ export async function enqueuePastedTerms(
             )
             .for('update');
 
-        if (!current) throw new DictionaryNotFoundError();
+        if (!current) {
+            throw new DictionaryNotFoundError();
+        }
+
         if (
             current.dictionary.lifecycle !== 'active' ||
             current.dictionary.version !== input.expectedDictionaryVersion ||
             current.settings.version !== input.expectedSettingsVersion
-        )
+        ) {
             throw new DictionaryVersionConflictError();
+        }
+
         const providerExecution = await assertGenerationAdmission(
             context,
             tx,

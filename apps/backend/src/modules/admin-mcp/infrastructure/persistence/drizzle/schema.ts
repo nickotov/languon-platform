@@ -15,6 +15,7 @@ import type { AdminMcpWriteAuthority } from '../../../domain/admin-mcp';
 import { usersTable } from '../../../../users/infrastructure/persistence/drizzle/schema';
 const time = (name: string) =>
     timestamp(name, { mode: 'date', withTimezone: true });
+
 export const adminMcpTokensTable = pgTable(
     'admin_mcp_tokens',
     {

@@ -13,6 +13,7 @@ const witnessSchema = z
             .optional(),
     })
     .strict();
+
 export type TextAiProviderAttemptWitness = z.infer<typeof witnessSchema>;
 const context = new AsyncLocalStorage<Readonly<TextAiProviderAttemptWitness>>();
 
@@ -23,6 +24,7 @@ export function withTextAiProviderAttemptWitness<T>(
 ): T {
     return context.run(Object.freeze(witnessSchema.parse(witness)), operation);
 }
+
 export function currentTextAiProviderAttemptWitness():
     Readonly<TextAiProviderAttemptWitness> | undefined {
     return context.getStore();

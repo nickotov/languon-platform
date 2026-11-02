@@ -75,7 +75,9 @@ export function registerOrReplacePendingSignup(
             );
         }
 
-        if (account && account.status !== 'pending') return 'active_noop';
+        if (account && account.status !== 'pending') {
+            return 'active_noop';
+        }
 
         const assessment = account
             ? await assessChallengeIssue(transaction, {
@@ -160,7 +162,10 @@ export function issuePasswordResetChallenge(
             input.challenge,
         );
 
-        if (assessment.decision) return assessment.decision;
+        if (assessment.decision) {
+            return assessment.decision;
+        }
+
         await transaction.insert(authVerificationChallengesTable).values({
             ...challengeInsertValues(input.challenge),
             ...rollingSendWindow(input.challenge, assessment.rolling),
@@ -201,13 +206,19 @@ export function replaceEmailVerificationChallenge(
             eq(usersTable.id, previous.userId),
         );
 
-        if (!account || account.status !== 'pending') return { kind: 'noop' };
+        if (!account || account.status !== 'pending') {
+            return { kind: 'noop' };
+        }
+
         const assessment = await assessChallengeIssue(
             transaction,
             input.challenge,
         );
 
-        if (assessment.decision) return assessment.decision;
+        if (assessment.decision) {
+            return assessment.decision;
+        }
+
         await transaction.insert(authVerificationChallengesTable).values({
             ...challengeInsertValues(input.challenge),
             ...rollingSendWindow(input.challenge, assessment.rolling),
@@ -300,7 +311,9 @@ export function commitEmailVerification(
             eq(usersTable.id, account.userId),
         );
 
-        if (!verified) throw new Error('The verified account disappeared.');
+        if (!verified) {
+            throw new Error('The verified account disappeared.');
+        }
 
         return { account: verified, kind: 'verified' };
     });
@@ -346,7 +359,10 @@ export function commitPasswordReset(
             eq(usersTable.id, challenge.userId),
         );
 
-        if (!account || account.status !== 'active') return 'unavailable';
+        if (!account || account.status !== 'active') {
+            return 'unavailable';
+        }
+
         if (input.newCredential.userId !== account.userId) {
             throw new Error('The password credential belongs to another user.');
         }

@@ -30,3 +30,22 @@ export * from './routing-probes';
 export * from './admin-mcp';
 
 export * from './provider-native-pricing';
+export * from './learning-blocks';
+export * from './knowledge-media';
+export * from './knowledge-block-copy';
+export * from './workbooks';
+
+export * from './knowledge-interactive';
+
+export * from './workbook-learning';
+
+export * from './knowledge-library-copy';
+export * from './knowledge-block-proposals';
+export * from './knowledge-transcription';
+export * from './knowledge-transcription-admin';
+
+export * from './knowledge-transcription-jobs';
+export * from './knowledge-vocabulary-practice';
+export * from './knowledge-private-translations';
+export * from './knowledge-block-field-ai';
+export * from './knowledge-exercise-evaluation';

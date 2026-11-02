@@ -1,5 +1,6 @@
-import { EyeOffIcon, RotateCcwIcon, XIcon } from 'lucide-react';
+import { EyeOffIcon } from 'lucide-react';
 import componentStyles from './library-list.module.css';
+import { LibrarySelectionToolbar } from './library-selection-toolbar';
 import { Button, Checkbox, InlineAlert } from '@/fsd/shared/ui';
 import { useInterfaceText } from '../../hooks/use-interface-text';
 import type { LibraryController } from '../../hooks/use-sentence-library';
@@ -25,34 +26,28 @@ export function LibraryList({
     function removeAll() {
         void c.openConfirmation('archive', true);
     }
-    function archiveSelected() {
-        void c.openConfirmation('archive');
+
+    let emptyKind: 'none' | 'archive-empty' | 'no-results' = 'none';
+    if (c.filters.personalArchive === 'archived') {
+        emptyKind = 'archive-empty';
+    } else if (c.presence.data?.items.length) {
+        emptyKind = 'no-results';
     }
-    function restoreSelected() {
-        void c.openConfirmation('restore');
-    }
-    const selectedArchive = c.selectedItems.some((item) => !item.archivedByMe);
-    const selectedRestore = c.selectedItems.some((item) => item.archivedByMe);
+
     let body;
-    if (c.query.isPending || (!c.items.length && c.presence.isPending))
+    if (c.query.isPending || (!c.items.length && c.presence.isPending)) {
         body = <LibrarySkeleton />;
-    else if (c.query.isError || (!c.items.length && c.presence.isError))
+    } else if (c.query.isError || (!c.items.length && c.presence.isError)) {
         body = <LibraryLoadError onRetry={c.retry} />;
-    else if (!c.items.length)
+    } else if (!c.items.length) {
         body = (
             <LibraryEmpty
-                kind={
-                    c.filters.personalArchive === 'archived'
-                        ? 'archive-empty'
-                        : c.presence.data?.items.length
-                          ? 'no-results'
-                          : 'none'
-                }
+                kind={emptyKind}
                 onReset={c.resetFilters}
                 onPractice={practice}
             />
         );
-    else
+    } else {
         body = (
             <section aria-label={L('title')} className={componentStyles.root}>
                 <div className={componentStyles.toolbar}>
@@ -102,97 +97,7 @@ export function LibraryList({
                     ))}
                 </ul>
                 {c.selected.length > 0 ? (
-                    <div className={componentStyles.selectionDock}>
-                        <div
-                            role='region'
-                            aria-label={L('selectionToolbar')}
-                            className={componentStyles.selectionPanel}
-                        >
-                            <div className={componentStyles.selectionToolbar}>
-                                <p
-                                    aria-live='polite'
-                                    className={componentStyles.selectionCount}
-                                >
-                                    {c.allMatching
-                                        ? L('scopeAll')
-                                        : L('selIds', { n: c.selected.length })}
-                                </p>
-                                {c.pageAllSelected && !c.allMatching ? (
-                                    <button
-                                        type='button'
-                                        onClick={c.chooseAllMatching}
-                                        className={
-                                            componentStyles.selectionLink
-                                        }
-                                    >
-                                        {L('scopeAll')}
-                                    </button>
-                                ) : null}
-                                {c.allMatching ? (
-                                    <button
-                                        type='button'
-                                        onClick={c.onlyThisPage}
-                                        className={
-                                            componentStyles.selectionLink
-                                        }
-                                    >
-                                        {L('onlyThisPage')}
-                                    </button>
-                                ) : null}
-                                <div
-                                    className={componentStyles.selectionActions}
-                                >
-                                    {selectedArchive ? (
-                                        <Button
-                                            size='compact'
-                                            disabled={c.pending}
-                                            leadingIcon={
-                                                <EyeOffIcon
-                                                    aria-hidden
-                                                    className={
-                                                        componentStyles.icon
-                                                    }
-                                                />
-                                            }
-                                            onClick={archiveSelected}
-                                        >
-                                            {L('removeMine')}
-                                        </Button>
-                                    ) : null}
-                                    {selectedRestore ? (
-                                        <Button
-                                            size='compact'
-                                            disabled={c.pending}
-                                            leadingIcon={
-                                                <RotateCcwIcon
-                                                    aria-hidden
-                                                    className={
-                                                        componentStyles.icon
-                                                    }
-                                                />
-                                            }
-                                            onClick={restoreSelected}
-                                        >
-                                            {L('restore')}
-                                        </Button>
-                                    ) : null}
-                                    <Button
-                                        size='compact'
-                                        variant='secondary'
-                                        leadingIcon={
-                                            <XIcon
-                                                aria-hidden
-                                                className={componentStyles.icon}
-                                            />
-                                        }
-                                        onClick={c.clearSelection}
-                                    >
-                                        {L('clearSelection')}
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <LibrarySelectionToolbar c={c} />
                 ) : null}
                 <div className={componentStyles.root}>
                     {c.query.isFetchNextPageError ? (
@@ -231,5 +136,7 @@ export function LibraryList({
                 </div>
             </section>
         );
+    }
+
     return body;
 }

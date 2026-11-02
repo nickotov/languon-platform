@@ -17,7 +17,8 @@ export function PortraitPageState({
         void management.query.refetch();
         void management.status.refetch();
     }
-    if (!management.ownerId)
+
+    if (!management.ownerId) {
         return (
             <div className={styles.page}>
                 <ButtonLink href='/login'>
@@ -25,13 +26,17 @@ export function PortraitPageState({
                 </ButtonLink>
             </div>
         );
-    if (management.query.isPending || management.status.isPending)
+    }
+
+    if (management.query.isPending || management.status.isPending) {
         return (
             <div className={styles.page} aria-busy>
                 <LoadingState>{portraitCopy(locale, 'loading')}</LoadingState>
             </div>
         );
-    if (management.query.isError || management.status.isError)
+    }
+
+    if (management.query.isError || management.status.isError) {
         return (
             <div className={styles.page}>
                 <h1 className={styles.title}>
@@ -50,5 +55,7 @@ export function PortraitPageState({
                 </InlineAlert>
             </div>
         );
+    }
+
     return children;
 }

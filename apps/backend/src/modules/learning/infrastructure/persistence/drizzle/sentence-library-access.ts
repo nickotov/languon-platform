@@ -47,14 +47,20 @@ export async function sentenceLibraryAuthorize(
         };
     }
 
-    if (!persistence.adminHooks) throw new SentenceUnavailableError();
+    if (!persistence.adminHooks) {
+        throw new SentenceUnavailableError();
+    }
+
     await persistence.adminHooks.authorizeAdmin(tx, access, write, context.now);
     const [d] = await tx
         .select()
         .from(dictionariesTable)
         .where(eq(dictionariesTable.id, access.dictionaryId));
 
-    if (!d) throw new SentenceUnavailableError();
+    if (!d) {
+        throw new SentenceUnavailableError();
+    }
+
     const ids = [...new Set([access.targetUserId, d.ownerId])].sort();
     const actors = await tx
         .select({ id: usersTable.id, status: usersTable.status })
@@ -68,8 +74,10 @@ export async function sentenceLibraryAuthorize(
         actors.some(
             (a) => a.status === 'deletion_pending' || a.status === 'purged',
         )
-    )
+    ) {
         throw new SentenceUnavailableError();
+    }
+
     await tx
         .select({ id: dictionariesTable.id })
         .from(dictionariesTable)

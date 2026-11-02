@@ -1,3 +1,13 @@
+import { authorizeKnowledgeExerciseJobSource } from '../../../../knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source';
+import type { KnowledgeExerciseEvaluationInput } from '../../../../knowledge/application/ports/exercise-evaluation-store';
+import { authorizeKnowledgeFieldJobSource } from '../../../../knowledge/infrastructure/persistence/drizzle/block-field-source';
+import type { KnowledgeFieldActionInput } from '../../../../knowledge/application/ports/block-field-action-store';
+import type { KnowledgeLearningSourceBinding } from '../../../../knowledge/application/learning-source-binding';
+import {
+    authorizeKnowledgeTranslationJobSource,
+    readPrivateKnowledgeTranslationResult,
+} from '../../../../knowledge/infrastructure/persistence/drizzle/private-translation-persistence';
+import { KnowledgeDomainError } from '../../../../knowledge/domain/knowledge';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
 import { and, eq, isNull } from 'drizzle-orm';
@@ -32,10 +42,39 @@ export function exposeTextsJob(job: TextsJobRow) {
     });
 }
 
+export async function exposeOwnedTextsJob(
+    tx: TextsTransaction,
+    job: TextsJobRow,
+) {
+    if (
+        job.externalSourceKind === 'knowledge-block' &&
+        job.executionState === 'completed' &&
+        !job.cancellationRequestedAt &&
+        job.resultPayload === null
+    ) {
+        return exposeTextsJob({
+            ...job,
+            resultPayload: await readPrivateKnowledgeTranslationResult(
+                tx,
+                job.id,
+                job.ownerId,
+            ),
+        });
+    }
+
+    return exposeTextsJob(job);
+}
+
 export async function authorizeTextsJob(
     tx: TextsTransaction,
     input: {
         ownerId: string;
+        id?: string;
+        externalSourceKind?:
+            'knowledge-block' | 'knowledge-field' | 'knowledge-exercise' | null;
+        knowledgeFieldAction?: KnowledgeFieldActionInput;
+        knowledgeExerciseEvaluation?: KnowledgeExerciseEvaluationInput;
+        knowledgeSource?: KnowledgeLearningSourceBinding;
         folderId: string | null;
         textId?: string | null | undefined;
         expectedTextVersion?: number | null | undefined;
@@ -47,8 +86,34 @@ export async function authorizeTextsJob(
         .where(eq(usersTable.id, input.ownerId))
         .for('share');
 
-    if (!owner || owner.status !== 'active')
+    if (!owner || owner.status !== 'active') {
         throw new TextsAiError('access_revoked');
+    }
+
+    try {
+        await authorizeKnowledgeFieldJobSource(tx, input);
+        await authorizeKnowledgeExerciseJobSource(tx, input);
+        if (
+            input.externalSourceKind !== 'knowledge-field' &&
+            input.externalSourceKind !== 'knowledge-exercise'
+        ) {
+            await authorizeKnowledgeTranslationJobSource(tx, {
+                ...input,
+                externalSourceKind: input.externalSourceKind ?? null,
+            });
+        }
+    } catch (error) {
+        if (error instanceof KnowledgeDomainError) {
+            throw new TextsAiError(
+                error.code === 'version_conflict'
+                    ? 'version_conflict'
+                    : 'access_revoked',
+            );
+        }
+
+        throw error;
+    }
+
     const [folder] = input.folderId
         ? await tx
               .select()
@@ -62,8 +127,10 @@ export async function authorizeTextsJob(
               .for('share')
         : [];
 
-    if (input.folderId && (!folder || folder.lifecycle !== 'active'))
+    if (input.folderId && (!folder || folder.lifecycle !== 'active')) {
         throw new TextsAiError('folder_not_found');
+    }
+
     if (input.textId) {
         const [text] = await tx
             .select()
@@ -79,10 +146,13 @@ export async function authorizeTextsJob(
             )
             .for('share');
 
-        if (!text || text.lifecycle !== 'active')
+        if (!text || text.lifecycle !== 'active') {
             throw new TextsAiError('text_not_found');
-        if (text.version !== input.expectedTextVersion)
+        }
+
+        if (text.version !== input.expectedTextVersion) {
             throw new TextsAiError('version_conflict');
+        }
     }
 }
 
@@ -103,26 +173,52 @@ export async function loadTextTranslationProposal(
         .where(and(eq(jobs.id, input.jobId), eq(jobs.ownerId, input.ownerId)))
         .for('update');
 
-    if (!job) throw new TextsAiError('generation_job_not_found');
-    if (job.expiresAt <= (input.now ?? new Date()))
+    if (!job) {
+        throw new TextsAiError('generation_job_not_found');
+    }
+
+    await authorizeTextsJob(tx, job);
+    if (job.expiresAt <= (input.now ?? new Date())) {
         throw new TextsAiError('generation_proposal_expired');
+    }
+
     if (
         job.executionState !== 'completed' ||
         !!job.cancellationRequestedAt ||
         job.jobKind !== 'text-translation' ||
-        !job.resultPayload
-    )
+        job.format === 'text-translation:v4' ||
+        (!job.resultPayload && job.externalSourceKind !== 'knowledge-block')
+    ) {
         throw new TextsAiError('generation_not_reviewable');
-    if (input.folderId !== undefined && input.folderId !== job.folderId)
+    }
+
+    if (input.folderId !== undefined && input.folderId !== job.folderId) {
         throw new TextsAiError('version_conflict');
+    }
+
     if (
         job.textId &&
         (job.textId !== input.textId ||
             job.expectedTextVersion !== input.expectedVersion)
-    )
+    ) {
         throw new TextsAiError('version_conflict');
-    if (job.appliedTextId) throw new TextsAiError('generation_not_reviewable');
-    const proposal = TextTranslationProposalSchema.parse(job.resultPayload);
+    }
+
+    if (job.appliedTextId) {
+        throw new TextsAiError('generation_not_reviewable');
+    }
+
+    const proposal = TextTranslationProposalSchema.parse(
+        job.externalSourceKind === 'knowledge-block' &&
+            job.resultPayload === null
+            ? await readPrivateKnowledgeTranslationResult(
+                  tx,
+                  job.id,
+                  job.ownerId,
+              )
+            : job.resultPayload,
+    );
+
     await tx
         .update(jobs)
         .set({ appliedTextId: input.textId })
@@ -141,7 +237,10 @@ export async function resolveTextTranslationProposal(
         .from(jobs)
         .where(and(eq(jobs.id, input.jobId), eq(jobs.ownerId, input.ownerId)));
 
-    if (!candidate) throw new TextsAiError('generation_job_not_found');
+    if (!candidate) {
+        throw new TextsAiError('generation_job_not_found');
+    }
+
     await authorizeTextsJob(tx, candidate);
     const [job] = await tx
         .select()
@@ -149,16 +248,29 @@ export async function resolveTextTranslationProposal(
         .where(eq(jobs.id, input.jobId))
         .for('share');
 
-    if (!job || job.expiresAt <= input.now)
+    if (!job || job.expiresAt <= input.now) {
         throw new TextsAiError('generation_proposal_expired');
+    }
+
     if (
         job.executionState !== 'completed' ||
         !!job.cancellationRequestedAt ||
         job.jobKind !== 'text-translation' ||
-        !job.resultPayload ||
+        job.format === 'text-translation:v4' ||
+        (!job.resultPayload && job.externalSourceKind !== 'knowledge-block') ||
         job.appliedTextId
-    )
+    ) {
         throw new TextsAiError('generation_not_reviewable');
+    }
 
-    return TextTranslationProposalSchema.parse(job.resultPayload);
+    return TextTranslationProposalSchema.parse(
+        job.externalSourceKind === 'knowledge-block' &&
+            job.resultPayload === null
+            ? await readPrivateKnowledgeTranslationResult(
+                  tx,
+                  job.id,
+                  job.ownerId,
+              )
+            : job.resultPayload,
+    );
 }

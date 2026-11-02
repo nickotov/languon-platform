@@ -12,6 +12,7 @@ describe('card authoring provider failure diagnostics', () => {
             headers: { authorization: secret },
             cause: Object.assign(new Error(secret), { code: 'ECONNRESET' }),
         });
+
         expect(
             cardAuthoringProviderFailure(
                 error,
@@ -31,10 +32,12 @@ describe('card authoring provider failure diagnostics', () => {
             code: 'secret token',
             statusCode: 12345,
         };
+
         error.cause = error;
         expect(cardAuthoringProviderFailure(error, 'private prompt')).toEqual({
             errorName: 'UnknownError',
         });
+
         expect(cardAuthoringProviderFailure(null, 'invalid')).toEqual({
             errorName: 'UnknownError',
         });

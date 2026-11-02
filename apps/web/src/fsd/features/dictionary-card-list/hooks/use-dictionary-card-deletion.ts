@@ -68,6 +68,7 @@ export function useDictionaryCardDeletion({
                     snapshot: result.snapshot,
                     expectedDictionaryVersion: dictionaryVersion,
                 });
+
                 setAcknowledged(false);
             } else {
                 setOutcome(t('dictionary.deletion.noneAvailable'));
@@ -77,7 +78,10 @@ export function useDictionaryCardDeletion({
 
     const remove = useMutation({
         mutationFn: () => {
-            if (!deletion) throw new Error('Deletion unavailable');
+            if (!deletion) {
+                throw new Error('Deletion unavailable');
+            }
+
             const body = {
                 expectedDictionaryVersion: deletion.expectedDictionaryVersion,
                 scope:
@@ -98,6 +102,7 @@ export function useDictionaryCardDeletion({
             if (attempt.current?.fingerprint !== fingerprint) {
                 attempt.current = { fingerprint, key: crypto.randomUUID() };
             }
+
             return requestWithSession((token) =>
                 dictionaryApi.deleteDictionaryCards(
                     token,
@@ -118,6 +123,7 @@ export function useDictionaryCardDeletion({
                     count: receipt.deletedCount,
                 }),
             );
+
             await Promise.all([
                 queryClient.invalidateQueries({
                     queryKey: ['dictionary-cards', dictionaryId],
@@ -127,6 +133,7 @@ export function useDictionaryCardDeletion({
                 }),
                 queryClient.invalidateQueries({ queryKey: ['dictionaries'] }),
             ]);
+
             document.getElementById('archived-cards-filter')?.focus();
         },
     });
@@ -142,6 +149,7 @@ export function useDictionaryCardDeletion({
             selected,
             cards.map((card) => card.id),
         );
+
         setSelected(update.selected);
         setSelectionLimitReached(update.limitReached);
     }
@@ -150,7 +158,11 @@ export function useDictionaryCardDeletion({
         const targets = card
             ? [card]
             : cards.filter((entry) => selected.has(entry.id));
-        if (!targets.length) return;
+
+        if (!targets.length) {
+            return;
+        }
+
         remove.reset();
         setAcknowledged(false);
         setDeletion({
@@ -166,7 +178,10 @@ export function useDictionaryCardDeletion({
     }
 
     function close() {
-        if (remove.isPending) return;
+        if (remove.isPending) {
+            return;
+        }
+
         setDeletion(null);
         setAcknowledged(false);
         remove.reset();

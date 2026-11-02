@@ -1,0 +1,359 @@
+{
+  "reviewer": "backend-conversations-texts",
+  "mode": "initial independent source review",
+  "baseCommit": "252de64",
+  "boundary": "All refactored originals and new helpers listed in frontend-foundation, web-composition, web-knowledge and sentence-model ledgers; no authorship in reviewed scope. Unchanged surrounding consumers inspected only as needed.",
+  "verdict": "No material source findings; final evidence approval pending browser and final gates.",
+  "findings": [],
+  "files": [
+    {
+      "path": "apps/admin/src/pages/accounting/ui/provider-prices/provider-price-dialog.tsx",
+      "scope": "frontend-foundation",
+      "beforeSha256": "aa16b4b2a802534351628cd28658350ba04df2696659d6b2dd3fa46ae14d5401",
+      "reviewedSha256": "779741bdb99759dbe7d49d29c0b5b79088ff4ae6209bf88cf333846c0db0c67d",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete scoped diff and helper bodies: resize effect retains original hook position, [resizable] subscription and cleanup; drag/root font/RTL and CSS/ARIA clamps remain exact. ExerciseAnswerOption retains keyed radio DOM and callback semantics. Toast view move retains timer/control/pause hooks and module singleton in original facade. Admin fields and account/availability children retain field names, regex rules, DOM ordering, operation choices, state ownership and reason/version authority."
+    },
+    {
+      "path": "apps/admin/src/pages/users/user-detail-page.tsx",
+      "scope": "frontend-foundation",
+      "beforeSha256": "943a26853393a61fec13484e0ca18e01f509cd8b9ea6b953f27023dc98ff762c",
+      "reviewedSha256": "f59e073ddac1f2ee6a4e0490cda3cb90c95b83c3a82ba7e445f0376308196846",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete scoped diff and helper bodies: resize effect retains original hook position, [resizable] subscription and cleanup; drag/root font/RTL and CSS/ARIA clamps remain exact. ExerciseAnswerOption retains keyed radio DOM and callback semantics. Toast view move retains timer/control/pause hooks and module singleton in original facade. Admin fields and account/availability children retain field names, regex rules, DOM ordering, operation choices, state ownership and reason/version authority."
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/companion-layout/use-companion-resize.ts",
+      "scope": "frontend-foundation",
+      "beforeSha256": "b5e2d20d04b58cd08b5547112e49d33c2e49cb93aff6fb95509ead63ddf92f1b",
+      "reviewedSha256": "694f8845a418527b5c931c1c7c49e99e404d94d2f59f2a28afd1b477276a6996",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete scoped diff and helper bodies: resize effect retains original hook position, [resizable] subscription and cleanup; drag/root font/RTL and CSS/ARIA clamps remain exact. ExerciseAnswerOption retains keyed radio DOM and callback semantics. Toast view move retains timer/control/pause hooks and module singleton in original facade. Admin fields and account/availability children retain field names, regex rules, DOM ordering, operation choices, state ownership and reason/version authority."
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/exercise-card/exercise-card.tsx",
+      "scope": "frontend-foundation",
+      "beforeSha256": "63fffad07e7fc71be61d5222ba230641001c2a3228d22c45fcdf31122919729a",
+      "reviewedSha256": "80004be3360acaf67b46510e47aacd882a0ea1e69913bb519ed68bdf1ff47dae",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete scoped diff and helper bodies: resize effect retains original hook position, [resizable] subscription and cleanup; drag/root font/RTL and CSS/ARIA clamps remain exact. ExerciseAnswerOption retains keyed radio DOM and callback semantics. Toast view move retains timer/control/pause hooks and module singleton in original facade. Admin fields and account/availability children retain field names, regex rules, DOM ordering, operation choices, state ownership and reason/version authority."
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/toast/toast.tsx",
+      "scope": "frontend-foundation",
+      "beforeSha256": "d56b36d0efc0576e39c667f4840169518cd988973a9169d029cfec71d4132c45",
+      "reviewedSha256": "ebc88bf2f6c33f0aad1ebe63a69f809540270e8f70bf07edaa4c1d58492b46ed",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete scoped diff and helper bodies: resize effect retains original hook position, [resizable] subscription and cleanup; drag/root font/RTL and CSS/ARIA clamps remain exact. ExerciseAnswerOption retains keyed radio DOM and callback semantics. Toast view move retains timer/control/pause hooks and module singleton in original facade. Admin fields and account/availability children retain field names, regex rules, DOM ordering, operation choices, state ownership and reason/version authority."
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/ui/provider-prices/provider-price-fields.tsx",
+      "scope": "frontend-foundation",
+      "beforeSha256": null,
+      "reviewedSha256": "ac07a7da49b2fcb5cca77bb868264cacc8100ea9f66d3c8600c645374f2e27dc",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete scoped diff and helper bodies: resize effect retains original hook position, [resizable] subscription and cleanup; drag/root font/RTL and CSS/ARIA clamps remain exact. ExerciseAnswerOption retains keyed radio DOM and callback semantics. Toast view move retains timer/control/pause hooks and module singleton in original facade. Admin fields and account/availability children retain field names, regex rules, DOM ordering, operation choices, state ownership and reason/version authority."
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/user-account-summary/user-account-summary.tsx",
+      "scope": "frontend-foundation",
+      "beforeSha256": null,
+      "reviewedSha256": "8b8f1fefd58d4cac17d63bc179c7082e557a5bcf5065cd30a4b043da08476ec1",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete scoped diff and helper bodies: resize effect retains original hook position, [resizable] subscription and cleanup; drag/root font/RTL and CSS/ARIA clamps remain exact. ExerciseAnswerOption retains keyed radio DOM and callback semantics. Toast view move retains timer/control/pause hooks and module singleton in original facade. Admin fields and account/availability children retain field names, regex rules, DOM ordering, operation choices, state ownership and reason/version authority."
+    },
+    {
+      "path": "apps/admin/src/pages/users/ui/user-availability/user-availability.tsx",
+      "scope": "frontend-foundation",
+      "beforeSha256": null,
+      "reviewedSha256": "0116fc865ccdfecdcb33d007799db5849bd1e79a5ab252abf78080d82c090741",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete scoped diff and helper bodies: resize effect retains original hook position, [resizable] subscription and cleanup; drag/root font/RTL and CSS/ARIA clamps remain exact. ExerciseAnswerOption retains keyed radio DOM and callback semantics. Toast view move retains timer/control/pause hooks and module singleton in original facade. Admin fields and account/availability children retain field names, regex rules, DOM ordering, operation choices, state ownership and reason/version authority."
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/companion-layout/use-companion-measurements.ts",
+      "scope": "frontend-foundation",
+      "beforeSha256": null,
+      "reviewedSha256": "2dbebf8f698fa164ac155f16fdf516c227f02041837c9dd00054e5b8768dfa7c",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete scoped diff and helper bodies: resize effect retains original hook position, [resizable] subscription and cleanup; drag/root font/RTL and CSS/ARIA clamps remain exact. ExerciseAnswerOption retains keyed radio DOM and callback semantics. Toast view move retains timer/control/pause hooks and module singleton in original facade. Admin fields and account/availability children retain field names, regex rules, DOM ordering, operation choices, state ownership and reason/version authority."
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/exercise-card/exercise-answer-option.tsx",
+      "scope": "frontend-foundation",
+      "beforeSha256": null,
+      "reviewedSha256": "92be7c32825dfe42427d0fc4f088e60770019a3a204db9d6844b6286600fe84d",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete scoped diff and helper bodies: resize effect retains original hook position, [resizable] subscription and cleanup; drag/root font/RTL and CSS/ARIA clamps remain exact. ExerciseAnswerOption retains keyed radio DOM and callback semantics. Toast view move retains timer/control/pause hooks and module singleton in original facade. Admin fields and account/availability children retain field names, regex rules, DOM ordering, operation choices, state ownership and reason/version authority."
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/toast/toast-view.tsx",
+      "scope": "frontend-foundation",
+      "beforeSha256": null,
+      "reviewedSha256": "a1ae18fab7adf360e3d93eaa885a9a10d9b862d7c6406b04d5178b9e7c5edb0b",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete scoped diff and helper bodies: resize effect retains original hook position, [resizable] subscription and cleanup; drag/root font/RTL and CSS/ARIA clamps remain exact. ExerciseAnswerOption retains keyed radio DOM and callback semantics. Toast view move retains timer/control/pause hooks and module singleton in original facade. Admin fields and account/availability children retain field names, regex rules, DOM ordering, operation choices, state ownership and reason/version authority."
+    },
+    {
+      "path": "apps/web/src/fsd/shared/ui/toast/types.ts",
+      "scope": "frontend-foundation",
+      "beforeSha256": null,
+      "reviewedSha256": "24f94255f6484b743c48e877c31e209061e23fbe93f861ed56321a367d04caf6",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete scoped diff and helper bodies: resize effect retains original hook position, [resizable] subscription and cleanup; drag/root font/RTL and CSS/ARIA clamps remain exact. ExerciseAnswerOption retains keyed radio DOM and callback semantics. Toast view move retains timer/control/pause hooks and module singleton in original facade. Admin fields and account/availability children retain field names, regex rules, DOM ordering, operation choices, state ownership and reason/version authority."
+    },
+    {
+      "path": "apps/web/scripts/style-contract.ts",
+      "scope": "web-composition",
+      "beforeSha256": "ce0d4a621ab95c3ecfdbe3ed75e0effabf366348f0a92a98982db7178e04b937",
+      "reviewedSha256": "41daaaf928dde209b9a746cd81557fcef20d6adb07e961dee885340a12e3ba61",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed scoped diff and helper bodies: profile subtree functions preserve original DOM, state and hook order; deletion receipt is stored before clearLocalSession. Stable component definitions retain tab state/key identity and existing dirty navigation. Training copy and per-render audio factory preserve language strings, current identity-scoped props, source construction, guards and render callback timing. Utility lexer retains bracket/variant parsing and literal exclusion precedence."
+    },
+    {
+      "path": "apps/web/scripts/style-utilities.ts",
+      "scope": "web-composition",
+      "beforeSha256": null,
+      "reviewedSha256": "6c29f1b45ec121de8e4e7a65dc85dcb575370fee4ff4eeb9ed17717edb13a53d",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed scoped diff and helper bodies: profile subtree functions preserve original DOM, state and hook order; deletion receipt is stored before clearLocalSession. Stable component definitions retain tab state/key identity and existing dirty navigation. Training copy and per-render audio factory preserve language strings, current identity-scoped props, source construction, guards and render callback timing. Utility lexer retains bracket/variant parsing and literal exclusion precedence."
+    },
+    {
+      "path": "apps/web/src/fsd/pages/profile/ui/profile-page/profile-page.tsx",
+      "scope": "web-composition",
+      "beforeSha256": "89a92edb92fe14f9889a6db98fadbf691a826ae1886785d9f333fb2b2055bd12",
+      "reviewedSha256": "0ddf532596107aa29f8442e084ac2da93ce580f76faf12b344cbc495957438f4",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed scoped diff and helper bodies: profile subtree functions preserve original DOM, state and hook order; deletion receipt is stored before clearLocalSession. Stable component definitions retain tab state/key identity and existing dirty navigation. Training copy and per-render audio factory preserve language strings, current identity-scoped props, source construction, guards and render callback timing. Utility lexer retains bracket/variant parsing and literal exclusion precedence."
+    },
+    {
+      "path": "apps/web/src/fsd/pages/profile/ui/profile-page/settings-parts.tsx",
+      "scope": "web-composition",
+      "beforeSha256": null,
+      "reviewedSha256": "c4007927eb9e11622052f016b9e603133d2425c922f2f99792dc84d0e627e343",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed scoped diff and helper bodies: profile subtree functions preserve original DOM, state and hook order; deletion receipt is stored before clearLocalSession. Stable component definitions retain tab state/key identity and existing dirty navigation. Training copy and per-render audio factory preserve language strings, current identity-scoped props, source construction, guards and render callback timing. Utility lexer retains bracket/variant parsing and literal exclusion precedence."
+    },
+    {
+      "path": "apps/web/src/fsd/pages/profile/ui/profile-page/security-tab.tsx",
+      "scope": "web-composition",
+      "beforeSha256": null,
+      "reviewedSha256": "622e60a1dff5f212cf10e0b001f0e0630d5726f97dbc3423e85b4986300f92c4",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed scoped diff and helper bodies: profile subtree functions preserve original DOM, state and hook order; deletion receipt is stored before clearLocalSession. Stable component definitions retain tab state/key identity and existing dirty navigation. Training copy and per-render audio factory preserve language strings, current identity-scoped props, source construction, guards and render callback timing. Utility lexer retains bracket/variant parsing and literal exclusion precedence."
+    },
+    {
+      "path": "apps/web/src/fsd/pages/profile/ui/profile-page/billing-tabs.tsx",
+      "scope": "web-composition",
+      "beforeSha256": null,
+      "reviewedSha256": "1816b6705d1f0847390c69cad386449db4dbd5021fb2dff7d573ca2feb933f09",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed scoped diff and helper bodies: profile subtree functions preserve original DOM, state and hook order; deletion receipt is stored before clearLocalSession. Stable component definitions retain tab state/key identity and existing dirty navigation. Training copy and per-render audio factory preserve language strings, current identity-scoped props, source construction, guards and render callback timing. Utility lexer retains bracket/variant parsing and literal exclusion precedence."
+    },
+    {
+      "path": "apps/web/src/fsd/pages/profile/ui/profile-page/account-tab.tsx",
+      "scope": "web-composition",
+      "beforeSha256": null,
+      "reviewedSha256": "a01721a74c9edd52a71b0e98f19c9b5477dc82d8d4c674222b9c4ef2ebedb63f",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed scoped diff and helper bodies: profile subtree functions preserve original DOM, state and hook order; deletion receipt is stored before clearLocalSession. Stable component definitions retain tab state/key identity and existing dirty navigation. Training copy and per-render audio factory preserve language strings, current identity-scoped props, source construction, guards and render callback timing. Utility lexer retains bracket/variant parsing and literal exclusion precedence."
+    },
+    {
+      "path": "apps/web/src/fsd/pages/profile/ui/profile-page/authenticated-profile.tsx",
+      "scope": "web-composition",
+      "beforeSha256": null,
+      "reviewedSha256": "23ebae952b6fdba4f006007e0238674fef7f6da820871ae6f41ace568e4d0f50",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed scoped diff and helper bodies: profile subtree functions preserve original DOM, state and hook order; deletion receipt is stored before clearLocalSession. Stable component definitions retain tab state/key identity and existing dirty navigation. Training copy and per-render audio factory preserve language strings, current identity-scoped props, source construction, guards and render callback timing. Utility lexer retains bracket/variant parsing and literal exclusion precedence."
+    },
+    {
+      "path": "apps/web/src/fsd/pages/profile/ui/profile-page/types.ts",
+      "scope": "web-composition",
+      "beforeSha256": null,
+      "reviewedSha256": "59b55116efe23eda2e86f2df86231ef4939d10eb00e5ea07c16ef98c740d241f",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed scoped diff and helper bodies: profile subtree functions preserve original DOM, state and hook order; deletion receipt is stored before clearLocalSession. Stable component definitions retain tab state/key identity and existing dirty navigation. Training copy and per-render audio factory preserve language strings, current identity-scoped props, source construction, guards and render callback timing. Utility lexer retains bracket/variant parsing and literal exclusion precedence."
+    },
+    {
+      "path": "apps/web/src/fsd/pages/profile/lib/profile-tab.ts",
+      "scope": "web-composition",
+      "beforeSha256": null,
+      "reviewedSha256": "0693aee66267645d27af3879b8b1e78ea5f0aeb45c81729813af21450a5ebca0",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed scoped diff and helper bodies: profile subtree functions preserve original DOM, state and hook order; deletion receipt is stored before clearLocalSession. Stable component definitions retain tab state/key identity and existing dirty navigation. Training copy and per-render audio factory preserve language strings, current identity-scoped props, source construction, guards and render callback timing. Utility lexer retains bracket/variant parsing and literal exclusion precedence."
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/dictionary-training/ui/dictionary-training/dictionary-training.tsx",
+      "scope": "web-composition",
+      "beforeSha256": "db34d2cd81530cfbad56dd774f1ce250f4e40dddb82a1a23181d660013f03026",
+      "reviewedSha256": "f2beb040321e87f2f3f2efacaed87ebaf126a3a48cc5cd2ad2b846c7f3411fa1",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed scoped diff and helper bodies: profile subtree functions preserve original DOM, state and hook order; deletion receipt is stored before clearLocalSession. Stable component definitions retain tab state/key identity and existing dirty navigation. Training copy and per-render audio factory preserve language strings, current identity-scoped props, source construction, guards and render callback timing. Utility lexer retains bracket/variant parsing and literal exclusion precedence."
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/dictionary-training/ui/dictionary-training/copy.ts",
+      "scope": "web-composition",
+      "beforeSha256": null,
+      "reviewedSha256": "301a19018d06915f79f42c0eb95fdfacfa1685cf6bd333b76f937c897ecf61b2",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed scoped diff and helper bodies: profile subtree functions preserve original DOM, state and hook order; deletion receipt is stored before clearLocalSession. Stable component definitions retain tab state/key identity and existing dirty navigation. Training copy and per-render audio factory preserve language strings, current identity-scoped props, source construction, guards and render callback timing. Utility lexer retains bracket/variant parsing and literal exclusion precedence."
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/dictionary-training/ui/dictionary-training/training-audio.tsx",
+      "scope": "web-composition",
+      "beforeSha256": null,
+      "reviewedSha256": "90057b2650f0e5681fc2a5374b06d8cfb36c455d991dc30ef9647b2a3df4e1d1",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed scoped diff and helper bodies: profile subtree functions preserve original DOM, state and hook order; deletion receipt is stored before clearLocalSession. Stable component definitions retain tab state/key identity and existing dirty navigation. Training copy and per-render audio factory preserve language strings, current identity-scoped props, source construction, guards and render callback timing. Utility lexer retains bracket/variant parsing and literal exclusion precedence."
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/learning-block-form.ts",
+      "scope": "web-knowledge",
+      "beforeSha256": "5698db7f50a1cd9b6ba6c60630bd15a344e35c2f90557184ad328e4a93b3e279",
+      "reviewedSha256": "09dc0283f9a4e934e43fcf4338b005f90dd794d8ef0d937bd25f63eaf1d30a7c",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed original form branches versus complete extracted readers: common UUID allocation occurs before branches and final LearningBlockSchema.parse remains after branch construction. Video URL schema precedes URL parsing and transcript IDs; row filtering, previous ID priority, gap UUID consumption, optional truthiness, bilingual prepared-draft/case matching and source linkage remain exact. Original public facade reexports both functions and types."
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/block-form-definition.ts",
+      "scope": "web-knowledge",
+      "beforeSha256": null,
+      "reviewedSha256": "213ab52a82ba147adc242664407e8092a4a7d2fde19e38b0cfb051265149d673",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed original form branches versus complete extracted readers: common UUID allocation occurs before branches and final LearningBlockSchema.parse remains after branch construction. Video URL schema precedes URL parsing and transcript IDs; row filtering, previous ID priority, gap UUID consumption, optional truthiness, bilingual prepared-draft/case matching and source linkage remain exact. Original public facade reexports both functions and types."
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/block-form-read-context.ts",
+      "scope": "web-knowledge",
+      "beforeSha256": null,
+      "reviewedSha256": "968d307c457908c20fce39b6335c41b75c28f251f77e74442498739fc8bbbb6c",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed original form branches versus complete extracted readers: common UUID allocation occurs before branches and final LearningBlockSchema.parse remains after branch construction. Video URL schema precedes URL parsing and transcript IDs; row filtering, previous ID priority, gap UUID consumption, optional truthiness, bilingual prepared-draft/case matching and source linkage remain exact. Original public facade reexports both functions and types."
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/read-block-form.ts",
+      "scope": "web-knowledge",
+      "beforeSha256": null,
+      "reviewedSha256": "183f42ee4165a2034c2a7378ce5548f8d0895b37c2d4435debcdaa04fef5f83a",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed original form branches versus complete extracted readers: common UUID allocation occurs before branches and final LearningBlockSchema.parse remains after branch construction. Video URL schema precedes URL parsing and transcript IDs; row filtering, previous ID priority, gap UUID consumption, optional truthiness, bilingual prepared-draft/case matching and source linkage remain exact. Original public facade reexports both functions and types."
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/read-media-block-form.ts",
+      "scope": "web-knowledge",
+      "beforeSha256": null,
+      "reviewedSha256": "96b357a238a4f6ec24f2505d13bf1c093cd49863eacd1fb7922881fc0909e9f6",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed original form branches versus complete extracted readers: common UUID allocation occurs before branches and final LearningBlockSchema.parse remains after branch construction. Video URL schema precedes URL parsing and transcript IDs; row filtering, previous ID priority, gap UUID consumption, optional truthiness, bilingual prepared-draft/case matching and source linkage remain exact. Original public facade reexports both functions and types."
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/read-text-block-form.ts",
+      "scope": "web-knowledge",
+      "beforeSha256": null,
+      "reviewedSha256": "29458aa58c6ecd64e60e06f37eca82b0343ebc54e6dd3ab8df48896c2cadc9e2",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed original form branches versus complete extracted readers: common UUID allocation occurs before branches and final LearningBlockSchema.parse remains after branch construction. Video URL schema precedes URL parsing and transcript IDs; row filtering, previous ID priority, gap UUID consumption, optional truthiness, bilingual prepared-draft/case matching and source linkage remain exact. Original public facade reexports both functions and types."
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts",
+      "scope": "web-knowledge",
+      "beforeSha256": null,
+      "reviewedSha256": "b8b5ec3b8bde443c76690616c930ef4ca045d10871ec04b8cf15cb231ad905b5",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed original form branches versus complete extracted readers: common UUID allocation occurs before branches and final LearningBlockSchema.parse remains after branch construction. Video URL schema precedes URL parsing and transcript IDs; row filtering, previous ID priority, gap UUID consumption, optional truthiness, bilingual prepared-draft/case matching and source linkage remain exact. Original public facade reexports both functions and types."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/model/sentence-preparation.ts",
+      "scope": "sentence-model",
+      "beforeSha256": "b597637f3a9ecb3e8a4b36eb41ad95b1a79a576f03c475b40f8a12444b9596af",
+      "reviewedSha256": "ab59fb8152d573cf79bbe6feb9e1ff54c4e8daf3739c027d8bf33c5f1ff9cd40",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete changed diff, helper bodies and store subscribe/update/reset/enable/recover contexts: parsing schemas and order are unchanged; initial state factory creates fresh arrays/counters; round synchronization stays synchronous before listeners and returns original array without exercise, preserves unmatched item identity and clones hint IDs only for matches. No await, timer, epoch or API change; original initialSentenceState export retained."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/model/sentence-session.ts",
+      "scope": "sentence-model",
+      "beforeSha256": "0850a67258783cb87fa66b94f35c90d57efde7d90ef81b6bae30030db5f3a3ef",
+      "reviewedSha256": "408e843ae4764c2fd098894f5d695ea292ca12a53c5f785f237d68329657e28d",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete changed diff, helper bodies and store subscribe/update/reset/enable/recover contexts: parsing schemas and order are unchanged; initial state factory creates fresh arrays/counters; round synchronization stays synchronous before listeners and returns original array without exercise, preserves unmatched item identity and clones hint IDs only for matches. No await, timer, epoch or API change; original initialSentenceState export retained."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/model/sentence-preparation-recovery.ts",
+      "scope": "sentence-model",
+      "beforeSha256": null,
+      "reviewedSha256": "c7a8abd3fd1cfe3e5b71641489ab3d443ae8b99d78791d4ac08dd0a2716d6536",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete changed diff, helper bodies and store subscribe/update/reset/enable/recover contexts: parsing schemas and order are unchanged; initial state factory creates fresh arrays/counters; round synchronization stays synchronous before listeners and returns original array without exercise, preserves unmatched item identity and clones hint IDs only for matches. No await, timer, epoch or API change; original initialSentenceState export retained."
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/model/sentence-session-state.ts",
+      "scope": "sentence-model",
+      "beforeSha256": null,
+      "reviewedSha256": "94493c74bd8845c054d07f7cf96688e743f4f9209de5600bee07bcae3916b85c",
+      "disposition": "no-material-finding",
+      "reason": "Reviewed complete changed diff, helper bodies and store subscribe/update/reset/enable/recover contexts: parsing schemas and order are unchanged; initial state factory creates fresh arrays/counters; round synchronization stays synchronous before listeners and returns original array without exercise, preserves unmatched item identity and clones hint IDs only for matches. No await, timer, epoch or API change; original initialSentenceState export retained."
+    },
+    {
+      "path": "apps/web/tests/e2e/sentence-practice.journeys.spec.ts",
+      "scope": "root requested supplemental test-only independent review",
+      "beforeSha256": "c2275457e1f06b12ce8ace14d681b994782855357cac36c236e0fbeadace1ee4",
+      "reviewedSha256": "2e981164232e10662da6dbb6f7a4334867157345592bd6406973a69765a367c3",
+      "disposition": "no-material-source-finding-runtime-pending",
+      "reason": "First3 interception diff hunks only replace apiOrigin-targeted browser intercept patterns with absolute current-web-origin /api URLs. createSentenceApi resolves /api in this runner; direct backend page.request fixture calls retain apiOrigin. Statistics abort/unroute/Retry and exact saved counts, one-shot library abort/intercepted count/error/retry, and schema-validated preparation state fulfill/unroute assertions are unchanged. new URL with leading /api ignores current localized page path/fragment, and query wildcard remains in library pattern. Journey revision mapping remains unchanged because no scenario or behavior assertion changed. Fourth hunk makes the page request bearer observer match the absolute current browser /api/ prefix, preserving the existing authorization-header update and direct backend fixture calls. After reload, refreshed proxy bearer values can replace the initial token used for fixture progress reads. Prefix includes trailing slash and current web origin, so unrelated URLs do not match. Full4-hunk diff contains no assertion, scenario, timeout or runtime changes. Fifth hunk overrides requiresNewBudget:false only in schema-validated presentation copies of a completed response, with explicit reason comment. Existing notice priority requiresNewBudget before pauseReason is unchanged from252de64; carrying true would test budget notice instead of the requested credits/capacity/model/provider state. Contract accepts the boolean without a cross-field budget constraint. All rare-state title assertions and real preparation/reconnect/practice before injection remain unchanged; dedicated requiresNewBudget:true coverage remains in sentence-preparation-notice.test.tsx. This proves fixture isolation only, not real backend pause transitions. Final coordinator-reported whitespace-only follow-up inserts required blank line before page.route for ESLint padding; no semantic review scope change."
+    }
+  ],
+  "evidenceAssessment": {
+    "reportedByCoordinator": [
+      "Early web typecheck passed",
+      "90 shared/auth/practice cases passed",
+      "174 integrated Knowledge/dictionary/sentence cases passed",
+      "88 earlier profile/media/style cases passed"
+    ],
+    "independentlyRun": [],
+    "limitations": [
+      "No browser/rendered observation or heavy gate executed by this reviewer.",
+      "Final browser/static/build and completion evidence must be assessed centrally against captured file hashes."
+    ]
+  },
+  "supplementalReviews": [
+    {
+      "path": "apps/web/tests/e2e/sentence-practice.journeys.spec.ts",
+      "reviewedSha256": "692b9fb073ced35286d271991bb221481107c4d75d6b80c72008717cc6b88274",
+      "verdict": "Source reviewed with no material findings; runtime completion approval withheld until centrally scheduled tests finish.",
+      "coverage": "Exact3 diff hunks and surrounding route/unroute/abort/fulfill/assertion bodies, API base resolver, sentence API composition and sentence-practice-web guide mapping.",
+      "ledgerOwnership": "web-tests belongs to another owner; root must update that ledger and inventory hash/disposition.",
+      "runtimeExecutedByReviewer": false
+    },
+    {
+      "path": "apps/web/tests/e2e/sentence-practice.journeys.spec.ts",
+      "mode": "remediation review of additional fourth hunk; prior3 hunks rechecked unchanged",
+      "reviewedSha256": "32a9f34574b8dc31a8afae87ad1c764743689ce3fa1c82e733a5e7c08d7e5b74",
+      "verdict": "No material source findings; runtime approval remains pending central rerun.",
+      "runtimeExecutedByReviewer": false,
+      "ledgerOwnership": "web-tests ledger belongs to another owner; root owns hash/disposition update."
+    },
+    {
+      "path": "apps/web/tests/e2e/sentence-practice.journeys.spec.ts",
+      "mode": "remediation review fifth presentation-fixture hunk; previous4 hunks unchanged",
+      "reviewedSha256": "47a60dc11dddbcdfcc3980cd3d2f48aaa71cca3d1a83ccff4ebaf6f271ed44c6",
+      "verdict": "No material source findings; final runtime approval pending central rerun.",
+      "runtimeExecutedByReviewer": false,
+      "basis": [
+        "Unchanged baseline notice precedence selects budget when requiresNewBudget=true",
+        "Strict SentencePreparationSchema accepts explicit false",
+        "Existing dedicated unit case retains true/exhausted-budget behavior",
+        "Real preparation/reconnect/practice assertions and rare-state assertions unchanged"
+      ]
+    },
+    {
+      "path": "apps/web/tests/e2e/sentence-practice.journeys.spec.ts",
+      "mode": "Whitespace-only hash refresh after required blank line before page.route",
+      "previousReviewedSha256": "47a60dc11dddbcdfcc3980cd3d2f48aaa71cca3d1a83ccff4ebaf6f271ed44c6",
+      "reviewedSha256": "2e981164232e10662da6dbb6f7a4334867157345592bd6406973a69765a367c3",
+      "coordinatorEvidence": "History and preparation journeys passed before blankline; scoped ESLint passed after blankline. Aggregate rerun pending.",
+      "verdict": "No material source finding; final aggregate approval remains pending.",
+      "runtimeExecutedByReviewer": false
+    }
+  ]
+}

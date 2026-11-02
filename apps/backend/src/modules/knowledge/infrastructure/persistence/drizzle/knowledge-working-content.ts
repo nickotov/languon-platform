@@ -1,4 +1,7 @@
+import { syncLearningEpochs } from './learning-epochs';
 import { readWorkingBranch } from './knowledge-workspace-access';
+import { assertKnowledgeMediaGrants, prepareMediaCopy } from './media-grants';
+import { copyWorkbookBody } from './workbook-copy';
 import {
     KnowledgeNoteContentSchema,
     KnowledgeWorkingContentSchema,
@@ -65,7 +68,10 @@ export async function updateWorking(
                     ),
                 );
 
-            if (!replayed) throw knowledgeUnavailable();
+            if (!replayed) {
+                throw knowledgeUnavailable();
+            }
+
             const branches = await tx
                 .select()
                 .from(knowledgeWorkingBranchesTable)
@@ -92,36 +98,44 @@ export async function updateWorking(
             )
             .for('update');
 
-        if (!current) throw knowledgeUnavailable();
+        if (!current) {
+            throw knowledgeUnavailable();
+        }
+
         const content = KnowledgeWorkingContentSchema.parse(input.content),
             now = new Date();
+
+        await assertKnowledgeMediaGrants(tx, noteId, content.body);
         const conflict = current.version !== input.expectedVersion;
         const id = conflict ? randomUUID() : current.id;
-        const branch = conflict
-            ? (
-                  await tx
-                      .insert(knowledgeWorkingBranchesTable)
-                      .values({
-                          id,
-                          noteId,
-                          version: 1,
-                          basePublishedVersion: current.basePublishedVersion,
-                          content,
-                          updatedAt: now,
-                      })
-                      .returning()
-              )[0]!
-            : (
-                  await tx
-                      .update(knowledgeWorkingBranchesTable)
-                      .set({
-                          version: current.version + 1,
-                          content,
-                          updatedAt: now,
-                      })
-                      .where(eq(knowledgeWorkingBranchesTable.id, id))
-                      .returning()
-              )[0]!;
+        let branch: typeof knowledgeWorkingBranchesTable.$inferSelect;
+        if (conflict) {
+            const [created] = await tx
+                .insert(knowledgeWorkingBranchesTable)
+                .values({
+                    id,
+                    noteId,
+                    version: 1,
+                    basePublishedVersion: current.basePublishedVersion,
+                    content,
+                    updatedAt: now,
+                })
+                .returning();
+
+            branch = created!;
+        } else {
+            const [updated] = await tx
+                .update(knowledgeWorkingBranchesTable)
+                .set({
+                    version: current.version + 1,
+                    content,
+                    updatedAt: now,
+                })
+                .where(eq(knowledgeWorkingBranchesTable.id, id))
+                .returning();
+
+            branch = updated!;
+        }
 
         await tx
             .update(knowledgeNotesTable)
@@ -185,17 +199,22 @@ export async function resolveWorking(
             fingerprint,
         );
 
-        if (receipt) return composeWorkspace(persistence, tx, row);
+        if (receipt) {
+            return composeWorkspace(persistence, tx, row);
+        }
+
         const ids = [
             input.keepBranchId,
             ...input.discardBranches.map((branch) => branch.id),
         ];
 
-        if (new Set(ids).size !== ids.length)
+        if (new Set(ids).size !== ids.length) {
             throw new KnowledgeDomainError(
                 'invalid_request',
                 'Choose distinct working versions to resolve.',
             );
+        }
+
         const branches = await tx
             .select()
             .from(knowledgeWorkingBranchesTable)
@@ -208,11 +227,13 @@ export async function resolveWorking(
                 (branch) =>
                     byId.get(branch.id)?.version !== branch.expectedVersion,
             )
-        )
+        ) {
             throw new KnowledgeDomainError(
                 'version_conflict',
                 'A working version changed. Reload both versions before resolving.',
             );
+        }
+
         const now = new Date();
         const discardedIds = new Set(
             input.discardBranches.map((branch) => branch.id),
@@ -245,10 +266,12 @@ export async function resolveWorking(
             })
             .where(eq(knowledgeNotesTable.id, noteId));
 
-        for (const branch of input.discardBranches)
+        for (const branch of input.discardBranches) {
             await tx
                 .delete(knowledgeWorkingBranchesTable)
                 .where(eq(knowledgeWorkingBranchesTable.id, branch.id));
+        }
+
         await writeKnowledgeReceipt(tx, {
             ownerId,
             operationId: input.operationId,
@@ -285,12 +308,16 @@ export async function workingAtVersion(
         )
         .for('update');
 
-    if (!branch) throw knowledgeUnavailable();
-    if (branch.version !== expectedVersion)
+    if (!branch) {
+        throw knowledgeUnavailable();
+    }
+
+    if (branch.version !== expectedVersion) {
         throw new KnowledgeDomainError(
             'version_conflict',
             'The working draft changed. Compare both versions before saving.',
         );
+    }
 
     return branch;
 }
@@ -299,11 +326,12 @@ export function assertSaveable(
     persistence: KnowledgeStoreContext,
     content: KnowledgeWorkingContent,
 ): KnowledgeNoteContent {
-    if (!content.title.trim() || !knowledgeBodyPlainText(content.body))
+    if (!content.title.trim() || !knowledgeBodyPlainText(content.body)) {
         throw new KnowledgeDomainError(
             'invalid_request',
             'Add a title and document content before saving.',
         );
+    }
 
     return KnowledgeNoteContentSchema.parse(content);
 }
@@ -333,7 +361,10 @@ export async function saveWorkspace(
             fingerprint,
         );
 
-        if (receipt) return replayKnowledgeNote(tx, ownerId, receipt);
+        if (receipt) {
+            return replayKnowledgeNote(tx, ownerId, receipt);
+        }
+
         const branch = await workingAtVersion(
             persistence,
             tx,
@@ -346,20 +377,25 @@ export async function saveWorkspace(
             .from(knowledgeWorkingBranchesTable)
             .where(eq(knowledgeWorkingBranchesTable.noteId, noteId));
 
-        if ((alternatives?.value ?? 0) > 1)
+        if ((alternatives?.value ?? 0) > 1) {
             throw new KnowledgeDomainError(
                 'version_conflict',
                 'Compare and resolve working versions before saving.',
             );
+        }
+
         if (
             row.version !== input.expectedPublishedVersion ||
             branch.basePublishedVersion !== input.expectedPublishedVersion
-        )
+        ) {
             throw new KnowledgeDomainError(
                 'version_conflict',
                 'The saved note changed. Compare versions before saving.',
             );
+        }
+
         const savedContent = assertSaveable(persistence, branch.content);
+        await assertKnowledgeMediaGrants(tx, noteId, savedContent.body);
         const now = new Date(),
             version = row.version + 1;
         const [saved] = await tx
@@ -376,6 +412,7 @@ export async function saveWorkspace(
             .where(eq(knowledgeNotesTable.id, noteId))
             .returning();
 
+        await syncLearningEpochs(tx, noteId, savedContent.body, version);
         await tx.insert(knowledgeNoteRevisionsTable).values({
             noteId,
             version,
@@ -426,7 +463,10 @@ export async function saveWorkspaceCopy(
             fingerprint,
         );
 
-        if (receipt) return replayKnowledgeNote(tx, ownerId, receipt);
+        if (receipt) {
+            return replayKnowledgeNote(tx, ownerId, receipt);
+        }
+
         const branch = await workingAtVersion(
             persistence,
             tx,
@@ -434,7 +474,12 @@ export async function saveWorkspaceCopy(
             input.branchId,
             input.expectedVersion,
         );
-        const savedContent = assertSaveable(persistence, branch.content);
+        const original = assertSaveable(persistence, branch.content);
+        const media = await prepareMediaCopy(tx, noteId, original.body);
+        const savedContent = {
+            ...original,
+            body: copyWorkbookBody(original.body, media.assetIds),
+        };
         const now = new Date(),
             id = randomUUID(),
             copyBranchId = randomUUID();
@@ -453,6 +498,8 @@ export async function saveWorkspaceCopy(
             })
             .returning();
 
+        await media.grant(id);
+        await syncLearningEpochs(tx, id, savedContent.body, 1);
         await tx.insert(knowledgeNoteRevisionsTable).values({
             noteId: id,
             version: 1,

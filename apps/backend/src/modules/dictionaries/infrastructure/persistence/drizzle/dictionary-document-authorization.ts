@@ -79,8 +79,10 @@ export async function authorize(
                 .for('share');
 
             if (replayJob) {
-                if (replayJob.requestFingerprint !== input.fingerprint)
+                if (replayJob.requestFingerprint !== input.fingerprint) {
                     throw new DictionaryIdempotencyConflictError();
+                }
+
                 const [upload] = await tx
                     .select()
                     .from(dictionaryDocumentUploadsTable)
@@ -89,7 +91,9 @@ export async function authorize(
                     )
                     .limit(1);
 
-                if (!upload) throw new DictionaryDocumentUploadNotFoundError();
+                if (!upload) {
+                    throw new DictionaryDocumentUploadNotFoundError();
+                }
 
                 return { jobId: replayJob.id, upload };
             }
@@ -115,14 +119,17 @@ export async function authorize(
                 )
                 .for('update');
 
-            if (!current || current.dictionary.lifecycle !== 'active')
+            if (!current || current.dictionary.lifecycle !== 'active') {
                 throw new DictionaryNotFoundError();
+            }
+
             if (
                 current.dictionary.version !==
                     input.expectedDictionaryVersion ||
                 current.settings.version !== input.expectedSettingsVersion
-            )
+            ) {
                 throw new DictionaryVersionConflictError();
+            }
 
             const [queue] = await tx
                 .select({
@@ -137,8 +144,9 @@ export async function authorize(
             if (
                 Number(queue?.global ?? 0) >= documentQueueQuota.global ||
                 Number(queue?.owner ?? 0) >= documentQueueQuota.owner
-            )
+            ) {
                 throw new DictionaryGenerationNotAvailableError();
+            }
 
             const [quota] = await tx
                 .select({
@@ -158,8 +166,9 @@ export async function authorize(
                     documentQuota.ownerBytes ||
                 Number(quota?.globalBytes ?? 0) + input.expectedSizeBytes >
                     documentQuota.globalBytes
-            )
+            ) {
                 throw new DictionaryDocumentUploadCapacityError();
+            }
 
             const jobId = context.ids.generate();
             const providerExecution = await activeProviderExecution(
@@ -176,8 +185,10 @@ export async function authorize(
             if (
                 context.aiCreditEnforcementEnabled &&
                 (!providerExecution.revisionId || !creditPricing)
-            )
+            ) {
                 throw new DictionaryGenerationNotAvailableError();
+            }
+
             const uploadId = context.ids.generate();
             const objectKey = `dictionary-documents/${input.ownerId}/${uploadId}`;
             const [admittedJob] = await tx
@@ -298,8 +309,9 @@ export async function authorize(
                         })
                         .where(eq(dictionaryGenerationJobsTable.id, jobId));
                 } catch (error) {
-                    if (error instanceof AiCreditInsufficientBalanceError)
+                    if (error instanceof AiCreditInsufficientBalanceError) {
                         throw new DictionaryAiCreditsExhaustedError();
+                    }
 
                     throw error;
                 }
@@ -335,8 +347,9 @@ export async function authorize(
         ownerId: input.ownerId,
     });
 
-    if (job.kind !== 'document-terms')
+    if (job.kind !== 'document-terms') {
         throw new DictionaryGenerationJobNotFoundError();
+    }
 
     return {
         capabilityExpiresAt: authorization.upload.capabilityExpiresAt,

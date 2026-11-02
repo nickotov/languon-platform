@@ -21,6 +21,7 @@ describe('dictionary document HTTP routes', () => {
             info: { title: 'Dictionary document routes', version: '1' },
             openapi: '3.1.0',
         });
+
         expect(
             document.paths?.['/dictionaries/{dictionaryId}/document-uploads']
                 ?.post?.responses?.['402'],
@@ -52,6 +53,7 @@ describe('dictionary document HTTP routes', () => {
                 method: 'POST',
             },
         );
+
         expect(response.status).toBe(202);
         expect(authorizeUpload).toHaveBeenCalledWith(
             'valid.token.value',
@@ -85,10 +87,12 @@ describe('dictionary document HTTP routes', () => {
                 },
                 method: 'POST',
             });
+
         expect((await send('not-a-checksum', 12)).status).toBe(400);
         expect(
             (await send('a'.repeat(64), 20 * 1_024 * 1_024 + 1)).status,
         ).toBe(400);
+
         expect(authorizeUpload).not.toHaveBeenCalled();
     });
 
@@ -109,6 +113,7 @@ describe('dictionary document HTTP routes', () => {
                 method: 'POST',
             },
         );
+
         expect(response.status).toBe(200);
         expect(completeUpload).toHaveBeenCalledWith(
             'valid.token.value',

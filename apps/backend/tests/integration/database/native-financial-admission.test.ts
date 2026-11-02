@@ -47,6 +47,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             client = createTestPostgresClient();
             database = createDrizzleDatabase(client, databaseSchema);
         });
+
         beforeEach(async () => {
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
@@ -55,9 +56,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .insert(usersTable)
                 .values({ id: ownerId, status: 'active' });
         });
+
         afterAll(async () => {
             await client?.end();
         });
+
         const budget = {
             maxInputTokensPerAttempt: 100,
             maxOutputTokensPerAttempt: 100,
@@ -65,6 +68,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             inputCostMicrosPerMillionTokens: 0,
             outputCostMicrosPerMillionTokens: 0,
         };
+
         async function seed(
             rules: ProviderNativePricingRules,
             providerId = 'openrouter',
@@ -90,6 +94,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const data = bypassValidation
                 ? candidate
                 : ProviderPricePublishRequestSchema.parse(candidate);
+
             await database.insert(aiProviderPriceRevisionsTable).values({
                 id: randomUUID(),
                 providerId,
@@ -101,6 +106,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdBy: ownerId,
                 data,
             });
+
             return database.transaction((tx) =>
                 reserveConversationActionFixture(tx, {
                     ownerId,
@@ -112,6 +118,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             );
         }
+
         const admit = (id: string) =>
             database.transaction((tx) =>
                 new DrizzleActionAccountingParticipant(tx).admitAttempt({
@@ -126,6 +133,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     at: new Date(),
                 }),
             );
+
         function rules(
             transition: number,
             gap: number,
@@ -145,6 +153,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     chargeWhen: 'positive-usage' as const,
                 },
             ];
+
             return {
                 version: 1,
                 validFrom: new Date(origin - 60000).toISOString(),
@@ -188,6 +197,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ],
             };
         }
+
         it('rejects incompatible native text meters in SQL even when TypeScript admission is bypassed', async () => {
             for (const [index, meter] of (
                 ['characters', 'audioOutputTokens'] as const
@@ -203,6 +213,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         },
                     ];
                 });
+
                 // Simulate a malformed historical pin; only the fixture's TS budget validator is bypassed.
                 // Authoritative SQL admission, immutable pins, parent policy and worker fences stay real.
                 const bypass = vi
@@ -218,39 +229,48 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 } finally {
                     bypass.mockRestore();
                 }
+
                 await expect(admit(action.id)).rejects.toThrow();
                 await expect(
                     client`select languon_authorize_native_text_call(${randomUUID()}::uuid,100,100)`,
                 ).rejects.toThrow();
             }
+
             expect(
                 await database.select().from(aiCreditActionAttemptsTable),
             ).toEqual([]);
+
             expect(
                 await database.select().from(aiCreditNativeCallDispatchesTable),
             ).toEqual([]);
         });
+
         it('rejects an uncovered later dispatch gap before admitting an attempt or issuing HTTP receipts', async () => {
             const action = await seed(rules(20000, 10000));
             await expect(admit(action.id)).rejects.toThrow();
             expect(
                 await database.select().from(aiCreditActionAttemptsTable),
             ).toEqual([]);
+
             expect(
                 await database.select().from(aiCreditNativeCallDispatchesTable),
             ).toEqual([]);
         });
+
         it('admits a covered price transition and pins the complete exclusive action deadline horizon', async () => {
             const action = await seed(rules(20000, 0));
             const attempt = await admit(action.id);
             expect(attempt.budget.nativeExecutionFacts?.latestDispatchAt).toBe(
                 new Date(action.deadlineAt.getTime() - 1).toISOString(),
             );
+
             expect(attempt.reservedCostMicros).toBe(400);
             const receipt =
                 await client`select languon_authorize_native_text_call(${attempt.id}::uuid,100,100) as value`;
+
             expect(receipt[0]!.value.callId).toEqual(expect.any(String));
         });
+
         it('preserves extreme native credit evidence while settling unrepresentable USD cost as unknown', async () => {
             const value = rules(20000, 0);
             value.reportedCreditUsdPerCredit = '999999999999';
@@ -259,6 +279,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     c.pricePerUnit = '0';
                 }),
             );
+
             const action = await seed(value, 'kie');
             const attempt = await admit(action.id);
             const receipt =
@@ -273,12 +294,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     successful: false,
                     at: new Date(),
                 });
+
                 await settleConversationActionFixture(tx, {
                     actionId: action.id,
                     ownerId,
                     outcome: 'failure',
                 });
             });
+
             expect(
                 await database
                     .select()
@@ -287,13 +310,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         eq(aiProviderExpenseRecordsTable.attemptId, attempt.id),
                     ),
             ).toMatchObject([{ costSource: 'unknown', amountUsdMicros: null }]);
+
             const checkpoint = await database
                 .select()
                 .from(aiCreditNativeCallDispatchesTable)
                 .where(eq(aiCreditNativeCallDispatchesTable.id, callId));
+
             expect(checkpoint[0]!.providerUsage?.providerCreditsConsumed).toBe(
                 '999999999999',
             );
+
             expect(
                 await database
                     .select()

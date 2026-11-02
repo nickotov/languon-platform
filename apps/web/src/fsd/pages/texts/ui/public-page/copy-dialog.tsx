@@ -43,7 +43,9 @@ export function PublicCopyDialog(props: {
     const canChoose = props.target.mode === 'text';
 
     function close() {
-        if (!working) props.onClose();
+        if (!working) {
+            props.onClose();
+        }
     }
 
     function destination(event: ChangeEvent<HTMLInputElement>) {
@@ -53,6 +55,7 @@ export function PublicCopyDialog(props: {
     function confirmShare(event: ChangeEvent<HTMLInputElement>) {
         copy.confirmShare(event.target.checked);
     }
+
     function name(event: ChangeEvent<HTMLInputElement>) {
         copy.setName(event.target.value);
     }
@@ -66,7 +69,7 @@ export function PublicCopyDialog(props: {
     }
 
     let destinationField = null;
-    if (copy.destination === 'existing')
+    if (copy.destination === 'existing') {
         destinationField = (
             <Select
                 label={t('texts.public.folder')}
@@ -77,7 +80,7 @@ export function PublicCopyDialog(props: {
                 placeholder={t('texts.public.folder')}
             />
         );
-    else if (copy.destination === 'new')
+    } else if (copy.destination === 'new') {
         destinationField = (
             <Input
                 label={t('texts.public.name')}
@@ -88,6 +91,7 @@ export function PublicCopyDialog(props: {
                 required
             />
         );
+    }
 
     const footer = (
         <DialogActions>

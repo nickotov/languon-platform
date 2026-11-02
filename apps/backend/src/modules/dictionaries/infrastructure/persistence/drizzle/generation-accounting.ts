@@ -37,8 +37,9 @@ export function creditUsage(
     if (
         job.aiCreditInputCreditsPerMillionTokens === null ||
         job.aiCreditOutputCreditsPerMillionTokens === null
-    )
+    ) {
         throw new Error('AI credit pricing is missing');
+    }
 
     return roundActionChargeMilli(
         actionChargeNumerator(usage, {
@@ -56,10 +57,14 @@ export function aiCreditJobValues(
     context: GenerationStoreContext,
     providerExecution: ProviderExecution,
 ) {
-    if (!context.aiCreditEnforcementEnabled) return {};
+    if (!context.aiCreditEnforcementEnabled) {
+        return {};
+    }
+
     const pricing = providerExecution.snapshot?.creditPricing;
-    if (!providerExecution.revisionId || !pricing)
+    if (!providerExecution.revisionId || !pricing) {
         throw new DictionaryGenerationNotAvailableError();
+    }
 
     return {
         aiCreditAccounted: false,
@@ -96,10 +101,13 @@ export async function reserveInitialAiCreditAttempt(
                 at,
             });
         } catch (error) {
-            if (error instanceof OperatorBudgetUnavailableError)
+            if (error instanceof OperatorBudgetUnavailableError) {
                 throw new DictionaryGenerationNotAvailableError();
-            if (error instanceof AiCreditInsufficientBalanceError)
+            }
+
+            if (error instanceof AiCreditInsufficientBalanceError) {
                 throw new DictionaryAiCreditsExhaustedError();
+            }
 
             throw error;
         }
@@ -107,7 +115,10 @@ export async function reserveInitialAiCreditAttempt(
         return;
     }
 
-    if (!job.aiCreditAccounted) return;
+    if (!job.aiCreditAccounted) {
+        return;
+    }
+
     try {
         const reservation = await reserveAiCreditAttempt(
             context,
@@ -125,8 +136,9 @@ export async function reserveInitialAiCreditAttempt(
             })
             .where(eq(dictionaryGenerationJobsTable.id, job.id));
     } catch (error) {
-        if (error instanceof AiCreditInsufficientBalanceError)
+        if (error instanceof AiCreditInsufficientBalanceError) {
             throw new DictionaryAiCreditsExhaustedError();
+        }
 
         throw error;
     }
@@ -139,8 +151,10 @@ export async function reserveAiCreditAttempt(
     attempt: number,
     at: Date,
 ) {
-    if (!job.aiCreditMaxCreditsPerAttempt)
+    if (!job.aiCreditMaxCreditsPerAttempt) {
         throw new Error('AI credit pricing is missing');
+    }
+
     const reservationId = context.ids.generate();
     const reservation = await new DrizzleAiCreditTransactionParticipant(
         tx,
@@ -184,21 +198,30 @@ export async function settleCurrentAiCreditAttempt(
             at: input.at,
         });
 
-        if (input.terminal !== false)
+        if (input.terminal !== false) {
             await settleLegacyAction(tx, {
                 id: job.id,
                 ownerId: job.ownerId,
                 outcome: input.outcome ?? 'failure',
                 at: input.at,
             });
+        }
 
         return;
     }
 
-    if (!job.aiCreditAccounted) return;
-    if (!job.aiCreditReservationId) return;
-    if (!job.aiCreditPolicyMode)
+    if (!job.aiCreditAccounted) {
+        return;
+    }
+
+    if (!job.aiCreditReservationId) {
+        return;
+    }
+
+    if (!job.aiCreditPolicyMode) {
         throw new Error('AI credit reservation is missing');
+    }
+
     const credits = new DrizzleAiCreditTransactionParticipant(tx);
     if (!job.aiCreditProviderDispatchedAt) {
         await credits.releaseUndispatchedAttempt({
@@ -217,13 +240,13 @@ export async function settleCurrentAiCreditAttempt(
             ? creditUsage(job, input.providerUsage)
             : 0n;
 
-    if (!input.outcome || input.outcome === 'failure' || !input.providerUsage)
+    if (!input.outcome || input.outcome === 'failure' || !input.providerUsage) {
         await credits.settleFailedAttempt({
             ownerId: job.ownerId,
             reservationId: job.aiCreditReservationId,
             settledAt: input.at,
         });
-    else {
+    } else {
         await credits.settleAttempt({
             measuredCredits,
             measurement: 'provider_reported',

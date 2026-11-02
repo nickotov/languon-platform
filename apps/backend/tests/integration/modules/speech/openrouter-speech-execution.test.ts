@@ -86,6 +86,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     normalizedSource: paidText.toLowerCase(),
                 })
                 .where(eq(dictionaryCardsTable.id, cardId));
+
             // An explicit synthetic tariff proves exact customer settlement independently of USD pricing.
             await db.insert(modelPriceRevisionsTable).values({
                 id: randomUUID(),
@@ -104,6 +105,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: new Date(),
                 reason: 'Synthetic disposable customer speech tariff',
             });
+
             await db.transaction((tx) =>
                 new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                     ownerId: actorId,
@@ -114,6 +116,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sourceReference: randomUUID(),
                 }),
             );
+
             const prepared = await prepare();
             expect(prepared.state).toBe('confirmation_required');
             const expectedCredits = BigInt([...paidText].length);
@@ -121,12 +124,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 quoteId: prepared.quote!.id,
                 operationId: randomUUID(),
             });
+
             expect(confirmed.billingState).toBe('reserved');
             expect((await job()).credits).toBe(expectedCredits);
             expect(await wallet()).toMatchObject({
                 reservedCredits: expectedCredits,
                 consumedCredits: 0n,
             });
+
             return { confirmed, expectedCredits };
         };
         const expectExpense = async (
@@ -146,6 +151,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     measurement === 'unknown' ? 'unknown' : 'calculated',
                 attemptReference: `speech:${admitted.id}`,
             });
+
             expect(
                 (await db.select().from(aiOperatorActionBudgetsTable))[0],
             ).toMatchObject({ state: 'settled' });
@@ -158,30 +164,36 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 actorId,
                 ready.playbackId!,
             );
+
             expect(result.fixture).toBe(false);
             expect(Buffer.from(result.audio.bytes)).toEqual(mp3);
             expect(result.audio.mimeType).toBe('audio/mpeg');
             await expect(
                 speech.service.content(strangerId, ready.playbackId!),
             ).rejects.toThrow();
+
             // Playback also rechecks the saved source, even after successful publication.
             await db
                 .update(dictionaryCardsTable)
                 .set({ lifecycle: 'archived', archivedAt: new Date() })
                 .where(eq(dictionaryCardsTable.id, cardId));
+
             await expect(
                 speech.service.content(actorId, ready.playbackId!),
             ).rejects.toThrow('speech_source_unavailable');
+
             await db
                 .update(dictionaryCardsTable)
                 .set({ lifecycle: 'active', archivedAt: null })
                 .where(eq(dictionaryCardsTable.id, cardId));
+
             return ready;
         };
 
         beforeAll(() => {
             client = createTestPostgresClient();
         });
+
         beforeEach(async () => {
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
@@ -199,6 +211,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     updatedAt: now,
                 })),
             );
+
             const dictionaryStore = new DrizzleDictionaryStore(db, {
                 generate: randomUUID,
             });
@@ -215,6 +228,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     targetLanguage: 'en',
                 },
             });
+
             dictionaryId = dictionary.id;
             const card = await dictionaryStore.createCard({
                 context,
@@ -244,6 +258,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 },
             });
+
             cardId = card.card.id;
             source = {
                 kind: 'dictionary-field',
@@ -251,6 +266,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 cardId,
                 field: 'source',
             };
+
             await db.insert(aiAccountingSettingsRevisionsTable).values({
                 id: randomUUID(),
                 version: 1,
@@ -261,6 +277,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 reason: 'Synthetic disposable OpenRouter speech limits',
             });
+
             await new DrizzleProviderPriceStore(db).publish(
                 {
                     expectedVersion: 0,
@@ -280,6 +297,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 actorId,
                 now,
             );
+
             http.mockReset();
             http.mockImplementation(
                 async () =>
@@ -288,6 +306,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         headers: { 'content-type': 'audio/mpeg' },
                     }),
             );
+
             vi.stubGlobal('fetch', http);
             const environment = loadDictionaryAudioEnvironment(
                 {
@@ -312,11 +331,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 { deployed: false, role: 'worker' },
             );
+
             adapters = createDictionaryAudioAdapters({
                 database: db,
                 environment,
                 role: 'worker',
             });
+
             speech = createSpeechInfrastructure({
                 database: db,
                 dictionaryHmacSecret:
@@ -330,10 +351,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 burstLimiter: { consume: async () => ({ allowed: true }) },
             });
         }, 120000);
+
         afterEach(() => {
             adapters?.close();
             vi.unstubAllGlobals();
         });
+
         afterAll(async () => {
             await client?.end();
         });
@@ -345,9 +368,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 billingState: 'free',
                 fixture: false,
             });
+
             expect(
                 await db.select().from(modelPriceRevisionsTable),
             ).toHaveLength(0);
+
             expect(
                 (await db.select().from(speechRecordingsTable))[0]!.profile,
             ).toMatchObject({
@@ -356,6 +381,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 voice: 'george',
                 configurationId,
             });
+
             expect((await job()).credits).toBe(0n);
             expect(await speech.worker.runOnce()).toBe(true);
             await expectPrivatePlayback(admitted.requestId!);
@@ -365,21 +391,25 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 state: 'ready',
                 profile: { provider: 'openrouter', model },
             });
+
             expect(await wallet()).toMatchObject({
                 consumedCredits: 0n,
                 reservedCredits: 0n,
             });
+
             await expectExpense(280n, 'estimated');
             expect(http).toHaveBeenCalledTimes(1);
             const [url, request] = http.mock.calls[0]!;
             expect(String(url)).toBe(
                 'https://openrouter.ai/api/v1/audio/speech',
             );
+
             expect(JSON.parse(String(request?.body))).toMatchObject({
                 model,
                 input: 'bonjour',
                 voice: 'george',
             });
+
             expect((await prepare()).state).toBe('ready');
             expect(await speech.worker.runOnce()).toBe(false);
             expect(http).toHaveBeenCalledTimes(1);
@@ -398,10 +428,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 reservedCredits: 0n,
                 consumedCredits: expectedCredits,
             });
+
             await expectExpense(
                 BigInt([...paidText].length) * 40n,
                 'estimated',
             );
+
             expect((await prepare()).state).toBe('ready');
             expect(await speech.worker.runOnce()).toBe(false);
             expect(http).toHaveBeenCalledTimes(1);
@@ -415,6 +447,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             http.mockRejectedValue(
                 new TypeError('Synthetic connection lost after dispatch'),
             );
+
             const { confirmed, expectedCredits } = await setPaidText();
             expect(await speech.worker.runOnce()).toBe(true);
             expect(
@@ -424,10 +457,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 billingState: 'reserved',
                 playbackId: null,
             });
+
             expect(await wallet()).toMatchObject({
                 consumedCredits: 0n,
                 reservedCredits: expectedCredits,
             });
+
             await expectExpense(null, 'unknown');
             // Ambiguous submission keeps its hold until the established billing deadline.
             await db
@@ -436,6 +471,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     billingDeadline: sql`clock_timestamp()-interval '1 second'`,
                 })
                 .where(eq(speechJobsTable.id, (await job()).id));
+
             await speech.store.releaseDeadlines(new Date());
             expect(
                 await speech.service.status(actorId, confirmed.requestId!),
@@ -444,14 +480,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 billingState: 'released_no_charge',
                 playbackId: null,
             });
+
             expect(await wallet()).toMatchObject({
                 consumedCredits: 0n,
                 reservedCredits: 0n,
             });
+
             await expectExpense(null, 'unknown');
             expect(
                 (await db.select().from(speechRecordingsTable))[0]?.state,
             ).not.toBe('ready');
+
             expect(await speech.worker.runOnce()).toBe(false);
             expect(http).toHaveBeenCalledTimes(1);
         });
@@ -466,14 +505,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await client.unsafe(
                 `create function speech_test_block_storage() returns trigger language plpgsql as $$ begin perform pg_advisory_xact_lock(550055); return NEW; end $$`,
             );
+
             await client.unsafe(
                 `create trigger speech_test_block_storage before insert on dictionary_audio_blobs for each row execute function speech_test_block_storage()`,
             );
+
             http.mockImplementation(async () => {
                 const [nearExpiry] = await db.transaction(async (tx) => {
                     await tx.execute(
                         sql`select set_config('languon.speech_worker_version','1',true)`,
                     );
+
                     return tx
                         .update(speechJobsTable)
                         .set({
@@ -482,28 +524,34 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .where(eq(speechJobsTable.id, (await job()).id))
                         .returning();
                 });
+
                 originalExpiry = nearExpiry!.leaseExpiresAt!;
                 originalToken = nearExpiry!.leaseToken;
+
                 return new Response(mp3, {
                     status: 200,
                     headers: { 'content-type': 'audio/mpeg' },
                 });
             });
+
             try {
                 execution = speech.worker.runOnce();
                 await vi.waitFor(
                     async () => expect((await job()).state).toBe('storing'),
                     { timeout: 10000, interval: 20 },
                 );
+
                 const storing = await job();
                 expect(storing.leaseToken).toBe(originalToken);
                 expect(storing.leaseExpiresAt!.getTime()).toBeGreaterThan(
                     originalExpiry!.getTime() + 50000,
                 );
+
                 // The real object-storage insert is blocked while the original synthesis lease expires.
                 await db.execute(
                     sql`select pg_sleep(greatest(0,extract(epoch from (${originalExpiry!.toISOString()}::timestamptz-clock_timestamp())))+0.05)`,
                 );
+
                 expect(await speech.store.claim(new Date())).toBeNull();
                 expect((await job()).state).toBe('storing');
                 expect(
@@ -512,14 +560,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             } finally {
                 await storageLock`select pg_advisory_unlock(550055)`;
                 storageLock.release();
-                if (execution) await execution;
+                if (execution) {
+                    await execution;
+                }
+
                 await client.unsafe(
                     'drop trigger speech_test_block_storage on dictionary_audio_blobs',
                 );
+
                 await client.unsafe(
                     'drop function speech_test_block_storage()',
                 );
             }
+
             await expectPrivatePlayback(confirmed.requestId!);
             expect((await job()).billingState).toBe('charged_success');
             expect(await speech.worker.runOnce()).toBe(false);
@@ -541,10 +594,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     mimeType: 'audio/mpeg' as const,
                     checksum: audioChecksum(mp3),
                 };
+
                 await db.transaction(async (tx) => {
                     await tx.execute(
                         sql`select set_config('languon.speech_worker_version','1',true)`,
                     );
+
                     await tx
                         .update(speechJobsTable)
                         .set(
@@ -556,31 +611,38 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         )
                         .where(eq(speechJobsTable.id, claimed!.id));
                 });
+
                 const fenced = await job();
                 expect(
                     await speech.store.storing(claimed!, audio, new Date()),
                 ).toBe(false);
+
                 const reference = await adapters.storage.putForReference(
                     claimed!.storage,
                     audio,
                 );
+
                 await speech.store.complete(
                     claimed!,
                     reference,
                     audio,
                     new Date(),
                 );
+
                 expect(await job()).toMatchObject({
                     state: 'submitting',
                     leaseToken: fenced.leaseToken,
                     leaseExpiresAt: fenced.leaseExpiresAt,
                 });
+
                 expect(
                     (await db.select().from(speechRecordingsTable))[0],
                 ).toMatchObject({ state: 'pending', checksum: null });
+
                 expect(
                     await db.select().from(aiProviderExpenseRecordsTable),
                 ).toHaveLength(0);
+
                 expect(await wallet()).toMatchObject({
                     consumedCredits: 0n,
                     reservedCredits: 0n,
@@ -592,15 +654,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             http.mockRejectedValue(
                 new TypeError('Synthetic Free connection lost after dispatch'),
             );
+
             const admitted = await prepare();
             expect(admitted).toMatchObject({
                 state: 'queued',
                 billingState: 'free',
                 fixture: false,
             });
+
             expect(
                 await db.select().from(modelPriceRevisionsTable),
             ).toHaveLength(0);
+
             expect(await speech.worker.runOnce()).toBe(true);
             expect(
                 await speech.service.status(actorId, admitted.requestId!),
@@ -610,20 +675,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 playbackId: null,
                 error: 'speech_submission_unknown',
             });
+
             expect(await job()).toMatchObject({
                 state: 'submission_unknown',
                 credits: 0n,
                 reservationId: null,
                 rateRevisionId: null,
             });
+
             expect(await wallet()).toMatchObject({
                 consumedCredits: 0n,
                 reservedCredits: 0n,
             });
+
             await expectExpense(null, 'unknown');
             expect(
                 (await db.select().from(speechRecordingsTable))[0]?.state,
             ).not.toBe('ready');
+
             expect(await speech.worker.runOnce()).toBe(false);
             expect(http).toHaveBeenCalledTimes(1);
             expect(
@@ -639,6 +708,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         headers: { 'content-type': 'application/json' },
                     }),
             );
+
             const { confirmed } = await setPaidText();
             expect(await speech.worker.runOnce()).toBe(true);
             expect(
@@ -648,10 +718,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 billingState: 'released_no_charge',
                 playbackId: null,
             });
+
             expect(await wallet()).toMatchObject({
                 consumedCredits: 0n,
                 reservedCredits: 0n,
             });
+
             await expectExpense(0n, 'measured');
             expect(http).toHaveBeenCalledTimes(1);
         });

@@ -23,6 +23,19 @@ export function SentenceReferenceComparison({
 }) {
     const { t } = useSentenceCopy();
     const [open, setOpen] = useState(true);
+
+    function toggleReference() {
+        setOpen((value) => !value);
+    }
+
+    let status = 'Reference read without an answer.';
+    if (comparison.kind === 'match') {
+        status = 'Matches the saved example after normalization.';
+    } else if (comparison.kind === 'different') {
+        status =
+            'Different from this example. Another translation may still be valid.';
+    }
+
     return (
         <section
             aria-label={t('Free comparison')}
@@ -39,19 +52,13 @@ export function SentenceReferenceComparison({
                     variant='ghost'
                     size='compact'
                     aria-expanded={open}
-                    onClick={() => setOpen((value) => !value)}
+                    onClick={toggleReference}
                 >
                     {t(open ? 'Hide reference' : 'Show reference')}
                 </Button>
             </div>
             <p role='status' className={styles.status}>
-                {t(
-                    comparison.kind === 'match'
-                        ? 'Matches the saved example after normalization.'
-                        : comparison.kind === 'different'
-                          ? 'Different from this example. Another translation may still be valid.'
-                          : 'Reference read without an answer.',
-                )}
+                {t(status)}
             </p>
             <p className={styles.subtitle}>
                 {t(

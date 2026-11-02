@@ -47,13 +47,15 @@ export async function listDictionaries(
         eq(dictionariesTable.lifecycle, input.query.lifecycle),
     ];
 
-    if (input.query.search)
+    if (input.query.search) {
         conditions.push(
             ilike(
                 dictionariesTable.name,
                 `%${escapeLike(input.query.search)}%`,
             ),
         );
+    }
+
     if (cursor) {
         const date = new Date(cursor.updatedAt);
         conditions.push(
@@ -210,7 +212,9 @@ export async function readCard(
             )
             .limit(1);
 
-        if (!row) throw new DictionaryCardNotFoundError();
+        if (!row) {
+            throw new DictionaryCardNotFoundError();
+        }
 
         return {
             card: mapCard(row, current.settings),
@@ -244,7 +248,9 @@ export async function readOwned(
         )
         .limit(1);
 
-    if (!row) throw new DictionaryNotFoundError();
+    if (!row) {
+        throw new DictionaryNotFoundError();
+    }
 
     return mapOwned(
         row.dictionary,
@@ -277,7 +283,9 @@ export async function readOwnedStateForExport(
         )
         .limit(1);
 
-    if (!row) throw new DictionaryNotFoundError();
+    if (!row) {
+        throw new DictionaryNotFoundError();
+    }
 
     return row;
 }

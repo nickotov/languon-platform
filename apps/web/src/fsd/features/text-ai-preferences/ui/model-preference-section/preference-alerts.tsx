@@ -19,12 +19,15 @@ export function PreferenceAlerts({
     function retrySave() {
         void controller.save();
     }
+
     function overwrite() {
         void controller.save(true);
     }
+
     function reload() {
         void controller.reloadLatest();
     }
+
     return (
         <div className={styles.stack}>
             {!controller.online ? (

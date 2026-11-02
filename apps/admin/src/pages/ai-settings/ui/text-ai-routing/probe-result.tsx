@@ -49,12 +49,13 @@ export function ProbeResult({ probe }: { probe: TextAiProbe }) {
         },
     ];
 
-    if (probe.recoveredAt)
+    if (probe.recoveredAt) {
         items.push({
             key: 'recovered',
             label: t('routing.recovered'),
             children: new Date(probe.recoveredAt).toLocaleString(),
         });
+    }
 
     return <Descriptions size='small' column={1} items={items} />;
 }

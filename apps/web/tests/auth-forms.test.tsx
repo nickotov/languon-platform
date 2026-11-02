@@ -29,6 +29,7 @@ const testCatalogs = { en, ru };
 
 function LocaleSwitcherHarness({ children }: { children: ReactNode }) {
     const [locale, setLocale] = useState<Extract<Locale, 'en' | 'ru'>>('en');
+
     return (
         <I18nProvider locale={locale} messages={testCatalogs[locale]}>
             <button onClick={() => setLocale('ru')} type='button'>
@@ -98,16 +99,19 @@ describe('authentication forms', () => {
         const accountSwitch = screen.getByRole('link', {
             name: 'Create an account',
         });
+
         expect(heading).toBeVisible();
         expect(screen.getByText('Continue your lessons.')).toBeVisible();
         expect(heading.parentElement?.parentElement).not.toContainElement(
             accountSwitch,
         );
+
         expect(screen.getByText(/Language learning that adapts/)).toBeVisible();
         expect(screen.getAllByRole('heading')).toHaveLength(1);
         expect(
             screen.getByText('Lessons that follow your level'),
         ).toBeVisible();
+
         expect(screen.queryByText(/Google|Apple|Yandex|VK/)).toBeNull();
         expect(screen.queryByRole('checkbox')).toBeNull();
     });
@@ -126,6 +130,7 @@ describe('authentication forms', () => {
         const recoveryLink = screen.getByRole('link', {
             name: 'Back to sign in',
         });
+
         expect(recoveryLink).toHaveAttribute('href', '/login');
         expect(heading.parentElement?.parentElement).not.toContainElement(
             recoveryLink,
@@ -146,6 +151,7 @@ describe('authentication forms', () => {
         const requestLink = screen.getByRole('link', {
             name: 'Request a new code.',
         });
+
         expect(requestLink).toHaveAttribute('href', '/forgot-password');
         expect(heading.parentElement?.parentElement).not.toContainElement(
             requestLink,
@@ -166,6 +172,7 @@ describe('authentication forms', () => {
         const restartLink = screen.getByRole('link', {
             name: 'Start signup again.',
         });
+
         expect(restartLink).toHaveAttribute('href', '/signup');
         expect(heading.parentElement?.parentElement).not.toContainElement(
             restartLink,
@@ -181,6 +188,7 @@ describe('authentication forms', () => {
                 name='password'
             />,
         );
+
         const input = screen.getByLabelText('New password');
 
         expect(input).toHaveAttribute('autocomplete', 'new-password');
@@ -190,6 +198,7 @@ describe('authentication forms', () => {
         await user.click(
             screen.getByRole('button', { name: 'Show new password' }),
         );
+
         expect(input).toHaveAttribute('type', 'text');
     });
 
@@ -207,6 +216,7 @@ describe('authentication forms', () => {
             screen.getByLabelText('Password'),
             'a very secure password',
         );
+
         await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
         await waitFor(() => expect(replace).toHaveBeenCalledWith('/'));
@@ -222,6 +232,7 @@ describe('authentication forms', () => {
         const login = new Promise<AuthenticationSuccessResponse>((resolve) => {
             resolveLogin = resolve;
         });
+
         vi.spyOn(authApi, 'passwordLogin').mockReturnValue(login);
         render(
             <AuthProvider>
@@ -235,11 +246,13 @@ describe('authentication forms', () => {
             screen.getByLabelText('Password'),
             'a very secure password',
         );
+
         await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
         const pendingButton = screen.getByRole('button', {
             name: 'Signing in…',
         });
+
         expect(pendingButton).toBeDisabled();
         expect(pendingButton).toHaveAttribute('aria-busy', 'true');
 
@@ -277,6 +290,7 @@ describe('authentication forms', () => {
         >((resolve) => {
             resolveRetry = resolve;
         });
+
         vi.mocked(authApi.capabilities)
             .mockRejectedValueOnce(new Error('backend unavailable'))
             .mockReturnValueOnce(retry);
@@ -298,6 +312,7 @@ describe('authentication forms', () => {
                 'Authentication options are temporarily unavailable.',
             ),
         ).toBeInTheDocument();
+
         expect(
             screen.getByRole('link', { name: 'Create an account' }),
         ).toHaveAttribute('href', '/signup');
@@ -312,6 +327,7 @@ describe('authentication forms', () => {
             passkeys: { authentication: false, registration: false },
             passwordAuthentication: true,
         });
+
         expect(
             await screen.findByRole('link', { name: 'Forgot password?' }),
         ).toBeInTheDocument();
@@ -336,6 +352,7 @@ describe('authentication forms', () => {
                 'Authentication options are temporarily unavailable.',
             ),
         ).toBeInTheDocument();
+
         await user.click(
             screen.getByRole('button', { name: 'Switch test locale' }),
         );
@@ -343,6 +360,7 @@ describe('authentication forms', () => {
         expect(
             await screen.findByText('Способы входа временно недоступны.'),
         ).toBeInTheDocument();
+
         expect(screen.getByRole('button', { name: 'Повторить' })).toBeEnabled();
         expect(
             screen.queryByText('Проверяем доступные способы входа…'),
@@ -359,6 +377,7 @@ describe('authentication forms', () => {
                 resendAvailableAt: '2026-08-13T10:01:00.000Z',
             },
         });
+
         render(
             <AuthProvider>
                 <SignupForm returnTo='/security' />
@@ -370,11 +389,13 @@ describe('authentication forms', () => {
                 screen.getByRole('button', { name: 'Create account' }),
             ).toBeEnabled(),
         );
+
         await user.type(screen.getByLabelText('Email'), 'Learner@Example.com');
         await user.type(
             screen.getByLabelText('Password'),
             'a very secure password',
         );
+
         await user.click(
             screen.getByRole('button', { name: 'Create account' }),
         );
@@ -405,6 +426,7 @@ describe('authentication forms', () => {
         expect(useSessionStore.getState().user?.primaryEmail).toBe(
             'learner@example.com',
         );
+
         expect(localStorage).toHaveLength(0);
     });
 
@@ -418,6 +440,7 @@ describe('authentication forms', () => {
                 resendAvailableAt: '2099-08-13T10:11:00.000Z',
             },
         });
+
         render(
             <AuthProvider>
                 <VerifyEmailForm
@@ -436,6 +459,7 @@ describe('authentication forms', () => {
                 '/verify-email?flowId=10000000-0000-4000-8000-000000000004&resendAvailableAt=2099-08-13T10%3A11%3A00.000Z&returnTo=%2Fsecurity',
             ),
         );
+
         expect(
             screen.getByRole('button', { name: /Send a new code in/ }),
         ).toBeDisabled();
@@ -447,6 +471,7 @@ describe('authentication forms', () => {
         vi.spyOn(authApi, 'resetPassword').mockResolvedValue({
             status: 'password_reset',
         });
+
         render(
             <AuthProvider>
                 <ResetPasswordForm flowId='10000000-0000-4000-8000-000000000003' />
@@ -458,6 +483,7 @@ describe('authentication forms', () => {
             screen.getByLabelText('New password'),
             'a different secure password',
         );
+
         await user.click(
             screen.getByRole('button', { name: 'Change password' }),
         );
@@ -467,6 +493,7 @@ describe('authentication forms', () => {
                 '/login?passwordReset=complete',
             ),
         );
+
         expect(useSessionStore.getState().status).toBe('signed-out');
     });
 
@@ -478,6 +505,7 @@ describe('authentication forms', () => {
         function LogoutProbe() {
             const { signOutHere } = useAuth();
             const [failed, setFailed] = useState(false);
+
             return (
                 <>
                     <button
@@ -498,9 +526,11 @@ describe('authentication forms', () => {
                 <LogoutProbe />
             </AuthProvider>,
         );
+
         await waitFor(() =>
             expect(useSessionStore.getState().status).toBe('authenticated'),
         );
+
         await user.click(screen.getByRole('button', { name: 'Logout' }));
 
         expect(await screen.findByText('failed')).toBeInTheDocument();
@@ -518,27 +548,33 @@ describe('authentication forms', () => {
                     resolveChange = resolve;
                 }),
         );
+
         render(
             <AuthProvider>
                 <SecuritySettings />
             </AuthProvider>,
         );
+
         await screen.findByRole('heading', { name: 'Change password' });
         expect(screen.getByLabelText('Email')).toHaveAttribute(
             'autocomplete',
             'username',
         );
+
         expect(screen.getByLabelText('Email')).toHaveValue(
             'learner@example.com',
         );
+
         await user.type(
             screen.getByLabelText('Current password'),
             'the current password',
         );
+
         await user.type(
             screen.getByLabelText('New password'),
             'a different secure password',
         );
+
         await user.click(
             screen.getByRole('button', { name: 'Change password' }),
         );
@@ -546,11 +582,13 @@ describe('authentication forms', () => {
         const pendingButton = screen.getByRole('button', {
             name: 'Changing password…',
         });
+
         expect(pendingButton).toBeDisabled();
         expect(pendingButton.closest('form')).toHaveAttribute(
             'aria-busy',
             'true',
         );
+
         await user.click(pendingButton);
         expect(change).toHaveBeenCalledOnce();
 

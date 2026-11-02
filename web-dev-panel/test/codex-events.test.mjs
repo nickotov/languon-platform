@@ -18,12 +18,14 @@ test('projects only allowlisted Codex metadata and drops content', () => {
         }),
         initialAgentMetadata(),
     );
+
     assert.equal(projected.kind, 'metadata');
     assert.equal(projected.metadata.itemType, 'command_execution');
     assert.equal(
         JSON.stringify(projected),
         JSON.stringify(projected).replace('private prompt', ''),
     );
+
     assert.equal(projected.metadata.skill, 'Not reported by Codex CLI');
 });
 

@@ -26,9 +26,15 @@ const targetSchema = z
     .object({
         providerId: z.string().trim().min(1).max(200),
         modelId: z.string().trim().min(1).max(200),
-        meter: z.enum(['text-tokens', 'speech-characters', 'speech-tokens']),
+        meter: z.enum([
+            'text-tokens',
+            'speech-characters',
+            'speech-tokens',
+            'audio-duration',
+        ]),
     })
     .strict();
+
 export const actualizeModelPricesSchema = z
     .object({
         reason: adminMcpReasonSchema,
@@ -97,42 +103,60 @@ const rateFields = [
     'usdPer1000Characters',
     'minimumUsdPerRequest',
 ] as const;
+
 function decimal(value: string | null | undefined) {
-    if (value == null) return null;
+    if (value == null) {
+        return null;
+    }
+
     const [whole, fraction = ''] = value.split('.');
     const significant = fraction.replace(/0+$/, '');
+
     return significant ? `${whole}.${significant}` : whole;
 }
+
 function canonical(value: unknown): string {
-    if (value === null || typeof value !== 'object')
+    if (value === null || typeof value !== 'object') {
         return JSON.stringify(value);
-    if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
+    }
+
+    if (Array.isArray(value)) {
+        return `[${value.map(canonical).join(',')}]`;
+    }
+
     const object = value as Record<string, unknown>;
+
     return `{${Object.keys(object)
         .filter((key) => object[key] !== undefined)
         .sort()
         .map((key) => `${JSON.stringify(key)}:${canonical(object[key])}`)
         .join(',')}}`;
 }
+
 /** Retrieval time alone never creates another monetary revision. Actual validity changes still do. */
 export function sameProviderPricing(
     current: ProviderPrice,
     proposed: ProviderPricePublishRequest,
     at: string,
 ) {
-    if (Boolean(current.nativeRules) !== Boolean(proposed.nativeRules))
+    if (Boolean(current.nativeRules) !== Boolean(proposed.nativeRules)) {
         return false;
+    }
+
     if (current.nativeRules && proposed.nativeRules) {
         if (
             current.nativeRules.validUntil &&
             Date.parse(current.nativeRules.validUntil) <= Date.parse(at)
-        )
+        ) {
             return false;
+        }
+
         return (
             canonical({ ...current.nativeRules, validFrom: undefined }) ===
             canonical({ ...proposed.nativeRules, validFrom: undefined })
         );
     }
+
     return rateFields.every(
         (field) => decimal(current[field]) === decimal(proposed[field]),
     );
@@ -142,15 +166,19 @@ export function sameProviderPricing(
 export class AdminMcpPriceActualizationService {
     constructor(private readonly deps: PriceActualizationDependencies) {
         const ids = deps.sources.map((source) => source.providerId);
-        if (new Set(ids).size !== ids.length)
+        if (new Set(ids).size !== ids.length) {
             throw new Error('Duplicate provider price source.');
+        }
     }
+
     actualize(actor: AdminMcpActor, raw: unknown, signal?: AbortSignal) {
         return this.run(actor, raw, 'actualize', signal);
     }
+
     verify(actor: AdminMcpActor, raw: unknown, signal?: AbortSignal) {
         return this.run(actor, raw, 'verify', signal);
     }
+
     private async run(
         actor: AdminMcpActor,
         raw: unknown,
@@ -161,6 +189,7 @@ export class AdminMcpPriceActualizationService {
             mode === 'verify'
                 ? 'provider-prices.verify'
                 : 'provider-prices.actualize-native.v1';
+
         try {
             this.authorize(actor, mode);
             const input = actualizeModelPricesSchema.parse(raw);
@@ -194,11 +223,16 @@ export class AdminMcpPriceActualizationService {
                       ).values(),
                   ]
                 : discovered.slice(offset, offset + 50);
-            if (targets.some((target) => !entries.has(priceTargetKey(target))))
+
+            if (
+                targets.some((target) => !entries.has(priceTargetKey(target)))
+            ) {
                 throw new AdminMcpError(
                     'not_found',
                     'Select real catalog models only.',
                 );
+            }
+
             const fetched = await this.fetch(targets, bounded);
             bounded.throwIfAborted();
             const fresh = await this.deps.reauthenticate();
@@ -206,11 +240,13 @@ export class AdminMcpPriceActualizationService {
             if (
                 fresh.tokenId !== actor.tokenId ||
                 fresh.userId !== actor.userId
-            )
+            ) {
                 throw new AdminMcpError(
                     'unauthorized',
                     'Credential identity changed.',
                 );
+            }
+
             const prices = new Map(
                 (await this.deps.prices()).map((price) => [
                     priceTargetKey(price),
@@ -233,6 +269,7 @@ export class AdminMcpPriceActualizationService {
                         knownBlockers: entry.executionBlockers,
                     },
                 };
+
                 if (item.status !== 'available') {
                     results.push({
                         ...base,
@@ -244,8 +281,10 @@ export class AdminMcpPriceActualizationService {
                                 : item.status,
                         publication: entry.retired ? 'retired' : 'not-ready',
                     });
+
                     continue;
                 }
+
                 const current = prices.get(priceTargetKey(item.target));
                 const parsed = ProviderPricePublishRequestSchema.safeParse({
                     ...item.price,
@@ -253,6 +292,7 @@ export class AdminMcpPriceActualizationService {
                     effectiveAt: at,
                     reason: input.reason,
                 });
+
                 if (
                     !parsed.success ||
                     priceTargetKey(parsed.data) !==
@@ -268,8 +308,10 @@ export class AdminMcpPriceActualizationService {
                         reason: 'Official rates, identity or validity do not match the supported native contract.',
                         publication: 'not-ready',
                     });
+
                     continue;
                 }
+
                 const scheduled =
                     current && Date.parse(current.effectiveAt) > Date.parse(at);
                 const matches = current
@@ -293,10 +335,12 @@ export class AdminMcpPriceActualizationService {
                     sourceUrl: item.price.sourceUrl,
                     fetchedAt: at,
                 };
+
                 if (mode === 'verify') {
                     results.push({ ...verified, status: 'verified' });
                     continue;
                 }
+
                 if (!ready) {
                     results.push({
                         ...verified,
@@ -305,12 +349,15 @@ export class AdminMcpPriceActualizationService {
                             ? 'Retired entries are verified without reactivation or publication.'
                             : 'A future price revision is already scheduled.',
                     });
+
                     continue;
                 }
+
                 if (matches) {
                     results.push({ ...verified, status: 'unchanged' });
                     continue;
                 }
+
                 try {
                     const write = parsed.data.nativeRules
                         ? 'provider-prices.native-write'
@@ -320,6 +367,7 @@ export class AdminMcpPriceActualizationService {
                         write,
                         parsed.data,
                     );
+
                     results.push({ ...verified, status: 'preview', preview });
                 } catch {
                     results.push({
@@ -330,6 +378,7 @@ export class AdminMcpPriceActualizationService {
                     });
                 }
             }
+
             const nextOffset =
                 !input.models && offset + targets.length < discovered.length
                     ? offset + targets.length
@@ -346,6 +395,7 @@ export class AdminMcpPriceActualizationService {
                         ? 'Verification publishes no prices or previews and runs no generation. Continue nextOffset until null; actualize separately when updates are wanted.'
                         : 'Apply intended previews with admin_apply and stable operation keys before continuing nextOffset. Price publication does not activate models or satisfy runtime checks.',
             };
+
             await this.deps.audit.recordRead(
                 fresh,
                 operation,
@@ -353,12 +403,15 @@ export class AdminMcpPriceActualizationService {
                 value,
                 input.reason,
             );
+
             return value;
         } catch (error) {
             await this.deps.audit.recordRejected(actor, operation, raw, error);
+
             throw error;
         }
     }
+
     private authorize(actor: AdminMcpActor, mode: 'verify' | 'actualize') {
         if (mode === 'verify') {
             requirePermission(actor, 'providers.read');
@@ -369,6 +422,7 @@ export class AdminMcpPriceActualizationService {
             requireAction(actor, 'provider-prices.native-write');
         }
     }
+
     private async fetch(targets: ProviderPriceTarget[], signal: AbortSignal) {
         const sources = new Map(
             this.deps.sources.map((source) => [source.providerId, source]),
@@ -390,8 +444,10 @@ export class AdminMcpPriceActualizationService {
                         reason: 'A new provider requires a reviewed price source adapter.',
                     })),
                 );
+
                 continue;
             }
+
             try {
                 const values = await source.fetchPrices(batch, signal);
                 for (const target of batch) {
@@ -400,6 +456,7 @@ export class AdminMcpPriceActualizationService {
                             priceTargetKey(value.target) ===
                             priceTargetKey(target),
                     );
+
                     fetched.push(
                         matching.length === 1
                             ? matching[0]!
@@ -421,6 +478,7 @@ export class AdminMcpPriceActualizationService {
                 );
             }
         }
+
         return fetched;
     }
 }

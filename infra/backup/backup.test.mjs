@@ -51,6 +51,7 @@ test('freshness gate requires a recent backup and compatible restore drill', () 
         restore: restore(),
         now: new Date('2026-08-18T20:00:00.000Z'),
     });
+
     assert.equal(result.backupAgeHours, 10);
     assert.equal(result.restoreAgeDays, 17.42);
     assert.equal(result.objectSha256, checksum);
@@ -79,6 +80,7 @@ test('freshness gate rejects stale, future, and incompatible evidence', () => {
             }),
         /limit is 24/,
     );
+
     assert.throws(
         () =>
             checkFreshEvidence({
@@ -88,6 +90,7 @@ test('freshness gate rejects stale, future, and incompatible evidence', () => {
             }),
         /future/,
     );
+
     assert.throws(
         () =>
             checkFreshEvidence({
@@ -112,6 +115,7 @@ test('restore target must be explicit, disposable, and strongly named', () => {
         AWS_ACCESS_KEY_ID: 'id',
         AWS_SECRET_ACCESS_KEY: 'secret',
     };
+
     assert.equal(assertRestoreConfig(base), base);
     assert.throws(
         () =>
@@ -121,6 +125,7 @@ test('restore target must be explicit, disposable, and strongly named', () => {
             }),
         /required/,
     );
+
     assert.throws(
         () => assertRestoreConfig({ ...base, RESTORE_PGDATABASE: 'languon' }),
         /must use/,
@@ -139,6 +144,7 @@ test('production backup and restore require verified PostgreSQL TLS', () => {
         AWS_ACCESS_KEY_ID: 'id',
         AWS_SECRET_ACCESS_KEY: 'secret',
     };
+
     assert.throws(
         () =>
             assertCreateConfig(
@@ -147,6 +153,7 @@ test('production backup and restore require verified PostgreSQL TLS', () => {
             ),
         /PGSSLMODE=verify-full and PGSSLROOTCERT/,
     );
+
     assert.equal(
         assertCreateConfig(
             {
@@ -169,6 +176,7 @@ test('production backup and restore require verified PostgreSQL TLS', () => {
         AWS_ACCESS_KEY_ID: 'id',
         AWS_SECRET_ACCESS_KEY: 'secret',
     };
+
     assert.throws(
         () =>
             assertRestoreConfig(
@@ -191,6 +199,7 @@ test('retention keeps seven recent daily backups and four distinct older weeks',
         deletions.some(({ key }) => key.endsWith('/06.metadata.json')),
         false,
     );
+
     assert.equal(
         deletions.some(({ key }) => key.endsWith('/09.metadata.json')),
         false,
@@ -201,6 +210,7 @@ test('environment parser does not expand shell expressions', () => {
     const parsed = parseEnvironmentFile(
         "PGPASSWORD='$(do-not-run)'\nAWS_SECRET_ACCESS_KEY=value\n",
     );
+
     assert.equal(parsed.PGPASSWORD, '$(do-not-run)');
 });
 
@@ -208,6 +218,7 @@ test('create writes evidence only after encrypted private upload is verified', a
     const directory = await mkdtemp(
         path.join(tmpdir(), 'languon-backup-test-'),
     );
+
     context.after(() => rm(directory, { recursive: true, force: true }));
     const configPath = path.join(directory, 'backup.env');
     const manifestPath = path.join(directory, 'latest.json');
@@ -228,6 +239,7 @@ test('create writes evidence only after encrypted private upload is verified', a
         ].join('\n'),
         { mode: 0o600 },
     );
+
     let uploadedBytes;
     let uploadedChecksum;
     const calls = [];
@@ -236,17 +248,22 @@ test('create writes evidence only after encrypted private upload is verified', a
         if (command === 'pg_dump' && args[0] === '--version') {
             return { stdout: 'pg_dump (PostgreSQL) 17.4\n', stderr: '' };
         }
+
         if (command === 'pg_dump') {
             await writeFile(args[args.indexOf('--file') + 1], 'custom-dump');
+
             return { stdout: '', stderr: '' };
         }
+
         if (command === 'age') {
             await writeFile(
                 args[args.indexOf('--output') + 1],
                 'encrypted-dump',
             );
+
             return { stdout: '', stderr: '' };
         }
+
         if (command === 'aws' && args.includes('head-object')) {
             return {
                 stdout: JSON.stringify({
@@ -257,6 +274,7 @@ test('create writes evidence only after encrypted private upload is verified', a
                 stderr: '',
             };
         }
+
         if (
             command === 'aws' &&
             args[0] === 's3' &&
@@ -267,9 +285,14 @@ test('create writes evidence only after encrypted private upload is verified', a
             uploadedChecksum = args[args.indexOf('--metadata') + 1].slice(
                 'sha256='.length,
             );
+
             return { stdout: '', stderr: '' };
         }
-        if (command === 'psql') return { stdout: '\n', stderr: '' };
+
+        if (command === 'psql') {
+            return { stdout: '\n', stderr: '' };
+        }
+
         return { stdout: '', stderr: '' };
     };
 
@@ -292,12 +315,14 @@ test('create writes evidence only after encrypted private upload is verified', a
         ([command, args]) =>
             command === 'aws' && args[0] === 's3' && args[2]?.endsWith('.age'),
     );
+
     assert.ok(encryptedUpload[1].includes('--acl'));
     assert.ok(encryptedUpload[1].includes('private'));
     assert.ok(encryptedUpload[1].includes('--sse'));
     const dump = calls.find(
         ([command, args]) => command === 'pg_dump' && args[0] !== '--version',
     );
+
     assert.equal(dump[2].env.PGSSLMODE, 'verify-full');
     assert.equal(dump[2].env.PGSSLROOTCERT, '/secure/postgres-ca.crt');
 });
@@ -306,6 +331,7 @@ test('restore accepts only a confirmed empty disposable target and records integ
     const directory = await mkdtemp(
         path.join(tmpdir(), 'languon-restore-test-'),
     );
+
     context.after(() => rm(directory, { recursive: true, force: true }));
     const configPath = path.join(directory, 'restore.env');
     const identityPath = path.join(directory, 'age-identity.txt');
@@ -315,6 +341,7 @@ test('restore accepts only a confirmed empty disposable target and records integ
     const encryptedSha256 = createHash('sha256')
         .update(encrypted)
         .digest('hex');
+
     await writeFile(
         configPath,
         [
@@ -332,6 +359,7 @@ test('restore accepts only a confirmed empty disposable target and records integ
         ].join('\n'),
         { mode: 0o600 },
     );
+
     await writeFile(identityPath, 'AGE-SECRET-KEY-TEST', { mode: 0o600 });
     await writeFile(
         backupPath,
@@ -345,34 +373,46 @@ test('restore accepts only a confirmed empty disposable target and records integ
             }),
         ),
     );
+
     let restored = false;
     const runnerCalls = [];
     const runner = async (command, args, options = {}) => {
         runnerCalls.push([command, args, options]);
         if (command === 'aws') {
             await writeFile(args[3], encrypted);
+
             return { stdout: '', stderr: '' };
         }
+
         if (command === 'age') {
             await writeFile(args[args.indexOf('--output') + 1], 'custom-dump');
+
             return { stdout: '', stderr: '' };
         }
+
         if (command === 'pg_restore' && args[0] === '--version') {
             return { stdout: 'pg_restore (PostgreSQL) 17.4\n', stderr: '' };
         }
-        if (command === 'pg_restore' && args.includes('--dbname'))
+
+        if (command === 'pg_restore' && args.includes('--dbname')) {
             restored = true;
+        }
+
         if (command === 'psql') {
             const query = args[args.indexOf('--command') + 1];
             if (query === 'select current_database()') {
                 return { stdout: 'languon_restore_a1b2c3d4\n', stderr: '' };
             }
+
             if (query.includes('count(*)')) {
                 return { stdout: restored ? '3\n' : '0\n', stderr: '' };
             }
-            if (query.includes('to_regclass'))
+
+            if (query.includes('to_regclass')) {
                 return { stdout: '\n', stderr: '' };
+            }
         }
+
         return { stdout: '', stderr: '' };
     };
 
@@ -388,6 +428,7 @@ test('restore accepts only a confirmed empty disposable target and records integ
         ),
         /requires --confirm/,
     );
+
     const result = await restoreBackup(
         {
             environment: 'production',
@@ -406,6 +447,7 @@ test('restore accepts only a confirmed empty disposable target and records integ
         ([command, args]) =>
             command === 'pg_restore' && args.includes('--dbname'),
     );
+
     assert.equal(restoreCall[2].env.PGSSLMODE, 'verify-full');
     assert.equal(restoreCall[2].env.PGSSLROOTCERT, '/secure/postgres-ca.crt');
 });

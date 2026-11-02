@@ -48,6 +48,7 @@ it('sends the pinned Flash translation cap and non-thinking mode on the actual S
                 },
             ),
     );
+
     vi.stubGlobal('fetch', transport);
     const result = await createTextsAiProvider({
         credentials: { DEEPSEEK_API_KEY: 'synthetic-wire-key' },
@@ -76,6 +77,7 @@ it('sends the pinned Flash translation cap and non-thinking mode on the actual S
         idempotencyKey: 'synthetic-capacity-wire',
         signal: new AbortController().signal,
     });
+
     expect(result.draft).toEqual({ translation });
     expect(transport).toHaveBeenCalledTimes(1);
     const [url, options] = transport.mock.calls[0]!;
@@ -87,5 +89,6 @@ it('sends the pinned Flash translation cap and non-thinking mode on the actual S
     expect(JSON.stringify(body.messages)).toContain(
         'La médiation permet de comprendre.',
     );
+
     expect(body.tools).toBeUndefined();
 });

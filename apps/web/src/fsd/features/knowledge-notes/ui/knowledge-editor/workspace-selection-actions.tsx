@@ -28,30 +28,38 @@ export function WorkspaceSelectionActions({
     const actions: KnowledgeTutorAction[] = more
         ? ['simplify', 'rephrase', 'examples']
         : ['explain', 'correct', 'translate'];
+
     function preserveSelection(event: MouseEvent) {
         event.preventDefault();
     }
+
     function askTutor() {
         workspace.onAskTutor(passage);
     }
+
     function bold() {
         editor.chain().focus().toggleBold().run();
     }
+
     function italic() {
         editor.chain().focus().toggleItalic().run();
     }
+
     function toggleMore() {
         setMore((value) => !value);
     }
+
     function keyDown(event: KeyboardEvent) {
         if (event.key === 'Escape') {
             event.preventDefault();
             editor.commands.focus();
         }
     }
+
     const moreLabel = more
         ? t('knowledge.lessActions')
         : t('knowledge.moreActions');
+
     return (
         <div
             ref={root}
@@ -128,6 +136,7 @@ const actionKeys = {
     rephrase: 'knowledge.selectionRephrase',
     examples: 'knowledge.selectionExamples',
 } as const;
+
 function TutorAction({
     action,
     passage,
@@ -141,9 +150,11 @@ function TutorAction({
     function preserveSelection(event: MouseEvent) {
         event.preventDefault();
     }
+
     function select() {
         workspace.onTutorAction?.(action, passage);
     }
+
     return (
         <button
             type='button'

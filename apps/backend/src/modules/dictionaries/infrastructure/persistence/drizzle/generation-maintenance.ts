@@ -73,8 +73,9 @@ export async function expireReviewPayloads(
             .limit(input.limit)
             .for('update', { skipLocked: true });
 
-        for (const row of rows)
+        for (const row of rows) {
             await expireProposal(tx, row.jobId, input.context.now);
+        }
 
         return rows.length;
     });
@@ -97,10 +98,12 @@ export async function observeOperationalState(
     const windowMs =
         input.context.now.getTime() - input.windowStartedAt.getTime();
 
-    if (windowMs < 10_000 || windowMs > 300_000)
+    if (windowMs < 10_000 || windowMs > 300_000) {
         throw new Error(
             'Dictionary operational measurement window is invalid.',
         );
+    }
+
     const observedAt = input.context.now.toISOString();
     const windowStartedAt = input.windowStartedAt.toISOString();
     const [jobs] = await context.database

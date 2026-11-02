@@ -24,12 +24,15 @@ export function mapProposalTarget(
                     oldStart === oldEnd &&
                     oldStart > from &&
                     oldStart < to)
-            )
+            ) {
                 changed = true;
+            }
         });
+
         const collapsed = from === to;
         from = stepMap.map(from, 1);
         to = stepMap.map(to, collapsed ? 1 : -1);
     }
+
     return { ...target, from, to, changed };
 }

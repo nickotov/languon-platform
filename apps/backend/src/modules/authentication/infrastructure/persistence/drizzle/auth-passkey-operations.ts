@@ -45,7 +45,10 @@ export function registerPasskey(
             input.userId,
         );
 
-        if (!session || input.passkey.userId !== input.userId) return false;
+        if (!session || input.passkey.userId !== input.userId) {
+            return false;
+        }
+
         const activePasskeys = await transaction
             .select({ id: authPasskeysTable.id })
             .from(authPasskeysTable)
@@ -57,7 +60,10 @@ export function registerPasskey(
             )
             .limit(maximumActivePasskeysPerUser);
 
-        if (activePasskeys.length >= maximumActivePasskeysPerUser) return false;
+        if (activePasskeys.length >= maximumActivePasskeysPerUser) {
+            return false;
+        }
+
         try {
             await transaction
                 .insert(authPasskeysTable)
@@ -92,7 +98,10 @@ export function commitPasskeyAuthentication(
             .limit(1)
             .for('update');
         const passkey = rows[0];
-        if (!passkey || passkey.revokedAt) return { kind: 'unavailable' };
+        if (!passkey || passkey.revokedAt) {
+            return { kind: 'unavailable' };
+        }
+
         if (passkey.counter !== input.expectedCounter) {
             return { kind: 'counter_conflict' };
         }
@@ -129,7 +138,10 @@ export function commitPasskeyAuthentication(
             )
             .returning({ id: authPasskeysTable.id });
 
-        if (updated.length !== 1) return { kind: 'counter_conflict' };
+        if (updated.length !== 1) {
+            return { kind: 'counter_conflict' };
+        }
+
         await insertSession(transaction, input.session);
 
         return { account, kind: 'authenticated' };
@@ -185,7 +197,10 @@ export function revokePasskey(
             input.userId,
         );
 
-        if (!session) return false;
+        if (!session) {
+            return false;
+        }
+
         const revoked = await transaction
             .update(authPasskeysTable)
             .set({ revokedAt: input.now, updatedAt: input.now })

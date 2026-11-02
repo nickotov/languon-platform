@@ -20,6 +20,7 @@ export async function getRequestLocale(): Promise<Locale> {
         cookies(),
         headers(),
     ]);
+
     return preferredLocale(
         cookieStore.get(localeCookieName)?.value,
         headerStore.get('accept-language'),
@@ -28,10 +29,12 @@ export async function getRequestLocale(): Promise<Locale> {
 
 export async function getServerI18n(locale: Locale) {
     const messages = await getMessages(locale);
+
     return { messages, t: createTranslator(messages) };
 }
 
 export async function getRequestI18n() {
     const locale = await getRequestLocale();
+
     return { locale, ...(await getServerI18n(locale)) };
 }

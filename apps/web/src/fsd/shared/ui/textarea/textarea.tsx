@@ -123,7 +123,9 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
                     id={fieldId}
                     maxLength={maxLength}
                     onChange={(event) => {
-                        if (!controlled) setInternalValue(event.target.value);
+                        if (!controlled) {
+                            setInternalValue(event.target.value);
+                        }
 
                         onChange?.(event);
                     }}

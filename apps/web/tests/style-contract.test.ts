@@ -9,12 +9,28 @@ import {
 } from '../scripts/style-contract';
 
 describe('CSS-only styling contract', () => {
+    it('allows the exercise format discriminator while retaining fill utility checks', () => {
+        expect(inspectMarkup('const format = "fill-in-the-blank";')).toEqual(
+            [],
+        );
+
+        expect(
+            inspectMarkup('<div className="fill-in-the-blank fill-current" />'),
+        ).toEqual(
+            expect.arrayContaining([
+                'Tailwind utility: fill-in-the-blank',
+                'Tailwind utility: fill-current',
+            ]),
+        );
+    });
+
     it('permits AI SDK protocol literals while still rejecting alignment utilities in class attributes', () => {
         expect(
             inspectMarkup(
                 'const event = { type: "text-start" }; const delta = "text-delta"; const end = "text-end";',
             ),
         ).toEqual([]);
+
         expect(
             inspectMarkup('<div className="text-start text-end" />'),
         ).toEqual(
@@ -24,10 +40,12 @@ describe('CSS-only styling contract', () => {
             ]),
         );
     });
+
     it('rejects utilities in direct, conditional and computed class names', () => {
         expect(
             inspectMarkup('<div className="flex items-center" />'),
         ).toHaveLength(2);
+
         expect(
             inspectMarkup(
                 'const variant = active ? "grid" : "hidden"; const classes = variant; const view = <div className={classes} />;',
@@ -38,6 +56,7 @@ describe('CSS-only styling contract', () => {
                 'Tailwind utility: hidden',
             ]),
         );
+
         expect(
             inspectMarkup(
                 'const classes = `px-${size} hover:bg-primary-600`; const view = <div className={classes} />;',
@@ -48,11 +67,13 @@ describe('CSS-only styling contract', () => {
                 'Tailwind utility: hover:bg-primary-600',
             ]),
         );
+
         expect(
             inspectMarkup(
                 'function classes() { return "flex"; } const view = <div className={classes()} />;',
             ),
         ).toContain('Tailwind utility: flex');
+
         expect(
             inspectMarkup('const variant = {compact: "p-2", default: "p-4"};'),
         ).toHaveLength(2);
@@ -64,6 +85,7 @@ describe('CSS-only styling contract', () => {
                 'import styles from "./flex-panel.module.css"; const classes = styles.layout; const view = <div className={classes}>A relative of mine</div>; const label = "flex";',
             ),
         ).toEqual([]);
+
         expect(inspectMarkup('<div className={styles[variant]} />')).toEqual(
             [],
         );
@@ -74,6 +96,7 @@ describe('CSS-only styling contract', () => {
         expect(inspectMarkup('<div className="text-folders" />')).toEqual([
             'Tailwind utility: text-folders',
         ]);
+
         expect(inspectMarkup('const kind = "text-reference";')).toEqual([]);
         expect(inspectMarkup('<div className="text-reference" />')).toEqual([
             'Tailwind utility: text-reference',
@@ -94,16 +117,19 @@ describe('CSS-only styling contract', () => {
                 '<Menu triggerClassName="flex" menuClassName="hidden" />',
             ),
         ).toHaveLength(2);
+
         expect(
             inspectMarkup(
                 'const cardStyle = { padding: "12px", opacity: pending ? 0 : 1 }; const view = <div style={cardStyle} />;',
             ),
         ).toEqual(['Static inline presentation: padding']);
+
         expect(
             inspectMarkup(
                 '<div style={{ width: `${percent}%`, transform: drag.transform, opacity: departing ? 0 : 1 }} />',
             ),
         ).toEqual([]);
+
         expect(
             inspectMarkup(
                 '<div style={{ padding: "12px" }} />',
@@ -118,17 +144,21 @@ describe('CSS-only styling contract', () => {
                 '@tailwind utilities; .card { padding: 12px; width: 2.75rem; border-radius: 8px; --tw-shadow: none; }',
             ),
         ).toHaveLength(5);
+
         expect(
             inspectCss(
                 '.card { margin-inline: -0.5rem; grid-template-columns: 300px 1fr; }',
             ),
         ).toHaveLength(2);
+
         expect(inspectCss('@apply flex;')).toContain(
             'Tailwind directive: @apply',
         );
+
         expect(inspectCss('@import "tailwindcss";')).toContain(
             'Tailwind stylesheet import',
         );
+
         expect(inspectCss('.card { --style-translate-x: 24px; }')).toHaveLength(
             1,
         );
@@ -140,6 +170,7 @@ describe('CSS-only styling contract', () => {
                 --elevation-sm: 0 1px 4px #000; filter: blur(4px);
                 backdrop-filter: blur(4px); }
         `);
+
         expect(errors).toHaveLength(6);
         for (const property of [
             'flex',
@@ -147,10 +178,11 @@ describe('CSS-only styling contract', () => {
             '--elevation-sm',
             'filter',
             'backdrop-filter',
-        ])
+        ]) {
             expect(errors.some((error) => error.includes(`${property}:`))).toBe(
                 true,
             );
+        }
     });
 
     it('allows token consumers and intentionally native CSS values', () => {
@@ -159,12 +191,15 @@ describe('CSS-only styling contract', () => {
                 '@media (min-width: 768px) { .card { width: 100%; min-height: 100dvh; border: 1px solid; line-height: 1.5; padding: 0 var(--space-16); border-radius: 50%; transform: translateX(50%); font-size: 0.85em; } }',
             ),
         ).toEqual([]);
+
         expect(
             inspectCss(':root { --size-44: 2.75rem; }', 'geometry-tokens.css'),
         ).toEqual([]);
+
         expect(
             inspectCss('.card { background-image: url("12px.svg"); }'),
         ).toEqual([]);
+
         expect(inspectCss(':root { --radius-full: 9999px; }')).toEqual([]);
     });
 
@@ -174,11 +209,13 @@ describe('CSS-only styling contract', () => {
                 'const headers = ["content-type", "content-length", "content-disposition"]; const placement = "bottom-end"; const queryKey = ["text-ai-catalog"];',
             ),
         ).toEqual([]);
+
         expect(
             inspectMarkup(
                 'const opposite = {top: "bottom", left: "right"}; function position(x) { return {left: x, [opposite.top]: x}; } const view = <div style={position(offset)} />;',
             ),
         ).toEqual([]);
+
         expect(
             inspectMarkup(
                 'const opposite = {top: "bottom", left: "right"}; function position(x): CSSProperties { const side = "top" as keyof typeof opposite; return {left: x, [opposite[side]]: 2}; } const offset = position(x); const view = <div style={offset} />;',
@@ -208,6 +245,7 @@ describe('CSS-only styling contract', () => {
                 new Set(['--size-44']),
             ),
         ).toEqual(['Undefined geometry token: --space-17']);
+
         expect(
             inspectCss(
                 '.card { padding: var(--space-16); }',

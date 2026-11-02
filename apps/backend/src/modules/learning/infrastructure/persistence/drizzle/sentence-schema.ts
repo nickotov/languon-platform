@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import type { KnowledgeLearningSourceBinding } from '../../../../knowledge/application/learning-source-binding';
 import {
     pgTable,
     uuid,
@@ -245,7 +246,20 @@ export const sentenceAiJobsTable = pgTable(
     {
         id: uuid('id').primaryKey(),
         learnerId: learner(),
-        dictionaryId: dictionary(),
+        dictionaryId: uuid('dictionary_id').references(
+            () => dictionariesTable.id,
+            { onDelete: 'cascade' },
+        ),
+        sourceKind: text('source_kind')
+            .$type<'dictionary' | 'knowledge-vocabulary'>()
+            .notNull()
+            .default('dictionary'),
+        sourceNoteId: uuid('source_note_id'),
+        sourceExerciseId: uuid('source_exercise_id'),
+        knowledgeSource:
+            jsonb('knowledge_source').$type<KnowledgeLearningSourceBinding>(),
+        resultKnowledgeExerciseId: uuid('result_knowledge_exercise_id'),
+        resultKnowledgeAttemptId: uuid('result_knowledge_attempt_id'),
         jobKind: text('job_kind')
             .$type<'sentence-generation' | 'sentence-check'>()
             .notNull(),
@@ -258,9 +272,9 @@ export const sentenceAiJobsTable = pgTable(
         referenceRevealed: boolean('reference_revealed')
             .notNull()
             .default(false),
-        inputPayload: jsonb('input_payload')
-            .$type<SentenceGenerationInput | SentenceCheckInput>()
-            .notNull(),
+        inputPayload: jsonb('input_payload').$type<
+            SentenceGenerationInput | SentenceCheckInput
+        >(),
         executionState: text('execution_state')
             .$type<
                 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
@@ -364,6 +378,11 @@ export const sentenceAiJobsTable = pgTable(
             t.operationId,
         ),
         index('sentence_ai_jobs_dictionary_idx').on(t.dictionaryId),
+        index('sentence_ai_jobs_knowledge_note_idx').on(t.sourceNoteId),
+        check(
+            'sentence_ai_jobs_source_shape',
+            sql`(${t.sourceKind}='dictionary' and ${t.dictionaryId} is not null and ${t.sourceNoteId} is null and ${t.knowledgeSource} is null and ${t.sourceExerciseId} is null and ${t.resultKnowledgeExerciseId} is null and ${t.resultKnowledgeAttemptId} is null) or (${t.sourceKind}='knowledge-vocabulary' and ${t.dictionaryId} is null and ${t.sourceNoteId} is not null and ${t.resultExerciseId} is null and ${t.resultAttemptId} is null and (${t.knowledgeSource} is not null or (${t.executionState} in ('completed','failed','cancelled') and ${t.inputPayload} is null)))`,
+        ),
         index('sentence_ai_jobs_revision_idx').on(t.executionRevisionId),
         index('sentence_ai_jobs_result_exercise_idx').on(t.resultExerciseId),
         index('sentence_ai_jobs_result_attempt_idx').on(t.resultAttemptId),
@@ -375,7 +394,7 @@ export const sentenceAiJobsTable = pgTable(
         index('sentence_ai_jobs_learner_idx').on(t.learnerId, t.executionState),
         check(
             'sentence_ai_jobs_kind_format',
-            sql`((${t.jobKind}='sentence-generation' and ((${t.format} in ('sentence-generation:v1','sentence-preparation:v1') and ${t.inputPayload}->>'generationPolicyVersion'='1') or (${t.format} in ('sentence-generation:v2','sentence-preparation:v2') and ${t.inputPayload}->>'generationPolicyVersion'='2'))) or (${t.jobKind}='sentence-check' and ${t.format}='sentence-check:v1')) is true`,
+            sql`((${t.jobKind}='sentence-generation' and ((${t.format} in ('sentence-generation:v1','sentence-preparation:v1') and ${t.inputPayload}->>'generationPolicyVersion'='1') or (${t.format} in ('sentence-generation:v2','sentence-preparation:v2') and ${t.inputPayload}->>'generationPolicyVersion'='2'))) or (${t.jobKind}='sentence-check' and ${t.format}='sentence-check:v1')) is true or (${t.sourceKind}='knowledge-vocabulary' and ${t.executionState} in ('completed','failed','cancelled') and ${t.inputPayload} is null)`,
         ),
         check(
             'sentence_ai_jobs_execution_versions',

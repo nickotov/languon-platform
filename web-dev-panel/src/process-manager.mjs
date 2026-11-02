@@ -27,7 +27,10 @@ function terminalStatus(status) {
 }
 
 function snapshotRun(run) {
-    if (!run) return null;
+    if (!run) {
+        return null;
+    }
+
     return {
         agent: run.agent,
         commandId: run.commandId,
@@ -43,7 +46,10 @@ function snapshotRun(run) {
 
 function processSignal(run, signal) {
     const child = run.child;
-    if (!child || child.pid === undefined) return;
+    if (!child || child.pid === undefined) {
+        return;
+    }
+
     try {
         if (process.platform === 'win32') {
             if (child.exitCode === null) {
@@ -53,25 +59,37 @@ function processSignal(run, signal) {
             process.kill(-child.pid, signal);
         }
     } catch (error) {
-        if (error.code !== 'ESRCH') throw error;
+        if (error.code !== 'ESRCH') {
+            throw error;
+        }
     }
 }
 
 function windowsTreeKill(run, force) {
-    if (process.platform !== 'win32' || !run.child?.pid) return;
+    if (process.platform !== 'win32' || !run.child?.pid) {
+        return;
+    }
+
     const args = ['/PID', String(run.child.pid), '/T'];
-    if (force) args.push('/F');
+    if (force) {
+        args.push('/F');
+    }
+
     const killer = spawn('taskkill.exe', args, {
         shell: false,
         stdio: 'ignore',
         windowsHide: true,
     });
+
     killer.unref();
 }
 
 function forceOwnedTree(run) {
-    if (process.platform === 'win32') windowsTreeKill(run, true);
-    else processSignal(run, 'SIGKILL');
+    if (process.platform === 'win32') {
+        windowsTreeKill(run, true);
+    } else {
+        processSignal(run, 'SIGKILL');
+    }
 }
 
 function commandConflictIssues(commands, activeRuns) {
@@ -85,6 +103,7 @@ function commandConflictIssues(commands, activeRuns) {
                     reason: `conflicts with selected command '${conflict}'`,
                 });
             }
+
             const active = activeRuns.get(conflict);
             if (commandIsActive(active)) {
                 issues.push({
@@ -94,6 +113,7 @@ function commandConflictIssues(commands, activeRuns) {
             }
         }
     }
+
     return issues;
 }
 
@@ -131,6 +151,7 @@ export class ProcessManager extends EventEmitter {
                 { status: 503 },
             );
         }
+
         await this.#catalogStore.refresh();
         const issues = [];
         if (!Array.isArray(selections) || selections.length === 0) {
@@ -139,6 +160,7 @@ export class ProcessManager extends EventEmitter {
                 reason: 'select at least one command',
             });
         }
+
         const uniqueIds = new Set();
         const commands = [];
         for (const selection of selections) {
@@ -147,43 +169,54 @@ export class ProcessManager extends EventEmitter {
                 issues.push({ commandId, reason: 'selected more than once' });
                 continue;
             }
+
             uniqueIds.add(commandId);
             const command = this.#catalogStore.getCommand(commandId);
             if (!command) {
                 issues.push({ commandId, reason: 'unknown command' });
                 continue;
             }
+
             if (!command.available || !command.execution) {
                 issues.push({
                     commandId,
                     reason: command.runtimeReason ?? 'command is disabled',
                 });
+
                 continue;
             }
+
             if (selections.length > 1 && !command.batchEligible) {
                 issues.push({
                     commandId,
                     reason: 'command is not eligible for batch start',
                 });
+
                 continue;
             }
+
             if (selection.sourceRevision !== command.actualRevision) {
                 issues.push({
                     commandId,
                     reason: 'command source changed; refresh the panel before starting it',
                 });
+
                 continue;
             }
+
             const existing = this.#runs.get(commandId);
             if (commandIsActive(existing)) {
                 issues.push({
                     commandId,
                     reason: 'command is already running',
                 });
+
                 continue;
             }
+
             commands.push(command);
         }
+
         issues.push(...commandConflictIssues(commands, this.#runs));
         if (issues.length > 0) {
             throw new PanelOperationError(
@@ -197,6 +230,7 @@ export class ProcessManager extends EventEmitter {
             const run = this.#createRun(command);
             this.#runs.set(command.id, run);
             this.#emitState(command.id);
+
             return { command, run };
         });
 
@@ -206,10 +240,14 @@ export class ProcessManager extends EventEmitter {
         const failed = results
             .map((result, index) => ({ result, ...batchRuns[index] }))
             .filter(({ result }) => result.status === 'rejected');
+
         if (failed.length > 0) {
             for (const { run } of batchRuns) {
-                if (commandIsActive(run)) this.#requestStop(run);
+                if (commandIsActive(run)) {
+                    this.#requestStop(run);
+                }
             }
+
             throw new PanelOperationError(
                 'batch_spawn_failed',
                 'The batch could not start and its owned processes are stopping.',
@@ -222,6 +260,7 @@ export class ProcessManager extends EventEmitter {
                 },
             );
         }
+
         return batchRuns.map(({ run }) => snapshotRun(run));
     }
 
@@ -230,6 +269,7 @@ export class ProcessManager extends EventEmitter {
         const exitPromise = new Promise((resolve) => {
             resolveExit = resolve;
         });
+
         return {
             agent:
                 command.outputProtocol === 'codex-jsonl'
@@ -267,6 +307,7 @@ export class ProcessManager extends EventEmitter {
                 stdio: ['ignore', 'pipe', 'pipe'],
             },
         );
+
         run.child = child;
         const redact = createEnvironmentRedactor(this.#environment);
         const append = (stream, rawText) => {
@@ -277,8 +318,10 @@ export class ProcessManager extends EventEmitter {
         const stdoutDecoder = new LineDecoder((line) => {
             if (command.outputProtocol !== 'codex-jsonl') {
                 append('stdout', line);
+
                 return;
             }
+
             const projected = projectCodexEvent(line, run.agent);
             if (projected.kind === 'metadata') {
                 run.agent = projected.metadata;
@@ -310,12 +353,14 @@ export class ProcessManager extends EventEmitter {
             onText: (text) => stderrDecoder.writeText(text),
             redact,
         });
+
         run.decoders = [
             stdoutRedactor,
             stderrRedactor,
             stdoutDecoder,
             stderrDecoder,
         ];
+
         child.stdout.on('data', (chunk) => stdoutRedactor.write(chunk));
         child.stderr.on('data', (chunk) => stderrRedactor.write(chunk));
 
@@ -327,13 +372,19 @@ export class ProcessManager extends EventEmitter {
 
         child.once('close', (code, signal) => {
             this.#enqueue(async () => {
-                if (run.finalized) return;
+                if (run.finalized) {
+                    return;
+                }
+
                 run.finalized = true;
                 stdoutRedactor.end();
                 stderrRedactor.end();
                 stdoutDecoder.end();
                 stderrDecoder.end();
-                for (const timer of run.timers) clearTimeout(timer);
+                for (const timer of run.timers) {
+                    clearTimeout(timer);
+                }
+
                 run.timers = [];
                 run.endedAt = new Date().toISOString();
                 run.exitCode = code;
@@ -343,6 +394,7 @@ export class ProcessManager extends EventEmitter {
                     : code === 0
                       ? 'succeeded'
                       : 'failed';
+
                 run.resolveExit(snapshotRun(run));
                 this.#emitState(command.id);
             }).catch(() => {});
@@ -361,12 +413,15 @@ export class ProcessManager extends EventEmitter {
                 'stderr',
                 `Unable to start command (${error.code ?? 'spawn failed'}).`,
             );
+
             run.endedAt = new Date().toISOString();
             run.status = 'failed';
             run.resolveExit(snapshotRun(run));
             this.#emitState(command.id);
+
             throw error;
         });
+
         if (run.stopRequested) {
             this.#requestStop(run);
         } else {
@@ -388,6 +443,7 @@ export class ProcessManager extends EventEmitter {
                     },
                 );
             }
+
             if (run.id !== runId) {
                 throw new PanelOperationError(
                     'stale_run',
@@ -398,7 +454,11 @@ export class ProcessManager extends EventEmitter {
                     },
                 );
             }
-            if (!terminalStatus(run.status)) this.#requestStop(run);
+
+            if (!terminalStatus(run.status)) {
+                this.#requestStop(run);
+            }
+
             return snapshotRun(run);
         });
     }
@@ -425,21 +485,26 @@ export class ProcessManager extends EventEmitter {
             } else {
                 uniqueIds.add(commandId);
             }
+
             const run = this.#runs.get(commandId);
             if (!run) {
                 issues.push({ commandId, reason: 'no current run' });
                 continue;
             }
+
             if (run.id !== runId) {
                 issues.push({ commandId, reason: 'run ID is stale' });
                 continue;
             }
+
             if (terminalStatus(run.status)) {
                 issues.push({ commandId, reason: 'run is not active' });
                 continue;
             }
+
             runs.push(run);
         }
+
         if (issues.length > 0) {
             throw new PanelOperationError(
                 'stop_selected_invalid',
@@ -447,7 +512,11 @@ export class ProcessManager extends EventEmitter {
                 { issues },
             );
         }
-        for (const run of runs) this.#requestStop(run);
+
+        for (const run of runs) {
+            this.#requestStop(run);
+        }
+
         return runs.map(snapshotRun);
     }
 
@@ -460,24 +529,36 @@ export class ProcessManager extends EventEmitter {
                     stopped.push(snapshotRun(run));
                 }
             }
+
             return stopped;
         });
     }
 
     #requestStop(run) {
-        if (terminalStatus(run.status) || run.status === 'stopping') return;
+        if (terminalStatus(run.status) || run.status === 'stopping') {
+            return;
+        }
+
         run.stopRequested = true;
         run.status = 'stopping';
         this.#emitState(run.commandId);
-        if (process.platform === 'win32') windowsTreeKill(run, false);
-        else processSignal(run, 'SIGTERM');
+        if (process.platform === 'win32') {
+            windowsTreeKill(run, false);
+        } else {
+            processSignal(run, 'SIGTERM');
+        }
+
         const terminate = setTimeout(() => {
-            if (process.platform === 'win32') windowsTreeKill(run, false);
-            else processSignal(run, 'SIGTERM');
+            if (process.platform === 'win32') {
+                windowsTreeKill(run, false);
+            } else {
+                processSignal(run, 'SIGTERM');
+            }
         }, 3000);
         const force = setTimeout(() => {
             forceOwnedTree(run);
         }, 6000);
+
         terminate.unref();
         force.unref();
         run.timers.push(terminate, force);
@@ -496,7 +577,11 @@ export class ProcessManager extends EventEmitter {
         const active = [...this.#runs.values()].filter((run) =>
             commandIsActive(run),
         );
-        if (active.length === 0) return;
+
+        if (active.length === 0) {
+            return;
+        }
+
         await Promise.race([
             Promise.allSettled(active.map(({ exitPromise }) => exitPromise)),
             new Promise((resolve) => {
@@ -509,6 +594,7 @@ export class ProcessManager extends EventEmitter {
     #enqueue(operation) {
         const result = this.#serial.then(operation, operation);
         this.#serial = result.catch(() => {});
+
         return result;
     }
 }

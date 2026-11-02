@@ -29,6 +29,7 @@ const en = {
     text: 'Saved text and its available translation. Relevant passages are retrieved as needed.',
     knowledge: 'The saved content of this Knowledge note.',
 };
+
 type Copy = typeof en;
 const ru: Copy = {
     title: 'Языковой наставник',
@@ -118,6 +119,7 @@ const fr: Copy = {
     text: 'Texte enregistré et traduction disponible. Les passages pertinents sont consultés au besoin.',
     knowledge: 'Le contenu enregistré de cette note.',
 };
+
 export function tutorShellCopy(locale: Locale): Copy {
     return { en, ru, es, fr }[locale];
 }

@@ -20,10 +20,14 @@ export function ComposerAttachments({
     const text = composerCopy(locale);
     const [expanded, setExpanded] = useState<string | null>(null);
     const open = attachments.find((item) => item.id === expanded);
-    if (!attachments.length) return null;
+    if (!attachments.length) {
+        return null;
+    }
+
     function toggle(id: string) {
         setExpanded(expanded === id ? null : id);
     }
+
     return (
         <div className={styles.attachmentTray}>
             <ul className={styles.attachments} aria-label={copy.material}>
@@ -45,6 +49,7 @@ export function ComposerAttachments({
         </div>
     );
 }
+
 function AttachmentChip({
     attachment,
     expanded,
@@ -61,7 +66,10 @@ function AttachmentChip({
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
     let Icon = workspace ? Clipboard : Quote;
-    if (attachment.kind === 'dictionary-card') Icon = BookA;
+    if (attachment.kind === 'dictionary-card') {
+        Icon = BookA;
+    }
+
     const characterCount =
         attachment.kind === 'dictionary-card'
             ? null
@@ -75,9 +83,11 @@ function AttachmentChip({
     function toggle() {
         onToggle(attachment.id);
     }
+
     function remove() {
         onRemove(attachment.id);
     }
+
     return (
         <li
             className={
@@ -114,8 +124,9 @@ function AttachmentChip({
         </li>
     );
 }
+
 function AttachmentPreview({ attachment }: { attachment: CopiedAttachment }) {
-    if (attachment.kind === 'text-reference')
+    if (attachment.kind === 'text-reference') {
         return (
             <div className={styles.attachmentPreview} dir='auto'>
                 <p>{attachment.content}</p>
@@ -126,13 +137,18 @@ function AttachmentPreview({ attachment }: { attachment: CopiedAttachment }) {
                 )}
             </div>
         );
-    if (attachment.kind !== 'dictionary-card')
+    }
+
+    if (attachment.kind !== 'dictionary-card') {
         return (
             <div className={styles.attachmentPreview} dir='auto'>
                 {attachment.content}
             </div>
         );
+    }
+
     const card = attachment.card;
+
     return (
         <div className={styles.attachmentPreview}>
             <div className={styles.cardHeading}>

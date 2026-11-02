@@ -13,6 +13,7 @@ for (const script of ['dev-doctor', 'dev-configure']) {
                 env: { PATH: process.env.PATH },
             },
         );
+
         assert.match(output, /--env-file/);
     });
 }

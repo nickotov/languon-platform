@@ -5,6 +5,7 @@ title: 'Knowledge workspace document and context boundaries'
 status: accepted
 date: 2026-10-19
 supersedes: 'Partial extension of ADR-0037 for workspace draft context and Knowledge sharing'
+superseded_in_part_by: 'ADR-0050 media exclusion and copy-before-shared-conversation rule'
 ---
 
 # ADR-0042: Knowledge workspace document and context boundaries

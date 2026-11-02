@@ -10,28 +10,38 @@ export async function withPreservedFile(path, work) {
         dirname(canonical),
         `.next-preserve-${basename(canonical)}.lock`,
     );
+
     try {
         await mkdir(lock);
     } catch (error) {
-        if (error.code === 'EEXIST')
+        if (error.code === 'EEXIST') {
             throw new Error(
                 'Another verification runner is preserving this generated file. Wait for it to finish; inspect ownership before removing a stale preservation lock.',
                 { cause: error },
             );
+        }
+
         throw error;
     }
+
     try {
         let original;
         try {
             original = await readFile(canonical);
         } catch (error) {
-            if (error.code !== 'ENOENT') throw error;
+            if (error.code !== 'ENOENT') {
+                throw error;
+            }
         }
+
         try {
             return await work();
         } finally {
-            if (original === undefined) await rm(canonical, { force: true });
-            else await writeFile(canonical, original);
+            if (original === undefined) {
+                await rm(canonical, { force: true });
+            } else {
+                await writeFile(canonical, original);
+            }
         }
     } finally {
         await rm(lock, { recursive: true });
@@ -56,10 +66,11 @@ export function assertContextualAssistantEnvironment(environment) {
         redis.port !== '56444' ||
         redis.pathname !== '/1' ||
         environment.AUTH_TEST_REDIS_CONFIRM !== `${redis.hostname}:56444/1`
-    )
+    ) {
         throw new Error(
             'Contextual assistant journeys require confirmed exclusive loopback PostgreSQL 55444/languon_auth_assistant_web_test and Redis 56444/1.',
         );
+    }
 }
 
 export async function runContextualAssistantE2e(
@@ -79,6 +90,7 @@ export async function runContextualAssistantE2e(
                 'run',
                 'tests/integration/modules/conversations/contextual-assistant.journeys.test.ts',
             ]);
+
             await run('pnpm', [
                 '--filter',
                 '@languon/web',
@@ -92,6 +104,7 @@ export async function runContextualAssistantE2e(
         },
     );
 }
+
 function execute(command, args) {
     return new Promise((resolve, reject) => {
         const child = spawn(command, args, {
@@ -114,22 +127,27 @@ function execute(command, args) {
             process.removeListener('SIGINT', interrupt);
             process.removeListener('SIGTERM', terminate);
         };
+
         child.once('error', (error) => {
             cleanup();
             reject(error);
         });
+
         child.once('exit', (code, signal) => {
             cleanup();
-            if (code === 0) resolve();
-            else
+            if (code === 0) {
+                resolve();
+            } else {
                 reject(
                     new Error(
                         `Contextual assistant command failed (${signal ?? code}).`,
                     ),
                 );
+            }
         });
     });
 }
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
     await runContextualAssistantE2e().catch((error) => {
         console.error(error.message);

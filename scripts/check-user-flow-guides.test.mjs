@@ -136,6 +136,7 @@ test('rejects empty list items and empty required sections', () => {
             ),
         /'source_paths' must be a non-empty list/,
     );
+
     assert.throws(
         () =>
             validateGuide(
@@ -145,6 +146,7 @@ test('rejects empty list items and empty required sections', () => {
             ),
         /required '## Cleanup' section is empty/,
     );
+
     assert.throws(
         () =>
             validateGuide(
@@ -172,6 +174,7 @@ test('rejects unsafe source paths and missing index entries', () => {
             ),
         /must be repository-relative/,
     );
+
     assert.throws(
         () => validateGuide(validGuide, 'example-feature.md', '# Empty index'),
         /guide is missing from README.md index/,
@@ -188,6 +191,7 @@ test('requires complete and safe E2E metadata for current guides', () => {
             ),
         /'e2e_command' must be a non-empty scalar/,
     );
+
     assert.throws(
         () =>
             validateGuide(
@@ -200,6 +204,7 @@ test('requires complete and safe E2E metadata for current guides', () => {
             ),
         /must be a registered command ID/,
     );
+
     assert.throws(
         () =>
             validateGuide(
@@ -212,6 +217,7 @@ test('requires complete and safe E2E metadata for current guides', () => {
             ),
         /exact path without glob syntax/,
     );
+
     assert.throws(
         () =>
             validateGuide(
@@ -221,6 +227,7 @@ test('requires complete and safe E2E metadata for current guides', () => {
             ),
         /must be a kebab-case slug/,
     );
+
     assert.throws(
         () =>
             validateGuide(
@@ -233,6 +240,7 @@ test('requires complete and safe E2E metadata for current guides', () => {
             ),
         /must document scenario 'primary-journey'/,
     );
+
     assert.throws(
         () =>
             validateGuide(
@@ -245,6 +253,7 @@ test('requires complete and safe E2E metadata for current guides', () => {
             ),
         /'e2e_scenarios' must not contain duplicates/,
     );
+
     assert.throws(
         () =>
             validateGuide(
@@ -257,6 +266,7 @@ test('requires complete and safe E2E metadata for current guides', () => {
             ),
         /must explain what scenario 'primary-journey' proves/,
     );
+
     assert.throws(
         () =>
             validateGuide(
@@ -274,6 +284,7 @@ test('requires complete and safe E2E metadata for current guides', () => {
             ),
         /must explain what scenario 'primary-journey' proves/,
     );
+
     assert.throws(
         () =>
             validateGuide(
@@ -318,6 +329,7 @@ test('E2E revision changes only with test-relevant guide content', () => {
             original.revision,
         );
     }
+
     for (const editedGuide of revisionChangingEdits) {
         assert.notEqual(
             validateGuide(editedGuide, 'example-feature.md', index).e2e
@@ -325,6 +337,7 @@ test('E2E revision changes only with test-relevant guide content', () => {
             original.revision,
         );
     }
+
     assert.equal(
         computeE2eRevision({
             e2eCommand: original.command,
@@ -338,6 +351,7 @@ test('E2E revision changes only with test-relevant guide content', () => {
         }),
         original.revision,
     );
+
     assert.notEqual(
         computeE2eRevision({
             e2eCommand: 'pnpm changed-command',
@@ -368,6 +382,7 @@ test('validates scenario and revision markers across declared E2E files', () => 
             'example-feature.md',
         ),
     );
+
     assert.throws(
         () =>
             validateE2eTestFiles(
@@ -382,6 +397,7 @@ test('validates scenario and revision markers across declared E2E files', () => 
             ),
         /must contain exactly one.*@user-flow-revision/,
     );
+
     assert.throws(
         () =>
             validateE2eTestFiles(
@@ -399,10 +415,12 @@ test('validates scenario and revision markers across declared E2E files', () => 
             ),
         /marks undeclared scenario 'orphaned-journey'/,
     );
+
     assert.throws(
         () => validateE2eTestFiles(e2e, new Map(), 'example-feature.md'),
         /does not exist/,
     );
+
     assert.throws(
         () =>
             validateE2eTestFiles(
@@ -440,6 +458,7 @@ test('rejects orphaned and unknown markers outside declared test files', () => {
             ),
         /marker.*orphaned/,
     );
+
     assert.throws(
         () =>
             validateE2eMarkerRegistry(
@@ -453,6 +472,7 @@ test('rejects orphaned and unknown markers outside declared test files', () => {
             ),
         /unknown current guide 'removed-feature'/,
     );
+
     assert.throws(
         () =>
             validateE2eMarkerRegistry(
@@ -466,6 +486,7 @@ test('rejects orphaned and unknown markers outside declared test files', () => {
             ),
         /malformed user-flow marker/,
     );
+
     assert.throws(
         () =>
             validateE2eMarkerRegistry(
@@ -479,6 +500,7 @@ test('rejects orphaned and unknown markers outside declared test files', () => {
             ),
         /\\u001b\[31m/,
     );
+
     assert.throws(
         () =>
             validateE2eMarkerRegistry(
@@ -492,6 +514,7 @@ test('rejects orphaned and unknown markers outside declared test files', () => {
             ),
         /E2E test path.*\\u001b\]52;c;payload.*must not contain control characters/,
     );
+
     assert.throws(
         () =>
             validateE2eMarkerRegistry(
@@ -505,6 +528,7 @@ test('rejects orphaned and unknown markers outside declared test files', () => {
             ),
         /malformed user-flow marker/,
     );
+
     assert.throws(
         () =>
             validateE2eMarkerRegistry(
@@ -536,6 +560,7 @@ test('declared test reads reject symbolic-link paths', async () => {
             join(repositoryRoot, 'apps/web/tests/e2e/auth.journeys.spec.ts'),
             linkPath,
         );
+
         await assert.rejects(
             readE2eTestFiles({
                 feature: 'example-feature',
@@ -558,6 +583,7 @@ test('does not count a fenced example as an index entry', () => {
             ),
         /guide is missing from README.md index/,
     );
+
     assert.throws(
         () =>
             validateGuide(
@@ -575,12 +601,14 @@ test('agent CLI inspects and checks a mapped user flow without executing it', ()
         ['scripts/user-flow-e2e.mjs', 'inspect', 'user-authentication'],
         { cwd: repositoryRoot, encoding: 'utf8' },
     );
+
     assert.equal(inspection.status, 0, inspection.stderr);
     assert.match(inspection.stdout, /User flow: user-authentication/);
     assert.match(
         inspection.stdout,
         /Guide: docs\/user-flows\/user-authentication\.md/,
     );
+
     assert.match(inspection.stdout, /E2E command ID: web-playwright/);
     assert.match(inspection.stdout, /Status: synchronized/);
     assert.match(inspection.stdout, /signup-verification-refresh-logout/);
@@ -590,6 +618,7 @@ test('agent CLI inspects and checks a mapped user flow without executing it', ()
         ['scripts/user-flow-e2e.mjs', 'check', 'user-authentication'],
         { cwd: repositoryRoot, encoding: 'utf8' },
     );
+
     assert.equal(check.status, 0, check.stderr);
     assert.match(check.stdout, /Validated 1 user-flow guide/);
 
@@ -598,6 +627,7 @@ test('agent CLI inspects and checks a mapped user flow without executing it', ()
         ['scripts/user-flow-e2e.mjs', 'run', 'user-authentication'],
         { cwd: repositoryRoot, encoding: 'utf8' },
     );
+
     assert.equal(invalid.status, 1);
     assert.match(invalid.stderr, /Usage:/);
 });

@@ -82,6 +82,7 @@ export class DictionaryService {
         context: DictionaryRequestContext,
     ) {
         const ownerId = await this.owner(accessToken, context);
+
         return this.dependencies.store.listDictionaries({
             context: this.context(context),
             ownerId,
@@ -94,6 +95,7 @@ export class DictionaryService {
         context: DictionaryRequestContext,
     ) {
         const ownerId = await this.owner(accessToken, context);
+
         return this.dependencies.store.previewDictionaryDeletion({
             context: this.context(context),
             ownerId,
@@ -110,7 +112,9 @@ export class DictionaryService {
             accessToken,
             context,
         );
+
         await this.limit('owner', ownerId, context);
+
         return this.dependencies.store.deleteDictionaries({
             context: this.context(context),
             fingerprint: this.dependencies.cryptography.fingerprint({
@@ -129,6 +133,7 @@ export class DictionaryService {
         context: DictionaryRequestContext,
     ) {
         const ownerId = await this.owner(accessToken, context);
+
         return this.dependencies.store.previewDictionaryCardDeletion({
             context: this.context(context),
             dictionaryId,
@@ -147,7 +152,9 @@ export class DictionaryService {
             accessToken,
             context,
         );
+
         await this.limit('card-write', ownerId, context);
+
         return this.dependencies.store.deleteDictionaryCards({
             context: this.context(context),
             dictionaryId,
@@ -170,8 +177,10 @@ export class DictionaryService {
         const ownerId = await this.owner(accessToken, context);
         await this.limit('import-preview-owner', ownerId, context);
         await this.limit('import-preview-global', 'global', context);
-        if (this.activeImportPreviews >= 4)
+        if (this.activeImportPreviews >= 4) {
             throw new DictionaryRateLimitError(1);
+        }
+
         this.activeImportPreviews += 1;
         try {
             await this.dependencies.store.authorizeDictionaryImportTarget({
@@ -180,6 +189,7 @@ export class DictionaryService {
                 requireExpectedVersions: true,
                 target: request.target,
             });
+
             const parsed = parseDictionaryInterchange({
                 bytes: new TextEncoder().encode(request.content),
                 options: request.options,
@@ -194,6 +204,7 @@ export class DictionaryService {
             const warnings = advisory.warnings;
             const previewLimit =
                 dictionaryInterchangeLimitsV1.maximumPreviewRows;
+
             return {
                 columns: parsed.columns,
                 capacity: {
@@ -232,6 +243,7 @@ export class DictionaryService {
             requireExpectedVersions: false,
             target: request.target,
         });
+
         await this.limit(
             request.enrichment.mode === 'ai'
                 ? 'generation-enqueue'
@@ -239,6 +251,7 @@ export class DictionaryService {
             ownerId,
             context,
         );
+
         const generationStore =
             request.enrichment.mode === 'ai'
                 ? (this.dependencies.generationStore ??
@@ -259,9 +272,13 @@ export class DictionaryService {
                 .sort((left, right) => left - right)
                 .map((rowIndex) => {
                     const row = parsedByIndex.get(rowIndex);
-                    if (!row) throw new InvalidDictionaryRequestError();
+                    if (!row) {
+                        throw new InvalidDictionaryRequestError();
+                    }
+
                     return row;
                 });
+
             return generationStore!.enqueueImportPairs({
                 context: this.context(context),
                 fingerprint,
@@ -276,6 +293,7 @@ export class DictionaryService {
                 target: request.target,
             });
         }
+
         return this.dependencies.store.importDictionary({
             context: this.context(context),
             fingerprint,
@@ -300,6 +318,7 @@ export class DictionaryService {
         const abortWriter = () => {
             void writer.abort(signal.reason).catch(() => undefined);
         };
+
         signal.addEventListener('abort', abortWriter, { once: true });
         let serializer: ReturnType<
             typeof createDictionaryInterchangeSerializer
@@ -317,26 +336,32 @@ export class DictionaryService {
                 await writer.write(chunk);
             }
         };
+
         void this.dependencies.store
             .streamDictionaryExport({
                 context: { now: this.dependencies.clock.now(), signal },
                 dictionaryId,
                 format,
                 onCards: async (cards) => {
-                    if (!serializer)
+                    if (!serializer) {
                         throw new Error('Export metadata was not initialized.');
+                    }
+
                     await writeChunks(serializer.serializeCards(cards).chunks);
                 },
                 onMetadata: async (metadata) => {
                     serializer =
                         createDictionaryInterchangeSerializer(metadata);
+
                     settleMetadata?.();
                 },
                 ownerId,
             })
             .then(async () => {
-                if (!serializer)
+                if (!serializer) {
                     throw new Error('Export metadata was not initialized.');
+                }
+
                 await writeChunks(serializer.finish().chunks);
                 await writer.close();
                 signal.removeEventListener('abort', abortWriter);
@@ -346,8 +371,10 @@ export class DictionaryService {
                 rejectMetadata?.(error);
                 await writer.abort(error).catch(() => undefined);
             });
+
         await metadataReady;
         const extension = format === 'quizlet-text' ? 'txt' : 'csv';
+
         return {
             body: body.readable,
             headers: {
@@ -371,6 +398,7 @@ export class DictionaryService {
         context: DictionaryRequestContext,
     ) {
         const ownerId = await this.owner(accessToken, context);
+
         return this.dependencies.store.createDictionary({
             context: this.context(context),
             fingerprint: this.dependencies.cryptography.fingerprint(request),
@@ -386,6 +414,7 @@ export class DictionaryService {
         context: DictionaryRequestContext,
     ) {
         const ownerId = await this.owner(accessToken, context);
+
         return this.dependencies.store.readDictionary({
             context: this.context(context),
             dictionaryId,
@@ -400,6 +429,7 @@ export class DictionaryService {
         context: DictionaryRequestContext,
     ) {
         const ownerId = await this.owner(accessToken, context);
+
         return this.dependencies.store.updateDictionary({
             context: this.context(context),
             dictionaryId,
@@ -415,6 +445,7 @@ export class DictionaryService {
         context: DictionaryRequestContext,
     ) {
         const ownerId = await this.owner(accessToken, context);
+
         return this.dependencies.store.archiveDictionary({
             context: this.context(context),
             dictionaryId,
@@ -430,6 +461,7 @@ export class DictionaryService {
         context: DictionaryRequestContext,
     ) {
         const ownerId = await this.owner(accessToken, context);
+
         return this.dependencies.store.restoreDictionary({
             context: this.context(context),
             dictionaryId,
@@ -445,6 +477,7 @@ export class DictionaryService {
         context: DictionaryRequestContext,
     ) {
         const ownerId = await this.owner(accessToken, context);
+
         return this.dependencies.store.listCards({
             context: this.context(context),
             dictionaryId,
@@ -461,6 +494,7 @@ export class DictionaryService {
     ) {
         const ownerId = await this.owner(accessToken, context);
         await this.limit('card-write', ownerId, context);
+
         return this.dependencies.store.createCard({
             context: this.context(context),
             dictionaryId,
@@ -476,6 +510,7 @@ export class DictionaryService {
         context: DictionaryRequestContext,
     ) {
         const ownerId = await this.owner(accessToken, context);
+
         return this.dependencies.store.readCard({
             context: this.context(context),
             dictionaryId,
@@ -493,6 +528,7 @@ export class DictionaryService {
     ) {
         const ownerId = await this.owner(accessToken, context);
         await this.limit('card-write', ownerId, context);
+
         return this.dependencies.store.updateCard({
             context: this.context(context),
             dictionaryId,
@@ -510,6 +546,7 @@ export class DictionaryService {
         context: DictionaryRequestContext,
     ) {
         const ownerId = await this.owner(accessToken, context);
+
         return this.dependencies.store.archiveCard({
             context: this.context(context),
             dictionaryId,
@@ -527,6 +564,7 @@ export class DictionaryService {
         context: DictionaryRequestContext,
     ) {
         const ownerId = await this.owner(accessToken, context);
+
         return this.dependencies.store.restoreCard({
             context: this.context(context),
             dictionaryId,
@@ -543,6 +581,7 @@ export class DictionaryService {
         context: DictionaryRequestContext,
     ) {
         const ownerId = await this.owner(accessToken, context);
+
         return this.dependencies.store.reorderCards({
             context: this.context(context),
             dictionaryId,
@@ -568,6 +607,7 @@ export class DictionaryService {
             locator: share.locator,
             ownerId,
         });
+
         return {
             capability: { shareId: share.locator, shareKey: share.key },
             dictionary,
@@ -589,10 +629,12 @@ export class DictionaryService {
             }),
             context,
         );
+
         const candidate = await this.dependencies.store.findSharedCandidate({
             context: this.context(context),
             shareId,
         });
+
         if (
             !this.dependencies.cryptography.verifyShare(
                 shareKey,
@@ -602,6 +644,7 @@ export class DictionaryService {
         ) {
             throw new SharedDictionaryNotFoundError();
         }
+
         return this.dependencies.store.readSharedDictionary({
             context: this.context(context),
             dictionaryId: candidate.dictionaryId,
@@ -632,11 +675,16 @@ export class DictionaryService {
             idempotencyKey,
             ownerId,
         });
-        if (replay) return replay;
+
+        if (replay) {
+            return replay;
+        }
+
         const candidate = await this.dependencies.store.findSharedCandidate({
             context: this.context(context),
             shareId,
         });
+
         if (
             !this.dependencies.cryptography.verifyShare(
                 shareKey,
@@ -646,6 +694,7 @@ export class DictionaryService {
         ) {
             throw new SharedDictionaryNotFoundError();
         }
+
         return this.dependencies.store.forkSharedDictionary({
             context: this.context(context),
             fingerprint,
@@ -659,6 +708,7 @@ export class DictionaryService {
 
     private context(context: DictionaryRequestContext) {
         context.signal.throwIfAborted();
+
         return { now: this.dependencies.clock.now(), signal: context.signal };
     }
 
@@ -669,8 +719,10 @@ export class DictionaryService {
         context.signal.throwIfAborted();
         const principal =
             await this.dependencies.authentication.authenticate(accessToken);
+
         await this.limit('owner', principal.userId, context);
         context.signal.throwIfAborted();
+
         return principal.userId;
     }
 
@@ -684,9 +736,14 @@ export class DictionaryService {
         const requireRecent =
             this.dependencies.authentication
                 .requireRecentlyAuthenticatedSession;
-        if (!requireRecent) throw new RecentAuthenticationRequiredError();
+
+        if (!requireRecent) {
+            throw new RecentAuthenticationRequiredError();
+        }
+
         await requireRecent(principal);
         context.signal.throwIfAborted();
+
         return principal.userId;
     }
 
@@ -709,6 +766,7 @@ export class DictionaryService {
             scope,
             signal: context.signal,
         });
+
         if (!result.allowed) {
             throw new DictionaryRateLimitError(result.retryAfterSeconds ?? 60);
         }

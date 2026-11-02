@@ -1,0 +1,250 @@
+{
+  "owner": "readability-final-verification",
+  "mode": "read-only runtime-evidence reconciliation",
+  "checkedAt": "2026-11-01",
+  "base": "252de64cc8fecfb9a213e5ec1fdac3b8e72f4caf",
+  "sourceIdentity": {
+    "sourceFreeze": ".agent/improvements/evidence/codebase-readability/source-freeze-platform.json",
+    "inventorySha256": "5269cd383bd08bef0841837f9f9e464f3d09b2b7239abad39e2afc21daf0375f",
+    "inventoryFiles": 3220,
+    "changedMaintainedPaths": 193,
+    "independentlyReviewedChangedPaths": 193,
+    "staleOrUnreviewedChangedPaths": 0,
+    "currentSourceMismatches": 0,
+    "historicalFrozenFiles": 881,
+    "historicalSourceMismatches": 0,
+    "interpretation": "Source-freeze evidence and review coverage are current at the recorded freeze; runtime approval remains separate."
+  },
+  "finalGates": {
+    "runnerSession": "66338",
+    "status": "passed with documented bounded-worker environment",
+    "source": ".agent/improvements/evidence/codebase-readability/final-verification.json",
+    "environmentWhitelist": {
+      "CI": "1",
+      "VITEST_MAX_WORKERS": "1",
+      "TURBO_ENV_MODE": "loose",
+      "inheritedNames": [
+        "PATH",
+        "HOME",
+        "PNPM_HOME",
+        "TMPDIR",
+        "CI"
+      ],
+      "providerCredentialsInherited": false,
+      "optionalDeploymentFlagsInherited": false
+    },
+    "serialWorkspaceTests": {
+      "command": "pnpm exec turbo run test --concurrency=1 --env-mode=loose",
+      "tasks": "15 successful, 15 total",
+      "code": 0,
+      "log": "/private/tmp/languon-bl019-final-runtime-serial-tests.log",
+      "logSha256": "85f160ed19742a8d41ccaa4a2b222908a959f33dd199896e182485847ebcd425"
+    },
+    "aggregate": {
+      "command": "pnpm check",
+      "code": 0,
+      "log": "/private/tmp/languon-bl019-final-runtime-aggregate.log",
+      "logSha256": "90ad88133f5918a732df3a7afe37e042c9504f59dce607908771dc8968ed9bef"
+    },
+    "doctor": {
+      "command": "node scripts/dev-doctor.mjs --json",
+      "ready": true,
+      "checks": 119,
+      "allChecksPass": true,
+      "code": 0,
+      "log": "/private/tmp/languon-bl019-final-runtime-doctor.log",
+      "logSha256": "047813d41b993febf34e051c531a976728e92ebb6c59052e7bb44ef83cff0b10"
+    },
+    "excludedNonPassingAttempts": "Default-parallel and strict serial worker-start attempts are retained only as host-contention diagnostics, never as passing evidence."
+  },
+  "fullCritical": {
+    "rawInvocation": {
+      "runId": "afeaba9a-e36c-44c1-8704-357f7e1ff153",
+      "summary": "test-results/critical-flows/afeaba9a-e36c-44c1-8704-357f7e1ff153/summary.json",
+      "backendReport": "test-results/critical-flows/afeaba9a-e36c-44c1-8704-357f7e1ff153/ai-execution-contracts.json",
+      "status": "failed",
+      "files": 68,
+      "tests": 791,
+      "passed": 790,
+      "failed": 1,
+      "skipped": 0,
+      "failedTitle": "manual AI accounting persisted facts reports measured, estimated and unknown costs independently of manual deposits and bill adjustment",
+      "rule": "This was a failed comprehensive invocation and is retained as failed. It must not be represented as a green full-critical run."
+    },
+    "accountingReplacementForCoverageOnly": {
+      "runId": "9330ada1-d32f-4d4a-9a96-f7b13bc8d840",
+      "summary": "/private/tmp/languon-bl019-supplemental-9330ada1-d32f-4d4a-9a96-f7b13bc8d840/summary.json",
+      "report": "/private/tmp/languon-bl019-supplemental-9330ada1-d32f-4d4a-9a96-f7b13bc8d840/backend-vitest.json",
+      "file": "apps/backend/tests/integration/database/ai-accounting.test.ts",
+      "tests": 10,
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "retries": 0,
+      "sameTenCaseIdentitiesAsRawFile": true,
+      "rawFilePassed": 9,
+      "rawFileFailed": 1,
+      "replacementRule": "Replace the entire 10-case accounting file, not only the formerly failing case, for unique coverage accounting."
+    },
+    "uniqueCoverageAnalysis": {
+      "rawNonAccountingPassedAssertions": 781,
+      "replacementAccountingAssertions": 10,
+      "uniqueAssertionsCovered": 791,
+      "rawPassedCountStillReported": 790,
+      "basis": "The full report has 68 files. All 67 non-accounting files passed; the accounting file has the same ten titles in the replacement report. diagnosis-accounting-clock.json records that this test-only DB-clock fixture changed while production accounting/SQL behavior did not."
+    },
+    "validityBoundary": "This is evidence composition, not a fabricated passing runner report. The source-freeze/review evidence supports reuse of the unaffected critical paths; the accounting file is proven by its own final disposable run."
+  },
+  "criticalFollowUps": [
+    {
+      "run": "/private/tmp/languon-bl019-final-runtime-speech-critical.log",
+      "selection": "ai-speech plus speech-playback",
+      "backendTests": 209,
+      "browserTests": 4,
+      "status": "passed with no skips"
+    },
+    {
+      "run": "/private/tmp/languon-bl019-admin-critical-remediation.log",
+      "selection": "setup-to-generation and admin-text-ai-routing",
+      "tests": 3,
+      "status": "passed with no skips"
+    },
+    {
+      "run": "/private/tmp/languon-bl019-final-runtime-diagram-browser.log",
+      "selection": "architecture diagram browser journey",
+      "tests": 1,
+      "status": "passed"
+    }
+  ],
+  "additionalBrowserCoverage": [
+    {
+      "runId": "a48536ac-e151-41ac-bb6c-9292eb567df4",
+      "report": "/private/tmp/languon-bl019-supplemental-a48536ac-e151-41ac-bb6c-9292eb567df4/web-playwright.json",
+      "scenario": "saves a unique handle, keeps Security real and email mock honest, then schedules removal",
+      "tests": 1,
+      "status": "passed",
+      "note": "The combined invocation failed for other selected scenarios; this exact Profile result is independently passing in its JSON report."
+    },
+    {
+      "runId": "87f0dd72-d39d-447d-8eaf-84287f577584",
+      "report": "/private/tmp/languon-bl019-supplemental-87f0dd72-d39d-447d-8eaf-84287f577584/web-playwright.json",
+      "scenarios": [
+        "previews a Quizlet import and exports formula-safe ordered CSV",
+        "automatically saves full inline forms while history remains preview-only and advanced rewrite remains available"
+      ],
+      "tests": 2,
+      "status": "passed",
+      "note": "The same invocation's flashcard selection timed out and is not reused here."
+    },
+    {
+      "runId": "b30151e4-286c-4128-a6e2-f82adac76237",
+      "report": "/private/tmp/languon-bl019-supplemental-b30151e4-286c-4128-a6e2-f82adac76237/web-playwright.json",
+      "scenario": "owner configures a session, rates a card, undoes it, and preserves preferences",
+      "tests": 1,
+      "status": "passed"
+    },
+    {
+      "runId": "8cd4dbb1-368a-4238-b4d8-a3b245f5efe1",
+      "report": "/private/tmp/languon-bl019-supplemental-8cd4dbb1-368a-4238-b4d8-a3b245f5efe1/sentence-history-playwright.json",
+      "tests": 2,
+      "status": "passed",
+      "scenarios": [
+        "previews saved hints and archives or restores an example without a review",
+        "reconnects to background preparation and practises the saved batch without regeneration"
+      ]
+    },
+    {
+      "runId": "6e3a822d-61f6-41f8-812f-443582c52db8",
+      "report": "/private/tmp/languon-bl019-supplemental-6e3a822d-61f6-41f8-812f-443582c52db8/admin-playwright.json",
+      "scenario": "owner publishes routing tariffs and queued jobs retain their selected revisions",
+      "tests": 1,
+      "status": "passed"
+    },
+    {
+      "runId": "f6a56ead-be24-487c-a022-914295f4129a",
+      "summary": "/private/tmp/languon-bl019-extra-browser-f6a56ead-be24-487c-a022-914295f4129a/summary.json",
+      "reports": [
+        "/private/tmp/languon-bl019-extra-browser-f6a56ead-be24-487c-a022-914295f4129a/readability-texts.json",
+        "/private/tmp/languon-bl019-extra-browser-f6a56ead-be24-487c-a022-914295f4129a/readability-knowledge.json"
+      ],
+      "tests": 4,
+      "status": "passed",
+      "coverage": "Two TextShare/selection and two Knowledge form/layout scenarios."
+    },
+    {
+      "runId": "313ffbd9-94ac-490c-a91a-a2c38c90d50e",
+      "report": "/private/tmp/languon-bl019-supplemental-313ffbd9-94ac-490c-a91a-a2c38c90d50e/document-playwright.json",
+      "scenario": "document generation cleans the upload before one final editable review",
+      "tests": 1,
+      "status": "passed",
+      "environment": "owned MinIO plus completed minio-init; no ClamAV claim"
+    }
+  ],
+  "coverageScopeAndCounts": {
+    "criticalBackend": {
+      "rawFiles": 68,
+      "expectedUniqueCases": 791,
+      "uniqueCasesCoveredByRawNonAccountingPlusExactAccountingReplacement": 791,
+      "rawInvocationStatus": "failed (790 passed, 1 failed)"
+    },
+    "additionalBrowser": {
+      "expectedUniqueCases": 12,
+      "passingCases": 12,
+      "scope": "Profile/security; dictionary import, batch and flashcards; sentence history/preparation; admin provider/user details; TextShare/selection; Knowledge form/state; document import/review."
+    },
+    "criticalFollowUps": {
+      "speechBackendCases": 209,
+      "speechBrowserCases": 4,
+      "adminRemediationCases": 3,
+      "diagramBrowserCases": 1
+    },
+    "boundary": "These counts describe the enumerated reports above, not an assertion that every product behavior was exercised."
+  },
+  "supplementalDatabaseCache": {
+    "initialBatch": {
+      "runId": "b6cfd56e-75a4-41dd-9a94-c2f473257d08",
+      "report": "/private/tmp/languon-bl019-supplemental-b6cfd56e-75a4-41dd-9a94-c2f473257d08/backend-vitest.json",
+      "tests": 94,
+      "passed": 70,
+      "failed": 24,
+      "skipped": 0
+    },
+    "baseReproduction": {
+      "runId": "f6c09169-dc4a-4992-b813-6e7e8514ef60",
+      "tests": 54,
+      "passed": 30,
+      "failed": 24,
+      "meaning": "The three failing seam files reproduce the same 24 failures against the base fixture."
+    },
+    "separatePurgeReproduction": {
+      "runId": "a2984582-0ac2-473f-863c-2fa173ed2a11",
+      "tests": 8,
+      "passed": 7,
+      "failed": 1,
+      "meaning": "The restricted-role purge fixture failure also reproduces at base."
+    },
+    "fullyPassingFilesFromInitialBatch": [
+      "sentence-library-safety.integration.test.ts: 6/6",
+      "shared-speech-sources.test.ts: 7/7",
+      "redis-authentication-controls.test.ts: 8/8",
+      "text-content-store.test.ts: 19/19"
+    ],
+    "partialPreExistingFailures": [
+      "administration-store.test.ts: 23/24; retired-model/catalog fixture expectation",
+      "conversation-lifecycle-capacity.test.ts: 7/8; stale restricted-role purge fixture"
+    ],
+    "unexecutedAssertions": [
+      "sentence-library-preparation.integration.test.ts: 21 assertions did not execute because its setup failed under the pre-existing fixture condition",
+      "text-ai-provider-circuit.test.ts: 1 assertion did not execute because its setup failed under the same baseline condition"
+    ],
+    "sourceDiagnosis": ".agent/improvements/evidence/codebase-readability/diagnosis-supplemental-platform.json",
+    "status": "These failures remain visible verification gaps, not passing evidence."
+  },
+  "unresolvedGaps": [
+    "Twenty-four supplemental assertion failures reproduce at baseline; twenty-two assertions are unexecuted (21 sentence-preparation plus 1 provider-circuit), and no claim is made for them.",
+    "Pre-existing supplemental fixture failures require separately authorized harness actualization; no product-source change is implied.",
+    "The raw full critical invocation remains failed even though its unique accounting file is replaced for coverage analysis.",
+    "No paid-provider smoke was run; doctor readiness does not establish live-provider execution."
+  ],
+  "approval": "Final gates passed; independent backend-platform final approval remains pending."
+}

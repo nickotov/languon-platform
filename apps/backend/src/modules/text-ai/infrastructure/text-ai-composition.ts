@@ -15,6 +15,7 @@ export function createTextAiModule(
     const preferences = new TextAiPreferenceService(
         new DrizzleTextAiPreferenceStore(input.database),
     );
+
     return {
         preferences,
         routes: createTextAiRoutes({ ...input, preferences }),
@@ -25,13 +26,18 @@ export function createTextAiModule(
 export function textsAiAdmissionsEnabled(
     environment: Record<string, string | undefined>,
 ): boolean {
-    if (environment.TEXTS_AI_ENABLED !== 'true') return false;
+    if (environment.TEXTS_AI_ENABLED !== 'true') {
+        return false;
+    }
+
     if (
         !['staging', 'production'].includes(
             environment.APP_ENV ?? 'development',
         )
-    )
+    ) {
         return true;
+    }
+
     const required = [
         'text-detection:v2',
         'text-translation:v3',
@@ -45,7 +51,35 @@ export function textsAiAdmissionsEnabled(
     )
         .split(',')
         .map((value) => value.trim());
+
     return required.every(
         (format) => api.includes(format) && workers.includes(format),
+    );
+}
+
+/** New knowledge actions must not disable the existing Texts journeys during rollout. */
+export function knowledgeTextAiAdmissionsEnabled(
+    environment: Record<string, string | undefined>,
+): boolean {
+    if (!textsAiAdmissionsEnabled(environment)) {
+        return false;
+    }
+
+    if (
+        !['staging', 'production'].includes(
+            environment.APP_ENV ?? 'development',
+        )
+    ) {
+        return true;
+    }
+
+    return [
+        'DICTIONARY_JOB_API_ENQUEUED_FORMATS',
+        'DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS',
+    ].every((key) =>
+        (environment[key] ?? '')
+            .split(',')
+            .map((value) => value.trim())
+            .includes('text-translation:v4'),
     );
 }

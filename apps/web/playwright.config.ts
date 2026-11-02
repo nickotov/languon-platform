@@ -38,6 +38,7 @@ const databaseUrl = process.env.AUTH_E2E_DATABASE_URL;
 const redisUrl = process.env.AUTH_E2E_REDIS_URL;
 const runId =
     process.env.AUTH_E2E_RUN_ID ?? `${Date.now().toString(36)}-${process.pid}`;
+
 process.env.AUTH_E2E_RUN_ID = runId;
 const redisNamespace = `languon:auth:e2e:${createHash('sha256')
     .update(runId)
@@ -221,6 +222,10 @@ export default defineConfig({
                 DICTIONARY_AI_PROVIDER_FIXTURE_MODE: 'deterministic',
                 DEEPSEEK_API_KEY: 'synthetic-test-key',
                 DICTIONARY_GENERATION_MODEL_ID: '',
+                // The worker process otherwise inherits a developer's API
+                // admission allowlist. Keep this disposable fixture's queue
+                // contract identical to its worker capability declaration.
+                DICTIONARY_JOB_API_ENQUEUED_FORMATS: dictionaryJobFormats,
                 DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: dictionaryJobFormats,
                 DICTIONARY_DOCUMENT_OCR_MODE: documentServicesEnabled
                     ? 'deterministic'

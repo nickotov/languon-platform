@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Editor } from '@tiptap/react';
+import { TextSelection } from '@tiptap/pm/state';
 import { useI18n } from '@/fsd/shared/i18n';
 import type { KnowledgeWorkspaceEditorOptions } from '../knowledge-note-form/knowledge-note-form';
 import { EditorToolbar } from './editor-toolbar';
@@ -15,25 +16,31 @@ export function WorkspaceEditorChrome({
     disabled,
     workspace,
     children,
+    authoring,
 }: {
     editor: Editor;
     disabled: boolean;
     workspace: KnowledgeWorkspaceEditorOptions;
     children: ReactNode;
+    authoring?: ReactNode;
 }) {
     const { t } = useI18n();
     const [toolbarRoot, setToolbarRoot] = useState<HTMLElement | null>(null);
     useEffect(() => {
         setToolbarRoot(document.getElementById(workspace.toolbarRootId));
     }, [workspace.toolbarRootId]);
+
     const selection = editor.state.selection;
     const passage = editor.state.doc.textBetween(
         selection.from,
         selection.to,
         '\n',
-        '\n',
     );
-    const hasSelection = passage.trim().length > 1 && !editor.isActive('table');
+    const hasSelection =
+        selection instanceof TextSelection &&
+        !selection.empty &&
+        passage.trim().length > 1 &&
+        !editor.isActive('table');
     const toolbar = (
         <EditorToolbar
             editor={editor}
@@ -41,6 +48,7 @@ export function WorkspaceEditorChrome({
             variant='workspace'
         />
     );
+
     return (
         <div className={styles.root} data-workspace-editor>
             {toolbarRoot ? createPortal(toolbar, toolbarRoot) : toolbar}
@@ -65,6 +73,7 @@ export function WorkspaceEditorChrome({
                     disabled={disabled}
                 />
             )}
+            {authoring}
             {workspace.inlineProposalRootId && (
                 <div
                     id={workspace.inlineProposalRootId}

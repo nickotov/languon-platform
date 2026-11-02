@@ -26,6 +26,7 @@ export class TutorOperationLimitError extends Error {
         super(
             'The conversation operation exceeded its available context or execution budget.',
         );
+
         this.name = 'TutorOperationLimitError';
     }
 }
@@ -43,8 +44,10 @@ function readUsage(usage: unknown): TutorCallUsage | null {
 
 /** Some adapters attach their final measured partial usage to an abort/error object. */
 function readFailureUsage(error: unknown): TutorCallUsage | undefined {
-    if (typeof error !== 'object' || error === null || !('usage' in error))
+    if (typeof error !== 'object' || error === null || !('usage' in error)) {
         return undefined;
+    }
+
     return readUsage(error.usage) ?? undefined;
 }
 
@@ -91,13 +94,16 @@ export function createTutorModelGate(options: {
                     }),
                     'utf8',
                 );
+
             if (inputTokenEstimate > options.maxInputTokens) {
                 contextExceeded = true;
+
                 throw new ConversationError(
                     'context_too_large',
                     'The complete editor, references and conversation exceed the model input limit after compaction. Reduce the editor text or references and try again.',
                 );
             }
+
             if (
                 Date.now() >= deadline ||
                 calls >= maxCalls ||
@@ -110,14 +116,21 @@ export function createTutorModelGate(options: {
                 controller.abort(new TutorOperationLimitError());
                 signal.throwIfAborted();
             }
+
             const outputCap = purpose === 'answer' ? 4096 : 2048;
             const maxOutputTokens = Math.min(
                 input.maxOutputTokens ?? outputCap,
                 outputCap,
                 10_000 - allocatedOutputTokens,
             );
-            if (!Number.isSafeInteger(maxOutputTokens) || maxOutputTokens <= 0)
+
+            if (
+                !Number.isSafeInteger(maxOutputTokens) ||
+                maxOutputTokens <= 0
+            ) {
                 throw new TutorOperationLimitError();
+            }
+
             allocatedOutputTokens += maxOutputTokens;
             const call: TutorCallAdmission = {
                 callId: randomUUID(),
@@ -125,8 +138,12 @@ export function createTutorModelGate(options: {
                 inputTokenEstimate,
                 maxOutputTokens,
             };
+
             calls += 1;
-            if (purpose !== 'answer') memoryCalls += 1;
+            if (purpose !== 'answer') {
+                memoryCalls += 1;
+            }
+
             try {
                 const admitted = await options.accounting.admit(call);
                 if (admitted) {
@@ -134,20 +151,26 @@ export function createTutorModelGate(options: {
                         !Number.isSafeInteger(admitted.maxOutputTokens) ||
                         admitted.maxOutputTokens < 1 ||
                         admitted.maxOutputTokens > call.maxOutputTokens
-                    )
+                    ) {
                         throw new TutorOperationLimitError();
+                    }
+
                     allocatedOutputTokens -=
                         call.maxOutputTokens - admitted.maxOutputTokens;
+
                     call.maxOutputTokens = admitted.maxOutputTokens;
                 }
             } catch (error) {
                 controller.abort(error);
+
                 throw error;
             }
+
             if (signal.aborted) {
                 await options.accounting.fail(call, 'aborted');
                 signal.throwIfAborted();
             }
+
             return {
                 call,
                 input: {
@@ -185,13 +208,17 @@ export function createTutorModelGate(options: {
                     'AbortError',
                 ),
             );
-            if (usage) await options.accounting.fail(call, reason, usage);
-            else await options.accounting.fail(call, reason);
+
+            if (usage) {
+                await options.accounting.fail(call, reason, usage);
+            } else {
+                await options.accounting.fail(call, reason);
+            }
         };
 
         return new Proxy(model, {
             get(target, property) {
-                if (property === 'doGenerate')
+                if (property === 'doGenerate') {
                     return async (input: CallOptions) => {
                         const prepared = await prepare(input);
                         let settled = false;
@@ -200,17 +227,23 @@ export function createTutorModelGate(options: {
                                 prepared.call,
                                 () => target.doGenerate(prepared.input),
                             );
-                            if ('stream' in result)
+
+                            if ('stream' in result) {
                                 return trackStream(
                                     result,
                                     prepared.call,
                                     prepared.input.abortSignal,
                                 );
+                            }
+
                             prepared.call.providerCompleted =
                                 result.finishReason === 'stop' ||
                                 result.finishReason === 'length';
-                            if (result.finishReason === 'length')
+
+                            if (result.finishReason === 'length') {
                                 prepared.call.outputLimitReached = true;
+                            }
+
                             const usage = readUsage(result.usage);
                             if (!usage) {
                                 settled = true;
@@ -218,16 +251,21 @@ export function createTutorModelGate(options: {
                                     prepared.call,
                                     'missing-usage',
                                 );
+
                                 return result;
                             }
-                            if (result.finishReason === 'length')
+
+                            if (result.finishReason === 'length') {
                                 usage.outputLimitReached = true;
+                            }
+
                             await settleUsage(prepared.call, usage);
                             settled = true;
+
                             return result;
                         } catch (error) {
                             providerFailure = { error, purpose };
-                            if (!settled)
+                            if (!settled) {
                                 await fail(
                                     prepared.call,
                                     signal.aborted
@@ -235,10 +273,14 @@ export function createTutorModelGate(options: {
                                         : 'provider-error',
                                     readFailureUsage(error),
                                 );
+                            }
+
                             throw error;
                         }
                     };
-                if (property === 'doStream')
+                }
+
+                if (property === 'doStream') {
                     return async (input: CallOptions) => {
                         const prepared = await prepare(input);
                         try {
@@ -256,10 +298,14 @@ export function createTutorModelGate(options: {
                                 signal.aborted ? 'aborted' : 'provider-error',
                                 readFailureUsage(error),
                             );
+
                             throw error;
                         }
                     };
+                }
+
                 const value: unknown = Reflect.get(target, property, target);
+
                 return typeof value === 'function' ? value.bind(target) : value;
             },
         });
@@ -283,8 +329,10 @@ export function createTutorModelGate(options: {
             if (
                 usage.outputTokens > call.maxOutputTokens ||
                 usage.inputTokens > options.maxInputTokens
-            )
+            ) {
                 throw new TutorOperationLimitError();
+            }
+
             await options.accounting.settle(call, usage);
             allocatedOutputTokens -= call.maxOutputTokens - usage.outputTokens;
         }
@@ -300,7 +348,10 @@ export function createTutorModelGate(options: {
                 reason: 'provider-error' | 'missing-usage' | 'aborted',
                 usage?: TutorCallUsage,
             ) => {
-                if (finalized) return;
+                if (finalized) {
+                    return;
+                }
+
                 finalized = true;
                 await fail(call, reason, usage);
             };
@@ -313,23 +364,28 @@ export function createTutorModelGate(options: {
                         reject(abortSignal.reason);
                         void reader.cancel().catch(() => undefined);
                     };
+
                     abortSignal.addEventListener('abort', onAbort, {
                         once: true,
                     });
                 });
+
                 try {
                     const pendingRead = reader
                         .read()
                         .catch((error: unknown) => {
                             providerFailure = { error, purpose };
                             lastFailureUsage = readFailureUsage(error);
+
                             throw error;
                         });
+
                     return await Promise.race([pendingRead, cancelled]);
                 } finally {
                     abortSignal.removeEventListener('abort', onAbort);
                 }
             }
+
             return {
                 ...result,
                 stream: new ReadableStream({
@@ -337,30 +393,44 @@ export function createTutorModelGate(options: {
                         try {
                             const next = await readNext();
                             if (next.done) {
-                                if (!finalized) await failOnce('missing-usage');
-                                if (signal.aborted) throw signal.reason;
+                                if (!finalized) {
+                                    await failOnce('missing-usage');
+                                }
+
+                                if (signal.aborted) {
+                                    throw signal.reason;
+                                }
+
                                 streamController.close();
+
                                 return;
                             }
+
                             if (next.value.type === 'error') {
                                 providerFailure = {
                                     error: next.value.error,
                                     purpose,
                                 };
+
                                 await failOnce(
                                     'provider-error',
                                     readFailureUsage(next.value.error),
                                 );
+
                                 throw new Error(
                                     'The language provider could not complete this response.',
                                 );
                             }
+
                             if (next.value.type === 'finish') {
                                 call.providerCompleted =
                                     next.value.finishReason === 'stop' ||
                                     next.value.finishReason === 'length';
-                                if (next.value.finishReason === 'length')
+
+                                if (next.value.finishReason === 'length') {
                                     call.outputLimitReached = true;
+                                }
+
                                 const usage = readUsage(next.value.usage);
                                 if (!usage) {
                                     finalized = true;
@@ -369,12 +439,15 @@ export function createTutorModelGate(options: {
                                         'missing-usage',
                                     );
                                 } else {
-                                    if (next.value.finishReason === 'length')
+                                    if (next.value.finishReason === 'length') {
                                         usage.outputLimitReached = true;
+                                    }
+
                                     await settleUsage(call, usage);
                                     finalized = true;
                                 }
                             }
+
                             streamController.enqueue(next.value);
                         } catch (error) {
                             await failOnce(
@@ -383,6 +456,7 @@ export function createTutorModelGate(options: {
                                     : 'provider-error',
                                 readFailureUsage(error) ?? lastFailureUsage,
                             );
+
                             void reader.cancel().catch(() => undefined);
                             streamController.error(error);
                         }
@@ -395,6 +469,7 @@ export function createTutorModelGate(options: {
             };
         }
     };
+
     return {
         wrap,
         signal,

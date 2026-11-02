@@ -36,6 +36,7 @@ export interface AdminMcpCredentialStore {
 export function hashAdminMcpSecret(secret: string): string {
     return createHash('sha256').update(secret).digest('hex');
 }
+
 export class AdminMcpCredentialService {
     public constructor(
         private readonly store: AdminMcpCredentialStore,
@@ -70,8 +71,10 @@ export class AdminMcpCredentialService {
             revokedAt: null,
             secretHash: hashAdminMcpSecret(secret),
         };
+
         await this.store.insertToken(token, parsed.reason, at);
         const { secretHash: _hash, ...metadata } = token;
+
         return { token: metadata, secret };
     }
 
@@ -92,8 +95,10 @@ export class AdminMcpCredentialService {
         reason: string,
     ): Promise<void> {
         assertSafeAuditContext(reason);
-        if (reason.trim().length < 5 || reason.length > 500)
+        if (reason.trim().length < 5 || reason.length > 500) {
             throw new Error('A bounded reason is required.');
+        }
+
         return this.store.revokeToken(
             ownerUserId,
             tokenId,
@@ -106,16 +111,22 @@ export class AdminMcpCredentialService {
         secret: string,
         permission?: AdminMcpPermission,
     ): Promise<AdminMcpActor> {
-        if (!/^lmcp_[A-Za-z0-9_-]{43}$/.test(secret))
+        if (!/^lmcp_[A-Za-z0-9_-]{43}$/.test(secret)) {
             throw new AdminMcpError(
                 'unauthorized',
                 'Invalid or inactive credential.',
             );
+        }
+
         const actor = await this.store.authenticateHash(
             hashAdminMcpSecret(secret),
             this.now(),
         );
-        if (permission) requirePermission(actor, permission);
+
+        if (permission) {
+            requirePermission(actor, permission);
+        }
+
         return actor;
     }
 }

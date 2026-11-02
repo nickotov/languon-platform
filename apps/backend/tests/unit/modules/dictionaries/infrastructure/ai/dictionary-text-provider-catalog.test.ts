@@ -33,6 +33,7 @@ describe('dictionary text provider catalog', () => {
                 },
             },
         });
+
         for (const model of Object.values(dictionaryTextModelCatalog)) {
             expect(model.supportedFormats).toEqual(
                 expect.arrayContaining([
@@ -44,6 +45,7 @@ describe('dictionary text provider catalog', () => {
                 ]),
             );
         }
+
         expect(findDictionaryTextModel('untrusted/model')).toBeUndefined();
         expect(
             findDictionaryTextModel('deepseek/deepseek-chat'),
@@ -85,6 +87,7 @@ describe('dictionary text provider catalog', () => {
             providerBudget,
             structuredOutputMode: 'prompt-injection',
         });
+
         expect(
             createDictionaryTextMastraGeneratorOptions({
                 apiKey: 'test-kie-key',
@@ -143,6 +146,7 @@ describe('dictionary text provider catalog', () => {
                 expect.objectContaining({ method: 'HEAD', signal }),
             ],
         ]);
+
         expect(fetchProvider.mock.calls[0]?.[1]).toMatchObject({
             headers: { authorization: 'Bearer test-provider-key' },
         });
@@ -155,6 +159,7 @@ describe('dictionary text provider catalog', () => {
             readiness:
                 dictionaryTextModelCatalog['kie/gemini-2.5-pro'].readiness,
         });
+
         await expect(readiness(new AbortController().signal)).rejects.toThrow(
             /unavailable/i,
         );

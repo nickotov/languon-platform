@@ -2,7 +2,7 @@
 type: reference
 title: Product backlog context and lifecycle
 created: 2026-10-01
-updated: 2026-10-26
+updated: 2026-11-01
 ---
 
 # Product backlog
@@ -171,3 +171,30 @@ When a task enters delivery, link its correction/improvement/feature record in
 its task file and update its status and this index. Preserve IDs, original task references,
 confirmed decisions, and the distinction between future requirements and
 completed behaviour.
+
+## Tutor generation and engineering follow-ups
+
+The 2026-10-31 discussion adds BL-012–BL-017; see the index for the recommended
+sequence. Initial authorization covered backlog preparation only. The user subsequently
+authorized BL-012 and its staged codebase cleanup follow-ups BL-018/019. This
+does not authorize implementing the unrelated generation/playground/Langfuse tasks.
+
+These tasks distinguish a generation brief (validated authoring parameters),
+a generated artifact (typed learning content), a proposal (reviewable intended
+document change) and explicit application/publication. Exact contract names and
+storage decisions remain for feature preparation. A vocabulary block is not a
+saved dictionary, and generated content is not a learner's attempt or progress.
+
+Source inspection established optional block-tool selection, Knowledge-only
+authoring availability, prose-oriented instructions and missing artifact outcome
+checks. The user's actual provider conversation has not been replayed. Existing
+scripted SDK tests prove tool execution, not natural-language intent quality.
+Future implementation must keep deterministic regression proof, model-behavior
+evaluations, readiness and live-provider evidence distinct.
+
+BL-013/015 first improve generation in authorized owned Knowledge contexts;
+BL-016 owns broader conversational artifact and access semantics. BL-014 exposes
+synthetic versions of the production factories in the guarded playground, not
+production user authority. BL-017 manages prompt versions without moving schemas,
+permissions or budgets out of code. BL-006/007 and feature 059 retain their existing
+scope and statuses; these new tasks are not evidence of their completion.

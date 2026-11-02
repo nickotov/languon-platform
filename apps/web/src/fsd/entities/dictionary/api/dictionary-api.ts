@@ -134,9 +134,13 @@ const apiUrl = resolveDictionaryApiUrl(
 function queryString(values: Record<string, number | string | undefined>) {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(values)) {
-        if (value !== undefined && value !== '') query.set(key, String(value));
+        if (value !== undefined && value !== '') {
+            query.set(key, String(value));
+        }
     }
+
     const serialized = query.toString();
+
     return serialized ? `?${serialized}` : '';
 }
 
@@ -176,6 +180,7 @@ async function request<TBody, TResponse>(
         if (cause instanceof DOMException && cause.name === 'AbortError') {
             throw cause;
         }
+
         throw new DictionaryApiError(0, {
             code: 'service_unavailable',
             correlationId: 'client-network-error',
@@ -186,6 +191,7 @@ async function request<TBody, TResponse>(
     const payload = await readJson(response);
     if (!response.ok) {
         const error = DictionaryErrorResponseSchema.safeParse(payload);
+
         throw new DictionaryApiError(
             response.status,
             error.success
@@ -219,6 +225,7 @@ async function readJson(response: Response): Promise<unknown> {
     ) {
         return undefined;
     }
+
     try {
         return await response.json();
     } catch {
@@ -245,6 +252,7 @@ async function invalidExportResponse(response: Response): Promise<never> {
     await response.body
         ?.cancel('invalid_export_headers')
         .catch(() => undefined);
+
     throw new DictionaryApiError(502, {
         code: 'service_unavailable',
         correlationId: 'invalid-export-headers',
@@ -269,17 +277,21 @@ async function ownerStreamRequest(
             ...(signal ? { signal } : {}),
         });
     } catch (cause) {
-        if (cause instanceof DOMException && cause.name === 'AbortError')
+        if (cause instanceof DOMException && cause.name === 'AbortError') {
             throw cause;
+        }
+
         throw new DictionaryApiError(0, {
             code: 'service_unavailable',
             correlationId: 'client-network-error',
             message: 'Dictionaries are temporarily unavailable.',
         });
     }
+
     if (!response.ok) {
         const payload = await readJson(response);
         const parsed = DictionaryErrorResponseSchema.safeParse(payload);
+
         throw new DictionaryApiError(
             response.status,
             parsed.success
@@ -293,6 +305,7 @@ async function ownerStreamRequest(
                   },
         );
     }
+
     const parsedHeaders = ExportDictionaryResponseHeadersSchema.safeParse({
         'cache-control': response.headers.get('cache-control'),
         'content-disposition': response.headers.get('content-disposition'),
@@ -302,12 +315,20 @@ async function ownerStreamRequest(
             'x-content-type-options',
         ),
     });
-    if (!parsedHeaders.success) return invalidExportResponse(response);
+
+    if (!parsedHeaders.success) {
+        return invalidExportResponse(response);
+    }
+
     const headers = parsedHeaders.data;
     const filename = /^attachment; filename="([A-Za-z0-9._-]+)"$/u.exec(
         headers['content-disposition'],
     )?.[1];
-    if (!filename) return invalidExportResponse(response);
+
+    if (!filename) {
+        return invalidExportResponse(response);
+    }
+
     return { filename, response };
 }
 
@@ -315,6 +336,7 @@ function validatedShareCapability(shareId: string, shareKey: string) {
     const validatedHeaders = DictionaryShareKeyHeadersSchema.parse({
         'x-languon-share-key': shareKey,
     });
+
     return {
         headers: {
             'X-Languon-Share-Key': validatedHeaders['x-languon-share-key'],
@@ -449,6 +471,7 @@ export const dictionaryApi = {
         signal?: AbortSignal,
     ) => {
         const query = ExportDictionaryQuerySchema.parse({ format });
+
         return ownerStreamRequest(
             accessToken,
             `/dictionaries/${dictionaryId}/export${queryString(query)}`,
@@ -602,6 +625,7 @@ export const dictionaryApi = {
         const capability = validatedShareCapability(shareId, shareKey);
         const validatedQuery =
             ListSharedDictionaryQuerySchema.partial().parse(query);
+
         return request(
             `/shared/dictionaries/${capability.shareId}${queryString(validatedQuery)}`,
             {
@@ -620,6 +644,7 @@ export const dictionaryApi = {
         signal?: AbortSignal,
     ) => {
         const capability = validatedShareCapability(shareId, shareKey);
+
         return ownerRequest(
             accessToken,
             `/shared/dictionaries/${capability.shareId}/fork`,
@@ -727,6 +752,7 @@ export const dictionaryApi = {
         signal?: AbortSignal,
     ) => {
         const parsed = DictionaryGenerationJobIdParamsSchema.parse({ jobId });
+
         return ownerRequest(
             accessToken,
             `/dictionary-generation-jobs/${parsed.jobId}/retry-pasted-terms`,
@@ -749,6 +775,7 @@ export const dictionaryApi = {
         signal?: AbortSignal,
     ) => {
         const parsed = DictionaryGenerationJobIdParamsSchema.parse({ jobId });
+
         return ownerRequest(
             accessToken,
             `/dictionary-generation-jobs/${parsed.jobId}/retry-document-terms`,
@@ -771,6 +798,7 @@ export const dictionaryApi = {
         signal?: AbortSignal,
     ) => {
         const parsed = DictionaryGenerationJobIdParamsSchema.parse({ jobId });
+
         return ownerRequest(
             accessToken,
             `/dictionary-generation-jobs/${parsed.jobId}/retry-import-pairs`,
@@ -793,6 +821,7 @@ export const dictionaryApi = {
         signal?: AbortSignal,
     ) => {
         const parsed = DictionaryGenerationJobIdParamsSchema.parse({ jobId });
+
         return ownerRequest(
             accessToken,
             `/dictionary-generation-jobs/${parsed.jobId}/regenerate-card-authoring`,
@@ -845,17 +874,21 @@ export const dictionaryApi = {
             if (cause instanceof DOMException && cause.name === 'AbortError') {
                 throw cause;
             }
+
             // The create-only PUT may have committed even when its response was
             // lost or hidden by CORS. Let the owner-authenticated completion
             // endpoint reconcile the sole exact immutable version.
             return {};
         }
+
         if (!response.ok && response.status !== 412) {
             throw new DictionaryDocumentUploadError(
                 'The document upload could not be completed.',
             );
         }
+
         const versionId = response.headers.get('x-amz-version-id')?.trim();
+
         return versionId ? { versionId } : {};
     },
     completeDocumentUpload: (
@@ -867,6 +900,7 @@ export const dictionaryApi = {
         const parsed = DictionaryDocumentUploadIdParamsSchema.parse({
             uploadId,
         });
+
         return ownerRequest(
             accessToken,
             `/dictionary-document-uploads/${parsed.uploadId}/complete`,
@@ -900,6 +934,7 @@ export const dictionaryApi = {
         signal?: AbortSignal,
     ) => {
         const parsed = DictionaryGenerationJobIdParamsSchema.parse({ jobId });
+
         return ownerRequest(
             accessToken,
             `/dictionary-generation-jobs/${parsed.jobId}`,
@@ -959,6 +994,7 @@ export const dictionaryApi = {
         signal?: AbortSignal,
     ) => {
         const parsed = DictionaryGenerationJobIdParamsSchema.parse({ jobId });
+
         return ownerRequest(
             accessToken,
             `/dictionary-generation-jobs/${parsed.jobId}/regenerate`,
@@ -984,6 +1020,7 @@ function generationJobAction<TBody, TResponse>(
     signal?: AbortSignal,
 ) {
     const parsed = DictionaryGenerationJobIdParamsSchema.parse({ jobId });
+
     return ownerRequest(
         accessToken,
         `/dictionary-generation-jobs/${parsed.jobId}/${action}`,

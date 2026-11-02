@@ -7,6 +7,7 @@ export function localOrigin(value) {
     } catch {
         throw new Error('Supply an explicit local HTTP origin.');
     }
+
     if (
         url.protocol !== 'http:' ||
         !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) ||
@@ -20,17 +21,23 @@ export function localOrigin(value) {
             'Only credential-free loopback HTTP origins are allowed.',
         );
     }
+
     return url.origin;
 }
 
 // Compare decimal spellings exactly without floating point conversion.
 function normalize(value) {
-    if (typeof value === 'number' && Number.isFinite(value))
+    if (typeof value === 'number' && Number.isFinite(value)) {
         return normalize(String(value));
-    if (typeof value === 'string' && /^\d+(\.\d+)?$/.test(value))
+    }
+
+    if (typeof value === 'string' && /^\d+(\.\d+)?$/.test(value)) {
         return value.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+    }
+
     return value;
 }
+
 function matches(current, desired) {
     return (
         current &&
@@ -39,6 +46,7 @@ function matches(current, desired) {
         )
     );
 }
+
 export function createAdminClient({
     origin,
     adminOrigin,
@@ -47,10 +55,12 @@ export function createAdminClient({
 }) {
     const target = localOrigin(origin);
     const browserOrigin = localOrigin(adminOrigin);
-    if (!token || /[\r\n]/.test(token))
+    if (!token || /[\r\n]/.test(token)) {
         throw new Error(
             'Set LANGUON_DEV_ADMIN_TOKEN to a recent admin access token.',
         );
+    }
+
     return async (path, schema, method = 'GET', body) => {
         const response = await fetchImpl(`${target}${path}`, {
             method,
@@ -63,12 +73,14 @@ export function createAdminClient({
             },
             ...(body ? { body: JSON.stringify(body) } : {}),
         });
+
         if (!response.ok) {
             // Never echo arbitrary response content, tokens, or supplied credentials.
             throw new Error(
                 `${method} ${path} failed (HTTP ${response.status}). Reauthenticate for 401/403; inspect current revisions for 409. No automatic retry was made.`,
             );
         }
+
         return schema.parse(await response.json());
     };
 }
@@ -82,10 +94,12 @@ export async function configure({
     log = console.log,
 }) {
     const profile = setupProfiles[profileName];
-    if (!profile)
+    if (!profile) {
         throw new Error(
             'Unknown profile. Choose deterministic-demo or deepseek-local-testing.',
         );
+    }
+
     validateProfile(profile, c);
     if (
         profileName === 'deterministic-demo' &&
@@ -97,6 +111,7 @@ export async function configure({
             'deterministic-demo requires the same isolated test runtime environment: APP_ENV=test and DICTIONARY_AI_PROVIDER_FIXTURE_MODE=deterministic. The CLI does not switch server adapters.',
         );
     }
+
     const [accounting, prices] = await Promise.all([
         request('/admin/ai/accounting-settings', c.AiAccountingSettingsSchema),
         request(
@@ -143,26 +158,33 @@ export async function configure({
             },
         },
     ];
+
     // Validate every proposed mutation before making any changes.
-    for (const operation of operations)
+    for (const operation of operations) {
         operation.body = operation.input.parse(operation.body);
+    }
+
     for (const operation of operations) {
         log(
             `${operation.name}: ${operation.unchanged ? 'already matches' : apply ? 'applying' : 'would update'}`,
         );
+
         if (!operation.unchanged) {
             log(JSON.stringify(operation.body));
-            if (apply)
+            if (apply) {
                 await request(
                     operation.path,
                     operation.output,
                     operation.method,
                     operation.body,
                 );
+            }
         }
     }
+
     log(
         'Activation requires Admin → AI routing: reviewed per-flow tariffs, successful route/flow checks and explicit routing publication. This profile never changes routes or runs paid probes.',
     );
+
     return operations.filter((operation) => !operation.unchanged).length;
 }

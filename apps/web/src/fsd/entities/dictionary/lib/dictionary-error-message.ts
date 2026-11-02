@@ -3,38 +3,67 @@ import type { Translate } from '@/fsd/shared/i18n';
 import { DictionaryApiError } from '../api/dictionary-api';
 
 export function dictionaryErrorMessage(error: unknown, t: Translate): string {
-    if (error instanceof TypeError) return t('dictionary.error.network');
+    if (error instanceof TypeError) {
+        return t('dictionary.error.network');
+    }
+
     if (
         error instanceof DictionaryApiError &&
         error.detail.code === 'rate_limited'
-    )
+    ) {
         return t('dictionary.error.rateLimited');
-    if (!(error instanceof DictionaryApiError))
+    }
+
+    if (!(error instanceof DictionaryApiError)) {
         return t('dictionary.error.generic');
-    if (error.detail.code === 'version_conflict')
+    }
+
+    if (error.detail.code === 'version_conflict') {
         return t('dictionary.error.conflict');
-    if (error.detail.code === 'language_pair_locked')
+    }
+
+    if (error.detail.code === 'language_pair_locked') {
         return t('dictionary.settings.pairLocked');
-    if (error.detail.code === 'authentication_required')
+    }
+
+    if (error.detail.code === 'authentication_required') {
         return t('dictionary.error.signIn');
-    if (error.detail.code === 'recent_authentication_required')
+    }
+
+    if (error.detail.code === 'recent_authentication_required') {
         return t('error.recent_authentication_required');
+    }
+
     if (
         error.detail.code === 'owner_capacity_exceeded' ||
         error.detail.code === 'card_capacity_exceeded'
-    )
+    ) {
         return t('dictionary.error.capacity');
-    if (error.detail.code === 'generation_not_available')
+    }
+
+    if (error.detail.code === 'generation_not_available') {
         return t('dictionary.generation.error.unavailable');
-    if (error.detail.code === 'ai_credits_exhausted')
+    }
+
+    if (error.detail.code === 'ai_credits_exhausted') {
         return t('dictionary.generation.error.creditsExhausted');
-    if (error.detail.code === 'generation_job_not_found')
+    }
+
+    if (error.detail.code === 'generation_job_not_found') {
         return t('dictionary.generation.error.notFound');
-    if (error.detail.code === 'generation_not_reviewable')
+    }
+
+    if (error.detail.code === 'generation_not_reviewable') {
         return t('dictionary.generation.error.notReviewable');
-    if (error.detail.code === 'generation_proposal_expired')
+    }
+
+    if (error.detail.code === 'generation_proposal_expired') {
         return t('dictionary.generation.error.expired');
-    if (error.detail.code === 'generation_candidate_conflict')
+    }
+
+    if (error.detail.code === 'generation_candidate_conflict') {
         return t('dictionary.generation.error.candidateConflict');
+    }
+
     return t('dictionary.error.generic');
 }

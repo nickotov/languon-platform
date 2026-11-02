@@ -47,9 +47,14 @@ export function useTextWorkspaceData(
                 const found = result.data.find(
                     (item) => item.id === membership,
                 );
-                if (found) return found;
+
+                if (found) {
+                    return found;
+                }
+
                 cursor = result.nextCursor ?? undefined;
             } while (cursor);
+
             return null;
         },
     });

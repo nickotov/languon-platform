@@ -32,8 +32,9 @@ export class DrizzleTextAiPreferenceStore implements TextAiPreferenceStore {
                 .where(eq(usersTable.id, userId))
                 .for('update');
 
-            if (!user || user.status !== 'active')
+            if (!user || user.status !== 'active') {
                 throw new TextAiUserUnavailableError();
+            }
 
             return work({
                 read: async () => {

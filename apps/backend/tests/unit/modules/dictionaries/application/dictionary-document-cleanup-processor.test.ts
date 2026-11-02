@@ -38,7 +38,7 @@ describe('DictionaryDocumentCleanupProcessor', () => {
             expireUploadAuthorizations,
             claimCleanup: vi.fn(async () => {
                 claimIndex += 1;
-                if (claimIndex === 1)
+                if (claimIndex === 1) {
                     return {
                         capabilityExpiresAt: new Date(
                             '2026-08-26T12:10:00.000Z',
@@ -60,10 +60,13 @@ describe('DictionaryDocumentCleanupProcessor', () => {
                         ],
                         workerId: 'cleanup-a',
                     };
+                }
+
                 const versions = await storage.listVersions({
                     objectKey,
                     signal: new AbortController().signal,
                 });
+
                 return {
                     capabilityExpiresAt: new Date('2026-08-26T12:10:00.000Z'),
                     fencingToken: 2n,
@@ -100,16 +103,19 @@ describe('DictionaryDocumentCleanupProcessor', () => {
                 workerId: 'root-worker',
             }),
         ).resolves.toBe(true);
+
         expect(expireUploadAuthorizations).toHaveBeenCalledWith({
             context: { now, signal: expect.any(AbortSignal) },
             limit: 100,
         });
+
         expect(recordCleanupTombstone).toHaveBeenCalledOnce();
         expect(recordCleanupTombstone).not.toHaveBeenCalledWith(
             expect.objectContaining({
                 storageVersionId: providerDeleteMarker.versionId,
             }),
         );
+
         expect(recordDataVersionsDeleted).toHaveBeenCalledWith(
             expect.objectContaining({
                 deletedVersions: [
@@ -117,6 +123,7 @@ describe('DictionaryDocumentCleanupProcessor', () => {
                 ],
             }),
         );
+
         expect(
             await storage.listVersions({
                 objectKey,
@@ -129,6 +136,7 @@ describe('DictionaryDocumentCleanupProcessor', () => {
             signal: new AbortController().signal,
             workerId: 'root-worker',
         });
+
         expect(completeCleanup).toHaveBeenCalledOnce();
         expect(
             await storage.listVersions({
@@ -180,10 +188,12 @@ describe('DictionaryDocumentCleanupProcessor', () => {
                 retryAt: new Date('2026-08-26T12:00:05.000Z'),
             }),
         );
+
         expect(failCleanup).toHaveBeenCalledOnce();
         const [persistedFailure] = failCleanup.mock.calls[0]! as unknown as [
             Record<string, unknown>,
         ];
+
         expect(persistedFailure).not.toHaveProperty('message');
     });
 
@@ -210,9 +220,11 @@ describe('DictionaryDocumentCleanupProcessor', () => {
                 workerId: 'cleanup-a',
             }),
         ).resolves.toBe(true);
+
         expect(expireUploadAuthorizations).toHaveBeenCalledWith(
             expect.objectContaining({ limit: 7 }),
         );
+
         expect(claimCleanup).toHaveBeenCalledOnce();
     });
 });

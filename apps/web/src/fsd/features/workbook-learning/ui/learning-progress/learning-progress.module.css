@@ -1,0 +1,18 @@
+.panel {
+    display: grid;
+    gap: var(--space-12);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--space-16);
+    background: var(--background-surface);
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.notice {
+    color: var(--text-secondary);
+}

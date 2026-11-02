@@ -40,10 +40,11 @@ export async function record(
             .where(eq(records.idempotencyKey, input.idempotencyKey));
 
         if (existing) {
-            if (canonical(existing.data) !== canonical(input))
+            if (canonical(existing.data) !== canonical(input)) {
                 throw new AccountingConflictError(
                     'Idempotency key reused with different data.',
                 );
+            }
 
             return dto(existing);
         }
@@ -64,10 +65,12 @@ export async function record(
                 )
                 .for('share');
 
-            if (!owner)
+            if (!owner) {
                 throw new AccountingInvalidRecordError(
                     'Payment credit recipient unavailable.',
                 );
+            }
+
             ownerId = input.ownerId;
             const issued = await persistence.credits(tx).issueGrant({
                 ownerId,
@@ -94,8 +97,10 @@ export async function record(
                 )
                 .for('update');
 
-            if (!payment)
+            if (!payment) {
                 throw new AccountingInvalidRecordError('Payment unavailable.');
+            }
+
             const [refunded] = await tx
                 .select({
                     total: sql<string>`coalesce(sum(${records.amountUsdMicros}), 0)::text`,
@@ -106,18 +111,22 @@ export async function record(
             if (
                 BigInt(refunded?.total ?? '0') + amount >
                 payment.amountUsdMicros
-            )
+            ) {
                 throw new AccountingInvalidRecordError(
                     'Refund exceeds payment.',
                 );
+            }
+
             ownerId = payment.ownerId;
             grantId = payment.grantId;
             const revoke = parseFixed(input.revokeAvailableCredits, 3);
-            if (revoke > 0n && (!ownerId || !grantId))
+            if (revoke > 0n && (!ownerId || !grantId)) {
                 throw new AccountingInvalidRecordError(
                     'Removed accounts allow cash-only refunds.',
                 );
-            if (revoke > 0n && ownerId && grantId)
+            }
+
+            if (revoke > 0n && ownerId && grantId) {
                 await persistence.credits(tx).revokePurchaseGrantAvailable({
                     ownerId,
                     grantId,
@@ -126,6 +135,7 @@ export async function record(
                     reason: input.reason,
                     at,
                 });
+            }
         }
 
         if (input.kind === 'provider_bill') {
@@ -138,10 +148,11 @@ export async function record(
                 sql`select id from ${records} where kind = 'provider_bill' and provider_id = ${input.providerId} and (data->>'periodStart')::timestamptz < ${input.periodEnd}::timestamptz and (data->>'periodEnd')::timestamptz > ${input.periodStart}::timestamptz limit 1`,
             );
 
-            if (overlaps.length)
+            if (overlaps.length) {
                 throw new AccountingConflictError(
                     'Provider bill periods overlap.',
                 );
+            }
         }
 
         const [row] = await tx
@@ -164,7 +175,10 @@ export async function record(
             })
             .returning();
 
-        if (!row) throw new Error('Accounting insert did not return a record.');
+        if (!row) {
+            throw new Error('Accounting insert did not return a record.');
+        }
+
         await markAccountingReportsDirty(tx);
 
         return dto(row);
@@ -179,8 +193,11 @@ export async function refundContext(
         sql`with purchase_allocations as (${purchaseAllocations}) select p.owner_id, p.grant_id, p.amount_usd_micros::text as paid, coalesce((select sum(amount_usd_micros) from ai_accounting_records where payment_id=p.id),0)::text as refunded, g.amount::text as issued, coalesce(a.reserved,0)::text as reserved, coalesce(a.consumed,0)::text as consumed, coalesce(r.revoked,0)::text as revoked from ai_accounting_records p left join ai_credit_grants g on g.id=p.grant_id left join lateral (select sum(case when x.state='active' then x.allocated_credits else 0 end) as reserved, sum(x.settled_credits) as consumed from purchase_allocations x where x.grant_id=g.id) a on true left join lateral (select sum(allocated_credits) as revoked from ai_credit_admin_removal_allocations where grant_id=g.id) r on true where p.id=${paymentId} and p.kind='payment'`,
     );
     const row = result[0];
-    if (!row) throw new AccountingInvalidRecordError('Payment unavailable.');
-    if (!row.owner_id || !row.grant_id)
+    if (!row) {
+        throw new AccountingInvalidRecordError('Payment unavailable.');
+    }
+
+    if (!row.owner_id || !row.grant_id) {
         return {
             paymentId,
             ownerId: null,
@@ -192,6 +209,8 @@ export async function refundContext(
             consumedCredits: null,
             revokedCredits: null,
         };
+    }
+
     const reserved = BigInt(String(row.reserved));
     const consumed = BigInt(String(row.consumed));
     const revoked = BigInt(String(row.revoked));

@@ -1,3 +1,8 @@
+import { createKnowledgeTranscriptionWorker } from '../../modules/knowledge/infrastructure/transcription-job-composition';
+import {
+    publishKnowledgeTranscriptionWorkerObservation,
+    knowledgeTranscriptionWorkerFormat,
+} from '../../modules/knowledge/infrastructure/transcription-worker-readiness';
 import type { TextsAiProvider } from '../../modules/texts/application/ports/texts-ai-provider';
 import { createTextAiProviderRuntime } from '../text-ai/provider-runtime';
 import type { TextAiProviderRuntimeOptions } from '../../modules/text-ai/infrastructure/ai/text-ai-provider-runtime-observer';
@@ -89,8 +94,10 @@ export function createWorkerSentenceProvider(
         const unavailable = async (): Promise<never> => {
             throw new Error('Sentence provider fixtures are unavailable.');
         };
+
         return { generate: unavailable, check: unavailable };
     }
+
     return createSentenceAiProvider({
         runtime,
         credentials: environment.providerCredentials,
@@ -135,11 +142,13 @@ export function publishWorkerTextAiObservations(
         | 'supportedFormats'
         | 'providerCredentials'
         | 'readinessTimeoutMs'
+        | 'transcriptionApiKey'
     >,
     database: Parameters<typeof publishTextAiWorkerObservations>[0]['database'],
     workerId: string,
+    transcriptionWorkerId = workerId,
 ): Promise<void> {
-    return publishTextAiWorkerObservations({
+    const textPublication = publishTextAiWorkerObservations({
         conversationCapacityEnabled: true,
         portraitInterviewExecutionEnabled:
             environment.providerFixtureMode !== 'deterministic' &&
@@ -162,6 +171,62 @@ export function publishWorkerTextAiObservations(
         readinessTimeoutMs: environment.readinessTimeoutMs,
         workerId,
     });
+    const transcriptionPublication = environment.supportedFormats.includes(
+        knowledgeTranscriptionWorkerFormat,
+    )
+        ? publishKnowledgeTranscriptionWorkerObservation(
+              database,
+              transcriptionWorkerId,
+              !!environment.transcriptionApiKey,
+          )
+        : Promise.resolve();
+
+    return Promise.all([textPublication, transcriptionPublication]).then(
+        () => undefined,
+    );
+}
+
+function createWorkerDocumentAdapters(
+    storage: S3PrivateDocumentStorage | undefined,
+    environment: DictionaryWorkerEnvironment['document'],
+): Parameters<typeof createDictionaryWorkerComposition>[0]['document'] {
+    if (!storage) {
+        return undefined;
+    }
+
+    if (environment.mode === 'deterministic') {
+        return {
+            extractor: new DeterministicSandboxedDocumentExtractor(),
+            fingerprint: new HmacDictionaryCryptography({
+                entropy: { randomBytes },
+                secret: environment.fingerprintSecret,
+            }),
+            ocr: new DeterministicDocumentOcrProvider(),
+            ocrEnabled: true,
+            scanner: new DeterministicDocumentMalwareScanner(),
+            storage,
+        };
+    }
+
+    if (environment.mode === 'production') {
+        return {
+            extractor: new BubblewrapSandboxedDocumentExtractor({
+                applicationRoot: environment.sandbox.applicationRoot,
+                bubblewrapPath: environment.sandbox.bubblewrapPath,
+                parserEntryPath: environment.sandbox.parserEntryPath,
+            }),
+            fingerprint: new HmacDictionaryCryptography({
+                entropy: { randomBytes },
+                secret: environment.fingerprintSecret,
+            }),
+            ocr: new UnavailableDocumentOcrProvider(),
+            ocrEnabled: false,
+            scanner: new ClamAvDocumentMalwareScanner(environment.scanner),
+            storage,
+        };
+    }
+
+    return undefined;
 }
 
 class DictionaryWorkerConfigurationError extends Error {}
@@ -180,6 +245,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     if (existsSync(dictionaryWorkerLocalEnvironmentFile)) {
         loadEnvFile(dictionaryWorkerLocalEnvironmentFile);
     }
+
     const [command = 'run'] = values;
     if (!['healthcheck', 'run'].includes(command) || values.length > 1) {
         throw new Error(
@@ -199,6 +265,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             }`,
         );
     }
+
     const sql = createPostgresClient({
         databaseUrl: environment.databaseUrl,
         maxConnections: environment.databaseMaxConnections,
@@ -211,6 +278,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     const audioDeployed = ['staging', 'production'].includes(
         process.env.APP_ENV ?? 'development',
     );
+
     if (
         audioDeployed &&
         process.env.SPEECH_GENERATION_ENABLED === 'true' &&
@@ -225,6 +293,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             'Shared speech worker requires compatible processing and pricing revisions.',
         );
     }
+
     const audioEnvironment = loadDictionaryAudioEnvironment(process.env, {
         deployed: audioDeployed,
         role: 'worker',
@@ -340,41 +409,10 @@ async function main(values = process.argv.slice(2)): Promise<void> {
                   client: documentS3Client,
               })
             : undefined;
-    const document =
-        documentStorage && environment.document.mode === 'deterministic'
-            ? {
-                  extractor: new DeterministicSandboxedDocumentExtractor(),
-                  fingerprint: new HmacDictionaryCryptography({
-                      entropy: { randomBytes },
-                      secret: environment.document.fingerprintSecret,
-                  }),
-                  ocr: new DeterministicDocumentOcrProvider(),
-                  ocrEnabled: true,
-                  scanner: new DeterministicDocumentMalwareScanner(),
-                  storage: documentStorage,
-              }
-            : documentStorage && environment.document.mode === 'production'
-              ? {
-                    extractor: new BubblewrapSandboxedDocumentExtractor({
-                        applicationRoot:
-                            environment.document.sandbox.applicationRoot,
-                        bubblewrapPath:
-                            environment.document.sandbox.bubblewrapPath,
-                        parserEntryPath:
-                            environment.document.sandbox.parserEntryPath,
-                    }),
-                    fingerprint: new HmacDictionaryCryptography({
-                        entropy: { randomBytes },
-                        secret: environment.document.fingerprintSecret,
-                    }),
-                    ocr: new UnavailableDocumentOcrProvider(),
-                    ocrEnabled: false,
-                    scanner: new ClamAvDocumentMalwareScanner(
-                        environment.document.scanner,
-                    ),
-                    storage: documentStorage,
-                }
-              : undefined;
+    const document = createWorkerDocumentAdapters(
+        documentStorage,
+        environment.document,
+    );
     const { service } = createDictionaryWorkerComposition({
         cardAuthoringProvider: routedProviders.cardAuthoring,
         clock: { now: () => new Date() },
@@ -412,11 +450,14 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     const generationFormat =
         process.env.LEARNING_SENTENCE_GENERATION_FORMAT ??
         'sentence-generation:v1';
+
     if (
         generationFormat !== 'sentence-generation:v1' &&
         generationFormat !== 'sentence-generation:v2'
-    )
+    ) {
         throw new Error('Invalid sentence generation format');
+    }
+
     const { preparation: sentencePreparation } =
         createSentencePreparationWorkerComposition({
             database,
@@ -465,12 +506,14 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             | 'text-detection:v2'
             | 'text-translation:v1'
             | 'text-translation:v2'
-            | 'text-translation:v3' =>
+            | 'text-translation:v3'
+            | 'text-translation:v4' =>
             format === 'text-detection:v1' ||
             format === 'text-detection:v2' ||
             format === 'text-translation:v1' ||
             format === 'text-translation:v2' ||
-            format === 'text-translation:v3',
+            format === 'text-translation:v3' ||
+            format === 'text-translation:v4',
     );
     const textsWorker = textsFormats.length
         ? createTextsWorkerComposition({
@@ -501,6 +544,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             'Texts vocabulary execution requires the API DICTIONARY_HMAC_SECRET (at least 32 bytes).',
         );
     }
+
     const textsCryptography = selectionEnabled
         ? createTextsCryptography(textsHmacSecret!, { randomBytes })
         : undefined;
@@ -522,13 +566,16 @@ async function main(values = process.argv.slice(2)): Promise<void> {
     const conversationEnabled =
         environment.supportedFormats.includes('conversation:v1') &&
         environment.providerFixtureMode !== 'deterministic';
+
     if (
         conversationEnabled &&
         (!textsHmacSecret || Buffer.byteLength(textsHmacSecret, 'utf8') < 32)
-    )
+    ) {
         throw new DictionaryWorkerConfigurationError(
             'Conversation execution requires DICTIONARY_HMAC_SECRET (at least 32 bytes).',
         );
+    }
+
     const conversationWorker = conversationEnabled
         ? createConversationWorkerComposition({
               database,
@@ -544,6 +591,17 @@ async function main(values = process.argv.slice(2)): Promise<void> {
                   credentials: environment.providerCredentials,
               })
             : undefined;
+    const transcriptionWorker = environment.supportedFormats.includes(
+        knowledgeTranscriptionWorkerFormat,
+    )
+        ? createKnowledgeTranscriptionWorker({
+              database,
+              workerId,
+              ...(environment.transcriptionApiKey
+                  ? { apiKey: environment.transcriptionApiKey }
+                  : {}),
+          })
+        : undefined;
     const observationWorkerId = `${environment.releaseSha}:${hostname().slice(0, 64)}`;
     const runtime = new DictionaryWorkerRuntime({
         concurrency: environment.concurrency,
@@ -552,6 +610,9 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         pollIntervalMs: environment.pollIntervalMs,
         readinessTimeoutMs: environment.readinessTimeoutMs,
         service: coordinatedService,
+        ...(transcriptionWorker
+            ? { transcriptionService: transcriptionWorker }
+            : {}),
         sentenceService: sentenceWorker,
         ...(portraitInterviewWorker
             ? { portraitInterviewService: portraitInterviewWorker }
@@ -579,6 +640,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
             audioAdapters.close();
             await sql.end({ timeout: 1 });
         }
+
         return;
     }
 
@@ -586,30 +648,37 @@ async function main(values = process.argv.slice(2)): Promise<void> {
         void runtime
             .shutdown(signal)
             .then(({ forced }) => {
-                if (forced) process.exitCode = 1;
+                if (forced) {
+                    process.exitCode = 1;
+                }
             })
             .catch(() => {
                 process.exitCode = 1;
             });
     };
+
     process.once('SIGINT', shutdown);
     process.once('SIGTERM', shutdown);
     await publishWorkerTextAiObservations(
         environment,
         database,
         observationWorkerId,
+        workerId,
     );
+
     const observationTimer = setInterval(() => {
         void publishWorkerTextAiObservations(
             environment,
             database,
             observationWorkerId,
+            workerId,
         ).catch(() => {
             process.stderr.write(
                 'Dictionary AI readiness observation failed.\n',
             );
         });
     }, 60_000);
+
     observationTimer.unref();
     try {
         await runtime.run();
@@ -630,6 +699,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
                 ? `${error.message}\n`
                 : 'Dictionary worker command failed.\n',
         );
+
         process.exitCode = 1;
     });
 }

@@ -3,10 +3,14 @@ import {
     ArrowLeft,
     CopyPlus,
     EllipsisVertical,
+    Eye,
     Globe,
     History,
     Link2,
     Sparkles,
+    Highlighter,
+    GraduationCap,
+    Save,
     Trash2,
 } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -44,8 +48,18 @@ export function WorkspaceHeader({
     onHistory,
     onDelete,
     onRetryRecovery,
+    practiceHref,
+    blockAccents = true,
+    onBlockAccentsChange,
+    learnerPreview = false,
+    onLearnerPreviewChange,
 }: {
     title: string;
+    blockAccents?: boolean;
+    onBlockAccentsChange?: ((enabled: boolean) => void) | undefined;
+    learnerPreview?: boolean;
+    onLearnerPreviewChange?: ((enabled: boolean) => void) | undefined;
+    practiceHref?: string | undefined;
     titleVisible?: boolean;
     stats?: string;
     savedAt?: string | undefined;
@@ -76,6 +90,7 @@ export function WorkspaceHeader({
     function openSharing() {
         setTimeout(() => setShareOpen(true), 0);
     }
+
     function restoreActionFocus(event: FocusEvent<HTMLSpanElement>) {
         if (event.target === event.currentTarget) {
             event.currentTarget
@@ -85,12 +100,19 @@ export function WorkspaceHeader({
                 ?.focus({ preventScroll: true });
         }
     }
+
     function openTutor() {
         placement?.setMode('split');
     }
+
     function ignoreStats() {
         return undefined;
     }
+
+    function toggleLearnerPreview() {
+        onLearnerPreviewChange?.(!learnerPreview);
+    }
+
     const actions: MenuItem[] = [
         {
             label: t('knowledge.saveCopy'),
@@ -111,6 +133,25 @@ export function WorkspaceHeader({
             onSelect: openSharing,
         },
     ];
+
+    if (onLearnerPreviewChange) {
+        actions.unshift({
+            label: t('knowledge.learnerPreview'),
+            icon: <Eye size={16} aria-hidden />,
+            checked: learnerPreview,
+            onSelect: toggleLearnerPreview,
+        });
+    }
+
+    if (onBlockAccentsChange) {
+        actions.push({
+            label: t('knowledge.highlightLearningBlocks'),
+            icon: <Highlighter size={16} aria-hidden />,
+            checked: blockAccents,
+            onSelect: () => onBlockAccentsChange(!blockAccents),
+        });
+    }
+
     if (stats) {
         actions.push({
             label: stats,
@@ -119,6 +160,7 @@ export function WorkspaceHeader({
             onSelect: ignoreStats,
         });
     }
+
     actions.push({
         label: t('knowledge.delete'),
         icon: <Trash2 size={16} aria-hidden />,
@@ -127,11 +169,16 @@ export function WorkspaceHeader({
         disabled: busy !== null,
         onSelect: onDelete,
     });
+
     const showOpenTutor = placement?.mode === 'focus';
     const saveDisabled = !canPublish || !dirty || busy !== null;
     let saveHint = t('knowledge.saveHintSave');
-    if (!canPublish) saveHint = t('knowledge.saveHintMissing');
-    else if (!dirty) saveHint = t('knowledge.saveHintUnchanged');
+    if (!canPublish) {
+        saveHint = t('knowledge.saveHintMissing');
+    } else if (!dirty) {
+        saveHint = t('knowledge.saveHintUnchanged');
+    }
+
     const menu = (
         <span
             className={styles.sharingAnchor}
@@ -164,6 +211,19 @@ export function WorkspaceHeader({
         </span>
     );
     const sharingMenu = share ? share(shareOpen, setShareOpen, menu) : menu;
+    const practice = practiceHref ? (
+        <Tooltip content={t('knowledge.practiceSaved')} placement='bottom'>
+            <ButtonLink
+                href={practiceHref}
+                variant='ghost'
+                size='compact'
+                className={styles.iconAction}
+                aria-label={t('knowledge.practiceSaved')}
+                leadingIcon={<GraduationCap size={16} aria-hidden />}
+            />
+        </Tooltip>
+    ) : null;
+
     return (
         <header className={styles.header}>
             <div className={styles.topbar} data-workspace-topbar>
@@ -208,15 +268,17 @@ export function WorkspaceHeader({
                             <Button
                                 size='compact'
                                 variant={saveDisabled ? 'secondary' : 'primary'}
-                                className={styles.save}
+                                className={styles.iconAction}
+                                aria-label={t('knowledge.saveDocument')}
                                 disabled={saveDisabled}
                                 loading={busy === 'save'}
+                                leadingIcon={<Save size={16} aria-hidden />}
+                                children={null}
                                 onClick={onSave}
-                            >
-                                {t('knowledge.saveDocument')}
-                            </Button>
+                            />
                         </span>
                     </Tooltip>
+                    {practice}
                     {sharingMenu}
                 </div>
                 <span className={styles.divider} aria-hidden />

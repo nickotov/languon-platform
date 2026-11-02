@@ -29,15 +29,20 @@ export function DeletePortraitDialog({
             onClose();
         }
     }
+
     async function confirm() {
         const version = management.query.data?.version;
-        if (version === undefined) return;
+        if (version === undefined) {
+            return;
+        }
+
         const result = await management.apply((token) =>
             portraitApi.remove(token, {
                 expectedVersion: version,
                 confirmed: true,
             }),
         );
+
         if (result) {
             setFailed(false);
             showToast({
@@ -45,9 +50,13 @@ export function DeletePortraitDialog({
                 content: portraitCopy(locale, 'deleted'),
                 dismissLabel: portraitCopy(locale, 'dismiss'),
             });
+
             onClose();
-        } else setFailed(true);
+        } else {
+            setFailed(true);
+        }
     }
+
     return (
         <Dialog
             open={open}

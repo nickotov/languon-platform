@@ -3,18 +3,14 @@ import styles from './sentence-session-results.module.css';
 
 import { useEffect, useRef, useState } from 'react';
 import { Repeat, Sparkles } from 'lucide-react';
-import { Badge, Button, InlineAlert, LoadingState } from '@/fsd/shared/ui';
+import { Button, InlineAlert, LoadingState } from '@/fsd/shared/ui';
 import type {
     SentenceSessionController,
     SentenceAudioRenderer,
 } from '../../types';
-import {
-    AiResultPanel,
-    languageDirection,
-    ReferencePanel,
-} from '../sentence-content/sentence-content';
+import { languageDirection } from '../sentence-content/sentence-content';
+import { LastSentenceReview } from './last-sentence-review';
 import { SentenceJobStatus } from '../sentence-job-status/sentence-job-status';
-import { SentenceReferenceComparison } from '../sentence-reference-comparison/sentence-reference-comparison';
 import { SentenceErrorNotice } from '../sentence-errors/sentence-errors';
 import { useSentenceCopy } from '../sentence-copy';
 
@@ -32,9 +28,31 @@ export function SentenceSessionResults({
     useEffect(() => {
         heading.current?.focus();
     }, []);
+
     function cancelRequest() {
         void c.cancel();
     }
+
+    function toggleDetails() {
+        setDetails((value) => !value);
+    }
+
+    function toggleAll() {
+        setAll((value) => !value);
+    }
+
+    function retry() {
+        void c.retry();
+    }
+
+    function repeatExact() {
+        void c.repeatExact();
+    }
+
+    function generateNew() {
+        void c.generateNew();
+    }
+
     const last = c.roundItems.at(-1);
     const promptAudio =
         last && c.sessionId
@@ -55,6 +73,7 @@ export function SentenceSessionResults({
     const answerAudio = last?.attempt
         ? renderAudio?.({ kind: 'checked-answer', id: last.attempt.id })
         : null;
+
     return (
         <section
             aria-labelledby='sentence-results-title'
@@ -147,81 +166,21 @@ export function SentenceSessionResults({
                 </p>
             ) : null}
             {last ? (
-                <div className={styles.reviewPanel}>
-                    <div className={styles.reviewHeader}>
-                        <h3 className={styles.summaryTitle}>
-                            {t('Last example')}
-                        </h3>
-                        <Button
-                            size='compact'
-                            variant='ghost'
-                            aria-expanded={details}
-                            onClick={() => setDetails((value) => !value)}
-                        >
-                            {t(details ? 'Hide details' : 'Show details')}
-                        </Button>
-                    </div>
-                    {details ? (
-                        <div className={styles.reviewContent}>
-                            <p
-                                lang={last.exercise.sourceLanguage}
-                                dir={languageDirection(
-                                    last.exercise.sourceLanguage,
-                                )}
-                                className={styles.reviewSentence}
-                            >
-                                {last.exercise.sourceText}
-                            </p>
-                            {promptAudio}
-                            {last.attempt ? (
-                                <AiResultPanel
-                                    attempt={last.attempt}
-                                    audio={answerAudio}
-                                />
-                            ) : null}
-                            {last.comparison ? (
-                                <SentenceReferenceComparison
-                                    audio={referenceAudio}
-                                    comparison={last.comparison}
-                                    exercise={last.exercise}
-                                />
-                            ) : last.reference ? (
-                                <ReferencePanel
-                                    review={last.reference}
-                                    audio={referenceAudio}
-                                />
-                            ) : null}
-                            {last.skipped ? (
-                                <div>
-                                    <Badge size='sm'>{t('Skipped')}</Badge>
-                                    <p className={styles.reviewNote}>
-                                        {t(
-                                            'Skipped — no AI check or manual review.',
-                                        )}
-                                    </p>
-                                    {last.answer ? (
-                                        <p
-                                            lang={last.exercise.targetLanguage}
-                                            dir={languageDirection(
-                                                last.exercise.targetLanguage,
-                                            )}
-                                            className={styles.reviewAnswer}
-                                        >
-                                            {last.answer}
-                                        </p>
-                                    ) : null}
-                                </div>
-                            ) : null}
-                        </div>
-                    ) : null}
-                </div>
+                <LastSentenceReview
+                    last={last}
+                    details={details}
+                    onToggleDetails={toggleDetails}
+                    promptAudio={promptAudio}
+                    referenceAudio={referenceAudio}
+                    answerAudio={answerAudio}
+                />
             ) : null}
             <div>
                 <Button
                     variant='secondary'
                     size='compact'
                     aria-expanded={all}
-                    onClick={() => setAll((value) => !value)}
+                    onClick={toggleAll}
                 >
                     {t('This round’s examples')} ({c.roundItems.length})
                 </Button>
@@ -278,13 +237,7 @@ export function SentenceSessionResults({
             {c.error ? (
                 <SentenceErrorNotice
                     error={c.error}
-                    onRetry={
-                        c.canRetry
-                            ? () => {
-                                  void c.retry();
-                              }
-                            : undefined
-                    }
+                    onRetry={c.canRetry ? retry : undefined}
                 />
             ) : null}
             <div className={styles.nextActions}>
@@ -296,9 +249,7 @@ export function SentenceSessionResults({
                         }
                         loading={c.replayLoading}
                         disabled={c.busy || c.uncertain || !c.roundItems.length}
-                        onClick={() => {
-                            void c.repeatExact();
-                        }}
+                        onClick={repeatExact}
                     >
                         {t('Repeat these exact examples')}
                     </Button>
@@ -316,9 +267,7 @@ export function SentenceSessionResults({
                             <Sparkles aria-hidden className={styles.icon} />
                         }
                         disabled={c.busy || c.uncertain}
-                        onClick={() => {
-                            void c.generateNew();
-                        }}
+                        onClick={generateNew}
                     >
                         {t('Generate new examples')}
                     </Button>

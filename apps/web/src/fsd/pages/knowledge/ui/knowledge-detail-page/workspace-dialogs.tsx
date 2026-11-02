@@ -11,7 +11,10 @@ export function WorkspaceDialogs({
 }) {
     const { t } = useI18n();
     const { workspace, draft, state, busy, navigation } = actions;
-    if (!workspace || !draft) return null;
+    if (!workspace || !draft) {
+        return null;
+    }
+
     return (
         <>
             <WorkspaceConflictDialogs

@@ -34,5 +34,6 @@ it('excludes private model and provider identity from the learner turn DTO witho
     expect(JSON.stringify(dto)).not.toMatch(
         /openrouter|evolink|gpt-6-luna|routingAuthority|snapshot|providerId/,
     );
+
     expect(row.execution).toEqual(execution);
 });

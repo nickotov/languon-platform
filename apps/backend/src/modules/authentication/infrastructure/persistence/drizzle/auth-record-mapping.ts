@@ -173,7 +173,10 @@ export function assertInitialSession(
 export function mapPasswordCredential(
     row: typeof passwordCredentialsTable.$inferSelect | null,
 ): StoredPasswordCredential | null {
-    if (!row) return null;
+    if (!row) {
+        return null;
+    }
+
     if (row.algorithm !== 'argon2id') {
         throw new Error('Persisted password algorithm is unsupported.');
     }

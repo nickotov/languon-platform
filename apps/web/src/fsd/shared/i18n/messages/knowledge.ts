@@ -1,4 +1,11 @@
 export const knowledgeEn = {
+    'knowledge.learnerPreview': 'Learner preview',
+    'knowledge.backToEditing': 'Back to editing',
+    'knowledge.learnerPreviewHint':
+        'Preview your current draft. Practice here is not saved. Shared links show the last saved version.',
+    'knowledge.highlightLearningBlocks': 'Highlight learning blocks',
+    'knowledge.addBlockToChat': 'Add block to chat',
+    'knowledge.practiceSaved': 'Practice saved note',
     'knowledge.proposalPlainText': 'Insert as plain text',
     'knowledge.proposalInvalid':
         'The reply could not be inserted. Check its formatting and document limits; your document has not changed.',
@@ -217,8 +224,10 @@ export const knowledgeEn = {
     'knowledge.underline': 'Underline',
     'knowledge.strike': 'Strikethrough',
     'knowledge.paragraph': 'Paragraph',
-    'knowledge.heading2': 'Heading',
-    'knowledge.heading3': 'Subheading',
+    'knowledge.heading1': 'Heading 1',
+    'knowledge.heading2': 'Heading 2',
+    'knowledge.horizontalRule': 'Horizontal rule',
+    'knowledge.heading3': 'Heading 3',
     'knowledge.bulletList': 'Bullet list',
     'knowledge.orderedList': 'Numbered list',
     'knowledge.blockquote': 'Quotation',
@@ -242,6 +251,13 @@ export const knowledgeEn = {
 } as const;
 
 export const knowledgeRu = {
+    'knowledge.learnerPreview': 'Предпросмотр для ученика',
+    'knowledge.backToEditing': 'Вернуться к редактированию',
+    'knowledge.learnerPreviewHint':
+        'Предпросмотр текущего черновика. Ответы здесь не сохраняются. По общей ссылке доступна последняя сохранённая версия.',
+    'knowledge.highlightLearningBlocks': 'Выделять учебные блоки',
+    'knowledge.addBlockToChat': 'Добавить блок в чат',
+    'knowledge.practiceSaved': 'Практика по сохранённой заметке',
     'knowledge.proposalPlainText': 'Вставить как обычный текст',
     'knowledge.proposalInvalid':
         'Не удалось вставить ответ. Проверьте форматирование и ограничения документа; документ не изменён.',
@@ -457,8 +473,10 @@ export const knowledgeRu = {
     'knowledge.underline': 'Подчёркнутый',
     'knowledge.strike': 'Зачёркнутый',
     'knowledge.paragraph': 'Абзац',
-    'knowledge.heading2': 'Заголовок',
-    'knowledge.heading3': 'Подзаголовок',
+    'knowledge.heading1': 'Заголовок 1',
+    'knowledge.heading2': 'Заголовок 2',
+    'knowledge.horizontalRule': 'Горизонтальная линия',
+    'knowledge.heading3': 'Заголовок 3',
     'knowledge.bulletList': 'Маркированный список',
     'knowledge.orderedList': 'Нумерованный список',
     'knowledge.blockquote': 'Цитата',
@@ -482,6 +500,13 @@ export const knowledgeRu = {
 } as const;
 
 export const knowledgeEs = {
+    'knowledge.learnerPreview': 'Vista de estudiante',
+    'knowledge.backToEditing': 'Volver a editar',
+    'knowledge.learnerPreviewHint':
+        'Vista del borrador actual. La práctica aquí no se guarda. Los enlaces compartidos muestran la última versión guardada.',
+    'knowledge.highlightLearningBlocks': 'Resaltar bloques de aprendizaje',
+    'knowledge.addBlockToChat': 'Añadir bloque al chat',
+    'knowledge.practiceSaved': 'Practicar la nota guardada',
     'knowledge.proposalPlainText': 'Insertar como texto sin formato',
     'knowledge.proposalInvalid':
         'No se pudo insertar la respuesta. Revisa el formato y los límites del documento; el documento no ha cambiado.',
@@ -702,8 +727,10 @@ export const knowledgeEs = {
     'knowledge.underline': 'Subrayado',
     'knowledge.strike': 'Tachado',
     'knowledge.paragraph': 'Párrafo',
-    'knowledge.heading2': 'Encabezado',
-    'knowledge.heading3': 'Subtítulo',
+    'knowledge.heading1': 'Encabezado 1',
+    'knowledge.heading2': 'Encabezado 2',
+    'knowledge.horizontalRule': 'Línea horizontal',
+    'knowledge.heading3': 'Encabezado 3',
     'knowledge.bulletList': 'Lista con viñetas',
     'knowledge.orderedList': 'Lista numerada',
     'knowledge.blockquote': 'Cita',
@@ -727,6 +754,14 @@ export const knowledgeEs = {
 } as const;
 
 export const knowledgeFr = {
+    'knowledge.learnerPreview': 'Aperçu élève',
+    'knowledge.backToEditing': 'Revenir à la rédaction',
+    'knowledge.learnerPreviewHint':
+        'Aperçu du brouillon actuel. La pratique ici n’est pas enregistrée. Les liens partagés affichent la dernière version enregistrée.',
+    'knowledge.highlightLearningBlocks':
+        'Mettre les blocs pédagogiques en évidence',
+    'knowledge.addBlockToChat': 'Ajouter le bloc au chat',
+    'knowledge.practiceSaved': 'Pratiquer la note enregistrée',
     'knowledge.proposalPlainText': 'Insérer en texte brut',
     'knowledge.proposalInvalid':
         'La réponse n’a pas pu être insérée. Vérifiez le format et les limites du document ; le document n’a pas changé.',
@@ -950,8 +985,10 @@ export const knowledgeFr = {
     'knowledge.underline': 'Souligné',
     'knowledge.strike': 'Barré',
     'knowledge.paragraph': 'Paragraphe',
-    'knowledge.heading2': 'Titre',
-    'knowledge.heading3': 'Sous-titre',
+    'knowledge.heading1': 'Titre 1',
+    'knowledge.heading2': 'Titre 2',
+    'knowledge.horizontalRule': 'Ligne horizontale',
+    'knowledge.heading3': 'Titre 3',
     'knowledge.bulletList': 'Liste à puces',
     'knowledge.orderedList': 'Liste numérotée',
     'knowledge.blockquote': 'Citation',

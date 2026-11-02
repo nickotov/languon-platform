@@ -29,7 +29,9 @@ export function LanguageSwitcher({
     function changeLanguage(event: ChangeEvent<HTMLSelectElement>) {
         const nextLocale = event.currentTarget.value;
 
-        if (!isLocale(nextLocale) || nextLocale === locale) return;
+        if (!isLocale(nextLocale) || nextLocale === locale) {
+            return;
+        }
 
         document.cookie = `${localeCookieName}=${nextLocale}; Max-Age=31536000; Path=/; SameSite=Lax`;
 
@@ -43,7 +45,7 @@ export function LanguageSwitcher({
         value: supportedLocale,
     }));
 
-    if (form)
+    if (form) {
         return (
             <Select
                 disabled={pending}
@@ -53,6 +55,7 @@ export function LanguageSwitcher({
                 value={locale}
             />
         );
+    }
 
     return (
         <label

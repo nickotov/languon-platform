@@ -16,6 +16,7 @@ export function changedSettings(
             Object.assign(patch, { [key]: current[key] });
         }
     }
+
     return patch;
 }
 

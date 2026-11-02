@@ -1,0 +1,839 @@
+{
+  "schemaVersion": 1,
+  "owner": "root-tooling",
+  "baseCommit": "252de64",
+  "files": [
+    {
+      "path": ".env.example",
+      "status": "reviewed-acceptable",
+      "reason": "Settings are grouped by process/capability with units, opt-in gates, synthetic-only credentials and retained configuration explanations; no executable control flow.",
+      "beforeSha256": "3488362f9bc42b31b47fa72024d313fce31cf53d3becb5542367a47f4d4d152b",
+      "afterSha256": "3488362f9bc42b31b47fa72024d313fce31cf53d3becb5542367a47f4d4d152b"
+    },
+    {
+      "path": ".github/workflows/deploy-production.yml",
+      "status": "reviewed-acceptable",
+      "reason": "resolve-build validates release/attestation/canonical manifest before protected deploy; SSH bundle and audit steps are visibly sequenced.",
+      "beforeSha256": "d918d0bd168132905dcc87b9cf47cd888c8d2a2663c8b33288927421af5c8f9b",
+      "afterSha256": "d918d0bd168132905dcc87b9cf47cd888c8d2a2663c8b33288927421af5c8f9b"
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "status": "reviewed-acceptable",
+      "reason": "validate-release, verify-build and build-ready publication form explicit job dependencies with immutable source/version checks.",
+      "beforeSha256": "75ce5282ae4c0bf6c7dd350839ff90fcc84d2cbedaf8caec0a2662fd49b9b32e",
+      "afterSha256": "75ce5282ae4c0bf6c7dd350839ff90fcc84d2cbedaf8caec0a2662fd49b9b32e"
+    },
+    {
+      "path": ".github/workflows/reusable-verify-build.yml",
+      "status": "reviewed-acceptable",
+      "reason": "Verification and image publication are separate dependent jobs; migration ledger, format ceilings and exact digests are declared at manifest creation.",
+      "beforeSha256": "8dcd9bbbe2b6e1ba8bee9a2649ef9228df5eb640e4c23598e7562dfc1b0703ae",
+      "afterSha256": "8dcd9bbbe2b6e1ba8bee9a2649ef9228df5eb640e4c23598e7562dfc1b0703ae"
+    },
+    {
+      "path": ".github/workflows/stage.yml",
+      "status": "reviewed-acceptable",
+      "reason": "Manual stage selection freezes source, calls reusable verification and verifies attestation before SSH deployment; environment/concurrency gates stay declarative.",
+      "beforeSha256": "65847c78514190f5034e836888395fc25bc73dfc55fe82a6e0f87ef73db6f2aa",
+      "afterSha256": "65847c78514190f5034e836888395fc25bc73dfc55fe82a6e0f87ef73db6f2aa"
+    },
+    {
+      "path": ".gitignore",
+      "status": "reviewed-acceptable",
+      "reason": "Generated output, local credentials and native build exclusions have distinct sections and explicit env.example exception.",
+      "beforeSha256": "4bbaa39fd0fe0ac1afab241ce46bf2c8428d0f325b745028521d4e4f3fc784ec",
+      "afterSha256": "4bbaa39fd0fe0ac1afab241ce46bf2c8428d0f325b745028521d4e4f3fc784ec"
+    },
+    {
+      "path": ".prettierignore",
+      "status": "reviewed-acceptable",
+      "reason": "Maintained files remain included; frozen source captures and machine evidence have explanatory scoped exclusions.",
+      "beforeSha256": "e2fb562c79257b1c7d6e84c9cfe1731abd8915e42ecf393ad7182ccdb29e5a87",
+      "afterSha256": "e2fb562c79257b1c7d6e84c9cfe1731abd8915e42ecf393ad7182ccdb29e5a87"
+    },
+    {
+      "path": ".prettierrc.json",
+      "status": "reviewed-acceptable",
+      "reason": "Single declarative formatter contract for indentation, quotes and trailing commas.",
+      "beforeSha256": "af334ac8d3fa21f7c58d12b4ff2e37275dc3f048697e9e96b6e7de5c24e911e3",
+      "afterSha256": "af334ac8d3fa21f7c58d12b4ff2e37275dc3f048697e9e96b6e7de5c24e911e3"
+    },
+    {
+      "path": "agent-browser.json",
+      "status": "reviewed-acceptable",
+      "reason": "Loopback domains, content boundaries and bounded output are concise declarative browser constraints.",
+      "beforeSha256": "fc1d222383942bd03510076f8dbb77c09194c6618720d01c0e06752c513d18f7",
+      "afterSha256": "fc1d222383942bd03510076f8dbb77c09194c6618720d01c0e06752c513d18f7"
+    },
+    {
+      "path": "compose.yaml",
+      "status": "reviewed-acceptable",
+      "reason": "Infrastructure healthchecks, optional app profile and migration/start dependencies reveal startup order; speech fixture storage policy is explicit.",
+      "beforeSha256": "99918c42819a37daee928586b6128ddc08a6b0ec769279a1bba793887dd8a2af",
+      "afterSha256": "99918c42819a37daee928586b6128ddc08a6b0ec769279a1bba793887dd8a2af"
+    },
+    {
+      "path": "eslint.config.mjs",
+      "status": "refactored",
+      "reason": "Web/admin boundary policies are necessarily declarative; formatter compatibility precedes persistence/readability enforcement. Removed temporary exact-file size overrides after cohesive extraction.",
+      "beforeSha256": "45245dfcf3b83ff0575e848fd135886a32a5f22587359ca36d6c4c8a5721a53b",
+      "afterSha256": "5dda24f45a977b19b171aa880367a5df74dde50d25d9eac171a15660a4f791f3"
+    },
+    {
+      "path": "scripts/eslint-persistence-readability.mjs",
+      "status": "refactored",
+      "reason": "One ordinary persistence size policy plus shared statement spacing; retired BL018 allowances removed without changing 500-line rule.",
+      "beforeSha256": "3f2829248557c890bf2ba1614e470536f52b81c60b0b1303505bf421da74073c",
+      "afterSha256": "35a052b8cf841a3c04d9de76017bbd197f8ab4fd0f1a39b332d465f768fb61a0"
+    },
+    {
+      "path": "scripts/eslint-persistence-readability.test.mjs",
+      "status": "refactored",
+      "reason": "Tests exercise real ESLint configuration and the three formerly exempt paths at 501 lines, plus schema/test exclusions and autofix semantics.",
+      "beforeSha256": "489b6be3bb5562c4adb01955cb6e53cb06e2c1bc067b3fe0aedd69fe4e2c066e",
+      "afterSha256": "a1d1302d5dce356e2de62fa6b6748c8c03bb5e9b6315d1ae81f12ec0f58f3546"
+    },
+    {
+      "path": "infra/backup/backup.sh",
+      "status": "reviewed-acceptable",
+      "reason": "Portable shell launcher resolves its own directory and execs the Node CLI preserving argv/status.",
+      "beforeSha256": "5d2dced7a6d883fe14fa67ff3f1eb85019bfee17d28602123613c005c2a2ce4f",
+      "afterSha256": "5d2dced7a6d883fe14fa67ff3f1eb85019bfee17d28602123613c005c2a2ce4f"
+    },
+    {
+      "path": "infra/backup/cli.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Command handlers visibly preserve encrypt-before-upload, checksum-before-manifest, dry-run pruning and twice-checked disposable restore target; local helpers expose integrity and atomic persistence.",
+      "beforeSha256": "01489275ecd561b0b3a3658cc6ccf30c74f1aec07b0b06afd8f4ac872db60d2c",
+      "afterSha256": "01489275ecd561b0b3a3658cc6ccf30c74f1aec07b0b06afd8f4ac872db60d2c"
+    },
+    {
+      "path": "infra/backup/lib.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Named validation helpers distinguish creation/storage/restoration, verified TLS and retention; parse and timestamp failure paths are local and explicit.",
+      "beforeSha256": "4e2dcd0bc48265e4e39b1cdc1b08e668ed72821779332e14d7428f14bf377533",
+      "afterSha256": "4e2dcd0bc48265e4e39b1cdc1b08e668ed72821779332e14d7428f14bf377533"
+    },
+    {
+      "path": "infra/backup/backup.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Synthetic runner dispatch mirrors external commands while exercising real file integrity/evidence and restore confirmation; assertions retain secrets exclusion and TLS options.",
+      "beforeSha256": "e856d5bb100a37daecb8617afb5cfad11e3b83adb563c588aa8cc8515abc7801",
+      "afterSha256": "e856d5bb100a37daecb8617afb5cfad11e3b83adb563c588aa8cc8515abc7801"
+    },
+    {
+      "path": "infra/deploy/cli.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Argument validation, guarded local registry, manifest/config validation and command dispatch are sequenced in main without hidden mutations.",
+      "beforeSha256": "a10994752f991afa148f9deaa4a65dbc2cf33e5492de5f5607582e394b84f8e4",
+      "afterSha256": "a10994752f991afa148f9deaa4a65dbc2cf33e5492de5f5607582e394b84f8e4"
+    },
+    {
+      "path": "infra/deploy/admin-cli.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Request is parsed/validated then unlinked in finally before remote operator execution; required options and root paths are explicit.",
+      "beforeSha256": "a64276d81d974f1ea50cfba03bdbd124ff72679cb04d53e7f5f208d6f09810de",
+      "afterSha256": "a64276d81d974f1ea50cfba03bdbd124ff72679cb04d53e7f5f208d6f09810de"
+    },
+    {
+      "path": "infra/deploy/lib/runner.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "spawn transport keeps capture/input behavior and close/error mapping visible; shellRunner only composes base options at established injected boundary.",
+      "beforeSha256": "ba07abe20c83b1b5e2aa8481d4c2744d349d625280b87b0561b9d052da2ccb65",
+      "afterSha256": "ba07abe20c83b1b5e2aa8481d4c2744d349d625280b87b0561b9d052da2ccb65"
+    },
+    {
+      "path": "infra/deploy/lib/lock.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "OS-specific nonblocking lock acquisition, readiness handshake and idempotent owner-matched release are cohesive; stdin lifetime retains lock ownership.",
+      "beforeSha256": "b0f3db769b9a338f812eaa891232c22ddde1562ddab79aff35cee0d7a90ae3d4",
+      "afterSha256": "b0f3db769b9a338f812eaa891232c22ddde1562ddab79aff35cee0d7a90ae3d4"
+    },
+    {
+      "path": "infra/deploy/lib/audit.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "createAuditRecord validates outcome and sanitizes actor before explicit immutable release and migration projections.",
+      "beforeSha256": "86df2eab0e852e36aa05cf2751383bd72d4eee0a5588fd38db0506c021028f88",
+      "afterSha256": "86df2eab0e852e36aa05cf2751383bd72d4eee0a5588fd38db0506c021028f88"
+    },
+    {
+      "path": "infra/deploy/compose/apps.production.compose.yaml",
+      "status": "reviewed-acceptable",
+      "reason": "Production override only mounts trust bundle for backend and worker processes; inheritance is declarative.",
+      "beforeSha256": "dc5355cdeff025a0b836773ee5abf732bc626f2136bb3bb2640724bcc7ee2d08",
+      "afterSha256": "dc5355cdeff025a0b836773ee5abf732bc626f2136bb3bb2640724bcc7ee2d08"
+    },
+    {
+      "path": "infra/deploy/compose/edge.compose.yaml",
+      "status": "reviewed-acceptable",
+      "reason": "Published public/admin bindings and readonly cert/upstream mounts are grouped; graceful stop and private networks are explicit.",
+      "beforeSha256": "ec60d8d9e8a65c57b5d3e3aea091f31b92ab2c1cbe35512952a7745439746ed4",
+      "afterSha256": "ec60d8d9e8a65c57b5d3e3aea091f31b92ab2c1cbe35512952a7745439746ed4"
+    },
+    {
+      "path": "infra/deploy/compose/migrate.compose.yaml",
+      "status": "reviewed-acceptable",
+      "reason": "One-shot migrator image, dedicated credential and no-new-privileges/read-only filesystem are declarative.",
+      "beforeSha256": "d1752faeb465dd4048c1b9b870c1aae3d0ac6e66fe971f5a9387a84678d5c6e3",
+      "afterSha256": "d1752faeb465dd4048c1b9b870c1aae3d0ac6e66fe971f5a9387a84678d5c6e3"
+    },
+    {
+      "path": "infra/deploy/compose/migrate.production.compose.yaml",
+      "status": "reviewed-acceptable",
+      "reason": "TLS trust override is restricted to migrator environment and readonly CA mount.",
+      "beforeSha256": "cce1a56cd99f8d0129a7cb9a92f66335a270e3aafa6c908859411b5ded5fdf06",
+      "afterSha256": "cce1a56cd99f8d0129a7cb9a92f66335a270e3aafa6c908859411b5ded5fdf06"
+    },
+    {
+      "path": "infra/deploy/compose/recovery-gate.compose.yaml",
+      "status": "reviewed-acceptable",
+      "reason": "Recovery process receives reader journal identity with no restart and private data network; required config is declared by field.",
+      "beforeSha256": "8ede054d90954f3ab6999ca19b2d1f5724baf2a85c5d718f2596d1f798ebc242",
+      "afterSha256": "8ede054d90954f3ab6999ca19b2d1f5724baf2a85c5d718f2596d1f798ebc242"
+    },
+    {
+      "path": "infra/deploy/compose/recovery-gate.production.compose.yaml",
+      "status": "reviewed-acceptable",
+      "reason": "Recovery gate trust bundle override is minimal and explicit.",
+      "beforeSha256": "63b12acd37585765231d90e556fa092d0207436b16c9663ee0021005661fa215",
+      "afterSha256": "63b12acd37585765231d90e556fa092d0207436b16c9663ee0021005661fa215"
+    },
+    {
+      "path": "infra/deploy/compose/production-data.compose.yaml",
+      "status": "reviewed-acceptable",
+      "reason": "Dedicated private bindings, PostgreSQL verified server TLS and Redis named ACL/TLS options are explicit arrays; persistent volumes independent of apps.",
+      "beforeSha256": "ad85854305f76848466077c5510a490a1657c5d2c6b24c253f16e56bd7537c51",
+      "afterSha256": "ad85854305f76848466077c5510a490a1657c5d2c6b24c253f16e56bd7537c51"
+    },
+    {
+      "path": "infra/deploy/compose/stage-data.compose.yaml",
+      "status": "reviewed-acceptable",
+      "reason": "Stage-only durable data services have independent volumes and private network aliases with readiness checks.",
+      "beforeSha256": "40c1f1b27ce50eea294b40130632c59f4c24209ce882ea2ac99a31d29a87dac8",
+      "afterSha256": "40c1f1b27ce50eea294b40130632c59f4c24209ce882ea2ac99a31d29a87dac8"
+    },
+    {
+      "path": "infra/deploy/lib/config.mjs",
+      "status": "refactored",
+      "reason": "Private generation and production-data validation stages now expose assertDeployConfig sequence without moving config reads, errors or guards.",
+      "beforeSha256": "c0cf1cd97f17e48956b5cab4deda81d264a22db489cc3e684b07a558102e97c3",
+      "afterSha256": "7180b7e61ddcdc95a17783b06151e8d0a44658ede05e4c9b64e48f48714998e1"
+    },
+    {
+      "path": "infra/deploy/tests/config.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Real config validation tests cover private files, origins, role separation, credential gates and dictionary envelope edges using synthetic examples; relevant regression selection for private-helper extraction.",
+      "beforeSha256": "8fce16bb8d46320f192e2a343503af82ac9bccafb713a6060f2d4debe3d7df37",
+      "afterSha256": "8fce16bb8d46320f192e2a343503af82ac9bccafb713a6060f2d4debe3d7df37"
+    },
+    {
+      "path": "scripts/critical-flows/runtime.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "execute owns interruption cleanup; infrastructure declares isolated per-app ports/database; createFlowEnvironment strips parent execution controls before reviewed flags and runner-owned settings.",
+      "beforeSha256": "18760eebb57892e29a0ddb33843e0af8c78aa4978dcc83db7ac5efe766d0d478",
+      "afterSha256": "18760eebb57892e29a0ddb33843e0af8c78aa4978dcc83db7ac5efe766d0d478"
+    },
+    {
+      "path": "infra/deploy/lib/admin-operator.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Operator validation distinguishes list/prune/account mutations before exact active-release matching and stdin-only credential-safe execution; helpers expose payload conversion and immutable image identity.",
+      "beforeSha256": "345e4c903638de0bb7c04b316c7666a2b6a3e0ac865213c4c9e34ade58d41491",
+      "afterSha256": "345e4c903638de0bb7c04b316c7666a2b6a3e0ac865213c4c9e34ade58d41491"
+    },
+    {
+      "path": "infra/deploy/lib/manifest.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Normalization helpers separate budget, formats, overlap and release shape; compatibility checks preserve forward/rollback distinctions and mandatory lifecycle support. Large file is cohesive manifest boundary, not mixed orchestration.",
+      "beforeSha256": "df198464bd699dd91ead574442c293946d4b5ac2c16a507cf5b1c0b07b7864f4",
+      "afterSha256": "df198464bd699dd91ead574442c293946d4b5ac2c16a507cf5b1c0b07b7864f4"
+    },
+    {
+      "path": "infra/deploy/lib/shared-speech.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Separate speech budget, version lists, pricing and overlap helpers expose compatibility invariants with explicit failure branches.",
+      "beforeSha256": "27666050d7b2aecf2422206018a0ccaed8206c22850a0c68e9e089df05be9c73",
+      "afterSha256": "27666050d7b2aecf2422206018a0ccaed8206c22850a0c68e9e089df05be9c73"
+    },
+    {
+      "path": "infra/deploy/lib/deployment.mjs",
+      "status": "refactored",
+      "reason": "Stateless worker privilege construction and validation moved into cohesive internal module; public exports and literal queries/column arrays/validation body equal base. Slot lifecycle/async phases untouched.",
+      "beforeSha256": "9229e40c6062995725ca8ff705f3804a775cf1e5cefdd7d190a514b6a9a7d3aa",
+      "afterSha256": "4f1a5130323be7281a15de71c1a736ed3eb09c92847304b443e14584143dfd3a"
+    },
+    {
+      "path": "infra/deploy/compose/apps.compose.yaml",
+      "status": "reviewed-acceptable",
+      "reason": "Role-specific environment mapping, private worker/data networks, release images and healthchecks are explicit; shared audio/default anchors avoid repeated whole-service configuration.",
+      "beforeSha256": "1c71bb6bd15005c9fdaa47521097af041e7d57e876dfb466bd68add57ca81a8a",
+      "afterSha256": "1c71bb6bd15005c9fdaa47521097af041e7d57e876dfb466bd68add57ca81a8a"
+    },
+    {
+      "path": "infra/deploy/sql/account-purge-worker-role.sql",
+      "status": "reviewed-acceptable",
+      "reason": "Ordered revocation then per-domain column/function grants include rationale for erasure and privacy; keeping literal grant lists exposes security audit authority without dynamic abstraction.",
+      "beforeSha256": "4975c71a987eef131ea5ee55df011fafe98262417f80e9bab6b0f16c148ef182",
+      "afterSha256": "4975c71a987eef131ea5ee55df011fafe98262417f80e9bab6b0f16c148ef182"
+    },
+    {
+      "path": "infra/deploy/sql/dictionary-worker-role.sql",
+      "status": "reviewed-acceptable",
+      "reason": "Explicit per-domain grants and fenced SECURITY DEFINER entrypoints make worker restrictions inspectable; SQL declarations and comments show harmless locking-column permissions.",
+      "beforeSha256": "eeb2f555ac4fafbda2236fe34f6aa31e4364a813cc99c3c01bf3264271c0eb37",
+      "afterSha256": "eeb2f555ac4fafbda2236fe34f6aa31e4364a813cc99c3c01bf3264271c0eb37"
+    },
+    {
+      "path": "infra/docker/dev.Dockerfile",
+      "status": "reviewed-acceptable",
+      "reason": "Development image explicitly installs frozen workspace dependencies and exposes known dev ports; concise linear build.",
+      "beforeSha256": "bef10cdbb925d92924be646306890f534e1984febe9faf8aaa0f6ea9e388914a",
+      "afterSha256": "bef10cdbb925d92924be646306890f534e1984febe9faf8aaa0f6ea9e388914a"
+    },
+    {
+      "path": "infra/docker/prod.admin.Dockerfile",
+      "status": "reviewed-acceptable",
+      "reason": "Builder/runtime separation, immutable base and unprivileged static server are clear with release identity and readiness configuration.",
+      "beforeSha256": "29db6208f191018bbabd018babdc153d2651a6e7f6c22d923d6664f497e14317",
+      "afterSha256": "29db6208f191018bbabd018babdc153d2651a6e7f6c22d923d6664f497e14317"
+    },
+    {
+      "path": "infra/docker/prod.backend.Dockerfile",
+      "status": "reviewed-acceptable",
+      "reason": "Build-only heap and parser confinement executables have reason comments; production deploy output, node user and process entrypoint are explicit.",
+      "beforeSha256": "b867abebb12a17d41a4dbd4ae1cbd2a1d2f582fc55f70b92034c46ddf3ef60f8",
+      "afterSha256": "b867abebb12a17d41a4dbd4ae1cbd2a1d2f582fc55f70b92034c46ddf3ef60f8"
+    },
+    {
+      "path": "infra/docker/prod.migrator.Dockerfile",
+      "status": "reviewed-acceptable",
+      "reason": "Separate immutable build/runtime stages share backend bundle then run one-shot migrator with node user; heap rationale is local.",
+      "beforeSha256": "211f25e109fe8aa6cd8ee698b1c89c34eae2fe8157756ab10cc907ea6b7aec3a",
+      "afterSha256": "211f25e109fe8aa6cd8ee698b1c89c34eae2fe8157756ab10cc907ea6b7aec3a"
+    },
+    {
+      "path": "infra/docker/prod.web.Dockerfile",
+      "status": "reviewed-acceptable",
+      "reason": "Standalone Next runtime copies exact build output with node ownership and declared release/host/port; no hidden startup logic.",
+      "beforeSha256": "2f24654b3add57846484507d98d93366aa3c258983eb1e052621f1074c8d4815",
+      "afterSha256": "2f24654b3add57846484507d98d93366aa3c258983eb1e052621f1074c8d4815"
+    },
+    {
+      "path": "infra/dev/speech-storage-policy.json",
+      "status": "reviewed-acceptable",
+      "reason": "Bucket-level and object-version permissions are separate explicit statements scoped to synthetic speech bucket.",
+      "beforeSha256": "38493e4e89e114ed65510a8f0d7afce9ea480f7535b01ce7c39e1f9ddd1dc47a",
+      "afterSha256": "38493e4e89e114ed65510a8f0d7afce9ea480f7535b01ce7c39e1f9ddd1dc47a"
+    },
+    {
+      "path": "infra/nginx/edge-entrypoint.sh",
+      "status": "reviewed-acceptable",
+      "reason": "Credential copy, ownership and restrictive modes occur before exec; short shell preserves process signal ownership.",
+      "beforeSha256": "13ac1397c755894f8c4a860419d9ff4d91823910f3acd4453c2ec9590047367f",
+      "afterSha256": "13ac1397c755894f8c4a860419d9ff4d91823910f3acd4453c2ec9590047367f"
+    },
+    {
+      "path": "infra/docker/admin.nginx.conf",
+      "status": "reviewed-acceptable",
+      "reason": "Static assets, health and SPA locations expose distinct cache behavior; repeated security headers are required by NGINX inheritance per-location and are kept explicit.",
+      "beforeSha256": "3228c76a84b53945f773ee289ef1528c06c1afeaa16b4efd5f5e3e88ec61b469",
+      "afterSha256": "3228c76a84b53945f773ee289ef1528c06c1afeaa16b4efd5f5e3e88ec61b469"
+    },
+    {
+      "path": "infra/nginx/nginx.conf",
+      "status": "reviewed-acceptable",
+      "reason": "Distinct public/admin listeners keep route precedence, auth-header rewriting and query-free logging visible; stream buffering/timeouts and import rate limits are declared locally.",
+      "beforeSha256": "fd27c544bbec7cacb39983129ae2a4d96344c9d9872d2b3bf2e919009b59e03b",
+      "afterSha256": "fd27c544bbec7cacb39983129ae2a4d96344c9d9872d2b3bf2e919009b59e03b"
+    },
+    {
+      "path": ".dockerignore",
+      "status": "reviewed-acceptable",
+      "reason": "Build context excludes credentials, agent history and generated dependency/native output while retaining safe env example.",
+      "beforeSha256": "9d2d3a5fab56cda7eacbb53e711e0e143e5ada2c3eb6c4e43d37baf23baa48d0",
+      "afterSha256": "9d2d3a5fab56cda7eacbb53e711e0e143e5ada2c3eb6c4e43d37baf23baa48d0"
+    },
+    {
+      "path": ".editorconfig",
+      "status": "reviewed-acceptable",
+      "reason": "Declarative whitespace baseline has explicit Markdown exception for intentional trailing spaces.",
+      "beforeSha256": "7cc19f88a90f7ce13784897b1bfaa48245a975a144ea226410435d3cc2ee609a",
+      "afterSha256": "7cc19f88a90f7ce13784897b1bfaa48245a975a144ea226410435d3cc2ee609a"
+    },
+    {
+      "path": "infra/backup/backup.env.example",
+      "status": "reviewed-acceptable",
+      "reason": "Source and restore groups explain independent credentials, private ownership, verified TLS and disposable naming.",
+      "beforeSha256": "b03890846ed11994f3a363ec16767c2a7307848dd7c6176897f6889ba1a7072c",
+      "afterSha256": "b03890846ed11994f3a363ec16767c2a7307848dd7c6176897f6889ba1a7072c"
+    },
+    {
+      "path": "infra/deploy/production-data.env.example",
+      "status": "reviewed-acceptable",
+      "reason": "Data-plane addresses, TLS paths and health identity are concise sanitized provisioning declarations.",
+      "beforeSha256": "ac9ef408f76752a739c0585ece86ddcc9616705fbc9d58281cb786de0f098ba1",
+      "afterSha256": "ac9ef408f76752a739c0585ece86ddcc9616705fbc9d58281cb786de0f098ba1"
+    },
+    {
+      "path": "infra/deploy/stage.env.example",
+      "status": "reviewed-acceptable",
+      "reason": "Settings are grouped by speech, worker, document, deletion journal and network contracts; dormant capability gates and credential roles have reasons.",
+      "beforeSha256": "ff396b862f59ea384ba8e9bb3bbf37d914dbdc5cc96652757b65caa13bed136a",
+      "afterSha256": "ff396b862f59ea384ba8e9bb3bbf37d914dbdc5cc96652757b65caa13bed136a"
+    },
+    {
+      "path": "infra/deploy/production.env.example",
+      "status": "reviewed-acceptable",
+      "reason": "Sanitized deployment groups retain private verified TLS endpoints, dedicated role identities and off-by-default capability gates with activation notes.",
+      "beforeSha256": "843dac4e06b34b5980b56267c30479c969282c65a50669cf8649cdc05488a27c",
+      "afterSha256": "843dac4e06b34b5980b56267c30479c969282c65a50669cf8649cdc05488a27c"
+    },
+    {
+      "path": "infra/test/document-storage-api-policy.json",
+      "status": "reviewed-acceptable",
+      "reason": "Synthetic bucket list/version read/write declarations retain denied deletion implicitly; two clear resource levels.",
+      "beforeSha256": "a28626a1d82a2a5f6c09d2092475109797026a9f0b05c8962fee25699088b540",
+      "afterSha256": "a28626a1d82a2a5f6c09d2092475109797026a9f0b05c8962fee25699088b540"
+    },
+    {
+      "path": "infra/test/document-storage-worker-policy.json",
+      "status": "reviewed-acceptable",
+      "reason": "Synthetic worker object version deletion/read/write is separate from bucket inventory and explicitly enumerated.",
+      "beforeSha256": "dc26e17a18362f5f2da734642e5ad244ed961fc78e07796217246f87bc80e9c2",
+      "afterSha256": "dc26e17a18362f5f2da734642e5ad244ed961fc78e07796217246f87bc80e9c2"
+    },
+    {
+      "path": "infra/test/document-storage-account-purge-policy.json",
+      "status": "reviewed-acceptable",
+      "reason": "Purge fixture grants version read/delete only at object scope plus bounded bucket inventory; no dynamic policy.",
+      "beforeSha256": "67af53d616da716d07e0bcb89ee911f51a6636306131f3ad7aa439a5618be962",
+      "afterSha256": "67af53d616da716d07e0bcb89ee911f51a6636306131f3ad7aa439a5618be962"
+    },
+    {
+      "path": "infra/test/document-services.compose.yaml",
+      "status": "reviewed-acceptable",
+      "reason": "Disposable services are isolated; ClamAV updates and parser confinement have reason comments; explicit credentials and private internal/host bridge roles remain visible.",
+      "beforeSha256": "4b9516cef350fcd6b83c8e9015e85258048577829f1c032840d91a9ec87c6dd1",
+      "afterSha256": "4b9516cef350fcd6b83c8e9015e85258048577829f1c032840d91a9ec87c6dd1"
+    },
+    {
+      "path": "infra/test/document-parser-sandbox.Dockerfile",
+      "status": "reviewed-acceptable",
+      "reason": "Probe image pins runtime, copies one probe and drops to node user with no extra startup layers.",
+      "beforeSha256": "891e699e53d62b1d1e30bcd76d1f9a2a3047742b5daf1996fc065fa3002e4835",
+      "afterSha256": "891e699e53d62b1d1e30bcd76d1f9a2a3047742b5daf1996fc065fa3002e4835"
+    },
+    {
+      "path": "infra/test/document-parser-sandbox-probe.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Secret inheritance assertion precedes bounded external-network probe; timer/socket cleanup is explicit per outcome.",
+      "beforeSha256": "11664c05b745e7402a5a9a062503679b07e35e8d871fa6634ecaaa20b3ceaf34",
+      "afterSha256": "11664c05b745e7402a5a9a062503679b07e35e8d871fa6634ecaaa20b3ceaf34"
+    },
+    {
+      "path": "infra/test/generate-document-fixtures.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Temporary directory owns synthetic plain/Markdown/EICAR fixture writes; concurrency is independent and output is only directory metadata.",
+      "beforeSha256": "e6630c04139cc3d4fb09f9b35573ae53f6223964855a4b875bfc122676f8407a",
+      "afterSha256": "e6630c04139cc3d4fb09f9b35573ae53f6223964855a4b875bfc122676f8407a"
+    },
+    {
+      "path": "infra/test/document-services.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Contract assertions inspect exact isolation/pinning/storage policies and verify runtime fixture bytes with finally cleanup.",
+      "beforeSha256": "379cb2651ccd8a5027e8eca9ea7001906b610e111e72fe0649b97c7928caf1ed",
+      "afterSha256": "379cb2651ccd8a5027e8eca9ea7001906b610e111e72fe0649b97c7928caf1ed"
+    },
+    {
+      "path": "infra/dev/speech-services.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Rendered Compose contract proves loopback ports, init dependency, versioned persistent storage and enumerated bucket-scoped policy.",
+      "beforeSha256": "c747256b570a6092bef148166ce60bd5d3fa8c4b2e5fda335eb7b433b1116c02",
+      "afterSha256": "c747256b570a6092bef148166ce60bd5d3fa8c4b2e5fda335eb7b433b1116c02"
+    },
+    {
+      "path": "infra/deploy/tests/fixtures/stream-server.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Synthetic stream and identity responses expose delayed completion used by drain tests; short branch preserves fixed timing.",
+      "beforeSha256": "36b7ddd3082f31a3635ac039eb4f962fc571d268127ad1073fb51fa9f932a459",
+      "afterSha256": "36b7ddd3082f31a3635ac039eb4f962fc571d268127ad1073fb51fa9f932a459"
+    },
+    {
+      "path": "infra/deploy/tests/fixtures/stream.Dockerfile",
+      "status": "reviewed-acceptable",
+      "reason": "Small synthetic fixture runs one unprivileged Node process.",
+      "beforeSha256": "7fe714dca5177e259f46d68df19145195b3e7688e93fea9602a9ab99865bd54a",
+      "afterSha256": "7fe714dca5177e259f46d68df19145195b3e7688e93fea9602a9ab99865bd54a"
+    },
+    {
+      "path": "infra/deploy/tests/fixtures/stream.compose.yaml",
+      "status": "reviewed-acceptable",
+      "reason": "Blue/green aliases and release labels are explicit; shared service anchor retains identical fixture execution.",
+      "beforeSha256": "c5c468831579b407134742696b8a96d6b1267ea73de4ad59258cada0ac09f501",
+      "afterSha256": "c5c468831579b407134742696b8a96d6b1267ea73de4ad59258cada0ac09f501"
+    },
+    {
+      "path": "infra/deploy/tests/lock-contender.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "IPC handshake holds acquired lock until explicit release, reporting rejection through separate error branch.",
+      "beforeSha256": "a061a0a5c5611371bf2b30b94a7f3acc66166ec7c99e643f4870335242e1cd20",
+      "afterSha256": "a061a0a5c5611371bf2b30b94a7f3acc66166ec7c99e643f4870335242e1cd20"
+    },
+    {
+      "path": "infra/deploy/tests/lock.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Cross-process trials assert one owner across stale locks, with explicit acquisition/release messages and child exits.",
+      "beforeSha256": "0ec5ff66cb9a7865e73ec9b9ec55a77300abd6711d09307388100687a395e435",
+      "afterSha256": "0ec5ff66cb9a7865e73ec9b9ec55a77300abd6711d09307388100687a395e435"
+    },
+    {
+      "path": "infra/deploy/tests/production-security.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Tests assert concrete rendered configuration and literal SQL authority contracts by role, listener, transport and credential boundary; exact patterns are intentional audit coverage.",
+      "beforeSha256": "c5d1b66475786e0743e16926d7b3ebe1242eba08be432c3f92f0e8afa676b0ac",
+      "afterSha256": "c5d1b66475786e0743e16926d7b3ebe1242eba08be432c3f92f0e8afa676b0ac"
+    },
+    {
+      "path": "infra/deploy/lib/worker-database-privileges.mjs",
+      "status": "refactored",
+      "reason": "Cohesive static privilege queries, column allowlists and required/forbidden checks retain byte-identical SQL and function body; no mutable deployment state.",
+      "beforeSha256": null,
+      "afterSha256": "01b6c7c38398c92c1bc0b36bc2ba9c257df607782564f114d17bff54604d5441"
+    },
+    {
+      "path": "infra/deploy/tests/shared-speech.test.mjs",
+      "status": "refactored",
+      "reason": "Existing schema/retired-name assertions now inspect combined orchestrator+extracted policy source, preserving authority coverage after module move.",
+      "beforeSha256": "7c61efefb23e4220ef3020cc1371c3e9c8a0cd5220e41e12deb9a840f8a41550",
+      "afterSha256": "1450ed87b43350ae4e639df303cdf9e03b88f739d9064d9d96123461f86889cb"
+    },
+    {
+      "path": "infra/deploy/tests/speech-fingerprint-rotation.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Retained secret JSON validation, protected parser escaping and rendered per-role Compose injection remain separate synthetic cases with exact output assertions.",
+      "beforeSha256": "7150bf74cdb37d0169f1d1b294cf4c92d2991e7f091772a2eebef35ac6df4d49",
+      "afterSha256": "7150bf74cdb37d0169f1d1b294cf4c92d2991e7f091772a2eebef35ac6df4d49"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "beforeSha256": "6378ae34026d95bcffb6223726db6d6e15e089d91595d165b83970bcba6674bc",
+      "status": "reviewed-acceptable",
+      "afterSha256": "6378ae34026d95bcffb6223726db6d6e15e089d91595d165b83970bcba6674bc"
+    },
+    {
+      "path": "tsconfig.base.json",
+      "beforeSha256": "5c6cfcc1baa9397f95ded2bc1e99832539fcbf41c03747f4e1fa2efaf85540ec",
+      "status": "reviewed-acceptable",
+      "afterSha256": "5c6cfcc1baa9397f95ded2bc1e99832539fcbf41c03747f4e1fa2efaf85540ec"
+    },
+    {
+      "path": "turbo.json",
+      "beforeSha256": "e3f916cc4924ebd8ae0db6e4079a8be977b8dce8448cf376367920b4f2f60e73",
+      "status": "reviewed-acceptable",
+      "afterSha256": "e3f916cc4924ebd8ae0db6e4079a8be977b8dce8448cf376367920b4f2f60e73"
+    },
+    {
+      "path": "scripts/eslint-readability.mjs",
+      "beforeSha256": "5ecd12290cd94abdbaf0da0adea56bae763e9b32b6599ee65dc0bff4e7625d56",
+      "status": "reviewed-acceptable",
+      "afterSha256": "5ecd12290cd94abdbaf0da0adea56bae763e9b32b6599ee65dc0bff4e7625d56"
+    },
+    {
+      "path": "scripts/copy-directory.mjs",
+      "beforeSha256": "b3cfdb646d97cb28e43fe70134f8833cc733c0e719f6353b6ea32a0a6d781240",
+      "status": "reviewed-acceptable",
+      "afterSha256": "b3cfdb646d97cb28e43fe70134f8833cc733c0e719f6353b6ea32a0a6d781240"
+    },
+    {
+      "path": "scripts/critical-flows/backend-retry-reporter.mjs",
+      "beforeSha256": "76ca38821ba550ac815e2faf7661a8d59a0efd53181ae305565ba19aa20d070d",
+      "status": "reviewed-acceptable",
+      "afterSha256": "76ca38821ba550ac815e2faf7661a8d59a0efd53181ae305565ba19aa20d070d"
+    },
+    {
+      "path": "scripts/check-critical-flows.mjs",
+      "beforeSha256": "0379bc5639dcd351927f5e993b415ff1723e6c677bd4ba1623ffa3564f19efb1",
+      "status": "reviewed-acceptable",
+      "afterSha256": "0379bc5639dcd351927f5e993b415ff1723e6c677bd4ba1623ffa3564f19efb1"
+    },
+    {
+      "path": "scripts/deploy-release.mjs",
+      "beforeSha256": "1b2b66fe92d2162d2907a600a6a97163257b9af91929fcce6a9bfc4ae7a97020",
+      "status": "reviewed-acceptable",
+      "afterSha256": "1b2b66fe92d2162d2907a600a6a97163257b9af91929fcce6a9bfc4ae7a97020"
+    },
+    {
+      "path": "scripts/run-admin-mcp-e2e.mjs",
+      "beforeSha256": "b4c55a0e352c7e1f7b86c3655eec7ca2d9db66ce464dd3aafa81b9bde673f987",
+      "status": "reviewed-acceptable",
+      "afterSha256": "b4c55a0e352c7e1f7b86c3655eec7ca2d9db66ce464dd3aafa81b9bde673f987"
+    },
+    {
+      "path": "scripts/run-admin-user-management-e2e.mjs",
+      "beforeSha256": "a8b570c19d70b364953ff319a438e0faf07e785a73fcc3fe2d3d06b1a0f2bfac",
+      "status": "reviewed-acceptable",
+      "afterSha256": "a8b570c19d70b364953ff319a438e0faf07e785a73fcc3fe2d3d06b1a0f2bfac"
+    },
+    {
+      "path": "scripts/run-shared-pronunciation-e2e.mjs",
+      "beforeSha256": "57351fe42f08c83391482b2a2b68af43605c1d0de77dc39f746e2a258087334d",
+      "status": "reviewed-acceptable",
+      "afterSha256": "57351fe42f08c83391482b2a2b68af43605c1d0de77dc39f746e2a258087334d"
+    },
+    {
+      "path": "scripts/create-feature.mjs",
+      "beforeSha256": "71d0c099aabdad54c76a59a05550f002f4c0cb316be654da2eed51ea7f8da87f",
+      "status": "reviewed-acceptable",
+      "afterSha256": "71d0c099aabdad54c76a59a05550f002f4c0cb316be654da2eed51ea7f8da87f"
+    },
+    {
+      "path": "scripts/create-feature.test.mjs",
+      "beforeSha256": "79e72cc4a728067dd60033f742e64bc3861719bafdbe678b358d3c5b5eeb0d9e",
+      "status": "reviewed-acceptable",
+      "afterSha256": "79e72cc4a728067dd60033f742e64bc3861719bafdbe678b358d3c5b5eeb0d9e"
+    },
+    {
+      "path": "infra/deploy/tests/shared-speech-roles.integration.test.mjs",
+      "beforeSha256": "9967c62b6d98ab6307c66b5b2a42b15e93a94eb45f8db3ca5cefb4bd65474492",
+      "status": "reviewed-acceptable",
+      "afterSha256": "9967c62b6d98ab6307c66b5b2a42b15e93a94eb45f8db3ca5cefb4bd65474492"
+    },
+    {
+      "path": "infra/deploy/tests/local-rehearsal.journeys.test.mjs",
+      "beforeSha256": "37a4701e5dc0526d0852e67fa694cf74a943457e72dda8a254447c22b259e22a",
+      "status": "reviewed-acceptable",
+      "afterSha256": "37a4701e5dc0526d0852e67fa694cf74a943457e72dda8a254447c22b259e22a"
+    },
+    {
+      "path": "infra/deploy/local-rehearsal.mjs",
+      "beforeSha256": "2e812116e4974badd5c795c966ac32ec37bf8532c0cb846e1ac1bf36c911983e",
+      "status": "reviewed-acceptable",
+      "afterSha256": "2e812116e4974badd5c795c966ac32ec37bf8532c0cb846e1ac1bf36c911983e"
+    },
+    {
+      "path": "scripts/migration-classification.mjs",
+      "beforeSha256": "26e5a03623e6e273a773281690801cd8fcea10c706aeb0d357eb31108a4e88a0",
+      "status": "reviewed-acceptable",
+      "afterSha256": "26e5a03623e6e273a773281690801cd8fcea10c706aeb0d357eb31108a4e88a0"
+    },
+    {
+      "path": "scripts/release-ref.mjs",
+      "beforeSha256": "c95f6388fabb8c2fc9899026bf1ee40138aca9f5bfdb3b8c16fce112bf1295aa",
+      "status": "reviewed-acceptable",
+      "afterSha256": "c95f6388fabb8c2fc9899026bf1ee40138aca9f5bfdb3b8c16fce112bf1295aa"
+    },
+    {
+      "path": "infra/deploy/tests/admin-operator.test.mjs",
+      "beforeSha256": "6cd3148530b389268384775612279bd70bb87cd2e30d6c7684c84c277ec67a84",
+      "status": "reviewed-acceptable",
+      "afterSha256": "6cd3148530b389268384775612279bd70bb87cd2e30d6c7684c84c277ec67a84"
+    },
+    {
+      "path": "scripts/release-manifest.mjs",
+      "beforeSha256": "fb0c24b2426b103a36b5b3a021677cf6cc6bd6cd90e00254410b0c49c1030101",
+      "status": "refactored",
+      "afterSha256": "69f39a817b9210d45ecef8bb13686b6269b1f2a419bb23110ae1fb371f788cc8"
+    },
+    {
+      "path": "scripts/dev-doctor.mjs",
+      "beforeSha256": "c4fa83c838f58f39fadc5666550a0c2d0148114f7eb1125d292c913a85cf89e6",
+      "status": "reviewed-acceptable",
+      "afterSha256": "c4fa83c838f58f39fadc5666550a0c2d0148114f7eb1125d292c913a85cf89e6"
+    },
+    {
+      "path": "scripts/dev-configure.mjs",
+      "beforeSha256": "42fb590f6ef905c67e76fd23d2d43b022e43be8b35612592e4817df806d9b68e",
+      "status": "reviewed-acceptable",
+      "afterSha256": "42fb590f6ef905c67e76fd23d2d43b022e43be8b35612592e4817df806d9b68e"
+    },
+    {
+      "path": "scripts/dev-setup/profiles.mjs",
+      "beforeSha256": "63351b326b6b35d80acf58ac77089074a9230f49170517e31ad59442032c8ba1",
+      "status": "reviewed-acceptable",
+      "afterSha256": "63351b326b6b35d80acf58ac77089074a9230f49170517e31ad59442032c8ba1"
+    },
+    {
+      "path": "scripts/dev-readiness/database.mjs",
+      "beforeSha256": "caa9885d7ac7b85aa551d2af2df1e72217f6feef7e7e7e5491c716f1df4c2870",
+      "status": "reviewed-acceptable",
+      "afterSha256": "caa9885d7ac7b85aa551d2af2df1e72217f6feef7e7e7e5491c716f1df4c2870"
+    },
+    {
+      "path": "scripts/dev-setup/target-binding.mjs",
+      "beforeSha256": "c6384e70e4247002a1ce611358096c614b385dfe33c17abdeb0d271260f96cfb",
+      "status": "reviewed-acceptable",
+      "afterSha256": "c6384e70e4247002a1ce611358096c614b385dfe33c17abdeb0d271260f96cfb"
+    },
+    {
+      "path": "scripts/dev-setup/learner-grant.mjs",
+      "beforeSha256": "34b46deba3297e48246707fc61f053f11e036585607872c0e6194bc20dd8c3b6",
+      "status": "reviewed-acceptable",
+      "afterSha256": "34b46deba3297e48246707fc61f053f11e036585607872c0e6194bc20dd8c3b6"
+    },
+    {
+      "path": "scripts/dev-readiness/worker.mjs",
+      "beforeSha256": "c83851e018447b7c27c07b299ce449d58ea731bb294c7b508a0bcaf14d4d3ba7",
+      "status": "refactored",
+      "afterSha256": "975e03c9fc1225e023914ebf75ef575fcae06363bb20c390a21b95f99f2df3e2"
+    },
+    {
+      "path": "scripts/dev-mastra.mjs",
+      "beforeSha256": "1919fe5157668fc47bcb0734581d0a1ca248a4f62b34409aed63c2c3b3d4100a",
+      "status": "reviewed-acceptable",
+      "afterSha256": "1919fe5157668fc47bcb0734581d0a1ca248a4f62b34409aed63c2c3b3d4100a"
+    },
+    {
+      "path": "scripts/dev-mastra.test.mjs",
+      "beforeSha256": "04cab442bd141629871402bd7f9bd190787c420823ec6829610b87d3519d3b8e",
+      "status": "reviewed-acceptable",
+      "afterSha256": "04cab442bd141629871402bd7f9bd190787c420823ec6829610b87d3519d3b8e"
+    },
+    {
+      "path": "scripts/run-critical-flows.mjs",
+      "beforeSha256": "519c925ffeb636623fed6809399a2491bc394f18ca543c2b3383735261e422af",
+      "status": "reviewed-acceptable",
+      "afterSha256": "519c925ffeb636623fed6809399a2491bc394f18ca543c2b3383735261e422af"
+    },
+    {
+      "path": "scripts/dev-all-output.mjs",
+      "beforeSha256": "7210bdeff1c103321fc6b8d64844ee8a4ce6fedb975a3dce24607ed22451d2ee",
+      "status": "reviewed-acceptable",
+      "afterSha256": "7210bdeff1c103321fc6b8d64844ee8a4ce6fedb975a3dce24607ed22451d2ee"
+    },
+    {
+      "path": "web-dev-panel/src/source-revision.mjs",
+      "beforeSha256": "defc783fb4cb56cd8ba0a0d70c9f3ded4c97374c09f2e4698c9db9cafca3c28d",
+      "status": "reviewed-acceptable",
+      "afterSha256": "defc783fb4cb56cd8ba0a0d70c9f3ded4c97374c09f2e4698c9db9cafca3c28d"
+    },
+    {
+      "path": "web-dev-panel/src/catalog-reconciliation.mjs",
+      "beforeSha256": "fa89e88b3db438c6fb1e5c39922e8d5d914c84eddd60657fd30effe884ccfbe7",
+      "status": "reviewed-acceptable",
+      "afterSha256": "fa89e88b3db438c6fb1e5c39922e8d5d914c84eddd60657fd30effe884ccfbe7"
+    },
+    {
+      "path": "web-dev-panel/src/catalog-check.mjs",
+      "beforeSha256": "ed9b9c4e6660a6b0ba699f3b11e07b7df1e02a617a833c0e86a6afa896e1fa1e",
+      "status": "reviewed-acceptable",
+      "afterSha256": "ed9b9c4e6660a6b0ba699f3b11e07b7df1e02a617a833c0e86a6afa896e1fa1e"
+    },
+    {
+      "path": "web-dev-panel/src/dev.mjs",
+      "beforeSha256": "e789ce3b27ab82f1cbbc999e6341d1de864668c040b7ce9688f95014caaab975",
+      "status": "reviewed-acceptable",
+      "afterSha256": "e789ce3b27ab82f1cbbc999e6341d1de864668c040b7ce9688f95014caaab975"
+    },
+    {
+      "path": "web-dev-panel/src/main.mjs",
+      "beforeSha256": "3383b28d569cd2f55577d72f5a8819e650c342b391a43465c3205299f06596fa",
+      "status": "reviewed-acceptable",
+      "afterSha256": "3383b28d569cd2f55577d72f5a8819e650c342b391a43465c3205299f06596fa"
+    },
+    {
+      "path": "web-dev-panel/src/http-validation.mjs",
+      "beforeSha256": "e94e017385ea0eddcd59e45edb37378d4f148cf782430f55c35bf9d01b9c8ba8",
+      "status": "reviewed-acceptable",
+      "afterSha256": "e94e017385ea0eddcd59e45edb37378d4f148cf782430f55c35bf9d01b9c8ba8"
+    },
+    {
+      "path": "web-dev-panel/src/logs.mjs",
+      "beforeSha256": "99e7b669f59e500282504ed6db27106e97ed08e109326adf69f871617a7eb0e0",
+      "status": "reviewed-acceptable",
+      "afterSha256": "99e7b669f59e500282504ed6db27106e97ed08e109326adf69f871617a7eb0e0"
+    },
+    {
+      "path": "web-dev-panel/src/codex-events.mjs",
+      "beforeSha256": "10d39f33c5c865526fa391dacf8d586f3fbb65933c5ee3f9d6f7eefce6dd5474",
+      "status": "refactored",
+      "afterSha256": "fb83c7f3a64f29af38f12061d6f80b5f5a2ff995d9385a81e4177b41dae711ff"
+    },
+    {
+      "path": "scripts/resources/config.mjs",
+      "beforeSha256": "996f3bb39d7316b3776d9e679dbc1009909f528149d248f56f321d33a073b30d",
+      "status": "reviewed-acceptable",
+      "afterSha256": "996f3bb39d7316b3776d9e679dbc1009909f528149d248f56f321d33a073b30d"
+    },
+    {
+      "path": "scripts/resources/lib.mjs",
+      "beforeSha256": "65346fc889d4f1f7f72067e87843988910118488fdc088353cd0c9f76c18b44f",
+      "status": "reviewed-acceptable",
+      "afterSha256": "65346fc889d4f1f7f72067e87843988910118488fdc088353cd0c9f76c18b44f"
+    },
+    {
+      "path": "scripts/resources/dashboard.mjs",
+      "beforeSha256": "242172d7ba96efb48d1895ba6aa66f28847ace1082f65214b743ef2a7dea6482",
+      "status": "refactored",
+      "afterSha256": "1f4ab7c7ef54123b40a467437ded2b2b8c159683a44be51b590ee87920233c92"
+    },
+    {
+      "path": "scripts/resources/resources.test.mjs",
+      "beforeSha256": "eaf471a1e5302a27b8eefd32578e22bed28d1e95017a9a5473075facfb0d34a0",
+      "status": "reviewed-acceptable",
+      "afterSha256": "eaf471a1e5302a27b8eefd32578e22bed28d1e95017a9a5473075facfb0d34a0"
+    },
+    {
+      "path": "scripts/ai-smoke.mjs",
+      "beforeSha256": "165f86c859f628d19908c4cfa033549ea4710525507e1b5047209e0f7b19984e",
+      "status": "reviewed-acceptable",
+      "afterSha256": "165f86c859f628d19908c4cfa033549ea4710525507e1b5047209e0f7b19984e"
+    },
+    {
+      "path": "scripts/ai-smoke/policy.mjs",
+      "beforeSha256": "c321b9d0d0dc00c67aba520dca9901698b4fb5d1227d9386b596b74612a36f1c",
+      "status": "reviewed-acceptable",
+      "afterSha256": "c321b9d0d0dc00c67aba520dca9901698b4fb5d1227d9386b596b74612a36f1c"
+    },
+    {
+      "path": "scripts/ai-smoke/expense.mjs",
+      "beforeSha256": "fc3a00d9ee636fb6bb7e7b23411fd66a1d69970d5128a6c6267103967a158a4a",
+      "status": "reviewed-acceptable",
+      "afterSha256": "fc3a00d9ee636fb6bb7e7b23411fd66a1d69970d5128a6c6267103967a158a4a"
+    },
+    {
+      "path": "scripts/ai-smoke/inspect.mjs",
+      "beforeSha256": "07aa8b9deb8d8aab065e8eae3c87c76b74819c7af3a13bd53ffbfd22b92aa4c4",
+      "status": "reviewed-acceptable",
+      "afterSha256": "07aa8b9deb8d8aab065e8eae3c87c76b74819c7af3a13bd53ffbfd22b92aa4c4"
+    },
+    {
+      "path": "scripts/run-user-ai-model-preferences-e2e.mjs",
+      "beforeSha256": "cdf71612e32a72a1450ebdf1752032e9ef200020ad658543b283ea195b1399f4",
+      "status": "reviewed-acceptable",
+      "afterSha256": "cdf71612e32a72a1450ebdf1752032e9ef200020ad658543b283ea195b1399f4"
+    },
+    {
+      "path": "scripts/run-contextual-assistant-e2e.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Preservation lock owns exact generated declaration bytes; confirmed exclusive DB/Redis validation precedes backend/browser phases and signal cleanup.",
+      "beforeSha256": "5cbca9d5b016800d711eb10bdb2ec0fc527f4603d3baba92b8a9677e6576abbd",
+      "afterSha256": "5cbca9d5b016800d711eb10bdb2ec0fc527f4603d3baba92b8a9677e6576abbd"
+    },
+    {
+      "path": "scripts/run-learner-portrait-e2e.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Explicit confirmed portrait DB/Redis guard precedes two deterministic journey phases wrapped in generated-file preservation; no inferred shared target.",
+      "beforeSha256": "b8afecbd4c3d22c97f69780290f0f14ad074295f68f1d12d411d0b13f4e4e7cd",
+      "afterSha256": "b8afecbd4c3d22c97f69780290f0f14ad074295f68f1d12d411d0b13f4e4e7cd"
+    },
+    {
+      "path": "scripts/run-texts-web-e2e.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Exact UI database and ports are enforced before fixed Playwright argv; synthetic fixture environment and forwarded signal lifecycle stay explicit.",
+      "beforeSha256": "022beabc4f25630d1730212f47cdec04fa64e39d28e348a7eadf74890ef102fc",
+      "afterSha256": "022beabc4f25630d1730212f47cdec04fa64e39d28e348a7eadf74890ef102fc"
+    }
+  ],
+  "pendingClarity": [],
+  "checks": [
+    {
+      "command": "node --test infra/deploy/tests/config.test.mjs infra/deploy/tests/deployment.test.mjs infra/deploy/tests/shared-speech.test.mjs infra/deploy/tests/production-security.test.mjs",
+      "result": "39 passed, zero skips",
+      "log": "/private/tmp/languon-bl019-root-policy-preflight.log"
+    },
+    {
+      "result": "Base/current public export keys, query strings, column arrays and validator function body equal",
+      "method": "dynamic import and strict assertions against git show252de64"
+    }
+  ]
+}

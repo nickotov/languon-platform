@@ -9,6 +9,9 @@ import type {
     SubmitConversationTurnRequest,
     KnowledgeDraft,
     KnowledgeNoteContent,
+    LearningBlockProposalInput,
+    KnowledgeBlockProposal,
+    KnowledgeWorkingBranch,
     PublishKnowledgeDraftRequest,
     KnowledgeNote,
     ConversationToolCall,
@@ -36,6 +39,26 @@ export type ClaimedConversationTurn = {
     source: ConversationSource;
 };
 export interface ConversationStore {
+    listBlockProposals?(
+        access: ConversationAccess,
+        conversationId: string,
+    ): Promise<{ proposals: KnowledgeBlockProposal[] }>;
+    applyBlockProposal?(
+        access: ConversationAccess,
+        conversationId: string,
+        proposalId: string,
+        expectedBranchVersion: number,
+        mode?: 'proposal' | 'add-separately',
+        insertionPosition?: number,
+    ): Promise<{
+        proposal: KnowledgeBlockProposal;
+        branch: KnowledgeWorkingBranch;
+    }>;
+
+    proposeBlocks?(
+        turn: ClaimedConversationTurn,
+        input: LearningBlockProposalInput,
+    ): Promise<{ id: string }>;
     list(
         access: ConversationAccess,
         source: ConversationSource,

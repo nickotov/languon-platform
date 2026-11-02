@@ -67,6 +67,7 @@ export function createDictionaryComposition(
                 sessionId: claims.sessionId,
                 userId: claims.userId,
             });
+
             return { sessionId: claims.sessionId, userId: claims.userId };
         },
         requireRecentlyAuthenticatedSession: (principal) =>
@@ -152,6 +153,7 @@ export function createDictionaryComposition(
         policy: dependencies.policy,
         service,
     });
+
     routes.route(
         '/',
         createDictionaryGenerationRoutes({
@@ -159,7 +161,8 @@ export function createDictionaryComposition(
             service: generationService,
         }),
     );
-    if (documentService)
+
+    if (documentService) {
         routes.route(
             '/',
             createDictionaryDocumentRoutes({
@@ -167,6 +170,8 @@ export function createDictionaryComposition(
                 service: documentService,
             }),
         );
+    }
+
     return {
         documentService,
         generationService,

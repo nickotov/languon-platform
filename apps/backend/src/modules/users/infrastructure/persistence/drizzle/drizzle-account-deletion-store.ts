@@ -16,6 +16,10 @@ import {
     knowledgeSharesTable,
 } from '../../../../knowledge/infrastructure/persistence/drizzle/schema';
 import { activeOwnerMutationLock } from '../../../../administration/infrastructure/persistence/drizzle/owner-lock';
+import {
+    knowledgeWorkbooksTable,
+    knowledgeWorkbookSharesTable,
+} from '../../../../knowledge/infrastructure/persistence/drizzle/workbook-schema';
 import { usersTable } from './schema';
 import { accountDeletionRequestsTable } from './account-deletion-schema';
 import {
@@ -81,7 +85,9 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                 .limit(1)
                 .for('update');
 
-            if (!session) throw new RecentAuthenticationRequiredError();
+            if (!session) {
+                throw new RecentAuthenticationRequiredError();
+            }
 
             const [user] = await transaction
                 .select({
@@ -108,8 +114,9 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                 )
                 .limit(1);
 
-            if (membership)
+            if (membership) {
                 throw new AccountDeletionOwnerTransferRequiredError();
+            }
 
             const [clock] = await transaction
                 .select({ value: sql<string>`clock_timestamp()::text` })
@@ -150,7 +157,9 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                 )
                 .returning({ version: usersTable.version });
 
-            if (!changed) throw new AccountDeletionConflictError();
+            if (!changed) {
+                throw new AccountDeletionConflictError();
+            }
 
             const scheduleValues = {
                 attemptCount: 0,
@@ -217,6 +226,23 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                             .from(knowledgeNotesTable)
                             .where(
                                 eq(knowledgeNotesTable.ownerId, input.userId),
+                            ),
+                    ),
+                );
+
+            await transaction
+                .delete(knowledgeWorkbookSharesTable)
+                .where(
+                    inArray(
+                        knowledgeWorkbookSharesTable.workbookId,
+                        transaction
+                            .select({ id: knowledgeWorkbooksTable.id })
+                            .from(knowledgeWorkbooksTable)
+                            .where(
+                                eq(
+                                    knowledgeWorkbooksTable.ownerId,
+                                    input.userId,
+                                ),
                             ),
                     ),
                 );

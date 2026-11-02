@@ -27,17 +27,25 @@ function runBodies(source) {
     const bodies = [];
     for (let index = 0; index < lines.length; index += 1) {
         const match = /^(\s*)run:\s*(.*)$/.exec(lines[index]);
-        if (!match) continue;
+        if (!match) {
+            continue;
+        }
+
         const indent = match[1].length;
         const body = [match[2]];
         while (index + 1 < lines.length) {
             const next = lines[index + 1];
-            if (next.trim() && next.search(/\S/) <= indent) break;
+            if (next.trim() && next.search(/\S/) <= indent) {
+                break;
+            }
+
             body.push(next);
             index += 1;
         }
+
         bodies.push(body.join('\n'));
     }
+
     return bodies;
 }
 
@@ -63,7 +71,10 @@ test('all third-party actions are pinned to full commit SHAs', () => {
     for (const [file, source] of Object.entries(workflows)) {
         for (const match of source.matchAll(/uses:\s*([^\s#]+)/g)) {
             const reference = match[1];
-            if (reference.startsWith('./')) continue;
+            if (reference.startsWith('./')) {
+                continue;
+            }
+
             assert.match(reference, /@[a-f0-9]{40}$/, `${file}: ${reference}`);
         }
     }
@@ -97,6 +108,7 @@ test('reusable verification builds all images and emits exact digests after chec
             new RegExp(check.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
         );
     }
+
     for (const service of ['backend', 'web', 'admin', 'migrator']) {
         assert.match(source, new RegExp(`prod\\.${service}\\.Dockerfile`));
         assert.match(
@@ -106,6 +118,7 @@ test('reusable verification builds all images and emits exact digests after chec
             ),
         );
     }
+
     assert.match(source, /provenance: mode=max/);
     assert.match(source, /sbom: true/);
     assert.match(source, /actions\/attest@[a-f0-9]{40}/);
@@ -122,10 +135,12 @@ test('reusable verification builds all images and emits exact digests after chec
     ]) {
         assert.match(source, new RegExp(`--dictionary-job-${capability} ""`));
     }
+
     assert.doesNotMatch(
         source,
         /--dictionary-job-(?:worker-processable|api-readable|api-cancellable|api-discardable|api-acceptable|web-readable) "[^"]+"/,
     );
+
     assert.doesNotMatch(source, /--dictionary-job-api-enqueued/);
     assert.match(source, /--dictionary-job-retire-formats ""/);
     for (const [flag, value] of [
@@ -146,6 +161,7 @@ test('stage selects current stage head, serializes, then deploys the same manife
         source,
         /uses: \.\/\.github\/workflows\/reusable-verify-build\.yml/,
     );
+
     assert.match(source, /group: deploy-stage/);
     assert.match(source, /cancel-in-progress: false/);
     assert.match(source, /environment: staging/);
@@ -190,6 +206,7 @@ test('deployment uses pinned SSH host identity and the private network action', 
             /StrictHostKeyChecking=no|UserKnownHostsFile=\/dev\/null/,
         );
     }
+
     assert.match(workflow('stage.yml'), /tags: tag:ci-stage/);
     assert.match(workflow('deploy-production.yml'), /tags: tag:ci-production/);
 });

@@ -39,6 +39,7 @@ describe('JoseAccessTokenSigner', () => {
             alg: 'HS256',
             typ: 'JWT',
         });
+
         expect(decodeJwt(token)).toEqual(standardPayload);
         await expect(signer.verify(token)).resolves.toEqual(claims);
     });
@@ -81,6 +82,7 @@ describe('JoseAccessTokenSigner', () => {
             name: 'a required claim is missing',
             token: () => {
                 const { sid: _sid, ...payload } = standardPayload;
+
                 return signToken(payload, secret, 'HS256', 'JWT');
             },
         },
@@ -150,6 +152,7 @@ describe('JoseAccessTokenSigner', () => {
                     secret: 'too-short',
                 }),
         ).toThrow(RangeError);
+
         expect(
             () =>
                 new JoseAccessTokenSigner({

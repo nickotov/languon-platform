@@ -41,7 +41,7 @@ export function projectFlashcard(
 ): FlashcardItem | null {
     const languageFor = (role: 'source' | 'target') =>
         role === 'source' ? input.sourceLanguage : input.targetLanguage;
-    const valueFor = (
+    const projectField = (
         requested: FlashcardField,
     ): FlashcardPresentationField | null => {
         let text: string | null;
@@ -60,34 +60,44 @@ export function projectFlashcard(
                 text = input.settings.transcriptionEnabled
                     ? input.values.transcription
                     : null;
+
                 break;
             case 'definition':
                 text = input.settings.definitionEnabled
                     ? input.values.definition
                     : null;
+
                 role = input.settings.definitionLanguageRole;
                 break;
             case 'sourceExample':
             case 'targetExample': {
                 role = requested === 'sourceExample' ? 'source' : 'target';
-                text =
-                    input.settings.exampleLanguageRole === role
-                        ? input.settings.exampleEnabled
-                            ? input.values.example
-                            : null
-                        : input.settings.exampleTranslationEnabled
-                          ? input.values.exampleTranslation
-                          : null;
+                if (input.settings.exampleLanguageRole === role) {
+                    text = input.settings.exampleEnabled
+                        ? input.values.example
+                        : null;
+                } else {
+                    text = input.settings.exampleTranslationEnabled
+                        ? input.values.exampleTranslation
+                        : null;
+                }
+
                 if (!text?.trim()) {
                     field = role === 'source' ? 'source' : 'translation';
                     text = input.values[field];
                     fallback = true;
                 }
+
                 break;
             }
         }
-        if (!text?.trim()) return null;
+
+        if (!text?.trim()) {
+            return null;
+        }
+
         const language = languageFor(role);
+
         return {
             field,
             requestedFields: [requested],
@@ -97,24 +107,37 @@ export function projectFlashcard(
             fallback,
         };
     };
-    const side = (selected: FlashcardField[]): FlashcardPresentationField[] => {
+    const projectSide = (
+        selected: FlashcardField[],
+    ): FlashcardPresentationField[] => {
         const result: FlashcardPresentationField[] = [];
         for (const field of flashcardFieldOrder) {
-            if (!selected.includes(field)) continue;
-            const projected = valueFor(field);
-            if (!projected) continue;
+            if (!selected.includes(field)) {
+                continue;
+            }
+
+            const projected = projectField(field);
+            if (!projected) {
+                continue;
+            }
+
             const previous = result.find(
                 (candidate) => candidate.field === projected.field,
             );
+
             if (previous) {
                 previous.requestedFields.push(field);
                 previous.fallback ||= projected.fallback;
-            } else result.push(projected);
+            } else {
+                result.push(projected);
+            }
         }
+
         return result;
     };
-    const front = side(input.configuration.front);
-    const back = side(input.configuration.back);
+    const front = projectSide(input.configuration.front);
+    const back = projectSide(input.configuration.back);
+
     return front.length && back.length
         ? {
               entryId: input.entryId,

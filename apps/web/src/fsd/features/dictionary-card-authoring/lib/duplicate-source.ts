@@ -7,6 +7,7 @@ export function hasLoadedSourceDuplicate(
     loadedSources: readonly string[],
 ): boolean {
     const normalized = normalizeDictionarySource(source);
+
     return (
         normalized.length > 0 &&
         loadedSources.some(

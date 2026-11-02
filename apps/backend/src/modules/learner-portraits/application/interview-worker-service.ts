@@ -24,10 +24,14 @@ export class InterviewWorkerService {
             timeoutMs?: number;
         },
     ) {}
+
     async processNext(signal: AbortSignal): Promise<boolean> {
         signal.throwIfAborted();
         const operation = await this.dependencies.store.claim();
-        if (!operation) return false;
+        if (!operation) {
+            return false;
+        }
+
         const controller = new AbortController();
         const combined = AbortSignal.any([
             signal,
@@ -36,7 +40,10 @@ export class InterviewWorkerService {
         ]);
         let pending: Promise<void> | undefined;
         const timer = setInterval(() => {
-            if (pending) return;
+            if (pending) {
+                return;
+            }
+
             pending = this.dependencies.store
                 .heartbeat(operation)
                 .catch(() => {
@@ -46,6 +53,7 @@ export class InterviewWorkerService {
                     pending = undefined;
                 });
         }, this.dependencies.heartbeatMs ?? 2000);
+
         try {
             // Check the fence immediately before creating any provider-bound runner.
             await this.dependencies.store.heartbeat(operation);
@@ -74,13 +82,15 @@ export class InterviewWorkerService {
                 if (
                     !(failure instanceof PortraitConflictError) &&
                     !(failure instanceof PortraitDraftUnavailableError)
-                )
+                ) {
                     throw failure;
+                }
             }
         } finally {
             clearInterval(timer);
             await pending;
         }
+
         return true;
     }
 }

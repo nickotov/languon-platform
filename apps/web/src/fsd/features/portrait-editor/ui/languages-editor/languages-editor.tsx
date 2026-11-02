@@ -42,25 +42,38 @@ function LanguageRow({
             value: option.value,
         })),
     ];
+
     function handleRemove() {
         onRemove(item.language);
     }
+
     function handleLevel(event: ChangeEvent<HTMLSelectElement>) {
         const level = event.target.value as LanguageEntry['level'];
         const next = { ...item };
-        if (level) next.level = level;
-        else delete next.level;
+        if (level) {
+            next.level = level;
+        } else {
+            delete next.level;
+        }
+
         onChange(next);
     }
+
     function handleLearning(event: ChangeEvent<HTMLInputElement>) {
         onChange({ ...item, learning: event.target.checked });
     }
+
     function handleClarification(value: string) {
         const next = { ...item };
-        if (value) next.clarification = value;
-        else delete next.clarification;
+        if (value) {
+            next.clarification = value;
+        } else {
+            delete next.clarification;
+        }
+
         onChange(next);
     }
+
     return (
         <li className={styles.language}>
             <div className={styles.row}>
@@ -105,6 +118,7 @@ function LanguageRow({
         </li>
     );
 }
+
 export function LanguagesEditor({
     languages,
     onChange,
@@ -127,18 +141,31 @@ export function LanguagesEditor({
         (code) =>
             !languages.some((item) => item.language.toLowerCase() === code),
     );
+
     function handleAdd(code: string) {
-        if (atLimit) return;
+        if (atLimit) {
+            return;
+        }
+
         onChange([...languages, { language: code, learning: false }]);
     }
+
     function handleCustomAdd() {
-        if (!valid || duplicate || disabled) return;
-        if (customCode) handleAdd(customCode);
+        if (!valid || duplicate || disabled) {
+            return;
+        }
+
+        if (customCode) {
+            handleAdd(customCode);
+        }
+
         setCustom('');
     }
+
     function handleCustomChange(event: ChangeEvent<HTMLInputElement>) {
         setCustom(event.target.value);
     }
+
     function handleUpdate(next: LanguageEntry) {
         onChange(
             languages.map((item) =>
@@ -146,9 +173,11 @@ export function LanguagesEditor({
             ),
         );
     }
+
     function handleRemove(code: string) {
         onChange(languages.filter((item) => item.language !== code));
     }
+
     const label = copy(
         locale,
         'Another language',
@@ -170,6 +199,7 @@ export function LanguagesEditor({
         'Aucune langue pour le moment.',
         'Todavía no hay idiomas.',
     );
+
     return (
         <div className={styles.stack}>
             <p className={styles.description}>{selfReported}</p>

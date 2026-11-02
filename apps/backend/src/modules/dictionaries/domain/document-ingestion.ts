@@ -125,6 +125,7 @@ export type DictionaryDocumentTermExtractionResult =
 function hasDisallowedControlCharacter(value: string): boolean {
     return [...value].some((character) => {
         const codePoint = character.codePointAt(0)!;
+
         return (
             codePoint <= 8 ||
             codePoint === 11 ||
@@ -156,9 +157,16 @@ export function classifyDictionaryDocumentTerms(
     const units = blocks.filter(
         (block) => block.kind !== 'blank' && block.kind !== 'heading',
     );
-    if (units.length === 0) return { kind: 'no_terms_found' };
-    if (units.length > documentIngestionLimitsV1.document.maximumExtractedUnits)
+
+    if (units.length === 0) {
+        return { kind: 'no_terms_found' };
+    }
+
+    if (
+        units.length > documentIngestionLimitsV1.document.maximumExtractedUnits
+    ) {
         return { kind: 'too_many_terms', extractedUnits: units.length };
+    }
 
     const rows: DictionaryDocumentTermRow[] = [];
     const failures: DictionaryDocumentTermFailure[] = [];
@@ -173,8 +181,10 @@ export function classifyDictionaryDocumentTerms(
                         'Multi-cell rows must use the structured import flow.',
                     ),
                 );
+
                 continue;
             }
+
             tableCell = cells[0];
         }
 
@@ -184,12 +194,15 @@ export function classifyDictionaryDocumentTerms(
                 : unit.kind === 'list-item'
                   ? stripListMarker(unit.text)
                   : unit.text.trim();
+
         if (raw.length === 0) {
             failures.push(
                 invalidFailure(rowIndex, 'The extracted term is empty.'),
             );
+
             continue;
         }
+
         if (hasDisallowedControlCharacter(raw)) {
             failures.push(
                 invalidFailure(
@@ -197,8 +210,10 @@ export function classifyDictionaryDocumentTerms(
                     'The extracted term contains an unsupported control character.',
                 ),
             );
+
             continue;
         }
+
         if (
             [...raw].length >
             documentIngestionLimitsV1.document.maximumUnitCodePoints
@@ -209,8 +224,10 @@ export function classifyDictionaryDocumentTerms(
                     'The extracted term exceeds the 200 code point limit.',
                 ),
             );
+
             continue;
         }
+
         rows.push({ input: raw, rowIndex });
     }
 
@@ -220,16 +237,23 @@ export function classifyDictionaryDocumentTerms(
 export function validateDictionaryDocumentBlocks(
     blocks: readonly DictionaryDocumentBlock[],
 ): void {
-    for (const block of blocks) DictionaryDocumentBlockSchema.parse(block);
+    for (const block of blocks) {
+        DictionaryDocumentBlockSchema.parse(block);
+    }
+
     const serializedBytes = Buffer.byteLength(JSON.stringify(blocks), 'utf8');
     if (
         serializedBytes > documentIngestionLimitsV1.parser.maximumIpcOutputBytes
-    )
+    ) {
         throw new InvalidDictionaryDocumentExtractionError('ipc_output_limit');
+    }
 
     const extractedTextBytes = blocks.reduce((total, block) => {
-        if (block.kind === 'blank' || block.kind === 'heading') return total;
-        if (block.kind === 'table-row')
+        if (block.kind === 'blank' || block.kind === 'heading') {
+            return total;
+        }
+
+        if (block.kind === 'table-row') {
             return (
                 total +
                 block.cells.reduce(
@@ -238,15 +262,19 @@ export function validateDictionaryDocumentBlocks(
                     0,
                 )
             );
+        }
+
         return total + Buffer.byteLength(block.text, 'utf8');
     }, 0);
+
     if (
         extractedTextBytes >
         documentIngestionLimitsV1.document.maximumExtractedUtf8Bytes
-    )
+    ) {
         throw new InvalidDictionaryDocumentExtractionError(
             'extracted_text_limit',
         );
+    }
 }
 
 export type InvalidDictionaryDocumentExtractionReason =

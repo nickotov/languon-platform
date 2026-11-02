@@ -45,7 +45,9 @@ export function Menu({
         !allowDisabledItems && items.every((item) => item.disabled);
 
     useEffect(() => {
-        if (disabled && open) setOpen(false);
+        if (disabled && open) {
+            setOpen(false);
+        }
     }, [disabled, open]);
 
     function move(event: KeyboardEvent<HTMLButtonElement>, index: number) {
@@ -72,7 +74,9 @@ export function Menu({
 
         const currentItem = itemRefs.current[index];
 
-        if (!currentItem || enabled.length === 0) return;
+        if (!currentItem || enabled.length === 0) {
+            return;
+        }
 
         const current = enabled.indexOf(currentItem);
 
@@ -98,7 +102,9 @@ export function Menu({
 
         const next = resolveNext();
 
-        if (next === null) return;
+        if (next === null) {
+            return;
+        }
 
         event.preventDefault();
 
@@ -137,13 +143,17 @@ export function Menu({
     }
 
     function handleMenuKey(event: KeyboardEvent<HTMLDivElement>) {
-        if (event.defaultPrevented) return;
+        if (event.defaultPrevented) {
+            return;
+        }
 
         if (event.key === 'Escape') {
             event.preventDefault();
 
             closeAndRestoreFocus();
-        } else if (event.key === 'Tab') setOpen(false);
+        } else if (event.key === 'Tab') {
+            setOpen(false);
+        }
     }
 
     function renderItem(item: MenuItem, index: number) {

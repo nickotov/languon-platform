@@ -24,14 +24,17 @@ const body = {
 };
 const request = <T,>(operation: (token: string) => Promise<T>) =>
     operation('test-token');
+
 function wrapper({ children }: PropsWithChildren) {
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
+
     return (
         <QueryClientProvider client={client}>{children}</QueryClientProvider>
     );
 }
+
 afterEach(() => vi.restoreAllMocks());
 describe('workspace durable job fencing', () => {
     it('restores a completed proposal after reload and explicitly discards it on the server', async () => {
@@ -46,23 +49,27 @@ describe('workspace durable job fencing', () => {
         const { result } = renderHook(() => useTextWorkspaceJob(request), {
             wrapper,
         });
+
         act(() => result.current.restore(completed));
         expect(result.current.job).toEqual(completed);
         await act(() => result.current.cancel());
         expect(cancel).toHaveBeenCalledWith('test-token', id);
         expect(result.current.job?.state).toBe('cancelled');
     });
+
     it('reuses enqueue operation identity after a transport failure and never saves a draft', async () => {
         const create = vi.spyOn(textsApi, 'createText');
         const enqueue = vi
             .spyOn(textsApi, 'translateText')
             .mockRejectedValueOnce(new Error('network'))
             .mockResolvedValueOnce({ job });
+
         vi.spyOn(textsApi, 'getAiJob').mockResolvedValue({ job });
         const { result, unmount } = renderHook(
             () => useTextWorkspaceJob(request),
             { wrapper },
         );
+
         await act(() => result.current.start(body));
         await act(() =>
             result.current.start({
@@ -70,10 +77,12 @@ describe('workspace durable job fencing', () => {
                 operationId: '123e4567-e89b-42d3-a456-426614174001',
             }),
         );
+
         expect(enqueue.mock.calls[1]?.[1].operationId).toBe(id);
         expect(create).not.toHaveBeenCalled();
         unmount();
     });
+
     it('cancels a late enqueue response after close/cancel and does not resurrect its UI', async () => {
         let resolve!: (value: { job: TextAiJob }) => void;
         vi.spyOn(textsApi, 'translateText').mockReturnValue(
@@ -81,6 +90,7 @@ describe('workspace durable job fencing', () => {
                 resolve = done;
             }),
         );
+
         const cancel = vi.spyOn(textsApi, 'cancelAiJob').mockResolvedValue({
             job: { ...job, state: 'cancelled', completedAt: job.createdAt },
         });
@@ -92,14 +102,17 @@ describe('workspace durable job fencing', () => {
         act(() => {
             start = result.current.start(body);
         });
+
         await act(() => result.current.cancel());
         await act(async () => {
             resolve({ job });
             await start;
         });
+
         await waitFor(() =>
             expect(cancel).toHaveBeenCalledWith('test-token', id),
         );
+
         expect(result.current.job).toBeNull();
         unmount();
     });
@@ -133,9 +146,11 @@ it('keeps the exact text operation and source while awaiting explicit allowance 
     act(() => {
         pending = result.current.start(body);
     });
+
     await waitFor(() =>
         expect(result.current.actionConsent.quote?.id).toBe(quote.id),
     );
+
     expect(enqueue).toHaveBeenCalledTimes(1);
     expect(result.current.job).toBeNull();
     act(() => result.current.actionConsent.confirm());
@@ -145,6 +160,7 @@ it('keeps the exact text operation and source while awaiting explicit allowance 
         ...body,
         confirmedQuoteId: quote.id,
     });
+
     expect(result.current.job?.state).toBe('completed');
     unmount();
 });

@@ -31,17 +31,23 @@ export function usePracticeSession(input: SessionInput) {
         session.getState,
         session.getState,
     );
+
     useEffect(() => {
         session.start();
+
         return () => session.dispose();
     }, [session]);
+
     useEffect(() => {
         function refreshWhenVisible() {
-            if (document.visibilityState === 'visible')
+            if (document.visibilityState === 'visible') {
                 void session.refreshProgress();
+            }
         }
+
         window.addEventListener('focus', refreshWhenVisible);
         document.addEventListener('visibilitychange', refreshWhenVisible);
+
         return () => {
             window.removeEventListener('focus', refreshWhenVisible);
             document.removeEventListener(
@@ -50,7 +56,9 @@ export function usePracticeSession(input: SessionInput) {
             );
         };
     }, [session]);
+
     const currentId = state.queue[state.index];
+
     return {
         state,
         currentItem: currentId ? state.items[currentId] : undefined,

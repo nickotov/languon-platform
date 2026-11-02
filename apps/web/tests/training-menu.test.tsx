@@ -13,8 +13,10 @@ describe('menu training extensions preserve default behavior', () => {
                 ]}
             />,
         );
+
         expect(screen.getByRole('button', { name: 'Actions' })).toBeDisabled();
     });
+
     it('renders a noninteractive heading and disabled hint, restores focus on Escape', async () => {
         const select = vi.fn();
         render(
@@ -36,18 +38,21 @@ describe('menu training extensions preserve default behavior', () => {
                 ]}
             />,
         );
+
         const trigger = screen.getByRole('button', { name: 'Train' });
         fireEvent.click(trigger);
         expect(screen.getByText('Train with')).toHaveAttribute(
             'role',
             'presentation',
         );
+
         expect(await screen.findAllByRole('menuitem')).toHaveLength(2);
         expect(
             await screen.findByRole('menuitem', {
                 name: 'Sentences Coming soon',
             }),
         ).toBeDisabled();
+
         const cards = await screen.findByRole('menuitem', { name: 'Cards' });
         expect(cards).toHaveFocus();
         fireEvent.keyDown(cards, { key: 'Escape' });
@@ -55,6 +60,7 @@ describe('menu training extensions preserve default behavior', () => {
         await waitFor(() => expect(trigger).toHaveFocus());
         expect(select).not.toHaveBeenCalled();
     });
+
     it('allows informational all-disabled menus only when explicitly requested', async () => {
         const select = vi.fn();
         render(
@@ -72,6 +78,7 @@ describe('menu training extensions preserve default behavior', () => {
                 ]}
             />,
         );
+
         fireEvent.click(screen.getByRole('button', { name: 'Train' }));
         expect(await screen.findByRole('menuitem')).toBeDisabled();
         fireEvent.click(await screen.findByRole('menuitem'));
@@ -79,6 +86,7 @@ describe('menu training extensions preserve default behavior', () => {
         fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
         expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
+
     it('keeps retry menus open only when a menu action requests it', async () => {
         const retry = vi.fn();
         render(
@@ -91,6 +99,7 @@ describe('menu training extensions preserve default behavior', () => {
                 ]}
             />,
         );
+
         fireEvent.click(screen.getByRole('button', { name: 'Train' }));
         fireEvent.click(await screen.findByRole('menuitem', { name: 'Retry' }));
         expect(retry).toHaveBeenCalledOnce();

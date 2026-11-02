@@ -13,7 +13,10 @@ export function createAuditRecord({
     forcedDrain = false,
     failurePhase,
 }) {
-    if (!SAFE_OUTCOMES.has(outcome)) throw new Error('Invalid audit outcome.');
+    if (!SAFE_OUTCOMES.has(outcome)) {
+        throw new Error('Invalid audit outcome.');
+    }
+
     return {
         schemaVersion: 1,
         actor: String(actor || 'local')

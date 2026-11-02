@@ -58,27 +58,35 @@ export function TextWorkspace({
         folderConsent.shareId === ws.folder.data?.shareId &&
         folderConsent.shareVersion === ws.folder.data?.shareVersion,
     );
+
     useEffect(() => {
-        if (ws.folder.data && !ws.folder.data.isShared)
+        if (ws.folder.data && !ws.folder.data.isShared) {
             setFolderConsent(undefined);
+        }
     }, [ws.folder.data]);
+
     function consent(event: ChangeEvent<HTMLInputElement>) {
         const folder = ws.folder.data;
         if (
             event.target.checked &&
             folder?.shareId &&
             folder.shareVersion != null
-        )
+        ) {
             setFolderConsent({
                 shareId: folder.shareId,
                 shareVersion: folder.shareVersion,
             });
-        else setFolderConsent(undefined);
+        } else {
+            setFolderConsent(undefined);
+        }
     }
+
     useEffect(() => {
-        if (!textId && ws.document && !ws.unsaved)
+        if (!textId && ws.document && !ws.unsaved) {
             router.replace(`/texts/${ws.document.id}`);
+        }
     }, [textId, ws.document, ws.unsaved, folderId, router]);
+
     const [confirmation, setConfirmation] =
         useState<WorkspaceConfirmation>(null);
     const [management, setManagement] = useState<WorkspaceManagementKind>(null);
@@ -89,23 +97,34 @@ export function TextWorkspace({
     useEffect(() => {
         guard.setDirty(dirty);
     }, [dirty, guard.setDirty]);
+
     function leave() {
         const destination = ws.document?.folderId ?? folderId;
         router.push(destination ? `/texts/folders/${destination}` : '/texts');
     }
+
     function confirmLeave() {
-        if (guard.open) guard.discard();
-        else leave();
+        if (guard.open) {
+            guard.discard();
+        } else {
+            leave();
+        }
     }
+
     function move() {
         setManagement('move');
     }
 
     function close() {
-        if (ws.saving) return;
-        if (ws.unsaved || (ws.aiActive ?? ws.translation.active))
+        if (ws.saving) {
+            return;
+        }
+
+        if (ws.unsaved || (ws.aiActive ?? ws.translation.active)) {
             setConfirmation('close');
-        else leave();
+        } else {
+            leave();
+        }
     }
 
     function dismissConfirmation() {
@@ -120,8 +139,11 @@ export function TextWorkspace({
     }
 
     function cancelEdit() {
-        if (ws.touched.size) setConfirmation('cancel-edit');
-        else ws.cancelEdit();
+        if (ws.touched.size) {
+            setConfirmation('cancel-edit');
+        } else {
+            ws.cancelEdit();
+        }
     }
 
     function rename() {
@@ -147,6 +169,7 @@ export function TextWorkspace({
     function retryRecovery() {
         void ws.pendingJob.refetch();
     }
+
     function review() {
         setConfirmation('conflict');
     }

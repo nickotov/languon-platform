@@ -8,6 +8,8 @@ import {
     type TestInfo,
 } from '@playwright/test';
 
+import { speechCreditFixture } from './support/speech-credit-fixture';
+
 import {
     installSpeechAudioProbe,
     playSpeechControl,
@@ -33,17 +35,26 @@ function captureBrowserErrors(page: Page) {
             errors.push(message.text());
         }
     });
+
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('response', (response) => {
-        if (response.status() < 400) return;
+        if (response.status() < 400) {
+            return;
+        }
+
         const path = new URL(response.url()).pathname.replace(
             /^\/api(?=\/)/,
             '',
         );
+
         // Initial anonymous-session probing is an expected application boundary.
-        if (path === '/auth/refresh' && response.status() === 401) return;
+        if (path === '/auth/refresh' && response.status() === 401) {
+            return;
+        }
+
         errors.push(`${response.status()} ${path}`);
     });
+
     return () => expect(errors, 'unexpected browser errors').toEqual([]);
 }
 
@@ -92,10 +103,12 @@ async function createDictionaryWithCard(
         .getByRole('main')
         .getByRole('button', { name: 'New dictionary', exact: true })
         .click();
+
     await page.getByLabel('Name').fill(name);
     await page
         .getByLabel('Description')
         .fill('Synthetic flashcard journey data.');
+
     await page.getByLabel('Translate from').selectOption('en');
     await page.getByLabel('Translate to').selectOption('es');
     await page.getByRole('button', { name: 'Create dictionary' }).click();
@@ -117,6 +130,7 @@ async function createArabicDictionaryWithLongCard(
         .getByRole('main')
         .getByRole('button', { name: 'New dictionary', exact: true })
         .click();
+
     await page.getByLabel('Name').fill(name);
     await page.getByLabel('Description').fill('Synthetic RTL card data.');
     await page.getByLabel('Translate from').selectOption('ar');
@@ -128,6 +142,7 @@ async function createArabicDictionaryWithLongCard(
     await page
         .getByLabel(/^Translation/)
         .fill('A deliberately long Arabic flashcard.');
+
     await page.getByRole('button', { name: 'Create card' }).click();
     await expect(page.getByText('Card saved.', { exact: true })).toBeVisible();
     await expect(
@@ -140,6 +155,7 @@ async function openCardSetup(page: Page) {
     await page.getByRole('menuitem', { name: 'Cards', exact: true }).click();
     const setup = page.getByRole('dialog', { name: 'Train with cards' });
     await expect(setup).toBeVisible();
+
     return setup;
 }
 
@@ -160,6 +176,7 @@ async function createSharingLink(
             response.url().endsWith('/share-key/rotate') &&
             response.status() === 200,
     );
+
     await page.getByRole('button', { name: 'More dictionary actions' }).click();
     await page.getByRole('menuitem', { name: 'Sharing', exact: true }).click();
     await page.getByRole('button', { name: 'Create sharing link' }).click();
@@ -167,6 +184,7 @@ async function createSharingLink(
     const payload = (await response.json()) as {
         capability: { shareId: string; shareKey: string };
     };
+
     return payload.capability;
 }
 
@@ -184,8 +202,10 @@ async function signedInSharedPage(
         syntheticEmail(testInfo, label),
         `/shared/dictionaries/${shareId}`,
     );
+
     await page.goto(`/shared/dictionaries/${shareId}#${shareKey}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
     return { context, page };
 }
 
@@ -198,11 +218,28 @@ test.describe('flashcard training journeys', () => {
         const assertNoBrowserErrors = captureBrowserErrors(page);
         const name = `Owner cards ${runId}`;
         await installSpeechAudioProbe(page.context());
+        const verification = page.waitForResponse(
+            (response) =>
+                response.url().endsWith('/auth/email-verification/verify') &&
+                response.status() === 200,
+        );
+
         await signUpAndVerify(
             page,
             syntheticEmail(testInfo, 'owner'),
             '/dictionaries',
         );
+
+        const { AuthenticationSuccessResponseSchema } =
+            await import('@languon/contracts');
+        const verified = AuthenticationSuccessResponseSchema.parse(
+            await (await verification).json(),
+        );
+
+        // Playback admission requires the same synthetic prices as other
+        // pronunciation journeys, even when the learner is not charged.
+        await speechCreditFixture(verified.user.id, 'setup-provider');
+
         await createDictionaryWithCard(page, name);
 
         const setup = await openCardSetup(page);
@@ -214,15 +251,18 @@ test.describe('flashcard training journeys', () => {
         await expect(
             setup.getByText('Eligible', { exact: true }),
         ).toBeVisible();
+
         await expect(setup.getByText('Skipped', { exact: true })).toBeVisible();
         await expect(
             setup.getByText('With fallback', { exact: true }),
         ).toBeVisible();
+
         await setup.getByRole('button', { name: 'Start', exact: true }).click();
 
         const practice = page.getByRole('dialog', {
             name: `Card practice · ${name}`,
         });
+
         await expect(practice).toBeVisible();
         const bounds = await practice.boundingBox();
         expect(bounds?.width).toBe(page.viewportSize()!.width);
@@ -234,6 +274,7 @@ test.describe('flashcard training journeys', () => {
                 exact: true,
             }),
         ).toHaveCount(1);
+
         await playSpeechControl(
             page,
             practice.getByRole('button', {
@@ -242,16 +283,19 @@ test.describe('flashcard training journeys', () => {
             }),
             'flashcard-field',
         );
+
         await practice.getByRole('button', { name: 'Show back' }).click();
         await expect(
             practice.getByRole('button', { name: 'Show front' }),
         ).toBeVisible();
+
         await expect(
             practice.getByRole('button', {
                 name: 'Play pronunciation',
                 exact: true,
             }),
         ).toHaveCount(1);
+
         await playSpeechControl(
             page,
             practice.getByRole('button', {
@@ -260,6 +304,7 @@ test.describe('flashcard training journeys', () => {
             }),
             'flashcard-field',
         );
+
         await practice.getByRole('button', { name: 'Dialog view' }).click();
         await expect(practice).toBeVisible();
         const dialogBounds = await practice.boundingBox();
@@ -270,63 +315,78 @@ test.describe('flashcard training journeys', () => {
         await expect(
             practice.getByRole('button', { name: 'End', exact: true }),
         ).toBeInViewport();
+
         const screenshot = testInfo.outputPath('flashcard-viewport-dialog.png');
         await page.screenshot({ path: screenshot });
         await testInfo.attach('flashcard-viewport-dialog', {
             path: screenshot,
             contentType: 'image/png',
         });
+
         await practice
             .getByRole('button', { name: 'Known', exact: true })
             .click();
+
         await expect(
             page.getByRole('heading', { name: 'Round 1 complete' }),
         ).toBeVisible();
+
         await page.getByRole('button', { name: 'Undo last rating' }).click();
         await expect(practice).toBeVisible();
         await practice
             .getByRole('button', { name: 'Known', exact: true })
             .click();
+
         await expect(
             page.getByRole('heading', { name: 'Round 1 complete' }),
         ).toBeVisible();
+
         await page.getByRole('button', { name: 'Finish', exact: true }).click();
         await expect(practice).not.toBeVisible();
         await page
             .getByRole('button', { name: 'More dictionary actions' })
             .click();
+
         await page
             .getByRole('menuitem', { name: 'My practice history', exact: true })
             .click();
+
         const history = page.getByRole('dialog', {
             name: 'My practice history',
             exact: true,
         });
+
         await expect(
             history.getByRole('tab', { name: 'Flashcards', exact: true }),
         ).toHaveAttribute('aria-selected', 'true');
+
         await expect(
             history.getByRole('img', {
                 name: '1 Known, 0 Practise again, 0 Unstudied of 1',
             }),
         ).toBeVisible();
+
         await page.setViewportSize({ width: 390, height: 844 });
         const historyBounds = await history.boundingBox();
         expect(historyBounds!.x).toBeGreaterThanOrEqual(0);
         expect(historyBounds!.x + historyBounds!.width).toBeLessThanOrEqual(
             390,
         );
+
         const historyScreenshot = testInfo.outputPath(
             'flashcard-saved-history-mobile.png',
         );
+
         await page.screenshot({ path: historyScreenshot });
         await testInfo.attach('flashcard-saved-history-mobile', {
             path: historyScreenshot,
             contentType: 'image/png',
         });
+
         await history
             .getByRole('button', { name: 'Close dialog', exact: true })
             .click();
+
         await page.setViewportSize({ width: 1280, height: 720 });
 
         await page.reload();
@@ -334,9 +394,11 @@ test.describe('flashcard training journeys', () => {
         await expect(
             restoredSetup.getByLabel('Dictionary order'),
         ).toBeChecked();
+
         await restoredSetup
             .getByRole('button', { name: 'Cancel', exact: true })
             .click();
+
         assertNoBrowserErrors();
     });
 
@@ -352,6 +414,7 @@ test.describe('flashcard training journeys', () => {
             syntheticEmail(testInfo, 'shared-owner'),
             '/dictionaries',
         );
+
         await createDictionaryWithCard(page, name);
         const { shareId, shareKey } = await createSharingLink(page);
 
@@ -367,15 +430,19 @@ test.describe('flashcard training journeys', () => {
         const firstPractice = first.page.getByRole('dialog', {
             name: `Card practice · ${name}`,
         });
+
         await firstPractice
             .getByRole('button', { name: 'Known', exact: true })
             .click();
+
         await expect(
             first.page.getByRole('heading', { name: 'Round 1 complete' }),
         ).toBeVisible();
+
         await first.page
             .getByRole('button', { name: 'Finish', exact: true })
             .click();
+
         assertFirstBrowserErrors();
 
         const second = await signedInSharedPage(
@@ -390,17 +457,21 @@ test.describe('flashcard training journeys', () => {
         const secondPractice = second.page.getByRole('dialog', {
             name: `Card practice · ${name}`,
         });
+
         await secondPractice
             .getByRole('button', { name: 'Practise again', exact: true })
             .click();
+
         await expect(
             second.page.getByRole('img', {
                 name: '0 Known, 1 Practise again, 0 Unstudied of 1',
             }),
         ).toBeVisible();
+
         await second.page
             .getByRole('button', { name: 'Finish', exact: true })
             .click();
+
         assertSecondBrowserErrors();
 
         await first.context.close();
@@ -421,6 +492,7 @@ test.describe('flashcard training journeys', () => {
             syntheticEmail(testInfo, 'anonymous-owner'),
             '/dictionaries',
         );
+
         await createDictionaryWithCard(page, name);
         const { shareId, shareKey } = await createSharingLink(page);
 
@@ -439,37 +511,47 @@ test.describe('flashcard training journeys', () => {
                 learningWrites.push(`${request.method()} ${url.pathname}`);
             }
         });
+
         await anonymous.goto(`/shared/dictionaries/${shareId}#${shareKey}`);
         await expect(
             anonymous.getByRole('button', { name: /^Play / }),
         ).toHaveCount(0);
+
         await startPractice(anonymous);
         const practice = anonymous.getByRole('dialog', {
             name: `Card practice · ${name}`,
         });
+
         await practice
             .getByRole('button', { name: 'Practise again', exact: true })
             .click();
+
         await expect(
             anonymous.getByRole('heading', { name: 'Round 1 complete' }),
         ).toBeVisible();
+
         await anonymous
             .getByRole('button', { name: /Practise again \(1\)/ })
             .click();
+
         await expect(practice).toBeVisible();
         await expect(
             practice.getByRole('button', { name: /^Play / }),
         ).toHaveCount(0);
+
         await practice
             .getByRole('button', { name: 'Known', exact: true })
             .click();
+
         await expect(
             anonymous.getByRole('heading', { name: 'Round 2 complete' }),
         ).toBeVisible();
+
         expect(learningWrites).toEqual([]);
         await anonymous
             .getByRole('button', { name: 'Finish', exact: true })
             .click();
+
         assertAnonymousBrowserErrors();
         await anonymousContext.close();
         assertNoOwnerBrowserErrors();
@@ -491,17 +573,20 @@ test.describe('flashcard training journeys', () => {
             syntheticEmail(testInfo, 'owner'),
             '/dictionaries',
         );
+
         const assertNoBrowserErrors = captureBrowserErrors(page);
         await createArabicDictionaryWithLongCard(page, name);
         await page
             .getByRole('button', { name: 'Add card', exact: true })
             .click();
+
         await page.getByLabel(/^Source word or phrase/).fill('التالي');
         await page.getByLabel(/^Translation/).fill('Next card');
         await page.getByRole('button', { name: 'Create card' }).click();
         await expect(
             page.getByRole('dialog', { name: 'Add card' }),
         ).not.toBeVisible();
+
         const setup = await openCardSetup(page);
         await setup.getByLabel('Dictionary order').check();
         const front = setup.getByRole('group', { name: 'Front' });
@@ -511,11 +596,13 @@ test.describe('flashcard training journeys', () => {
         await expect(
             page.getByRole('dialog', { name: `Card practice · ${name}` }),
         ).toBeVisible();
+
         // This is a CSS rendering-scale surrogate for 200% zoom; browser chrome
         // zoom remains outside Playwright's durable page contract.
         await page.evaluate(() => {
             document.documentElement.style.zoom = '2';
         });
+
         const practice = page.getByRole('dialog', {
             name: `Card practice · ${name}`,
         });
@@ -534,10 +621,12 @@ test.describe('flashcard training journeys', () => {
                     ) <= 0.001,
             ),
         ).toBe(true);
+
         await practice.getByRole('button', { name: 'Show back' }).focus();
         await expect(
             practice.getByRole('button', { name: 'Show back' }),
         ).toBeFocused();
+
         await expect
             .poll(() =>
                 page.evaluate(() => ({
@@ -548,11 +637,13 @@ test.describe('flashcard training journeys', () => {
                 })),
             )
             .toEqual({ effectiveViewport: 720, pageOverflows: false });
+
         expect(
             await practice.evaluate(
                 (element) => element.scrollWidth / 2 <= element.clientWidth,
             ),
         ).toBe(true);
+
         expect(
             await rtlText.evaluate(
                 (element) =>
@@ -567,6 +658,7 @@ test.describe('flashcard training journeys', () => {
                 (element) => element.scrollWidth / 2 <= element.clientWidth,
             ),
         ).toBe(true);
+
         await testInfo.attach('rtl-200-css-scale', {
             body: await page.screenshot(),
             contentType: 'image/png',
@@ -575,14 +667,17 @@ test.describe('flashcard training journeys', () => {
         await page.evaluate(() => {
             document.documentElement.style.zoom = '';
         });
+
         await practice.getByRole('button', { name: 'Dialog view' }).click();
         await page.setViewportSize({ width: 720, height: 500 });
         await expect(
             practice.getByRole('button', { name: 'End', exact: true }),
         ).toBeInViewport();
+
         await expect(
             practice.getByRole('button', { name: 'Known', exact: true }),
         ).toBeInViewport();
+
         await page.setViewportSize({ width: 390, height: 844 });
         const cdp = await context.newCDPSession(page);
         const faceBounds = await cardFace.boundingBox();
@@ -590,6 +685,7 @@ test.describe('flashcard training journeys', () => {
         const scrollTop = await cardFace.evaluate(
             (element) => element.scrollTop,
         );
+
         await cdp.send('Input.dispatchTouchEvent', {
             type: 'touchStart',
             touchPoints: [
@@ -600,6 +696,7 @@ test.describe('flashcard training journeys', () => {
                 },
             ],
         });
+
         await cdp.send('Input.dispatchTouchEvent', {
             type: 'touchMove',
             touchPoints: [
@@ -610,23 +707,29 @@ test.describe('flashcard training journeys', () => {
                 },
             ],
         });
+
         await cdp.send('Input.dispatchTouchEvent', {
             type: 'touchEnd',
             touchPoints: [],
         });
+
         await expect
             .poll(() => cardFace.evaluate((element) => element.scrollTop))
             .toBeGreaterThan(scrollTop);
+
         await expect(
             page.getByRole('heading', { name: 'Round 1 complete' }),
         ).not.toBeVisible();
+
         await expect(
             practice.getByRole('button', { name: 'Known', exact: true }),
         ).toBeVisible();
+
         await testInfo.attach('rtl-mobile-touch', {
             body: await page.screenshot(),
             contentType: 'image/png',
         });
+
         await page.emulateMedia({ reducedMotion: 'no-preference' });
 
         const bounds = await card.boundingBox();
@@ -635,14 +738,17 @@ test.describe('flashcard training journeys', () => {
         const ratingGate = new Promise<void>((resolve) => {
             releaseRating = resolve;
         });
+
         await page.route('**/flashcards/attempts', async (route) => {
             await ratingGate;
             await route.continue();
         });
+
         const touchY = Math.max(
             bounds!.y + 24,
             Math.min(bounds!.y + bounds!.height - 24, 420),
         );
+
         await cdp.send('Input.dispatchTouchEvent', {
             type: 'touchStart',
             touchPoints: [
@@ -653,6 +759,7 @@ test.describe('flashcard training journeys', () => {
                 },
             ],
         });
+
         for (const x of [
             bounds!.x + bounds!.width * 0.4,
             bounds!.x + bounds!.width * 0.7,
@@ -663,6 +770,7 @@ test.describe('flashcard training journeys', () => {
                 touchPoints: [{ x, y: touchY, id: 2 }],
             });
         }
+
         // CDP delivery can precede React's final move paint. Sample the actual
         // released position only after that paint, not a coalesced earlier move.
         await expect
@@ -676,16 +784,20 @@ test.describe('flashcard training journeys', () => {
                 ),
             )
             .toBe(Math.round(bounds!.width - 48));
+
         const releaseTransform = await card.evaluate(
             (element) => getComputedStyle(element).transform,
         );
+
         await cdp.send('Input.dispatchTouchEvent', {
             type: 'touchEnd',
             touchPoints: [],
         });
+
         await expect(
             practice.getByText('Saving…', { exact: true }),
         ).toBeVisible();
+
         await expect(card).toHaveCSS('opacity', '0');
         await expect(card).toHaveCSS('transform', releaseTransform);
         releaseRating();
@@ -697,9 +809,11 @@ test.describe('flashcard training journeys', () => {
         await practice
             .getByRole('button', { name: 'Known', exact: true })
             .click();
+
         await expect(
             page.getByRole('heading', { name: 'Round 1 complete' }),
         ).toBeVisible();
+
         await page.getByRole('button', { name: 'Finish', exact: true }).click();
         await expect(practice).not.toBeVisible();
         assertNoBrowserErrors();

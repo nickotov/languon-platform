@@ -20,17 +20,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         let database: ReturnType<
             typeof createDrizzleDatabase<typeof databaseSchema>
         >;
+
         beforeAll(() => {
             client = createTestPostgresClient();
             database = createDrizzleDatabase(client, databaseSchema);
         });
+
         beforeEach(async () => {
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
         });
+
         afterAll(async () => {
             await client?.end();
         });
+
         it.each(['deepseek', 'evolink'])(
             'rejects foreign USD/credit fields for %s even from an authorized restricted worker',
             async (providerId) => {
@@ -39,6 +43,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await database
                     .insert(usersTable)
                     .values({ id: ownerId, status: 'active' });
+
                 await database.insert(aiProviderPriceRevisionsTable).values({
                     id: randomUUID(),
                     providerId,
@@ -89,6 +94,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         },
                     },
                 });
+
                 const action = await database.transaction((tx) =>
                     reserveConversationActionFixture(tx, {
                         ownerId,
@@ -131,9 +137,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     await client.unsafe(
                         `GRANT USAGE ON SCHEMA public TO "${role}"`,
                     );
+
                     await client.unsafe(
                         `GRANT EXECUTE ON FUNCTION public.languon_observe_native_text_call(uuid,jsonb) TO "${role}"`,
                     );
+
                     for (const monetaryField of [
                         'providerCostUsd',
                         'providerCreditsConsumed',
@@ -147,13 +155,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             'Reported monetary evidence is not supported',
                         );
                     }
+
                     expect(
                         await client`select provider_usage from ai_credit_native_call_dispatches where id=${callId}::uuid`,
                     ).toMatchObject([{ provider_usage: null }]);
+
                     await client.begin(async (tx) => {
                         await tx.unsafe(`SET LOCAL ROLE "${role}"`);
                         await tx`select languon_observe_native_text_call(${callId}::uuid,${JSON.stringify({ usage: { requests: 1, inputTokens: 1, outputTokens: 1 } })}::jsonb)`;
                     });
+
                     expect(
                         await client`select provider_usage from ai_credit_native_call_dispatches where id=${callId}::uuid`,
                     ).toMatchObject([

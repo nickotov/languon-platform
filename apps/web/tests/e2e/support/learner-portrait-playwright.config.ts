@@ -1,9 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
-if (process.env.LEARNER_PORTRAIT_WEB_RUNNER !== 'true')
+if (process.env.LEARNER_PORTRAIT_WEB_RUNNER !== 'true') {
     throw new Error(
         'Run learner portrait Playwright through pnpm test:e2e:learner-portrait so its exclusive fixture and tracked Next type file cleanup are applied.',
     );
+}
 
 const env = Object.fromEntries(
     Object.entries(process.env).filter(

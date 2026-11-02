@@ -12,6 +12,7 @@ vi.mock(
     '../src/fsd/widgets/contextual-assistant/hooks/use-conversation-stream',
     () => ({ useConversationStream: () => ({}) }),
 );
+
 afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
@@ -36,6 +37,7 @@ it('retains the initial selected passage through delayed creation and restores e
         drafts: [],
         turns: [],
     });
+
     vi.spyOn(conversationApi, 'list').mockResolvedValue({ conversations: [] });
     vi.spyOn(conversationApi, 'detail').mockImplementation(
         async (_token, conversationId) => ({
@@ -43,21 +45,25 @@ it('retains the initial selected passage through delayed creation and restores e
             conversation: { ...detail.conversation, id: conversationId },
         }),
     );
+
     let resolveCreate!: (value: {
         conversation: typeof detail.conversation;
     }) => void;
+
     vi.spyOn(conversationApi, 'create').mockImplementation(
         () =>
             new Promise((resolve) => {
                 resolveCreate = resolve;
             }),
     );
+
     const client = new QueryClient({
         defaultOptions: {
             queries: { retry: false },
             mutations: { retry: false },
         },
     });
+
     function Wrapper({ children }: PropsWithChildren) {
         return (
             <QueryClientProvider client={client}>
@@ -65,12 +71,14 @@ it('retains the initial selected passage through delayed creation and restores e
             </QueryClientProvider>
         );
     }
+
     const request = <T,>(operation: (token: string) => Promise<T>) =>
         operation('synthetic');
     const { result } = renderHook(
         () => useConversation('synthetic-actor', source, request),
         { wrapper: Wrapper },
     );
+
     await waitFor(() => expect(result.current.list.isSuccess).toBe(true));
     act(() => result.current.create.mutate());
     await waitFor(() => expect(resolveCreate).toBeDefined());
@@ -79,10 +87,12 @@ it('retains the initial selected passage through delayed creation and restores e
         label: 'Selected passage',
         content: 'We rested on the bank.',
     };
+
     act(() => {
         result.current.setAttachments([attachment]);
         result.current.setQuestion('Explain this phrase');
     });
+
     await act(async () => resolveCreate({ conversation: detail.conversation }));
     await waitFor(() => expect(result.current.id).toBe(id));
     expect(result.current.attachments).toEqual([attachment]);

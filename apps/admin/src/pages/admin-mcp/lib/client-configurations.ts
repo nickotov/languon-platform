@@ -8,7 +8,9 @@ export function buildClientConfigurations(port: number) {
             'MCP port must be a whole number from 1024 to 65535.',
         );
     }
+
     const endpoint = `http://127.0.0.1:${port}/mcp`;
+
     return {
         codex: `[mcp_servers.languon]\nurl = "${endpoint}"\nbearer_token_env_var = "${tokenEnvironmentVariable}"`,
         claude: JSON.stringify(

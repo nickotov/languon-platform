@@ -57,43 +57,64 @@ export function WorkspaceConflictDialogs({
     if (!hasCurrentTarget) {
         const original =
             liveComparison?.original ?? proposal?.anchor?.originalText;
+
         comparison =
             original !== undefined
                 ? { original, current: proposal?.currentDocument ?? '' }
                 : null;
     }
+
     function openResolve() {
         setConfirmResolve(true);
     }
+
     function closeResolve() {
-        if (!resolving) setConfirmResolve(false);
+        if (!resolving) {
+            setConfirmResolve(false);
+        }
     }
+
     function resolve() {
         onResolve();
         setConfirmResolve(false);
     }
+
     function appendInstead() {
-        if (!proposal) return;
+        if (!proposal) {
+            return;
+        }
+
         const result = editor.current?.applyProposal(
             proposal.text,
             'append',
             undefined,
             format,
         );
-        if (result === 'applied') onCloseProposal();
-        else setFailedProposal(proposal);
+
+        if (result === 'applied') {
+            onCloseProposal();
+        } else {
+            setFailedProposal(proposal);
+        }
     }
+
     function changeFormat(event: ChangeEvent<HTMLInputElement>) {
-        if (!proposal) return;
+        if (!proposal) {
+            return;
+        }
+
         setFormatChoice({
             proposal,
             format: event.target.checked ? 'plain-text' : 'markdown',
         });
+
         setFailedProposal(null);
     }
+
     function newTarget() {
         onNewTarget(format);
     }
+
     return (
         <>
             {workspace.branches.length > 1 && (
@@ -215,6 +236,7 @@ function BranchChoice({
     function choose() {
         onChoose(branch);
     }
+
     return (
         <article className={styles.branch}>
             <h3 dir='auto'>{branch.content.title}</h3>

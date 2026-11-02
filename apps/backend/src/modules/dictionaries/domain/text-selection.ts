@@ -33,11 +33,12 @@ export const SelectionOccurrenceSchema = z
             value.phrase !== value.phrase.trim() ||
             value.startOffset >= value.endOffset ||
             value.sourceLanguageTag === value.targetLanguageTag
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 message: 'Invalid selected occurrence',
             });
+        }
     });
 export type SelectionOccurrence = z.infer<typeof SelectionOccurrenceSchema>;
 export const selectionCardOverrides = {
@@ -64,6 +65,7 @@ export function selectionProviderInput(
         'exampleTranslation',
         ...(effective.transcriptionEnabled ? ['transcription' as const] : []),
     ] as const;
+
     return DictionaryCardAuthoringProviderInputSchema.parse({
         sourceLanguage: selected.sourceLanguageTag,
         targetLanguage: selected.targetLanguageTag,
@@ -96,6 +98,7 @@ export function selectionProviderInput(
         })),
     });
 }
+
 export function selectionCardValues(
     input: ReturnType<typeof selectionProviderInput>,
     value: DictionaryCardAuthoringProviderDelta,
@@ -103,9 +106,13 @@ export function selectionCardValues(
     const delta = validateDictionaryCardAuthoringProviderDelta(input, value);
     const field = (name: string) =>
         delta.suggestions.find((s) => s.field === name)?.value ?? null;
-    for (const required of input.requestedFields)
-        if (required !== 'source' && field(required) === null)
+
+    for (const required of input.requestedFields) {
+        if (required !== 'source' && field(required) === null) {
             throw new Error('Missing requested vocabulary field');
+        }
+    }
+
     return DictionaryGenerationCardValuesSchema.parse({
         source:
             delta.sourceResult?.kind === 'suggested'
@@ -118,6 +125,7 @@ export function selectionCardValues(
         transcription: field('transcription'),
     });
 }
+
 export class TextSelectionError extends Error {
     constructor(
         public readonly code:

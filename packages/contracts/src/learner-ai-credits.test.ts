@@ -13,6 +13,7 @@ describe('learner credit balance contract', () => {
             ).toEqual({ mode: 'limited', availableCredits });
         },
     );
+
     it('requires null for unlimited access', () => {
         expect(
             LearnerAiCreditBalanceSchema.parse({
@@ -21,6 +22,7 @@ describe('learner credit balance contract', () => {
             }),
         ).toEqual({ mode: 'unlimited', availableCredits: null });
     });
+
     it.each([
         { mode: 'limited', availableCredits: null },
         { mode: 'limited', availableCredits: 20.125 },

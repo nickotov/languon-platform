@@ -1,3 +1,4 @@
+import { sentenceWorkerJobs } from './sentence-worker-jobs';
 import { SentenceExerciseSchema } from '@languon/contracts';
 import { and, asc, eq, inArray, or, sql } from 'drizzle-orm';
 import { lockTextAiCapacity } from '../../../../../infrastructure/text-ai/text-ai-capacity';
@@ -61,7 +62,9 @@ export async function sentencePreparationTick(
         context,
     );
 
-    if (!candidate) return !!expired;
+    if (!candidate) {
+        return !!expired;
+    }
 
     return modelPricingTransaction(persistence.database, async (tx) => {
         await lockTextAiCapacity(tx);
@@ -70,7 +73,10 @@ export async function sentencePreparationTick(
         try {
             await authorizeSentence(tx, accessFor(candidate), true);
         } catch (error) {
-            if (!(error instanceof SentenceUnavailableError)) throw error;
+            if (!(error instanceof SentenceUnavailableError)) {
+                throw error;
+            }
+
             accessValid = false;
         }
 
@@ -91,7 +97,10 @@ export async function sentencePreparationTick(
             )
             .for('update');
 
-        if (!row) return false;
+        if (!row) {
+            return false;
+        }
+
         const pause = async (
             pauseReason: NonNullable<Preparation['pauseReason']>,
         ) => {
@@ -104,7 +113,7 @@ export async function sentencePreparationTick(
                 })
                 .where(eq(preparations.id, row.id));
 
-            if (row.activeJobId)
+            if (row.activeJobId) {
                 await tx
                     .update(jobs)
                     .set({
@@ -117,6 +126,7 @@ export async function sentencePreparationTick(
                             inArray(jobs.executionState, ['queued', 'running']),
                         ),
                     );
+            }
         };
         const partitions = await sentencePreparationRows(tx, row.id);
 
@@ -129,8 +139,8 @@ export async function sentencePreparationTick(
         if (row.activeJobId) {
             const [job] = await tx
                 .select()
-                .from(jobs)
-                .where(eq(jobs.id, row.activeJobId));
+                .from(sentenceWorkerJobs)
+                .where(eq(sentenceWorkerJobs.id, row.activeJobId));
 
             if (job && ['queued', 'running'].includes(job.executionState)) {
                 await tx
@@ -198,25 +208,31 @@ export async function sentencePreparationTick(
                 job.executionState === 'failed' ||
                 job.executionState === 'cancelled';
 
-            if (stopping || failed)
+            if (stopping || failed) {
                 await sentencePreparationSettleParent(
                     tx,
                     row,
                     context.now,
                     stopping && current!.pauseReason === 'user',
                 );
+            }
+
+            let pauseReason: Preparation['pauseReason'] = null;
+            if (stopping) {
+                pauseReason = current!.pauseReason;
+            } else if (failed) {
+                pauseReason =
+                    job?.failureCategory === 'credits_exhausted'
+                        ? 'credits'
+                        : 'provider';
+            }
+
             await tx
                 .update(preparations)
                 .set({
                     activeJobId: null,
                     state: stopping || failed ? 'paused' : 'running',
-                    pauseReason: stopping
-                        ? current!.pauseReason
-                        : failed
-                          ? job?.failureCategory === 'credits_exhausted'
-                              ? 'credits'
-                              : 'provider'
-                          : null,
+                    pauseReason,
                     updatedAt: context.now,
                 })
                 .where(eq(preparations.id, row.id));
@@ -255,8 +271,10 @@ export async function sentencePreparationTick(
             lifecycleCancelled ||
             ['stopping', 'paused'].includes(currentPreparation!.state)
         ) {
-            if (!accessValid || lifecycleCancelled)
+            if (!accessValid || lifecycleCancelled) {
                 await sentencePreparationSettleParent(tx, row, context.now);
+            }
+
             await tx
                 .update(preparations)
                 .set({ state: 'paused', updatedAt: context.now })
@@ -265,13 +283,15 @@ export async function sentencePreparationTick(
             return true;
         }
 
-        for (const batch of partitions)
+        for (const batch of partitions) {
             await sentencePreparationRefreshManifest(
                 persistence,
                 tx,
                 row,
                 batch,
             );
+        }
+
         const pending = partitions.find(
             (batch) =>
                 covered(batch).size < batch.entries.length &&
@@ -368,8 +388,10 @@ export async function sentencePreparationTick(
                             row.learnerId,
                             exercise.id,
                         ))
-                    )
+                    ) {
                         continue;
+                    }
+
                     const linked = await sentenceExerciseEntries(
                         tx,
                         exercise.id,
@@ -387,8 +409,10 @@ export async function sentencePreparationTick(
                         ) ||
                         !linked.some((entry) => !ready.has(entry.entryId)) ||
                         !(await isSentenceCurrent(tx, exercise.id))
-                    )
+                    ) {
                         continue;
+                    }
+
                     pending.manifest.push({
                         exerciseId: exercise.id,
                         entryIds: linked.map((entry) => entry.entryId),
@@ -396,14 +420,17 @@ export async function sentencePreparationTick(
                     });
 
                     linked.forEach((entry) => ready.add(entry.entryId));
-                    if (ready.size === pending.entries.length) break;
+                    if (ready.size === pending.entries.length) {
+                        break;
+                    }
                 }
 
-                if (saved.length)
+                if (saved.length) {
                     cursor = {
                         createdAt: saved.at(-1)!.createdAt,
                         id: saved.at(-1)!.id,
                     };
+                }
             }
 
             await tx
@@ -466,18 +493,22 @@ export async function sentencePreparationTick(
                     context,
                 );
 
-                if (!jobId) throw new SentenceCreditsExhaustedError();
+                if (!jobId) {
+                    throw new SentenceCreditsExhaustedError();
+                }
             });
         } catch (error) {
             if (error instanceof SentenceCreditsExhaustedError) {
                 await sentencePreparationSettleParent(tx, row, context.now);
 
                 await pause('budget');
-            } else if (error instanceof SentenceCapacityUnavailableError)
+            } else if (error instanceof SentenceCapacityUnavailableError) {
                 await pause('capacity');
-            else if (error instanceof SentenceModelUnavailableError)
+            } else if (error instanceof SentenceModelUnavailableError) {
                 await pause('model');
-            else throw error;
+            } else {
+                throw error;
+            }
         }
 
         context.signal.throwIfAborted();

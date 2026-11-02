@@ -30,12 +30,14 @@ export function nativePrice(
         sourceUrl,
         sourceReference,
     };
+
     ProviderPricePublishRequestSchema.parse({
         ...price,
         effectiveAt: rules.validFrom,
         expectedVersion: 0,
         reason: 'Verified official provider price source',
     });
+
     return price;
 }
 
@@ -53,5 +55,6 @@ export function publishedRate(value: unknown): string {
     const parsed = ProviderNativeRateSchema.parse(value);
     const [whole, fraction = ''] = parsed.split('.');
     const tail = fraction.replace(/0+$/, '');
+
     return tail ? `${whole}.${tail}` : whole!;
 }

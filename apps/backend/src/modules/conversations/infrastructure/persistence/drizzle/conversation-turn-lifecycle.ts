@@ -36,8 +36,14 @@ export async function conversationMaintainAccounting(
                 )
                 .for('update', { skipLocked: true });
 
-            if (!turn) continue;
-            if (!['queued', 'running'].includes(turn.status)) continue;
+            if (!turn) {
+                continue;
+            }
+
+            if (!['queued', 'running'].includes(turn.status)) {
+                continue;
+            }
+
             await conversationTerminal(
                 persistence,
                 tx,
@@ -81,7 +87,10 @@ export async function conversationStop(
                 .where(and(eq(turns.id, turnId), eq(turns.conversationId, id)))
                 .for('update');
 
-            if (!row) throw conversationUnavailable();
+            if (!row) {
+                throw conversationUnavailable();
+            }
+
             if (row.status === 'queued') {
                 row.failureCode = 'explicit_stop';
                 await conversationTerminal(
@@ -91,7 +100,7 @@ export async function conversationStop(
                     'cancelled',
                     'cancelled',
                 );
-            } else if (row.status === 'running')
+            } else if (row.status === 'running') {
                 await tx
                     .update(turns)
                     .set({
@@ -100,6 +109,8 @@ export async function conversationStop(
                         updatedAt: persistence.now(),
                     })
                     .where(eq(turns.id, turnId));
+            }
+
             const [result] = await tx
                 .select()
                 .from(turns)

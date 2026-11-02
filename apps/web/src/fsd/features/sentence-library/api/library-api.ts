@@ -34,21 +34,23 @@ export function createLibraryApi(
         target.kind === 'owner'
             ? `/learning/dictionaries/${encodeURIComponent(target.dictionaryId)}/sentences/library`
             : `/learning/shared-dictionaries/${encodeURIComponent(target.shareId)}/sentences/library`;
+
     async function request<T>(
         path: string,
         schema: { parse(value: unknown): T },
         body?: unknown,
     ): Promise<T> {
-        if (target.kind === 'owner')
+        if (target.kind === 'owner') {
             DictionaryIdParamsSchema.parse({
                 dictionaryId: target.dictionaryId,
             });
-        else {
+        } else {
             SharedDictionaryParamsSchema.parse({ shareId: target.shareId });
             DictionaryShareKeyHeadersSchema.parse({
                 'x-languon-share-key': target.shareKey,
             });
         }
+
         return requestWithSession(async (token) => {
             const response = await fetch(`${base}${root}${path}`, {
                 method: body === undefined ? 'GET' : 'POST',
@@ -70,6 +72,7 @@ export function createLibraryApi(
             const payload: unknown = await response.json();
             if (!response.ok) {
                 const error = SentenceErrorResponseSchema.safeParse(payload);
+
                 throw new LibraryApiError(
                     response.status,
                     error.success
@@ -77,15 +80,21 @@ export function createLibraryApi(
                         : 'service_unavailable',
                 );
             }
+
             return schema.parse(payload);
         });
     }
+
     return {
         list: (query) => {
             const parsed = SentenceLibraryQuerySchema.parse(query);
             const params = new URLSearchParams();
-            for (const [k, v] of Object.entries(parsed))
-                if (v !== undefined) params.set(k, String(v));
+            for (const [k, v] of Object.entries(parsed)) {
+                if (v !== undefined) {
+                    params.set(k, String(v));
+                }
+            }
+
             return request(`?${params}`, SentenceLibraryListResponseSchema);
         },
         detail: (id) =>

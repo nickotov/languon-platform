@@ -77,10 +77,12 @@ export class DrizzleProviderPriceStore {
             .orderBy(desc(prices.version))
             .limit(1);
 
-        if ((latest?.version ?? 0) !== input.expectedVersion)
+        if ((latest?.version ?? 0) !== input.expectedVersion) {
             throw new AccountingConflictError(
                 'Provider price revision changed.',
             );
+        }
+
         const { expectedVersion, ...data } = input;
         const [saved] = await tx
             .insert(prices)
@@ -97,7 +99,9 @@ export class DrizzleProviderPriceStore {
             })
             .returning();
 
-        if (!saved) throw new Error('Provider price publication failed.');
+        if (!saved) {
+            throw new Error('Provider price publication failed.');
+        }
 
         return dto(saved);
     }
@@ -109,7 +113,11 @@ export async function pinProviderPrice(
     input: {
         providerId: string;
         modelId: string;
-        meter: 'text-tokens' | 'speech-characters' | 'speech-tokens';
+        meter:
+            | 'text-tokens'
+            | 'speech-characters'
+            | 'speech-tokens'
+            | 'audio-duration';
         at: Date;
     },
 ): Promise<ProviderPrice | null> {

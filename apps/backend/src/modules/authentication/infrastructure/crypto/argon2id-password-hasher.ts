@@ -47,6 +47,7 @@ export class Argon2idPasswordHasher implements PasswordHasher {
             parallelism: options.parallelism ?? minimumParallelism,
             timeCost: options.timeCost ?? minimumTimeCost,
         };
+
         this.parametersVersion = options.parametersVersion ?? 1;
         validateOptions(this.parameters, this.parametersVersion);
     }
@@ -70,7 +71,9 @@ export class Argon2idPasswordHasher implements PasswordHasher {
                 },
                 relay.signal,
             );
+
             assertNotAborted(options?.signal);
+
             return { encoded, parametersVersion: this.parametersVersion };
         } finally {
             relay.release();
@@ -91,6 +94,7 @@ export class Argon2idPasswordHasher implements PasswordHasher {
                 undefined,
                 relay.signal,
             );
+
             assertNotAborted(options?.signal);
 
             return {
@@ -117,20 +121,32 @@ export class Argon2idPasswordHasher implements PasswordHasher {
 }
 
 function assertNotAborted(signal: AbortSignal | undefined): void {
-    if (signal?.aborted) throw new DOMException('The authentication request was cancelled.', 'AbortError');
+    if (signal?.aborted) {
+        throw new DOMException(
+            'The authentication request was cancelled.',
+            'AbortError',
+        );
+    }
 }
 
 function relayAbortSignal(source: AbortSignal | undefined): {
     release(): void;
     signal: AbortSignal | undefined;
 } {
-    if (!source) return { release: () => undefined, signal: undefined };
+    if (!source) {
+        return { release: () => undefined, signal: undefined };
+    }
+
     // The native Argon2 operation consumes its signal; each operation needs a
     // fresh signal even when one HTTP request performs verify followed by hash.
     const controller = new AbortController();
     const forwardAbort = () => controller.abort(source.reason);
-    if (source.aborted) forwardAbort();
-    else source.addEventListener('abort', forwardAbort, { once: true });
+    if (source.aborted) {
+        forwardAbort();
+    } else {
+        source.addEventListener('abort', forwardAbort, { once: true });
+    }
+
     return {
         release: () => source.removeEventListener('abort', forwardAbort),
         signal: controller.signal,
@@ -154,6 +170,7 @@ function hasCurrentParameters(
     const parameters = new Map(
         (sections[3] ?? '').split(',').map((pair) => {
             const [name, value] = pair.split('=');
+
             return [name, Number(value)] as const;
         }),
     );

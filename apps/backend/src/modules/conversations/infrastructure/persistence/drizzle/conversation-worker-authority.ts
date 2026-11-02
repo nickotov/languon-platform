@@ -75,7 +75,10 @@ export async function conversationFencedOperation<T>(
             ),
         );
 
-    if (!candidate) throw conversationUnavailable();
+    if (!candidate) {
+        throw conversationUnavailable();
+    }
+
     await persistence.dependencies.sources.resolve(
         tx,
         operation.ownerId,
@@ -103,11 +106,12 @@ export async function conversationFencedOperation<T>(
         !row.leaseUntil ||
         row.leaseUntil <= persistence.now() ||
         (!allowCancelled && row.cancelRequested)
-    )
+    ) {
         throw new ConversationError(
             'operation_interrupted',
             'The response is no longer active.',
         );
+    }
 
     return run(tx, row);
 }

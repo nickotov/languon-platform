@@ -49,6 +49,7 @@ export function createSentencePreparationApi(
             ),
         preparationBatches: (id, input) => {
             const query = SentencePreparationBatchesQuerySchema.parse(input);
+
             return request(
                 `${prefix}/preparations/${pathId(id)}/batches?offset=${query.offset}&limit=${query.limit}`,
                 SentencePreparationBatchesResponseSchema,

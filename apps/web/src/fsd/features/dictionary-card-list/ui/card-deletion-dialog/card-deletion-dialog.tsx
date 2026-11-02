@@ -23,7 +23,9 @@ export function CardDeletionDialog({
 
     const target = deletion.deletion;
 
-    if (!target) return null;
+    if (!target) {
+        return null;
+    }
 
     const count = target.kind === 'all' ? target.count : target.cards.length;
 

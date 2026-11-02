@@ -31,6 +31,7 @@ const document = {
         editedPairIds: [],
     },
 } as unknown as TextDocument;
+
 function stubWorkspace(overrides: Partial<TextWorkspace> = {}): TextWorkspace {
     return {
         input,
@@ -58,6 +59,7 @@ function stubWorkspace(overrides: Partial<TextWorkspace> = {}): TextWorkspace {
         ...overrides,
     } as unknown as TextWorkspace;
 }
+
 describe('workspace pending-save controls and failed-job recovery', () => {
     it('locks all editable fields throughout a delayed save, preserving the submitted snapshot', async () => {
         let resolve!: (value: { text: TextDocument }) => void;
@@ -92,6 +94,7 @@ describe('workspace pending-save controls and failed-job recovery', () => {
                 setInput,
                 editPair,
             });
+
             return (
                 <>
                     <button onClick={() => void state.save()}>
@@ -107,25 +110,33 @@ describe('workspace pending-save controls and failed-job recovery', () => {
                 </>
             );
         }
+
         const view = render(<Harness />);
         fireEvent.click(screen.getByText('Start save'));
         expect(screen.getByLabelText('Title')).toBeDisabled();
-        for (const field of view.container.querySelectorAll('textarea,select'))
+        for (const field of view.container.querySelectorAll(
+            'textarea,select',
+        )) {
             expect(field).toBeDisabled();
+        }
+
         expect(
             screen.getByRole('button', { name: 'Detect language' }),
         ).toBeDisabled();
+
         expect(setInput).not.toHaveBeenCalled();
         expect(editPair).not.toHaveBeenCalled();
         await act(async () => {
             resolve({ text: document });
         });
+
         expect(screen.getByLabelText('Title')).toBeEnabled();
         expect(adopt).toHaveBeenCalledWith(document);
         expect(save).toHaveBeenCalledTimes(1);
         view.unmount();
         vi.restoreAllMocks();
     });
+
     it('offers error dismissal and capacity shortening without changing saved text', () => {
         const clear = vi.fn();
         const shortenSource = vi.fn();
@@ -142,15 +153,18 @@ describe('workspace pending-save controls and failed-job recovery', () => {
             } as unknown as TextWorkspace['translation'],
             shortenSource,
         });
+
         render(<WorkspaceBanners ws={ws} />);
         fireEvent.click(screen.getByRole('button', { name: 'Dismiss error' }));
         expect(clear).toHaveBeenCalledOnce();
         fireEvent.click(
             screen.getByRole('button', { name: 'Shorten the text' }),
         );
+
         expect(shortenSource).toHaveBeenCalledOnce();
         expect(ws.document?.sourceText).toBe(input.sourceText);
     });
+
     it('switches the compact composer back to Source before shortening a failed translation', () => {
         const shortenSource = vi.fn();
         const running = stubWorkspace({
@@ -166,12 +180,15 @@ describe('workspace pending-save controls and failed-job recovery', () => {
         function ComposerHarness() {
             const [ws, setWs] = useState(running);
             setWorkspace = setWs;
+
             return <WorkspaceCompose ws={ws} />;
         }
+
         const view = render(<ComposerHarness />);
         expect(
             screen.getByRole('tab', { name: 'Translation' }),
         ).toHaveAttribute('aria-selected', 'true');
+
         const failed = stubWorkspace({
             shortenSource,
             translation: {
@@ -185,20 +202,25 @@ describe('workspace pending-save controls and failed-job recovery', () => {
                 clear: vi.fn(),
             } as unknown as TextWorkspace['translation'],
         });
+
         act(() => setWorkspace(failed));
         expect(
             screen.getByRole('tab', { name: 'Translation' }),
         ).toHaveAttribute('aria-selected', 'true');
+
         fireEvent.click(
             screen.getByRole('button', { name: 'Shorten the text' }),
         );
+
         expect(
             screen.getByRole('tab', { name: 'Source text' }),
         ).toHaveAttribute('aria-selected', 'true');
+
         expect(view.container.querySelector('[data-tab]')).toHaveAttribute(
             'data-tab',
             'source',
         );
+
         expect(shortenSource).toHaveBeenCalledOnce();
     });
 });

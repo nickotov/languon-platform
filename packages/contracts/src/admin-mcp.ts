@@ -33,6 +33,7 @@ const positiveAmount = z
 const creditCeiling = z
     .object({ perOperation: positiveAmount, perDay: positiveAmount })
     .strict();
+
 export const adminMcpLimitsSchema = z
     .object({
         modelChecks: z
@@ -80,20 +81,24 @@ export const adminMcpIssueTokenSchema = z
             ['credits.revoke', 'creditRevocations'],
             ['spending-limits.write', 'spendingLimits'],
         ] as const;
+
         for (const [permission, key] of required) {
-            if (value.permissions.includes(permission) && !value.limits[key])
+            if (value.permissions.includes(permission) && !value.limits[key]) {
                 context.addIssue({
                     code: 'custom',
                     path: ['limits', key],
                     message: 'Explicit finite limits required',
                 });
+            }
         }
-        if (new Set(value.permissions).size !== value.permissions.length)
+
+        if (new Set(value.permissions).size !== value.permissions.length) {
             context.addIssue({
                 code: 'custom',
                 path: ['permissions'],
                 message: 'Duplicate permission',
             });
+        }
     });
 export type AdminMcpIssueToken = z.infer<typeof adminMcpIssueTokenSchema>;
 export const adminMcpTokenMetadataSchema = z

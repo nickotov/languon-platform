@@ -26,8 +26,9 @@ export function WorkspaceProperties({
     function expand() {
         setExpanded(true);
     }
+
     const empty = !languages && !categories && !summary.trim();
-    if (empty && !expanded)
+    if (empty && !expanded) {
         return (
             <button
                 type='button'
@@ -38,6 +39,8 @@ export function WorkspaceProperties({
                 {t('knowledge.addProperties')}
             </button>
         );
+    }
+
     return (
         <div
             role='group'

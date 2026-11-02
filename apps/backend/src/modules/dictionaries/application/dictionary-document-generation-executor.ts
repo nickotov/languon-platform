@@ -54,12 +54,16 @@ export class DictionaryDocumentGenerationExecutor implements DictionaryGeneratio
             uploadId: request.input.uploadId,
             workerId: request.workerId,
         });
-        if (!upload || upload.uploadId !== request.input.uploadId)
+
+        if (!upload || upload.uploadId !== request.input.uploadId) {
             throw new DictionaryDocumentGenerationError(
                 'invalid_document',
                 false,
             );
+        }
+
         const object: DictionaryDocumentObjectReference = { ...upload };
+
         return this.dependencies.processor.process({
             idempotencyKey: `${request.jobId}/document`,
             input: request.input,

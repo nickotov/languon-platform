@@ -10,6 +10,7 @@ export function providerExecutionOutcome(
 ): ProviderExecutionOutcome {
     const failure = sentenceProviderFailure(error, providerId);
     const code = failure.providerCode ?? failure.httpStatus;
+
     return code !== undefined && [401, 402, 404, 410, 429].includes(code)
         ? 'rejected'
         : 'ambiguous';
@@ -42,8 +43,10 @@ export function markCompletedInvalidProviderResult<T extends Error>(
     error: T,
 ): T {
     completedInvalidResults.add(error);
+
     return error;
 }
+
 export function isCompletedInvalidProviderResult(error: unknown): boolean {
     return error instanceof Error && completedInvalidResults.has(error);
 }

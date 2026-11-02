@@ -33,11 +33,26 @@ export function PaletteRow({
     const { requestWithSession } = useShellNavigation();
     const pin = useResourcePin(requestWithSession);
     let Icon = Plus;
-    if (item.resource?.kind === 'dictionary') Icon = Languages;
-    if (item.resource?.kind === 'text') Icon = FileText;
-    if (item.resource?.kind === 'knowledge') Icon = Lightbulb;
-    if (item.id === 'settings') Icon = Settings;
-    if (item.id === 'theme') Icon = Sun;
+    if (item.resource?.kind === 'dictionary') {
+        Icon = Languages;
+    }
+
+    if (item.resource?.kind === 'text') {
+        Icon = FileText;
+    }
+
+    if (item.resource?.kind === 'knowledge') {
+        Icon = Lightbulb;
+    }
+
+    if (item.id === 'settings') {
+        Icon = Settings;
+    }
+
+    if (item.id === 'theme') {
+        Icon = Sun;
+    }
+
     const resource = item.resource;
     const section = navigationSections.find(
         (section) => section.kind === resource?.kind,
@@ -50,12 +65,17 @@ export function PaletteRow({
     function activate() {
         onActive(item.id);
     }
+
     function run() {
         onRun(item);
     }
+
     function togglePin() {
-        if (resource) pin.mutate(resource);
+        if (resource) {
+            pin.mutate(resource);
+        }
     }
+
     const menu = [
         {
             label: t(resource?.pinned ? 'shell.unpin' : 'shell.pin'),
@@ -64,6 +84,7 @@ export function PaletteRow({
             onSelect: togglePin,
         },
     ];
+
     return (
         <>
             <li

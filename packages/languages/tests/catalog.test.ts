@@ -32,6 +32,7 @@ describe('language catalog', () => {
             'uk',
             'zh-Hans',
         ]);
+
         expect(Object.isFrozen(LANGUAGE_CATALOG)).toBe(true);
         expect(Object.isFrozen(LANGUAGE_CATALOG[0])).toBe(true);
         expect(Object.isFrozen(LANGUAGE_CATALOG[0]?.displayNames)).toBe(true);

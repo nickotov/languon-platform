@@ -13,6 +13,7 @@ import { accessTokenStore } from '../src/shared/auth/access-token-store';
 vi.mock('@refinedev/core', () => ({
     useTranslate: () => adminI18nProvider.translate,
 }));
+
 const id = '00000000-0000-4000-8000-000000000042';
 beforeEach(() => {
     accessTokenStore.set('admin-session');
@@ -25,6 +26,7 @@ beforeEach(() => {
         }),
     );
 });
+
 afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
@@ -48,6 +50,7 @@ it('shows attributed audit activity and retrieves subsequent pages', async () =>
         const page = new URL(String(url), 'http://localhost').searchParams.get(
             'page',
         );
+
         return new Response(
             JSON.stringify({
                 events: page === '1' ? [event] : [],
@@ -58,6 +61,7 @@ it('shows attributed audit activity and retrieves subsequent pages', async () =>
             { headers: { 'Content-Type': 'application/json' } },
         );
     });
+
     vi.stubGlobal('fetch', fetcher);
     render(<TokenAudit />);
     await screen.findByText('application-route');

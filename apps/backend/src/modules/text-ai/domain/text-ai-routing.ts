@@ -25,8 +25,11 @@ export function textAiFlowForFormat(format: string): TextAiFlowId {
         'conversation',
         'portrait-interview',
     ];
-    if (!flow || !flows.includes(flow))
+
+    if (!flow || !flows.includes(flow)) {
         throw new TextAiRoutingUnavailableError('Unregistered AI flow.');
+    }
+
     return flow as TextAiFlowId;
 }
 
@@ -35,6 +38,7 @@ export function effectiveTextAiRouteIds(
     flow: TextAiFlowId,
 ): string[] {
     const policy = configuration.overrides[flow] ?? configuration.default;
+
     return [policy.primaryRouteId, ...policy.fallbackRouteIds];
 }
 
@@ -47,36 +51,43 @@ export function validateTextAiRouting(
     }[],
 ) {
     const enabled = new Set(configuration.enabledRouteIds);
-    if (enabled.size !== configuration.enabledRouteIds.length)
+    if (enabled.size !== configuration.enabledRouteIds.length) {
         throw new TextAiRoutingInvalidError('Enabled routes must be unique.');
+    }
+
     for (const routeId of enabled) {
         const route = routes.find((candidate) => candidate.routeId === routeId);
-        if (!route || route.retired)
+        if (!route || route.retired) {
             throw new TextAiRoutingInvalidError(
                 'A route is not reviewed or has retired.',
             );
+        }
     }
+
     const flows = [
         ...new Set(
             routes.flatMap((route) => route.formats.map(textAiFlowForFormat)),
         ),
     ];
+
     for (const flow of flows) {
         const ids = effectiveTextAiRouteIds(configuration, flow);
         for (const routeId of ids) {
             const route = routes.find(
                 (candidate) => candidate.routeId === routeId,
             );
+
             if (
                 !enabled.has(routeId) ||
                 !route ||
                 !route.formats.some(
                     (format) => textAiFlowForFormat(format) === flow,
                 )
-            )
+            ) {
                 throw new TextAiRoutingInvalidError(
                     `Route is incompatible with ${flow}.`,
                 );
+            }
         }
         // Free capabilities may omit a tariff; paid admission checks separately.
     }
@@ -85,8 +96,17 @@ export function validateTextAiRouting(
 export function textAiCapabilityForFlow(
     flow: TextAiFlowId,
 ): CapabilityPolicy['capability'] {
-    if (flow === 'portrait-interview' || flow === 'conversation') return flow;
-    if (flow.startsWith('sentence-')) return 'sentence-generation';
-    if (flow.startsWith('text-')) return 'text-translation';
+    if (flow === 'portrait-interview' || flow === 'conversation') {
+        return flow;
+    }
+
+    if (flow.startsWith('sentence-')) {
+        return 'sentence-generation';
+    }
+
+    if (flow.startsWith('text-')) {
+        return 'text-translation';
+    }
+
     return 'dictionary-generation';
 }

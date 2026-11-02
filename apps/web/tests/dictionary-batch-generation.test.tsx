@@ -240,6 +240,7 @@ function panel(
             {...props}
         />,
     );
+
     return {
         ...result,
         ...callbacks,
@@ -285,6 +286,7 @@ describe('dictionary pasted-term batch generation', () => {
                 '10000000-0000-4000-8000-000000000099',
             ),
         ).toBeNull();
+
         expect(batchGenerationJobForDictionary(reviewJob, dictionary.id)).toBe(
             reviewJob,
         );
@@ -307,11 +309,13 @@ describe('dictionary pasted-term batch generation', () => {
                 pendingAction={false}
             />,
         );
+
         const user = userEvent.setup();
         await user.type(
             screen.getByLabelText('Terms or phrases'),
             '  واحد\nاثنان  ',
         );
+
         await user.type(screen.getByLabelText(/^Context/), '  legal context  ');
         expect(screen.getByLabelText(/^Context/)).toHaveAttribute('dir', 'rtl');
         expect(screen.getByLabelText(/^Context/)).toHaveAttribute('lang', 'ar');
@@ -323,6 +327,7 @@ describe('dictionary pasted-term batch generation', () => {
             context: 'legal context',
             text: 'واحد\nاثنان',
         });
+
         expect(screen.queryByLabelText(/authorship/i)).not.toBeInTheDocument();
     });
 
@@ -356,30 +361,38 @@ describe('dictionary pasted-term batch generation', () => {
         expect(screen.getAllByLabelText('Source phrase')[0]).toHaveValue(
             'مصطلح محرر',
         );
+
         expect(
             screen.getByRole('checkbox', { name: 'Include row 2' }),
         ).not.toBeChecked();
+
         expect(
             screen.queryByLabelText('Transcription'),
         ).not.toBeInTheDocument();
+
         expect(screen.getAllByLabelText('Definition')[0]).toHaveAttribute(
             'dir',
             'rtl',
         );
+
         expect(screen.getAllByLabelText('Context example')[0]).toHaveAttribute(
             'dir',
             'ltr',
         );
+
         expect(
             screen.getAllByLabelText('Example translation')[0],
         ).toHaveAttribute('dir', 'rtl');
+
         expect(
             screen.getByText('<svg onload=alert(1)>Duplicate source'),
         ).toBeInTheDocument();
+
         expect(document.querySelector('script, svg, img')).toBeNull();
         await user.click(
             screen.getAllByRole('button', { name: 'Remove row' })[1]!,
         );
+
         expect(
             screen.queryByRole('checkbox', { name: 'Include row 2' }),
         ).not.toBeInTheDocument();
@@ -405,9 +418,11 @@ describe('dictionary pasted-term batch generation', () => {
                 name: 'Batch generation progress',
             }),
         ).toHaveValue(38);
+
         expect(
             screen.getByRole('button', { name: 'Cancel generation' }),
         ).toBeDisabled();
+
         expect(
             screen.getByRole('button', { name: 'Close batch generation' }),
         ).toBeDisabled();
@@ -419,12 +434,15 @@ describe('dictionary pasted-term batch generation', () => {
         expect(
             screen.queryByRole('checkbox', { name: 'غير صالح' }),
         ).not.toBeInTheDocument();
+
         expect(
             screen.getByRole('checkbox', { name: 'Retry row 3' }),
         ).toBeChecked();
+
         await user.click(
             screen.getByRole('button', { name: 'Retry selected failures' }),
         );
+
         expect(onRetryFailures).toHaveBeenCalledWith([
             expect.objectContaining({ input: 'قابل للإعادة', retryable: true }),
         ]);
@@ -435,6 +453,7 @@ describe('dictionary pasted-term batch generation', () => {
         expect(
             screen.getByRole('button', { name: 'Retry selected failures' }),
         ).toBeDisabled();
+
         expect(
             screen.getByRole('button', { name: 'Add 2 cards' }),
         ).toBeEnabled();
@@ -447,9 +466,11 @@ describe('dictionary pasted-term batch generation', () => {
         expect(
             screen.getByRole('button', { name: 'Add 2 cards' }),
         ).toBeDisabled();
+
         await user.click(
             screen.getByRole('button', { name: 'Reload current versions' }),
         );
+
         expect(onReloadConflict).toHaveBeenCalledOnce();
         expect(screen.getAllByLabelText('Source phrase')[0]).toHaveValue(
             '<script>مصطلح</script>',

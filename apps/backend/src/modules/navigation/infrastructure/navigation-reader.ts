@@ -22,6 +22,7 @@ export function createNavigationReader(
                 select count(*) as total from (${source(ownerId)}) r
                 inner join ${usersTable} u on u.id = ${ownerId}::uuid and u.status = 'active'
             `);
+
             return Number(row?.total ?? 0);
         },
         async read(ownerId, query) {
@@ -54,6 +55,7 @@ export function createNavigationReader(
             left join ${navigationResourcesTable} m on m.owner_id = ${ownerId}::uuid and m.kind = ${kind} and m.resource_id = r.id
             where ${condition} order by ${order} limit ${query.limit}
         `);
+
             return rows.map(
                 (row) =>
                     ({

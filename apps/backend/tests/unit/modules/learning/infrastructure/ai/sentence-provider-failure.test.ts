@@ -133,6 +133,7 @@ describe('sentenceProviderFailure', () => {
         expect(sentenceProviderFailure(cycle, 'kie')).toEqual({
             reason: 'provider_unavailable',
         });
+
         expect(
             sentenceProviderFailure(
                 {
@@ -155,12 +156,14 @@ describe('sentenceProviderFailure', () => {
             headers: { Authorization: 'SECRET_TOKEN' },
             cause: { name: 'TypeError', code: 'ECONNRESET' },
         };
+
         expect(sentenceProviderFailure(error, 'kie')).toEqual({
             reason: 'model_retired',
             providerCode: 410,
             errorName: 'TypeError',
             transportCode: 'ECONNRESET',
         });
+
         expect(
             JSON.stringify(sentenceProviderFailure(error, 'kie')),
         ).not.toContain('SECRET_TOKEN');
@@ -206,12 +209,14 @@ describe('reviewed gateway error envelopes', () => {
                 },
                 providerId,
             );
+
             expect(result).toEqual({
                 reason: 'model_retired',
                 errorName: 'AI_APICallError',
                 httpStatus: 200,
                 providerCode: 410,
             });
+
             expect(JSON.stringify(result)).not.toContain('synthetic-secret');
         },
     );
@@ -234,6 +239,7 @@ describe('bounded schema rejection diagnostics', () => {
                 'openrouter',
             ),
         ).toMatchObject({ reason: 'schema_incompatible', httpStatus: 400 });
+
         expect(
             sentenceProviderFailure(
                 {
@@ -248,6 +254,7 @@ describe('bounded schema rejection diagnostics', () => {
                 'openrouter',
             ).reason,
         ).toBe('provider_unavailable');
+
         expect(
             sentenceProviderFailure(
                 {
@@ -263,6 +270,7 @@ describe('bounded schema rejection diagnostics', () => {
             ).reason,
         ).toBe('provider_unavailable');
     });
+
     it('classifies numeric streamed error codes without exposing their messages', () => {
         expect(
             sentenceProviderFailure(
@@ -289,6 +297,7 @@ describe('policy refusal isolation', () => {
                 'openrouter',
             ),
         ).toMatchObject({ reason: 'provider_unavailable', httpStatus: 403 });
+
         expect(
             sentenceProviderFailure(
                 {

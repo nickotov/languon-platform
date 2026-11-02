@@ -39,13 +39,17 @@ export function loadDictionaryDocumentS3Environment(
         StorageEnvironmentSchema,
         values,
     );
+
     if (environment.DICTIONARY_DOCUMENT_STORAGE_MODE === 'unavailable') {
-        if (options.required)
+        if (options.required) {
             throw new Error(
                 'Document storage is required when document-terms:v1 is enabled.',
             );
+        }
+
         return undefined;
     }
+
     const accessKeyId =
         options.role === 'api'
             ? environment.DICTIONARY_DOCUMENT_STORAGE_API_ACCESS_KEY_ID
@@ -57,22 +61,27 @@ export function loadDictionaryDocumentS3Environment(
         options.role === 'api'
             ? environment.DICTIONARY_DOCUMENT_STORAGE_API_SECRET_ACCESS_KEY
             : environment.DICTIONARY_DOCUMENT_STORAGE_WORKER_SECRET_ACCESS_KEY;
+
     if (
         !accessKeyId ||
         !bucket ||
         !endpointValue ||
         !region ||
         !secretAccessKey
-    )
+    ) {
         throw new Error('S3 document storage configuration is incomplete.');
+    }
+
     if (
         accessKeyId.length > 128 ||
         secretAccessKey.length < 16 ||
         secretAccessKey.length > 512 ||
         !/^[a-z0-9][a-z0-9.-]{2,62}$/u.test(bucket) ||
         !/^[a-z0-9][a-z0-9-]{0,62}$/u.test(region)
-    )
+    ) {
         throw new Error('S3 document storage configuration is invalid.');
+    }
+
     const endpoint = new URL(endpointValue);
     if (
         endpoint.username ||
@@ -82,10 +91,12 @@ export function loadDictionaryDocumentS3Environment(
         endpoint.pathname !== '/' ||
         (options.deployed && endpoint.protocol !== 'https:') ||
         (!options.deployed && !['http:', 'https:'].includes(endpoint.protocol))
-    )
+    ) {
         throw new Error(
             'Document storage endpoint must be a credential-free origin and use HTTPS when deployed.',
         );
+    }
+
     return {
         accessKeyId,
         bucket,

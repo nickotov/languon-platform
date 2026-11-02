@@ -1,0 +1,2 @@
+ALTER TABLE "speech_jobs" ADD COLUMN "source_binding_id" uuid;--> statement-breakpoint
+ALTER TABLE "speech_jobs" ADD CONSTRAINT "speech_jobs_source_binding_id_speech_bindings_id_fk" FOREIGN KEY ("source_binding_id") REFERENCES "public"."speech_bindings"("id") ON DELETE set null ON UPDATE no action;

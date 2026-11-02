@@ -9,7 +9,8 @@ import { useSessionStore } from '@/fsd/entities/session';
 import { useAuth } from '@/fsd/features/auth';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, ButtonLink, InlineAlert, LoadingState } from '@/fsd/shared/ui';
-import { NotePreview } from '../knowledge-detail-page/note-preview';
+import { SharedNoteLearning } from './shared-note-learning';
+import type { WorkbookLearningShareAccess } from '@languon/contracts';
 import styles from './shared-knowledge-page.module.css';
 
 export function SharedKnowledgePage({ locator }: { locator: string }) {
@@ -34,6 +35,7 @@ export function SharedKnowledgePage({ locator }: { locator: string }) {
             const fragment = window.location.hash.startsWith('#')
                 ? window.location.hash.slice(1)
                 : '';
+
             if (fragment) {
                 try {
                     window.sessionStorage.setItem(storageKey, fragment);
@@ -45,9 +47,12 @@ export function SharedKnowledgePage({ locator }: { locator: string }) {
                 } catch {
                     // The current page can still read the link when storage is unavailable.
                 }
+
                 setAccess({ locator, key: fragment });
+
                 return;
             }
+
             try {
                 setAccess({
                     locator,
@@ -57,8 +62,10 @@ export function SharedKnowledgePage({ locator }: { locator: string }) {
                 setAccess({ locator, key: '' });
             }
         }
+
         readKey();
         window.addEventListener('hashchange', readKey);
+
         return () => window.removeEventListener('hashchange', readKey);
     }, [locator, storageKey]);
 
@@ -84,7 +91,10 @@ export function SharedKnowledgePage({ locator }: { locator: string }) {
     }, [shared.error, storageKey]);
 
     async function copy() {
-        if (!shared.data || !key) return;
+        if (!shared.data || !key) {
+            return;
+        }
+
         setCopying(true);
         setCopyError(false);
         try {
@@ -97,11 +107,13 @@ export function SharedKnowledgePage({ locator }: { locator: string }) {
                     operationId.current,
                 ),
             );
+
             try {
                 window.sessionStorage.removeItem(storageKey);
             } catch {
                 // The copied note is independent of the shared link.
             }
+
             router.push(href(`/knowledge/${note.id}`));
         } catch {
             setCopyError(true);
@@ -110,6 +122,11 @@ export function SharedKnowledgePage({ locator }: { locator: string }) {
         }
     }
 
+    const learningAccess: WorkbookLearningShareAccess = {
+        kind: 'note',
+        locator,
+        key: key ?? '',
+    };
     const signInQuery = new URLSearchParams({
         returnTo: `/shared/knowledge/${locator}`,
     });
@@ -131,14 +148,15 @@ export function SharedKnowledgePage({ locator }: { locator: string }) {
         </ButtonLink>
     );
 
-    if (key === null || (key && shared.isPending))
+    if (key === null || (key && shared.isPending)) {
         return (
             <main className={styles.page}>
                 <LoadingState>{t('knowledge.loading')}</LoadingState>
             </main>
         );
+    }
 
-    if (!key || !shared.data)
+    if (!key || !shared.data) {
         return (
             <main className={styles.page}>
                 <InlineAlert tone='error'>
@@ -146,6 +164,7 @@ export function SharedKnowledgePage({ locator }: { locator: string }) {
                 </InlineAlert>
             </main>
         );
+    }
 
     return (
         <main className={styles.page}>
@@ -165,7 +184,10 @@ export function SharedKnowledgePage({ locator }: { locator: string }) {
                 </InlineAlert>
             )}
             <article className={styles.article}>
-                <NotePreview content={shared.data} />
+                <SharedNoteLearning
+                    note={shared.data}
+                    access={learningAccess}
+                />
             </article>
         </main>
     );

@@ -49,6 +49,7 @@ const result: TextAiProbeResult = {
     outputTokens: 10,
     measurement: 'measured',
 };
+
 run('atomic operator model probes and immutable evidence', () => {
     let client: PostgresClient;
     let database: PostgresJsDatabase<typeof databaseSchema>;
@@ -68,9 +69,11 @@ run('atomic operator model probes and immutable evidence', () => {
             updatedAt: at,
         });
     });
+
     afterAll(async () => {
         await client?.end();
     });
+
     async function seedRuntimeHealth(
         input: {
             identity: {
@@ -92,6 +95,7 @@ run('atomic operator model probes and immutable evidence', () => {
             observedAt: new Date(),
         });
     }
+
     async function fixture(
         customLimits = limits,
         minimumUsdPerRequest?: string,
@@ -105,6 +109,7 @@ run('atomic operator model probes and immutable evidence', () => {
             routeId: `${providerId}/${modelId}`,
             fingerprint: 'a'.repeat(64),
         };
+
         await database.insert(aiProviderPriceRevisionsTable).values({
             id: randomUUID(),
             providerId,
@@ -132,6 +137,7 @@ run('atomic operator model probes and immutable evidence', () => {
                 reason: 'Synthetic reviewed test rate',
             },
         });
+
         return {
             actorId,
             identity,
@@ -145,26 +151,32 @@ run('atomic operator model probes and immutable evidence', () => {
             limits: customLimits,
         };
     }
+
     it('atomically admits only one concurrent probe per provider', async () => {
         const input = await fixture();
         const outcomes = await Promise.allSettled(
             Array.from({ length: 8 }, () => store.reserve(input)),
         );
+
         expect(
             outcomes.filter((value) => value.status === 'fulfilled'),
         ).toHaveLength(1);
+
         const successful = outcomes.find(
             (value) => value.status === 'fulfilled',
         ) as PromiseFulfilledResult<TextAiProbeReservation>;
+
         await store.finish(
             successful.value,
             result,
             new Date(at.getTime() + 20),
         );
+
         await expect(
             store.reserve({ ...input, at: new Date(at.getTime() + 1000) }),
         ).rejects.toThrow('probe_cooldown');
     });
+
     it('enforces shared daily reservation across different admins/providers and keeps unknown nonzero for cap', async () => {
         const otherAdmin = randomUUID();
         await database.insert(usersTable).values({
@@ -173,6 +185,7 @@ run('atomic operator model probes and immutable evidence', () => {
             createdAt: at,
             updatedAt: at,
         });
+
         const inputs = await Promise.all([
             fixture({ ...limits, dailyMaximumCostMicros: 20_100n }),
             fixture({ ...limits, dailyMaximumCostMicros: 20_100n }),
@@ -186,13 +199,16 @@ run('atomic operator model probes and immutable evidence', () => {
                 }),
             ),
         );
+
         expect(
             outcomes.filter((value) => value.status === 'fulfilled'),
         ).toHaveLength(2);
+
         const fulfilled = outcomes.filter(
             (value): value is PromiseFulfilledResult<TextAiProbeReservation> =>
                 value.status === 'fulfilled',
         );
+
         await Promise.all(
             fulfilled.map((value) =>
                 store.finish(
@@ -209,14 +225,17 @@ run('atomic operator model probes and immutable evidence', () => {
                 ),
             ),
         );
+
         const next = await fixture({
             ...limits,
             dailyMaximumCostMicros: 20_100n,
         });
+
         await expect(store.reserve(next)).rejects.toThrow(
             'probe_limit_reached',
         );
     });
+
     it('records real expense without learner rows, protects exact completed facts and idempotent settlement', async () => {
         const input = await fixture({
             ...limits,
@@ -228,11 +247,13 @@ run('atomic operator model probes and immutable evidence', () => {
             result,
             new Date(at.getTime() + 20),
         );
+
         expect(saved).toMatchObject({
             state: 'passed',
             providerCostUsd: '0.000042',
             measurement: 'measured',
         });
+
         expect(
             await store.finish(
                 reservation,
@@ -240,22 +261,27 @@ run('atomic operator model probes and immutable evidence', () => {
                 new Date(at.getTime() + 40),
             ),
         ).toEqual(saved);
+
         const expense = await database
             .select()
             .from(aiProviderExpenseRecordsTable)
             .where(eq(aiProviderExpenseRecordsTable.actionId, reservation.id));
+
         expect(expense).toHaveLength(1);
         expect(await probeExpenseId(database, reservation.id)).toBe(
             expense[0]?.id,
         );
+
         expect(await probeExpenseId(database, randomUUID())).toBeNull();
         expect(expense[0]).toMatchObject({
             sourceKind: 'admin-probe',
             amountUsdMicros: 42n,
             measurement: 'measured',
         });
+
         const [counts] =
             await client`select (select count(*) from ai_credit_actions where id=${reservation.id})::int actions,(select count(*) from ai_credit_reservations where job_id=${reservation.id})::int holds`;
+
         expect(counts).toMatchObject({ actions: 0, holds: 0 });
         await expect(
             database
@@ -264,6 +290,7 @@ run('atomic operator model probes and immutable evidence', () => {
                 .where(eq(textAiProbesTable.id, reservation.id)),
         ).rejects.toThrow();
     });
+
     it('requires fresh exact evidence for activation but not for unchanged dispatch, rejects credential changes', async () => {
         const input = await fixture({
             ...limits,
@@ -277,24 +304,29 @@ run('atomic operator model probes and immutable evidence', () => {
             now: new Date(at.getTime() + 1000),
             fingerprint: input.identity.fingerprint,
         };
+
         await database.transaction((tx) => requireProbeReady(tx, gate));
         await expect(
             database.transaction((tx) =>
                 requireProbeReady(tx, { ...gate, fingerprint: 'changed-key' }),
             ),
         ).rejects.toThrow('probe_check_required');
+
         const stale = {
             ...gate,
             now: new Date(at.getTime() + 25 * 60 * 60 * 1000),
         };
+
         await expect(
             database.transaction((tx) => requireProbeReady(tx, stale)),
         ).rejects.toThrow('probe_check_required');
+
         expect(
             await database.transaction((tx) =>
                 isProbeDispatchAllowed(tx, stale),
             ),
         ).toBe(true);
+
         expect(
             await database.transaction((tx) =>
                 isProbeDispatchAllowed(tx, {
@@ -304,11 +336,13 @@ run('atomic operator model probes and immutable evidence', () => {
             ),
         ).toBe(false);
     });
+
     it('keeps hard exclusions until manual success and does not let a later timeout clear them', async () => {
         const input = await fixture({
             ...limits,
             dailyMaximumCostMicros: 1_000_000n,
         });
+
         await store.finish(await store.reserve(input), result, at);
         const hardAt = new Date(at.getTime() + 10_000);
         await store.finish(
@@ -323,6 +357,7 @@ run('atomic operator model probes and immutable evidence', () => {
             },
             hardAt,
         );
+
         const timeoutAt = new Date(at.getTime() + 20_000);
         await store.finish(
             await store.reserve({ ...input, at: timeoutAt }),
@@ -336,17 +371,20 @@ run('atomic operator model probes and immutable evidence', () => {
             },
             timeoutAt,
         );
+
         const gate = {
             routeId: input.identity.routeId,
             flowId: 'sentence-check',
             now: new Date(at.getTime() + 100_000),
             fingerprint: input.identity.fingerprint,
         };
+
         expect(
             await database.transaction((tx) =>
                 isProbeDispatchAllowed(tx, gate),
             ),
         ).toBe(false);
+
         const recoveredAt = new Date(at.getTime() + 120_000);
         const uncertain = await database
             .select()
@@ -359,17 +397,20 @@ run('atomic operator model probes and immutable evidence', () => {
             reason: 'Synthetic operator confirmed upstream stopped.',
             at: recoveredAt,
         });
+
         await store.finish(
             await store.reserve({ ...input, at: recoveredAt }),
             result,
             recoveredAt,
         );
+
         expect(
             await database.transaction((tx) =>
                 isProbeDispatchAllowed(tx, { ...gate, now: recoveredAt }),
             ),
         ).toBe(true);
     });
+
     it('serializes explicit recovery, preserves unknown expense and fences late completion', async () => {
         const input = await fixture({
             ...limits,
@@ -380,6 +421,7 @@ run('atomic operator model probes and immutable evidence', () => {
         await expect(
             store.reserve({ ...input, at: recoveryAt }),
         ).rejects.toThrow('probe_busy');
+
         const outcomes = await Promise.all(
             Array.from({ length: 4 }, () =>
                 store.recover({
@@ -390,51 +432,61 @@ run('atomic operator model probes and immutable evidence', () => {
                 }),
             ),
         );
+
         expect(
             outcomes.every(
                 (row) => row.state === 'failed' && row.providerCostUsd === null,
             ),
         ).toBe(true);
+
         const facts = await database
             .select()
             .from(aiProviderExpenseRecordsTable)
             .where(eq(aiProviderExpenseRecordsTable.actionId, reservation.id));
+
         expect(facts).toHaveLength(1);
         expect(facts[0]).toMatchObject({
             measurement: 'unknown',
             amountUsdMicros: null,
         });
+
         const attestations = await database
             .select()
             .from(textAiProbeRecoveriesTable)
             .where(eq(textAiProbeRecoveriesTable.probeId, reservation.id));
+
         expect(attestations).toHaveLength(1);
         const late = await store.finish(
             reservation,
             result,
             new Date(recoveryAt.getTime() + 1),
         );
+
         expect(late).toMatchObject({
             state: 'failed',
             failure: 'execution_unknown',
             providerCostUsd: null,
         });
+
         await expect(
             database
                 .update(textAiProbeRecoveriesTable)
                 .set({ reason: 'Altered historical reason' })
                 .where(eq(textAiProbeRecoveriesTable.probeId, reservation.id)),
         ).rejects.toThrow();
+
         const next = await store.reserve({
             ...input,
             at: new Date(recoveryAt.getTime() + 10_000),
         });
+
         await store.finish(
             next,
             result,
             new Date(recoveryAt.getTime() + 10_020),
         );
     });
+
     it('does not release uncertain completed execution without explicit recovery', async () => {
         const input = await fixture({
             ...limits,
@@ -453,30 +505,36 @@ run('atomic operator model probes and immutable evidence', () => {
             },
             at,
         );
+
         const later = new Date(at.getTime() + 60_000);
         await expect(store.reserve({ ...input, at: later })).rejects.toThrow(
             'probe_recovery_required',
         );
+
         await store.recover({
             probeId: reservation.id,
             actorId,
             reason: 'Synthetic operator confirmed upstream request stopped.',
             at: later,
         });
+
         const next = await store.reserve({ ...input, at: later });
         await store.finish(next, result, later);
         const facts = await database
             .select()
             .from(aiProviderExpenseRecordsTable)
             .where(eq(aiProviderExpenseRecordsTable.actionId, reservation.id));
+
         expect(facts).toHaveLength(1);
         expect(facts[0]!.amountUsdMicros).toBeNull();
     });
+
     it('excludes actual runtime retirement until a later manual check and preserves append-only evidence', async () => {
         const input = await fixture({
             ...limits,
             dailyMaximumCostMicros: 1_000_000n,
         });
+
         await store.finish(await store.reserve(input), result, at);
         const eventId = randomUUID();
         await seedRuntimeHealth(input, 'model_retired', eventId);
@@ -490,34 +548,40 @@ run('atomic operator model probes and immutable evidence', () => {
             fingerprint: input.identity.fingerprint,
             now: new Date(event!.observedAt.getTime() + 120_000),
         };
+
         expect(
             await database.transaction((tx) =>
                 isProbeDispatchAllowed(tx, gate),
             ),
         ).toBe(false);
+
         await expect(
             database
                 .update(textAiRouteHealthEventsTable)
                 .set({ reason: 'provider_unavailable' })
                 .where(eq(textAiRouteHealthEventsTable.id, eventId)),
         ).rejects.toThrow();
+
         const recheckAt = new Date(event!.observedAt.getTime() + 180_000);
         await store.finish(
             await store.reserve({ ...input, at: recheckAt }),
             result,
             recheckAt,
         );
+
         expect(
             await database.transaction((tx) =>
                 isProbeDispatchAllowed(tx, { ...gate, now: recheckAt }),
             ),
         ).toBe(true);
     });
+
     it('does not let learner-induced invalid output or request rejection exclude a shared flow', async () => {
         const input = await fixture({
             ...limits,
             dailyMaximumCostMicros: 1_000_000n,
         });
+
         await store.finish(await store.reserve(input), result, at);
         const eventId = randomUUID();
         await seedRuntimeHealth(input, 'invalid_output', eventId);
@@ -531,11 +595,13 @@ run('atomic operator model probes and immutable evidence', () => {
             fingerprint: input.identity.fingerprint,
             now: new Date(event!.observedAt.getTime() + 1000),
         };
+
         expect(
             await database.transaction((tx) =>
                 isProbeDispatchAllowed(tx, gate),
             ),
         ).toBe(true);
+
         expect(
             await database.transaction((tx) =>
                 isProbeDispatchAllowed(tx, {
@@ -544,12 +610,14 @@ run('atomic operator model probes and immutable evidence', () => {
                 }),
             ),
         ).toBe(true);
+
         await seedRuntimeHealth(input, 'request_rejected');
         expect(
             await database.transaction((tx) =>
                 isProbeDispatchAllowed(tx, gate),
             ),
         ).toBe(true);
+
         await seedRuntimeHealth(input, 'schema_incompatible');
         expect(
             await database.transaction((tx) =>
@@ -570,6 +638,7 @@ run('atomic operator model probes and immutable evidence', () => {
         expect(await store.finish(charged, result, at)).toMatchObject({
             providerCostUsd: '0.001000',
         });
+
         const nextAt = new Date(at.getTime() + 10_000);
         const undispatched = await store.reserve({ ...input, at: nextAt });
         expect(
@@ -585,6 +654,7 @@ run('atomic operator model probes and immutable evidence', () => {
                 nextAt,
             ),
         ).toMatchObject({ providerCostUsd: '0.000000' });
+
         const laterAt = new Date(at.getTime() + 20_000);
         const unknown = await store.reserve({ ...input, at: laterAt });
         expect(
@@ -601,14 +671,17 @@ run('atomic operator model probes and immutable evidence', () => {
             ),
         ).toMatchObject({ state: 'passed', providerCostUsd: null });
     });
+
     it('rejects an unfundable minimum and missing EvoLink minimum before creating any probe reservation', async () => {
         const expensive = await fixture(
             { ...limits, dailyMaximumCostMicros: 1_000_000n },
             '0.02',
         );
+
         await expect(store.reserve(expensive)).rejects.toThrow(
             'probe_budget_insufficient',
         );
+
         expect(
             await database
                 .select()
@@ -617,23 +690,28 @@ run('atomic operator model probes and immutable evidence', () => {
                     eq(textAiProbesTable.routeId, expensive.identity.routeId),
                 ),
         ).toHaveLength(0);
+
         const evolink = await fixture(
             { ...limits, dailyMaximumCostMicros: 1_000_000n },
             undefined,
             'evolink',
         );
+
         await expect(store.reserve(evolink)).rejects.toThrow(
             'probe_prices_missing',
         );
+
         const zeroMinimum = await fixture(
             { ...limits, dailyMaximumCostMicros: 1_000_000n },
             '0',
             'evolink',
             'synthetic-zero-minimum',
         );
+
         await expect(store.reserve(zeroMinimum)).rejects.toThrow(
             'probe_prices_missing',
         );
+
         expect(
             await database
                 .select()
@@ -641,14 +719,17 @@ run('atomic operator model probes and immutable evidence', () => {
                 .where(eq(textAiProbesTable.routeId, evolink.identity.routeId)),
         ).toHaveLength(0);
     });
+
     it('retains bounded index lookups with representative probe history', async () => {
         const input = await fixture({
             ...limits,
             dailyMaximumCostMicros: 1_000_000n,
         });
+
         await store.finish(await store.reserve(input), result, at);
         await database.execute(sql`insert into text_ai_probes(id,route_id,provider_id,model_id,kind,flow_id,fingerprint,state,evidence_hours,day,maximum_micros,price,started_at,completed_at)
             select gen_random_uuid(),case when n%3<>2 then ${input.identity.routeId} else 'history-'||(n%100)::text||'/synthetic' end,case when n%3<>2 then ${input.identity.providerId} else 'history-'||(n%100)::text end,'synthetic','flow',case when n%3=0 then 'sentence-check' else 'conversation' end,case when n%3=0 then repeat('a',64) else repeat('b',64) end,'passed',24,'2026-10-25',10000,'{}'::jsonb,case when n%3=0 then '2026-10-01'::timestamptz else '2026-10-25 01:00:00'::timestamptz end + n*interval '1 second',case when n%3=0 then '2026-10-01'::timestamptz else '2026-10-25 01:00:00'::timestamptz end + n*interval '1 second' from generate_series(1,25000) n`);
+
         await database.execute(sql`analyze text_ai_probes`);
         const passedPlan = await database.execute(
             sql`explain (analyze,buffers,format json) select started_at from text_ai_probes where route_id=${input.identity.routeId} and flow_id='sentence-check' and fingerprint=${input.identity.fingerprint} and state='passed' and kind='flow' order by started_at desc nulls last limit 1`,
@@ -669,23 +750,28 @@ run('atomic operator model probes and immutable evidence', () => {
                 ...(node['Index Name'] ? [node['Index Name']] : []),
                 ...(node.Plans ?? []).flatMap(indexes),
             ];
+
             return {
                 indexes: report?.[0]?.Plan ? indexes(report[0].Plan) : [],
                 sharedHitBlocks: report?.[0]?.Plan['Shared Hit Blocks'],
                 executionMs: report?.[0]?.['Execution Time'],
             };
         };
+
         console.info('Probe-history lookup evidence', {
             historyRows: 25000,
             passed: summarize(passedPlan),
             providerAuth: summarize(authPlan),
         });
+
         expect(JSON.stringify(passedPlan)).toContain(
             'text_ai_probe_passed_flow_idx',
         );
+
         expect(JSON.stringify(authPlan)).toContain(
             'text_ai_probe_failed_auth_idx',
         );
+
         expect(JSON.stringify(passedPlan)).not.toContain('Seq Scan');
         expect(JSON.stringify(passedPlan)).not.toContain('Sort');
         expect(JSON.stringify(authPlan)).not.toContain('Seq Scan');

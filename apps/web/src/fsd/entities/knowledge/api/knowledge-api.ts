@@ -50,20 +50,30 @@ async function request<T>(
             },
         );
     } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') throw error;
+        if (error instanceof Error && error.name === 'AbortError') {
+            throw error;
+        }
+
         throw new KnowledgeApiError(0, fallback);
     }
+
     const payload: unknown = await response.json().catch((error: unknown) => {
-        if (error instanceof Error && error.name === 'AbortError') throw error;
+        if (error instanceof Error && error.name === 'AbortError') {
+            throw error;
+        }
+
         return undefined;
     });
+
     if (!response.ok) {
         const error = c.KnowledgeErrorResponseSchema.safeParse(payload);
+
         throw new KnowledgeApiError(
             response.status,
             error.success ? error.data.error : fallback,
         );
     }
+
     try {
         return schema.parse(payload);
     } catch {
@@ -84,9 +94,11 @@ export const knowledgeApi = {
         const query = c.ListKnowledgeQuerySchema.parse(input);
         const values = new URLSearchParams();
         for (const [key, value] of Object.entries(query)) {
-            if (value !== undefined && value !== '')
+            if (value !== undefined && value !== '') {
                 values.set(key, String(value));
+            }
         }
+
         return request(
             token,
             `/knowledge/workspaces?${values}`,
@@ -249,9 +261,11 @@ export const knowledgeApi = {
         const query = c.ListKnowledgeQuerySchema.parse(input);
         const values = new URLSearchParams();
         for (const [key, value] of Object.entries(query)) {
-            if (value !== undefined && value !== '')
+            if (value !== undefined && value !== '') {
                 values.set(key, String(value));
+            }
         }
+
         return request(
             token,
             `/knowledge?${values}`,

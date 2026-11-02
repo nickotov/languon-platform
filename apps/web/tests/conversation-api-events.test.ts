@@ -50,6 +50,7 @@ it('keeps reading production named conversation events across heartbeat and unkn
                 { headers: { 'content-type': 'text/event-stream' } },
             ),
         );
+
     vi.stubGlobal('fetch', fetcher);
     await conversationApi.events(
         'local-token',
@@ -58,6 +59,7 @@ it('keeps reading production named conversation events across heartbeat and unkn
         receive,
         new AbortController().signal,
     );
+
     expect(receive).toHaveBeenCalledTimes(2);
     expect(receive).toHaveBeenNthCalledWith(1, snapshot);
     expect(receive).toHaveBeenNthCalledWith(2, snapshot);
@@ -76,6 +78,7 @@ it('turns in-stream unavailable into a safe terminal access error instead of par
                 ),
             ),
     );
+
     const reading = conversationApi.events(
         'local-token',
         id,
@@ -83,6 +86,7 @@ it('turns in-stream unavailable into a safe terminal access error instead of par
         receive,
         new AbortController().signal,
     );
+
     await expect(reading).rejects.toBeInstanceOf(ConversationApiError);
     await expect(reading).rejects.toMatchObject({ status: 404 });
     expect(receive).toHaveBeenCalledTimes(1);
@@ -102,6 +106,7 @@ it.each([401, 403, 404, 410])(
                     ),
                 ),
         );
+
         await expect(
             conversationApi.events(
                 'local-token',
@@ -121,6 +126,7 @@ it('retains bounded validated error diagnostics and keeps malformed payloads gen
         requestId: id,
         correlationId: 'correlation-test-id',
     };
+
     vi.stubGlobal(
         'fetch',
         vi
@@ -141,9 +147,11 @@ it('retains bounded validated error diagnostics and keeps malformed payloads gen
                 ),
             ),
     );
+
     await expect(
         conversationApi.detail('local-token', id),
     ).rejects.toMatchObject({ detail: error });
+
     await expect(
         conversationApi.detail('local-token', id),
     ).rejects.toMatchObject({
@@ -181,10 +189,12 @@ it('resumes an actual EOF wire stream with its cursor without converting a trans
         .fn()
         .mockImplementation(async (_input: string, init: RequestInit) => {
             attempts += 1;
-            if (attempts === 1)
+            if (attempts === 1) {
                 return new Response(`${canonical}${heartbeat}`, {
                     headers: { 'content-type': 'text/event-stream' },
                 });
+            }
+
             const stream = new ReadableStream<Uint8Array>({
                 start(controller) {
                     controller.enqueue(
@@ -192,6 +202,7 @@ it('resumes an actual EOF wire stream with its cursor without converting a trans
                             `id: 2\nevent: conversation\ndata: ${JSON.stringify(next)}\n\n${heartbeat}`,
                         ),
                     );
+
                     init.signal?.addEventListener(
                         'abort',
                         () => controller.close(),
@@ -199,10 +210,12 @@ it('resumes an actual EOF wire stream with its cursor without converting a trans
                     );
                 },
             });
+
             return new Response(stream, {
                 headers: { 'content-type': 'text/event-stream' },
             });
         });
+
     vi.stubGlobal('fetch', fetcher);
     const transport = new DurableChatTransport({
         request: (operation) => operation('local-token'),
@@ -215,11 +228,15 @@ it('resumes an actual EOF wire stream with its cursor without converting a trans
         transport,
         onError,
         onData(part) {
-            if (part.type !== 'data-canonical') return;
+            if (part.type !== 'data-canonical') {
+                return;
+            }
+
             canonicalDetail = reduceConversationEvent(
                 canonicalDetail,
                 part.data,
             )!;
+
             chat.messages = conversationUIMessages(canonicalDetail);
         },
     });
@@ -233,6 +250,7 @@ it('resumes an actual EOF wire stream with its cursor without converting a trans
                 }),
             { timeout: 3500 },
         );
+
         expect(fetcher).toHaveBeenCalledTimes(2);
         expect(fetcher.mock.calls[0]?.[0]).toContain('/events?after=0');
         expect(fetcher.mock.calls[1]?.[0]).toContain('/events?after=1');
@@ -244,3 +262,41 @@ it('resumes an actual EOF wire stream with its cursor without converting a trans
         await completion;
     }
 });
+
+it.each(['running', 'succeeded', 'failed'] as const)(
+    'preserves typed block tool identity for %s public events',
+    (state) => {
+        const projection = ConversationDetailSchema.parse({
+            ...detail,
+            messages: [
+                {
+                    id: '206e752e-d69c-439c-8e74-20ef69cfd907',
+                    conversationId: id,
+                    role: 'assistant',
+                    content: '',
+                    attachments: [],
+                    toolCalls: [
+                        {
+                            id: 'block-call',
+                            name: 'propose_learning_blocks',
+                            state,
+                        },
+                    ],
+                    status: 'complete',
+                    sourceVersion: '1',
+                    sourceProvenance: 'saved',
+                    createdAt: date,
+                    turnId: null,
+                },
+            ],
+        });
+        const [message] = conversationUIMessages(projection);
+        expect(
+            message?.parts.find((part) => part.type.startsWith('tool-'))?.type,
+        ).toBe('tool-propose_learning_blocks');
+
+        expect(JSON.stringify(message)).not.toContain(
+            'tool-propose_knowledge_note',
+        );
+    },
+);

@@ -88,6 +88,7 @@ test('design briefs require explicit invocation', () => {
         () => validate('design-brief'),
         /disable implicit invocation/,
     );
+
     assert.equal(
         validate('design-brief', {
             metadataContent: metadataContent(
@@ -120,6 +121,7 @@ test('requires every UI metadata field', () => {
             .split('\n')
             .filter((line) => !line.includes(`${key}:`))
             .join('\n');
+
         assert.throws(
             () =>
                 validate('example-skill', {

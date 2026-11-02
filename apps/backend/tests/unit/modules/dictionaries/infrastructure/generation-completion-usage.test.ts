@@ -21,6 +21,7 @@ describe('dictionary completion provider usage projection', () => {
             ...budget,
             inputCostMicrosPerMillionTokens: Number.MAX_SAFE_INTEGER,
         };
+
         expect(
             generationCompletionUsage(
                 job,
@@ -29,6 +30,7 @@ describe('dictionary completion provider usage projection', () => {
                 true,
             ),
         ).toEqual({ costMicros: null, inputTokens: 9_000, outputTokens: 1 });
+
         expect(() =>
             generationCompletionUsage(
                 job,
@@ -38,6 +40,7 @@ describe('dictionary completion provider usage projection', () => {
             ),
         ).toThrow('exceeds reservation');
     });
+
     it('preserves per-attempt and cumulative token limits for native completion', () => {
         expect(() =>
             generationCompletionUsage(
@@ -47,6 +50,7 @@ describe('dictionary completion provider usage projection', () => {
                 true,
             ),
         ).toThrow('Invalid provider usage');
+
         expect(() =>
             generationCompletionUsage(
                 { ...job, attemptCount: 2 },
@@ -56,6 +60,7 @@ describe('dictionary completion provider usage projection', () => {
             ),
         ).toThrow('exceeds reservation');
     });
+
     it('keeps legacy expense projection and missing-meter reservation behavior', () => {
         expect(
             generationCompletionUsage(
@@ -65,6 +70,7 @@ describe('dictionary completion provider usage projection', () => {
                 false,
             ),
         ).toEqual({ costMicros: 2, inputTokens: 1_000, outputTokens: 1_000 });
+
         expect(
             generationCompletionUsage(job, budget, undefined, false),
         ).toEqual({
@@ -72,6 +78,7 @@ describe('dictionary completion provider usage projection', () => {
             inputTokens: 10_000,
             outputTokens: 1_000,
         });
+
         expect(generationCompletionUsage(job, budget, undefined, true)).toEqual(
             { costMicros: null, inputTokens: 10_000, outputTokens: 1_000 },
         );

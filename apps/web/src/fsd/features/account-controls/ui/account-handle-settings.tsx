@@ -4,7 +4,7 @@ import {
     UpdateHandleRequestSchema,
     type UpdateHandleResponse,
 } from '@languon/contracts';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { AtSign, CheckCircle2 } from 'lucide-react';
 
 import { useSessionStore } from '@/fsd/entities/session';
@@ -42,7 +42,9 @@ export function AccountHandleSettings({
     async function save(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (state === 'saving') return;
+        if (state === 'saving') {
+            return;
+        }
 
         const parsed = UpdateHandleRequestSchema.safeParse({ handle: draft });
 
@@ -75,6 +77,24 @@ export function AccountHandleSettings({
         }
     }
 
+    function changeDraft(event: ChangeEvent<HTMLInputElement>) {
+        setDraft(event.target.value);
+        setError(null);
+        setState('idle');
+    }
+
+    let fieldFeedback: { error: string } | { hint: string };
+    if (error) {
+        fieldFeedback = { error };
+    } else {
+        const hint =
+            state === 'saved'
+                ? t('profile.handleSaved')
+                : t('profile.handleHelp');
+
+        fieldFeedback = { hint };
+    }
+
     return (
         <form
             className={[styles.handleForm, className].filter(Boolean).join(' ')}
@@ -84,24 +104,11 @@ export function AccountHandleSettings({
                 wrapperClassName={styles.handleField}
                 autoComplete='off'
                 disabled={state === 'saving'}
-                {...(error
-                    ? { error }
-                    : {
-                          hint:
-                              state === 'saved'
-                                  ? t('profile.handleSaved')
-                                  : t('profile.handleHelp'),
-                      })}
+                {...fieldFeedback}
                 label={t('profile.handleLabel')}
                 leadingIcon={<AtSign size={16} />}
                 maxLength={30}
-                onChange={(event) => {
-                    setDraft(event.target.value);
-
-                    setError(null);
-
-                    setState('idle');
-                }}
+                onChange={changeDraft}
                 placeholder={t('profile.handlePlaceholder')}
                 {...(state === 'saved'
                     ? { trailingIcon: <CheckCircle2 size={16} /> }

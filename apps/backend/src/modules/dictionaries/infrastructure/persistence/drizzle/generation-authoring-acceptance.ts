@@ -25,8 +25,10 @@ export function validateAuthoringAcceptance(
         jobInput.format !== dictionaryCardAuthoringGenerationFormat &&
         jobInput.format !== dictionaryCardAuthoringGenerationFormatV2 &&
         jobInput.format !== dictionaryCardAuthoringGenerationFormatV1
-    )
+    ) {
         throw new DictionaryGenerationCandidateConflictError();
+    }
+
     const candidateValues = normalizeCardValues(input.candidate.values);
     const candidateTranslationContext =
         jobInput.format === dictionaryCardAuthoringGenerationFormat
@@ -43,15 +45,19 @@ export function validateAuthoringAcceptance(
         (input.candidate.translationContext === undefined ||
             candidateTranslationContext !== jobInput.draft.translationContext ||
             proposalTranslationContext !== jobInput.translationContext)
-    )
+    ) {
         throw new DictionaryGenerationCandidateConflictError();
+    }
+
     const aiAssisted = input.selectedSuggestions.length > 0;
     if (
         jobInput.format === dictionaryCardAuthoringGenerationFormatV1 &&
         aiAssisted &&
         candidateValues.source !== stored.source
-    )
+    ) {
         throw new DictionaryGenerationCandidateConflictError();
+    }
+
     const suggestionsById = new Map(
         [...stored.suggestions, ...(stored.sourceSuggestions ?? [])].map(
             (suggestion) => [suggestion.id, suggestion],
@@ -67,8 +73,9 @@ export function validateAuthoringAcceptance(
             (suggestion.field !== 'source' &&
                 suggestion.basisSource !== undefined &&
                 suggestion.basisSource !== candidateValues.source)
-        )
+        ) {
             throw new DictionaryGenerationCandidateConflictError();
+        }
     }
 
     if (
@@ -80,8 +87,9 @@ export function validateAuthoringAcceptance(
         !input.selectedSuggestions.some(
             (selected) => selected.field === 'source',
         )
-    )
+    ) {
         throw new DictionaryGenerationCandidateConflictError();
+    }
 
     return {
         jobInput,

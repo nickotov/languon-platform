@@ -31,8 +31,10 @@ function setup(enabled = true) {
         enabled,
         store,
     });
+
     return { ...base, service, store };
 }
+
 const context = {
     clientAddress: '127.0.0.1',
     signal: new AbortController().signal,
@@ -42,6 +44,7 @@ const input = {
     mode: 'saved-first' as const,
     scope: { type: 'all' as const },
 };
+
 describe('sentence admission service and HTTP', () => {
     it('reports admission pressure as retryable capacity 503 instead of missing content', async () => {
         const f = setup();
@@ -70,20 +73,24 @@ describe('sentence admission service and HTTP', () => {
                 }),
             },
         );
+
         expect(res.status).toBe(503);
         expect(res.headers.get('Retry-After')).toBe('7');
         expect((await res.json()).error).toMatchObject({
             code: 'capacity_unavailable',
             retryAfterSeconds: 7,
         });
+
         expect(f.store.cancelJob).not.toHaveBeenCalled();
         expect(f.store.revealReference).not.toHaveBeenCalled();
     });
+
     it('admits checks using the canonical plural checks route and preserves capacity failure', async () => {
         const f = setup();
         f.store.enqueueCheck.mockRejectedValue(
             new SentenceCapacityUnavailableError(),
         );
+
         const app = createSentenceRoutes({
             service: f.service,
             policy: new AuthHttpPolicy({
@@ -109,6 +116,7 @@ describe('sentence admission service and HTTP', () => {
                 }),
             },
         );
+
         expect(res.status).toBe(503);
         expect((await res.json()).error.code).toBe('capacity_unavailable');
         expect(f.store.enqueueCheck).toHaveBeenCalled();
@@ -128,9 +136,11 @@ describe('sentence admission service and HTTP', () => {
         f.store.enqueueCheck.mockRejectedValue(
             new SentenceCreditsExhaustedError(),
         );
+
         f.store.revealReference.mockResolvedValue({
             review: { id, referenceTranslation: 'Saved answer' },
         });
+
         const app = createSentenceRoutes({
             service: f.service,
             policy: new AuthHttpPolicy({
@@ -150,10 +160,12 @@ describe('sentence admission service and HTTP', () => {
                 body: JSON.stringify({ operationId: id, sessionId: id }),
             },
         );
+
         expect(res.status).toBe(200);
         expect((await res.json()).review.referenceTranslation).toBe(
             'Saved answer',
         );
+
         expect(f.store.revealReference).toHaveBeenCalledWith(
             {
                 kind: 'owner',
@@ -167,10 +179,12 @@ describe('sentence admission service and HTTP', () => {
                 signal: expect.any(AbortSignal),
             },
         );
+
         expect(f.store.next).not.toHaveBeenCalled();
         expect(f.store.enqueueCheck).not.toHaveBeenCalled();
         expect(f.store.getJob).not.toHaveBeenCalled();
     });
+
     it('requires authentication for shared free reveal and personal review history', async () => {
         const f = setup();
         const target = {
@@ -178,6 +192,7 @@ describe('sentence admission service and HTTP', () => {
             shareId: 'share',
             shareKey: 'secret',
         };
+
         await expect(
             f.service.revealReference(
                 target,
@@ -186,12 +201,15 @@ describe('sentence admission service and HTTP', () => {
                 context,
             ),
         ).rejects.toBeInstanceOf(LearningAuthenticationRequiredError);
+
         await expect(
             f.service.manualReviews(target, { limit: 25 }, context),
         ).rejects.toBeInstanceOf(LearningAuthenticationRequiredError);
+
         expect(f.store.revealReference).not.toHaveBeenCalled();
         expect(f.store.manualReviews).not.toHaveBeenCalled();
     });
+
     it('passes live shared provenance to private manual history and free reveal', async () => {
         const f = setup();
         const target = {
@@ -200,12 +218,14 @@ describe('sentence admission service and HTTP', () => {
             shareKey: 'secret',
             accessToken: 'token',
         };
+
         await f.service.revealReference(
             target,
             id,
             { operationId: id, sessionId: id },
             context,
         );
+
         await f.service.manualReviews(target, { limit: 25 }, context);
         const access = {
             kind: 'shared',
@@ -213,14 +233,17 @@ describe('sentence admission service and HTTP', () => {
             keyDigest: 'digest',
             learnerId: 'learner',
         };
+
         expect(f.store.revealReference.mock.calls[0]?.[0]).toEqual(access);
         expect(f.store.manualReviews.mock.calls[0]?.[0]).toEqual(access);
     });
+
     it('denies unavailable exercise provenance on the free path and keeps disabled feature guarded', async () => {
         const f = setup();
         f.store.revealReference.mockRejectedValue(
             new SentenceUnavailableError(),
         );
+
         const app = createSentenceRoutes({
             service: f.service,
             policy: new AuthHttpPolicy({
@@ -237,6 +260,7 @@ describe('sentence admission service and HTTP', () => {
             },
             body: JSON.stringify({ operationId: id, sessionId: id }),
         };
+
         expect(
             (
                 await app.request(
@@ -245,6 +269,7 @@ describe('sentence admission service and HTTP', () => {
                 )
             ).status,
         ).toBe(404);
+
         const disabled = setup(false);
         const disabledApp = createSentenceRoutes({
             service: disabled.service,
@@ -258,16 +283,19 @@ describe('sentence admission service and HTTP', () => {
             `/learning/dictionaries/${id}/sentences/exercises/${id}/reference-answer`,
             request,
         );
+
         expect(res.status).toBe(503);
         expect((await res.json()).error.code).toBe('feature_disabled');
         expect(disabled.store.revealReference).not.toHaveBeenCalled();
     });
+
     it('serves authenticated personal review history without consulting paid admission', async () => {
         const f = setup();
         f.store.manualReviews.mockResolvedValue({
             reviews: [],
             nextCursor: null,
         });
+
         const app = createSentenceRoutes({
             service: f.service,
             policy: new AuthHttpPolicy({
@@ -280,6 +308,7 @@ describe('sentence admission service and HTTP', () => {
             `/learning/dictionaries/${id}/sentences/reviews?direction=source-to-target&limit=25`,
             { headers: { Authorization: 'Bearer valid.token.value' } },
         );
+
         expect(res.status).toBe(200);
         expect(await res.json()).toEqual({ reviews: [], nextCursor: null });
         expect(f.store.manualReviews).toHaveBeenCalled();
@@ -330,6 +359,7 @@ describe('sentence admission service and HTTP', () => {
                 }),
             },
         );
+
         expect(res.status).toBe(status);
         expect((await res.json()).error.code).toBe(code);
     });
@@ -343,11 +373,13 @@ describe('sentence admission service and HTTP', () => {
                 context,
             ),
         ).rejects.toBeInstanceOf(LearningAuthenticationRequiredError);
+
         expect(f.store.prepare).not.toHaveBeenCalled();
         expect(
             f.dependencies.dictionaries.findSharedCandidate,
         ).not.toHaveBeenCalled();
     });
+
     it('passes live share provenance and authenticated learner identity, without share key', async () => {
         const f = setup();
         await f.service.prepare(
@@ -360,6 +392,7 @@ describe('sentence admission service and HTTP', () => {
             input,
             context,
         );
+
         expect(f.store.prepare).toHaveBeenCalledWith(
             {
                 kind: 'shared',
@@ -370,6 +403,7 @@ describe('sentence admission service and HTTP', () => {
             input,
             { now: f.dependencies.clock.now(), signal: context.signal },
         );
+
         expect(
             f.dependencies.rateLimiter.consume.mock.calls.map(
                 ([call]) => call.scope,
@@ -379,6 +413,7 @@ describe('sentence admission service and HTTP', () => {
             'learning.sentences.prepare.learner',
         ]);
     });
+
     it('isolates capabilities and rejects shared history without bearer authentication', async () => {
         const f = setup();
         const app = createSentenceRoutes({
@@ -389,16 +424,20 @@ describe('sentence admission service and HTTP', () => {
                 refreshTokenTtlSeconds: 3600,
             }),
         });
+
         expect(
             (await app.request('/learning/sentences/capabilities')).status,
         ).toBe(200);
+
         const res = await app.request(
             '/learning/shared-dictionaries/abcdefghijklmnop/sentences/progress?direction=source-to-target',
             { headers: { 'x-languon-share-key': 'a'.repeat(43) } },
         );
+
         expect(res.status).toBe(401);
         expect(f.store.progress).not.toHaveBeenCalled();
     });
+
     it.each([
         { kind: 'empty', reason: 'no-saved-exercises' },
         { kind: 'job', job: { id } },
@@ -429,6 +468,7 @@ describe('sentence admission service and HTTP', () => {
                 }),
             },
         );
+
         expect(res.status).toBe(result.kind === 'job' ? 202 : 200);
     });
 });

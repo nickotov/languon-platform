@@ -3,10 +3,10 @@ type: design
 title: AI credits and provider expense accounting
 status: approved
 source_paths:
-  - apps/backend/src/modules/ai-credits
-  - apps/backend/src/modules/text-ai
-  - apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts
-  - apps/admin/src/pages/ai-settings
+    - apps/backend/src/modules/ai-credits
+    - apps/backend/src/modules/text-ai
+    - apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts
+    - apps/admin/src/pages/ai-settings
 ---
 
 # AI credits and provider expense accounting

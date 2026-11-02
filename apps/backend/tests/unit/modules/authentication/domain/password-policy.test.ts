@@ -21,6 +21,7 @@ describe('PasswordPolicy', () => {
         expect(() => policy.assertAcceptable(fourteenEmoji)).toThrow(
             PasswordPolicyViolationError,
         );
+
         expect(() => policy.assertAcceptable(fifteenEmoji)).not.toThrow();
     });
 

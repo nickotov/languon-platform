@@ -194,7 +194,7 @@ unusable. Recovery mutates shared state and requires an accountable operator.
    and business invariants. Resume writes only after the incident lead accepts
    the checks.
 10. Rotate affected credentials, preserve forensic evidence, and schedule a new
-   backup immediately after stabilization.
+    backup immediately after stabilization.
 
 If the newest backup fails checksum or integrity validation, move backward one
 verified object and record the larger RPO breach. Never patch migration history

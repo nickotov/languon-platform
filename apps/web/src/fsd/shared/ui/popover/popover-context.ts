@@ -26,6 +26,9 @@ export const PopoverContext = createContext<PopoverContextValue | null>(null);
 
 export function usePopover() {
     const context = useContext(PopoverContext);
-    if (!context) throw new Error('Popover parts must be used within Popover');
+    if (!context) {
+        throw new Error('Popover parts must be used within Popover');
+    }
+
     return context;
 }

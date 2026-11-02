@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "owner": "content-colocated-tests",
+  "baseCommit": "252de64",
+  "files": [
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/block-copy-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Atomic partial learning-block copy suite uses real disposable DB with explicit reset/migration/cleanup, tests dependency closure preview without writes, fresh audio/segment/exercise identity remapping, independent blob lifetime after source deletion and receipt replay. Negative foreign working-source/missing-block/stale destination cases assert unchanged draft version; fixture and scenario phases remain clear, assertions/timeouts untouched.",
+      "beforeSha256": "cf0afc56e959964171de2c50a29db99dc9dd4535cdf3df154e50d5d1ae494b04",
+      "afterSha256": "cf0afc56e959964171de2c50a29db99dc9dd4535cdf3df154e50d5d1ae494b04"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/block-field-actions.database.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Production Texts execution field-action suite names request/executeWorker/evaluationFixture seams, applies real restricted-role grants and explicitly denies note/learner table writes, validates real SDK request envelope/settlement, private attempt isolation, cancellation and revoked/materially changed source publication failure with zero learner charge. Also covers operator-funded checks, idempotency, invalid output bounded retry, branch/note erasure and strict schema field/Unicode rejection. Full 1148-line body read in contiguous segments; large suite represents consequential production composition coverage, no edits.",
+      "beforeSha256": "b42412f15178c0b5638de0ea9c3439a679caf1fd1bfcd71ea46652a688680bb4",
+      "afterSha256": "b42412f15178c0b5638de0ea9c3439a679caf1fd1bfcd71ea46652a688680bb4"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-free-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Prepared sentence PostgreSQL suite injects an admission that throws to prove free saved examples/reveals never invoke AI; asserts next/reveal replay, progress/history distinction, actor privacy/revocation, concurrent receipt serialization, outdated material history and source cascade erasure. Cursor tests bind source/actor/direction. Named source/setup/context fixtures expose each scenario.",
+      "beforeSha256": "99f10c1ecb35f7cc06ace9506399db11afb81512b0da24f246a4f0df3d44d3a3",
+      "afterSha256": "99f10c1ecb35f7cc06ace9506399db11afb81512b0da24f246a4f0df3d44d3a3"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-paid.database.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Paid sentence lifecycle suite exercises v1/v2 real provider adapter with stubbed HTTP and real financial engine; checks private reader ownership, revocation, deletion/purge fencing and independent copy survival. Deployment-role scenario explicitly denies private tables/queue fields, guessed/stale/cross-job capabilities and malformed generation/check output, requires deferred financial atomicity and verifies redaction/recovery/no-charge failure. All 1214 lines read in contiguous segments; security scenario breadth justifies size; assertions/timeouts retained.",
+      "beforeSha256": "fd0ffd84ef7f744fbaa9482d01c2621aebf54a64bd76d916454004a743574686",
+      "afterSha256": "fd0ffd84ef7f744fbaa9482d01c2621aebf54a64bd76d916454004a743574686"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-private-retention.database.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Private sentence retention DB suite names source fixture, real claim/dispatch and publish helpers; verifies payloads persist through unrelated edits but erase after source block deletion, with dispatched generation/check fencing and settled nonchargeable financial remnants. Exercise/note purge removes private content without reopening settlement; explicit transaction assertions preserve privacy lifetime contract.",
+      "beforeSha256": "d1c12247ea1f501d6db235e665e8bc00ca32df07d2477822dc796ea1b58049fb",
+      "afterSha256": "d1c12247ea1f501d6db235e665e8bc00ca32df07d2477822dc796ea1b58049fb"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Knowledge PostgreSQL suite covers v1/v2 rich-content roundtrip, derived search wildcard escaping, optimistic concurrent revision/restore, unsaved competing branch retention, idempotency, deletion tombstones, rollback/busy deletion and owner purge. Promise-gated share revocation verifies access recheck after blocking lock; explicit Save/title/recovery semantics have scenario-specific assertions. Full 880-line body read; established fixture/scenario organization retained.",
+      "beforeSha256": "3d6ad65b80e6a2c03b2c12b029eacb87866b6a3b57d22e96e18d0492f58d404c",
+      "afterSha256": "3d6ad65b80e6a2c03b2c12b029eacb87866b6a3b57d22e96e18d0492f58d404c"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learner-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "LearnerStore PostgreSQL suite separates source/content/request/share helpers and tests per-actor access, raw-key-free pinned answer/digest, explanation-only versus material revision, concurrent replay, reveal/completion separation, workbook membership/progress/revocation and cascade private-state erasure. Explicit scenario assertions explain security/history invariants; no mechanical reorganization warranted.",
+      "beforeSha256": "050e17bbde2a3cc907ef24aaa11b6953cab5e1475786bdbb0e5d6f64e27381ff",
+      "afterSha256": "050e17bbde2a3cc907ef24aaa11b6953cab5e1475786bdbb0e5d6f64e27381ff"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-epochs.database.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Published learning epochs tests exercise A-B-restored-A invalidation, cosmetic edit preservation, removal tombstones, scoped vocabulary identities, linked versus unrelated source changes, independent copied epochs, draft versus explicit Save, transaction rollback and invalid counter SQL constraints. revision/epoch fixtures isolate authoritative reads; paired semantic changes clearly express ABA invariant.",
+      "beforeSha256": "4ffab1fa5c15d78f0db35566c0952e9b54547d3d2cae51495074e85bebfbb8e6",
+      "afterSha256": "4ffab1fa5c15d78f0db35566c0952e9b54547d3d2cae51495074e85bebfbb8e6"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-source-accounting.database.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Learning source SQL authority suite uses pin/assert/save fixtures and direct SQL assertion boundary to test forged actor/snapshot rejection, translation-only edits versus original wording, exact live grants/owner status, workbook membership versus independent note links, and vocabulary ABA epochs including missing/duplicate epochs. Cohesive negative/positive paired assertions remain clear.",
+      "beforeSha256": "d217bc0e9aba8eae53964baf2af9a1704f41b92e78e9970d7eb2d940d91aecb3",
+      "afterSha256": "d217bc0e9aba8eae53964baf2af9a1704f41b92e78e9970d7eb2d940d91aecb3"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/library-copy.database.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Atomic library publication suite tests unpublished owned working snapshots without source publication, stale/foreign rollback, prepared vocabulary/revisions and independent replay after deletion, live share access versus completed copy, and Promise-gated source lock retention through destination publication. Bilingual aligned append preserves identities/manual text/offsets, untranslated sources remain drafts, and foreign targets/idempotency substitutions fail. Full 765-line body read with focused note/request/working fixtures.",
+      "beforeSha256": "d27de6b898e743456bf92e9e10bc86ae4a3e1a9949f408dea707ebd12339bb00",
+      "afterSha256": "d27de6b898e743456bf92e9e10bc86ae4a3e1a9949f408dea707ebd12339bb00"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/library-copy.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Library copy projection tests assert exact prepared vocabulary retention, fabricated selection/type rejection, fresh aligned identities/source order, append offsets/paragraph boundaries/manual translations, missing language fallback and duplicate/overflow rejection. Small shared fixtures and pure-function assertions express contract without mirroring implementation.",
+      "beforeSha256": "9753528e93becad074ea23f72c6f193e01f8def021af581082a5b18cdd7b1354",
+      "afterSha256": "9753528e93becad074ea23f72c6f193e01f8def021af581082a5b18cdd7b1354"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/media-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Media ownership DB tests require canonical verified fixture audio; assert draft media concealed from share until saved reference, foreign note/asset refusal, live playback revocation, fresh copied asset identity and ref-counted blob lifetime through independent source/copy deletion. Two complete lifecycle scenarios use explicit table count assertions.",
+      "beforeSha256": "1959e3e4153b5a88c39c5fc20f7f17c52577889967c5e1be7ab84d448fc45adf",
+      "afterSha256": "1959e3e4153b5a88c39c5fc20f7f17c52577889967c5e1be7ab84d448fc45adf"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/private-translation.database.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Private translation DB suite uses pinned binding/overlay/publication seams to verify contiguous paragraph offsets, no burst admission for prepared targets, per-actor overlay/fingerprint isolation and revoked grants. Publication rejects changed private snapshot before writes and independent copied Text survives source owner purge; actor purge preserves another actor/source. Explicit positive/negative authority cases are cohesive.",
+      "beforeSha256": "878b0b303044a048af0686d9da9acac6c9a8c091b77de71efdf97ffd76ab7503",
+      "afterSha256": "878b0b303044a048af0686d9da9acac6c9a8c091b77de71efdf97ffd76ab7503"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-admin-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Immutable transcription admin publication suite seeds real active owner/session, asserts audited revision atomicity, privately pinned credential evidence, unchanged replay versus substitution, concurrent version fencing, expired preview denial, membership and recent-auth recheck, and database immutable-update rejection. Exact stored versus public fingerprint assertions preserve secrecy; sequential stateful scenarios are explicit.",
+      "beforeSha256": "5ae17d1c123fa6a26465b6729d4e9e0a46800f964b1bdc813c566b34ca6ad4f8",
+      "afterSha256": "5ae17d1c123fa6a26465b6729d4e9e0a46800f964b1bdc813c566b34ca6ad4f8"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-store.database.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Canonical transcription DB suite validates preview versus confirmed hold, exact duration financial arithmetic, real adapter/worker fake HTTP completion and unknown/failed provider expense handling. Promise gates prove late cancellation observations cannot republish/reprice frozen expense; direct SQL probes reject forged witnesses, credential/attestation drift, raw media/foreign receipts and restricted-worker writes. Concurrent deletion prevents resurrection/stranded hold; TS/SQL arithmetic matches edge durations. Full 1275-line body read across contiguous segments; consequential authority/accounting assertions and cleanup remain intact.",
+      "beforeSha256": "a961c5f6188152fbba6bba13d71b5b56d58b152b2ad890c4ccc892f9d997cb13",
+      "afterSha256": "a961c5f6188152fbba6bba13d71b5b56d58b152b2ad890c4ccc892f9d997cb13"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/vocabulary-practice-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Vocabulary practice DB suite asserts prepared projections without library publication, per-actor mastery behind live grants, concurrent idempotent rating, strict latest-session/latest-entry Undo, A-B-A mastery reset and stale version rejection, preference compare-and-swap and publication-bound cursor invalidation. source/attempt/content fixtures keep behavior-oriented scenario assertions cohesive.",
+      "beforeSha256": "028b5cd2657ee6dec5c8f490bb90f0cd917d9fc4bf980b9b218ce7cb4bce2991",
+      "afterSha256": "028b5cd2657ee6dec5c8f490bb90f0cd917d9fc4bf980b9b218ce7cb4bce2991"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/workbook-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "WorkbookStore PostgreSQL suite distinguishes saved/draft private/shared copies, verifies atomic rejection leaves full tables unchanged, ordered membership/owner isolation, foreign/duplicate membership, concurrent expected-version writes, explicit shared-add acknowledgment, live membership revocation, link rotation/tombstone replay and independent fresh exercise IDs. note fixture centralizes content while scenarios expose aggregate invariants.",
+      "beforeSha256": "c1434cd4420e6f5530ab57da762e5974bc6604a294b9f5f3edb510a9a5ffb0eb",
+      "afterSha256": "c1434cd4420e6f5530ab57da762e5974bc6604a294b9f5f3edb510a9a5ffb0eb"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/transcription-admin.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Transcription configuration tests bind preview proof to exact values/owner session/current credential and preserve fingerprint secrecy. Readiness rejects missing tariff/billing/execution/credentials, stale account evidence and unapproved code revision; pinned native-duration rule verifies exact expense bound. Fixture separates preview application from pure readiness assertions.",
+      "beforeSha256": "2f6bcd4f2dd16727718ebe22467f1f0de67ab78947bd22810b8195d7f72ca3d2",
+      "afterSha256": "2f6bcd4f2dd16727718ebe22467f1f0de67ab78947bd22810b8195d7f72ca3d2"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/transcription-openai.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "OpenAI transcription adapter fixture binds canonical audio/receipt/credential fingerprint and approved processing revision; asserts official fixed multipart shape, language headers and absent unsupported fields, no dispatch for forged metadata/receipt/credential rotation, cancellation and no ambiguous retry, unknown usage and bounded malformed output. Parameterized receipt cases keep individual authority assertions explicit.",
+      "beforeSha256": "6cfc7bc8ef5bc0d5648cc9c364f9b063406783a84e38f1d7e53427807b280b9a",
+      "afterSha256": "6cfc7bc8ef5bc0d5648cc9c364f9b063406783a84e38f1d7e53427807b280b9a"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/block-field-routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Atomic field HTTP suite composes real service/routes with typed spies, asserting authenticated private actor/no-store, strict arbitrary field/prototype/identity/language rejection before persistence, validated allowance consent stripping, origin denial, foreign/revoked concealment and separate insufficient-credit status. Focused fixture and explicit request contracts are readable.",
+      "beforeSha256": "d5246d081c25972d4953c5f4be7bb8cfeae32a64c1c0a14c9ffd1b1d9e6e8031",
+      "afterSha256": "d5246d081c25972d4953c5f4be7bb8cfeae32a64c1c0a14c9ffd1b1d9e6e8031"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/exercise-evaluation-routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Exercise evaluation HTTP fixture composes real app/service/routes and typed store spies; cases assert authenticated actor, private no-store, strict input/consent stripping, origin/body limits, unavailable foreign job concealment, complete share-capability headers, source-change conflict and distinct credit error. Shared proof validation is checked before any store call; no edits.",
+      "beforeSha256": "4709eaea39695d8efae0e4f4a17302decded1b0833c21902478c899ec2e0299f",
+      "afterSha256": "4709eaea39695d8efae0e4f4a17302decded1b0833c21902478c899ec2e0299f"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/knowledge.routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Knowledge HTTP fixture lists complete typed store port but scenarios target bearer identity/private no-store, origin and unsafe rich-content rejection, optimistic conflict mapping, header-only share proof, authenticated shared copy and OpenAPI rich-content generation. Explicit request/store-not-called assertions preserve transport trust boundaries.",
+      "beforeSha256": "aa6afc393186d91b266eb26f27222c34a107891d62ef90502cfb01197ebd7aea",
+      "afterSha256": "aa6afc393186d91b266eb26f27222c34a107891d62ef90502cfb01197ebd7aea"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/learner-routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Learner HTTP tests compose service and typed persistence spies, checking authenticated private actor/no-store for note and workbook aggregates, all-or-nothing capability headers, caller identity/correctness rejection, revocation concealment and scoped origin/body limits before persistence. Small fixture returns focused scenario actors and spies.",
+      "beforeSha256": "312fac5f3109705d6103d6994391bef6c15502c9783c85c1adacc51a84efc280",
+      "afterSha256": "312fac5f3109705d6103d6994391bef6c15502c9783c85c1adacc51a84efc280"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/transcription-admin-routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Transcription admin boundary tests assert owner authentication/read denial, explicit allowed origin/recent authentication for preview, no apply during preview, code-owned approval despite billing evidence, and rejection of caller-supplied credential fingerprint/API key/model override. Readiness spy exercises real validation without provider calls.",
+      "beforeSha256": "48b79876451245354a6f48e625de144755d14f0f211ca76be5b3d59a7696f6c3",
+      "afterSha256": "48b79876451245354a6f48e625de144755d14f0f211ca76be5b3d59a7696f6c3"
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/workbook.routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Workbook HTTP suite composes actual app/services and typed store spies; verifies approved preflight capability headers, authenticated identity/private cache, invalid duplicate membership/UUID/origin no persistence, header-only public share proof, version conflict and source-version-bound copy destination. Fixture isolates transport assertions from DB behavior covered in colocated store suite.",
+      "beforeSha256": "46fc56fc54b2012f31e818b047f27d93104d415b6f20835829627dbe0c08863f",
+      "afterSha256": "46fc56fc54b2012f31e818b047f27d93104d415b6f20835829627dbe0c08863f"
+    }
+  ],
+  "batches": [],
+  "auditCursor": 25,
+  "remaining": 0,
+  "manifestNote": "Manifest expanded from16 to25 during audit; entries matched by actually read path, unread additions remain9."
+}

@@ -31,7 +31,9 @@ export async function lockPortraitOwner(
         .where(eq(usersTable.id, userId))
         .for('update');
 
-    if (owner?.status !== 'active') throw new PortraitUserUnavailableError();
+    if (owner?.status !== 'active') {
+        throw new PortraitUserUnavailableError();
+    }
 }
 
 export async function readPortraitState(

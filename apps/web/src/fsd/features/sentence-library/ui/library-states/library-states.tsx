@@ -9,10 +9,12 @@ import {
 import { Button } from '@/fsd/shared/ui';
 import { InlineAlert } from '@/fsd/shared/ui';
 import { Skeleton } from '@/fsd/shared/ui';
+import type { LibraryKey } from '../../lib/copy';
 import { useInterfaceText } from '../../hooks/use-interface-text';
 
 export function LibrarySkeleton({ rows = 5 }: { rows?: number }) {
     const { L } = useInterfaceText();
+
     return (
         <div
             role='status'
@@ -38,6 +40,7 @@ export function LibrarySkeleton({ rows = 5 }: { rows?: number }) {
 
 export function LibraryLoadError({ onRetry }: { onRetry: () => void }) {
     const { L } = useInterfaceText();
+
     return (
         <InlineAlert
             tone='error'
@@ -65,24 +68,26 @@ export function LibraryEmpty({
     onPractice?: () => void;
 }) {
     const { L } = useInterfaceText();
-    const Icon =
-        kind === 'none'
-            ? MessageSquareTextIcon
-            : kind === 'archive-empty'
-              ? EyeOffIcon
-              : FilterXIcon;
-    const title =
-        kind === 'none'
-            ? L('emptyTitle')
-            : kind === 'archive-empty'
-              ? L('archiveEmptyTitle')
-              : L('noResultsTitle');
-    const body =
-        kind === 'none'
-            ? L('emptyBody')
-            : kind === 'archive-empty'
-              ? L('archiveEmptyBody')
-              : L('noResultsBody');
+    let Icon;
+    let titleKey: LibraryKey;
+    let bodyKey: LibraryKey;
+    if (kind === 'none') {
+        Icon = MessageSquareTextIcon;
+        titleKey = 'emptyTitle';
+        bodyKey = 'emptyBody';
+    } else if (kind === 'archive-empty') {
+        Icon = EyeOffIcon;
+        titleKey = 'archiveEmptyTitle';
+        bodyKey = 'archiveEmptyBody';
+    } else {
+        Icon = FilterXIcon;
+        titleKey = 'noResultsTitle';
+        bodyKey = 'noResultsBody';
+    }
+
+    const title = L(titleKey);
+    const body = L(bodyKey);
+
     return (
         <div className={componentStyles.emptyState}>
             <span className={componentStyles.emptyIcon}>
@@ -116,6 +121,7 @@ export function LoadMore({
     onLoad: () => void;
 }) {
     const { L } = useInterfaceText();
+
     return (
         <div className={componentStyles.root}>
             {status === 'error' ? (

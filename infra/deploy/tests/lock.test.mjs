@@ -14,6 +14,7 @@ async function deadProcessId() {
     const pid = child.pid;
     child.kill('SIGTERM');
     await new Promise((resolve) => child.once('exit', resolve));
+
     return pid;
 }
 
@@ -24,6 +25,7 @@ test('serializes live deployments', async () => {
         () => acquireDeployLock(directory, 'second'),
         /already running/,
     );
+
     await release();
 });
 
@@ -53,6 +55,7 @@ test('simultaneous cross-process stale-lock recovery admits exactly one owner', 
                     stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
                 },
             );
+
             return {
                 child,
                 exit: new Promise((resolve) => child.once('exit', resolve)),
@@ -67,6 +70,7 @@ test('simultaneous cross-process stale-lock recovery admits exactly one owner', 
         const owners = contenders.filter(
             (_, index) => results[index].status === 'acquired',
         );
+
         assert.equal(owners.length, 1);
         owners[0].child.send('release');
         await Promise.all(contenders.map(({ exit }) => exit));

@@ -20,6 +20,7 @@ function inspection({
     const signalled = [];
     const calls = [];
     let psCalls = 0;
+
     return {
         signalled,
         calls,
@@ -32,6 +33,7 @@ function inspection({
                 calls.push([tool, args]);
                 if (tool === 'ps') {
                     psCalls++;
+
                     return {
                         stdout:
                             !survives && psCalls > 2
@@ -39,6 +41,7 @@ function inspection({
                                 : `${uid} ${stamp} ${command}\n`,
                     };
                 }
+
                 return {
                     stdout: args.includes('cwd')
                         ? `p12345\nfcwd\nn${cwd}\n`
@@ -61,6 +64,7 @@ test('empty port does not signal anything', async () => {
     state.options.run = async () => {
         throw Object.assign(new Error(), { code: 1, stdout: '', stderr: '' });
     };
+
     await restartExistingPanel(state.options);
     assert.deepEqual(state.signalled, []);
 });
@@ -76,6 +80,7 @@ for (const [name, overrides] of [
             restartExistingPanel(state.options),
             /not this checkout's panel/u,
         );
+
         assert.deepEqual(state.signalled, []);
     });
 }
@@ -85,10 +90,12 @@ test('failed process inspection never becomes permission to signal', async () =>
     state.options.run = async () => {
         throw Object.assign(new Error(), { code: 'ENOENT' });
     };
+
     await assert.rejects(
         restartExistingPanel(state.options),
         /Cannot safely inspect/u,
     );
+
     assert.deepEqual(state.signalled, []);
 });
 
@@ -98,14 +105,18 @@ test('changed process identity during inspection is refused', async () => {
     let count = 0;
     state.options.run = async (tool, args) => {
         const result = await run(tool, args);
-        if (tool === 'ps' && ++count === 2)
+        if (tool === 'ps' && ++count === 2) {
             result.stdout = result.stdout.replace('12:00:00', '12:00:01');
+        }
+
         return result;
     };
+
     await assert.rejects(
         restartExistingPanel(state.options),
         /changed during inspection/u,
     );
+
     assert.deepEqual(state.signalled, []);
 });
 
@@ -115,6 +126,7 @@ test('shutdown timeout never escalates the signal', async () => {
         restartExistingPanel({ ...state.options, timeoutMs: 0 }),
         /shutdown timed out/u,
     );
+
     assert.deepEqual(state.signalled, [12345]);
 });
 
@@ -139,8 +151,10 @@ test(
                     await closed;
                 }
             }
+
             await rm(directory, { recursive: true, force: true });
         });
+
         await mkdir(resolve(directory, 'src'));
         await writeFile(
             resolve(directory, 'src/main.mjs'),
@@ -151,12 +165,14 @@ server.listen(Number(process.env.FIXTURE_PORT || 0), '127.0.0.1', () => console.
 process.once('SIGTERM', () => setTimeout(() => server.close(), 100));
 `,
         );
+
         const start = async (port = 0) => {
             const child = spawn(process.execPath, ['src/main.mjs'], {
                 cwd: directory,
                 env: { ...process.env, FIXTURE_PORT: String(port) },
                 stdio: ['ignore', 'pipe', 'pipe'],
             });
+
             children.push(child);
             const [chunk] = await Promise.race([
                 once(child.stdout, 'data'),
@@ -166,6 +182,7 @@ process.once('SIGTERM', () => setTimeout(() => server.close(), 100));
                     );
                 }),
             ]);
+
             return { child, port: Number(chunk.toString().trim()) };
         };
         const first = await start();
@@ -175,6 +192,7 @@ process.once('SIGTERM', () => setTimeout(() => server.close(), 100));
             port: first.port,
             log: () => {},
         });
+
         await closed;
         assert.equal(first.child.exitCode, 0);
         const second = await start(first.port);
@@ -183,6 +201,7 @@ process.once('SIGTERM', () => setTimeout(() => server.close(), 100));
             await (await fetch(`http://127.0.0.1:${first.port}`)).text(),
             'fixture',
         );
+
         await assert.rejects(
             restartExistingPanel({
                 panelDirectory,
@@ -191,6 +210,7 @@ process.once('SIGTERM', () => setTimeout(() => server.close(), 100));
             }),
             /not this checkout's panel/u,
         );
+
         assert.equal(second.child.exitCode, null);
     },
 );

@@ -9,6 +9,7 @@ export function useCreditBalance() {
         (state) => state.status === 'authenticated',
     );
     const { requestWithSession } = useAuth();
+
     return useQuery({
         queryKey: ['learner-credit-balance', ownerId],
         queryFn: ({ signal }) =>

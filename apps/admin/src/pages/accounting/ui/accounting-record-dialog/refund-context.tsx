@@ -24,7 +24,7 @@ export function RefundContext({
         onCreditLotAvailable(false);
         setContext(null);
         setError(null);
-        if (paymentId)
+        if (paymentId) {
             void adminApi
                 .accountingRefundContext(paymentId, controller.signal)
                 .then((value) => {
@@ -35,18 +35,25 @@ export function RefundContext({
                     }
                 })
                 .catch((caught: unknown) => {
-                    if (!controller.signal.aborted)
+                    if (!controller.signal.aborted) {
                         setError(
                             caught instanceof Error
                                 ? caught.message
                                 : 'Unable to load refund context.',
                         );
+                    }
                 });
+        }
+
         return () => controller.abort();
     }, [paymentId, onReady, onCreditLotAvailable, attempt]);
+
     const retry = () => setAttempt((value) => value + 1);
-    if (!paymentId) return null;
-    if (error)
+    if (!paymentId) {
+        return null;
+    }
+
+    if (error) {
         return (
             <Alert
                 type='error'
@@ -54,7 +61,12 @@ export function RefundContext({
                 action={<Button onClick={retry}>{t('actions.retry')}</Button>}
             />
         );
-    if (!context) return <Spin />;
+    }
+
+    if (!context) {
+        return <Spin />;
+    }
+
     const items = [
         {
             key: 'paid',
@@ -91,5 +103,6 @@ export function RefundContext({
                 context.revokedCredits ?? t('accounting.removedCreditLot'),
         },
     ];
+
     return <Descriptions column={1} bordered items={items} />;
 }

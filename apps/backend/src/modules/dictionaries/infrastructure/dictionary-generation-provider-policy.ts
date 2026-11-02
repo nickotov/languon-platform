@@ -54,6 +54,7 @@ export function loadDictionaryGenerationProviderBudgetPolicy(
     const configuredCount = providerPolicyEnvironmentNames.filter(
         (name) => raw[name] !== undefined,
     ).length;
+
     if (
         (options.requireExplicit &&
             configuredCount !== providerPolicyEnvironmentNames.length) ||
@@ -65,8 +66,10 @@ export function loadDictionaryGenerationProviderBudgetPolicy(
             'All five dictionary generation provider budget settings must be configured together.',
         );
     }
+
     if (configuredCount === 0) {
         reportEnvironmentFallbacks(values, providerPolicyEnvironmentNames);
+
         return defaultDictionaryGenerationProviderBudgetPolicy;
     }
 
@@ -80,6 +83,7 @@ export function loadDictionaryGenerationProviderBudgetPolicy(
         outputCostMicrosPerMillionTokens:
             raw.DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS!,
     };
+
     if (
         policy.maxInputTokensPerAttempt <
             dictionaryGenerationMinimumSupportedInputTokens ||
@@ -89,6 +93,7 @@ export function loadDictionaryGenerationProviderBudgetPolicy(
             `DICTIONARY_GENERATION_MAX_INPUT_TOKENS must be between ${dictionaryGenerationMinimumSupportedInputTokens} and 262144 so the fixed provider framing, prompt, structured-output schema, and a valid card input fit before dispatch.`,
         );
     }
+
     if (
         policy.maxOutputTokensPerAttempt < 128 ||
         policy.maxOutputTokensPerAttempt > 40_960
@@ -97,6 +102,7 @@ export function loadDictionaryGenerationProviderBudgetPolicy(
             'DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS must be between 128 and 40960.',
         );
     }
+
     for (const [name, value] of [
         [
             'DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS',
@@ -113,6 +119,7 @@ export function loadDictionaryGenerationProviderBudgetPolicy(
             );
         }
     }
+
     if (
         policy.maxCostMicrosPerAttempt < 1 ||
         policy.maxCostMicrosPerAttempt > 10_000_000
@@ -121,13 +128,16 @@ export function loadDictionaryGenerationProviderBudgetPolicy(
             'DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT must be between 1 and 10000000.',
         );
     }
+
     const maximumPricedCost =
         dictionaryGenerationProviderMaximumPricedCostMicros(policy);
+
     if (policy.maxCostMicrosPerAttempt < maximumPricedCost) {
         throw policyConfigurationError(
             'DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT must cover the configured maximum input and output token prices.',
         );
     }
+
     return policy;
 }
 
@@ -146,16 +156,18 @@ export function assertDictionaryGenerationProviderBudgetSupportsFormats(
             'Pasted-term generation requires a 262144 input-token and 40960 output-token aggregate provider envelope.',
         );
     }
+
     if (
         formats.includes(dictionaryImportPairsGenerationFormat) &&
         (policy.maxInputTokensPerAttempt <
             dictionaryImportPairsGenerationMinimumInputTokensPerAttempt ||
             policy.maxOutputTokensPerAttempt <
                 dictionaryImportPairsGenerationMinimumOutputTokensPerAttempt)
-    )
+    ) {
         throw policyConfigurationError(
             'Import-pairs generation requires a 262144 input-token and 40960 output-token aggregate provider envelope.',
         );
+    }
 }
 
 function policyConfigurationError(message: string): z.ZodError {

@@ -49,16 +49,23 @@ export function SentencePreparationSheet({
     function stop() {
         void controller.stop();
     }
+
     function resume() {
-        if (run?.requiresNewBudget) void controller.continueWithBudget?.();
-        else void controller.resume();
+        if (run?.requiresNewBudget) {
+            void controller.continueWithBudget?.();
+        } else {
+            void controller.resume();
+        }
     }
+
     function startAgain() {
         if (!run) {
             controller.clear();
             onRestartSetup();
+
             return;
         }
+
         void controller.start({
             direction: run.direction,
             mode: 'saved-first',
@@ -68,14 +75,17 @@ export function SentencePreparationSheet({
                 : {}),
         });
     }
+
     function startRound(batch: SentencePreparationBatch) {
         if (
             !run ||
             !batch.preparedEntryIds.length ||
             run.pauseReason === 'stale' ||
             run.pauseReason === 'access'
-        )
+        ) {
             return;
+        }
+
         onStart({
             direction: run.direction,
             mode: run.mode,
@@ -86,6 +96,7 @@ export function SentencePreparationSheet({
                 : {}),
         });
     }
+
     const footer = (
         <div className={styles.footer}>
             {working ? (
@@ -128,6 +139,7 @@ export function SentencePreparationSheet({
             </div>
         </div>
     );
+
     return (
         <>
             {controller.actionConsent && (

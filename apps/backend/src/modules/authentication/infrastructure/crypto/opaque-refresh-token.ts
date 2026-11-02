@@ -25,6 +25,7 @@ export class OpaqueRefreshTokenService implements RefreshCredentialService {
         }
 
         const value = Buffer.from(randomBytes).toString('base64url');
+
         return { digest: this.digest(value), value };
     }
 }

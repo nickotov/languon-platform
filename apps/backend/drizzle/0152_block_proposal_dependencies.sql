@@ -1,0 +1,1 @@
+ALTER TABLE "conversation_block_proposals" ADD COLUMN "dependency_snapshots" jsonb DEFAULT '[]'::jsonb NOT NULL;

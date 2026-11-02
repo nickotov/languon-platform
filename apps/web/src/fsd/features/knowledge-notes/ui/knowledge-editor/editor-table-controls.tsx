@@ -14,19 +14,27 @@ export function EditorTableControls({
     function addRow() {
         editor.chain().focus().addRowAfter().run();
     }
+
     function addColumn() {
         editor.chain().focus().addColumnAfter().run();
     }
+
     function deleteRow() {
         editor.chain().focus().deleteRow().run();
     }
+
     function deleteColumn() {
         editor.chain().focus().deleteColumn().run();
     }
+
     function deleteTable() {
         editor.chain().focus().deleteTable().run();
     }
-    if (!editor.isActive('table')) return null;
+
+    if (!editor.isActive('table')) {
+        return null;
+    }
+
     return (
         <div
             className={styles.tableTools}

@@ -142,6 +142,7 @@ describe('dictionary document generation panel', () => {
                 {...handlers}
             />,
         );
+
         const user = userEvent.setup();
         const file = new File(['مصطلح'], 'terms.txt', { type: 'text/plain' });
         const fileInput = screen.getByLabelText('Document');
@@ -151,12 +152,15 @@ describe('dictionary document generation panel', () => {
             screen.getByLabelText(/^Generation instruction/),
             '  legal context  ',
         );
+
         expect(
             screen.getByLabelText(/^Generation instruction/),
         ).toHaveAttribute('dir', 'rtl');
+
         const submit = screen.getByRole('button', {
             name: 'Upload and generate cards',
         });
+
         expect(submit).toBeEnabled();
         fireEvent.submit(submit.closest('form')!);
         await waitFor(() =>
@@ -165,6 +169,7 @@ describe('dictionary document generation panel', () => {
                 instruction: 'legal context',
             }),
         );
+
         expect(screen.getByText(/OCR is unavailable/)).toBeInTheDocument();
     });
 
@@ -182,16 +187,19 @@ describe('dictionary document generation panel', () => {
                 {...handlers}
             />,
         );
+
         const user = userEvent.setup();
         expect(document.querySelector('script')).toBeNull();
         expect(screen.getByLabelText('Source phrase')).toHaveAttribute(
             'dir',
             'rtl',
         );
+
         expect(screen.getByLabelText('Translation')).toHaveAttribute(
             'dir',
             'ltr',
         );
+
         await user.clear(screen.getByLabelText('Translation'));
         await user.type(screen.getByLabelText('Translation'), 'edited term');
         await user.click(screen.getByRole('button', { name: 'Add 1 cards' }));
@@ -242,19 +250,23 @@ describe('dictionary document generation panel', () => {
                 {...handlers}
             />,
         );
+
         const user = userEvent.setup();
         const retryable = screen.getByRole('checkbox', {
             name: 'Retry extracted term 2',
         });
+
         expect(retryable).toBeChecked();
         expect(
             screen.queryByRole('checkbox', {
                 name: 'Retry extracted term 3',
             }),
         ).not.toBeInTheDocument();
+
         await user.click(
             screen.getByRole('button', { name: 'Retry selected failures' }),
         );
+
         expect(handlers.onRetryFailures).toHaveBeenCalledWith([
             expect.objectContaining({ rowIndex: 1 }),
         ]);
@@ -279,14 +291,17 @@ describe('dictionary document generation panel', () => {
                 {...callbacks()}
             />,
         );
+
         expect(
             screen.getByRole('progressbar', {
                 name: 'Document generation progress',
             }),
         ).toHaveValue(18);
+
         expect(
             screen.getByRole('button', { name: 'Cancel processing' }),
         ).toBeDisabled();
+
         expect(
             screen.getByRole('button', { name: 'Close document generation' }),
         ).toBeDisabled();

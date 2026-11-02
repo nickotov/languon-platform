@@ -53,13 +53,16 @@ async function request<T>(
     const data: unknown = await response.json().catch(() => undefined);
     if (!response.ok) {
         const parsed = TextAiErrorResponseSchema.safeParse(data);
+
         throw new PreferenceApiError(
             parsed.success ? parsed.data.error.code : 'internal_error',
             response.status,
         );
     }
+
     return schema.parse(data);
 }
+
 export const preferencesApi = {
     catalog: (token: string) =>
         request(token, '/text-ai/models', TextAiModelsResponseSchema),

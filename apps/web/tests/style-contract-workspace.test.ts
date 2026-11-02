@@ -22,11 +22,14 @@ const fixtures: string[] = [];
 function fixture() {
     const directory = mkdtempSync(join(tmpdir(), 'languon-style-contract-'));
     fixtures.push(directory);
+
     return directory;
 }
+
 afterEach(() => {
-    for (const directory of fixtures.splice(0))
+    for (const directory of fixtures.splice(0)) {
         rmSync(directory, { recursive: true, force: true });
+    }
 });
 
 describe('workspace styling contract regressions', () => {
@@ -38,10 +41,12 @@ describe('workspace styling contract regressions', () => {
             join(catalog, 'preview.tsx'),
             '<div className="flex" style={{padding: 24}} />',
         );
+
         writeFileSync(
             join(catalog, 'preview.module.css'),
             '.canvas { max-width: 720px; }',
         );
+
         const errors = checkStyles(directory);
         expect(errors).toEqual(
             expect.arrayContaining([
@@ -49,6 +54,7 @@ describe('workspace styling contract regressions', () => {
                 '.storybook/preview.tsx: Static inline presentation: padding',
             ]),
         );
+
         expect(
             errors.some((error) =>
                 error.startsWith('.storybook/preview.module.css:'),
@@ -67,6 +73,7 @@ describe('workspace styling contract regressions', () => {
                 'Tailwind utility: hidden',
             ]),
         );
+
         expect(
             inspectMarkup(
                 '<div className={clsx({ [styles.layout]: active })} />',
@@ -80,6 +87,7 @@ describe('workspace styling contract regressions', () => {
                 'const base = {padding: "12px"}; const alias = base; const view = <div style={{...alias, width: `${percent}%`}} />;',
             ),
         ).toEqual(['Static inline presentation: padding']);
+
         expect(
             inspectMarkup(
                 'const base = {width: `${percent}%`, transform: drag.transform}; const view = <div style={{...base, ...floatingStyles}} />;',
@@ -93,6 +101,7 @@ describe('workspace styling contract regressions', () => {
             join(directory, 'tailwind.config.ts'),
             'export default {};',
         );
+
         writeFileSync(
             join(directory, 'package.json'),
             JSON.stringify({
@@ -100,10 +109,12 @@ describe('workspace styling contract regressions', () => {
                 dependencies: { '@tailwindcss/postcss': '4.0.0' },
             }),
         );
+
         writeFileSync(
             join(directory, 'postcss.config.mjs'),
             'import plugin from "@tailwindcss/postcss"; export default {plugins: [plugin]};',
         );
+
         expect(inspectWorkspaceArtifacts(directory)).toEqual(
             expect.arrayContaining([
                 'tailwind.config.ts: Tailwind configuration',
@@ -112,10 +123,12 @@ describe('workspace styling contract regressions', () => {
                 'postcss.config.mjs: Tailwind PostCSS plugin',
             ]),
         );
+
         writeFileSync(
             join(directory, 'postcss.config.mjs'),
             'export default { plugins: {tailwindcss: {}} };',
         );
+
         expect(inspectWorkspaceArtifacts(directory)).toContain(
             'postcss.config.mjs: Tailwind PostCSS plugin',
         );
@@ -127,10 +140,12 @@ describe('workspace styling contract regressions', () => {
             join(directory, 'package.json'),
             JSON.stringify({ devDependencies: { postcss: '^8' } }),
         );
+
         writeFileSync(
             join(directory, 'postcss.config.mjs'),
             '// removed tailwindcss\nexport default {plugins: {autoprefixer: {}}};',
         );
+
         expect(inspectWorkspaceArtifacts(directory)).toEqual([]);
     });
 
@@ -145,16 +160,19 @@ describe('workspace styling contract regressions', () => {
             componentFile,
             '.card { padding: 0.75rem 4px; margin-left: -12px; width: 12.8px; border-radius: 12px; border: 1px solid; height: 100%; }',
         );
+
         expect(tokenizeCss(directory)).toEqual({ changed: 1, lengths: 3 });
         const component = readFileSync(componentFile, 'utf8');
         const tokens = readFileSync(tokenFile, 'utf8');
         expect(component).toBe(
             '.card { padding: var(--space-12) var(--space-4); margin-left: calc(var(--space-12) * -1); width: var(--size-12-8); border-radius: var(--radius-12); border: 1px solid; height: 100%; }',
         );
+
         const definitions = new Map<string, string>();
         postcss.parse(tokens).walkDecls((declaration) => {
             definitions.set(declaration.prop, declaration.value);
         });
+
         expect(definitions.get('--size-4')).toBe('0.25rem');
         expect(definitions.get('--size-12')).toBe('0.75rem');
         expect(definitions.get('--size-12-8')).toBe('0.8rem');

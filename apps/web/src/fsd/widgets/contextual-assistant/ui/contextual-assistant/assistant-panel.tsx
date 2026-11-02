@@ -1,4 +1,7 @@
 'use client';
+import { BlockContextPicker } from './block-context-picker';
+import type { KnowledgeBlockProposal } from '@languon/contracts';
+import { KnowledgeBlockProposals } from '@/fsd/features/knowledge-notes';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
 import { LoadingState, useCompanionLayout } from '@/fsd/shared/ui';
@@ -30,10 +33,15 @@ export function AssistantPanel(
         onSelectFromPage(): void;
     },
 ) {
+    const readOnlyKnowledge =
+        props.source.kind === 'knowledge' &&
+        (Boolean(props.source.shareLocator) || props.source.view === 'saved');
+    const workspace = readOnlyKnowledge ? undefined : props.workspace;
+    const currentDraft = readOnlyKnowledge ? undefined : props.currentDraft;
     const { locale, formatDate } = useI18n();
     const copy = conversationCopy(locale);
     const placement = useCompanionLayout();
-    const panel = useAssistantPanel(props);
+    const panel = useAssistantPanel({ ...props, workspace, currentDraft });
     const { chat, detail } = panel;
     const modeCopy = tutorModeCopy(locale);
     const actionRetryLabel =
@@ -53,10 +61,12 @@ export function AssistantPanel(
     const lastTurn = detail?.turns.at(-1);
     const interrupted =
         lastTurn?.status === 'failed' || lastTurn?.status === 'cancelled';
-    const editing = Boolean(
-        panel.editingDraft &&
-        detail?.drafts.some((draft) => draft.id === panel.editingDraft),
-    );
+    const editing =
+        !readOnlyKnowledge &&
+        Boolean(
+            panel.editingDraft &&
+            detail?.drafts.some((draft) => draft.id === panel.editingDraft),
+        );
     const preferences = panel.preferences;
     const showContent = !panel.unavailable && Boolean(detail);
     const loading =
@@ -66,26 +76,60 @@ export function AssistantPanel(
     const busy = panel.busy || panel.deletingPending;
     const deletePending = Boolean(panel.deleting) && !panel.history;
     const historyDeleting = panel.history ? panel.deleting : null;
-    const canSelect = Boolean(props.selectionRootId) && !props.workspace;
+    const canSelect = Boolean(props.selectionRootId) && !workspace;
     const selectionAction = canSelect ? props.onSelectFromPage : undefined;
     function foldMobileForReview() {
-        if (props.workspace && placement && !placement.detached) {
-            if (placement.mobile) placement.setMobileTab('document');
-            else if (placement.overlay) placement.setMode('focus');
+        if (workspace && placement && !placement.detached) {
+            if (placement.mobile) {
+                placement.setMobileTab('document');
+            } else if (placement.overlay) {
+                placement.setMode('focus');
+            }
+
             return;
         }
-        if (window.matchMedia('(max-width: 1023px)').matches) props.onFold();
+
+        if (window.matchMedia('(max-width: 1023px)').matches) {
+            props.onFold();
+        }
     }
 
+    function askForBlocksAgain(proposal: KnowledgeBlockProposal) {
+        const question = detail?.messages.find(
+            (message) =>
+                message.role === 'user' && message.turnId === proposal.turnId,
+        )?.content;
+
+        if (question) {
+            chat.setQuestion(question);
+        }
+    }
+
+    const blockProposalContext =
+        workspace?.blockProposalContext && chat.id
+            ? {
+                  ...workspace.blockProposalContext,
+                  requestWithSession: panel.requestWithSession,
+                  conversationId: chat.id,
+                  onAskAgain: askForBlocksAgain,
+                  getBlockLabel: (blockId: string) =>
+                      workspace.blockProposalContext?.getBlockLabel?.(
+                          blockId,
+                      ) ??
+                      props.blocks?.find((block) => block.id === blockId)
+                          ?.title,
+              }
+            : undefined;
+    const blockProposalRefresh = `${detail?.conversation.updatedAt ?? ''}:${lastTurn?.id ?? ''}:${lastTurn?.status ?? ''}`;
     const portrait = {
         ownerId: props.actorId,
         requestWithSession: panel.requestWithSession,
         origins: detail?.conversation.preferenceOrigins,
         onFreshChat: panel.createWithoutPortrait,
     };
-    const contextPicker =
+    const libraryPicker =
         panel.picker && chat.id ? (
-            props.workspace ? (
+            workspace ? (
                 <WorkspaceReferencePicker
                     actorId={props.actorId}
                     conversationId={chat.id}
@@ -105,11 +149,25 @@ export function AssistantPanel(
                 />
             )
         ) : undefined;
+    const contextPicker =
+        props.blocks && panel.picker ? (
+            <BlockContextPicker
+                available={props.blocks}
+                selected={panel.blockReferences.selected}
+                onAdd={panel.blockReferences.add}
+                onRemove={panel.blockReferences.remove}
+                onClose={panel.closePicker}
+                libraryPicker={libraryPicker}
+            />
+        ) : (
+            libraryPicker
+        );
+
     return (
         <TutorShell
-            workspace={Boolean(props.workspace)}
-            editorCharacters={props.workspace?.editorCharacters}
-            editorLimit={props.workspace?.editorLimit}
+            workspace={Boolean(workspace)}
+            editorCharacters={workspace?.editorCharacters}
+            editorLimit={workspace?.editorLimit}
             folded={props.folded}
             onFold={props.onFold}
             onExpand={props.onExpand}
@@ -118,8 +176,8 @@ export function AssistantPanel(
             unread={panel.unread}
             sourceKind={props.source.kind}
             contextLabel={props.contextLabel ?? copy.source}
-            hasDraft={Boolean(props.currentDraft) && !props.workspace}
-            useDraft={props.workspace ? true : chat.useDraft}
+            hasDraft={Boolean(currentDraft) && !workspace}
+            useDraft={workspace ? true : chat.useDraft}
             onUseDraft={chat.setUseDraft}
             onNew={panel.create}
             onHistory={panel.toggleHistory}
@@ -174,46 +232,60 @@ export function AssistantPanel(
                     hidden={panel.history || panel.unavailable}
                 >
                     {showContent && detail && (
-                        <ConversationMessages
-                            detail={detail}
-                            sourceKind={props.source.kind}
-                            contextLabel={props.contextLabel}
-                            uiMessages={chat.stream.messages}
+                        <KnowledgeBlockProposals
+                            context={blockProposalContext}
+                            refreshKey={blockProposalRefresh}
                             active={panel.active}
-                            pending={chat.submit.isPending}
-                            onRetry={panel.retry}
-                            onContinue={panel.continueResponse}
-                            onPropose={panel.propose}
-                            onAcceptWorkspaceProposal={
-                                props.workspace
-                                    ? panel.acceptProposal
-                                    : undefined
-                            }
-                            workspaceTargets={panel.proposalTargets}
-                            onSuggest={chat.setQuestion}
-                            proposalRootId={props.workspace?.proposalRootId}
-                            onReviewProposal={foldMobileForReview}
-                            workspace={props.workspace}
                         >
-                            {detail.drafts.map((draft) => (
-                                <KnowledgeDraftCard
-                                    key={draft.id}
-                                    draft={draft}
-                                    request={panel.requestWithSession}
-                                    shareKey={props.shareKey}
-                                    onChanged={chat.refresh}
-                                    onDirtyChange={panel.draftDirty}
-                                    discardRevision={panel.discardRevision}
-                                    expanded={panel.editingDraft === draft.id}
-                                    onOpen={panel.setEditingDraft}
-                                    onBack={panel.backToChat}
-                                    onPublished={publishedNote}
-                                />
-                            ))}
-                            {published && (
-                                <PublishedNoteNotice note={published} />
-                            )}
-                        </ConversationMessages>
+                            <ConversationMessages
+                                detail={detail}
+                                blocks={props.blocks}
+                                sourceKind={props.source.kind}
+                                contextLabel={props.contextLabel}
+                                uiMessages={chat.stream.messages}
+                                active={panel.active}
+                                pending={chat.submit.isPending}
+                                onRetry={panel.retry}
+                                onContinue={panel.continueResponse}
+                                onPropose={
+                                    readOnlyKnowledge
+                                        ? undefined
+                                        : panel.propose
+                                }
+                                onAcceptWorkspaceProposal={
+                                    workspace ? panel.acceptProposal : undefined
+                                }
+                                workspaceTargets={panel.proposalTargets}
+                                onSuggest={chat.setQuestion}
+                                proposalRootId={workspace?.proposalRootId}
+                                onReviewProposal={foldMobileForReview}
+                                workspace={workspace}
+                            >
+                                {!readOnlyKnowledge &&
+                                    detail.drafts.map((draft) => (
+                                        <KnowledgeDraftCard
+                                            key={draft.id}
+                                            draft={draft}
+                                            request={panel.requestWithSession}
+                                            shareKey={props.shareKey}
+                                            onChanged={chat.refresh}
+                                            onDirtyChange={panel.draftDirty}
+                                            discardRevision={
+                                                panel.discardRevision
+                                            }
+                                            expanded={
+                                                panel.editingDraft === draft.id
+                                            }
+                                            onOpen={panel.setEditingDraft}
+                                            onBack={panel.backToChat}
+                                            onPublished={publishedNote}
+                                        />
+                                    ))}
+                                {!readOnlyKnowledge && published && (
+                                    <PublishedNoteNotice note={published} />
+                                )}
+                            </ConversationMessages>
+                        </KnowledgeBlockProposals>
                     )}
                     {panel.error && !chat.quote && (
                         <div className={styles.notice}>
@@ -281,17 +353,26 @@ export function AssistantPanel(
                                 onStop={chat.stop}
                                 busy={busy}
                                 active={panel.active}
-                                hasDraft={Boolean(props.currentDraft)}
+                                hasDraft={Boolean(currentDraft)}
                                 useDraft={chat.useDraft}
                                 onUseDraft={chat.setUseDraft}
                                 contextPicker={contextPicker}
                                 contextOpen={panel.picker}
                                 onSelectFromPage={selectionAction}
-                                workspace={Boolean(props.workspace)}
-                                editorCharacters={
-                                    props.workspace?.editorCharacters
+                                workspace={Boolean(workspace)}
+                                editorCharacters={workspace?.editorCharacters}
+                                editorLimit={workspace?.editorLimit}
+                                blockReferences={panel.blockReferences.selected}
+                                availableBlocks={props.blocks}
+                                onRemoveBlockReference={
+                                    panel.blockReferences.remove
                                 }
-                                editorLimit={props.workspace?.editorLimit}
+                                blockReferenceLimitReached={
+                                    panel.blockReferences.limitReached
+                                }
+                                missingBlockReference={
+                                    panel.blockReferences.missing
+                                }
                                 workspacePassage={panel.workspacePassage}
                                 onRemoveWorkspacePassage={
                                     panel.removeWorkspacePassage

@@ -23,6 +23,7 @@ afterEach(() => {
     Reflect.deleteProperty(document, 'exitFullscreen');
     vi.restoreAllMocks();
 });
+
 const exercise: SentenceManualReview['exercise'] = {
     id: '00000000-0000-4000-8000-000000000001',
     dictionaryId: '00000000-0000-4000-8000-000000000002',
@@ -69,6 +70,7 @@ const review: SentenceManualReview = {
     referenceTranslation: 'Un libro, un libro.',
     createdAt: '2026-10-04T00:00:00.000Z',
 };
+
 describe('sentence content', () => {
     it('preserves exact text and gives repeated admitted targets the same hint identity', async () => {
         const reveal = vi.fn();
@@ -81,47 +83,57 @@ describe('sentence content', () => {
                 />
             </I18nProvider>,
         );
+
         expect(container.querySelector('p')?.textContent).toBe(
             exercise.sourceText,
         );
+
         const targets = screen.getAllByRole('button', {
             name: 'book: show hint · Required word',
         });
+
         fireEvent.click(targets[0]!);
         expect(reveal).toHaveBeenLastCalledWith('hint-1');
         expect(
             await screen.findByRole('dialog', { name: 'Hint: book' }),
         ).toHaveTextContent('libro');
+
         expect(
             (await screen.findByRole('dialog', { name: 'Hint: book' }))
                 .parentElement,
         ).toBe(document.body);
+
         fireEvent.keyDown(targets[0]!, { key: 'Escape' });
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         await waitFor(() => expect(targets[0]).toHaveFocus());
         fireEvent.click(targets[1]!);
         expect(reveal).toHaveBeenLastCalledWith('hint-1');
     });
+
     it('renders manual reference without a score or verdict and keeps the review on collapse', () => {
         render(
             <I18nProvider locale='en' messages={en}>
                 <ReferencePanel review={review} />
             </I18nProvider>,
         );
+
         expect(
             screen.getByText(review.referenceTranslation),
         ).toBeInTheDocument();
+
         expect(screen.queryByText(/\d+%/)).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'Hide' }));
         expect(
             screen.queryByText(review.referenceTranslation),
         ).not.toBeInTheDocument();
+
         expect(screen.getByText('Manually reviewed')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'Show again' }));
         expect(
             screen.getByText(review.referenceTranslation),
         ).toBeInTheDocument();
     });
+
     it('uses backend UTF-16 spans without splitting an emoji and refuses mismatched quotes', () => {
         const issue: SentenceAttempt['feedback']['issues'][number] = {
             id: 'issue-1',
@@ -131,11 +143,13 @@ describe('sentence content', () => {
             explanation: 'Check meaning',
             correction: 'good',
         };
+
         expect(segmentAnswer('😀bad!', [issue])).toEqual([
             { text: '😀', issue: null },
             { text: 'bad', issue: 0 },
             { text: '!', issue: null },
         ]);
+
         expect(
             segmentAnswer('😀bad!', [
                 { ...issue, span: { start: 2, end: 5, quote: 'wrong' } },
@@ -143,6 +157,7 @@ describe('sentence content', () => {
         ).toEqual([{ text: '😀bad!', issue: null }]);
     });
 });
+
 describe('sentence presentation cleanup', () => {
     it('keeps the same modal, draft and focused control when fullscreen reorders the top layer', async () => {
         const dialog = document.createElement('dialog');
@@ -162,15 +177,18 @@ describe('sentence presentation cleanup', () => {
                 queueMicrotask(() => dialog.dispatchEvent(new Event('close')));
             },
         });
+
         Object.defineProperty(dialog, 'showModal', {
             value: () => {
                 dialog.open = true;
             },
         });
+
         Object.defineProperty(document, 'fullscreenElement', {
             configurable: true,
             value: document.documentElement,
         });
+
         restoreSentenceTopLayer(dialog);
         await Promise.resolve();
         expect(dialog.open).toBe(true);
@@ -184,6 +202,7 @@ describe('sentence presentation cleanup', () => {
         expect(onClose).toHaveBeenCalledOnce();
         dialog.remove();
     });
+
     it('retains an already-open nested confirmation when the initial fullscreen grant is slow', async () => {
         const practice = document.createElement('dialog');
         const confirmation = document.createElement('dialog');
@@ -204,17 +223,20 @@ describe('sentence presentation cleanup', () => {
                     );
                 },
             });
+
             Object.defineProperty(modal, 'showModal', {
                 value: () => {
                     modal.open = true;
                 },
             });
         }
+
         keep.focus();
         Object.defineProperty(document, 'fullscreenElement', {
             configurable: true,
             value: document.documentElement,
         });
+
         restoreSentenceTopLayer(practice);
         await Promise.resolve();
         expect(practice.open).toBe(true);
@@ -224,6 +246,7 @@ describe('sentence presentation cleanup', () => {
         expect(exited).not.toHaveBeenCalled();
         practice.remove();
     });
+
     it('releases native fullscreen when the grant arrives after practice closed', async () => {
         let resolve!: (entered: boolean) => void;
         const request = new Promise<boolean>((done) => {
@@ -234,19 +257,23 @@ describe('sentence presentation cleanup', () => {
             configurable: true,
             value: exit,
         });
+
         const { unmount } = renderHook(() => useSentenceDisplay(request));
         unmount();
         await act(async () => {
             await Promise.resolve();
         });
+
         Object.defineProperty(document, 'fullscreenElement', {
             configurable: true,
             value: document.documentElement,
         });
+
         await act(async () => {
             resolve(true);
             await request;
         });
+
         expect(exit).toHaveBeenCalledOnce();
     });
 });

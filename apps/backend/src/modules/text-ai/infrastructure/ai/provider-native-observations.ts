@@ -31,6 +31,7 @@ const wireSchema = z.object({
         })
         .nullish(),
 });
+
 export interface NativeTextCallReceipt {
     callId: string;
     dispatchedAt: string;
@@ -49,9 +50,15 @@ const metadataSchema = z.object({
 /** Expand an SDK numeric value without rounding it to the money settlement scale. */
 export function reportedPriceDecimal(value: string | number): string {
     const source = String(value);
-    if (!/[eE]/.test(source)) return ProviderNativeRateSchema.parse(source);
+    if (!/[eE]/.test(source)) {
+        return ProviderNativeRateSchema.parse(source);
+    }
+
     const match = /^(\d+)(?:\.(\d+))?[eE]([+-]?\d+)$/.exec(source);
-    if (!match) throw new Error('Invalid reported provider price.');
+    if (!match) {
+        throw new Error('Invalid reported provider price.');
+    }
+
     const whole = match[1]!;
     const fraction = match[2] ?? '';
     const digits = whole + fraction;
@@ -62,6 +69,7 @@ export function reportedPriceDecimal(value: string | number): string {
             : point >= digits.length
               ? digits + '0'.repeat(point - digits.length)
               : `${digits.slice(0, point)}.${digits.slice(point)}`;
+
     return ProviderNativeRateSchema.parse(expanded);
 }
 
@@ -73,7 +81,10 @@ export function captureNativeTextObservation(
     knownDispatchedAt?: string,
 ): NativeTextObservation | undefined {
     const parsed = wireSchema.safeParse(raw);
-    if (!parsed.success) return undefined;
+    if (!parsed.success) {
+        return undefined;
+    }
+
     const value = parsed.data;
     const cacheRead =
         value.usage?.prompt_cache_hit_tokens ??
@@ -91,13 +102,16 @@ export function captureNativeTextObservation(
             ? {}
             : { providerCostUsd: reportedPriceDecimal(value.usage.cost) }),
     };
+
     if (
         !receipt &&
         !observedAt &&
         !endpointId &&
         Object.keys(usage).length === 1
-    )
+    ) {
         return undefined;
+    }
+
     return {
         ...(receipt ? { callId: receipt.callId } : {}),
         usage,
@@ -118,7 +132,10 @@ export function captureNativeTextObservation(
 export function readNativeTextObservation(
     value: unknown,
 ): NativeTextObservation | undefined {
-    if (!value || typeof value !== 'object') return undefined;
+    if (!value || typeof value !== 'object') {
+        return undefined;
+    }
+
     const source = value as Record<string, unknown>;
     const metadata = source.providerMetadata;
     const candidate =
@@ -126,13 +143,18 @@ export function readNativeTextObservation(
             ? (metadata as Record<string, unknown>).languonNativePricing
             : source.languonNativePricing;
     const parsed = metadataSchema.safeParse(candidate);
-    if (!parsed.success) return undefined;
-    if (parsed.data.callId && parsed.data.execution)
+    if (!parsed.success) {
+        return undefined;
+    }
+
+    if (parsed.data.callId && parsed.data.execution) {
         ProviderNativeCallObservationSchema.parse({
             callId: parsed.data.callId,
             usage: parsed.data.usage,
             execution: parsed.data.execution,
         });
+    }
+
     return {
         usage: parsed.data.usage,
         ...(parsed.data.callId ? { callId: parsed.data.callId } : {}),

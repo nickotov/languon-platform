@@ -37,6 +37,7 @@ const paid: SpeechResponse = {
         provisional: true,
     },
 };
+
 class FakeAudio {
     static instances: FakeAudio[] = [];
     onended: (() => void) | null = null;
@@ -60,6 +61,7 @@ function transport(): SpeechTransport {
             .mockResolvedValue(new Blob(['audio'], { type: 'audio/mpeg' })),
     };
 }
+
 beforeEach(() => {
     FakeAudio.instances = [];
     vi.stubGlobal('Audio', FakeAudio);
@@ -71,6 +73,7 @@ beforeEach(() => {
         }),
     );
 });
+
 afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -88,6 +91,7 @@ describe('shared speech playback', () => {
             requestId: ready.playbackId,
             retryAfterMs: 500,
         });
+
         vi.mocked(api.status).mockResolvedValue({
             ...ready,
             state: 'failed',
@@ -96,6 +100,7 @@ describe('shared speech playback', () => {
             error: 'speech_provider_unavailable',
             billingState: 'released_no_charge',
         });
+
         const player = new SpeechPlayer();
         const observed: ReturnType<SpeechPlayer['snapshot']>[] = [];
         player.subscribe(() => observed.push(player.snapshot()));
@@ -107,6 +112,7 @@ describe('shared speech playback', () => {
             error: 'speech_provider_unavailable',
             billingState: 'released_no_charge',
         });
+
         expect(observed.at(-1)?.phase).toBe('failed');
         expect(api.prepare).toHaveBeenCalledOnce();
         expect(api.bytes).not.toHaveBeenCalled();
@@ -115,9 +121,11 @@ describe('shared speech playback', () => {
             phase: 'playing',
             error: null,
         });
+
         player.reset();
         expect(player.snapshot().error).toBeNull();
     });
+
     it('does not confirm or download paid generation before an explicit action; cancellation submits nothing', async () => {
         const api = transport();
         vi.mocked(api.prepare).mockResolvedValue(paid);
@@ -130,6 +138,7 @@ describe('shared speech playback', () => {
         await player.confirm();
         expect(api.confirm).not.toHaveBeenCalled();
     });
+
     it('confirms once even with repeated clicks while generation is being admitted', async () => {
         const api = transport();
         vi.mocked(api.prepare).mockResolvedValue(paid);
@@ -140,6 +149,7 @@ describe('shared speech playback', () => {
                     finish = resolve;
                 }),
         );
+
         const player = new SpeechPlayer();
         await player.play(source, api);
         const first = player.confirm();
@@ -150,6 +160,7 @@ describe('shared speech playback', () => {
         expect(player.snapshot().phase).toBe('playing');
         player.reset();
     });
+
     it('fences a late generation after selection change and revokes the previous clip', async () => {
         const api = transport();
         let finish!: (value: SpeechResponse) => void;
@@ -159,6 +170,7 @@ describe('shared speech playback', () => {
                     finish = resolve;
                 }),
         );
+
         const player = new SpeechPlayer();
         const old = player.play(source, api);
         player.reset();
@@ -170,6 +182,7 @@ describe('shared speech playback', () => {
         player.reset();
         expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:speech');
     });
+
     it('retries autoplay in a fresh gesture without another API request', async () => {
         class BlockedAudio extends FakeAudio {
             constructor(src: string) {
@@ -190,12 +203,14 @@ describe('shared speech playback', () => {
         expect(api.bytes).toHaveBeenCalledOnce();
         player.reset();
     });
+
     it('expires a quote locally without submitting it', async () => {
         const api = transport();
         vi.mocked(api.prepare).mockResolvedValue({
             ...paid,
             quote: { ...paid.quote!, expiresAt: new Date(0).toISOString() },
         });
+
         const player = new SpeechPlayer();
         await player.play(source, api);
         await player.confirm();
@@ -203,6 +218,7 @@ describe('shared speech playback', () => {
         expect(player.snapshot().phase).toBe('failed');
         player.reset();
     });
+
     it('polls the known request and never resubmits an unknown outcome', async () => {
         vi.useFakeTimers();
         const api = transport();
@@ -213,11 +229,13 @@ describe('shared speech playback', () => {
             requestId: ready.playbackId,
             retryAfterMs: 500,
         });
+
         vi.mocked(api.status).mockResolvedValue({
             ...ready,
             state: 'submission_unknown',
             playbackId: null,
         });
+
         const player = new SpeechPlayer();
         const operation = player.play(source, api);
         await vi.advanceTimersByTimeAsync(500);
@@ -227,5 +245,33 @@ describe('shared speech playback', () => {
         expect(api.bytes).not.toHaveBeenCalled();
         expect(player.snapshot().phase).toBe('unavailable');
         player.reset();
+    });
+
+    it('stops native recording playback before speech and stops speech before another recording', async () => {
+        const player = new SpeechPlayer();
+        const pauseRecording = vi.fn();
+        player.registerExternalMedia(pauseRecording);
+        await player.play(source, transport());
+        expect(pauseRecording).toHaveBeenCalledOnce();
+        const audio = FakeAudio.instances.at(-1)!;
+        const pauseSecond = vi.fn();
+        player.registerExternalMedia(pauseSecond);
+        expect(audio.pause).toHaveBeenCalled();
+        expect(player.snapshot().phase).toBe('idle');
+        player.reset();
+        expect(pauseSecond).toHaveBeenCalledOnce();
+    });
+
+    it('does not pause a native player registering the same target twice and refreshes its stop callback', () => {
+        const player = new SpeechPlayer();
+        const stale = vi.fn();
+        const current = vi.fn();
+        player.registerExternalMedia(stale, 'same-video');
+        player.registerExternalMedia(current, 'same-video');
+        expect(stale).not.toHaveBeenCalled();
+        expect(current).not.toHaveBeenCalled();
+        player.reset();
+        expect(stale).not.toHaveBeenCalled();
+        expect(current).toHaveBeenCalledOnce();
     });
 });

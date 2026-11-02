@@ -5,10 +5,12 @@ import { localOrigin } from './configure.mjs';
 
 export function validateApplyEnvironment(env, confirmedDatabase) {
     const identity = validateLocalEnvironment(env);
-    if (!confirmedDatabase || identity.database !== confirmedDatabase)
+    if (!confirmedDatabase || identity.database !== confirmedDatabase) {
         throw new Error(
             '--confirm-database must exactly match the explicit env-file database name.',
         );
+    }
+
     return identity;
 }
 
@@ -19,10 +21,11 @@ export function assertAdminBinding(admin, actor) {
         admin.status !== 'active' ||
         admin.email !== actor.primaryEmail ||
         admin.role !== actor.role
-    )
+    ) {
         throw new Error(
             'The API admin identity does not belong to the confirmed local database.',
         );
+    }
 }
 
 export async function openTargetBinding({
@@ -33,8 +36,10 @@ export async function openTargetBinding({
     contracts: c,
     fetchImpl = fetch,
 }) {
-    if (!envFile)
+    if (!envFile) {
         throw new Error('--apply requires --env-file and --confirm-database.');
+    }
+
     const env = parseEnv(await readFile(envFile, 'utf8'));
     validateApplyEnvironment(env, confirmedDatabase);
     const target = localOrigin(origin);
@@ -55,10 +60,12 @@ export async function openTargetBinding({
             live?.service !== 'backend' ||
             live.status !== 'ok' ||
             live.release !== (env.RELEASE_SHA || 'development')
-        )
+        ) {
             throw new Error(
                 'The API does not match the expected local backend release.',
             );
+        }
+
         const [{ actor }, ai, accounting, tariffs, providers] =
             await Promise.all([
                 request('/admin/me', c.AdminMeResponseSchema),
@@ -73,10 +80,12 @@ export async function openTargetBinding({
                     c.ProviderPricesResponseSchema,
                 ),
             ]);
+
         await sql.begin('read only', async (db) => {
             await db`set local statement_timeout='5000ms'`;
             const [admin] =
                 await db`select u.id,u.status,e.email,m.role from users u join user_emails e on e.user_id=u.id and e.is_primary join admin_memberships m on m.user_id=u.id and m.revoked_at is null where u.id=${actor.id} and u.status='active'`;
+
             assertAdminBinding(admin, actor);
             const [configuration] =
                 await db`select c.version,r.catalog_snapshot as snapshot from dictionary_ai_configuration c left join dictionary_ai_configuration_revisions r on r.id=c.active_revision_id where c.id='global'`;
@@ -86,12 +95,14 @@ export async function openTargetBinding({
                 await db`select distinct on (provider_id,model_id) id,provider_id,model_id,version from model_price_revisions order by provider_id,model_id,version desc`;
             const provider =
                 await db`select distinct on (provider_id,model_id,meter) id,provider_id,model_id,meter,version from ai_provider_price_revisions order by provider_id,model_id,meter,version desc`;
+
             assertRevisionBinding(
                 { configuration, settings, customer, provider },
                 { ai, accounting, tariffs, providers },
             );
         });
     };
+
     return { env, verify, close: () => sql.end({ timeout: 2 }) };
 }
 
@@ -130,6 +141,7 @@ export function assertRevisionBinding(db, api) {
         Object.entries(db.settings).every(
             ([key, value]) => api.accounting[key] === value,
         );
+
     if (
         (db.configuration?.version ?? 0) !== api.ai.settings.version ||
         (db.settings?.version ?? 0) !== api.accounting.version ||
@@ -137,8 +149,9 @@ export function assertRevisionBinding(db, api) {
         !same(providerDb, providerApi) ||
         !configValuesMatch ||
         !settingsMatch
-    )
+    ) {
         throw new Error(
             'API configuration revisions differ from the confirmed local database. No further changes are allowed; inspect the selected target or rerun after concurrent changes.',
         );
+    }
 }

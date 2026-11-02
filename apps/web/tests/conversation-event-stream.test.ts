@@ -8,8 +8,10 @@ describe('readEventStream', () => {
         );
         const stream = new ReadableStream<Uint8Array>({
             start(controller) {
-                for (const byte of bytes)
+                for (const byte of bytes) {
                     controller.enqueue(new Uint8Array([byte]));
+                }
+
                 controller.close();
             },
         });
@@ -19,10 +21,12 @@ describe('readEventStream', () => {
             (event) => received.push(event),
             new AbortController().signal,
         );
+
         expect(received).toEqual([
             { id: '4', event: 'update', data: '{"text":"日本語"}\nsecond' },
         ]);
     });
+
     it('does not dispatch an incomplete event at disconnect', async () => {
         const received: unknown[] = [];
         await readEventStream(
@@ -30,6 +34,7 @@ describe('readEventStream', () => {
             (event) => received.push(event),
             new AbortController().signal,
         );
+
         expect(received).toEqual([]);
     });
 });

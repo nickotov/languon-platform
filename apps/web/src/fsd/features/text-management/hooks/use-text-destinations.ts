@@ -5,6 +5,7 @@ import { useSessionStore } from '@/fsd/entities/session';
 
 export function useTextDestinations(request: RequestWithTextSession) {
     const actorId = useSessionStore((state) => state.user?.id);
+
     return useQuery({
         queryKey: ['texts', actorId, 'destinations'],
         queryFn: async ({ signal }) => {
@@ -22,9 +23,11 @@ export function useTextDestinations(request: RequestWithTextSession) {
                         signal,
                     ),
                 );
+
                 folders.push(...page.data);
                 cursor = page.nextCursor ?? undefined;
             } while (cursor);
+
             return folders;
         },
     });

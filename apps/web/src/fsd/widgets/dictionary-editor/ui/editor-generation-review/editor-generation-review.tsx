@@ -62,8 +62,10 @@ export function EditorGenerationReview({
         if (
             generationAction.error instanceof ActionConsentCancelledError &&
             !generationJob.error
-        )
+        ) {
             return null;
+        }
+
         if (generationJob.error || generationAction.error) {
             return dictionaryErrorMessage(
                 generationJob.error ?? generationAction.error,

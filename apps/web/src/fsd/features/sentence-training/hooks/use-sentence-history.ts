@@ -20,15 +20,21 @@ export function useSentenceHistory({
         () => new SentenceHistory(api, direction, exerciseId),
         [api, identity, direction, exerciseId],
     );
+
     useEffect(() => {
-        if (enabled) store.enable();
+        if (enabled) {
+            store.enable();
+        }
+
         return () => store.stop();
     }, [store, enabled]);
+
     const snapshot = useSyncExternalStore(
         store.subscribe,
         store.getSnapshot,
         store.getSnapshot,
     );
+
     return {
         ...snapshot,
         refresh: store.refresh,

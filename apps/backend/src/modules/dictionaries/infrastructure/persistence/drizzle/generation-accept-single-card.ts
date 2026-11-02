@@ -66,20 +66,31 @@ export async function acceptSingleCard(
 
             abort(input.context);
             const job = await lockOwnedJob(tx, input.ownerId, input.jobId);
-            if (job.kind !== 'single-card')
+            if (job.kind !== 'single-card') {
                 throw new DictionaryGenerationNotReviewableError();
+            }
+
             const proposal = await lockProposal(tx, job.id);
             abort(input.context);
-            if (!proposal) throw new DictionaryGenerationNotReviewableError();
+            if (!proposal) {
+                throw new DictionaryGenerationNotReviewableError();
+            }
+
             if (proposal.reviewState === 'accepted') {
                 if (
                     proposal.acceptedCandidateFingerprint !==
                     input.candidateFingerprint
-                )
+                ) {
                     throw new DictionaryGenerationCandidateConflictError();
+                }
+
                 const acceptedJob = await readView(tx, job, input.context.now);
-                if (acceptedJob.kind !== 'single-card' || !acceptedJob.outcome)
+                if (
+                    acceptedJob.kind !== 'single-card' ||
+                    !acceptedJob.outcome
+                ) {
                     throw new DictionaryGenerationCandidateConflictError();
+                }
 
                 return {
                     expired: false as const,
@@ -90,12 +101,18 @@ export async function acceptSingleCard(
                 };
             }
 
-            if (proposal.reviewState === 'expired')
+            if (proposal.reviewState === 'expired') {
                 return { expired: true as const };
-            if (proposal.reviewState !== 'reviewable' || !proposal.payload)
+            }
+
+            if (proposal.reviewState !== 'reviewable' || !proposal.payload) {
                 throw new DictionaryGenerationNotReviewableError();
-            if (proposal.documentStagedAt && !proposal.documentPublishedAt)
+            }
+
+            if (proposal.documentStagedAt && !proposal.documentPublishedAt) {
                 throw new DictionaryGenerationNotReviewableError();
+            }
+
             if (proposal.expiresAt <= input.context.now) {
                 await expireProposal(tx, job.id, input.context.now);
 
@@ -120,8 +137,9 @@ export async function acceptSingleCard(
                 current.dictionary.sourceLanguageTag !==
                     job.sourceLanguageTag ||
                 current.dictionary.targetLanguageTag !== job.targetLanguageTag
-            )
+            ) {
                 throw new DictionaryVersionConflictError();
+            }
 
             const candidateOverrides = domainOverrides(candidate.overrides);
             assertCardSettingsOverrideTransition({
@@ -170,8 +188,10 @@ export async function acceptSingleCard(
                     )
                     .where(eq(dictionariesTable.ownerId, input.ownerId));
 
-                if (Number(ownerRevisionCount?.value ?? 0) >= 250_000)
+                if (Number(ownerRevisionCount?.value ?? 0) >= 250_000) {
                     throw new DictionaryGenerationNotAvailableError();
+                }
+
                 abort(input.context);
                 const [updatedCard] = await tx
                     .update(dictionaryCardsTable)
@@ -243,7 +263,10 @@ export async function acceptSingleCard(
                     )
                     .returning();
 
-                if (!updatedCard) throw new DictionaryVersionConflictError();
+                if (!updatedCard) {
+                    throw new DictionaryVersionConflictError();
+                }
+
                 card = updatedCard;
                 revisionId = context.ids.generate();
                 await tx.insert(dictionaryCardRevisionsTable).values({
@@ -283,8 +306,10 @@ export async function acceptSingleCard(
                     )
                     .returning({ version: dictionariesTable.version });
 
-                if (!updatedDictionary)
+                if (!updatedDictionary) {
                     throw new DictionaryVersionConflictError();
+                }
+
                 dictionaryVersion = updatedDictionary.version;
             } else {
                 const [currentRevision] = await tx
@@ -304,8 +329,10 @@ export async function acceptSingleCard(
                     )
                     .limit(1);
 
-                if (!currentRevision)
+                if (!currentRevision) {
                     throw new DictionaryGenerationCandidateConflictError();
+                }
+
                 revisionId = currentRevision.id;
             }
 
@@ -330,8 +357,9 @@ export async function acceptSingleCard(
                 .where(eq(dictionaryGenerationJobsTable.id, job.id));
 
             const acceptedJob = await readView(tx, job, input.context.now);
-            if (acceptedJob.kind !== 'single-card' || !acceptedJob.outcome)
+            if (acceptedJob.kind !== 'single-card' || !acceptedJob.outcome) {
                 throw new DictionaryGenerationCandidateConflictError();
+            }
 
             return {
                 expired: false as const,
@@ -340,7 +368,9 @@ export async function acceptSingleCard(
         },
     );
 
-    if (result.expired) throw new DictionaryGenerationProposalExpiredError();
+    if (result.expired) {
+        throw new DictionaryGenerationProposalExpiredError();
+    }
 
     return result.value;
 }

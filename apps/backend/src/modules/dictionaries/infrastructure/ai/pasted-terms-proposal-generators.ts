@@ -57,6 +57,7 @@ const boundedChunkInput = z
         (value) =>
             ![...value].some((character) => {
                 const codePoint = character.codePointAt(0)!;
+
                 return (
                     codePoint <= 9 ||
                     codePoint === 11 ||
@@ -137,6 +138,7 @@ export class PastedTermsProposalGeneratorExecutionError extends CardProposalGene
                 ? 'invalid_model_output'
                 : 'provider_unavailable',
         );
+
         this.name = 'PastedTermsProposalGeneratorExecutionError';
     }
 }
@@ -146,6 +148,7 @@ export class PastedTermsProposalGeneratorCapabilityError extends Error {
         super(
             'The pasted-terms provider budget cannot safely fit the bounded chunk envelope.',
         );
+
         this.name = 'PastedTermsProposalGeneratorCapabilityError';
     }
 }
@@ -179,9 +182,11 @@ function validatedChunkInput(request: PastedTermsProposalGeneratorRequest) {
     const input = DictionaryPastedTermsGenerationInputPayloadSchema.parse(
         request.input,
     );
+
     if (input.rows.length > dictionaryBatchGenerationLimits.chunkRows) {
         throw new PastedTermsProposalGeneratorExecutionError('invalid_input');
     }
+
     return input;
 }
 
@@ -204,6 +209,7 @@ function validatedChunkOutput(
     ) {
         throw new PastedTermsProposalGeneratorExecutionError('invalid_output');
     }
+
     return parseDictionaryBatchGenerationProposal({
         candidates: output.candidates,
         failures: output.failures,
@@ -254,11 +260,16 @@ export function createMastraPastedTermsProposalGenerator(options: {
                 const result = new PastedTermsProposalGeneratorExecutionError(
                     reason,
                 );
-                if (meteredUsage) result.usage = meteredUsage;
+
+                if (meteredUsage) {
+                    result.usage = meteredUsage;
+                }
+
                 result.executionOutcome =
                     outputReceived && result.category === 'invalid_model_output'
                         ? 'completed'
                         : 'ambiguous';
+
                 return result;
             };
 
@@ -274,6 +285,7 @@ export function createMastraPastedTermsProposalGenerator(options: {
                         request.providerBudget.maxOutputTokensPerAttempt,
                 },
             });
+
             if (
                 requestLimits.maxOutputTokens <
                     dictionaryPastedTermsGenerationMinimumOutputTokensPerChunk ||
@@ -310,6 +322,7 @@ export function createMastraPastedTermsProposalGenerator(options: {
                             },
                         }),
                 );
+
                 outputReceived = true;
                 request.signal.throwIfAborted();
                 if (result.usage) {
@@ -323,6 +336,7 @@ export function createMastraPastedTermsProposalGenerator(options: {
                         throw failure('invalid_output');
                     }
                 }
+
                 if (result.error || result.tripwire) {
                     throw withProviderExecutionOutcome(
                         failure('provider_failure'),
@@ -330,6 +344,7 @@ export function createMastraPastedTermsProposalGenerator(options: {
                         request.providerExecution?.providerId ?? 'unknown',
                     );
                 }
+
                 return {
                     proposal: validatedChunkOutput(result.object, request),
                     usage: validatedUsage(
@@ -360,8 +375,13 @@ export function createMastraPastedTermsProposalGenerator(options: {
                         /* Invalid/missing provider meters remain unknown. */
                     }
                 }
-                if (error instanceof CardProposalGeneratorError && meteredUsage)
+
+                if (
+                    error instanceof CardProposalGeneratorError &&
+                    meteredUsage
+                ) {
                     error.usage = meteredUsage;
+                }
 
                 if (request.signal.aborted) {
                     throw (
@@ -369,20 +389,25 @@ export function createMastraPastedTermsProposalGenerator(options: {
                         new DOMException('Aborted', 'AbortError')
                     );
                 }
+
                 if (
                     outputReceived &&
                     error instanceof CardProposalGeneratorError &&
                     error.category === 'invalid_model_output'
-                )
+                ) {
                     error.executionOutcome = 'completed';
+                }
+
                 if (
                     error instanceof PastedTermsProposalGeneratorExecutionError
                 ) {
                     throw error;
                 }
+
                 if (error instanceof Error && error.name === 'ZodError') {
                     throw failure('invalid_output');
                 }
+
                 throw withProviderExecutionOutcome(
                     failure('provider_failure'),
                     error,
@@ -392,12 +417,15 @@ export function createMastraPastedTermsProposalGenerator(options: {
         },
         readiness(signal) {
             signal.throwIfAborted();
-            if (!options.providerReadiness)
+            if (!options.providerReadiness) {
                 return Promise.reject(
                     new PastedTermsProposalGeneratorUnavailableError(),
                 );
+            }
+
             return options.providerReadiness(signal).catch(() => {
                 signal.throwIfAborted();
+
                 throw new PastedTermsProposalGeneratorUnavailableError();
             });
         },
@@ -426,6 +454,7 @@ function defaultDeterministicProposal(
                 'Deterministic generation could not resolve this long term.',
             retryable: true,
         }));
+
     return {
         candidates: request.input.rows
             .filter((row) => [...row.input].length <= 160)
@@ -480,6 +509,7 @@ export class DeterministicPastedTermsProposalGenerator implements PastedTermsPro
         try {
             const proposal = await this.resolve(request);
             request.signal.throwIfAborted();
+
             return {
                 proposal: validatedChunkOutput(proposal, request),
                 usage: { inputTokens: 0, outputTokens: 0 },
@@ -491,9 +521,11 @@ export class DeterministicPastedTermsProposalGenerator implements PastedTermsPro
                     new DOMException('Aborted', 'AbortError')
                 );
             }
+
             if (error instanceof PastedTermsProposalGeneratorExecutionError) {
                 throw error;
             }
+
             throw new PastedTermsProposalGeneratorExecutionError(
                 error instanceof Error && error.name === 'ZodError'
                     ? 'invalid_output'
@@ -504,6 +536,7 @@ export class DeterministicPastedTermsProposalGenerator implements PastedTermsPro
 
     public readiness(signal: AbortSignal): Promise<void> {
         signal.throwIfAborted();
+
         return Promise.resolve();
     }
 }
@@ -513,6 +546,7 @@ export class UnavailablePastedTermsProposalGenerator implements PastedTermsPropo
         request: PastedTermsProposalGeneratorRequest,
     ): Promise<never> {
         request.signal.throwIfAborted();
+
         return Promise.reject(
             new PastedTermsProposalGeneratorUnavailableError(),
         );
@@ -520,6 +554,7 @@ export class UnavailablePastedTermsProposalGenerator implements PastedTermsPropo
 
     public readiness(signal: AbortSignal): Promise<void> {
         signal.throwIfAborted();
+
         return Promise.reject(
             new PastedTermsProposalGeneratorUnavailableError(),
         );
@@ -550,9 +585,11 @@ export function createPastedTermsProposalGenerator(
     if (options.mode === 'unavailable') {
         return new UnavailablePastedTermsProposalGenerator();
     }
+
     if (options.mode === 'deterministic') {
         return new DeterministicPastedTermsProposalGenerator(options.proposal);
     }
+
     // Accounting may admit fewer than five chunks. Require only a single
     // affordable chunk here; generate() checks its actual input and remaining caps.
     if (
@@ -563,12 +600,14 @@ export function createPastedTermsProposalGenerator(
     ) {
         throw new PastedTermsProposalGeneratorCapabilityError();
     }
+
     const agent: DictionaryPastedTermsGenerationAgent =
         createDictionaryPastedTermsGenerationAgent({ model: options.model });
     const runtime = new Mastra({
         agents: { dictionaryPastedTermsGenerationAgent: agent },
         logger: false,
     });
+
     return createMastraPastedTermsProposalGenerator({
         agent: runtime.listAgents().dictionaryPastedTermsGenerationAgent,
         ...(options.modelRequestLimits

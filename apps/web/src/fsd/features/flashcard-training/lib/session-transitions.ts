@@ -17,6 +17,7 @@ export function acknowledgeRating(
         reviewEvents: state.reviewEvents,
         roundsCompleted: state.roundsCompleted,
     };
+
     return {
         index,
         face: 'front',
@@ -68,6 +69,7 @@ export function removeEntries(
         delete items[id];
         delete outcomes[id];
     }
+
     return {
         queue,
         index,

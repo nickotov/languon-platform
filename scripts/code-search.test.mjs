@@ -24,7 +24,9 @@ function search(language, pattern, file) {
         ],
         { encoding: 'utf8', timeout: 15_000 },
     );
+
     assert.ifError(result.error);
+
     return result;
 }
 
@@ -33,6 +35,7 @@ function fixture(t, extension, source) {
     t.after(() => rmSync(directory, { recursive: true, force: true }));
     const file = join(directory, `example.${extension}`);
     writeFileSync(file, source);
+
     return file;
 }
 

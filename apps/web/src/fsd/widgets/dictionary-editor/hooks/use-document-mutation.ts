@@ -68,16 +68,23 @@ export function useDocumentMutation({
                 | { file: File; instruction?: string; kind: 'start' },
         ) => {
             const versions = cards.data?.pages[0];
-            if (!versions) throw new Error('Dictionary unavailable');
+            if (!versions) {
+                throw new Error('Dictionary unavailable');
+            }
+
             if (action.kind === 'accept') {
-                if (!documentGenerationJobId)
+                if (!documentGenerationJobId) {
                     throw new Error('Document generation job unavailable');
+                }
+
                 const format = documentGenerationJob.data?.job?.format;
                 if (
                     format !== 'document-terms:v1' &&
                     format !== 'document-terms:v2'
-                )
+                ) {
                     throw new Error('Document generation job unavailable');
+                }
+
                 return requestWithSession((token) =>
                     dictionaryApi.acceptGenerationJob(
                         token,
@@ -89,9 +96,12 @@ export function useDocumentMutation({
                     ),
                 );
             }
+
             if (action.kind === 'cancel' || action.kind === 'discard') {
-                if (!documentGenerationJobId)
+                if (!documentGenerationJobId) {
                     throw new Error('Document generation job unavailable');
+                }
+
                 return requestWithSession((token) =>
                     action.kind === 'cancel'
                         ? dictionaryApi.cancelGenerationJob(
@@ -104,9 +114,12 @@ export function useDocumentMutation({
                           ),
                 );
             }
+
             if (action.kind === 'retry-failures') {
-                if (!documentGenerationJobId)
+                if (!documentGenerationJobId) {
                     throw new Error('Document generation job unavailable');
+                }
+
                 const rowIndexes = [...action.rowIndexes].sort(
                     (left, right) => left - right,
                 );
@@ -120,6 +133,7 @@ export function useDocumentMutation({
                         rowIndexes,
                     }),
                 );
+
                 documentRetryAttempt.current = attempt;
                 const response = await actionConsent.run((confirmedQuoteId) =>
                     requestWithSession((token) =>
@@ -140,13 +154,17 @@ export function useDocumentMutation({
                         ),
                     ),
                 );
+
                 documentRetryAttempt.current = null;
+
                 return response;
             }
 
             const mediaType = documentMediaTypeForFile(action.file);
-            if (!mediaType)
+            if (!mediaType) {
                 throw new Error(t('dictionary.document.invalidFile'));
+            }
+
             if (
                 action.file.size < 1 ||
                 action.file.size >
@@ -154,6 +172,7 @@ export function useDocumentMutation({
             ) {
                 throw new Error(t('dictionary.document.invalidFileSize'));
             }
+
             const sha256 = await fileSha256(action.file);
             const instruction = action.instruction?.trim() || null;
             const fingerprint = JSON.stringify({
@@ -169,6 +188,7 @@ export function useDocumentMutation({
                 documentUploadAttempt.current,
                 fingerprint,
             );
+
             documentUploadAttempt.current = attempt;
             const authorization = await actionConsent.run((confirmedQuoteId) =>
                 requestWithSession((token) =>
@@ -189,12 +209,14 @@ export function useDocumentMutation({
                     ),
                 ),
             );
+
             setDocumentGenerationJobId(authorization.job.id);
             syncDocumentGenerationUrl(authorization.job.id);
             queryClient.setQueryData(
                 ['dictionary-document-generation-job', authorization.job.id],
                 { job: authorization.job },
             );
+
             const uploaded = await dictionaryApi.uploadDocument(
                 authorization.upload,
                 action.file,
@@ -206,7 +228,9 @@ export function useDocumentMutation({
                     uploaded,
                 ),
             );
+
             documentUploadAttempt.current = null;
+
             return response;
         },
         onSuccess: async (response) => {
@@ -221,21 +245,28 @@ export function useDocumentMutation({
                     ['dictionary-batch-generation-job', response.job.id],
                     { job: response.job },
                 );
+
                 return;
             }
-            if (response.job.kind !== 'document-terms') return;
+
+            if (response.job.kind !== 'document-terms') {
+                return;
+            }
+
             setDocumentGenerationJobId(response.job.id);
             syncDocumentGenerationUrl(response.job.id);
             queryClient.setQueryData(
                 ['dictionary-document-generation-job', response.job.id],
                 { job: response.job },
             );
+
             if (response.job.state === 'accepted') {
                 setOutcome(
                     t('dictionary.document.saved', {
                         count: response.job.outcome?.cards.length ?? 0,
                     }),
                 );
+
                 await Promise.all([
                     queryClient.invalidateQueries({
                         queryKey: ['dictionary-cards', dictionaryId],

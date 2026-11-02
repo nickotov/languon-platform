@@ -22,11 +22,13 @@ export function mergeDisplayedPreferences(
             manual.portrait?.inheritedFields ??
             []),
     ];
+
     for (const field of portraitFields) {
         if (next[field] !== displayed[field]) {
             Object.assign(result, { [field]: next[field] });
             const replacesLegacyLevel =
                 field === 'detail' || field === 'wording';
+
             inherited = inherited.filter(
                 (item) =>
                     item !== field &&
@@ -34,11 +36,14 @@ export function mergeDisplayedPreferences(
             );
         }
     }
-    if (next.portrait || manual.portrait)
+
+    if (next.portrait || manual.portrait) {
         result.portrait = {
             enabled: next.portrait?.enabled ?? manual.portrait?.enabled ?? true,
             inheritedFields: inherited,
         };
+    }
+
     return result;
 }
 
@@ -51,6 +56,7 @@ export function inheritPortraitField(
               new Set([...(value.portrait?.inheritedFields ?? []), field]),
           )
         : [...portraitFields];
+
     return {
         ...value,
         portrait: { enabled: value.portrait?.enabled ?? true, inheritedFields },

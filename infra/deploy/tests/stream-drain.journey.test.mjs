@@ -24,6 +24,7 @@ async function assertLocalDocker() {
         undefined,
         'DOCKER_HOST must be unset',
     );
+
     const { stdout } = await runCommand(
         'docker',
         [
@@ -34,6 +35,7 @@ async function assertLocalDocker() {
         ],
         { capture: true },
     );
+
     assert.match(stdout.trim(), /^unix:\/\//);
 }
 
@@ -72,6 +74,7 @@ test(
             '-out',
             tlsCertificatePath,
         ]);
+
         await chmod(tlsPrivateKeyPath, 0o600);
         await chmod(tlsCertificatePath, 0o600);
         const env = {
@@ -97,6 +100,7 @@ test(
                 ['compose', '--file', file, '--project-name', project, ...args],
                 { env },
             );
+
         try {
             const cachedImage = 'languon-backend:packaging-test';
             const hasCachedImage = await runCommand(
@@ -107,6 +111,7 @@ test(
                 () => true,
                 () => false,
             );
+
             if (hasCachedImage) {
                 env.STREAM_FIXTURE_IMAGE = cachedImage;
             } else {
@@ -123,6 +128,7 @@ test(
                     { cwd: root },
                 );
             }
+
             await runCommand('docker', [
                 'network',
                 'create',
@@ -130,11 +136,13 @@ test(
                 '172.30.251.0/24',
                 `${prefix}-edge`,
             ]);
+
             await runCommand('docker', ['network', 'create', `${prefix}-data`]);
             await writeFile(
                 path.join(runtime, 'active-upstream.conf'),
                 upstream('blue'),
             );
+
             await compose(fixture, `${prefix}-apps`, [
                 'up',
                 '--detach',
@@ -142,6 +150,7 @@ test(
                 'blue-web',
                 'blue-admin',
             ]);
+
             await compose(edge, `${prefix}-edge`, ['up', '--detach', '--wait']);
 
             const stream = spawn('curl', [
@@ -156,10 +165,14 @@ test(
             const firstChunk = new Promise((resolve, reject) => {
                 stream.stdout.on('data', (chunk) => {
                     streamOutput += chunk;
-                    if (streamOutput.includes('blue:start')) resolve();
+                    if (streamOutput.includes('blue:start')) {
+                        resolve();
+                    }
                 });
+
                 stream.on('error', reject);
             });
+
             await firstChunk;
             await compose(fixture, `${prefix}-apps`, [
                 'up',
@@ -168,16 +181,19 @@ test(
                 'green-web',
                 'green-admin',
             ]);
+
             await writeFile(
                 path.join(runtime, 'active-upstream.conf'),
                 upstream('green'),
             );
+
             await runCommand('docker', [
                 'exec',
                 `${prefix}-edge-nginx`,
                 'nginx',
                 '-t',
             ]);
+
             await runCommand('docker', [
                 'exec',
                 `${prefix}-edge-nginx`,
@@ -185,6 +201,7 @@ test(
                 '-s',
                 'reload',
             ]);
+
             let current = '';
             for (
                 let attempt = 0;
@@ -202,10 +219,12 @@ test(
                     ],
                     { capture: true },
                 ).then(({ stdout }) => stdout);
+
                 if (current !== 'green') {
                     await new Promise((resolve) => setTimeout(resolve, 100));
                 }
             }
+
             assert.equal(current, 'green');
             const oldWorker = await runCommand('docker', [
                 'exec',
@@ -217,12 +236,14 @@ test(
                 () => true,
                 () => false,
             );
+
             assert.equal(oldWorker, true);
             await new Promise((resolve, reject) => {
                 stream.on('close', (code) =>
                     code === 0 ? resolve() : reject(new Error(`curl ${code}`)),
                 );
             });
+
             assert.equal(streamOutput, 'blue:start\nblue:end\n');
             await compose(fixture, `${prefix}-apps`, [
                 'stop',
@@ -235,16 +256,20 @@ test(
                 'down',
                 '--remove-orphans',
             ]).catch(() => {});
+
             await compose(fixture, `${prefix}-apps`, [
                 'down',
                 '--remove-orphans',
             ]).catch(() => {});
+
             await runCommand('docker', ['network', 'rm', `${prefix}-edge`], {
                 capture: true,
             }).catch(() => {});
+
             await runCommand('docker', ['network', 'rm', `${prefix}-data`], {
                 capture: true,
             }).catch(() => {});
+
             await rm(runtime, { recursive: true, force: true });
         }
     },

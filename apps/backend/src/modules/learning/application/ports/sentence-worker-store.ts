@@ -22,6 +22,8 @@ export interface SentenceLease {
     workerId: string;
     fencingToken: number;
     attempt: number;
+    /** Opaque per-claim authority for private Knowledge sources; never logged. */
+    capability?: string;
 }
 export type ClaimedSentenceJob = {
     lease: SentenceLease;

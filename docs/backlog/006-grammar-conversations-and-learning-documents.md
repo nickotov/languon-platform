@@ -4,9 +4,10 @@ id: BL-006
 title: 'Grammar conversations and learning documents'
 status: in-progress
 created: 2026-10-01
-updated: 2026-10-19
+updated: 2026-10-31
 original_tasks: '9'
 evidence:
+    - .agent/features/059-interactive-workbooks/EVIDENCE.md
     - .agent/features/044-contextual-language-assistant-and-knowledge/EVIDENCE.md
     - docs/user-flows/contextual-language-assistant-and-knowledge.md
     - .agent/features/047-knowledge-workspace/EVIDENCE.md
@@ -538,3 +539,52 @@ evidence and user-flow guide identify the implemented tests and runtime results.
 - Verify readable long-chat history and conversation-isolated context handling
   with the selected compaction mechanism; retrieve exact prior wording when
   needed and prevent memory from creating Knowledge automatically.
+
+## Interactive workbook extension — 2026-10-28
+
+The user confirmed [feature 059](../../.agent/features/059-interactive-workbooks/FEATURE.md)
+after the [interactive workbook interview](../interactive-workbook-discovery.md).
+This delivery extends knowledge notes with reusable grammar, vocabulary, bilingual
+text, video, audio-comprehension and exercise blocks; ordered workbooks; independent
+copies; shared-reader explanation/practice; and private versioned learner state.
+It includes on-demand exercise generation with preview/apply and explicit Save.
+The [execution plan](../../.agent/features/059-interactive-workbooks/EXEC_PLAN.md)
+owns current progress and verification requirements.
+
+Foundational contracts are in progress, not a completed interactive workspace.
+Earlier interview restrictions on media and copy-before-chat describe features
+044/047; feature 059 must explicitly reconcile ADR-0042 before extending them.
+Historical evidence above is retained and does not prove the new behavior.
+Guided course/lesson generation and workbook-wide AI context remain separate
+future work. BL-006 remains in progress after this partial scope allocation.
+
+## v16 partial-delivery checkpoint — 2026-10-30
+
+The selected Magic Patterns v16 custom-block/editor/chat migration is implemented: six reusable block families, reviewed generation/update proposals, atomic vocabulary/text AI, independent library copies and private shared-reader practice. Guided lessons, workbook-wide AI context and grammar-library saving remain deferred. Live uploaded-audio transcription still awaits approved provider/model activation.
+
+See [F059 evidence](../../.agent/features/059-interactive-workbooks/EVIDENCE.md)
+and its [fidelity observations](../../.agent/features/059-interactive-workbooks/evidence/v16-migration/FIDELITY.md).
+The full critical gate passes14 flows /812 tests with no skips. Parent F059 and
+this broader backlog task remain **in progress**; this is partial-delivery evidence,
+not a terminal task disposition.
+
+## Referenced custom-block refinement — 2026-10-30
+
+Feature059's REF-1–REF-5 follow-up adds readable safe narrative Markdown,
+current-note block mentions from slash/settings menus, multiple target-specific
+review proposals and explicit cursor insertion while preserving source authority,
+complete editor context and learner-controlled publication. It also corrects the
+workspace's initial false unavailable state. Source/security review and serial
+web185/1295 are verified. The final canonical gate passes14/14 flows and816/816
+tests, including789 backend cases and3 workbook browser journeys; final static
+checks and product builds pass. Exact source and evidence are recorded in the
+[F059 verification record](../../.agent/features/059-interactive-workbooks/EVIDENCE.md).
+This is partial BL-006 delivery; guided lessons, shared workbook AI context,
+grammar-library saving and unapproved live transcription activation remain
+outside this slice. Status remains in-progress.
+
+## Document formatting and proposal preview follow-up
+
+The F059 DOC follow-up adds native H1/H2/H3 and thematic breaks, preserves them through proposals, recovery, Save, copying and shared readers, and shows formatted proposal cards with a responsive read-only document preview. The complete mapped Knowledge workspace journey file is verified. Scoped implementation, final gate state and review evidence are recorded in [F059 evidence](../../.agent/features/059-interactive-workbooks/EVIDENCE.md).
+
+This partial delivery leaves BL-006 in progress; it does not complete the wider workbook or deferred transcription/course scope.

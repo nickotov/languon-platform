@@ -32,6 +32,7 @@ const content = {
     studiedLanguage: 'es',
     explanationLanguage: 'en',
 };
+
 describe('contextual assistant rich content contracts', () => {
     it('permits only a redacted model identity in learner turn responses', () => {
         const turn = {
@@ -49,15 +50,18 @@ describe('contextual assistant rich content contracts', () => {
             createdAt: '2026-10-25T00:00:00.000Z',
             updatedAt: '2026-10-25T00:00:00.000Z',
         };
+
         expect(ConversationTurnSchema.parse(turn).modelId).toBeNull();
         for (const modelId of [
             'deepseek-flash',
             'openai/gpt-6-luna',
             'gemini-2.5-pro',
-        ])
+        ]) {
             expect(
                 ConversationTurnSchema.safeParse({ ...turn, modelId }).success,
             ).toBe(false);
+        }
+
         expect(
             ConversationTurnSchema.safeParse({
                 ...turn,
@@ -65,15 +69,20 @@ describe('contextual assistant rich content contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('defaults omitted tutor modes and validates only the four supported modes', () => {
         expect(ChatPreferencesSchema.parse({}).mode).toBe('auto');
-        for (const mode of ['auto', 'explain', 'correct', 'practice'])
+        for (const mode of ['auto', 'explain', 'correct', 'practice']) {
             expect(ChatPreferencesSchema.parse({ mode }).mode).toBe(mode);
-        for (const mode of ['search', '', null, 1])
+        }
+
+        for (const mode of ['search', '', null, 1]) {
             expect(ChatPreferencesSchema.safeParse({ mode }).success).toBe(
                 false,
             );
+        }
     });
+
     it('rejects invalid persisted chat text and exposes only sanitized tool lifecycle', () => {
         const id = '00000000-0000-4000-8000-000000000001';
         for (const text of ['bad\u0000text', 'bad\uD800text']) {
@@ -83,6 +92,7 @@ describe('contextual assistant rich content contracts', () => {
                     content: text,
                 }).success,
             ).toBe(false);
+
             expect(
                 CopiedAttachmentSchema.safeParse({
                     id,
@@ -91,12 +101,14 @@ describe('contextual assistant rich content contracts', () => {
                 }).success,
             ).toBe(false);
         }
+
         expect(
             SubmitConversationTurnRequestSchema.safeParse({
                 requestId: id,
                 content: 'Explain مرحباً 👋',
             }).success,
         ).toBe(true);
+
         expect(
             ConversationToolCallSchema.safeParse({
                 id: 'tool-1',
@@ -104,6 +116,7 @@ describe('contextual assistant rich content contracts', () => {
                 state: 'running',
             }).success,
         ).toBe(true);
+
         expect(
             ConversationToolCallSchema.safeParse({
                 id: 'tool-1',
@@ -113,6 +126,7 @@ describe('contextual assistant rich content contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('admits exactly 40,000 non-BMP copied characters for the configured workspace allowance', () => {
         const id = '00000000-0000-4000-8000-000000000001';
         const copied = CopiedAttachmentSchema.parse({
@@ -121,6 +135,7 @@ describe('contextual assistant rich content contracts', () => {
             label: 'Copied text',
             content: '😀'.repeat(40_000),
         });
+
         expect(
             SubmitConversationTurnRequestSchema.safeParse({
                 requestId: id,
@@ -139,6 +154,7 @@ describe('contextual assistant rich content contracts', () => {
             }).success,
         ).toBe(true);
     });
+
     it('retains meaningful language examples and a rectangular comparison table', () => {
         const rich = {
             ...body,
@@ -169,8 +185,10 @@ describe('contextual assistant rich content contracts', () => {
                 ],
             },
         };
+
         expect(KnowledgeBodySchema.parse(rich)).toEqual(rich);
     });
+
     it.each([
         'javascript:alert(1)',
         'data:text/html,x',
@@ -180,12 +198,14 @@ describe('contextual assistant rich content contracts', () => {
     ])('rejects unsafe link %s', (href) => {
         expect(KnowledgeLinkSchema.safeParse(href).success).toBe(false);
     });
+
     it('allows absolute web links without interpreting strings as markup', () => {
         expect(
             KnowledgeLinkSchema.parse(
                 'https://example.test/grammar?q=%E3%81%AF',
             ),
         ).toContain('https:');
+
         expect(
             KnowledgeBodySchema.parse({
                 ...body,
@@ -206,9 +226,10 @@ describe('contextual assistant rich content contracts', () => {
             }),
         ).toBeDefined();
     });
+
     it.each([
         { type: 'image', attrs: { src: 'https://example.test/a.png' } },
-        { type: 'heading', attrs: { level: 1 }, content: [] },
+        { type: 'heading', attrs: { level: 4 }, content: [] },
         { type: 'paragraph', attrs: { onclick: 'x' }, content: [] },
         { type: 'paragraph', content: [{ type: 'doc', content: [paragraph] }] },
         { type: 'paragraph', content: [{ type: 'text', text: 'a\u0000b' }] },
@@ -221,10 +242,13 @@ describe('contextual assistant rich content contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('bounds malicious recursion before recursive schema validation', () => {
         let node: KnowledgeNode = paragraph;
-        for (let i = 0; i < 2_000; i++)
+        for (let i = 0; i < 2_000; i++) {
             node = { type: 'blockquote', content: [node] };
+        }
+
         expect(
             KnowledgeBodySchema.safeParse({
                 ...body,
@@ -232,6 +256,7 @@ describe('contextual assistant rich content contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('rejects malformed tables and indirect nested tables', () => {
         const cell = { type: 'tableCell', content: [paragraph] };
         const table = {
@@ -241,12 +266,14 @@ describe('contextual assistant rich content contracts', () => {
                 { type: 'tableRow', content: [cell, cell] },
             ],
         };
+
         expect(
             KnowledgeBodySchema.safeParse({
                 ...body,
                 document: { type: 'doc', content: [table] },
             }).success,
         ).toBe(false);
+
         const nested = {
             type: 'table',
             content: [
@@ -277,6 +304,7 @@ describe('contextual assistant rich content contracts', () => {
                 },
             ],
         };
+
         expect(
             KnowledgeBodySchema.safeParse({
                 ...body,
@@ -284,6 +312,7 @@ describe('contextual assistant rich content contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('requires unique categories and paired update target/version', () => {
         expect(
             KnowledgeNoteContentSchema.safeParse({
@@ -291,6 +320,7 @@ describe('contextual assistant rich content contracts', () => {
                 categories: ['grammar', 'grammar'],
             }).success,
         ).toBe(false);
+
         const draft = {
             id: '00000000-0000-4000-8000-000000000001',
             conversationId: '00000000-0000-4000-8000-000000000002',
@@ -301,12 +331,14 @@ describe('contextual assistant rich content contracts', () => {
             createdAt: '2026-10-19T00:00:00.000Z',
             updatedAt: '2026-10-19T00:00:00.000Z',
         };
+
         expect(KnowledgeDraftSchema.safeParse(draft).success).toBe(true);
         expect(
             KnowledgeDraftSchema.safeParse({ ...draft, expectedNoteVersion: 1 })
                 .success,
         ).toBe(false);
     });
+
     it('allows a draft with optional note metadata and a manually renamed chat', () => {
         expect(
             KnowledgeNoteContentSchema.safeParse({
@@ -318,23 +350,28 @@ describe('contextual assistant rich content contracts', () => {
                 explanationLanguage: null,
             }).success,
         ).toBe(true);
+
         expect(
             UpdateConversationRequestSchema.safeParse({
                 title: 'Research notes',
             }).success,
         ).toBe(true);
+
         expect(UpdateConversationRequestSchema.safeParse({}).success).toBe(
             false,
         );
+
         expect(
             KnowledgeWorkingContentSchema.safeParse({ ...content, title: '' })
                 .success,
         ).toBe(true);
+
         expect(
             KnowledgeNoteContentSchema.safeParse({ ...content, title: '' })
                 .success,
         ).toBe(false);
     });
+
     it('requires distinct stale-checked branches for explicit conflict resolution', () => {
         const request = {
             operationId: '00000000-0000-4000-8000-000000000001',
@@ -347,9 +384,11 @@ describe('contextual assistant rich content contracts', () => {
                 },
             ],
         };
+
         expect(
             ResolveKnowledgeWorkingRequestSchema.safeParse(request).success,
         ).toBe(true);
+
         expect(
             ResolveKnowledgeWorkingRequestSchema.safeParse({
                 ...request,
@@ -378,17 +417,20 @@ describe('immutable typed copied dictionary cards', () => {
         exampleTranslation: 'Hello, my friend',
         exampleTranslationLanguage: 'en',
     };
+
     it('preserves legacy and pasted text without inferring structure from JSON-looking content', () => {
         const legacy = {
             id,
             label: 'Copied passage',
             content: JSON.stringify(card),
         };
+
         expect(CopiedAttachmentSchema.parse(legacy)).toEqual(legacy);
         expect(
             CopiedAttachmentSchema.parse({ ...legacy, kind: 'text' }).kind,
         ).toBe('text');
     });
+
     it('validates all copied fields and languages and keeps model text equal to the visible snapshot', () => {
         const copy = {
             id,
@@ -397,6 +439,7 @@ describe('immutable typed copied dictionary cards', () => {
             card,
             content: JSON.stringify(card),
         };
+
         expect(CopiedAttachmentSchema.parse(copy)).toEqual(copy);
         const reordered = Object.fromEntries(Object.entries(card).reverse());
         expect(
@@ -405,24 +448,28 @@ describe('immutable typed copied dictionary cards', () => {
                 content: JSON.stringify(reordered),
             }).success,
         ).toBe(true);
+
         expect(
             CopiedAttachmentSchema.safeParse({
                 ...copy,
                 content: JSON.stringify({ ...card, translation: 'Different' }),
             }).success,
         ).toBe(false);
+
         expect(
             CopiedAttachmentSchema.safeParse({
                 ...copy,
                 card: { ...card, definitionLanguage: undefined },
             }).success,
         ).toBe(false);
+
         expect(
             CopiedAttachmentSchema.safeParse({
                 ...copy,
                 card: { ...card, hiddenInstructions: 'arbitrary' },
             }).success,
         ).toBe(false);
+
         expect(
             CopiedAttachmentSchema.safeParse({
                 ...copy,
@@ -430,6 +477,7 @@ describe('immutable typed copied dictionary cards', () => {
             }).success,
         ).toBe(false);
     });
+
     it('retains copied snapshots independently of later live card edits and permits multiple attachments', () => {
         const liveCard = { ...card };
         const first = CopiedAttachmentSchema.parse({
@@ -448,6 +496,7 @@ describe('immutable typed copied dictionary cards', () => {
             content: 'Compare these words.',
             attachments: [first, second],
         });
+
         liveCard.source = 'A changed live source';
         expect(liveCard.source).not.toBe(card.source);
         expect(turn.attachments).toHaveLength(2);
@@ -476,12 +525,14 @@ it('keeps independent portrait explanation settings and accepts all inherited fi
             ],
         },
     });
+
     expect(parsed).toMatchObject({
         mode: 'practice',
         detail: 'concise',
         wording: 'academic',
         approach: 'examples-first',
     });
+
     expect(
         ChatPreferencesSchema.safeParse({ ...parsed, wording: 'diagnosed' })
             .success,

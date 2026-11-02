@@ -67,6 +67,7 @@ export async function runPlaygroundLifecycle(
                     await connection.unsafe(
                         `create database ${quoteIdentifier(options.environment.databaseName)}`,
                     );
+
                     created = true;
                 }
 
@@ -102,6 +103,7 @@ async function migrateAndSeedTarget(
             migrationsFolder: options.migrationsFolder,
             purpose: grantDisposableMigrationPurpose(),
         });
+
         await seedDevelopmentHarnessFixture(
             createDrizzleDatabase(target, databaseSchema),
         );
@@ -116,6 +118,7 @@ async function waitForPostgres(client: PostgresClient): Promise<void> {
     for (let attempt = 0; attempt < 20; attempt += 1) {
         try {
             await client`select 1`;
+
             return;
         } catch (error) {
             lastError = error;
@@ -135,6 +138,7 @@ async function databaseExists(
     const rows = await connection<{ exists: boolean }[]>`
         select exists(select 1 from pg_database where datname = ${databaseName})
     `;
+
     return rows[0]?.exists === true;
 }
 

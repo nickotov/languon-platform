@@ -25,8 +25,10 @@ export function generationCompletionUsage(
             usage.outputTokens < 0 ||
             usage.inputTokens > budget.maxInputTokensPerAttempt ||
             usage.outputTokens > budget.maxOutputTokensPerAttempt)
-    )
+    ) {
         throw new Error('Invalid provider usage');
+    }
+
     const priorAttemptCount = Math.max(0, job.attemptCount - 1);
     const costMicros = nativeDispatch
         ? null
@@ -47,8 +49,9 @@ export function generationCompletionUsage(
         (costMicros !== null && costMicros > job.providerReservedCostMicros) ||
         inputTokens > job.providerReservedInputTokens ||
         outputTokens > job.providerReservedOutputTokens
-    )
+    ) {
         throw new Error('Provider usage exceeds reservation');
+    }
 
     return { costMicros, inputTokens, outputTokens };
 }

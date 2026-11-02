@@ -230,7 +230,10 @@ export function userWhere(
     input: AdminUsersQuery,
 ): SQL | undefined {
     const conditions: SQL[] = [];
-    if (input.status) conditions.push(eq(usersTable.status, input.status));
+    if (input.status) {
+        conditions.push(eq(usersTable.status, input.status));
+    }
+
     if (input.search) {
         const matches: SQL[] = [
             ilike(userEmailsTable.email, `%${input.search}%`),

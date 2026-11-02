@@ -65,7 +65,10 @@ export async function claimCleanup(
             .limit(1)
             .for('update', { skipLocked: true });
 
-        if (!upload) return null;
+        if (!upload) {
+            return null;
+        }
+
         const fencingToken = upload.cleanupFencingToken + 1n;
         const leaseDeadline = new Date(
             input.context.now.getTime() + input.leaseDurationMs,

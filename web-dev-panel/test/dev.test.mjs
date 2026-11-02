@@ -10,6 +10,7 @@ function launcher(platform = 'darwin') {
     const signals = [];
     const events = [];
     child.kill = (signal) => signals.push(signal);
+
     return {
         parent,
         child,
@@ -29,6 +30,7 @@ function launcher(platform = 'darwin') {
                     stdio: 'inherit',
                     shell: false,
                 });
+
                 return child;
             },
         },
@@ -42,6 +44,7 @@ test('launcher waits for restart completion before spawning main', async () => {
         new Promise((done) => {
             release = done;
         });
+
     const started = startDevelopmentPanel(state.options);
     assert.deepEqual(state.events, []);
     release();
@@ -55,6 +58,7 @@ test('failed restart never spawns a replacement', async () => {
     state.options.restart = async () => {
         throw new Error('refused');
     };
+
     await assert.rejects(startDevelopmentPanel(state.options), /refused/u);
     assert.deepEqual(state.events, []);
 });

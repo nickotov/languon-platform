@@ -66,17 +66,21 @@ function assertRequest(request: RateLimitRequest): void {
     if (!Number.isSafeInteger(request.limit) || request.limit < 1) {
         throw new RangeError('Rate limit must be a positive integer.');
     }
+
     if (request.limit > MAX_RATE_LIMIT) {
         throw new RangeError(`Rate limit must not exceed ${MAX_RATE_LIMIT}.`);
     }
+
     if (!Number.isSafeInteger(request.windowMs) || request.windowMs < 1) {
         throw new RangeError('Rate-limit window must be a positive integer.');
     }
+
     if (request.windowMs > MAX_WINDOW_MS) {
         throw new RangeError(
             `Rate-limit window must not exceed ${MAX_WINDOW_MS}ms.`,
         );
     }
+
     if (!/^[a-z][a-z0-9._-]{0,63}$/.test(request.scope)) {
         throw new RangeError('Rate-limit scope is invalid.');
     }
@@ -122,28 +126,32 @@ export class RedisRateLimiter implements RateLimiter, ConcurrentRequestLimiter {
         );
 
         try {
-            const key = request.resolveSubjectAlias
-                ? ((await runBoundedRedisOperation(
-                      this.redis,
-                      () =>
-                          this.redis.get(
-                              deriveOpaqueRedisKey(
-                                  this.namespace,
-                                  'rate-limit-alias',
-                                  `${request.scope}\0${request.subject}`,
-                                  this.hmacSecret,
-                              ),
-                          ),
-                      {
-                          ...(this.requestTimeoutMs === undefined
-                              ? {}
-                              : { requestTimeoutMs: this.requestTimeoutMs }),
-                          ...(request.signal === undefined
-                              ? {}
-                              : { signal: request.signal }),
-                      },
-                  )) ?? directKey)
-                : directKey;
+            let key = directKey;
+            if (request.resolveSubjectAlias) {
+                const resolvedKey = await runBoundedRedisOperation(
+                    this.redis,
+                    () =>
+                        this.redis.get(
+                            deriveOpaqueRedisKey(
+                                this.namespace,
+                                'rate-limit-alias',
+                                `${request.scope}\0${request.subject}`,
+                                this.hmacSecret,
+                            ),
+                        ),
+                    {
+                        ...(this.requestTimeoutMs === undefined
+                            ? {}
+                            : { requestTimeoutMs: this.requestTimeoutMs }),
+                        ...(request.signal === undefined
+                            ? {}
+                            : { signal: request.signal }),
+                    },
+                );
+
+                key = resolvedKey ?? directKey;
+            }
+
             const result = await runBoundedRedisOperation(
                 this.redis,
                 () =>
@@ -175,6 +183,7 @@ export class RedisRateLimiter implements RateLimiter, ConcurrentRequestLimiter {
             if (request.signal?.aborted === true || isAbortError(error)) {
                 throw error;
             }
+
             throw new RateLimitUnavailableError();
         }
     }
@@ -204,6 +213,7 @@ export class RedisRateLimiter implements RateLimiter, ConcurrentRequestLimiter {
                     ? {}
                     : { requestTimeoutMs: this.requestTimeoutMs },
             ).then(() => undefined);
+
         try {
             const result = await runBoundedRedisOperation(
                 this.redis,
@@ -225,11 +235,18 @@ export class RedisRateLimiter implements RateLimiter, ConcurrentRequestLimiter {
                         : { signal: input.signal }),
                 },
             );
+
             input.signal?.throwIfAborted();
-            if (result === 0) return null;
-            if (result !== 1)
+            if (result === 0) {
+                return null;
+            }
+
+            if (result !== 1) {
                 throw new Error('Invalid concurrent lease response.');
+            }
+
             let released: Promise<void> | undefined;
+
             return {
                 release: () =>
                     (released ??= release().catch(() => {
@@ -244,7 +261,11 @@ export class RedisRateLimiter implements RateLimiter, ConcurrentRequestLimiter {
             } catch {
                 /* The finite lease TTL remains the crash/outage backstop. */
             }
-            if (input.signal?.aborted || isAbortError(error)) throw error;
+
+            if (input.signal?.aborted || isAbortError(error)) {
+                throw error;
+            }
+
             throw new RateLimitUnavailableError();
         }
     }
@@ -256,6 +277,7 @@ export class RedisRateLimiter implements RateLimiter, ConcurrentRequestLimiter {
             subject: input.subject,
             windowMs: input.ttlMs,
         });
+
         const subjectKey = deriveOpaqueRedisKey(
             this.namespace,
             'rate-limit',
@@ -268,6 +290,7 @@ export class RedisRateLimiter implements RateLimiter, ConcurrentRequestLimiter {
             `${input.scope}\0${input.alias}`,
             this.hmacSecret,
         );
+
         try {
             await runBoundedRedisOperation(
                 this.redis,
@@ -285,6 +308,7 @@ export class RedisRateLimiter implements RateLimiter, ConcurrentRequestLimiter {
             if (input.signal?.aborted === true || isAbortError(error)) {
                 throw error;
             }
+
             throw new RateLimitUnavailableError();
         }
     }

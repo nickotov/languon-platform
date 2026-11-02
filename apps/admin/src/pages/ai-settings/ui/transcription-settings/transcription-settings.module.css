@@ -1,0 +1,13 @@
+.root,
+.body,
+.body > *,
+.form {
+    min-width: 0;
+}
+.root {
+    overflow-wrap: anywhere;
+}
+.control {
+    min-width: 0;
+    width: 100%;
+}

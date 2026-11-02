@@ -30,24 +30,35 @@ export function RestartInterviewDialog({
         management.status.data?.interview?.locale ??
         management.query.data?.draft?.locale ??
         locale;
+
     function close() {
-        if (pending) return;
+        if (pending) {
+            return;
+        }
+
         if (discarded && management.ownerId) {
             setPortraitStateCache(
                 management.client,
                 management.ownerId,
                 discarded,
             );
+
             void invalidatePortraitInterviewStatusCache(
                 management.client,
                 management.ownerId,
             );
+
             router.push('/portrait/intro?restart=failed');
         }
+
         onClose();
     }
+
     async function restart() {
-        if (pending || !management.ownerId || !management.query.data) return;
+        if (pending || !management.ownerId || !management.query.data) {
+            return;
+        }
+
         const ownerId = management.ownerId;
         setPending(true);
         setFailed(false);
@@ -59,7 +70,11 @@ export function RestartInterviewDialog({
                         expectedVersion: management.query.data!.version,
                     }),
                 ));
-            if (useSessionStore.getState().user?.id !== ownerId) return;
+
+            if (useSessionStore.getState().user?.id !== ownerId) {
+                return;
+            }
+
             setDiscarded(next);
             await management.requestWithSession((token) =>
                 portraitApi.startInterview(token, {
@@ -67,12 +82,17 @@ export function RestartInterviewDialog({
                     locale: interviewLocale,
                 }),
             );
-            if (useSessionStore.getState().user?.id !== ownerId) return;
+
+            if (useSessionStore.getState().user?.id !== ownerId) {
+                return;
+            }
+
             setPortraitStateCache(management.client, ownerId, next);
             await invalidatePortraitInterviewStatusCache(
                 management.client,
                 ownerId,
             );
+
             router.push('/portrait/interview');
         } catch {
             setFailed(true);
@@ -80,6 +100,7 @@ export function RestartInterviewDialog({
             setPending(false);
         }
     }
+
     return (
         <Dialog
             open={open}

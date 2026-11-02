@@ -18,10 +18,12 @@ describe('free saved-reference comparison', () => {
                 'spaces',
             ],
         });
+
         expect(compareReferenceAnswer('İSTANBUL', 'istanbul', 'tr').kind).toBe(
             'match',
         );
     });
+
     it.each([
         ['cafe', 'café'],
         ['je suis ici', 'ici suis je'],
@@ -49,12 +51,14 @@ describe('free saved-reference comparison', () => {
             );
         },
     );
+
     it('does not grade an empty answer and treats equivalent punctuation boundaries conservatively', () => {
         expect(compareReferenceAnswer(' \n ', 'Bonjour.')).toMatchObject({
             kind: 'reference-only',
             answer: ' \n ',
             ignored: [],
         });
+
         expect(
             compareReferenceAnswer('porte-monnaie', 'porte monnaie').kind,
         ).toBe('match');

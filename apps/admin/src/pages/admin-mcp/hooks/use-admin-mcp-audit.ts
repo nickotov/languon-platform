@@ -16,19 +16,23 @@ export function useAdminMcpAudit() {
                     { page, pageSize: 25 },
                     signal,
                 );
+
                 if (!signal?.aborted) {
                     setResult(response);
                     setError(null);
                 }
             } catch (caught) {
-                if (!signal?.aborted)
+                if (!signal?.aborted) {
                     setError(
                         caught instanceof Error
                             ? caught
                             : new Error('Activity could not be loaded.'),
                     );
+                }
             } finally {
-                if (!signal?.aborted) setLoading(false);
+                if (!signal?.aborted) {
+                    setLoading(false);
+                }
             }
         },
         [page],
@@ -37,10 +41,12 @@ export function useAdminMcpAudit() {
     useEffect(() => {
         const controller = new AbortController();
         void refresh(controller.signal);
+
         return () => controller.abort();
     }, [refresh]);
 
     const reload = () => void refresh();
     const changePage = (nextPage: number) => setPage(nextPage);
+
     return { result, error, loading, page, reload, changePage };
 }

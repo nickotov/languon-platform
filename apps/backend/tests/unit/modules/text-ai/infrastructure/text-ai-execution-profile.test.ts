@@ -11,6 +11,7 @@ import {
 
 function snapshot(modelId: string, format: string): TextAiExecutionSnapshot {
     const model = findTextAiModel('deepseek', modelId)!;
+
     return {
         adapterRevision: model.adapterRevision,
         aggregateBudget: model.aggregateBudget,
@@ -45,10 +46,12 @@ describe('reviewed Texts execution limits', () => {
             budget: execution.aggregateBudget,
             credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
         });
+
         expect(options.modelRequestLimits).toEqual({
             maxInputTokens: 128000,
             maxOutputTokens: 32768,
         });
+
         expect(
             execution.aggregateBudget.maxOutputTokensPerAttempt,
         ).toBeGreaterThanOrEqual(options.modelRequestLimits.maxOutputTokens);
@@ -63,18 +66,21 @@ describe('reviewed Texts execution limits', () => {
                 inputCreditsPerMillionTokens: inputRate,
             },
         });
+
         expect(
             resolveTextAiExecutionSnapshot(
                 priced(0.001),
                 execution.aggregateBudget,
             ).id,
         ).toBe('deepseek-flash');
+
         expect(
             resolveTextAiExecutionSnapshot(
                 priced(12.345),
                 execution.aggregateBudget,
             ).id,
         ).toBe('deepseek-flash');
+
         for (const rate of [
             0.0001,
             -1,

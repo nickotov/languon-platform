@@ -41,21 +41,31 @@ export function SentenceLibraryPage({
     const shareKey = capability?.key ?? null;
     const [preparationOpen, setPreparationOpen] = useState(false);
     useEffect(() => {
-        if (!shareId) return;
+        if (!shareId) {
+            return;
+        }
+
         const update = () =>
             setCapability((current) => ({
                 key: window.location.hash.slice(1),
                 revision: (current?.revision ?? 0) + 1,
             }));
+
         update();
         window.addEventListener('hashchange', update);
+
         return () => window.removeEventListener('hashchange', update);
     }, [shareId]);
+
     const dictionaryHref = shareId
         ? `/shared/dictionaries/${shareId}`
         : `/dictionaries/${dictionaryId}`;
+
     useEffect(() => {
-        if (status !== 'signed-out') return;
+        if (status !== 'signed-out') {
+            return;
+        }
+
         const returnTo = `${dictionaryHref}/sentences`;
         router.replace(
             href(
@@ -63,6 +73,7 @@ export function SentenceLibraryPage({
             ),
         );
     }, [status, router, href, dictionaryHref, shareKey]);
+
     const target = useMemo<LibraryTarget>(
         () =>
             shareId
@@ -84,20 +95,26 @@ export function SentenceLibraryPage({
         identity: `${userId ?? 'anonymous'}:${shareId ? `shared:${shareId}` : `owner:${dictionaryId}`}`,
         enabled: status === 'authenticated' && (!shareId || !!shareKey),
     });
+
     function startPrepared(configuration: Configuration) {
-        if (!configuration.preparedBatchId) return;
+        if (!configuration.preparedBatchId) {
+            return;
+        }
+
         const params = new URLSearchParams({
             practice: 'prepared',
             batch: configuration.preparedBatchId,
             direction: configuration.direction,
             mode: configuration.mode,
         });
+
         router.push(
             href(
                 `${dictionaryHref}?${params}${shareKey ? `#${shareKey}` : ''}`,
             ),
         );
     }
+
     const query = useQuery({
         queryKey: [
             'sentence-library-dictionary',
@@ -113,27 +130,34 @@ export function SentenceLibraryPage({
                     shareKey!,
                     { limit: 1 },
                 );
+
                 return response.dictionary;
             }
+
             const response = await requestWithSession((token) =>
                 dictionaryApi.readDictionary(token, dictionaryId!),
             );
+
             return response.dictionary;
         },
         enabled: status === 'authenticated' && (!shareId || Boolean(shareKey)),
         retry: false,
         gcTime: 0,
     });
+
     function retry() {
         void query.refetch();
     }
-    if (status !== 'authenticated' || query.isPending)
+
+    if (status !== 'authenticated' || query.isPending) {
         return (
             <main className={componentStyles.page}>
                 <LoadingState>{t('dictionary.editor.loading')}</LoadingState>
             </main>
         );
-    if (!query.data)
+    }
+
+    if (!query.data) {
         return (
             <main className={componentStyles.page}>
                 <ErrorState
@@ -146,6 +170,8 @@ export function SentenceLibraryPage({
                 </ErrorState>
             </main>
         );
+    }
+
     function renderAudio(exerciseId: string, field: 'prompt' | 'reference') {
         return (
             <SpeechControl
@@ -159,7 +185,9 @@ export function SentenceLibraryPage({
             />
         );
     }
+
     const identity = `${userId}:${dictionaryHref}:${capability?.revision ?? 0}`;
+
     return (
         <main className={componentStyles.page}>
             <SentenceLibrary

@@ -102,13 +102,15 @@ export function CardFieldOverrides({
     }
 
     function changeDefinitionLanguage(value: string) {
-        if (value === 'source' || value === 'target')
+        if (value === 'source' || value === 'target') {
             setOverride('definitionLanguage', value);
+        }
     }
 
     function changeExampleLanguage(value: string) {
-        if (value === 'source' || value === 'target')
+        if (value === 'source' || value === 'target') {
             setOverride('exampleLanguage', value);
+        }
     }
 
     return (

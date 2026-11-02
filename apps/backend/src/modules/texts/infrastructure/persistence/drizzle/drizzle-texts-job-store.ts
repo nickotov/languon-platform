@@ -1,3 +1,5 @@
+import type { KnowledgeLearningSourceBinding } from '../../../../knowledge/application/learning-source-binding';
+import type { TextSourceSegment } from '@languon/contracts';
 import type {
     EnqueueTextDetectionRequest,
     EnqueueTextTranslationRequest,
@@ -31,7 +33,15 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
     constructor(
         private readonly database: TextsDatabase,
         private readonly policy?: TextsJobAdmissionPolicy,
+        private readonly knowledgeActionsEnabled = true,
     ) {}
+
+    knowledgeActionPersistence() {
+        return {
+            database: this.database,
+            policy: this.knowledgeActionsEnabled ? this.policy : undefined,
+        };
+    }
 
     async enqueue(
         ownerId: string,
@@ -45,6 +55,23 @@ export class DrizzleTextsJobStore implements TextsJobStore, TextsWorkerStore {
             kind,
             raw,
             context,
+        );
+    }
+
+    enqueueKnowledgeTranslation(
+        ownerId: string,
+        raw: EnqueueTextTranslationRequest,
+        segments: TextSourceSegment[],
+        source: KnowledgeLearningSourceBinding,
+        context: TextJobContext,
+    ) {
+        return enqueue(
+            { database: this.database, policy: this.policy },
+            ownerId,
+            'text-translation',
+            raw,
+            context,
+            { binding: source, segments },
         );
     }
 

@@ -26,6 +26,7 @@ function controller(error: ApiError | null): SentencePreparationController {
         clear: vi.fn(),
     };
 }
+
 function error(code: ApiError['code'], retryAfterSeconds?: number) {
     return new ApiError(503, {
         code,
@@ -34,6 +35,7 @@ function error(code: ApiError['code'], retryAfterSeconds?: number) {
         ...(retryAfterSeconds ? { retryAfterSeconds } : {}),
     });
 }
+
 afterEach(() => vi.useRealTimers());
 describe('preparation recovery notices', () => {
     it('directs a signed-out learner to sign in without replaying admission', () => {
@@ -44,15 +46,19 @@ describe('preparation recovery notices', () => {
                 onStartAgain={vi.fn()}
             />,
         );
+
         expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute(
             'href',
             '/login',
         );
+
         expect(
             screen.queryByRole('button', { name: 'Check status' }),
         ).not.toBeInTheDocument();
+
         expect(value.refresh).not.toHaveBeenCalled();
     });
+
     it('offers an explicit new preparation and saved library for an unavailable manifest', () => {
         const start = vi.fn();
         const library = vi.fn();
@@ -64,18 +70,22 @@ describe('preparation recovery notices', () => {
                 onOpenLibrary={library}
             />,
         );
+
         fireEvent.click(
             screen.getByRole('button', {
                 name: 'Start a new saved-first preparation',
             }),
         );
+
         fireEvent.click(
             screen.getByRole('button', { name: 'Saved sentences' }),
         );
+
         expect(start).toHaveBeenCalledOnce();
         expect(library).toHaveBeenCalledOnce();
         expect(value.refresh).not.toHaveBeenCalled();
     });
+
     it('honors the server cooldown before attempting recovery', () => {
         vi.useFakeTimers();
         const value = controller(error('capacity_unavailable', 2));
@@ -86,9 +96,11 @@ describe('preparation recovery notices', () => {
                 onStartAgain={restart}
             />,
         );
+
         const retry = screen.getByRole('button', {
             name: 'Start a new saved-first preparation',
         });
+
         expect(retry).toBeDisabled();
         act(() => vi.advanceTimersByTime(2001));
         expect(retry).toBeEnabled();
@@ -96,6 +108,7 @@ describe('preparation recovery notices', () => {
         expect(restart).toHaveBeenCalledOnce();
         expect(value.refresh).not.toHaveBeenCalled();
     });
+
     it('leaves a revoked dictionary rather than offering unsafe resume', () => {
         render(
             <SentencePreparationNotice
@@ -103,25 +116,30 @@ describe('preparation recovery notices', () => {
                 onStartAgain={vi.fn()}
             />,
         );
+
         expect(
             screen.getByRole('link', { name: 'Go to my dictionaries' }),
         ).toHaveAttribute('href', '/dictionaries');
+
         expect(
             screen.queryByRole('button', { name: 'Check status' }),
         ).not.toBeInTheDocument();
     });
+
     it('opens setup when an expired manifest cannot supply a new direction snapshot', () => {
         const prototype = HTMLDialogElement.prototype;
         const original = Object.getOwnPropertyDescriptor(
             prototype,
             'showModal',
         );
+
         Object.defineProperty(prototype, 'showModal', {
             configurable: true,
             value(this: HTMLDialogElement) {
                 this.setAttribute('open', '');
             },
         });
+
         const value = controller(error('job_not_found'));
         const restart = vi.fn();
         render(
@@ -135,17 +153,23 @@ describe('preparation recovery notices', () => {
                 targetLanguage='fr'
             />,
         );
+
         fireEvent.click(
             screen.getByRole('button', {
                 name: 'Start a new saved-first preparation',
             }),
         );
+
         expect(value.clear).toHaveBeenCalledOnce();
         expect(restart).toHaveBeenCalledOnce();
         expect(value.start).not.toHaveBeenCalled();
-        if (original) Object.defineProperty(prototype, 'showModal', original);
-        else Reflect.deleteProperty(prototype, 'showModal');
+        if (original) {
+            Object.defineProperty(prototype, 'showModal', original);
+        } else {
+            Reflect.deleteProperty(prototype, 'showModal');
+        }
     });
+
     it('lets unavailable AI retry without exposing model settings', () => {
         const value = controller(error('model_unavailable'));
         const restart = vi.fn();
@@ -157,19 +181,23 @@ describe('preparation recovery notices', () => {
                 onOpenAiSettings={settings}
             />,
         );
+
         expect(
             screen.queryByRole('button', { name: 'Open AI settings' }),
         ).not.toBeInTheDocument();
+
         fireEvent.click(
             screen.getByRole('button', {
                 name: 'Start a new saved-first preparation',
             }),
         );
+
         expect(settings).not.toHaveBeenCalled();
         expect(restart).toHaveBeenCalledOnce();
         expect(value.refresh).not.toHaveBeenCalled();
         expect(value.resume).not.toHaveBeenCalled();
     });
+
     it('keeps whole-dictionary round planning unknown until its size is known', () => {
         render(
             <SentencePreparationOption
@@ -182,6 +210,7 @@ describe('preparation recovery notices', () => {
                 onView={vi.fn()}
             />,
         );
+
         expect(screen.getByText('Rounds: …')).toBeVisible();
         expect(screen.queryByText('Rounds: 100')).not.toBeInTheDocument();
     });
@@ -215,6 +244,7 @@ it('requires an explicit new budget after preparation exhausts its parent allowa
             measurement: 'measured',
         },
     };
+
     render(
         <SentencePreparationSheet
             controller={value}
@@ -226,6 +256,7 @@ it('requires an explicit new budget after preparation exhausts its parent allowa
             targetLanguage='es'
         />,
     );
+
     expect(screen.queryByText(/Charged:/)).not.toBeInTheDocument();
     expect(value.continueWithBudget).not.toHaveBeenCalled();
     fireEvent.click(
@@ -233,6 +264,7 @@ it('requires an explicit new budget after preparation exhausts its parent allowa
             name: 'Continue with a new budget',
         })[0]!,
     );
+
     expect(value.continueWithBudget).toHaveBeenCalledOnce();
     expect(value.resume).not.toHaveBeenCalled();
 });

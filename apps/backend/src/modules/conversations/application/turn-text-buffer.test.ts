@@ -20,6 +20,7 @@ describe('durable turn text batching', () => {
             'Hello world',
             '!',
         ]);
+
         buffer.dispose();
     });
 
@@ -34,6 +35,7 @@ describe('durable turn text batching', () => {
         expect(batches.every((batch) => Buffer.byteLength(batch) <= 4096)).toBe(
             true,
         );
+
         expect(batches.join('')).toBe(text);
         expect(batches).toHaveLength(3);
         buffer.dispose();
@@ -46,6 +48,7 @@ describe('durable turn text batching', () => {
         const buffer = createTurnTextBuffer(async () => {
             throw failure;
         }, onError);
+
         await buffer.append('partial');
         await vi.advanceTimersByTimeAsync(100);
         expect(onError).toHaveBeenCalledWith(failure);

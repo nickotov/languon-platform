@@ -47,9 +47,11 @@ describe('dictionary pasted-term batch generation', () => {
                 },
             ],
         };
+
         expect(
             DictionaryImportPairsGenerationInputPayloadSchema.parse(input),
         ).toBeTruthy();
+
         expect(() =>
             DictionaryImportPairsGenerationInputPayloadSchema.parse({
                 ...input,
@@ -64,6 +66,7 @@ describe('dictionary pasted-term batch generation', () => {
                 ],
             }),
         ).toThrow();
+
         expect(() =>
             DictionaryImportPairsGenerationInputPayloadSchema.parse({
                 ...input,
@@ -85,6 +88,7 @@ describe('dictionary pasted-term batch generation', () => {
             { input: 'river bank', rowIndex: 1 },
             { input: 'shore', rowIndex: 2 },
         ]);
+
         expect(parseDictionaryBatchGenerationText('bank\rriver')).toEqual([
             { input: 'bank', rowIndex: 0 },
             { input: 'river', rowIndex: 1 },
@@ -95,6 +99,7 @@ describe('dictionary pasted-term batch generation', () => {
         expect(
             parseDictionaryBatchGenerationText('😀'.repeat(200)),
         ).toHaveLength(1);
+
         expect(() =>
             parseDictionaryBatchGenerationText('😀'.repeat(201)),
         ).toThrowError(
@@ -103,6 +108,7 @@ describe('dictionary pasted-term batch generation', () => {
                 rowIndex: 0,
             }),
         );
+
         expect(() =>
             parseDictionaryBatchGenerationText('safe\u0000unsafe'),
         ).toThrowError(
@@ -110,6 +116,7 @@ describe('dictionary pasted-term batch generation', () => {
                 reason: 'control_character',
             }),
         );
+
         expect(() =>
             parseDictionaryBatchGenerationText('safe\tunsafe'),
         ).toThrowError(
@@ -117,6 +124,7 @@ describe('dictionary pasted-term batch generation', () => {
                 reason: 'control_character',
             }),
         );
+
         expect(() =>
             parseDictionaryBatchGenerationText('safe\u0085unsafe'),
         ).toThrowError(
@@ -124,11 +132,13 @@ describe('dictionary pasted-term batch generation', () => {
                 reason: 'control_character',
             }),
         );
+
         expect(
             parseDictionaryBatchGenerationText(
                 Array.from({ length: 100 }, () => 'x'.repeat(200)).join('\r\n'),
             ),
         ).toHaveLength(100);
+
         expect(() =>
             parseDictionaryBatchGenerationText('x'.repeat(20_201)),
         ).toThrowError(
@@ -136,6 +146,7 @@ describe('dictionary pasted-term batch generation', () => {
                 reason: 'text_too_long',
             }),
         );
+
         expect(() =>
             parseDictionaryBatchGenerationText('\n \r\n'),
         ).toThrowError(
@@ -143,6 +154,7 @@ describe('dictionary pasted-term batch generation', () => {
                 reason: 'no_rows',
             }),
         );
+
         expect(() =>
             parseDictionaryBatchGenerationText(
                 Array.from({ length: 101 }, (_, index) => `row ${index}`).join(
@@ -200,6 +212,7 @@ describe('dictionary pasted-term batch generation', () => {
                 rowIndex: 3,
             },
         ]);
+
         expect(rows).toHaveLength(4);
     });
 
@@ -255,12 +268,14 @@ describe('dictionary pasted-term batch generation', () => {
         expect(parseDictionaryBatchGenerationProposal(proposal)).toEqual(
             proposal,
         );
+
         expect(() =>
             parseDictionaryBatchGenerationProposal({
                 ...proposal,
                 failures: [{ ...proposal.failures[0], rowIndex: 0 }],
             }),
         ).toThrow();
+
         expect(() =>
             parseDictionaryBatchGenerationProposal({
                 candidates: Array.from({ length: 101 }, (_, rowIndex) => ({
@@ -273,6 +288,7 @@ describe('dictionary pasted-term batch generation', () => {
                 warnings: [],
             }),
         ).toThrow();
+
         expect(() =>
             parseDictionaryBatchGenerationProposal({
                 ...proposal,

@@ -48,7 +48,9 @@ export class DurableChatTransport implements ChatTransport<ConversationUIMessage
                 this.options.shareKey,
             ),
         );
+
         this.options.onAdmitted(turn);
+
         return this.subscribe(options.chatId, options.abortSignal);
     };
 
@@ -64,23 +66,29 @@ export class DurableChatTransport implements ChatTransport<ConversationUIMessage
         this.subscription = controller;
         const abort = () => controller.abort();
         signal?.addEventListener('abort', abort, { once: true });
-        if (signal?.aborted) controller.abort();
+        if (signal?.aborted) {
+            controller.abort();
+        }
+
         const options = this.options;
         const cursor = this.cursor;
         let ended = false;
         const projection = new DurableMessageProjection(
             this.options.getDetail?.(),
         );
+
         return new ReadableStream<UIMessageChunk>({
             start(stream) {
                 const connection = (reconnecting: boolean) => {
-                    if (!controller.signal.aborted)
+                    if (!controller.signal.aborted) {
                         stream.enqueue({
                             type: 'data-connection',
                             data: { reconnecting },
                             transient: true,
                         });
+                    }
                 };
+
                 async function connect() {
                     while (!controller.signal.aborted) {
                         try {
@@ -93,30 +101,39 @@ export class DurableChatTransport implements ChatTransport<ConversationUIMessage
                                         if (
                                             controller.signal.aborted ||
                                             event.conversationId !== id
-                                        )
+                                        ) {
                                             return;
+                                        }
+
                                         if (
                                             event.id < cursor.after ||
                                             (event.id === cursor.after &&
                                                 event.type !== 'snapshot')
-                                        )
+                                        ) {
                                             return;
+                                        }
+
                                         cursor.after = Math.max(
                                             cursor.after,
                                             event.id,
                                         );
+
                                         connection(false);
                                         for (const chunk of projection.project(
                                             event,
-                                        ))
+                                        )) {
                                             stream.enqueue(chunk);
+                                        }
                                     },
                                     controller.signal,
                                     options.shareKey,
                                 ),
                             );
                         } catch (error) {
-                            if (controller.signal.aborted) break;
+                            if (controller.signal.aborted) {
+                                break;
+                            }
+
                             if (
                                 error instanceof ConversationApiError &&
                                 [401, 403, 404, 410].includes(error.status)
@@ -124,10 +141,15 @@ export class DurableChatTransport implements ChatTransport<ConversationUIMessage
                                 controller.abort();
                                 ended = true;
                                 stream.error(error);
+
                                 return;
                             }
                         }
-                        if (controller.signal.aborted) break;
+
+                        if (controller.signal.aborted) {
+                            break;
+                        }
+
                         connection(true);
                         await new Promise<void>((resolve) => {
                             const timer = setTimeout(done, 1500);
@@ -137,18 +159,22 @@ export class DurableChatTransport implements ChatTransport<ConversationUIMessage
                                     'abort',
                                     done,
                                 );
+
                                 resolve();
                             }
+
                             controller.signal.addEventListener('abort', done, {
                                 once: true,
                             });
                         });
                     }
+
                     if (!ended) {
                         ended = true;
                         stream.close();
                     }
                 }
+
                 void connect()
                     .catch((error: unknown) => {
                         if (!ended) {

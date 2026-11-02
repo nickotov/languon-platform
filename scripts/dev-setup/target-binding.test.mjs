@@ -12,10 +12,12 @@ test('apply requires explicit exact local environment and database confirmation'
         DATABASE_URL: 'postgres://test:private@127.0.0.1:5432/local_test',
         POSTGRES_DB: 'local_test',
     };
+
     assert.equal(
         validateApplyEnvironment(env, 'local_test').database,
         'local_test',
     );
+
     assert.throws(() => validateApplyEnvironment(env));
     assert.throws(() => validateApplyEnvironment(env, 'other_database'));
     for (const patch of [
@@ -23,11 +25,13 @@ test('apply requires explicit exact local environment and database confirmation'
         { NODE_ENV: 'production' },
         { DATABASE_URL: 'postgres://user:private@remote.example/db' },
         { POSTGRES_DB: 'other' },
-    ])
+    ]) {
         assert.throws(() =>
             validateApplyEnvironment({ ...env, ...patch }, 'local_test'),
         );
+    }
 });
+
 test('wrong server identity fails closed even when configuration is empty', () => {
     const actor = {
         id: 'random-local-admin-id',
@@ -40,6 +44,7 @@ test('wrong server identity fails closed even when configuration is empty', () =
         status: 'active',
         role: 'owner',
     };
+
     assertAdminBinding(admin, actor);
     for (const wrong of [
         null,
@@ -47,12 +52,14 @@ test('wrong server identity fails closed even when configuration is empty', () =
         { ...admin, status: 'disabled' },
         { ...admin, email: 'different@example.test' },
         { ...admin, role: 'other' },
-    ])
+    ]) {
         assert.throws(
             () => assertAdminBinding(wrong, actor),
             /confirmed local database/,
         );
+    }
 });
+
 test('revision identity or configuration mismatch refuses further mutations', () => {
     const db = {
         configuration: { version: 2 },
@@ -68,6 +75,7 @@ test('revision identity or configuration mismatch refuses further mutations', ()
         },
         providers: { prices: [{ id: 'provider-revision', version: 1 }] },
     };
+
     assertRevisionBinding(db, api);
     api.providers.prices[0].id = 'wrong-server-revision';
     assert.throws(() => assertRevisionBinding(db, api), /revisions differ/);

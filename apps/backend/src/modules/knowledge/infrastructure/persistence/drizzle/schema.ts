@@ -79,7 +79,7 @@ export const knowledgeNotesTable = pgTable(
         ),
         check(
             'knowledge_notes_body_version',
-            sql`${t.body}->>'schemaVersion' = '1'`,
+            sql`${t.body}->>'schemaVersion' in ('1','2')`,
         ),
     ],
 );

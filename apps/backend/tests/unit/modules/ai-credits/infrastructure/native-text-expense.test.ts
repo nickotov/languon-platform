@@ -65,6 +65,7 @@ describe('native text expense authority', () => {
             fact,
             { nativePrice: price },
         );
+
         const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]!);
         expect(query.params).toEqual([fact.attemptId, null]);
     });
@@ -75,6 +76,7 @@ describe('native text expense authority', () => {
             { execute } as unknown as Transaction,
             fact,
         );
+
         const query = new PgDialect().sqlToQuery(execute.mock.calls[0]![0]!);
         expect(query.params[0]).toBe(fact.attemptId);
         expect(JSON.parse(String(query.params[1]))).toMatchObject({

@@ -36,6 +36,7 @@ describe('shared UI accessibility contracts', () => {
         expect(
             screen.getByRole('link', { name: 'Languon home' }),
         ).toHaveAttribute('href', '/');
+
         expect(screen.getByText('Languon')).toBeVisible();
     });
 
@@ -52,6 +53,7 @@ describe('shared UI accessibility contracts', () => {
         expect(screen.getByLabelText('Default input').className).toContain(
             'default',
         );
+
         expect(
             screen.getByRole('button', { name: 'Compact action' }).className,
         ).toContain('compact');
@@ -82,10 +84,12 @@ describe('shared UI accessibility contracts', () => {
                 <Input name='email' type='email' />
             </Field>,
         );
+
         expect(screen.getByRole('textbox', { name: /Email/ })).toHaveAttribute(
             'aria-invalid',
             'true',
         );
+
         expect(
             screen.getByRole('textbox', { name: /Email/ }),
         ).toHaveAccessibleDescription('Enter a valid address.');
@@ -95,10 +99,12 @@ describe('shared UI accessibility contracts', () => {
                 <Input name='email' type='email' />
             </Field>,
         );
+
         expect(screen.getByRole('textbox', { name: 'Email' })).toHaveAttribute(
             'data-validation',
             'success',
         );
+
         expect(
             screen.getByRole('textbox', { name: 'Email' }),
         ).toHaveAccessibleDescription('Email address verified.');
@@ -124,6 +130,7 @@ describe('shared UI accessibility contracts', () => {
             'aria-selected',
             'true',
         );
+
         expect(screen.getByRole('tabpanel')).toHaveTextContent('Notes content');
 
         await user.keyboard('{End}');
@@ -143,9 +150,11 @@ describe('shared UI accessibility contracts', () => {
         expect(
             screen.getByRole('checkbox', { name: 'All lessons' }),
         ).toHaveAttribute('aria-checked', 'mixed');
+
         expect(
             screen.getByRole('button', { name: 'Save changes' }),
         ).toBeDisabled();
+
         expect(
             screen.getByRole('button', { name: 'Save changes' }),
         ).toHaveAttribute('aria-busy', 'true');
@@ -167,12 +176,14 @@ describe('shared UI accessibility contracts', () => {
         const input = screen.getByRole('combobox', {
             name: 'Learning language',
         });
+
         await user.click(input);
         expect(input).toHaveAttribute('aria-expanded', 'true');
         expect(input).toHaveAttribute(
             'aria-controls',
             screen.getByRole('listbox').id,
         );
+
         expect(screen.getByRole('listbox').parentElement).toBe(document.body);
         expect(input).toHaveFocus();
         await user.type(input, 'Span');
@@ -180,6 +191,7 @@ describe('shared UI accessibility contracts', () => {
             'aria-selected',
             'true',
         );
+
         await user.keyboard('{Enter}');
         expect(input).toHaveValue('es');
         expect(input).toHaveAttribute('aria-expanded', 'false');
@@ -200,9 +212,11 @@ describe('shared UI accessibility contracts', () => {
                 options={[{ label: 'Spanish', value: 'es' }]}
             />,
         );
+
         const input = screen.getByRole('combobox', {
             name: 'Learning language',
         });
+
         await user.click(input);
         expect(input).toHaveAttribute('aria-busy', 'true');
         expect(input).not.toHaveAttribute('aria-activedescendant');
@@ -228,10 +242,12 @@ describe('shared UI accessibility contracts', () => {
         const trigger = screen.getByRole('button', {
             name: 'Progress information',
         });
+
         await user.click(trigger);
         expect(trigger).toHaveAccessibleDescription(
             'Progress updates after each lesson.',
         );
+
         expect(screen.getByRole('tooltip')).toBeVisible();
         await user.keyboard('{Escape}');
         expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
@@ -245,9 +261,11 @@ describe('shared UI accessibility contracts', () => {
                     <button type='button'>More information</button>
                 </Tooltip>,
             );
+
             const trigger = screen.getByRole('button', {
                 name: 'More information',
             });
+
             fireEvent.mouseEnter(trigger.parentElement!);
             await act(async () => vi.advanceTimersByTimeAsync(499));
             expect(trigger).not.toHaveAccessibleDescription();
@@ -291,6 +309,7 @@ describe('shared UI accessibility contracts', () => {
         const control = screen.getByRole('switch', {
             name: 'Practice reminders',
         });
+
         await user.click(control);
 
         expect(control).toBeChecked();
@@ -309,6 +328,7 @@ describe('shared UI accessibility contracts', () => {
         await user.click(
             screen.getByRole('button', { name: 'Queue notifications' }),
         );
+
         expect(screen.getAllByRole('status')).toHaveLength(1);
         expect(screen.getByText('Notification 1')).toBeVisible();
         expect(screen.getByText('Notification 2')).toBeVisible();
@@ -329,19 +349,23 @@ describe('shared UI accessibility contracts', () => {
                 duration: null,
                 tone: 'success',
             });
+
             showToast({
                 content: 'Second notification',
                 dismissLabel: 'Dismiss second',
                 duration: null,
             });
         });
+
         expect(
             screen.getByText('First notification').parentElement,
         ).toHaveAttribute('data-tone', 'success');
+
         act(() => dismissToast(first));
         expect(
             screen.queryByText('First notification'),
         ).not.toBeInTheDocument();
+
         expect(screen.getByText('Second notification')).toBeVisible();
         act(clearToasts);
         expect(
@@ -360,6 +384,7 @@ describe('shared UI accessibility contracts', () => {
                     duration: 6_000,
                 });
             });
+
             await act(async () => vi.advanceTimersByTimeAsync(3_000));
             act(() => {
                 showToast({
@@ -367,26 +392,31 @@ describe('shared UI accessibility contracts', () => {
                     dismissLabel: 'Dismiss persistent notification',
                     duration: null,
                 });
+
                 showToast({
                     content: 'Third notification',
                     dismissLabel: 'Dismiss third notification',
                     duration: null,
                 });
+
                 showToast({
                     content: 'Queued notification',
                     dismissLabel: 'Dismiss queued notification',
                     duration: null,
                 });
             });
+
             expect(
                 screen.queryByText('Queued notification'),
             ).not.toBeInTheDocument();
+
             await act(async () => vi.advanceTimersByTimeAsync(2_999));
             expect(screen.getByText('Timed notification')).toBeVisible();
             await act(async () => vi.advanceTimersByTimeAsync(1));
             expect(
                 screen.queryByText('Timed notification'),
             ).not.toBeInTheDocument();
+
             expect(screen.getByText('Queued notification')).toBeVisible();
         } finally {
             vi.useRealTimers();
@@ -405,6 +435,7 @@ describe('shared UI accessibility contracts', () => {
                     duration: 6_000,
                 });
             });
+
             await act(async () => vi.advanceTimersByTimeAsync(60_000));
             expect(screen.getByText('Lesson removed')).toBeVisible();
             expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible();
@@ -444,6 +475,7 @@ describe('shared UI accessibility contracts', () => {
             'aria-controls',
             screen.getByRole('menu').id,
         );
+
         expect(screen.getAllByRole('separator')).toHaveLength(2);
         expect(screen.getByText('Bulk and sharing')).toBeVisible();
         expect(screen.getByRole('menuitem', { name: 'Rename' })).toHaveFocus();
@@ -473,6 +505,7 @@ describe('shared UI accessibility contracts', () => {
                 name: 'Unavailable lesson actions',
             }),
         ).toBeDisabled();
+
         expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
 
@@ -499,27 +532,33 @@ describe('shared UI accessibility contracts', () => {
         await user.click(
             screen.getByRole('button', { name: 'Practice information' }),
         );
+
         expect(screen.getByRole('dialog')).toBeVisible();
         expect(
             screen.getByRole('button', { name: 'Practice information' }),
         ).toHaveAttribute('aria-expanded', 'true');
+
         expect(screen.getByRole('dialog')).toHaveFocus();
         await user.keyboard('{Escape}');
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(
             screen.getByRole('button', { name: 'Practice information' }),
         ).toHaveFocus();
+
         await user.click(
             screen.getByRole('button', { name: 'Practice information' }),
         );
+
         await user.tab();
         expect(
             screen.getByRole('button', { name: 'Use calm pace' }),
         ).toHaveFocus();
+
         await user.tab();
         expect(
             screen.getByRole('button', { name: 'After popover' }),
         ).toHaveFocus();
+
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
@@ -550,6 +589,7 @@ describe('shared UI accessibility contracts', () => {
         const trigger = screen.getByRole('button', {
             name: 'Open compound popover',
         });
+
         expect(trigger).toHaveClass('compound-trigger');
         expect(trigger).toHaveAttribute('data-contract', 'forwarded');
         expect(childRef.current).toBe(trigger);
@@ -578,6 +618,7 @@ describe('shared UI accessibility contracts', () => {
         const content = await screen.findByRole('dialog', {
             name: 'Offset content',
         });
+
         expect(content).not.toHaveAttribute('sideOffset');
         expect(content).not.toHaveAttribute('sideoffset');
     });
@@ -598,13 +639,16 @@ describe('shared UI accessibility contracts', () => {
                 </PopoverContent>
             </Popover>,
         );
+
         const trigger = screen.getByRole('button', {
             name: 'Native information',
         });
+
         await user.click(trigger);
         const panel = await screen.findByRole('dialog', {
             name: 'Native information',
         });
+
         expect(panel.parentElement).toBe(document.body);
         expect(trigger).toHaveAttribute('aria-controls', panel.id);
         expect(trigger).toHaveAttribute('aria-expanded', 'true');
@@ -613,6 +657,7 @@ describe('shared UI accessibility contracts', () => {
             panel,
             Object.assign(new Event('toggle'), { newState: 'closed' }),
         );
+
         expect(trigger).toHaveAttribute('aria-expanded', 'false');
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         await user.click(trigger);
@@ -629,10 +674,12 @@ describe('shared UI accessibility contracts', () => {
         HTMLDialogElement.prototype.showModal = function showModalForTest() {
             this.setAttribute('open', '');
         };
+
         HTMLDialogElement.prototype.close = function closeForTest() {
             this.removeAttribute('open');
             this.dispatchEvent(new Event('close'));
         };
+
         const onClose = vi.fn();
 
         try {
@@ -646,9 +693,11 @@ describe('shared UI accessibility contracts', () => {
                     Confirm this change.
                 </Dialog>,
             );
+
             await user.click(
                 screen.getByRole('button', { name: 'Close dialog' }),
             );
+
             expect(onClose).toHaveBeenCalledTimes(1);
         } finally {
             HTMLDialogElement.prototype.showModal = showModal;
@@ -663,11 +712,13 @@ describe('shared UI accessibility contracts', () => {
         HTMLDialogElement.prototype.showModal = function () {
             this.setAttribute('open', '');
         };
+
         HTMLDialogElement.prototype.close = function () {
             connectedAtClose.push(this.isConnected);
             this.removeAttribute('open');
             this.dispatchEvent(new Event('close'));
         };
+
         const onClose = vi.fn();
         try {
             const { rerender, unmount } = render(
@@ -675,11 +726,13 @@ describe('shared UI accessibility contracts', () => {
                     Results
                 </Dialog>,
             );
+
             rerender(
                 <Dialog open={false} onClose={onClose} title='Practice history'>
                     Results
                 </Dialog>,
             );
+
             expect(connectedAtClose).toEqual([true]);
             expect(onClose).not.toHaveBeenCalled();
             rerender(
@@ -687,6 +740,7 @@ describe('shared UI accessibility contracts', () => {
                     Results
                 </Dialog>,
             );
+
             unmount();
             expect(connectedAtClose).toEqual([true, true]);
             expect(onClose).not.toHaveBeenCalled();
@@ -703,10 +757,12 @@ describe('shared UI accessibility contracts', () => {
         HTMLDialogElement.prototype.showModal = function () {
             this.open = true;
         };
+
         HTMLDialogElement.prototype.close = function () {
             this.open = false;
             queued.push(this);
         };
+
         const onClose = vi.fn();
         try {
             const { unmount } = render(
@@ -717,11 +773,17 @@ describe('shared UI accessibility contracts', () => {
             );
             const dialog = screen.getByRole('dialog', { name: 'Add card' });
             expect(queued.length).toBeGreaterThan(0);
-            for (const node of queued) fireEvent(node, new Event('close'));
+            for (const node of queued) {
+                fireEvent(node, new Event('close'));
+            }
+
             expect(dialog).toHaveAttribute('open');
             expect(onClose).not.toHaveBeenCalled();
             unmount();
-            for (const node of queued) fireEvent(node, new Event('close'));
+            for (const node of queued) {
+                fireEvent(node, new Event('close'));
+            }
+
             expect(onClose).not.toHaveBeenCalled();
         } finally {
             HTMLDialogElement.prototype.showModal = showModal;
@@ -734,6 +796,7 @@ describe('shared UI accessibility contracts', () => {
         HTMLDialogElement.prototype.showModal = function showModalForTest() {
             this.setAttribute('open', '');
         };
+
         const onClose = vi.fn();
         try {
             render(
@@ -741,10 +804,12 @@ describe('shared UI accessibility contracts', () => {
                     Draft content
                 </Dialog>,
             );
+
             const dialog = screen.getByRole('dialog');
             expect(
                 dialog.dispatchEvent(new Event('cancel', { cancelable: true })),
             ).toBe(false);
+
             expect(onClose).toHaveBeenCalledTimes(1);
             expect(dialog).toHaveAttribute('open');
         } finally {
@@ -757,6 +822,7 @@ describe('shared UI accessibility contracts', () => {
         HTMLDialogElement.prototype.showModal = function showModalForTest() {
             this.setAttribute('open', '');
         };
+
         try {
             render(
                 <Dialog
@@ -768,9 +834,11 @@ describe('shared UI accessibility contracts', () => {
                     Preview content
                 </Dialog>,
             );
+
             const dialog = screen.getByRole('dialog', {
                 name: 'Sentence preview',
             });
+
             expect(dialog).not.toHaveAttribute('aria-labelledby');
         } finally {
             HTMLDialogElement.prototype.showModal = showModal;
@@ -782,6 +850,7 @@ describe('shared UI accessibility contracts', () => {
         HTMLDialogElement.prototype.showModal = function showModalForTest() {
             this.setAttribute('open', '');
         };
+
         const onClose = vi.fn();
         try {
             render(
@@ -799,6 +868,7 @@ describe('shared UI accessibility contracts', () => {
             expect(
                 screen.getByRole('button', { name: 'Close pending dialog' }),
             ).toBeDisabled();
+
             const dialog = screen.getByRole('dialog');
             const cancelEvent = new Event('cancel', { cancelable: true });
             expect(dialog.dispatchEvent(cancelEvent)).toBe(false);
@@ -821,6 +891,7 @@ describe('shared UI accessibility contracts', () => {
                     Lesson saved
                 </Toast>,
             );
+
             const toast = screen.getByText('Lesson saved').parentElement;
             expect(toast).not.toBeNull();
             fireEvent.mouseEnter(toast!);

@@ -72,9 +72,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
         }, 60000);
+
         afterAll(async () => {
             await client?.end();
         });
+
         beforeEach(async () => {
             await client.unsafe('truncate users cascade');
             owner = randomUUID();
@@ -89,6 +91,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { id: owner, status: 'active' },
                 { id: reader, status: 'active' },
             ]);
+
             await db.insert(dictionariesTable).values([
                 {
                     id: dictionaryId,
@@ -107,9 +110,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     targetLanguageTag: 'es',
                 },
             ]);
+
             await db
                 .insert(dictionarySettingsTable)
                 .values([{ dictionaryId }, { dictionaryId: foreignId }]);
+
             await db.insert(dictionaryCardsTable).values([
                 {
                     id: a,
@@ -139,6 +144,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sortKey: 1024n,
                 },
             ]);
+
             const model = textAiModelCatalog[0]!;
             snapshot = {
                 adapterRevision: model.adapterRevision,
@@ -155,6 +161,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     'sentence-check:v1',
                 ],
             };
+
             await db.insert(dictionaryAiConfigurationRevisionsTable).values({
                 id: revisionId,
                 version: 1,
@@ -162,6 +169,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 catalogSnapshot: snapshot,
             });
         });
+
         async function exercise(
             creatorId = owner,
             dictionary = dictionaryId,
@@ -193,6 +201,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 generationPolicyVersion: 1,
                 createdAt: now.toISOString(),
             });
+
             await db.insert(sentenceExercisesTable).values({
                 id,
                 creatorId,
@@ -202,6 +211,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 publicContent,
                 referenceTranslation: 'private reference',
             });
+
             await db.insert(sentenceExerciseEntriesTable).values({
                 exerciseId: id,
                 dictionaryId: dictionary,
@@ -210,8 +220,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 sourceText: 'hello',
                 targetText: 'hola',
             });
+
             return id;
         }
+
         async function personal(
             exerciseId: string,
             learnerId = reader,
@@ -235,6 +247,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 improvedTranslation: 'hola',
                 explanation: 'Correct',
             });
+
             await db.insert(sentenceAttemptsTable).values({
                 id: attemptId,
                 learnerId,
@@ -247,6 +260,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 revealedHintIds: [],
                 feedback,
             });
+
             await db.insert(sentenceManualReviewsTable).values({
                 id: randomUUID(),
                 learnerId,
@@ -256,6 +270,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 sessionId: randomUUID(),
                 requestFingerprint: 'synthetic-manual',
             });
+
             await db
                 .insert(sentenceEntryCoverageTable)
                 .values({
@@ -267,6 +282,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     exposureCount: 1,
                 })
                 .onConflictDoNothing();
+
             await db.insert(sentenceNextReceiptsTable).values({
                 learnerId,
                 dictionaryId: dictionary,
@@ -279,8 +295,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 exerciseId,
             });
+
             return attemptId;
         }
+
         async function job(
             exerciseId: string,
             learnerId = reader,
@@ -296,11 +314,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 sourceText: 'hello',
                 targetText: 'hola',
             }));
+
             await db.transaction(async (tx) => {
                 await lockTextAiCapacity(tx);
                 await tx.execute(
                     sql`select set_config('languon.learning_execution_revision','1',true),set_config('languon.text_ai_selection_revision','1',true),set_config('languon.ai_credit_settlement_revision','1',true)`,
                 );
+
                 await tx.insert(sentenceAiJobsTable).values({
                     id,
                     learnerId,
@@ -351,6 +371,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     providerActualInputTokens: active ? null : 10,
                     providerActualOutputTokens: active ? null : 5,
                 });
+
                 await tx.insert(sentenceJobEntriesTable).values(
                     entries.map((entryId) => ({
                         jobId: id,
@@ -360,8 +381,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })),
                 );
             });
+
             return id;
         }
+
         const deleteB = () =>
             new DrizzleDictionaryDeletionStore(db, {
                 generate: randomUUID,
@@ -379,6 +402,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 context: context(),
             });
+
         it('entry deletion blocks copied candidate work, then erases whole derived exercises/checks while preserving unchanged coverage', async () => {
             const id = await exercise();
             await personal(id);
@@ -391,34 +415,43 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 true,
                 true,
             );
+
             await db
                 .update(dictionaryCardsTable)
                 .set({ lifecycle: 'archived', archivedAt: new Date() })
                 .where(eq(dictionaryCardsTable.id, b));
+
             await expect(deleteB()).rejects.toBeInstanceOf(
                 DictionaryDeletionBusyError,
             );
+
             expect(await db.select().from(sentenceExercisesTable)).toHaveLength(
                 1,
             );
+
             await db
                 .update(sentenceAiJobsTable)
                 .set({ executionState: 'cancelled', completedAt: now })
                 .where(eq(sentenceAiJobsTable.id, checkId));
+
             await expect(deleteB()).resolves.toMatchObject({ deletedCount: 1 });
             expect(await db.select().from(sentenceExercisesTable)).toHaveLength(
                 0,
             );
+
             expect(await db.select().from(sentenceAttemptsTable)).toHaveLength(
                 0,
             );
+
             expect(
                 await db.select().from(sentenceManualReviewsTable),
             ).toHaveLength(0);
+
             expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(0);
             expect(
                 await db.select().from(sentenceEntryCoverageTable),
             ).toMatchObject([{ entryId: a, exposureCount: 1 }]);
+
             expect(
                 await db
                     .select()
@@ -426,6 +459,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ).toMatchObject([
                 { id: generationId, ownerId: reader, actualCostMicros: 1 },
             ]);
+
             expect(
                 (await db.select().from(sentenceNextReceiptsTable)).every(
                     (receipt) =>
@@ -434,6 +468,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).toBe(true);
         });
+
         it('archive denies live practice without erasing history, restore retains it, and permanent dictionary deletion erases all derived content', async () => {
             const id = await exercise();
             await personal(id);
@@ -449,6 +484,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 learnerId: owner,
                 dictionaryId,
             };
+
             await expect(
                 practice.progress(
                     access,
@@ -456,10 +492,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     context(),
                 ),
             ).resolves.toMatchObject({ direction: 'source-to-target' });
+
             await db
                 .update(dictionariesTable)
                 .set({ lifecycle: 'archived', archivedAt: now })
                 .where(eq(dictionariesTable.id, dictionaryId));
+
             await expect(
                 practice.progress(
                     access,
@@ -467,16 +505,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     context(),
                 ),
             ).rejects.toThrow();
+
             expect(await db.select().from(sentenceExercisesTable)).toHaveLength(
                 2,
             );
+
             expect(await db.select().from(sentenceAttemptsTable)).toHaveLength(
                 1,
             );
+
             await db
                 .update(dictionariesTable)
                 .set({ lifecycle: 'active', archivedAt: null })
                 .where(eq(dictionariesTable.id, dictionaryId));
+
             await expect(
                 practice.progress(
                     access,
@@ -484,13 +526,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     context(),
                 ),
             ).resolves.toMatchObject({ direction: 'source-to-target' });
+
             expect(await db.select().from(sentenceAttemptsTable)).toHaveLength(
                 1,
             );
+
             await db
                 .update(dictionariesTable)
                 .set({ lifecycle: 'archived', archivedAt: now })
                 .where(eq(dictionariesTable.id, dictionaryId));
+
             await expect(
                 new DrizzleDictionaryDeletionStore(db, {
                     generate: randomUUID,
@@ -507,19 +552,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     context: context(),
                 }),
             ).resolves.toMatchObject({ deletedCount: 1 });
+
             expect(
                 await db.select().from(sentenceExercisesTable),
             ).toMatchObject([{ id: other, dictionaryId: foreignId }]);
+
             expect(await db.select().from(sentenceAttemptsTable)).toHaveLength(
                 0,
             );
+
             expect(
                 await db.select().from(sentenceManualReviewsTable),
             ).toHaveLength(0);
+
             expect(
                 await db.select().from(sentenceEntryCoverageTable),
             ).toHaveLength(0);
         });
+
         it('account deletion flags its foreign jobs and other learners owned-dictionary jobs without settling either', async () => {
             const owned = await exercise();
             const foreign = await exercise(
@@ -536,10 +586,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 [foreignEntry],
                 true,
             );
+
             await db
                 .update(usersTable)
                 .set({ status: 'deletion_pending' })
                 .where(eq(usersTable.id, owner));
+
             await db.insert(accountDeletionRequestsTable).values({
                 userId: owner,
                 scheduledAt: new Date(now.getTime() - 30 * 24 * 60 * 60000),
@@ -547,13 +599,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 nextAttemptAt: now,
                 updatedAt: now,
             });
+
             await new DrizzleOwnerDeletionPreparation(db).requestCancellation(
                 owner,
             );
+
             const rows = await db.select().from(sentenceAiJobsTable);
             expect(rows.map((row) => row.id).sort()).toEqual(
                 [ownedJob, foreignJob].sort(),
             );
+
             expect(
                 rows.every(
                     (row) =>
@@ -561,11 +616,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         row.executionState === 'queued',
                 ),
             ).toBe(true);
+
             const purge = new DrizzleAccountPurgeStore(db);
             const claim = await purge.claimDue({
                 workerId: 'busy-sentence-purge',
                 now,
             });
+
             expect(
                 (
                     await purge.inspectOwner({
@@ -574,6 +631,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })
                 ).activeJobs,
             ).toBeGreaterThan(0);
+
             await expect(
                 purge.finish({
                     ...claim!,
@@ -581,6 +639,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     now,
                 }),
             ).rejects.toThrow('Sentence work is not quiescent');
+
             expect(await db.select().from(sentenceAiJobsTable)).toHaveLength(2);
             expect(
                 (
@@ -591,6 +650,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 )[0]?.status,
             ).toBe('deletion_pending');
         });
+
         it('restricted account purge erases foreign private reviews and all learners owned content without reading sentence text', async () => {
             const owned = await exercise();
             const privateForeign = await exercise(
@@ -605,6 +665,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 foreignEntry,
                 true,
             );
+
             await personal(owned);
             await personal(privateForeign, owner, foreignId, foreignEntry);
             await personal(unaffected, reader, foreignId, foreignEntry);
@@ -616,6 +677,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     status: 'deletion_pending',
                 })
                 .where(eq(usersTable.id, owner));
+
             await db.insert(accountDeletionRequestsTable).values({
                 userId: owner,
                 scheduledAt: new Date(now.getTime() - 30 * 24 * 60 * 60000),
@@ -623,12 +685,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 nextAttemptAt: now,
                 updatedAt: now,
             });
+
             const role = `sentence_purge_${randomUUID().replaceAll('-', '')}`;
             await client.unsafe(`create role ${role}`);
             const connection = createPostgresClient({
                 databaseUrl: getTestDatabaseUrl(),
                 maxConnections: 1,
             });
+
             try {
                 const sql = await readFile(
                     new URL(
@@ -637,6 +701,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                     'utf8',
                 );
+
                 await client.unsafe(
                     sql
                         .split('\n')
@@ -644,6 +709,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .join('\n')
                         .replaceAll(':"account_purge_role"', role),
                 );
+
                 await connection.unsafe(`set role ${role}`);
                 for (const query of [
                     'select input_payload from sentence_ai_jobs',
@@ -652,8 +718,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     'select answer from sentence_attempts',
                     'select feedback from sentence_attempts',
                     'select configuration from sentence_next_receipts',
-                ])
+                ]) {
                     await expect(connection.unsafe(query)).rejects.toThrow();
+                }
+
                 const purge = new DrizzleAccountPurgeStore(
                     createDrizzleDatabase(connection, databaseSchema),
                 );
@@ -661,6 +729,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     workerId: 'restricted-sentence-purge',
                     now,
                 });
+
                 expect(claim?.userId).toBe(owner);
                 expect(
                     (
@@ -670,6 +739,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         })
                     ).activeJobs,
                 ).toBe(0);
+
                 await expect(
                     purge.finish({
                         ...claim!,
@@ -677,27 +747,33 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         now,
                     }),
                 ).resolves.toBe(true);
+
                 expect(
                     await db.select().from(sentenceExercisesTable),
                 ).toMatchObject([{ id: unaffected, creatorId: reader }]);
+
                 expect(
                     await db.select().from(sentenceAttemptsTable),
                 ).toMatchObject([
                     { learnerId: reader, exerciseId: unaffected },
                 ]);
+
                 expect(
                     await db.select().from(sentenceManualReviewsTable),
                 ).toMatchObject([
                     { learnerId: reader, exerciseId: unaffected },
                 ]);
+
                 expect(
                     await db.select().from(sentenceEntryCoverageTable),
                 ).toMatchObject([
                     { learnerId: reader, dictionaryId: foreignId },
                 ]);
+
                 expect(
                     await db.select().from(sentenceAiJobsTable),
                 ).toHaveLength(0);
+
                 expect(
                     await db
                         .select()

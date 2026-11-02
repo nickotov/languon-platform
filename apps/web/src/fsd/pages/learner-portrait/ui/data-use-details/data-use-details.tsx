@@ -5,6 +5,7 @@ import styles from './data-use-details.module.css';
 
 export function DataUseDetails() {
     const { locale } = useI18n();
+
     return (
         <details className={styles.details}>
             <summary className={styles.summary}>

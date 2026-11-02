@@ -9,8 +9,10 @@ export function sentenceSelection(
 ): SentenceLibrarySelection {
     const ids = new Set(selected);
     const matching = items.filter((item) => ids.has(item.exerciseId));
-    if (!matching.length || matching.length !== ids.size)
+    if (!matching.length || matching.length !== ids.size) {
         throw new Error('Refresh and select the examples again.');
+    }
+
     return {
         type: 'selected',
         items: matching.map((item) => ({
@@ -26,6 +28,7 @@ export function canDeleteSentences(
 ) {
     const ids = new Set(selected);
     const matching = items.filter((item) => ids.has(item.exerciseId));
+
     return (
         matching.length > 0 &&
         matching.length === ids.size &&

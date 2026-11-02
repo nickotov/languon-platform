@@ -1,9 +1,23 @@
 import type {
+    KnowledgeBlockReference,
+    KnowledgeBlockProposalContext,
+} from '@/fsd/features/knowledge-notes';
+import type {
     ConversationEditorTarget,
     ConversationSource,
 } from '@languon/contracts';
 
+export type AssistantRequest = {
+    id: string;
+    prompt?: string | undefined;
+    passage?: string | undefined;
+    blockIds?: string[] | undefined;
+};
+
 export type ContextualAssistantProps = {
+    /** Prefills a question for explicit Send; never grants editing or auto-send authority. */
+    request?: AssistantRequest | undefined;
+    blocks?: KnowledgeBlockReference[] | undefined;
     source: ConversationSource;
     contextLabel?: string | undefined;
     shareKey?: string | undefined;
@@ -36,12 +50,19 @@ export type WorkspaceProposalPreview = {
 };
 
 export type WorkspaceAssistantProps = {
+    blockProposalContext?:
+        | Omit<
+              KnowledgeBlockProposalContext,
+              'requestWithSession' | 'conversationId'
+          >
+        | undefined;
     request?:
         | {
               id: string;
               passage?: string;
               prompt?: string;
               autoSend?: boolean;
+              blockIds?: string[];
               targetId?: string;
           }
         | undefined;
@@ -58,7 +79,7 @@ export type WorkspaceAssistantProps = {
     onShowTarget?(targetId?: string): void;
     getSnapshot(targetId?: string | null): WorkspaceEditorSnapshot;
     /** Persist the working draft before creating a turn from the frozen snapshot. */
-    beforeSend?(): Promise<void>;
+    beforeSend?(): Promise<void | { id: string; version: number }>;
     restoreTarget?(anchor: ConversationEditorTarget): Promise<string | null>;
     onSent?(): void;
     onBusyChange?(busy: boolean): void;

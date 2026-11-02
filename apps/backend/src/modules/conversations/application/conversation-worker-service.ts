@@ -1,3 +1,4 @@
+import { isReadOnlyKnowledgeSource } from '../domain/conversation';
 import type {
     ClaimedConversationTurn,
     ConversationStore,
@@ -14,6 +15,7 @@ export type ConversationWorkerStore = Pick<
     | 'append'
     | 'recordTool'
     | 'propose'
+    | 'proposeBlocks'
     | 'recordMaterial'
     | 'finish'
     | 'memory'
@@ -31,10 +33,14 @@ export class ConversationWorkerService {
             timeoutMs?: number;
         },
     ) {}
+
     async processNext(signal: AbortSignal): Promise<boolean> {
         signal.throwIfAborted();
         const turn = await this.dependencies.store.claim();
-        if (!turn) return false;
+        if (!turn) {
+            return false;
+        }
+
         const controller = new AbortController();
         const combined = AbortSignal.any([
             signal,
@@ -47,7 +53,10 @@ export class ConversationWorkerService {
         );
         let heartbeatPending: Promise<void> | undefined;
         const timer = setInterval(() => {
-            if (heartbeatPending) return;
+            if (heartbeatPending) {
+                return;
+            }
+
             heartbeatPending = this.dependencies.store
                 .heartbeat(turn)
                 .catch(() => controller.abort())
@@ -55,6 +64,7 @@ export class ConversationWorkerService {
                     heartbeatPending = undefined;
                 });
         }, this.dependencies.heartbeatMs ?? 5_000);
+
         try {
             const runner = await this.dependencies.createRunner(turn);
             const source = projectConversationSource(
@@ -62,12 +72,36 @@ export class ConversationWorkerService {
                 turn.sourceSnapshot,
                 turn.message.content,
             );
+
             await runner.run({
                 conversationId: turn.conversationId,
+                readOnlySource: isReadOnlyKnowledgeSource(turn.source),
                 ownerId: turn.ownerId,
                 operationId: turn.id,
                 conversationCreatedAt: turn.conversationCreatedAt,
                 message: turn.message,
+                canProposeBlocks:
+                    !!turn.sourceSnapshot.blockTarget &&
+                    turn.source.kind === 'knowledge' &&
+                    !isReadOnlyKnowledgeSource(turn.source),
+                onBlockProposal: async (proposal) => {
+                    if (
+                        turn.source.kind !== 'knowledge' ||
+                        isReadOnlyKnowledgeSource(turn.source) ||
+                        !turn.sourceSnapshot.blockTarget ||
+                        !this.dependencies.store.proposeBlocks
+                    ) {
+                        throw new ConversationError(
+                            'read_only_source',
+                            'This source cannot propose learning blocks.',
+                        );
+                    }
+
+                    return this.dependencies.store.proposeBlocks(
+                        turn,
+                        proposal,
+                    );
+                },
                 preferences: turn.preferences,
                 sourceContext: source.initialContext,
                 ...(turn.portraitContext
@@ -83,8 +117,15 @@ export class ConversationWorkerService {
                     await buffer.flush();
                     await this.dependencies.store.recordTool(turn, call);
                 },
-                onDraft: async (content) =>
-                    this.dependencies.store.propose(
+                onDraft: async (content) => {
+                    if (isReadOnlyKnowledgeSource(turn.source)) {
+                        throw new ConversationError(
+                            'read_only_source',
+                            'Shared conversations cannot propose document changes.',
+                        );
+                    }
+
+                    return this.dependencies.store.propose(
                         turn,
                         content,
                         turn.source.kind === 'knowledge'
@@ -98,18 +139,26 @@ export class ConversationWorkerService {
                                   ),
                               }
                             : undefined,
-                    ),
-                readContext: async ({ query, limit }) => {
+                    );
+                },
+                readContext: async ({ query, limit, blockIds }) => {
                     combined.throwIfAborted();
                     await this.dependencies.store.heartbeat(turn);
-                    const selected = source.read({ query, limit });
+                    const selected = source.read({
+                        query,
+                        limit,
+                        ...(blockIds ? { blockIds } : {}),
+                    });
+
                     await this.dependencies.store.recordMaterial(
                         turn,
                         selected.material,
                     );
+
                     return selected;
                 },
             });
+
             await buffer.flush();
             combined.throwIfAborted();
             await this.dependencies.store.finish(turn, 'succeeded');
@@ -123,6 +172,7 @@ export class ConversationWorkerService {
                     : combined.aborted
                       ? 'response_interrupted'
                       : 'generation_failed';
+
             try {
                 await this.dependencies.store.finish(
                     turn,
@@ -130,14 +180,16 @@ export class ConversationWorkerService {
                     failure,
                 );
             } catch (finishError) {
-                if (!(finishError instanceof ConversationError))
-                    throw finishError; /* Expired/lost source is finalized by lease recovery without exposing content. */
+                if (!(finishError instanceof ConversationError)) {
+                    throw finishError;
+                } /* Expired/lost source is finalized by lease recovery without exposing content. */
             }
         } finally {
             buffer.dispose();
             clearInterval(timer);
             await heartbeatPending;
         }
+
         return true;
     }
 }

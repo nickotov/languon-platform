@@ -18,15 +18,19 @@ describe('current tutor message admission budget', () => {
                 content: '👋'.repeat(600),
             })),
         ]) {
-            for (const attachment of attachments)
+            for (const attachment of attachments) {
                 CopiedAttachmentSchema.parse(attachment);
+            }
+
             const projection = projectTutorUserMessage({
                 content: 'Explain.',
                 attachments,
             });
+
             expect(tutorCurrentMessageBytes(projection)).toBeGreaterThan(
                 currentTutorMessageByteLimit,
             );
+
             expect(() => assertTutorCurrentMessageFits(projection)).toThrow(
                 expect.objectContaining({ code: 'context_too_large' }),
             );
@@ -60,9 +64,11 @@ describe('current tutor message admission budget', () => {
         const encoded = JSON.parse(
             copied.slice(copied.indexOf('\n') + 1),
         ) as Record<string, unknown>[];
+
         expect(encoded).toEqual([
             { id, label: attachment.label, kind: 'dictionary-card', card },
         ]);
+
         expect(copied.split(card.source)).toHaveLength(2);
         expect(attachment).toEqual(original);
     });
@@ -83,6 +89,7 @@ describe('current tutor message admission budget', () => {
                 'utf8',
             ) + 1024,
         );
+
         expect(() => assertTutorCurrentMessageFits(projection)).not.toThrow();
         expect(projection.parts[0]?.text).toBe(content);
         expect(JSON.stringify(projection)).toContain(

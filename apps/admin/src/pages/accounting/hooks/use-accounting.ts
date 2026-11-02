@@ -15,6 +15,7 @@ export function useAccounting() {
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState(() => {
         const now = new Date();
+
         return {
             from: new Date(
                 Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
@@ -35,23 +36,31 @@ export function useAccounting() {
                     reportWhenReady(period, signal),
                     adminApi.accountingRecords(signal),
                 ]);
-                if (signal?.aborted) return;
+
+                if (signal?.aborted) {
+                    return;
+                }
+
                 setReport(nextReport);
                 setRecords(inventory.records);
                 setError(null);
             } catch (caught) {
-                if (!signal?.aborted)
+                if (!signal?.aborted) {
                     setError(
                         caught instanceof Error
                             ? caught
                             : new Error('Accounting could not be loaded.'),
                     );
+                }
             } finally {
-                if (!signal?.aborted) setLoading(false);
+                if (!signal?.aborted) {
+                    setLoading(false);
+                }
             }
         },
         [period],
     );
+
     useEffect(() => {
         const controller = new AbortController();
         setReport(null);
@@ -59,15 +68,19 @@ export function useAccounting() {
         let timer: number | undefined;
         const tick = async () => {
             await refresh(controller.signal);
-            if (!controller.signal.aborted)
+            if (!controller.signal.aborted) {
                 timer = window.setTimeout(tick, 30_000);
+            }
         };
+
         void tick();
+
         return () => {
             controller.abort();
             window.clearTimeout(timer);
         };
     }, [refresh]);
+
     const record = async (body: AccountingRecordRequest) => {
         setPending(true);
         try {
@@ -78,6 +91,7 @@ export function useAccounting() {
         }
     };
     const reload = () => void refresh();
+
     return {
         report,
         records,

@@ -27,6 +27,7 @@ export function SentenceMutationDialog({ mutation, onReload }: Props) {
     useEffect(() => {
         setAttempted(false);
     }, [confirmation?.operationId]);
+
     const code =
         mutation.error instanceof AdminApiError
             ? mutation.error.detail.code
@@ -57,12 +58,16 @@ export function SentenceMutationDialog({ mutation, onReload }: Props) {
         expired ||
         confirmation?.count === 0;
     let errorAction;
-    if (requiresAuth)
+    if (requiresAuth) {
         errorAction = <Button onClick={signIn}>{t('user.signInAgain')}</Button>;
-    if (conflict)
+    }
+
+    if (conflict) {
         errorAction = (
             <Button onClick={refresh}>{t('user.refreshConflict')}</Button>
         );
+    }
+
     return (
         <Modal
             destroyOnHidden
@@ -148,10 +153,11 @@ export function SentenceMutationDialog({ mutation, onReload }: Props) {
                                         _rule,
                                         value: boolean,
                                     ) => {
-                                        if (!value)
+                                        if (!value) {
                                             throw new Error(
                                                 t('sentences.confirmRequired'),
                                             );
+                                        }
                                     },
                                 },
                             ]}
@@ -199,6 +205,7 @@ export function operationKey(operation: AdminSentenceLibraryOperation) {
         'global-restore': 'sentences.globalRestore',
         delete: 'sentences.delete',
     };
+
     return keys[operation];
 }
 
@@ -207,11 +214,21 @@ export function sentenceErrorMessage(
     error: Error | null,
     t: ReturnType<typeof useTranslate>,
 ) {
-    if (code === 'sentence_library_deletion_busy') return t('sentences.busy');
-    if (code === 'sentence_library_conflict') return t('sentences.conflict');
-    if (code === 'recent_authentication_required')
+    if (code === 'sentence_library_deletion_busy') {
+        return t('sentences.busy');
+    }
+
+    if (code === 'sentence_library_conflict') {
+        return t('sentences.conflict');
+    }
+
+    if (code === 'recent_authentication_required') {
         return t('sentences.reauthenticate');
-    if (code === 'sentence_library_unavailable')
+    }
+
+    if (code === 'sentence_library_unavailable') {
         return t('sentences.unavailable');
+    }
+
     return error?.message ?? '';
 }

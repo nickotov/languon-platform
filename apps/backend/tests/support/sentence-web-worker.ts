@@ -38,8 +38,11 @@ if (
         'Sentence browser fixtures require explicit test-only opt-in.',
     );
 }
-if (!/^[a-zA-Z0-9-]{1,80}$/.test(runId))
+
+if (!/^[a-zA-Z0-9-]{1,80}$/.test(runId)) {
     throw new Error('Sentence fixture run ID is invalid.');
+}
+
 const target = new URL(databaseUrl);
 if (
     !['localhost', '127.0.0.1'].includes(target.hostname) ||
@@ -49,6 +52,7 @@ if (
         'Sentence fixtures require a disposable loopback test database.',
     );
 }
+
 const sql = createPostgresClient({ databaseUrl, maxConnections: 3 });
 const database = createDrizzleDatabase(sql, databaseSchema);
 // This guarded fixture must never create a live provider or external storage client.
@@ -60,12 +64,15 @@ if (
         'DICTIONARY_AUDIO_RETAINED_S3_CONFIGURATIONS',
     ].some((name) => {
         const value = process.env[name]?.trim();
+
         return value !== undefined && value !== '' && value !== '[]';
     })
-)
+) {
     throw new Error(
         'Sentence speech fixtures require local fixture audio storage and provider.',
     );
+}
+
 const audioEnvironment = loadDictionaryAudioEnvironment(process.env, {
     deployed: false,
     role: 'worker',
@@ -98,13 +105,29 @@ const fixture = new DeterministicSentenceAiProvider({
         const entry = input.candidates.find(
             (item) => item.entryId === input.priorityEntryId,
         )!;
+
         await delay(entry.sourceText === 'slowbook' ? 3000 : 600);
         const suffix = (language: string) => {
-            if (language === 'ar') return ' مفيد.';
-            if (language === 'ja') return 'は役に立ちます。';
-            if (language === 'ru') return ' — это полезно.';
-            if (language === 'fr') return ' est utile.';
-            if (language === 'en') return ' is useful.';
+            if (language === 'ar') {
+                return ' مفيد.';
+            }
+
+            if (language === 'ja') {
+                return 'は役に立ちます。';
+            }
+
+            if (language === 'ru') {
+                return ' — это полезно.';
+            }
+
+            if (language === 'fr') {
+                return ' est utile.';
+            }
+
+            if (language === 'en') {
+                return ' is useful.';
+            }
+
             return ' es útil.';
         };
         const sourceSuffix = suffix(input.sourceLanguage);
@@ -114,13 +137,29 @@ const fixture = new DeterministicSentenceAiProvider({
         const sourcePrefix = input.sourceLanguage === 'ar' ? 'هذا ' : '';
         const targetPrefix = input.targetLanguage === 'ar' ? 'هذا ' : '';
         const usefulLemma = (language: string) => {
-            if (language === 'ar') return 'مفيد';
-            if (language === 'ja') return '役立つ';
-            if (language === 'ru') return 'полезный';
-            if (language === 'fr') return 'utile';
-            if (language === 'en') return 'useful';
+            if (language === 'ar') {
+                return 'مفيد';
+            }
+
+            if (language === 'ja') {
+                return '役立つ';
+            }
+
+            if (language === 'ru') {
+                return 'полезный';
+            }
+
+            if (language === 'fr') {
+                return 'utile';
+            }
+
+            if (language === 'en') {
+                return 'useful';
+            }
+
             return 'útil';
         };
+
         return {
             sourceText: `${sourcePrefix}${entry.sourceText}${sourceSuffix}`,
             referenceTranslation: `${targetPrefix}${entry.targetText}${targetSuffix}`,
@@ -172,6 +211,7 @@ const fixture = new DeterministicSentenceAiProvider({
         if (input.answer === '[fixture-model-unavailable]') {
             throw new SentenceModelUnavailableError();
         }
+
         return {
             proposedPercentage: 100,
             meaning: 'correct',
@@ -252,6 +292,7 @@ async function prepareFixtures() {
     const users = await sql<
         { user_id: string; email: string }[]
     >`select user_id, email from user_emails where email like ${`sentence-e2e-${runId}-%@example.test`}`;
+
     if (!configured && users[0]) {
         const revision = randomUUID();
         await database.transaction(async (tx) => {
@@ -272,6 +313,7 @@ async function prepareFixtures() {
                     supportedFormats: [...model.supportedFormats],
                 },
             });
+
             await tx
                 .insert(dictionaryAiConfigurationTable)
                 .values({
@@ -284,22 +326,31 @@ async function prepareFixtures() {
                     set: { activeRevisionId: revision, version: 1 },
                 });
         });
+
         configured = true;
     }
+
     for (const user of users) {
-        if (credited.has(user.user_id)) continue;
+        if (credited.has(user.user_id)) {
+            continue;
+        }
+
         await sql`insert into ai_credit_accounts (user_id, mode) values (${user.user_id}, 'limited') on conflict do nothing`;
         // Readers intentionally receive zero credits to prove stored review is free.
         if (!user.email.includes('-reader-')) {
             await sql.begin(async (tx) => {
                 const grant =
                     await tx`insert into ai_credit_grants (id, owner_id, amount, source, source_reference) values (${randomUUID()}, ${user.user_id}, 10000000, 'purchase', ${`sentence-web:${runId}:${user.user_id}`}) on conflict do nothing returning id`;
-                if (grant.length)
+
+                if (grant.length) {
                     await tx`insert into ai_credit_history (id, owner_id, amount, kind, grant_source) values (${randomUUID()}, ${user.user_id}, 10000000, 'grant', 'purchase')`;
+                }
             });
         }
+
         credited.add(user.user_id);
     }
+
     const now = new Date();
     const observation = {
         id: sentenceExecutionObservationId(
@@ -339,6 +390,7 @@ async function prepareFixtures() {
         textsCapacityRevision: 1,
         conversationCapacityRevision: 1,
     };
+
     for (const row of [observation, capacityObservation]) {
         await database
             .insert(dictionaryAiWorkerObservationsTable)
@@ -349,31 +401,40 @@ async function prepareFixtures() {
             });
     }
 }
+
 console.log('Sentence browser fixture worker ready');
 let diagnosticLoops = 0;
 async function fixtureStage<T>(
     name: string,
     work: () => Promise<T>,
 ): Promise<T> {
-    if (diagnosticLoops < 2)
+    if (diagnosticLoops < 2) {
         process.stdout.write(`Sentence fixture phase ${name}: start\n`);
+    }
+
     const result = await work();
-    if (diagnosticLoops < 2)
+    if (diagnosticLoops < 2) {
         process.stdout.write(`Sentence fixture phase ${name}: done\n`);
+    }
+
     return result;
 }
+
 try {
     while (!controller.signal.aborted) {
         await fixtureStage('fixtures', prepareFixtures);
         await fixtureStage('preparation', () =>
             preparation.tick({ now: new Date(), signal: controller.signal }),
         );
+
         await fixtureStage('sentence', () =>
             worker.processNext(controller.signal),
         );
+
         await fixtureStage('speech', () =>
             speech.worker.runOnce(controller.signal),
         );
+
         diagnosticLoops++;
         await delay(50);
     }

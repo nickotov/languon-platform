@@ -40,24 +40,37 @@ export function cardAuthoringProviderFailure(
     };
     let current = error;
     for (let depth = 0; depth < 3; depth += 1) {
-        if (!current || typeof current !== 'object') break;
+        if (!current || typeof current !== 'object') {
+            break;
+        }
+
         const detail = current as Record<string, unknown>;
         if (
             depth === 0 &&
             typeof detail.name === 'string' &&
             errorNames.has(detail.name)
-        )
+        ) {
             result.errorName = detail.name;
+        }
+
         if (
             typeof detail.statusCode === 'number' &&
             Number.isInteger(detail.statusCode) &&
             detail.statusCode >= 100 &&
             detail.statusCode <= 599
-        )
+        ) {
             result.httpStatus ??= detail.statusCode;
-        if (typeof detail.code === 'string' && transportCodes.has(detail.code))
+        }
+
+        if (
+            typeof detail.code === 'string' &&
+            transportCodes.has(detail.code)
+        ) {
             result.transportCode ??= detail.code;
+        }
+
         current = detail.cause;
     }
+
     return result;
 }

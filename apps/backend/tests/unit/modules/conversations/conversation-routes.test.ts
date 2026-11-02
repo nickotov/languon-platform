@@ -20,9 +20,11 @@ function composedRoutes() {
     app.post('/dictionary-upload', async (c) =>
         c.json({ size: (await c.req.text()).length }),
     );
+
     app.options('/dictionary-upload', (c) =>
         c.json({ owner: 'dictionary-upload' }, 202),
     );
+
     return app;
 }
 
@@ -38,15 +40,18 @@ describe('conversation router mounting boundaries', () => {
             },
             body: payload,
         });
+
         expect(response.status).toBe(200);
         expect(await response.json()).toEqual({ size: payload.length });
         expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
         const preflight = await app.request('/dictionary-upload', {
             method: 'OPTIONS',
         });
+
         expect(preflight.status).toBe(202);
         expect(await preflight.json()).toEqual({ owner: 'dictionary-upload' });
     });
+
     it('retains the conversation namespace body limit and supported preflight headers', async () => {
         const app = composedRoutes();
         const payload = 'x'.repeat(1_200_000);
@@ -55,6 +60,7 @@ describe('conversation router mounting boundaries', () => {
             headers: { 'Content-Length': String(payload.length) },
             body: payload,
         });
+
         expect(response.status).toBe(413);
         for (const path of [
             '/conversations',
@@ -65,6 +71,7 @@ describe('conversation router mounting boundaries', () => {
                 method: 'OPTIONS',
                 headers: { Origin: 'http://localhost:3333' },
             });
+
             expect(preflight.status).toBe(204);
             expect(
                 preflight.headers.get('Access-Control-Allow-Headers'),
@@ -99,10 +106,12 @@ it('keeps live SSE private and prevents proxy compression from buffering small b
         '/conversations/00000000-0000-4000-8000-000000000001/events',
         { headers: { Authorization: 'Bearer synthetic.test.token' } },
     );
+
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toBe(
         'private, no-store, no-transform',
     );
+
     expect(response.headers.get('X-Accel-Buffering')).toBe('no');
     const reader = response.body!.getReader();
     try {
@@ -122,7 +131,7 @@ it('backs off unchanged queued streams, then polls running output quickly with f
     let eventCalls = 0;
     const events = vi.fn(async () => {
         const call = ++eventCalls;
-        if (call === 5 || call === 6)
+        if (call === 5 || call === 6) {
             return [
                 {
                     id: call,
@@ -133,6 +142,8 @@ it('backs off unchanged queued streams, then polls running output quickly with f
                     },
                 },
             ];
+        }
+
         return [];
     });
     const app = createConversationRoutes({
@@ -164,6 +175,7 @@ it('backs off unchanged queued streams, then polls running output quickly with f
             /* Drain SSE backpressure. */
         }
     })();
+
     try {
         await vi.advanceTimersByTimeAsync(375);
         expect(events).toHaveBeenCalledTimes(4);
@@ -226,6 +238,7 @@ it('returns a typed affordable-output offer for explicit confirmation without su
             }),
         },
     );
+
     expect(response.status).toBe(409);
     expect(await response.json()).toMatchObject({
         error: { code: 'action_confirmation_required', details: { quote } },
@@ -257,6 +270,7 @@ it('admits one source-preparation POST at a time and releases its lease on every
         .mockImplementationOnce(async () => {
             enteredPreparation();
             await preparationGate;
+
             return { id: 'turn-1', status: 'queued' };
         })
         .mockRejectedValueOnce(new Error('synthetic submit failure'));

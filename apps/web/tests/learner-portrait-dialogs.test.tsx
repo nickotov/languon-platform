@@ -20,6 +20,7 @@ vi.mock('@/fsd/shared/ui', async () => ({
     ...(await vi.importActual<object>('@/fsd/shared/ui')),
     showToast: toast,
 }));
+
 const ownerId = '10000000-0000-4000-8000-000000000001';
 function fixture(): PortraitManagement {
     return {
@@ -33,6 +34,7 @@ function fixture(): PortraitManagement {
         apply: vi.fn(),
     } as unknown as PortraitManagement;
 }
+
 beforeEach(() => {
     vi.clearAllMocks();
     useSessionStore.setState({ user: { id: ownerId } as AuthUser });
@@ -50,11 +52,13 @@ describe('portrait destructive confirmations', () => {
                 management={fixture()}
             />,
         );
+
         await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
         expect(close).toHaveBeenCalledOnce();
         expect(discard).not.toHaveBeenCalled();
         expect(start).not.toHaveBeenCalled();
     });
+
     it('discards before restarting with the returned version and chosen interview language', async () => {
         const next: PortraitState = {
             version: 5,
@@ -64,10 +68,12 @@ describe('portrait destructive confirmations', () => {
             approved: null,
             draft: null,
         };
+
         vi.spyOn(portraitApi, 'discard').mockResolvedValue(next);
         vi.spyOn(portraitApi, 'startInterview').mockResolvedValue(
             {} as StartPortraitInterviewResponse,
         );
+
         render(
             <RestartInterviewDialog
                 open
@@ -75,25 +81,31 @@ describe('portrait destructive confirmations', () => {
                 management={fixture()}
             />,
         );
+
         await userEvent.click(
             screen.getByRole('button', { name: 'Start a fresh interview' }),
         );
+
         await waitFor(() =>
             expect(push).toHaveBeenCalledWith('/portrait/interview'),
         );
+
         expect(portraitApi.discard).toHaveBeenCalledWith('fixture-token', {
             expectedVersion: 4,
         });
+
         expect(portraitApi.startInterview).toHaveBeenCalledWith(
             'fixture-token',
             { expectedVersion: 5, locale: 'fr' },
         );
+
         expect(
             vi.mocked(portraitApi.discard).mock.invocationCallOrder[0],
         ).toBeLessThan(
             vi.mocked(portraitApi.startInterview).mock.invocationCallOrder[0]!,
         );
     });
+
     it('reports when discard succeeded but restart failed, without pretending the draft survives', async () => {
         vi.spyOn(portraitApi, 'discard').mockResolvedValue({
             version: 5,
@@ -103,9 +115,11 @@ describe('portrait destructive confirmations', () => {
             approved: null,
             draft: null,
         });
+
         vi.spyOn(portraitApi, 'startInterview').mockRejectedValue(
             new Error('Unavailable'),
         );
+
         render(
             <RestartInterviewDialog
                 open
@@ -113,18 +127,22 @@ describe('portrait destructive confirmations', () => {
                 management={fixture()}
             />,
         );
+
         await userEvent.click(
             screen.getByRole('button', { name: 'Start a fresh interview' }),
         );
+
         expect(
             await screen.findByText(
                 /previous interview and draft were discarded/,
             ),
         ).toBeVisible();
+
         expect(push).not.toHaveBeenCalled();
         await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
         expect(push).toHaveBeenCalledWith('/portrait/intro?restart=failed');
     });
+
     it('does not delete or announce deletion when Delete dialog is cancelled', async () => {
         const management = fixture();
         const close = vi.fn();
@@ -135,6 +153,7 @@ describe('portrait destructive confirmations', () => {
                 management={management}
             />,
         );
+
         await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
         expect(close).toHaveBeenCalledOnce();
         expect(management.apply).not.toHaveBeenCalled();

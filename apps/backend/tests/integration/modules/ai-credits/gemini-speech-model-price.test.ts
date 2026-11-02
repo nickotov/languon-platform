@@ -39,6 +39,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await db
                 .insert(usersTable)
                 .values({ id: owner, status: 'active', createdAt: new Date() });
+
             await db.insert(adminMembershipsTable).values({
                 id: randomUUID(),
                 userId: owner,
@@ -77,6 +78,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     price.modelId === model.modelId &&
                     price.meter === model.meter,
             );
+
             expect(initial).toMatchObject({
                 version: 1,
                 creditsPer1000Characters: 100,
@@ -87,6 +89,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const current = await db.transaction((tx) =>
                 new DrizzleModelPriceParticipant(tx).current(model),
             );
+
             expect(current.rateRevisionId).toBe(initial?.rateRevisionId);
 
             const published = await db.transaction((tx) =>
@@ -105,6 +108,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     new Date(),
                 ),
             );
+
             expect(published).toMatchObject({
                 version: 2,
                 creditsPer1000Characters: 125,
@@ -118,6 +122,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .where(
                     eq(modelPriceRevisionsTable.id, current.rateRevisionId!),
                 );
+
             expect(historical?.rates).toMatchObject({
                 creditsPer1000Characters: 100,
                 minimumCredits: 1,

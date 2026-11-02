@@ -7,10 +7,12 @@ vi.mock('@mastra/core/agent', () => ({
         constructor(options: unknown) {
             agentOptions(options);
         }
+
         generate = generate;
         __registerPrimitives = registerPrimitives;
     },
 }));
+
 import { noopLogger } from '@mastra/core/logger';
 import { createSentenceAiProvider } from '../../../../../src/modules/learning/infrastructure/ai/sentence-ai-provider';
 import { SentenceWorkerService } from '../../../../../src/modules/learning/application/sentence-worker-service';
@@ -81,6 +83,7 @@ const providerDraft = {
         entryId: 'candidate-1',
     })),
 };
+
 describe('sentence structured provider boundary', () => {
     it('requires v2 contextual hint dispositions without exposing dictionary IDs', async () => {
         const contextualDraft = {
@@ -101,6 +104,7 @@ describe('sentence structured provider boundary', () => {
                 { text: '.', entryId: null, contextualHint: null },
             ],
         };
+
         generate.mockResolvedValue({ object: contextualDraft });
         const provider = createSentenceAiProvider({
             credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
@@ -109,14 +113,17 @@ describe('sentence structured provider boundary', () => {
             ...call,
             input: { ...call.input, generationPolicyVersion: 2 },
         });
+
         expect(result.draft.segments[2]?.contextualHint).toEqual({
             normalizedHint: 'nach Hause',
             hintForm: 'phrase',
         });
+
         expect(
             JSON.parse(generate.mock.calls.at(-1)?.[0] as string)
                 .generationPolicyVersion,
         ).toBe(2);
+
         generate.mockResolvedValue({ object: providerDraft });
         await expect(
             provider.generate({
@@ -125,18 +132,22 @@ describe('sentence structured provider boundary', () => {
             }),
         ).rejects.toBeInstanceOf(SentenceInvalidModelOutputError);
     });
+
     it('hides private input/output, prohibits tools and pins bounded single-attempt SDK options', async () => {
         generate.mockResolvedValue({
             object: providerDraft,
             usage: { inputTokens: 12, outputTokens: 18 },
         });
+
         const provider = createSentenceAiProvider({
             credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
         });
+
         expect(await provider.generate(call)).toEqual({
             draft,
             usage: { inputTokens: 12, outputTokens: 18 },
         });
+
         expect(generate.mock.calls.at(-1)?.[1]).toMatchObject({
             runId: call.idempotencyKey,
             toolChoice: 'none',
@@ -159,11 +170,13 @@ describe('sentence structured provider boundary', () => {
         expect(JSON.parse(message).candidates).toEqual([
             { entryId: 'candidate-1', sourceText: 'go', targetText: 'gehen' },
         ]);
+
         expect(JSON.parse(message).priorityEntryId).toBe('candidate-1');
         expect(result.draft.targets[0]?.entryId).toBe(
             call.input.priorityEntryId,
         );
     });
+
     it('projects checks to local aliases while preserving the exact answer and bounded grading context', async () => {
         const checkInput = {
             schemaVersion: 1 as const,
@@ -191,6 +204,7 @@ describe('sentence structured provider boundary', () => {
             improvedTranslation: 'Geh!',
             explanation: 'Correct.',
         };
+
         generate.mockResolvedValue({ object: checkDraft });
         const provider = createSentenceAiProvider({
             credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
@@ -206,23 +220,28 @@ describe('sentence structured provider boundary', () => {
             referenceTranslation: 'Geh.',
             hintsRevealed: true,
         });
+
         expect(result.draft.targets[0]?.entryId).toBe(
             call.input.priorityEntryId,
         );
+
         generate.mockResolvedValue({
             object: {
                 ...checkDraft,
                 targets: { 'target-99': checkDraft.targets['target-1'] },
             },
         });
+
         await expect(
             provider.check({ ...call, input: checkInput }),
         ).rejects.toBeInstanceOf(SentenceInvalidModelOutputError);
     });
+
     it('rejects generation output containing unrecognized local aliases or persistent IDs', async () => {
         const provider = createSentenceAiProvider({
             credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
         });
+
         generate.mockResolvedValue({
             object: {
                 ...providerDraft,
@@ -234,37 +253,46 @@ describe('sentence structured provider boundary', () => {
                 ],
             },
         });
+
         await expect(provider.generate(call)).rejects.toBeInstanceOf(
             SentenceInvalidModelOutputError,
         );
+
         generate.mockResolvedValue({
             object: {
                 ...providerDraft,
                 segments: [{ text: 'Go.', entryId: 'candidate-99' }],
             },
         });
+
         await expect(provider.generate(call)).rejects.toBeInstanceOf(
             SentenceInvalidModelOutputError,
         );
     });
+
     it('rejects malformed structured output and invalid reported token usage', async () => {
         const provider = createSentenceAiProvider({
             credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
         });
+
         generate.mockResolvedValueOnce({
             object: { ...providerDraft, unexpected: 'private' },
         });
+
         await expect(provider.generate(call)).rejects.toMatchObject({
             reason: 'schema_invalid',
         });
+
         generate.mockResolvedValueOnce({
             object: providerDraft,
             usage: { inputTokens: -1, outputTokens: 18 },
         });
+
         await expect(provider.generate(call)).rejects.toMatchObject({
             reason: 'usage_invalid',
         });
     });
+
     const checkInput = {
         schemaVersion: 1 as const,
         exerciseId: '00000000-0000-4000-8000-000000000002',
@@ -287,6 +315,7 @@ describe('sentence structured provider boundary', () => {
         improvedTranslation: 'Geh.',
         explanation: 'Correct.',
     };
+
     it.each([2, 3])(
         'requires and projects every one of %i keyed target assessments in input order',
         async (count) => {
@@ -294,6 +323,7 @@ describe('sentence structured provider boundary', () => {
                 ...call.input.candidates[0]!,
                 entryId: `00000000-0000-4000-8000-00000000000${index + 1}`,
             }));
+
             generate.mockResolvedValue({
                 object: {
                     ...checkOutput,
@@ -307,6 +337,7 @@ describe('sentence structured provider boundary', () => {
                     ),
                 },
             });
+
             const provider = createSentenceAiProvider({
                 credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
             });
@@ -314,11 +345,14 @@ describe('sentence structured provider boundary', () => {
                 ...call,
                 input: { ...checkInput, targets },
             });
+
             expect(
                 result.draft.targets.map((target) => target.entryId),
             ).toEqual(targets.map((target) => target.entryId));
+
             const schema =
                 generate.mock.calls.at(-1)?.[1].structuredOutput.schema;
+
             expect(
                 schema.safeParse({
                     ...checkOutput,
@@ -327,6 +361,7 @@ describe('sentence structured provider boundary', () => {
             ).toBe(false);
         },
     );
+
     it.each([
         {},
         { 'target-1': assessment, 'target-2': assessment },
@@ -338,11 +373,13 @@ describe('sentence structured provider boundary', () => {
             const provider = createSentenceAiProvider({
                 credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
             });
+
             await expect(
                 provider.check({ ...call, input: checkInput }),
             ).rejects.toMatchObject({ reason: 'target_assessments_invalid' });
         },
     );
+
     it.each([
         ['café', { start: 2, end: 6, quote: 'café' }],
         ['e\u0301', { start: 7, end: 9, quote: 'e\u0301' }],
@@ -368,6 +405,7 @@ describe('sentence structured provider boundary', () => {
                     ],
                 },
             });
+
             const provider = createSentenceAiProvider({
                 credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
             });
@@ -379,9 +417,11 @@ describe('sentence structured provider boundary', () => {
                 explanation: 'Review this.',
                 correction: null,
             });
+
             expect(result.draft.proposedPercentage).toBe(100);
         },
     );
+
     it('rejects model-authored offsets while accepting non-positioned feedback for ambiguous quotes', async () => {
         const provider = createSentenceAiProvider({
             credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
@@ -393,6 +433,7 @@ describe('sentence structured provider boundary', () => {
             explanation: 'Review.',
             correction: null,
         };
+
         generate.mockResolvedValue({
             object: {
                 ...checkOutput,
@@ -401,27 +442,33 @@ describe('sentence structured provider boundary', () => {
                 ],
             },
         });
+
         await expect(
             provider.check({
                 ...call,
                 input: { ...checkInput, answer: 'one one' },
             }),
         ).rejects.toMatchObject({ reason: 'schema_invalid' });
+
         generate.mockResolvedValue({
             object: { ...checkOutput, issues: [issue] },
         });
+
         const result = await provider.check({
             ...call,
             input: { ...checkInput, answer: 'one one' },
         });
+
         expect(result.draft.issues[0]?.span).toBeNull();
         expect(result.draft.issues[0]?.explanation).toBe('Review.');
     });
+
     it('rejects duplicate input identities before contacting the provider', async () => {
         generate.mockClear();
         const provider = createSentenceAiProvider({
             credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
         });
+
         await expect(
             provider.check({
                 ...call,
@@ -431,8 +478,10 @@ describe('sentence structured provider boundary', () => {
                 },
             }),
         ).rejects.toMatchObject({ reason: 'input_invalid' });
+
         expect(generate).not.toHaveBeenCalled();
     });
+
     it.each([
         [
             'missing assessment',
@@ -538,29 +587,37 @@ describe('sentence structured provider boundary', () => {
                 retryDelayMs: 1000,
                 onInvalidModelOutput,
             });
+
             await service.processNext(new AbortController().signal);
             expect(store.fail).toHaveBeenCalledWith(
                 job.lease,
                 {
                     code: 'invalid_model_output',
                     retryAt: null,
+                    // Completed provider output is conclusive evidence; this
+                    // classification does not request a retry for this check.
+                    retryDisposition: 'conclusive-provider-failure',
                     ...(usage ? { usage } : {}),
                 },
                 { now, signal: expect.any(AbortSignal) },
             );
+
             expect(store.completeCheck).not.toHaveBeenCalled();
             expect(onInvalidModelOutput.mock.calls).toEqual([
                 [{ kind: 'sentence-check', reason }],
             ]);
+
             expect(generate).toHaveBeenCalledOnce();
             expect(agentOptions.mock.calls.at(-1)?.[0]).not.toHaveProperty(
                 'logger',
             );
+
             expect(registerPrimitives.mock.calls.at(-1)?.[0].logger).toBe(
                 noopLogger,
             );
         },
     );
+
     it('keeps unrelated SDK tripwires classified as provider availability failures', async () => {
         generate.mockResolvedValue({
             tripwire: {
@@ -569,13 +626,16 @@ describe('sentence structured provider boundary', () => {
             },
             usage: { inputTokens: 12, outputTokens: 18 },
         });
+
         const provider = createSentenceAiProvider({
             credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
         });
+
         await expect(
             provider.check({ ...call, input: checkInput }),
         ).rejects.toThrow('Sentence provider unavailable');
     });
+
     it.each([
         [
             { inputTokens: 12, outputTokens: 18 },
@@ -595,6 +655,7 @@ describe('sentence structured provider boundary', () => {
                 new Error('Private raw model output.'),
                 { name: 'AI_NoObjectGeneratedError', usage },
             );
+
             generate.mockRejectedValue(error);
             const provider = createSentenceAiProvider({
                 credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
@@ -602,23 +663,28 @@ describe('sentence structured provider boundary', () => {
             const rejected = await provider
                 .check({ ...call, input: checkInput })
                 .catch((cause: unknown) => cause);
+
             expect(rejected).toBeInstanceOf(SentenceInvalidModelOutputError);
             expect(rejected).toMatchObject({ reason });
             expect((rejected as { usage?: unknown }).usage).toEqual(
                 retainedUsage,
             );
+
             expect((rejected as Error).message).not.toContain('Private raw');
         },
     );
+
     it('preserves unknown SDK exception handling without accepting its alleged usage', async () => {
         const error = Object.assign(new Error('Unknown provider failure'), {
             name: 'UnrecognizedSdkError',
             usage: { inputTokens: 12, outputTokens: 18 },
         });
+
         generate.mockRejectedValue(error);
         const provider = createSentenceAiProvider({
             credentials: { DEEPSEEK_API_KEY: 'synthetic-test-key' },
         });
+
         await expect(
             provider.check({ ...call, input: checkInput }),
         ).rejects.toBe(error);

@@ -46,7 +46,7 @@ export async function seedInterviewAccountingFixture(
         settings.maxProviderCostUsdPerAction !== '1' ||
         settings.maxProviderCostUsdPerAccountDay !== '1000' ||
         settings.maxProviderCostUsdPerDay !== '10000'
-    )
+    ) {
         await database
             .insert(aiAccountingSettingsRevisionsTable)
             .values({
@@ -60,10 +60,12 @@ export async function seedInterviewAccountingFixture(
                 reason: 'Synthetic interview accounting budget calibration',
             })
             .onConflictDoNothing();
+    }
+
     if (
         customerPrice?.rates.inputCreditsPerMillionTokens !== 1000 ||
         customerPrice?.rates.outputCreditsPerMillionTokens !== 3000
-    )
+    ) {
         await database
             .insert(modelPriceRevisionsTable)
             .values({
@@ -83,11 +85,13 @@ export async function seedInterviewAccountingFixture(
                 reason: 'Synthetic interview customer tariff calibration',
             })
             .onConflictDoNothing();
+    }
+
     if (
         providerPrice?.data.inputUsdPerMillionTokens !== '1' ||
         providerPrice?.data.outputUsdPerMillionTokens !== '3' ||
         providerPrice?.data.cacheReadUsdPerMillionTokens !== '1'
-    )
+    ) {
         await database
             .insert(aiProviderPriceRevisionsTable)
             .values({
@@ -114,5 +118,7 @@ export async function seedInterviewAccountingFixture(
                 },
             })
             .onConflictDoNothing();
+    }
+
     await seedTextAiRoutingFixture(database);
 }

@@ -1,0 +1,940 @@
+{
+  "owner": "backend-conversations-texts/packages",
+  "baseCommit": "252de64",
+  "batches": [
+    {
+      "id": "dictionary-lifecycle-validation",
+      "problem": "card-authoring repeats active-stage and terminal-outcome callbacks three times; generation repeats pasted/import batch lifecycle callback. Identical decisions obscure the invariant while version schemas remain useful explicit contracts.",
+      "chosenSeam": "Private structural typed refinement callbacks in their existing modules; preserve all schema shapes and public exports. Reject generic schema factory because it hides version-specific contracts; leave snapshot-redaction and document upload/OCR lifecycle separate.",
+      "invariants": "Same synchronous superRefine position, branch and diagnostic order, issue paths/messages, null checks, accepted/failed semantics and retryability guards; no parsing/transform/default or union order changes.",
+      "callers": "Dictionary job response/request consumers through unchanged public contracts exports; existing authoring and dictionary contract regressions.",
+      "checks": [
+        {
+          "command": "pnpm --filter @languon/contracts exec vitest run tests/dictionary-card-authoring-contracts.test.ts tests/dictionary-contracts.test.ts",
+          "setup": "Root schedules deterministic package tests; existing dependencies, no DB/provider calls.",
+          "estimate": "under 30 seconds",
+          "status": "pending central scheduling"
+        },
+        {
+          "command": "pnpm exec eslint packages/contracts/src/dictionaries/card-authoring.ts packages/contracts/src/dictionaries/generation.ts && pnpm exec prettier --check packages/contracts/src/dictionaries/card-authoring.ts packages/contracts/src/dictionaries/generation.ts",
+          "setup": "Local scoped static checks only",
+          "estimate": "under 15 seconds",
+          "status": "passed scoped ESLint and Prettier --check; author diff inspection confirms unchanged public shapes and diagnostic sequences"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/browser-auth/package.json",
+      "status": "reviewed-acceptable",
+      "reason": "browser-auth manifest exports only built public entry, depends on shared contracts and uses standard build/lint/test/typecheck scripts.",
+      "beforeSha256": "094fa2a793846d6d01be434be3ed55a471841dad09dca842d672bd880caf9264",
+      "afterSha256": "094fa2a793846d6d01be434be3ed55a471841dad09dca842d672bd880caf9264"
+    },
+    {
+      "path": "packages/browser-auth/src/http.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createBrowserApiClient separates schema validation, transport, safe failure mapping and response parsing; readJson handles absent/wrong/malformed content and authentication classifier excludes unrelated permission errors.",
+      "beforeSha256": "d2f5e07f4b6e66f4fb905a6c44bcfebab3aa95f397ef714e320ac9c030075c0f",
+      "afterSha256": "d2f5e07f4b6e66f4fb905a6c44bcfebab3aa95f397ef714e320ac9c030075c0f"
+    },
+    {
+      "path": "packages/browser-auth/src/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Public barrel exposes HTTP, passkeys and refresh coordination without hidden side effects.",
+      "beforeSha256": "a04690a05d7c3421e0c880f4f29c6f93f0923faf0eae8d3dce120101161ab053",
+      "afterSha256": "a04690a05d7c3421e0c880f4f29c6f93f0923faf0eae8d3dce120101161ab053"
+    },
+    {
+      "path": "packages/browser-auth/src/passkeys.ts",
+      "status": "reviewed-acceptable",
+      "reason": "getPasskey separates support assertion, browser credential type checks, bounded extension/attachment projection and base64url byte conversions; no SDK state crosses transport.",
+      "beforeSha256": "e3989b92e0025f3ea25cab0f4a5cd65b79d7d829b541e158ffae601dfdc0076f",
+      "afterSha256": "e3989b92e0025f3ea25cab0f4a5cd65b79d7d829b541e158ffae601dfdc0076f"
+    },
+    {
+      "path": "packages/browser-auth/src/refresh-coordinator.ts",
+      "status": "reviewed-acceptable",
+      "reason": "BrowserRefreshCoordinator separates tab inFlight, web-lock handoff and peer timeout paths; revision guards suppress stale outcomes and listener/channel ownership is explicit.",
+      "beforeSha256": "5ef110348e8de84a20331ce69dab1a24c93475834aaaee0d0991da6447493292",
+      "afterSha256": "5ef110348e8de84a20331ce69dab1a24c93475834aaaee0d0991da6447493292"
+    },
+    {
+      "path": "packages/browser-auth/tests/http.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "HTTP tests explicitly assert refreshable-auth versus permission denial, cookies/bearer, typed server errors and edge token header using restored fetch globals.",
+      "beforeSha256": "bfb2b92efe5757cb2be2ea17e8acc3b750449339e67fe9190cab6d98d45631f7",
+      "afterSha256": "bfb2b92efe5757cb2be2ea17e8acc3b750449339e67fe9190cab6d98d45631f7"
+    },
+    {
+      "path": "packages/browser-auth/tests/refresh-coordinator.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "SerialLocks fixture models asynchronous lock chaining; coordinator cases assert one refresh within tab, namespace-exclusive operations and invalid namespace rejection.",
+      "beforeSha256": "cf913524beaa333a92d10f5f12228f783ee97cf6a082a5c8ac5771f6c1bbfb2f",
+      "afterSha256": "cf913524beaa333a92d10f5f12228f783ee97cf6a082a5c8ac5771f6c1bbfb2f"
+    },
+    {
+      "path": "packages/browser-auth/tsconfig.json",
+      "status": "reviewed-acceptable",
+      "reason": "browser-auth tsconfig includes implementation/tests with Vitest globals and inherited strict base settings.",
+      "beforeSha256": "b0887414a3960c20f7b14bdaa29a7757dc1d260cedda4d4c3485aaf7d316692d",
+      "afterSha256": "b0887414a3960c20f7b14bdaa29a7757dc1d260cedda4d4c3485aaf7d316692d"
+    },
+    {
+      "path": "packages/contracts/package.json",
+      "status": "reviewed-acceptable",
+      "reason": "contracts manifest exports built public entry with only Zod/languages runtime dependencies and standard package verification scripts.",
+      "beforeSha256": "4a12aa98eacb90da7582d344c964bfd9e17c579ab942def5fb161fd559599fa7",
+      "afterSha256": "4a12aa98eacb90da7582d344c964bfd9e17c579ab942def5fb161fd559599fa7"
+    },
+    {
+      "path": "packages/contracts/tsconfig.json",
+      "status": "reviewed-acceptable",
+      "reason": "contracts tsconfig inherits strict base and includes only public source declarations with Node types.",
+      "beforeSha256": "c80577463beab884128558cb9c31b63b30a9671c7933a621c407b1dac4e59ba3",
+      "afterSha256": "c80577463beab884128558cb9c31b63b30a9671c7933a621c407b1dac4e59ba3"
+    },
+    {
+      "path": "packages/database/package.json",
+      "status": "reviewed-acceptable",
+      "reason": "database manifest keeps infrastructure dependencies drizzle/ioredis/postgres local and exports built public entry with ordinary verification commands.",
+      "beforeSha256": "9b3ac76942e5bd3f3df47db483f60be07c1cb8ae309c3f2300a30b649d137e07",
+      "afterSha256": "9b3ac76942e5bd3f3df47db483f60be07c1cb8ae309c3f2300a30b649d137e07"
+    },
+    {
+      "path": "packages/database/src/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createDatabaseClients owns postgres/Redis factories and parallel close; public exports expose migration-purpose/history and low-level typed factories only.",
+      "beforeSha256": "36ce4d62b065fce66737d6d31b2728476f851df6375537c14712f3c3a62c055d",
+      "afterSha256": "36ce4d62b065fce66737d6d31b2728476f851df6375537c14712f3c3a62c055d"
+    },
+    {
+      "path": "packages/database/src/migrations/enum-expansion.ts",
+      "status": "reviewed-acceptable",
+      "reason": "parseEnumExpansion recognizes one complete additive enum statement and preserves quoted names/escaped labels/order; ordinary DDL cannot enter idempotent precommit path.",
+      "beforeSha256": "27733252680cb617baf87aeabfd6bfbddd8d0c14f78fb802253c0256546e7e53",
+      "afterSha256": "27733252680cb617baf87aeabfd6bfbddd8d0c14f78fb802253c0256546e7e53"
+    },
+    {
+      "path": "packages/database/src/migrations/run-postgres-migrations.ts",
+      "status": "reviewed-acceptable",
+      "reason": "runPostgresMigrations keeps one reserved session/advisory lock across enum precommits and ordinary transaction; helper guards purpose/history, loops explicitly validate label identity/order before idempotent retry and final migrate, finally restores unsafe and releases session.",
+      "beforeSha256": "3bd6a59841f98ee32d36d1aa5ff664b245794e6a23f7b17e49c848e08726ae50",
+      "afterSha256": "3bd6a59841f98ee32d36d1aa5ff664b245794e6a23f7b17e49c848e08726ae50"
+    },
+    {
+      "path": "packages/database/src/postgres/client.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createPostgresClient names timeout/pool defaults and suppresses notices through typed postgres options.",
+      "beforeSha256": "f8d33d0adb8a5054337fc137985864bae99bf9743c86f1492e05ad8afeb314cd",
+      "afterSha256": "f8d33d0adb8a5054337fc137985864bae99bf9743c86f1492e05ad8afeb314cd"
+    },
+    {
+      "path": "packages/database/src/postgres/drizzle.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createDrizzleDatabase preserves generic caller-owned schema and public Drizzle type without business behavior.",
+      "beforeSha256": "e423c4f245daacc7dd7e463310a8f1c57bd3e62a543526182a57ce785d4bc548",
+      "afterSha256": "e423c4f245daacc7dd7e463310a8f1c57bd3e62a543526182a57ce785d4bc548"
+    },
+    {
+      "path": "packages/database/tests/enum-expansion.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Enum recognition tests assert quoted identifiers/escaped labels/placement and reject multi-statement/function/nonadditive DDL.",
+      "beforeSha256": "abe370c0d95aa61eb7202b1b7d37a17b35cf2560a25844ddbca314e9a780a19a",
+      "afterSha256": "abe370c0d95aa61eb7202b1b7d37a17b35cf2560a25844ddbca314e9a780a19a"
+    },
+    {
+      "path": "packages/database/tests/migration-purpose.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Migration-purpose tests reject forged capability before connecting and validate exact ordered history prefixes rather than mere membership.",
+      "beforeSha256": "12224643f60d1b09aeef502c5ff4ea403fbf926358292c786e1993ab651ad161",
+      "afterSha256": "12224643f60d1b09aeef502c5ff4ea403fbf926358292c786e1993ab651ad161"
+    },
+    {
+      "path": "packages/database/tsconfig.json",
+      "status": "reviewed-acceptable",
+      "reason": "database tsconfig inherits strict base and keeps implementation-only Node types.",
+      "beforeSha256": "c80577463beab884128558cb9c31b63b30a9671c7933a621c407b1dac4e59ba3",
+      "afterSha256": "c80577463beab884128558cb9c31b63b30a9671c7933a621c407b1dac4e59ba3"
+    },
+    {
+      "path": "packages/languages/package.json",
+      "status": "reviewed-acceptable",
+      "reason": "languages manifest exports built catalog and standard package verification with no runtime dependencies.",
+      "beforeSha256": "c01f4586587069bf770f66446f1a8f5f0511af6c2c85aff286e63314fd60a49d",
+      "afterSha256": "c01f4586587069bf770f66446f1a8f5f0511af6c2c85aff286e63314fd60a49d"
+    },
+    {
+      "path": "packages/languages/src/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "entry freezes per-language display names and catalog; isLanguageTag distinguishes canonical persistence from canonicalizeLanguageTag lookup with safe Intl failure.",
+      "beforeSha256": "b467bfee00a3eb92a509cd4e46adf79d031fdfcc34756ba5c8636f5473309081",
+      "afterSha256": "b467bfee00a3eb92a509cd4e46adf79d031fdfcc34756ba5c8636f5473309081"
+    },
+    {
+      "path": "packages/languages/tests/catalog.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Catalog tests assert canonical order/version/deep freezing, complete locale names/direction, alias normalization and unsupported-tag rejection.",
+      "beforeSha256": "7229cbf1e0552061ebec9edb54cba0af2518f422f46148ec4d4edc4ce5afe2d9",
+      "afterSha256": "7229cbf1e0552061ebec9edb54cba0af2518f422f46148ec4d4edc4ce5afe2d9"
+    },
+    {
+      "path": "packages/languages/tsconfig.json",
+      "status": "reviewed-acceptable",
+      "reason": "languages tsconfig includes source/tests and inherited strict settings with Node/Vitest types.",
+      "beforeSha256": "400b45c7193b1ac980d9907e77ed3d65ede809b4f6f3b87444b621663f408faf",
+      "afterSha256": "400b45c7193b1ac980d9907e77ed3d65ede809b4f6f3b87444b621663f408faf"
+    },
+    {
+      "path": "packages/prompts/package.json",
+      "status": "reviewed-acceptable",
+      "reason": "prompts manifest exposes built public fallback registry and Langfuse adapter dependency; watch/build/test commands are explicit.",
+      "beforeSha256": "d7672be5a5e27c97d742ecc8b4c55373d150d88a7e317781787a51e48634928a",
+      "afterSha256": "d7672be5a5e27c97d742ecc8b4c55373d150d88a7e317781787a51e48634928a"
+    },
+    {
+      "path": "packages/prompts/src/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "localPrompts maps each fixed prompt name to immutable system fallback; getLocalPrompt preserves typed name lookup and established public Langfuse export.",
+      "beforeSha256": "68553fd74e20b3523edee082788f09c1160c63ffa2eba09c7321a5ce8543a6a2",
+      "afterSha256": "68553fd74e20b3523edee082788f09c1160c63ffa2eba09c7321a5ce8543a6a2"
+    },
+    {
+      "path": "packages/prompts/src/local/contextual-language-tutor.ts",
+      "status": "reviewed-acceptable",
+      "reason": "contextualLanguageTutorPrompt organizes scope/security/current-versus-history/preferences/proposals/factual grounding into distinct sections; actual text and explicit learner-save/readonly source rules preserved.",
+      "beforeSha256": "9757c026ba7fb81fcc1510341d55fa91319060b41ad90c9969ef920c9182127b",
+      "afterSha256": "9757c026ba7fb81fcc1510341d55fa91319060b41ad90c9969ef920c9182127b"
+    },
+    {
+      "path": "packages/prompts/src/local/course-builder.ts",
+      "status": "reviewed-acceptable",
+      "reason": "courseBuilderPrompt is one deterministic instruction describing goals, constraints and missing-context question behavior.",
+      "beforeSha256": "8fc2e8fcde2a87361ff6228ca46e2a42b417b484fa22759f148351bd94a4651c",
+      "afterSha256": "8fc2e8fcde2a87361ff6228ca46e2a42b417b484fa22759f148351bd94a4651c"
+    },
+    {
+      "path": "packages/prompts/src/local/development-harness.ts",
+      "status": "reviewed-acceptable",
+      "reason": "developmentHarnessPrompt fixed ordered sentences distinguish synthetic principal tools from production authentication and prohibit secret/raw trace output.",
+      "beforeSha256": "1d309997a4ad24797a9ae6d33d4e5b6c4109df5312a9937f4afcd4530dec768b",
+      "afterSha256": "1d309997a4ad24797a9ae6d33d4e5b6c4109df5312a9937f4afcd4530dec768b"
+    },
+    {
+      "path": "packages/prompts/src/local/dictionary-card-authoring.ts",
+      "status": "reviewed-acceptable",
+      "reason": "dictionaryCardAuthoringPrompt keeps requested fields, noun gender/lemma rules, context authority and review-only save semantics explicit in ordered instructions.",
+      "beforeSha256": "34dd0910a06aa9c307546db2757a647159144cab2fd77acf3351557f82332a25",
+      "afterSha256": "34dd0910a06aa9c307546db2757a647159144cab2fd77acf3351557f82332a25"
+    },
+    {
+      "path": "packages/prompts/src/local/dictionary-card-generation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "dictionaryCardGenerationPrompt separates trusted settings/untrusted content, intended sense, article/gender correction and bounded review-only structured output.",
+      "beforeSha256": "8fea630dbe6f6145ed1a8faf1e411b33296fc24a7b68fc8710cf0ffb4917a0d5",
+      "afterSha256": "8fea630dbe6f6145ed1a8faf1e411b33296fc24a7b68fc8710cf0ffb4917a0d5"
+    },
+    {
+      "path": "packages/prompts/src/local/dictionary-import-pairs-generation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "dictionaryImportPairsGenerationPrompt preserves exact row order/core pairs while enriching enabled optional fields with review and mixed attribution.",
+      "beforeSha256": "6377869a82bf072ef308414b41af83000ef0cd849be7249492046b4611e823d1",
+      "afterSha256": "6377869a82bf072ef308414b41af83000ef0cd849be7249492046b4611e823d1"
+    },
+    {
+      "path": "packages/prompts/src/local/dictionary-pasted-terms-generation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "dictionaryPastedTermsGenerationPrompt requires one outcome per row, semantic context consistency and explicit learner acceptance without duplicate-authority claims.",
+      "beforeSha256": "75ba5165d56ed940cca106537266ed4685870ff9ab5647d5ca73c80307905787",
+      "afterSha256": "75ba5165d56ed940cca106537266ed4685870ff9ab5647d5ca73c80307905787"
+    },
+    {
+      "path": "packages/prompts/src/local/knowledge-block-field.ts",
+      "status": "reviewed-acceptable",
+      "reason": "knowledgeBlockFieldPrompt confines check/generate to one translation with suggested/correct structured status and fail-instead-of-fabricate grounding.",
+      "beforeSha256": "13029c5131b53cc721e739c16a69c1468bc726b45049b61505af97b6ed658fc6",
+      "afterSha256": "13029c5131b53cc721e739c16a69c1468bc726b45049b61505af97b6ed658fc6"
+    },
+    {
+      "path": "packages/prompts/src/local/knowledge-exercise-evaluation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "knowledgeExerciseEvaluationPrompt separates exact submitted answer/exercise identity, valid alternatives, language and schema from untrusted role-changing content.",
+      "beforeSha256": "7eaeed65da509b7d607ecd99a638c1f5a3c7eed6f768e8f9a2f7cce195643dc2",
+      "afterSha256": "7eaeed65da509b7d607ecd99a638c1f5a3c7eed6f768e8f9a2f7cce195643dc2"
+    },
+    {
+      "path": "packages/prompts/src/local/learner-interviewer.ts",
+      "status": "reviewed-acceptable",
+      "reason": "learnerInterviewerPrompt explicitly separates practical accommodations from diagnostic inference, confirmed items from proposed facts and interview language from known languages.",
+      "beforeSha256": "ea5900a41b6767b24ed77e83262172c5b77a7c07c9666a5f245497e3fb0c11de",
+      "afterSha256": "ea5900a41b6767b24ed77e83262172c5b77a7c07c9666a5f245497e3fb0c11de"
+    },
+    {
+      "path": "packages/prompts/src/local/sentence-check.ts",
+      "status": "reviewed-acceptable",
+      "reason": "sentenceCheckPrompt separates meaning/grammar/target vocabulary and exact-quote highlight authority, with bounded scoring and no answer rewrite.",
+      "beforeSha256": "257a2e2b59f0ceac500264694b286bbc45af4478b3d92bd05c03225ea8bef9aa",
+      "afterSha256": "257a2e2b59f0ceac500264694b286bbc45af4478b3d92bd05c03225ea8bef9aa"
+    },
+    {
+      "path": "packages/prompts/src/local/sentence-generation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "sentenceGenerationPrompt sections distinguish language/meaning, example quality, versioned contextual hint and private self-check contracts; concrete bad/good taf examples preserve lexical identity.",
+      "beforeSha256": "7a907b31b084cbbb1aba3c6cd9b621cde0015b4772ef969720b835fdcd000903",
+      "afterSha256": "7a907b31b084cbbb1aba3c6cd9b621cde0015b4772ef969720b835fdcd000903"
+    },
+    {
+      "path": "packages/prompts/src/local/texts.ts",
+      "status": "reviewed-acceptable",
+      "reason": "textTranslationPrompt retains complete ordered pair IDs and exact source/paragraph fidelity; textDetectionPrompt returns only supported advisory language/confidence ignoring embedded instructions.",
+      "beforeSha256": "24ec8bf542327bdb565c6e5d41ffd62e2d5640b201b1472b608db144a08d5c82",
+      "afterSha256": "24ec8bf542327bdb565c6e5d41ffd62e2d5640b201b1472b608db144a08d5c82"
+    },
+    {
+      "path": "packages/prompts/tests/local-prompts.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Local prompt tests assert critical stable safety/schema/noun-gender/context boundaries and deterministic registry lookup without invoking models.",
+      "beforeSha256": "fe6214918853d00b0d4107c2d11076dff1be3dd67d3bbf54735b4417349199b8",
+      "afterSha256": "fe6214918853d00b0d4107c2d11076dff1be3dd67d3bbf54735b4417349199b8"
+    },
+    {
+      "path": "packages/prompts/tsconfig.json",
+      "status": "reviewed-acceptable",
+      "reason": "prompts tsconfig includes source/tests with Node/Vitest types and strict inherited options.",
+      "beforeSha256": "400b45c7193b1ac980d9907e77ed3d65ede809b4f6f3b87444b621663f408faf",
+      "afterSha256": "400b45c7193b1ac980d9907e77ed3d65ede809b4f6f3b87444b621663f408faf"
+    },
+    {
+      "path": "packages/contracts/src/admin-mcp.ts",
+      "status": "reviewed-acceptable",
+      "reason": "adminMcpIssueTokenSchema names permission-to-finite-limit requirements, duplicate grant rejection and credential-free reasons; metadata and preview/audit schemas remain distinct fixed authorities.",
+      "beforeSha256": "59ed52540bf9c35235fbbce80c8b87b7520d00601bb5090f733dc3a6c95584e1",
+      "afterSha256": "59ed52540bf9c35235fbbce80c8b87b7520d00601bb5090f733dc3a6c95584e1"
+    },
+    {
+      "path": "packages/contracts/src/admin/contracts.ts",
+      "status": "reviewed-acceptable",
+      "reason": "AdminEndpointSchemas maps each typed route operation; AI settings refine enabled/default uniqueness, credit policy refines expiry, and adjustments reject zero/removal expiry with field-specific issues.",
+      "beforeSha256": "378dbf464be709b7f5fcc76f53829fc1cdbac72d1c7aa6ba9e1bfc779eb7c8a4",
+      "afterSha256": "378dbf464be709b7f5fcc76f53829fc1cdbac72d1c7aa6ba9e1bfc779eb7c8a4"
+    },
+    {
+      "path": "packages/contracts/src/admin/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Admin barrel exports contracts/models/primitives/sentence library through established entry only.",
+      "beforeSha256": "bd85498e7444baed5f3b9ac88a51d99257bc482b698a5c96c4d20680f476b975",
+      "afterSha256": "bd85498e7444baed5f3b9ac88a51d99257bc482b698a5c96c4d20680f476b975"
+    },
+    {
+      "path": "packages/contracts/src/admin/models.ts",
+      "status": "reviewed-acceptable",
+      "reason": "AdminUser/Audit/Credit schemas separate public operator summaries, lifecycle versions, audit outcome and exact compatibility amounts with inferred types.",
+      "beforeSha256": "717bf167246548e074bb09508f51c6c269c06cbd1f4b58e41f1e2dd0a184ad4b",
+      "afterSha256": "717bf167246548e074bb09508f51c6c269c06cbd1f4b58e41f1e2dd0a184ad4b"
+    },
+    {
+      "path": "packages/contracts/src/admin/primitives.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Admin primitives reuse auth IDs/timestamps/email and exact credit schemas, enumerate audit actions and bound reasons/pages/model identifiers.",
+      "beforeSha256": "6d19b25a96087565e37d3058a60811f606139201268cd4115d4c9c446f4c22a9",
+      "afterSha256": "6d19b25a96087565e37d3058a60811f606139201268cd4115d4c9c446f4c22a9"
+    },
+    {
+      "path": "packages/contracts/src/admin/sentence-library.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Admin sentence library extends learner filters/items without new hidden behavior; deletion confirmation refinement is local and operation/selection/reason explicit.",
+      "beforeSha256": "08d58f00b1b7d4fb38b77c2264108003bef395818a49cc717dcd55858f9e0fb5",
+      "afterSha256": "08d58f00b1b7d4fb38b77c2264108003bef395818a49cc717dcd55858f9e0fb5"
+    },
+    {
+      "path": "packages/contracts/src/ai-accounting.ts",
+      "status": "reviewed-acceptable",
+      "reason": "AccountingRecordRequestSchema discriminates manual payment/refund/deposit/balance/bill, validates exact milli purchase bound and paired currency; reporting period and independent cash/usage/provider projections stay explicit.",
+      "beforeSha256": "831dcce80fea8e8b7dcd31e2616d4376f65f09ddebfcf1b2df8eff9474f60c54",
+      "afterSha256": "831dcce80fea8e8b7dcd31e2616d4376f65f09ddebfcf1b2df8eff9474f60c54"
+    },
+    {
+      "path": "packages/contracts/src/ai-action.ts",
+      "status": "reviewed-acceptable",
+      "reason": "ActionAllowanceQuoteSchema binds exact decimal credits, output allowance and expiry; ActionBillingSchema exposes only learner hold/charge/measurement states.",
+      "beforeSha256": "3117f7ded593415851534df299de02f15e46a57d7fd0ae30d5a3d39a7c66faeb",
+      "afterSha256": "3117f7ded593415851534df299de02f15e46a57d7fd0ae30d5a3d39a7c66faeb"
+    },
+    {
+      "path": "packages/contracts/src/ai-capability-policy.ts",
+      "status": "reviewed-acceptable",
+      "reason": "operatorBudgetHierarchy separates all-unset, partially-set, invalid-format and ordered bigint micros checks; publish/read settings share this invariant.",
+      "beforeSha256": "b39fddcb731955be6138258874dbf18e87574807eb1dc383b259c0ba069d6954",
+      "afterSha256": "b39fddcb731955be6138258874dbf18e87574807eb1dc383b259c0ba069d6954"
+    },
+    {
+      "path": "packages/contracts/src/ai-credit-amount.ts",
+      "status": "reviewed-acceptable",
+      "reason": "parseCreditMilli validates canonical bounded decimal then computes bigint thousandths; numeric compatibility schemas explicitly restrict precision/range.",
+      "beforeSha256": "4b9d581168e9c16c88d9a4525c8d7fffe2141264fcd095c82098246db1a55b2d",
+      "afterSha256": "4b9d581168e9c16c88d9a4525c8d7fffe2141264fcd095c82098246db1a55b2d"
+    },
+    {
+      "path": "packages/contracts/src/ai-provider-prices.ts",
+      "status": "reviewed-acceptable",
+      "reason": "validMeters separates native pricing from legacy flat rates, checks meter compatibility and rejects mixed authorities; source URL requires credential-free HTTPS.",
+      "beforeSha256": "803cadc50699219246a1f0fa123cf123e638337819f1ea37eec69c59dca9231e",
+      "afterSha256": "803cadc50699219246a1f0fa123cf123e638337819f1ea37eec69c59dca9231e"
+    },
+    {
+      "path": "packages/contracts/src/auth/account-deletion.ts",
+      "status": "reviewed-acceptable",
+      "reason": "AccountDeletion schedule schemas expose empty strict request and explicit scheduled/purge timestamps with inferred DTOs.",
+      "beforeSha256": "413aba0bbb748f473ec9403e240b80273faaecde8d556f5ab336ee7f770e75d3",
+      "afterSha256": "413aba0bbb748f473ec9403e240b80273faaecde8d556f5ab336ee7f770e75d3"
+    },
+    {
+      "path": "packages/contracts/src/auth/contracts.ts",
+      "status": "reviewed-acceptable",
+      "reason": "AuthEndpointSchemas directly maps existing body/params/response/error schemas for password, passkey and session operations without runtime transport behavior.",
+      "beforeSha256": "fe5d6d2bd5d082e7458b01794c05f474160a0bb2acc84ec54a2dc02ec4973b4e",
+      "afterSha256": "fe5d6d2bd5d082e7458b01794c05f474160a0bb2acc84ec54a2dc02ec4973b4e"
+    },
+    {
+      "path": "packages/contracts/src/auth/errors.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth error contracts enumerate safe codes and bound field paths/issues/retry delays separately from response wrapper.",
+      "beforeSha256": "15193e9f1e38f9eac6cb340a5210c5643f938ab3f901db19048dcee0165453da",
+      "afterSha256": "15193e9f1e38f9eac6cb340a5210c5643f938ab3f901db19048dcee0165453da"
+    },
+    {
+      "path": "packages/contracts/src/auth/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth barrel preserves established public schemas and type exports across focused contract modules.",
+      "beforeSha256": "d6dd690c746a51b644430f1fca8f24ce32c4c4fa8b45143f9b2f5d1323efac62",
+      "afterSha256": "d6dd690c746a51b644430f1fca8f24ce32c4c4fa8b45143f9b2f5d1323efac62"
+    },
+    {
+      "path": "packages/contracts/src/auth/models.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth user/session/success/capability schemas keep active verified user identity, session expiry and token envelope explicit with strict fields.",
+      "beforeSha256": "2ff2e2b1b3eb27e48ca757aaa54536f3728a93e1ec2efc8ccd338bc7da210f07",
+      "afterSha256": "2ff2e2b1b3eb27e48ca757aaa54536f3728a93e1ec2efc8ccd338bc7da210f07"
+    },
+    {
+      "path": "packages/contracts/src/auth/passkeys.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Passkey contracts separate registration/authentication options/credentials and management metadata; bounded binary fields, required user verification and code-point name validation remain local.",
+      "beforeSha256": "46de9f9428aeed57e7b940163d66009daa25eef80cc36adf7f8130b7437fa7bb",
+      "afterSha256": "46de9f9428aeed57e7b940163d66009daa25eef80cc36adf7f8130b7437fa7bb"
+    },
+    {
+      "path": "packages/contracts/src/auth/password-email.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Password/email contracts distinguish verification pending from authenticated success and named flow deadlines; password change refinement rejects exact same current/new value on its field.",
+      "beforeSha256": "a6beaae1f8db5cabbcd054c3473c8d5107e41f87e55d9fc4f5a68d84f8f1db34",
+      "afterSha256": "a6beaae1f8db5cabbcd054c3473c8d5107e41f87e55d9fc4f5a68d84f8f1db34"
+    },
+    {
+      "path": "packages/contracts/src/auth/primitives.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth primitives explicitly separate normalized ASCII email, Unicode code-point password bounds, code/base64/JWT shape and strict empty body.",
+      "beforeSha256": "127ca7da47e447f8d3730c0dd8b6c3969f3fee6769625d00283ba00e7387051b",
+      "afterSha256": "127ca7da47e447f8d3730c0dd8b6c3969f3fee6769625d00283ba00e7387051b"
+    },
+    {
+      "path": "packages/contracts/src/auth/user-profile.ts",
+      "status": "reviewed-acceptable",
+      "reason": "HandleSchema normalizes trim/case then applies fixed ASCII handle pattern; update request/response share it with inferred DTOs.",
+      "beforeSha256": "a8560b31033658325a838b5a5cbba8a6bb0348ae44019554d277b218463c34dc",
+      "afterSha256": "a8560b31033658325a838b5a5cbba8a6bb0348ae44019554d277b218463c34dc"
+    },
+    {
+      "path": "packages/contracts/src/provider-native-pricing.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Native pricing separates component/variant/rule/execution/usage/call receipts; local refinements enforce time/currency/identity/budget limits. nativeProviderPricingMatchesMeter checks measurable components and request-only allowance; seconds conversion uses exact bigint decimal arithmetic.",
+      "beforeSha256": "3dc153336513f2faa79d12babe2fcd3466c4e68dc699732bdd8d0ad1cd72f88d",
+      "afterSha256": "3dc153336513f2faa79d12babe2fcd3466c4e68dc699732bdd8d0ad1cd72f88d"
+    },
+    {
+      "path": "packages/contracts/src/routing-probes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "TextAiProbeRequestSchema distinguishes quick/flow prerequisites, bounded operator spend and safe result/failure measurements; recovery requires explicit upstream-stopped confirmation.",
+      "beforeSha256": "4a7bfe5876313db0f9706e44bf79bd45c2ce20aa919231a780f4888e000803b9",
+      "afterSha256": "4a7bfe5876313db0f9706e44bf79bd45c2ce20aa919231a780f4888e000803b9"
+    },
+    {
+      "path": "packages/contracts/src/text-ai-routing.ts",
+      "status": "reviewed-acceptable",
+      "reason": "TextAiRoutePolicySchema rejects duplicate ordered route candidates; routing configuration, tariffs, revisions/catalog/runtime health and versioned mutations remain separate declarative contracts.",
+      "beforeSha256": "254e3c895a02a8c6fd8e47f3a18bd6f4c02c849b85e5811529ba94026ff9a171",
+      "afterSha256": "254e3c895a02a8c6fd8e47f3a18bd6f4c02c849b85e5811529ba94026ff9a171"
+    },
+    {
+      "path": "packages/contracts/src/text-ai/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "AiActionCreditBudgetSchema preserves positive canonical credits; model summaries/preferences/versioned update unions and safe errors remain explicit without selecting providers.",
+      "beforeSha256": "599a1f7f9bf340560e3003e8512bec6e84ad727270152df85ed52bf6efee1dc8",
+      "afterSha256": "599a1f7f9bf340560e3003e8512bec6e84ad727270152df85ed52bf6efee1dc8"
+    },
+    {
+      "path": "packages/contracts/src/contextual-assistant.ts",
+      "status": "reviewed-acceptable",
+      "reason": "BoundedDocumentSchema preflights depth/nodes/text before recursive topology/attribute validation; legacy v1 vs interactive v2 boundary, CopiedDictionaryCard visibility/canonical content and public conversation DTO/editor-anchor/event shapes are explicit cohesive contract groups.",
+      "beforeSha256": "8de7bfb66628ea31a3ab64059d5fc49ac00e466d326e6913a1ebd23b3fa3651b",
+      "afterSha256": "8de7bfb66628ea31a3ab64059d5fc49ac00e466d326e6913a1ebd23b3fa3651b"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-block-copy.ts",
+      "status": "reviewed-acceptable",
+      "reason": "CopyKnowledgeBlocksRequestSchema discriminates saved vs owned-working sources and unique selected IDs; response counts/nullable branch are direct.",
+      "beforeSha256": "668331cc6a2f71581f35d118c7f53da90d91ee8279841a1d3df58d7bee0c0651",
+      "afterSha256": "668331cc6a2f71581f35d118c7f53da90d91ee8279841a1d3df58d7bee0c0651"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-block-field-ai.ts",
+      "status": "reviewed-acceptable",
+      "reason": "KnowledgeBlockFieldTargetSchema separates vocabulary/segment targets; request current-value/language refinements and terminal/result/failure consistency are local.",
+      "beforeSha256": "02fcb42e6d9c21cf6bfca32a4e0b78eac05b0c6fbcd2c24a33bdf42702579657",
+      "afterSha256": "02fcb42e6d9c21cf6bfca32a4e0b78eac05b0c6fbcd2c24a33bdf42702579657"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-block-proposals.ts",
+      "status": "reviewed-acceptable",
+      "reason": "LearningBlockProposalInputSchema bounds serialized content and replacement target; apply request preserves add-separately insertion and expected version/hash preconditions.",
+      "beforeSha256": "824ed905d82db831d8a9338a62ab9434d82e0a22f7262bb6de51fb33e78498fc",
+      "afterSha256": "824ed905d82db831d8a9338a62ab9434d82e0a22f7262bb6de51fb33e78498fc"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-exercise-evaluation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "KnowledgeExerciseEvaluationJobSchema names resultMismatch and validates attempt identity/revision/status plus terminal result/failure consistency.",
+      "beforeSha256": "cc61c7380714305acf2b8240e17ea53a49473b4e6373c949e0e39fc34927e579",
+      "afterSha256": "cc61c7380714305acf2b8240e17ea53a49473b4e6373c949e0e39fc34927e579"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-interactive.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createInteractiveKnowledgeBodySchema bounds payload before atomic parsing; duplicate-ID map, exercise group/source/segment checks and injected legacy parser make validation stages explicit.",
+      "beforeSha256": "3b4b8d3350e70ef040545f0eb02730b35043654ae6ac66cd9143368eacd0b33f",
+      "afterSha256": "3b4b8d3350e70ef040545f0eb02730b35043654ae6ac66cd9143368eacd0b33f"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-library-copy.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Library-copy validateSource enforces exactly-one saved-note/working source; vocabulary uniqueness and private-translation saved-source requirement stay local.",
+      "beforeSha256": "915ce66749902fb764ac58f7367c41a47bf1fd8bb2c1584bec3596209e59f162",
+      "afterSha256": "915ce66749902fb764ac58f7367c41a47bf1fd8bb2c1584bec3596209e59f162"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-media.ts",
+      "status": "reviewed-acceptable",
+      "reason": "KnowledgeMediaAssetSchema bounds audio MIME/bytes/duration and separates note/workbook access capability fields.",
+      "beforeSha256": "54af7ebac20dce619b855be7fb927601106ba0e48078758fa3db319875def986",
+      "afterSha256": "54af7ebac20dce619b855be7fb927601106ba0e48078758fa3db319875def986"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-private-translations.ts",
+      "status": "reviewed-acceptable",
+      "reason": "KnowledgePrivateTranslationSchema keys output by note/block/source fingerprint/target language, retains segment alignment and composes shared TextAiJob directly.",
+      "beforeSha256": "5641b1423793542f0a7ed342be8fe56511d614af0b89d52234a8629d4ad21abe",
+      "afterSha256": "5641b1423793542f0a7ed342be8fe56511d614af0b89d52234a8629d4ad21abe"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-transcription-admin.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Transcription admin schemas separate exact tariff, enabled billing proof, revision pinning, readiness reasons and signed preview proof.",
+      "beforeSha256": "8da4cdd3db745d2bee6ddb33d7ae7f045f8ddc8ce6a9041edc34e74fdb85020b",
+      "afterSha256": "8da4cdd3db745d2bee6ddb33d7ae7f045f8ddc8ce6a9041edc34e74fdb85020b"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-transcription-jobs.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Transcription submission uses exact-credit parser for confirmed maximum; lifecycle/result/language/time shapes are declarative.",
+      "beforeSha256": "b1299cd863302f79db6a2705aedd1858dc396f26aecdf1f975a87dc3b5f387a5",
+      "afterSha256": "b1299cd863302f79db6a2705aedd1858dc396f26aecdf1f975a87dc3b5f387a5"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-transcription.ts",
+      "status": "reviewed-acceptable",
+      "reason": "KnowledgeTranscriptionPermitSchema documents internal authority and pins checksum/price/tariff/processing fingerprint/usage/expiry; provider seconds remain distinct from media bound.",
+      "beforeSha256": "52e3f3bf0f41e6925b9ecb10a6110b6df088f5d6566d2233849980bdab27e722",
+      "afterSha256": "52e3f3bf0f41e6925b9ecb10a6110b6df088f5d6566d2233849980bdab27e722"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-vocabulary-practice.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Vocabulary practice source identifies note/block and optional live share access without client correctness fields.",
+      "beforeSha256": "854fd5310316e54fc1b8cc9b8ebf0e739c3849f029269ea63b8c64a8df73cea6",
+      "afterSha256": "854fd5310316e54fc1b8cc9b8ebf0e739c3849f029269ea63b8c64a8df73cea6"
+    },
+    {
+      "path": "packages/contracts/src/learner-ai-credits.ts",
+      "status": "reviewed-acceptable",
+      "reason": "LearnerAiCreditBalanceSchema uses parseCreditMilli refinement and discriminates limited string amount from unlimited null.",
+      "beforeSha256": "42fbff03a90e2c4dfe93ac2a78960ef32a48bd8c0d66c97ce77c1c51bc8e60d3",
+      "afterSha256": "42fbff03a90e2c4dfe93ac2a78960ef32a48bd8c0d66c97ce77c1c51bc8e60d3"
+    },
+    {
+      "path": "packages/contracts/src/learner-portrait.ts",
+      "status": "reviewed-acceptable",
+      "reason": "portraitTextSchema separates Unicode/control guards from grapheme bounds; PortraitItemsSchema checks UTF8 aggregate bounds, mixed-language consistency and unique note/language IDs; versioned commands remain direct.",
+      "beforeSha256": "c84bd918794b99a01cf409319be8ebdb2d063f2bc3ae01dead07b64d8fff24da",
+      "afterSha256": "c84bd918794b99a01cf409319be8ebdb2d063f2bc3ae01dead07b64d8fff24da"
+    },
+    {
+      "path": "packages/contracts/src/learning-blocks.ts",
+      "status": "reviewed-acceptable",
+      "reason": "LearningBlockSchema preflights whole payload before typed parsing; transcript timing, bilingual alignment, correct-choice and unique-gap refinements are beside their variants.",
+      "beforeSha256": "1b3b540f3075ee2d9dbcbd9006d81d9cfc8667a7dd1e9122cfb554e937b80e27",
+      "afterSha256": "1b3b540f3075ee2d9dbcbd9006d81d9cfc8667a7dd1e9122cfb554e937b80e27"
+    },
+    {
+      "path": "packages/contracts/src/learning/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Flashcard schemas expose unique fields/entries, size bounds, expected learning version and operation/session/round identities; error envelopes remain direct.",
+      "beforeSha256": "966bb6f054da49e200079c3d1db2df0ce27122f70526afb4e810d1d9a978064d",
+      "afterSha256": "966bb6f054da49e200079c3d1db2df0ce27122f70526afb4e810d1d9a978064d"
+    },
+    {
+      "path": "packages/contracts/src/learning/sentence-library.ts",
+      "status": "reviewed-acceptable",
+      "reason": "SentenceLibrarySelectionSchema distinguishes expected-version selected items from snapshot all-matching operations; filters/paging/mutation responses compose existing schemas clearly.",
+      "beforeSha256": "ffd509e10b537c664a2b6ad54823546f2388220e11850c93c8617bd1396aedf1",
+      "afterSha256": "ffd509e10b537c664a2b6ad54823546f2388220e11850c93c8617bd1396aedf1"
+    },
+    {
+      "path": "packages/contracts/src/learning/sentence-preparation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "SentencePreparationBatchSchema checks prepared membership in nonempty entries; coverage bound, pause reasons, operation IDs and optional quote remain explicit.",
+      "beforeSha256": "145a8ccc75a6641df29533c2462d8a6cdc0cae6e854b7ba5a794e47bba5ccc60",
+      "afterSha256": "145a8ccc75a6641df29533c2462d8a6cdc0cae6e854b7ba5a794e47bba5ccc60"
+    },
+    {
+      "path": "packages/contracts/src/navigation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "NavigationQuerySchema directly bounds/coerces paging/search; resource/pin/error schemas form short declarative groups.",
+      "beforeSha256": "c11a48c5cda8051487f0763cb5a41c7a4c5741f2a4e493857021f6b27b9e42a0",
+      "afterSha256": "c11a48c5cda8051487f0763cb5a41c7a4c5741f2a4e493857021f6b27b9e42a0"
+    },
+    {
+      "path": "packages/contracts/src/portrait-interview.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Portrait answer/chat/skip variants preserve input bounds, version/generation/idempotency and billing acknowledgement; active/completed/last-attempt schemas distinguish private recovery state.",
+      "beforeSha256": "061e7532ce3a1a571c55886946ba0a18365bbf3db2e6f193c11763c56716055e",
+      "afterSha256": "061e7532ce3a1a571c55886946ba0a18365bbf3db2e6f193c11763c56716055e"
+    },
+    {
+      "path": "packages/contracts/src/workbook-learning.ts",
+      "status": "reviewed-acceptable",
+      "reason": "WorkbookAttemptAnswerSchema bounds unique gaps and aggregate text; evaluation alternative-answer rule, observation distinction, live-share syntax comment and progress inequalities keep invariants local.",
+      "beforeSha256": "821c8bbe79281b925115796ccf2b7c6a881c525046084d5be9952dc56c8d7d9c",
+      "afterSha256": "821c8bbe79281b925115796ccf2b7c6a881c525046084d5be9952dc56c8d7d9c"
+    },
+    {
+      "path": "packages/contracts/src/workbooks.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Workbook schemas preserve client retry identity, expected versions and shared-addition acknowledgement; shared response composes notes without leaking share keys.",
+      "beforeSha256": "8baef989b634033d3268b92fce362e5971fd7119d665c192095382b143576e27",
+      "afterSha256": "8baef989b634033d3268b92fce362e5971fd7119d665c192095382b143576e27"
+    },
+    {
+      "path": "packages/contracts/src/dictionaries/contracts.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DictionarySettingsPatchSchema and update/card request refinements keep nonempty changes, expected settings versions, distinct languages and overrides explicit; endpoint schema/inventory tables are declarative public contracts whose repetition is lookup data.",
+      "beforeSha256": "a548ad034645c314649887f4c5e722a1abc18c90268656081cd6d63eb1e6441a",
+      "afterSha256": "a548ad034645c314649887f4c5e722a1abc18c90268656081cd6d63eb1e6441a"
+    },
+    {
+      "path": "packages/contracts/src/dictionaries/deletion.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Selected deletion schemas pair unique target IDs with expected versions; all-archived variant requires snapshot; dictionary card deletion separately requires parent version.",
+      "beforeSha256": "18b7d37802e1ea0d0d41d83ae29038b19bfe259e8020979a65838c89414f8e43",
+      "afterSha256": "18b7d37802e1ea0d0d41d83ae29038b19bfe259e8020979a65838c89414f8e43"
+    },
+    {
+      "path": "packages/contracts/src/dictionaries/document-ingestion.ts",
+      "status": "reviewed-acceptable",
+      "reason": "documentIngestionLimitsV1 names upload, parser, ZIP, scanner and OCR resource budgets with unit suffixes; immutable constants/media allowlist need no new abstraction.",
+      "beforeSha256": "0473edb0e785f05aa354510663687c68c3ff18a205d663b0063189cf755be22b",
+      "afterSha256": "0473edb0e785f05aa354510663687c68c3ff18a205d663b0063189cf755be22b"
+    },
+    {
+      "path": "packages/contracts/src/dictionaries/errors.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DictionaryErrorResponseSchema composes bounded sanitized errors and optional allowance quote; explicit error code list is declarative.",
+      "beforeSha256": "69a5f49ae2e0ae67215fa6b032d491497c69b22acac8ac44a88df3d0097d24e9",
+      "afterSha256": "69a5f49ae2e0ae67215fa6b032d491497c69b22acac8ac44a88df3d0097d24e9"
+    },
+    {
+      "path": "packages/contracts/src/dictionaries/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Dictionary public barrel exports each cohesive contract module directly without runtime composition or cross-app imports.",
+      "beforeSha256": "271f44fc50b0df1bd75578e72cbce86f5fb25ea97cd2e8a20945a14922e88bdc",
+      "afterSha256": "271f44fc50b0df1bd75578e72cbce86f5fb25ea97cd2e8a20945a14922e88bdc"
+    },
+    {
+      "path": "packages/contracts/src/dictionaries/interchange.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DictionaryImportContentSchema explicitly separates UTF8 bytes/NUL/surrogate/control validation; duplicate references, capacity equation and target/enrichment discriminants remain near their schemas; format header ordering is public data.",
+      "beforeSha256": "fe84a04c8ef487db188af6215ad8e6585e24d92ec909a9efd861e9aa3a006c40",
+      "afterSha256": "fe84a04c8ef487db188af6215ad8e6585e24d92ec909a9efd861e9aa3a006c40"
+    },
+    {
+      "path": "packages/contracts/src/dictionaries/models.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DictionaryCardEffectiveSettingsSchema enforces custom label, example prerequisite and opposing translation role; LanguagesResponse canonical order and public omit/redaction shapes are explicit.",
+      "beforeSha256": "2f564080a34d24f659f3abe874df470101a15cb142b57020bf74944aa92385b2",
+      "afterSha256": "2f564080a34d24f659f3abe874df470101a15cb142b57020bf74944aa92385b2"
+    },
+    {
+      "path": "packages/contracts/src/dictionaries/primitives.ts",
+      "status": "reviewed-acceptable",
+      "reason": "boundedText names code-point/trim options and unsafe-control guard; cursor/capability/idempotency patterns remain distinct, headers deliberately passthrough.",
+      "beforeSha256": "66ade07a7301c2c3cad67899cb999ff5d9364d298f320363cbe5e6ba334194a3",
+      "afterSha256": "66ade07a7301c2c3cad67899cb999ff5d9364d298f320363cbe5e6ba334194a3"
+    },
+    {
+      "path": "packages/contracts/src/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Root contracts barrel contains only explicit module exports; grouped domains preserve existing public import surface.",
+      "beforeSha256": "72092c575c4b92778d7eb53fba0f9683f566cba9eb4a0da8d4414c38f129f6de",
+      "afterSha256": "72092c575c4b92778d7eb53fba0f9683f566cba9eb4a0da8d4414c38f129f6de"
+    },
+    {
+      "path": "packages/contracts/src/learning/sentences.ts",
+      "status": "reviewed-acceptable",
+      "reason": "SentenceExerciseSchema clearly stages source exclusivity and legacy-v1 vs v2 hint inventory/reference validation; SentenceJobSchema ties kind/result/state/failure, while bounded text/IDs and separate sentence errors remain local.",
+      "beforeSha256": "6a142c3e7b6b3882f8e6132ddda8a7eedd76aed7729492cdfba968ff26783242",
+      "afterSha256": "6a142c3e7b6b3882f8e6132ddda8a7eedd76aed7729492cdfba968ff26783242"
+    },
+    {
+      "path": "packages/contracts/src/speech/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "SpeechSourceSchema distinguishes trusted identity selectors, versioned origins and audio draft source; quote/preparation/availability and admin pricing/deletion schemas retain units, expected versions and counts explicitly.",
+      "beforeSha256": "4b67b4c0ee83c2e256e92ca5eac28a8d9396cc57dda4ec1ff3a90335750ffe79",
+      "afterSha256": "4b67b4c0ee83c2e256e92ca5eac28a8d9396cc57dda4ec1ff3a90335750ffe79"
+    },
+    {
+      "path": "packages/contracts/src/texts/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "TextAlignmentSchema checks ordered unique pairs, exact UTF16 offsets and total code points; TextSchema derives provenance status, request variants preserve optimistic versions and TextAiJobSchema checks lifecycle/result identity.",
+      "beforeSha256": "65c8a422c4b1e4f29b86c4b213e39073257a6f5d586017616740b914e54872ab",
+      "afterSha256": "65c8a422c4b1e4f29b86c4b213e39073257a6f5d586017616740b914e54872ab"
+    },
+    {
+      "path": "packages/contracts/src/audio-duration-pricing.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Audio pricing tests explicitly cover integer duration meter compatibility, exact decimal-second conversion, bound-vs-observation provenance and rejection of flattened legacy prices with deterministic rules.",
+      "beforeSha256": "91a7088b4409b20140c87b97c72ad7b47be35352b865b9cde4fc0743f07794f5",
+      "afterSha256": "91a7088b4409b20140c87b97c72ad7b47be35352b865b9cde4fc0743f07794f5"
+    },
+    {
+      "path": "packages/contracts/src/block-references.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Block references regression uses one readable request fixture and boundary cases for eight unique IDs, duplicate IDs and ninth reference.",
+      "beforeSha256": "3119e8b077f901efb783ae2e159e2b803bb33db3592214d775cb8ae72de0ed7e",
+      "afterSha256": "3119e8b077f901efb783ae2e159e2b803bb33db3592214d775cb8ae72de0ed7e"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-block-proposals.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Block proposal tests distinguish add-separately cursor bounds, single-target replacement and foreign destination rejection without changing assertions or fixtures.",
+      "beforeSha256": "e1064552130c222aec6d1a88e300d8afbe74bd8077c961c2a4b313d8a816e3ee",
+      "afterSha256": "e1064552130c222aec6d1a88e300d8afbe74bd8077c961c2a4b313d8a816e3ee"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-exercise-evaluation.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Exercise evaluation tests assert server-owned attempt/reference fields, alternative-answer semantics and exact completed attempt/revision binding with clear pending/completed fixtures.",
+      "beforeSha256": "5c8e04126e76c24669ab12d4d4f99fe68e2917cb98febf5500e709d0e795586f",
+      "afterSha256": "5c8e04126e76c24669ab12d4d4f99fe68e2917cb98febf5500e709d0e795586f"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-interactive.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Interactive knowledge tests group v1/v2 roundtrip, atomic placement/attrs, group identity, source references, media safety and cyclic/aggregate payload rejection using small body/node builders.",
+      "beforeSha256": "3092ebdd8341ddb57ef21388da8bd54ebeb5056ee63d173d820e1a065004bac0",
+      "afterSha256": "3092ebdd8341ddb57ef21388da8bd54ebeb5056ee63d173d820e1a065004bac0"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-library-copy.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Library-copy tests separate server-resolved content authority, destination versions, working-vs-saved exclusivity and saved-only private translation receipts; fixtures make each precondition visible.",
+      "beforeSha256": "357e59b2d69048c967bcb5008856db4d398747616c7c882b2cd48c08a740eea2",
+      "afterSha256": "357e59b2d69048c967bcb5008856db4d398747616c7c882b2cd48c08a740eea2"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-private-translations.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Private translation tests reject injected source/actor and unsupported language, then pin copy receipts to exact fingerprint/update timestamp.",
+      "beforeSha256": "5acd96994f13dac2690a537b6fe23d97bc519b7d680c1eba2b8094c9426e5d99",
+      "afterSha256": "5acd96994f13dac2690a537b6fe23d97bc519b7d680c1eba2b8094c9426e5d99"
+    },
+    {
+      "path": "packages/contracts/src/knowledge-vocabulary-practice.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Vocabulary practice tests distinguish legacy dictionary and note source, reject ambiguous/absent source and public secrets, and validate request-only share syntax.",
+      "beforeSha256": "3d5fe966ced8ba9da29b0a59d8f1699d83e474ca4b6a7a5a0c62728b88611c28",
+      "afterSha256": "3d5fe966ced8ba9da29b0a59d8f1699d83e474ca4b6a7a5a0c62728b88611c28"
+    },
+    {
+      "path": "packages/contracts/src/learner-ai-credits.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Learner credit tests table exact decimals/max precision, unlimited null and malformed/private-field rejection with no paid services.",
+      "beforeSha256": "714b9a799c72a08acc1b63e7d20c4732eabeb2539fd7b02ee63bef267665d4e1",
+      "afterSha256": "714b9a799c72a08acc1b63e7d20c4732eabeb2539fd7b02ee63bef267665d4e1"
+    },
+    {
+      "path": "packages/contracts/src/learner-portrait.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Portrait tests cover grapheme counting, aggregate storage bytes, partial unknown answers, mixed-language compatibility and bounded unique confirmed notes with explicit fixtures.",
+      "beforeSha256": "350038040c42def38957a4ed1d954d17b1feb57a4756d281ae1441df75a1a30c",
+      "afterSha256": "350038040c42def38957a4ed1d954d17b1feb57a4756d281ae1441df75a1a30c"
+    },
+    {
+      "path": "packages/contracts/src/learning-blocks.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Learning-block tests cover all variants plus cyclic/aggregate bounds, literal-vs-executable content, URL safety, answer/gap identity, exact bilingual alignment and transcript interval order in focused cases.",
+      "beforeSha256": "735d5db806996071fc9bb2e98bb837f3804753d0732f6913780363c7560cc9b2",
+      "afterSha256": "735d5db806996071fc9bb2e98bb837f3804753d0732f6913780363c7560cc9b2"
+    },
+    {
+      "path": "packages/contracts/src/portrait-interview.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Portrait submission tests separate 200-grapheme answers from 1000 chat, meaningful answer/skip variants and rejection of identity/provider/publication injection.",
+      "beforeSha256": "6ffde280c92c2826ee4c73cb13f5e7bc5ded78df85e8bfffcacbd0970293c06e",
+      "afterSha256": "6ffde280c92c2826ee4c73cb13f5e7bc5ded78df85e8bfffcacbd0970293c06e"
+    },
+    {
+      "path": "packages/contracts/src/workbook-learning.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Workbook tests keep attempts/events/completion distinct, assert server-owned correctness and method, unique/aggregate gap limits, explicit truncation/share syntax and aggregate progress inequalities.",
+      "beforeSha256": "60ace51080ff6ff72a5a60487b5cbe00bc2945247be8dcdd3efcaedf1ed5f193",
+      "afterSha256": "60ace51080ff6ff72a5a60487b5cbe00bc2945247be8dcdd3efcaedf1ed5f193"
+    },
+    {
+      "path": "packages/contracts/src/dictionaries/card-authoring.ts",
+      "status": "refactored",
+      "reason": "Extracted private validateAuthoringActiveStage and validateAuthoringTerminalOutcome from exact V1/V2/V3 callback duplicates, preserving each public schema shape/version, diagnostic path/message/order and accepted/failed/retryability invariants.",
+      "beforeSha256": "6c2ef95e09985273e20197035f256bdcd04c1bfc8c0a3f7523efe3b4e73c19bf",
+      "afterSha256": "e051e3b86f0a023496baf392fdd04f0a6e8dcac21fc74b4fbe32ec3af389b9c2"
+    },
+    {
+      "path": "packages/contracts/src/dictionaries/generation.ts",
+      "status": "refactored",
+      "reason": "Extracted private validateBatchGenerationOutcome for pasted/import identical lifecycle checks; single-card snapshot redaction and document upload/OCR rules remain explicit; state/proposal/failure/outcome/stage/expiry/completion diagnostics are unchanged.",
+      "beforeSha256": "c151d50a630e9bfaefba70ccb334f0162b4de70167f92ee6e152639647180eca",
+      "afterSha256": "eb5553ff5c591500e94e9b29ae97556034ffa02d56a39f37dec9a99af6b4cd85"
+    },
+    {
+      "path": "packages/contracts/tests/action-allowance.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Action allowance tests preserve original sentence operation alongside quote confirmation, exact milli-credit holds/charges and reject admin provider facts; fixtures expose financial boundary without services.",
+      "beforeSha256": "4c6c9cbcfa6be887757ce2889cd529da5c40124474ba62a4af8cde312e6b9877",
+      "afterSha256": "4c6c9cbcfa6be887757ce2889cd529da5c40124474ba62a4af8cde312e6b9877"
+    },
+    {
+      "path": "packages/contracts/tests/admin-contracts.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Admin tests separate reason/version/paging contracts from fractional and cached tariff compatibility, asserting null/omitted/zero semantics and rejecting sub-milli float artifacts.",
+      "beforeSha256": "7a2ea2b9684546fb4b2ff0a5bb2745fe5f4a30d6a63c0e1a32385a9e31407cdb",
+      "afterSha256": "7a2ea2b9684546fb4b2ff0a5bb2745fe5f4a30d6a63c0e1a32385a9e31407cdb"
+    },
+    {
+      "path": "packages/contracts/tests/auth-contracts.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth tests use authenticationResponse fixture for minimal public session/user shape, verify code-point passwords without trimming, ASCII normalization, bounded errors and full endpoint inventory.",
+      "beforeSha256": "f1ac4f1077a0f755318052a6947a24a26b3131510a485239d8068f8aa0b2e92b",
+      "afterSha256": "f1ac4f1077a0f755318052a6947a24a26b3131510a485239d8068f8aa0b2e92b"
+    },
+    {
+      "path": "packages/contracts/tests/contextual-assistant.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Contextual assistant tests group redacted model/tool lifecycle, Unicode/copied bounds, safe rich topology, optimistic branch conflicts and immutable copied-card canonical snapshots; rich malicious nested fixtures express actual parser boundaries.",
+      "beforeSha256": "c264edff711dcc6b88b0e997561b6f20170317b2554fc498f3c98ce4488c8ff6",
+      "afterSha256": "c264edff711dcc6b88b0e997561b6f20170317b2554fc498f3c98ce4488c8ff6"
+    },
+    {
+      "path": "packages/contracts/tests/credit-amount.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Credit parser table tests distinguish exact milli bigint boundary from malformed decimal notation and overflow; no implementation duplication.",
+      "beforeSha256": "f9e2e6f5f2d7d870a8cf0c6a99f4324763ccb5d009c32f6cf3503d5c5835fa02",
+      "afterSha256": "f9e2e6f5f2d7d870a8cf0c6a99f4324763ccb5d009c32f6cf3503d5c5835fa02"
+    },
+    {
+      "path": "packages/contracts/tests/dictionary-card-authoring-contracts.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Authoring tests explicitly cover V1/V2/V3 translation-context exclusivity, source history/basis, field generation prerequisites, bounded unique suggestions and safe accepted/conflict outcomes; fixtures retain version differences.",
+      "beforeSha256": "a14f62306ec28783d58b1f392c5541f1c5c23ae4cfd21ed72822dab4c193ece2",
+      "afterSha256": "a14f62306ec28783d58b1f392c5541f1c5c23ae4cfd21ed72822dab4c193ece2"
+    },
+    {
+      "path": "packages/contracts/tests/dictionary-contracts.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Dictionary contracts tests use generationJob/pastedTermsJob/source fixtures, cover public redaction, settings/version requirements, exact endpoint inventory, deletion snapshots, row proposals and document upload stages; long endpoint table is deliberate contract expectation and cases are separately named.",
+      "beforeSha256": "d8f471e140633f4df5f129e1dab9f1784f85b079eb0d41903d99096575b5c649",
+      "afterSha256": "d8f471e140633f4df5f129e1dab9f1784f85b079eb0d41903d99096575b5c649"
+    },
+    {
+      "path": "packages/contracts/tests/dictionary-interchange-contracts.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Interchange tests separate full preview target/capacity, AI-only unique selection, UTF8 bytes/control boundaries, export privacy headers and immutable imported source/translation.",
+      "beforeSha256": "8ee10e97574d9379c55b95a91130d2f554ada011a4f395584d8d2ac7f546ba2a",
+      "afterSha256": "8ee10e97574d9379c55b95a91130d2f554ada011a4f395584d8d2ac7f546ba2a"
+    },
+    {
+      "path": "packages/contracts/tests/learning-contracts.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Flashcard contract tests expose nonempty unique field config, initial version zero, bounded batches/manual IDs and server-owned learner/rating semantics with one small fixture.",
+      "beforeSha256": "b25b057050618c6a9881c7b0ce5d1ffab48eebf76a8ff74ebe8199ec115831a4",
+      "afterSha256": "b25b057050618c6a9881c7b0ce5d1ffab48eebf76a8ff74ebe8199ec115831a4"
+    },
+    {
+      "path": "packages/contracts/tests/passkey-contracts.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Passkey tests distinguish verified discoverable registration/auth options, bounded browser verification payload, required user handle and redacted management metadata; sensitive-field table is explicit.",
+      "beforeSha256": "e20f5fd6e81b82be6cf117016d1e11e684c494127f0cbd7779ac7a603fa300e0",
+      "afterSha256": "e20f5fd6e81b82be6cf117016d1e11e684c494127f0cbd7779ac7a603fa300e0"
+    },
+    {
+      "path": "packages/contracts/tests/sentence-contextual-hints.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Contextual hint tests retain linked version2 fixture and legacy projection, then reject hybrid/duplicate/conflicting/unreferenced hints; disclosed-ID transport and free reference schemas remain separate.",
+      "beforeSha256": "9f6d912d7aba646d598f276229f5dc7be116bb1e764f1e2b8ba5622ab99c4cdb",
+      "afterSha256": "9f6d912d7aba646d598f276229f5dc7be116bb1e764f1e2b8ba5622ab99c4cdb"
+    },
+    {
+      "path": "packages/contracts/tests/sentence-management.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Sentence management tests group public-vs-admin creator metadata, exact archive/filter/versioned selection semantics, destructive confirmation and bounded preparation partitions/coverage; setup fixtures make expected concurrency identities visible.",
+      "beforeSha256": "160633d3ca25d756a0eb6db2032f51d2e7e3cdf019d2790125327f0205924b1a",
+      "afterSha256": "160633d3ca25d756a0eb6db2032f51d2e7e3cdf019d2790125327f0205924b1a"
+    },
+    {
+      "path": "packages/contracts/tests/sentences.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Sentence boundary tests preserve code-point answer text, replay-only mode constraints, bounded scopes/history and separate legacy errors/capabilities; manual reveal fixture explicitly has no score/reference leakage.",
+      "beforeSha256": "842174822dc2bf189cf9a6340435d1642ca51234539147ab368934d3c26fce5d",
+      "afterSha256": "842174822dc2bf189cf9a6340435d1642ca51234539147ab368934d3c26fce5d"
+    },
+    {
+      "path": "packages/contracts/tests/text-ai.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Text AI tests distinguish Auto vs explicit optimistic model selection and reject caller identity/internal catalog fields using direct parse assertions.",
+      "beforeSha256": "6c641fbaab919e1e36dd79df7125eb0a8d57fa17e35285ba62d9ef1a84b96766",
+      "afterSha256": "6c641fbaab919e1e36dd79df7125eb0a8d57fa17e35285ba62d9ef1a84b96766"
+    },
+    {
+      "path": "packages/contracts/tests/texts.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Texts tests group nullable folder membership, exact share confirmation, Unicode/offset/alignment provenance, impossible job combinations, bounded edits and exactly-one copy destination using shared content/alignment fixtures.",
+      "beforeSha256": "c5a77ed195db1ac67f18dcc6ccd62a14af237f49cb26a5d71938d5046d3b4503",
+      "afterSha256": "c5a77ed195db1ac67f18dcc6ccd62a14af237f49cb26a5d71938d5046d3b4503"
+    }
+  ],
+  "audit": {
+    "originalFiles": 129,
+    "bodyReviewComplete": true,
+    "reviewedAcceptable": 127,
+    "refactored": 2,
+    "deferred": 0,
+    "hashVerification": "All129 current SHA256 hashes match final ledger entries. No package prompt, schema field, transform/default, union order or public export changed."
+  }
+}

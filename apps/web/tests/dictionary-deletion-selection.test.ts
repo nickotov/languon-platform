@@ -20,6 +20,7 @@ describe('dictionary deletion selection', () => {
         expect(rejected.selected.size).toBe(
             dictionaryDeletionSelectedTargetLimit,
         );
+
         expect(rejected.selected.has('target-over-limit')).toBe(false);
 
         const removed = toggleDeletionTarget(rejected.selected, 'target-0');

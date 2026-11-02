@@ -16,8 +16,13 @@ export function ActionBudgetField({
     function change(event: ChangeEvent<HTMLInputElement>) {
         controller.selectBudget(event.target.value);
     }
-    if (!base) return null;
+
+    if (!base) {
+        return null;
+    }
+
     const error = controller.budgetValid ? undefined : copy.invalid;
+
     return (
         <div className={styles.stack}>
             <Input

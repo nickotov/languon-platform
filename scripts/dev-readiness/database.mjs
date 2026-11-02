@@ -7,6 +7,7 @@ export async function expectedMigrations(root) {
     const journal = JSON.parse(
         await readFile(resolve(folder, 'meta/_journal.json'), 'utf8'),
     );
+
     return Promise.all(
         journal.entries.map(async (entry) => ({
             created_at: String(entry.when),
@@ -32,6 +33,7 @@ export function migrationStatus(applied, expected) {
                 'Database migration history differs from checked-in history. Preserve the database and review the development cutover guide; do not reset automatically.',
         };
     }
+
     return applied.length === expected.length
         ? {
               id: 'migrations',
@@ -71,6 +73,7 @@ export async function readSnapshot(sql, learnerEmail) {
             from user_emails e left join user_text_ai_preferences p on p.user_id=e.user_id
             left join ai_credit_accounts a on a.user_id=e.user_id where e.canonical_email=${learnerEmail.trim().toLowerCase()} and e.is_primary`;
     }
+
     return {
         routing,
         probes,

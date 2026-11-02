@@ -26,6 +26,7 @@ describe('environment diagnostics', () => {
             REQUIRED_SECRET: 'synthetic-private-value',
             TIMEOUT_MS: 180_000,
         });
+
         expect(logger.warn).toHaveBeenCalledTimes(1);
         expect(logger.warn.mock.calls[0]?.[0]).toContain('TIMEOUT_MS');
         expect(logger.warn.mock.calls[0]?.[0]).not.toContain('180000');
@@ -45,6 +46,7 @@ describe('environment diagnostics', () => {
                 logger,
             ),
         ).toEqual({ TIMEOUT_MS: 45_000 });
+
         expect(logger.warn).not.toHaveBeenCalled();
         expect(logger.error).not.toHaveBeenCalled();
     });
@@ -58,6 +60,7 @@ describe('environment diagnostics', () => {
                 logger,
             ),
         ).toEqual({ FORMATS: '' });
+
         expect(logger.warn).not.toHaveBeenCalled();
     });
 
@@ -78,6 +81,7 @@ describe('environment diagnostics', () => {
                 logger,
             ),
         ).toThrow(z.ZodError);
+
         expect(logger.error).toHaveBeenCalledTimes(1);
         const logged = logger.error.mock.calls[0]?.[0];
         expect(logged).toContain('API_KEY');
@@ -100,6 +104,7 @@ describe('environment diagnostics', () => {
         expect(
             parseEnvironmentSchema(schema, { TIMEOUT_MS: '' }, logger),
         ).toEqual({ TIMEOUT_MS: 180_000 });
+
         expect(logger.warn).toHaveBeenCalledTimes(1);
         expect(logger.warn.mock.calls[0]?.[0]).toContain('TIMEOUT_MS');
     });

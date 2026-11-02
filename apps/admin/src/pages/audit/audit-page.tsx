@@ -16,6 +16,7 @@ export function AuditPage() {
         pagination: { currentPage: page, pageSize: 25 },
         resource: 'audit-events',
     });
+
     return (
         <div className={styles.stack}>
             <header className={styles.heading}>
@@ -108,7 +109,9 @@ export function AuditPage() {
                                 <Space direction='vertical' size={0}>
                                     {event.actorEmail ?? event.actorUserId}
                                     {event.actorEmail ? (
-                                        <Link to={`/users/${event.actorUserId}`}>
+                                        <Link
+                                            to={`/users/${event.actorUserId}`}
+                                        >
                                             {translate('actions.viewActor')}
                                         </Link>
                                     ) : null}
@@ -124,7 +127,9 @@ export function AuditPage() {
                                     <Link to={`/users/${event.targetUserId}`}>
                                         {event.targetEmail}
                                     </Link>
-                                ) : event.targetUserId ?? '—',
+                                ) : (
+                                    (event.targetUserId ?? '—')
+                                ),
                         },
                         {
                             dataIndex: 'reason',

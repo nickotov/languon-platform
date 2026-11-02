@@ -18,18 +18,18 @@ Use ADR-0029 exact geometry and CSS Modules, current shared primitives and FSD.
 
 ## Acceptance and source inventory
 
-| ID | Source | Required behavior/presentation | Verification |
-| --- | --- | --- | --- |
-| W01 | TutorWidget, TutorHeader | 420px normal/560px wide, 600/680px default height, upper corner docking, 24px gutters, 20px top, resize/menu, no modal backdrop | Desktop source/runtime comparison and source interaction |
-| W02 | FoldedPill, TutorWidget | 48px status pill; fold retains mounted conversation, composer, notes, scroll and ongoing response | Fold/reopen while typing/streaming |
-| W03 | TutorSheet | Bottom sheet, 75vh partial/full, header/handle, safe area and keyboard, fold and touch gestures | Mobile 390/320px |
-| W04 | MessageList, AssistantMessage | Stable prose, activity and material disclosures, per-answer copy/usage/note, Stop/retry, follow only near bottom, jump pill | Streaming and selection tests |
-| W05 | Composer, AttachmentTray, ContextPicker | Rounded composer, attachments, plus/source selection, Send/Stop, actual context picker | Selection and multiple cards |
-| W06 | PreferenceControls | Compact Reply/Tone/Level and model popovers with defaults and real model preference | Preference persistence |
-| W07 | HistoryView, EmptyState, ContextIndicator | Context subtitle, history list, new/delete and source-specific prompts | Empty/history/delete |
-| W08 | DraftCard, NoteEditor | Compact card and dedicated review editor; real explicit save/update/discard/conflict | Note lifecycle |
-| W09 | ComposerAlerts | Actual errors retain input and partial output; no simulated success or provider claims | Failure states |
-| W10 | Full source | Matching tokens/type/icons, keyboard/RTL/dark/reduced motion | Static + responsive rendered checks |
+| ID  | Source                                    | Required behavior/presentation                                                                                                  | Verification                                             |
+| --- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| W01 | TutorWidget, TutorHeader                  | 420px normal/560px wide, 600/680px default height, upper corner docking, 24px gutters, 20px top, resize/menu, no modal backdrop | Desktop source/runtime comparison and source interaction |
+| W02 | FoldedPill, TutorWidget                   | 48px status pill; fold retains mounted conversation, composer, notes, scroll and ongoing response                               | Fold/reopen while typing/streaming                       |
+| W03 | TutorSheet                                | Bottom sheet, 75vh partial/full, header/handle, safe area and keyboard, fold and touch gestures                                 | Mobile 390/320px                                         |
+| W04 | MessageList, AssistantMessage             | Stable prose, activity and material disclosures, per-answer copy/usage/note, Stop/retry, follow only near bottom, jump pill     | Streaming and selection tests                            |
+| W05 | Composer, AttachmentTray, ContextPicker   | Rounded composer, attachments, plus/source selection, Send/Stop, actual context picker                                          | Selection and multiple cards                             |
+| W06 | PreferenceControls                        | Compact Reply/Tone/Level and model popovers with defaults and real model preference                                             | Preference persistence                                   |
+| W07 | HistoryView, EmptyState, ContextIndicator | Context subtitle, history list, new/delete and source-specific prompts                                                          | Empty/history/delete                                     |
+| W08 | DraftCard, NoteEditor                     | Compact card and dedicated review editor; real explicit save/update/discard/conflict                                            | Note lifecycle                                           |
+| W09 | ComposerAlerts                            | Actual errors retain input and partial output; no simulated success or provider claims                                          | Failure states                                           |
+| W10 | Full source                               | Matching tokens/type/icons, keyboard/RTL/dark/reduced motion                                                                    | Static + responsive rendered checks                      |
 
 Prototype shell/pages/demo scenarios are reference surroundings, not app redesign.
 Retain real API guardrails where prototype mocks allow unsupported models or
@@ -87,7 +87,6 @@ no invented balance. History API is source-scoped with dates, not cross-source
 conversation titles/counts; preserve that authorization contract. Source primitive
 stubs resolved through the actual Languon Magic Patterns design system for local
 reference rendering. Fixture providers/models are never ported into the app.
-
 
 ## Rendered fidelity comparison
 
@@ -169,7 +168,6 @@ scroll behavior has focused hook evidence; no claim of device keyboard testing o
 large-history browser performance benchmark. Styling and geometry comparisons are
 source-grounded manual inspection plus measured assertions, not a pixel-diff of
 identical fixture text. Original feature completion remains unchanged.
-
 
 ## Final verification and handoff
 

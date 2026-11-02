@@ -78,14 +78,19 @@ export function AutoSaveFeedback({
 
     let message: string | null = null;
 
-    if (status === 'saving') message = t('dictionary.authoring.autoSaving');
-    else if (status === 'saved') message = t('dictionary.authoring.autoSaved');
-    else if (status === 'unchanged')
+    if (status === 'saving') {
+        message = t('dictionary.authoring.autoSaving');
+    } else if (status === 'saved') {
+        message = t('dictionary.authoring.autoSaved');
+    } else if (status === 'unchanged') {
         message = t('dictionary.authoring.noChanges');
-    else if (!existing && hasGeneratedContent)
+    } else if (!existing && hasGeneratedContent) {
         message = t('dictionary.authoring.createRequired');
+    }
 
-    if (!message) return null;
+    if (!message) {
+        return null;
+    }
 
     return (
         <p aria-live='polite' role='status'>

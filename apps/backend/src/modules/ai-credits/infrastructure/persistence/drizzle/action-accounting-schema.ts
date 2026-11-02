@@ -22,6 +22,12 @@ import type { ActionTariff } from '../../../domain/action-pricing';
 import { usersTable } from '../../../../users/infrastructure/persistence/drizzle/schema';
 import { aiCreditGrantsTable } from './schema';
 
+export interface AudioDurationAttemptBudget {
+    usageMeter: 'audio-duration';
+    audioInputLimitMilliseconds: number;
+    maxCostMicrosPerAttempt: number;
+}
+
 /** All monetary amounts in these tables are integer thousandths of a credit. */
 export const aiCreditActionsTable = pgTable(
     'ai_credit_actions',
@@ -31,6 +37,11 @@ export const aiCreditActionsTable = pgTable(
             .notNull()
             .references(() => usersTable.id, { onDelete: 'cascade' }),
         capability: text('capability').notNull(),
+        usageMeter: text('usage_meter')
+            .$type<'text-tokens' | 'audio-duration'>()
+            .notNull()
+            .default('text-tokens'),
+        audioInputLimitMilliseconds: integer('audio_input_limit_milliseconds'),
         funding: text('funding')
             .$type<'customer' | 'operator' | 'unlimited'>()
             .notNull(),
@@ -60,7 +71,7 @@ export const aiCreditActionsTable = pgTable(
         ),
         check(
             'ai_credit_action_output_limit',
-            sql`${t.outputLimit} between 1 and 10000`,
+            sql`(${t.usageMeter}='text-tokens' and ${t.outputLimit} between 1 and 10000 and ${t.audioInputLimitMilliseconds} is null) or (${t.usageMeter}='audio-duration' and ${t.outputLimit}=0 and ${t.audioInputLimitMilliseconds} is not null and ${t.audioInputLimitMilliseconds} between 1 and 1800000)`,
         ),
         check(
             'ai_credit_action_terminal',
@@ -101,8 +112,15 @@ export const aiCreditActionAttemptsTable = pgTable(
         executionJobId: uuid('execution_job_id').notNull(),
         ordinal: integer('ordinal').notNull(),
         purpose: text('purpose').notNull(),
+        usageMeter: text('usage_meter')
+            .$type<'text-tokens' | 'audio-duration'>()
+            .notNull()
+            .default('text-tokens'),
+        audioInputLimitMilliseconds: integer('audio_input_limit_milliseconds'),
         state: text('state').$type<'dispatched' | 'settled'>().notNull(),
-        budget: jsonb('budget').$type<TextAiProviderBudgetPolicy>().notNull(),
+        budget: jsonb('budget')
+            .$type<TextAiProviderBudgetPolicy | AudioDurationAttemptBudget>()
+            .notNull(),
         reservedCostMicros: integer('reserved_cost_micros').notNull(),
         actualCostMicros: bigint('actual_cost_micros', { mode: 'bigint' }),
         inputLimit: integer('input_limit').notNull(),
@@ -136,7 +154,7 @@ export const aiCreditActionAttemptsTable = pgTable(
         ),
         check(
             'ai_credit_action_attempt_limits',
-            sql`${t.ordinal} between 1 and 5 and ${t.inputLimit} >= 0 and ${t.outputLimit} between 1 and 10000 and ${t.successful} in (0,1)`,
+            sql`${t.ordinal} between 1 and 5 and ${t.inputLimit} >= 0 and ${t.successful} in (0,1) and ((${t.usageMeter}='text-tokens' and ${t.outputLimit} between 1 and 10000 and ${t.audioInputLimitMilliseconds} is null) or (${t.usageMeter}='audio-duration' and ${t.inputLimit}=0 and ${t.outputLimit}=0 and ${t.audioInputLimitMilliseconds} is not null and ${t.audioInputLimitMilliseconds} between 1 and 1800000))`,
         ),
         check(
             'ai_credit_action_attempt_meter',
@@ -160,6 +178,11 @@ export const aiCreditNativeCallDispatchesTable = pgTable(
                 onDelete: 'cascade',
             }),
         ordinal: integer('ordinal').notNull(),
+        callKind: text('call_kind')
+            .$type<'text' | 'audio-transcription'>()
+            .notNull()
+            .default('text'),
+        audioInputLimitMilliseconds: integer('audio_input_limit_milliseconds'),
         inputLimit: integer('input_limit').notNull(),
         outputLimit: integer('output_limit').notNull(),
         dispatchedAt: timestamp('dispatched_at', {
@@ -175,7 +198,7 @@ export const aiCreditNativeCallDispatchesTable = pgTable(
         uniqueIndex('ai_credit_native_call_ordinal').on(t.attemptId, t.ordinal),
         check(
             'ai_credit_native_call_limits',
-            sql`${t.ordinal} between 1 and 5 and ${t.inputLimit}>=0 and ${t.outputLimit}>=1`,
+            sql`${t.ordinal} between 1 and 5 and ${t.inputLimit}>=0 and ${t.outputLimit}>=0 and ((${t.callKind}='text' and ${t.outputLimit}>=1 and ${t.audioInputLimitMilliseconds} is null) or (${t.callKind}='audio-transcription' and ${t.audioInputLimitMilliseconds} is not null and ${t.audioInputLimitMilliseconds} between 1 and 1800000 and ${t.inputLimit}=0 and ${t.outputLimit}=0))`,
         ),
     ],
 );

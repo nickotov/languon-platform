@@ -172,6 +172,7 @@ describe('dependent card field generation', () => {
                 ),
             ),
         ).toEqual(['translation', 'example', 'exampleTranslation']);
+
         expect(
             ['example', 'exampleTranslation'].filter((field) =>
                 isFieldAffectedByGeneration(
@@ -182,6 +183,7 @@ describe('dependent card field generation', () => {
                 ),
             ),
         ).toEqual(['example', 'exampleTranslation']);
+
         expect(
             isFieldAffectedByGeneration(
                 'exampleTranslation',
@@ -193,6 +195,7 @@ describe('dependent card field generation', () => {
                 'card-authoring:v2',
             ),
         ).toBe(false);
+
         expect(
             isFieldAffectedByGeneration(
                 'exampleTranslation',
@@ -214,6 +217,7 @@ describe('dependent card field generation', () => {
         ).toBe(true);
     });
 });
+
 function ArchivedCardDeletionHarness({ empty = false }: { empty?: boolean }) {
     const [outcome, setOutcome] = useState('');
     const archivedCard = {
@@ -231,6 +235,7 @@ function ArchivedCardDeletionHarness({ empty = false }: { empty?: boolean }) {
         resetKey: 'archived:',
         setOutcome,
     });
+
     return (
         <>
             <p>{outcome}</p>
@@ -344,8 +349,11 @@ function VersionedAuthoringHarness({
         >[0],
     ) {
         onAction(action);
-        if (action.kind === 'generate') setSuccessor(true);
+        if (action.kind === 'generate') {
+            setSuccessor(true);
+        }
     }
+
     return (
         <DictionaryCardForm
             ai={{
@@ -414,6 +422,7 @@ function renderGeneratedForm(
             </I18nProvider>,
         );
     }
+
     return {
         ...view,
         rerender,
@@ -486,35 +495,42 @@ describe('dictionary settings and card authoring', () => {
                 }}
             />,
         );
+
         const source = screen.getByRole('textbox', {
             name: 'Source word or phrase',
         });
         const translation = screen.getByRole('textbox', {
             name: 'Translation',
         });
+
         expect(
             screen.getByRole('textbox', { name: 'Context example (Spanish)' }),
         ).toHaveAttribute('lang', 'es');
+
         expect(source).toHaveAttribute('lang', dictionary.sourceLanguage);
         expect(translation).toHaveAttribute('lang', dictionary.targetLanguage);
         const generate = screen.getByRole('button', {
             name: 'Generate Translation with AI',
         });
+
         expect(generate).toBeDisabled();
         await user.hover(generate);
         expect(await screen.findByRole('tooltip')).toHaveTextContent(
             'Generate Translation with AI',
         );
+
         await user.unhover(generate);
         await user.type(source, 'atelier');
         expect(generate.textContent).toBe('');
         expect(
             screen.getByRole('button', { name: 'Generate all' }).textContent,
         ).toBe('');
+
         await user.hover(generate);
         expect(await screen.findByRole('tooltip')).toHaveTextContent(
             'Generate Translation with AI',
         );
+
         await user.unhover(generate);
     });
 
@@ -593,6 +609,7 @@ describe('dictionary settings and card authoring', () => {
         await user.click(
             screen.getByRole('switch', { name: /Update context/ }),
         );
+
         const context = screen.getByLabelText(/Card context/);
         expect(context).toHaveValue('');
         expect(context).toBeRequired();
@@ -600,6 +617,7 @@ describe('dictionary settings and card authoring', () => {
         expect(
             screen.getByRole('button', { name: /^(Save|Create) card$/ }),
         ).toBeDisabled();
+
         expect(
             screen.getByRole('button', { name: 'Generate all' }),
         ).toBeDisabled();
@@ -609,6 +627,7 @@ describe('dictionary settings and card authoring', () => {
             screen.getByLabelText(/Source word or phrase/),
             'medium',
         );
+
         await user.type(screen.getByLabelText(/^Translation/), 'medio');
         await user.click(
             screen.getByRole('button', { name: /^(Save|Create) card$/ }),
@@ -645,9 +664,11 @@ describe('dictionary settings and card authoring', () => {
         expect(screen.getByLabelText(/Card context/)).toHaveValue(
             'Photography terminology',
         );
+
         await user.click(
             screen.getByRole('switch', { name: /Update context/ }),
         );
+
         expect(screen.queryByLabelText(/Card context/)).not.toBeInTheDocument();
         expect(screen.getByText('Museum terminology')).toBeVisible();
         await user.click(
@@ -688,10 +709,12 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         await user.type(
             screen.getByLabelText(/Source word or phrase/),
             'medium',
         );
+
         await user.click(screen.getByRole('switch', { name: /Set context/ }));
         await user.type(
             screen.getByLabelText(/Card context/),
@@ -701,6 +724,7 @@ describe('dictionary settings and card authoring', () => {
         expect(
             screen.getByText(/source phrase or translation context changed/i),
         ).toBeVisible();
+
         expect(screen.queryByTestId('ai-review-translation')).toBeNull();
     });
 
@@ -740,6 +764,7 @@ describe('dictionary settings and card authoring', () => {
         await waitFor(() =>
             expect(screen.getByLabelText(/^Translation/)).toHaveValue('banque'),
         );
+
         expect(
             screen.queryByText(/source phrase or translation context changed/i),
         ).toBeNull();
@@ -756,17 +781,21 @@ describe('dictionary settings and card authoring', () => {
                 name: /^(Generate Translation with AI|Regenerate Translation)$/,
             }),
         );
+
         expect(screen.getByLabelText(/^Source word or phrase/)).toHaveValue(
             'atelier',
         );
+
         expect(screen.getByTestId('ai-progress-translation')).toBeVisible();
         expect(screen.getByTestId('ai-progress-example')).toBeVisible();
         expect(
             screen.getByTestId('ai-progress-exampleTranslation'),
         ).toBeVisible();
+
         expect(
             screen.queryByRole('textbox', { name: /^Translation/ }),
         ).not.toBeInTheDocument();
+
         expect(
             screen.queryByRole('textbox', { name: /^Context example \(/ }),
         ).not.toBeInTheDocument();
@@ -778,6 +807,7 @@ describe('dictionary settings and card authoring', () => {
                 name: /^(Generate Translation with AI|Regenerate Translation)$/,
             }),
         );
+
         expect(screen.getByTestId('ai-progress-translation')).toBeVisible();
         expect(screen.queryByTestId('ai-progress-example')).toBeNull();
         expect(screen.getByLabelText(/^Context example \(/)).toBeVisible();
@@ -797,44 +827,54 @@ describe('dictionary settings and card authoring', () => {
         render(
             <VersionedAuthoringHarness onAction={onAction} onSave={onSave} />,
         );
+
         await screen.findByText('Version 2 of 2');
         expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
             'The room is medium-sized.',
         );
+
         await user.click(
             screen.getByRole('button', {
                 name: 'Regenerate Context example',
             }),
         );
+
         expect(onAction).toHaveBeenCalledWith(
             expect.objectContaining({
                 scope: { field: 'example', kind: 'field' },
                 successor: true,
             }),
         );
+
         await screen.findByText('Version 3 of 3');
         expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
             'They chose a medium suitcase.',
         );
+
         expect(screen.getByLabelText(/^Example translation \(/)).toHaveValue(
             'Eligieron una maleta mediana.',
         );
+
         await user.click(
             screen.getByRole('button', { name: 'Previous form version' }),
         );
+
         expect(screen.getByText('Version 2 of 3')).toBeVisible();
         expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
             'The room is medium-sized.',
         );
+
         expect(onSave).not.toHaveBeenCalled();
         expect(
             screen.getByRole('button', {
                 name: 'Regenerate Context example',
             }),
         ).toBeDisabled();
+
         await user.click(
             screen.getByRole('button', { name: /^(Save|Create) card$/ }),
         );
+
         expect(onSave).toHaveBeenLastCalledWith(
             expect.objectContaining({
                 values: expect.objectContaining({
@@ -844,9 +884,11 @@ describe('dictionary settings and card authoring', () => {
             }),
             [],
         );
+
         await user.click(
             screen.getByRole('button', { name: 'Next form version' }),
         );
+
         expect(screen.getByText('Version 3 of 3')).toBeVisible();
         expect(
             screen.getByRole('button', { name: 'Next form version' }),
@@ -873,7 +915,7 @@ describe('dictionary settings and card authoring', () => {
                 >[0],
             ) {
                 onAction(action);
-                if (action.kind === 'generate')
+                if (action.kind === 'generate') {
                     setProposal({
                         source: 'but',
                         sourceResult: {
@@ -890,6 +932,7 @@ describe('dictionary settings and card authoring', () => {
                         suggestions: [],
                         translationContext: null,
                     });
+                }
             }
 
             return (
@@ -928,6 +971,7 @@ describe('dictionary settings and card authoring', () => {
                 successor: false,
             }),
         );
+
         expect(await screen.findByText('Version 2 of 2')).toBeVisible();
         expect(screen.getByLabelText(/Source word or phrase/)).toHaveValue(
             'le but',
@@ -936,12 +980,15 @@ describe('dictionary settings and card authoring', () => {
         await user.click(
             screen.getByRole('button', { name: 'Previous form version' }),
         );
+
         expect(screen.getByText('Version 1 of 2')).toBeVisible();
         expect(
             screen.getByRole('textbox', { name: /Source word or phrase/ }),
         ).toHaveValue('but');
+
         expect(screen.queryByTestId('ai-review-source')).toBeNull();
     });
+
     it.each([
         ['provider_rate_limited', 'dictionary.authoring.rateLimited'],
         ['provider_unavailable', 'dictionary.authoring.providerUnavailable'],
@@ -970,10 +1017,12 @@ describe('dictionary settings and card authoring', () => {
             cancelJobIds: [authoringSuccessorJob.id],
             discardJobIds: [],
         });
+
         expect(planCardAuthoringCleanup(authoringReviewJob, null)).toEqual({
             cancelJobIds: [],
             discardJobIds: [authoringReviewJob.id],
         });
+
         expect(
             planCardAuthoringCleanup(authoringReviewJob, authoringReviewJob),
         ).toEqual({ cancelJobIds: [], discardJobIds: [authoringReviewJob.id] });
@@ -987,24 +1036,29 @@ describe('dictionary settings and card authoring', () => {
                 authoringProposal,
             ),
         ).toEqual([removedId]);
+
         expect(
             discardedSuggestionIdsForPredecessor(new Set([removedId]), {
                 source: 'medium',
                 suggestions: [],
             }),
         ).toEqual([]);
+
         expect(
             planCardAuthoringCleanup(authoringSuccessorJob, authoringReviewJob),
         ).toEqual({
             cancelJobIds: [authoringSuccessorJob.id],
             discardJobIds: [authoringReviewJob.id],
         });
+
         expect(resolveCardAuthoringCleanupRead(authoringReviewJob)).toBe(
             'discard',
         );
+
         expect(resolveCardAuthoringCleanupRead(authoringSuccessorJob)).toBe(
             'retry',
         );
+
         expect(
             resolveCardAuthoringCleanupRead({
                 ...authoringReviewJob,
@@ -1031,8 +1085,10 @@ describe('dictionary settings and card authoring', () => {
                     translation: 'manual translation',
                 },
             };
+
             function ExpiringForm() {
                 const [expired, setExpired] = useState(false);
+
                 return (
                     <>
                         <button onClick={() => setExpired(true)}>
@@ -1060,32 +1116,40 @@ describe('dictionary settings and card authoring', () => {
                     </>
                 );
             }
+
             render(<ExpiringForm />);
             expect(screen.getByLabelText(/^Translation/)).toBeDisabled();
             expect(screen.getByRole('status')).toHaveTextContent(/Generating/);
             await user.click(
                 screen.getByRole('button', { name: 'Expire generation' }),
             );
+
             expect(
                 screen.getByText(/suggestions expired/i),
             ).toBeInTheDocument();
+
             expect(
                 screen.queryByText('Generating suggestions…'),
             ).not.toBeInTheDocument();
+
             expect(screen.getByLabelText(/Source word or phrase/)).toHaveValue(
                 'medium',
             );
+
             expect(
                 screen.getByDisplayValue('manual translation'),
             ).toBeInTheDocument();
+
             const generate = screen.getByRole('button', {
                 name: 'Regenerate all fields',
             });
+
             expect(generate).toBeEnabled();
             expect(screen.queryByText('medio')).not.toBeInTheDocument();
             await user.click(
                 screen.getByRole('button', { name: /^(Save|Create) card$/ }),
             );
+
             expect(onSave).toHaveBeenCalledWith(
                 expect.objectContaining({
                     values: expect.objectContaining({
@@ -1111,6 +1175,7 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         expect(onDirtyChange).toHaveBeenLastCalledWith(false);
         const source = screen.getByLabelText(/Source word or phrase/);
         await user.type(source, '   ');
@@ -1127,6 +1192,7 @@ describe('dictionary settings and card authoring', () => {
         const override = screen.getByRole('switch', {
             name: 'Override dictionary settings for this card',
         });
+
         await user.click(override);
         expect(onDirtyChange).toHaveBeenLastCalledWith(true);
         await user.click(override);
@@ -1147,6 +1213,7 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         expect(onDirtyChange).toHaveBeenLastCalledWith(false);
         const source = screen.getByLabelText(/Source word or phrase/);
         await user.type(source, ' changed');
@@ -1156,6 +1223,7 @@ describe('dictionary settings and card authoring', () => {
         const override = screen.getByRole('switch', {
             name: 'Override dictionary settings for this card',
         });
+
         await user.click(override);
         expect(onDirtyChange).toHaveBeenLastCalledWith(true);
         await user.click(override);
@@ -1171,20 +1239,24 @@ describe('dictionary settings and card authoring', () => {
                 value: `translation choice ${index + 1}`,
             })),
         });
+
         await waitFor(() =>
             expect(screen.getByLabelText(/^Translation/)).toHaveValue(
                 'translation choice 3',
             ),
         );
+
         expect(screen.queryByText(/Previous AI options/)).toBeNull();
         expect(
             screen.queryByRole('button', { name: /Accept|Reject/ }),
         ).toBeNull();
+
         await userEvent.setup().click(
             screen.getByRole('button', {
                 name: 'Regenerate Translation',
             }),
         );
+
         expect(onAction).toHaveBeenCalledWith(
             expect.objectContaining({
                 scope: { kind: 'field', field: 'translation' },
@@ -1203,15 +1275,19 @@ describe('dictionary settings and card authoring', () => {
                 successorActive: true,
             },
         });
+
         expect(
             screen.getByRole('button', { name: /^(Save|Create) card$/ }),
         ).toBeDisabled();
+
         expect(
             screen.getByRole('textbox', { name: /Source word or phrase/ }),
         ).toBeDisabled();
+
         expect(
             screen.queryByRole('button', { name: /Accept|Reject/ }),
         ).toBeNull();
+
         expect(
             screen.getByRole('button', {
                 name: 'Regenerate Translation',
@@ -1225,6 +1301,7 @@ describe('dictionary settings and card authoring', () => {
             'same-payload',
             () => 'first-key',
         );
+
         expect(
             retainCardAuthoringIdempotencyAttempt(
                 first,
@@ -1232,6 +1309,7 @@ describe('dictionary settings and card authoring', () => {
                 () => 'should-not-run',
             ),
         ).toBe(first);
+
         expect(
             retainCardAuthoringIdempotencyAttempt(
                 first,
@@ -1263,13 +1341,16 @@ describe('dictionary settings and card authoring', () => {
                 }}
             />,
         );
+
         expect(
             screen.getByRole('button', { name: 'Generate all' }),
         ).toBeDisabled();
+
         await user.type(
             screen.getByLabelText(/Source word or phrase/),
             'medium',
         );
+
         await user.click(screen.getByRole('button', { name: 'Generate all' }));
         expect(onAction).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -1278,6 +1359,7 @@ describe('dictionary settings and card authoring', () => {
                 successor: false,
             }),
         );
+
         form.rerender(
             <I18nProvider locale='en' messages={en}>
                 <DictionaryCardForm
@@ -1296,17 +1378,21 @@ describe('dictionary settings and card authoring', () => {
                 />
             </I18nProvider>,
         );
+
         await waitFor(() =>
             expect(screen.getByLabelText(/^Translation/)).toHaveValue('medio'),
         );
+
         expect(screen.queryByText(/Version 2 of/)).toBeNull();
         expect(onSave).not.toHaveBeenCalled();
         expect(
             screen.queryByRole('button', { name: /Accept|Reject/ }),
         ).toBeNull();
+
         await user.click(
             screen.getByRole('button', { name: /^(Save|Create) card$/ }),
         );
+
         expect(onSave).toHaveBeenCalledWith(
             expect.objectContaining({
                 values: expect.objectContaining({ translation: 'medio' }),
@@ -1319,14 +1405,17 @@ describe('dictionary settings and card authoring', () => {
             ],
             { jobId: authoringReviewJob.id, format: 'card-authoring:v3' },
         );
+
         await user.clear(screen.getByLabelText(/^Translation/));
         await user.type(
             screen.getByLabelText(/^Translation/),
             'manual translation',
         );
+
         await user.click(
             screen.getByRole('button', { name: /^(Save|Create) card$/ }),
         );
+
         expect(onSave.mock.calls.at(-1)![1]).toEqual([]);
     });
 
@@ -1357,25 +1446,31 @@ describe('dictionary settings and card authoring', () => {
                 },
             ],
         });
+
         await waitFor(() =>
             expect(screen.getByLabelText(/^Translation/)).toHaveValue(
                 'entorno',
             ),
         );
+
         expect(screen.getByLabelText(/^Context example \(/)).toHaveValue(
             'A second example.',
         );
+
         expect(screen.getByLabelText(/^Example translation \(/)).toHaveValue(
             'Un segundo ejemplo.',
         );
+
         await userEvent
             .setup()
             .click(
                 screen.getByRole('button', { name: /^(Save|Create) card$/ }),
             );
+
         expect(onSave.mock.calls[0]![0].values.definition).toBe(
             card.values.definition,
         );
+
         expect(onSave.mock.calls[0]![1]).toEqual([
             { field: 'translation', suggestionId: 'translation-new' },
             { field: 'example', suggestionId: 'example-new' },
@@ -1404,14 +1499,17 @@ describe('dictionary settings and card authoring', () => {
                 },
             ],
         });
+
         await waitFor(() =>
             expect(screen.getByLabelText(/Source word or phrase/)).toHaveValue(
                 "s'alarmer",
             ),
         );
+
         expect(screen.getByLabelText(/^Translation/)).toHaveValue(
             'to become alarmed',
         );
+
         expect(screen.queryByText('Review Source first')).toBeNull();
         expect(screen.queryByTestId('ai-review-source')).toBeNull();
         await userEvent
@@ -1419,6 +1517,7 @@ describe('dictionary settings and card authoring', () => {
             .click(
                 screen.getByRole('button', { name: /^(Save|Create) card$/ }),
             );
+
         expect(onSave.mock.calls[0]![1]).toEqual([
             { field: 'source', suggestionId: sourceId },
             { field: 'translation', suggestionId: translationId },
@@ -1442,19 +1541,23 @@ describe('dictionary settings and card authoring', () => {
                 },
             ],
         });
+
         await waitFor(() =>
             expect(screen.getByLabelText(/Source word or phrase/)).toHaveValue(
                 "s'alarmer",
             ),
         );
+
         const user = userEvent.setup();
         await user.type(
             screen.getByRole('textbox', { name: /Source word or phrase/ }),
             ' manually changed',
         );
+
         await user.click(
             screen.getByRole('button', { name: /^(Save|Create) card$/ }),
         );
+
         expect(onSave.mock.calls[0]![1]).toEqual([]);
     });
 
@@ -1463,9 +1566,11 @@ describe('dictionary settings and card authoring', () => {
         await waitFor(() =>
             expect(screen.getByLabelText(/^Translation/)).toHaveValue('medio'),
         );
+
         await userEvent
             .setup()
             .type(screen.getByLabelText(/^Translation/), ' manual');
+
         form.rerender(
             <DictionaryCardForm
                 {...form.props}
@@ -1478,9 +1583,11 @@ describe('dictionary settings and card authoring', () => {
                 }}
             />,
         );
+
         expect(screen.getByLabelText(/^Translation/)).toHaveValue(
             'medio manual',
         );
+
         expect(screen.getByText('Version 2 of 2')).toBeVisible();
     });
 
@@ -1502,21 +1609,25 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         await user.type(
             screen.getByLabelText(/Source word or phrase/),
             'medium',
         );
+
         await user.click(
             screen.getByRole('button', {
                 name: /^(Generate Translation with AI|Regenerate Translation)$/,
             }),
         );
+
         expect(onAction).toHaveBeenCalledWith(
             expect.objectContaining({
                 scope: { field: 'translation', kind: 'field' },
                 successor: false,
             }),
         );
+
         first.unmount();
 
         render(
@@ -1543,6 +1654,7 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         expect(screen.getByText('Source already looks correct.')).toBeVisible();
         expect(
             screen.getByRole('textbox', { name: /Source word or phrase/ }),
@@ -1578,9 +1690,11 @@ describe('dictionary settings and card authoring', () => {
                     },
                 },
             );
+
             expect(screen.getByLabelText(/^Translation/)).toHaveValue(
                 card.values.translation,
             );
+
             expect(
                 screen.queryByRole('button', { name: /Accept|Reject/ }),
             ).toBeNull();
@@ -1601,12 +1715,14 @@ describe('dictionary settings and card authoring', () => {
                     pending={false}
                 />,
             );
+
             const source = screen.getByRole('textbox', {
                 name: /Source word or phrase/,
             });
             const translation = screen.getByRole('textbox', {
                 name: /^Translation/,
             });
+
             fireEvent.change(source, { target: { value: 'word' } });
             fireEvent.change(translation, { target: { value: 'translation' } });
             const input = field === 'source' ? source : translation;
@@ -1616,6 +1732,7 @@ describe('dictionary settings and card authoring', () => {
             await user.click(
                 screen.getByRole('button', { name: /^(Save|Create) card$/ }),
             );
+
             expect(onSave).toHaveBeenLastCalledWith(
                 expect.objectContaining({
                     values: expect.objectContaining({
@@ -1624,6 +1741,7 @@ describe('dictionary settings and card authoring', () => {
                 }),
                 [],
             );
+
             fireEvent.change(input, { target: { value: 'x'.repeat(201) } });
             expect(input).toHaveValue('x'.repeat(200));
         },
@@ -1645,15 +1763,18 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         const translation = screen.getByRole('textbox', {
             name: /^Translation/,
         });
+
         expect(translation).toHaveValue('x'.repeat(201));
         expect(translation).toHaveAttribute('aria-invalid', 'true');
         expect(screen.getByText('Use at most 200 characters.')).toBeVisible();
         const save = screen.getByRole('button', {
             name: /^(Save|Create) card$/,
         });
+
         expect(save).toBeDisabled();
         fireEvent.submit(save.closest('form')!);
         expect(onSave).not.toHaveBeenCalled();
@@ -1676,9 +1797,11 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         await user.click(
             screen.getByRole('button', { name: /^(Save|Create) card$/ }),
         );
+
         expect(onSave).toHaveBeenCalledWith(
             expect.objectContaining({
                 values: expect.objectContaining({ transcription }),
@@ -1702,11 +1825,13 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         const source = screen.getByLabelText(/Source word or phrase/);
         fireEvent.change(source, { target: { value: '😀'.repeat(200) } });
         expect(
             screen.getByRole('button', { name: 'Generate all' }),
         ).toBeEnabled();
+
         fireEvent.change(source, { target: { value: 'unsafe\u0085' } });
         expect(
             screen.getByRole('button', { name: 'Generate all' }),
@@ -1729,17 +1854,21 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         await user.type(
             screen.getByLabelText(/Source word or phrase/),
             'manual',
         );
+
         expect(
             screen.getByText(/AI suggestions are unavailable/i),
         ).toBeVisible();
+
         await user.type(screen.getByLabelText(/^Translation/), 'manual');
         expect(
             screen.getByRole('button', { name: /^(Save|Create) card$/ }),
         ).toBeEnabled();
+
         unavailable.unmount();
 
         const onAction = vi.fn().mockResolvedValue(undefined);
@@ -1777,14 +1906,17 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         await user.type(
             screen.getByLabelText(/Source word or phrase/),
             'active',
         );
+
         await user.type(screen.getByLabelText(/^Translation/), 'editable');
         await user.click(
             screen.getByRole('button', { name: 'Cancel generation' }),
         );
+
         expect(onAction).toHaveBeenCalledWith({ kind: 'cancel' });
         expect(screen.getByLabelText(/^Translation/)).toHaveValue('');
     });
@@ -1815,20 +1947,25 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         await user.type(
             screen.getByLabelText(/Source word or phrase/),
             'another',
         );
+
         expect(
             screen.getByText(/source phrase or translation context changed/i),
         ).toBeInTheDocument();
+
         expect(
             screen.queryByTestId('ai-review-translation'),
         ).not.toBeInTheDocument();
+
         expect(
             screen.getByRole('button', { name: 'Regenerate all fields' }),
         ).toBeEnabled();
     });
+
     it('previews draft overrides without replacing server authority', () => {
         const effective = previewCardEffectiveSettings(
             dictionary.settings.values,
@@ -1839,6 +1976,7 @@ describe('dictionary settings and card authoring', () => {
                 transcriptionEnabled: 'enabled',
             },
         );
+
         expect(effective.transcriptionEnabled).toBe(true);
         expect(effective.exampleEnabled).toBe(false);
         expect(effective.exampleTranslationEnabled).toBe(false);
@@ -1855,9 +1993,11 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         expect(
             screen.queryByLabelText('Translate from'),
         ).not.toBeInTheDocument();
+
         expect(screen.getByText('Locked')).toBeVisible();
         await user.click(screen.getByLabelText('Context example'));
         await user.click(screen.getByRole('button', { name: 'Save settings' }));
@@ -1868,6 +2008,7 @@ describe('dictionary settings and card authoring', () => {
                 }),
             }),
         );
+
         expect(onSave.mock.calls[0]?.[0].settings).not.toHaveProperty(
             'exampleTranslationEnabled',
         );
@@ -1925,15 +2066,18 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         await user.click(
             screen.getByRole('switch', {
                 name: 'Override dictionary settings for this card',
             }),
         );
+
         await user.click(screen.getByRole('switch', { name: 'Transcription' }));
         expect(
             screen.getByRole('textbox', { name: /^Transcription/ }),
         ).toBeVisible();
+
         expect(
             screen.queryByRole('switch', { name: 'Example translation' }),
         ).not.toBeInTheDocument();
@@ -1951,32 +2095,40 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         await user.type(
             screen.getByLabelText(/Source word or phrase/),
             'stored',
         );
+
         await user.type(screen.getByLabelText(/^Translation/), 'guardado');
         await user.type(
             screen.getByRole('textbox', { name: /Context example/ }),
             'A retained example',
         );
+
         const override = screen.getByRole('switch', {
             name: 'Override dictionary settings for this card',
         });
+
         await user.click(override);
         await user.click(
             screen.getByRole('switch', { name: 'Context example' }),
         );
+
         expect(
             screen.queryByRole('textbox', { name: /Context example/ }),
         ).not.toBeInTheDocument();
+
         await user.click(override);
         expect(
             screen.getByRole('textbox', { name: /Context example/ }),
         ).toHaveValue('A retained example');
+
         await user.click(
             screen.getByRole('button', { name: /^(Save|Create) card$/ }),
         );
+
         expect(onSave).toHaveBeenCalledWith(
             expect.objectContaining({
                 values: expect.objectContaining({
@@ -2003,20 +2155,25 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         await user.type(
             screen.getByLabelText(/Source word or phrase/),
             ' Medium ',
         );
+
         expect(screen.getByRole('status')).toHaveTextContent(
             'Different senses and contexts are allowed',
         );
+
         await user.type(
             screen.getByRole('textbox', { name: /Translation/ }),
             'medio artístico',
         );
+
         await user.click(
             screen.getByRole('button', { name: /^(Save|Create) card$/ }),
         );
+
         expect(onSave).toHaveBeenCalled();
     });
 
@@ -2039,6 +2196,7 @@ describe('dictionary settings and card authoring', () => {
             'dir',
             'rtl',
         );
+
         expect(
             screen.getByRole('textbox', { name: /Translation/ }),
         ).toHaveAttribute('dir', 'ltr');
@@ -2075,6 +2233,7 @@ describe('dictionary settings and card authoring', () => {
         const save = screen.getByRole('button', {
             name: /^(Save|Create) card$/,
         });
+
         expect(cancel).toBeDisabled();
         expect(save).toBeDisabled();
         await user.click(cancel);
@@ -2117,6 +2276,7 @@ describe('dictionary settings and card authoring', () => {
             expect(transcription.previousElementSibling).toHaveTextContent(
                 card.values.source,
             );
+
             expect(
                 container.querySelector('[data-field="transcription"]'),
             ).toBeNull();
@@ -2151,6 +2311,7 @@ describe('dictionary settings and card authoring', () => {
                     pending={false}
                 />,
             );
+
             expect(screen.queryByText('(dormant)')).toBeNull();
             expect(screen.queryByText('()')).toBeNull();
             expect(
@@ -2173,9 +2334,11 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         expect(
             screen.getByText('<script>alert(1)</script>'),
         ).toBeInTheDocument();
+
         expect(container.querySelector('script')).toBeNull();
         expect(container.querySelector('img')).toBeNull();
         expect(container.querySelector('ol')).toBeInTheDocument();
@@ -2183,6 +2346,7 @@ describe('dictionary settings and card authoring', () => {
         await user.click(
             screen.getByRole('button', { name: 'Card actions, card 1' }),
         );
+
         expect(
             screen.queryByRole('menuitem', { name: /Move earlier|Move later/ }),
         ).not.toBeInTheDocument();
@@ -2200,6 +2364,7 @@ describe('dictionary settings and card authoring', () => {
                 },
             },
         };
+
         render(
             <DictionaryCardForm
                 card={card}
@@ -2210,6 +2375,7 @@ describe('dictionary settings and card authoring', () => {
                 pending={false}
             />,
         );
+
         expect(screen.queryByLabelText(/^Example translation \(/)).toBeNull();
         const user = userEvent.setup();
         const example = screen.getByLabelText(/^Context example \(/);
@@ -2227,6 +2393,7 @@ describe('dictionary settings and card authoring', () => {
         (field) => {
             const other =
                 field === 'example' ? 'exampleTranslation' : 'example';
+
             render(
                 <DictionaryCardList
                     cards={[
@@ -2241,10 +2408,12 @@ describe('dictionary settings and card authoring', () => {
                     pending={false}
                 />,
             );
+
             expect(screen.getByText(card.values[field]!)).toHaveAttribute(
                 'lang',
                 field === 'example' ? 'en' : 'es',
             );
+
             expect(screen.queryByText(card.values[other]!)).toBeNull();
             expect(screen.getByText(card.values[field]!)).toHaveAttribute(
                 'dir',
@@ -2267,9 +2436,11 @@ describe('dictionary settings and card authoring', () => {
         HTMLDialogElement.prototype.showModal = function show() {
             this.setAttribute('open', '');
         };
+
         HTMLDialogElement.prototype.close = function closeDialog() {
             this.removeAttribute('open');
         };
+
         const client = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         });
@@ -2285,18 +2456,22 @@ describe('dictionary settings and card authoring', () => {
                 name: `Select card ${card.values.source}`,
             }),
         );
+
         await user.click(
             screen.getByRole('button', { name: 'Delete selected' }),
         );
+
         const confirm = screen.getByRole('button', {
             name: 'Delete permanently',
         });
+
         expect(confirm).toBeDisabled();
         await user.click(
             screen.getByRole('checkbox', {
                 name: 'I understand these cards cannot be recovered. Cards: 1.',
             }),
         );
+
         await user.click(confirm);
 
         await waitFor(() =>
@@ -2313,9 +2488,11 @@ describe('dictionary settings and card authoring', () => {
                 expect.any(String),
             ),
         );
+
         expect(
             await screen.findByText('Cards permanently deleted: 1.'),
         ).toBeInTheDocument();
+
         HTMLDialogElement.prototype.showModal = showModal;
         HTMLDialogElement.prototype.close = close;
     });
@@ -2324,6 +2501,7 @@ describe('dictionary settings and card authoring', () => {
         const client = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         });
+
         render(
             <QueryClientProvider client={client}>
                 <ArchivedCardDeletionHarness empty />
@@ -2333,9 +2511,11 @@ describe('dictionary settings and card authoring', () => {
         expect(
             screen.queryByRole('checkbox', { name: 'Select loaded items' }),
         ).not.toBeInTheDocument();
+
         expect(
             screen.queryByRole('button', { name: 'Delete all archived' }),
         ).not.toBeInTheDocument();
+
         expect(screen.getByText('No cards here')).toBeInTheDocument();
     });
 
@@ -2362,9 +2542,11 @@ describe('dictionary settings and card authoring', () => {
                 name: 'Card actions, card 1',
             }),
         );
+
         const openReview = screen.getByRole('menuitem', {
             name: 'Open AI review',
         });
+
         expect(openReview).toBeEnabled();
         await user.click(openReview);
         expect(onGenerate).toHaveBeenCalledWith(card);
@@ -2399,8 +2581,10 @@ describe('auto-accepted card generation regression state', () => {
             ...options,
         };
     }
+
     function useDraftAndSave(props: ComponentProps<typeof DictionaryCardForm>) {
         const draft = useCardDraft(props);
+
         return { ...draft, ...useAuthoringAutoSave(props, draft) };
     }
 
@@ -2420,12 +2604,14 @@ describe('auto-accepted card generation regression state', () => {
                 translationContext: null,
             },
         };
+
         hook.rerender({ ...initial, ai: firstAI });
         await waitFor(() =>
             expect(hook.result.current.activeVersion.generation?.jobId).toBe(
                 authoringReviewJob.id,
             ),
         );
+
         expect(hook.result.current.versionCount).toBe(1);
         act(() => hook.result.current.setValue('source', 'changed source'));
         hook.rerender({
@@ -2437,12 +2623,14 @@ describe('auto-accepted card generation regression state', () => {
                 proposal: { ...firstAI.proposal, source: 'changed source' },
             },
         });
+
         await waitFor(() => expect(hook.result.current.versionCount).toBe(2));
         expect(hook.result.current.activeVersionIndex).toBe(1);
         act(() => hook.result.current.setActiveVersion(0));
         expect(hook.result.current.activeVersion.generation?.jobId).toBe(
             authoringReviewJob.id,
         );
+
         expect(hook.result.current.draft.values.translation).toBe('');
     });
 
@@ -2468,12 +2656,14 @@ describe('auto-accepted card generation regression state', () => {
         await waitFor(() =>
             expect(hook.result.current.autoSaveStatus).toBe('unchanged'),
         );
+
         expect(onAutoSave).toHaveBeenCalledOnce();
         expect(hook.result.current.autoSaveLocked).toBe(false);
         expect(hook.result.current.dirty).toBe(false);
         act(() =>
             hook.result.current.setValue('translation', 'new manual edit'),
         );
+
         expect(hook.result.current.dirty).toBe(true);
         expect(hook.result.current.autoSaveStatus).toBe('idle');
         expect(onAutoSave).toHaveBeenCalledOnce();
@@ -2505,12 +2695,14 @@ describe('auto-accepted card generation regression state', () => {
                 },
             },
         });
+
         render(<DictionaryCardForm {...initial} />);
         await waitFor(() =>
             expect(screen.getByLabelText(/^Translation/)).toHaveValue(
                 'x'.repeat(201),
             ),
         );
+
         expect(onAutoSave).not.toHaveBeenCalled();
         const user = userEvent.setup();
         await user.clear(screen.getByLabelText(/^Translation/));
@@ -2518,6 +2710,7 @@ describe('auto-accepted card generation regression state', () => {
             screen.getByLabelText(/^Translation/),
             'corrected translation',
         );
+
         await user.click(screen.getByRole('button', { name: 'Save card' }));
         expect(onSave).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -2546,6 +2739,7 @@ describe('auto-accepted card generation regression state', () => {
         await waitFor(() =>
             expect(hook.result.current.autoSaveStatus).toBe('saved'),
         );
+
         hook.rerender({
             ...initial,
             card: {
@@ -2569,18 +2763,22 @@ describe('auto-accepted card generation regression state', () => {
                 },
             },
         });
+
         await waitFor(() => expect(onAutoSave).toHaveBeenCalledTimes(2));
         await waitFor(() =>
             expect(hook.result.current.autoSaveStatus).toBe('saved'),
         );
+
         expect(hook.result.current.versionCount).toBe(3);
         expect(onAutoSave.mock.calls[1]![2]).toEqual({
             jobId: authoringSuccessorJob.id,
             format: 'card-authoring:v3',
         });
+
         expect(onAutoSave.mock.calls[1]![1]).toEqual([
             { field: 'translation', suggestionId: 'new-choice' },
         ]);
+
         expect(hook.result.current.dirty).toBe(false);
     });
 
@@ -2597,10 +2795,12 @@ describe('auto-accepted card generation regression state', () => {
             screen.getByLabelText(/Source word or phrase/),
             'medium',
         );
+
         await user.type(
             screen.getByLabelText(/^Translation/),
             'prior translation',
         );
+
         function update(ai: ComponentProps<typeof DictionaryCardForm>['ai']) {
             view.rerender(
                 <I18nProvider locale='en' messages={en}>
@@ -2608,6 +2808,7 @@ describe('auto-accepted card generation regression state', () => {
                 </I18nProvider>,
             );
         }
+
         update(propsFor().ai);
         await screen.findByText('Version 2 of 2');
         update({
@@ -2625,11 +2826,13 @@ describe('auto-accepted card generation regression state', () => {
                 ],
             },
         });
+
         await screen.findByText('Version 3 of 3');
         expect(onSave).not.toHaveBeenCalled();
         await user.click(
             screen.getByRole('button', { name: 'Previous form version' }),
         );
+
         expect(screen.getByLabelText(/^Translation/)).toHaveValue('medio');
         await user.click(screen.getByRole('button', { name: 'Create card' }));
         expect(onSave).toHaveBeenCalledWith(
@@ -2661,17 +2864,22 @@ describe('auto-accepted card generation regression state', () => {
             const hook = renderHook(useCardDraft, { initialProps: initial });
             act(() => {
                 hook.result.current.setValue('source', 'medium');
-                if (translation !== null)
+                if (translation !== null) {
                     hook.result.current.setValue('translation', translation);
-                if (definition !== null)
+                }
+
+                if (definition !== null) {
                     hook.result.current.setValue('definition', definition);
+                }
             });
+
             hook.rerender({ ...initial, ai: propsFor().ai });
             await waitFor(() =>
                 expect(hook.result.current.draft.values.translation).toBe(
                     'medio',
                 ),
             );
+
             expect(hook.result.current.versionCount).toBe(count);
         },
     );
@@ -2698,8 +2906,10 @@ describe('auto-accepted card generation regression state', () => {
                     proposalJobId: authoringReviewJob.id,
                 },
             });
+
             expect(hook.result.current.versionCount).toBe(2);
         }
+
         hook.rerender({
             ...initial,
             ai: {
@@ -2708,6 +2918,7 @@ describe('auto-accepted card generation regression state', () => {
                 proposalJobId: authoringSuccessorJob.id,
             },
         });
+
         await waitFor(() => expect(hook.result.current.versionCount).toBe(3));
     });
 
@@ -2721,6 +2932,7 @@ describe('auto-accepted card generation regression state', () => {
                 ],
             },
         );
+
         initial.draft.values.example = 'manually edited example';
         const applied = applyAuthoringResult(
             initial,
@@ -2754,16 +2966,19 @@ describe('auto-accepted card generation regression state', () => {
             card.effectiveSettings,
             { jobId: authoringReviewJob.id, format: 'card-authoring:v3' },
         );
+
         expect(applied.draft.values).toEqual({
             ...initial.draft.values,
             source: 'a medium',
             translation: 'un medio',
         });
+
         expect(applied.draft.translationContext).toBe('manual context');
         expect(applied.selectedSuggestions).toEqual({
             source: 'source',
             translation: 'translation',
         });
+
         expect(initial.draft.values.source).toBe('medium');
     });
 
@@ -2780,10 +2995,12 @@ describe('auto-accepted card generation regression state', () => {
         act(() =>
             hook.result.current.setValue('example', 'prior manual draft'),
         );
+
         hook.rerender({ ...initial, ai: propsFor().ai });
         await waitFor(() =>
             expect(hook.result.current.autoSaveStatus).toBe('saved'),
         );
+
         expect(onAutoSave).toHaveBeenCalledOnce();
         expect(onAutoSave).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -2800,6 +3017,7 @@ describe('auto-accepted card generation regression state', () => {
             ],
             { jobId: authoringReviewJob.id, format: 'card-authoring:v3' },
         );
+
         hook.rerender({
             ...initial,
             ai: propsFor().ai,
@@ -2813,6 +3031,7 @@ describe('auto-accepted card generation regression state', () => {
                 version: 2,
             },
         });
+
         expect(hook.result.current.versionCount).toBe(2);
         expect(hook.result.current.dirty).toBe(false);
         act(() => hook.result.current.setActiveVersion(0));
@@ -2833,14 +3052,17 @@ describe('auto-accepted card generation regression state', () => {
         const hook = renderHook(useDraftAndSave, {
             initialProps: propsFor({ onAutoSave }),
         });
+
         await waitFor(() =>
             expect(hook.result.current.autoSaveStatus).toBe('failed'),
         );
+
         expect(hook.result.current.autoSaveLocked).toBe(true);
         act(() => hook.result.current.retryAutoSave());
         await waitFor(() =>
             expect(hook.result.current.autoSaveStatus).toBe('saved'),
         );
+
         expect(onAutoSave.mock.calls[1]).toEqual(onAutoSave.mock.calls[0]);
         expect(hook.result.current.autoSaveLocked).toBe(false);
     });
@@ -2855,9 +3077,11 @@ describe('auto-accepted card generation regression state', () => {
         const hook = renderHook(useDraftAndSave, {
             initialProps: propsFor({ onAutoSave }),
         });
+
         await waitFor(() =>
             expect(hook.result.current.autoSaveStatus).toBe('refreshFailed'),
         );
+
         expect(hook.result.current.autoSaveLocked).toBe(true);
         act(() => hook.result.current.retryAutoSave());
         await waitFor(() => expect(onAutoSave).toHaveBeenCalledTimes(2));
@@ -2878,9 +3102,11 @@ describe('auto-accepted card generation regression state', () => {
         const hook = renderHook(useDraftAndSave, {
             initialProps: propsFor({ onAutoSave }),
         });
+
         await waitFor(() =>
             expect(hook.result.current.autoSaveStatus).toBe('conflict'),
         );
+
         expect(hook.result.current.autoSaveLocked).toBe(true);
         expect(hook.result.current.draft.values.translation).toBe('medio');
         act(() => hook.result.current.retryAutoSave());
@@ -2911,9 +3137,11 @@ describe('auto-accepted card generation regression state', () => {
                 },
             },
         });
+
         await waitFor(() =>
             expect(hook.result.current.autoSaveStatus).toBe('invalid'),
         );
+
         expect(onAutoSave).not.toHaveBeenCalled();
         expect(hook.result.current.draft.values.translation).toHaveLength(201);
         expect(hook.result.current.autoSaveLocked).toBe(false);
@@ -2935,6 +3163,7 @@ describe('auto-accepted card generation regression state', () => {
         await waitFor(() =>
             expect(hook.result.current.autoSaveStatus).toBe('saving'),
         );
+
         hook.rerender({
             ...initial,
             card: {
@@ -2944,6 +3173,7 @@ describe('auto-accepted card generation regression state', () => {
             },
             ai: { ...initial.ai!, job: null, proposal: null },
         });
+
         await act(async () =>
             finish({
                 card: {
@@ -2954,6 +3184,7 @@ describe('auto-accepted card generation regression state', () => {
                 dictionaryVersion: 2,
             }),
         );
+
         expect(hook.result.current.autoSaveStatus).toBe('idle');
         expect(hook.result.current.draft.values.source).toBe('different');
         expect(hook.result.current.versionCount).toBe(1);

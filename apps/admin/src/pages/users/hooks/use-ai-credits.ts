@@ -26,12 +26,18 @@ export function useAiCredits(userId: string) {
                     { page, pageSize },
                     signal,
                 );
+
                 setData(response);
             } catch (caught) {
-                if (signal?.aborted) return;
+                if (signal?.aborted) {
+                    return;
+                }
+
                 setError(normalizeError(caught));
             } finally {
-                if (!signal?.aborted) setLoading(false);
+                if (!signal?.aborted) {
+                    setLoading(false);
+                }
             }
         },
         [page, userId],
@@ -46,6 +52,7 @@ export function useAiCredits(userId: string) {
     useEffect(() => {
         const controller = new AbortController();
         void load(controller.signal);
+
         return () => controller.abort();
     }, [load]);
 
@@ -59,12 +66,15 @@ export function useAiCredits(userId: string) {
                 userId,
                 request,
             );
+
             setData(response);
             setPage(1);
+
             return response;
         } catch (caught) {
             const normalized = normalizeError(caught);
             setError(normalized);
+
             throw normalized;
         } finally {
             setMutating(false);
@@ -78,10 +88,12 @@ export function useAiCredits(userId: string) {
             const response = await adminApi.adjustAiCredits(userId, request);
             setData(response);
             setPage(1);
+
             return response;
         } catch (caught) {
             const normalized = normalizeError(caught);
             setError(normalized);
+
             throw normalized;
         } finally {
             setMutating(false);

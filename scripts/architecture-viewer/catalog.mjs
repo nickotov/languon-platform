@@ -16,6 +16,7 @@ const metadataSchema = z.strictObject({
 
 function inside(root, file) {
     const path = relative(root, file);
+
     return (
         path !== '' &&
         !path.startsWith(`..${sep}`) &&
@@ -27,50 +28,78 @@ function inside(root, file) {
 export async function readConfined(root, path, maximumBytes = 1024 * 1024) {
     const base = await realpath(root);
     const file = await realpath(resolve(base, path));
-    if (!inside(base, file))
+    if (!inside(base, file)) {
         throw new Error('File is outside its allowed directory.');
+    }
+
     const info = await stat(file);
-    if (!info.isFile() || info.size > maximumBytes)
+    if (!info.isFile() || info.size > maximumBytes) {
         throw new Error('File is missing, too large or not regular.');
+    }
+
     return readFile(file);
 }
 
 // Intentionally support only the small, documented diagram frontmatter schema.
 // No YAML evaluation, aliases, implicit object types or embedded configuration.
 export function parseDiagram(content, id) {
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(id))
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(id)) {
         throw new Error('Invalid diagram filename.');
+    }
+
     const header = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/u.exec(content);
-    if (!header) throw new Error('Diagram frontmatter is required.');
+    if (!header) {
+        throw new Error('Diagram frontmatter is required.');
+    }
+
     const metadata = {};
     let currentList;
     for (const line of header[1].split(/\r?\n/u)) {
-        if (line.trim() === '') continue;
+        if (line.trim() === '') {
+            continue;
+        }
+
         const item = /^ +[-] (.+)$/u.exec(line);
         if (item && currentList) {
             metadata[currentList].push(item[1]);
             continue;
         }
+
         const field = /^([a-z_]+):(?: (.*))?$/u.exec(line);
-        if (!field || Object.hasOwn(metadata, field[1]))
+        if (!field || Object.hasOwn(metadata, field[1])) {
             throw new Error('Invalid or duplicate metadata field.');
+        }
+
         const [, key, raw] = field;
         currentList = raw === undefined ? key : undefined;
-        if (raw === undefined) metadata[key] = [];
-        else if (raw.startsWith('"')) metadata[key] = JSON.parse(raw);
-        else if (raw.startsWith("'")) {
-            if (!raw.endsWith("'")) throw new Error('Unclosed metadata quote.');
+        if (raw === undefined) {
+            metadata[key] = [];
+        } else if (raw.startsWith('"')) {
+            metadata[key] = JSON.parse(raw);
+        } else if (raw.startsWith("'")) {
+            if (!raw.endsWith("'")) {
+                throw new Error('Unclosed metadata quote.');
+            }
+
             metadata[key] = raw.slice(1, -1).replaceAll("''", "'");
-        } else metadata[key] = raw;
+        } else {
+            metadata[key] = raw;
+        }
     }
+
     const parsed = metadataSchema.parse(metadata);
-    if (new Set(parsed.source_paths).size !== parsed.source_paths.length)
+    if (new Set(parsed.source_paths).size !== parsed.source_paths.length) {
         throw new Error('Duplicate source path.');
+    }
+
     const blocks = [
         ...content.matchAll(/^```mermaid\r?\n([\s\S]*?)^```\s*$/gmu),
     ];
-    if (blocks.length !== 1)
+
+    if (blocks.length !== 1) {
         throw new Error('Exactly one Mermaid block is required.');
+    }
+
     const mermaid = blocks[0][1].trim();
     if (
         mermaid.length > 30_000 ||
@@ -82,6 +111,7 @@ export function parseDiagram(content, id) {
             'Use a bounded flowchart, sequence, state or ER diagram.',
         );
     }
+
     if (
         /%%\{|^\s*click\s|<\/?[a-z!]|https?:|\b(?:img|icon)\s*:/imu.test(
             mermaid,
@@ -91,6 +121,7 @@ export function parseDiagram(content, id) {
             'Diagram directives, HTML, links and external resources are unsupported.',
         );
     }
+
     return {
         id,
         ...parsed,
@@ -116,13 +147,16 @@ export async function sourceFingerprint(repositoryRoot, paths) {
         ) {
             throw new Error(`Invalid source path: ${path}`);
         }
+
         const content = await readConfined(
             repositoryRoot,
             path,
             4 * 1024 * 1024,
         );
+
         entries.push(`${path}\0${hash(content)}\n`);
     }
+
     return `sha256:${hash(entries.join(''))}`;
 }
 
@@ -131,7 +165,11 @@ export async function loadCatalog(repositoryRoot, { stamp = false } = {}) {
     const names = (await readdir(directory))
         .filter((name) => name.endsWith('.md') && name !== 'README.md')
         .sort();
-    if (names.length > 64) throw new Error('Too many diagram documents.');
+
+    if (names.length > 64) {
+        throw new Error('Too many diagram documents.');
+    }
+
     const diagrams = [];
     const issues = [];
     for (const name of names) {
@@ -144,23 +182,28 @@ export async function loadCatalog(repositoryRoot, { stamp = false } = {}) {
                 repositoryRoot,
                 diagram.source_paths,
             );
+
             if (stamp) {
                 // Explicit author operation only. The HTTP server never calls this branch.
                 content = content.replace(
                     /^source_fingerprint: .*$/mu,
                     `source_fingerprint: ${expected}`,
                 );
+
                 content = content.replace(
                     /^reviewed: .*$/mu,
                     `reviewed: ${new Date().toISOString().slice(0, 10)}`,
                 );
+
                 await writeFile(
                     await realpath(resolve(directory, name)),
                     content,
                 );
+
                 diagram.source_fingerprint = expected;
                 diagram.reviewed = new Date().toISOString().slice(0, 10);
             }
+
             diagrams.push({
                 ...diagram,
                 file: `docs/diagrams/${name}`,
@@ -177,5 +220,6 @@ export async function loadCatalog(repositoryRoot, { stamp = false } = {}) {
             });
         }
     }
+
     return { diagrams, issues };
 }

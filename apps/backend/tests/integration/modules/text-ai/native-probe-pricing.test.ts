@@ -45,6 +45,7 @@ run('native text probe accounting', () => {
         db = createDrizzleDatabase(client, databaseSchema);
         store = new DrizzleTextAiProbeStore(db);
     });
+
     beforeEach(async () => {
         await resetTestDatabase(client);
         await migrateTestDatabase(client);
@@ -101,9 +102,11 @@ run('native text probe accounting', () => {
             },
         });
     });
+
     afterAll(async () => {
         await client?.end();
     });
+
     afterEach(() => vi.unstubAllGlobals());
     async function reserve() {
         return store.reserve({
@@ -123,6 +126,7 @@ run('native text probe accounting', () => {
             limits,
         });
     }
+
     it('uses the real probe service and SDK with fake external HTTP, then persists native facts and expense', async () => {
         vi.stubGlobal(
             'fetch',
@@ -146,6 +150,7 @@ run('native text probe accounting', () => {
                 }),
             ),
         );
+
         const service = new TextAiProbeService(
             store,
             createTextAiProbeExecutor({
@@ -160,19 +165,23 @@ run('native text probe accounting', () => {
             approvedMaximumCostUsd: '0.1',
             kind: 'quick',
         });
+
         expect(saved).toMatchObject({
             state: 'passed',
             measurement: 'measured',
             providerCostUsd: '0.000042',
         });
+
         const expenses = await db
             .select()
             .from(aiProviderExpenseRecordsTable)
             .where(eq(aiProviderExpenseRecordsTable.actionId, saved.id));
+
         expect(expenses).toMatchObject([
             { amountUsdMicros: 42n, measurement: 'measured' },
         ]);
     });
+
     it('settles an unambiguous native tariff without inventing a reservation amount', async () => {
         const reservation = await reserve();
         const saved = await store.finish(
@@ -192,12 +201,14 @@ run('native text probe accounting', () => {
             },
             at,
         );
+
         expect(saved).toMatchObject({
             state: 'passed',
             measurement: 'measured',
             providerCostUsd: '0.000042',
         });
     });
+
     it('records the entire OpenRouter reported-cost overrun through the real SDK while failing the probe', async () => {
         const [seed] = await db.select().from(aiProviderPriceRevisionsTable);
         await db.insert(aiProviderPriceRevisionsTable).values({
@@ -215,6 +226,7 @@ run('native text probe accounting', () => {
                 modelId: 'openai/gpt-6-luna',
             },
         });
+
         vi.stubGlobal(
             'fetch',
             vi.fn(async () =>
@@ -239,6 +251,7 @@ run('native text probe accounting', () => {
                 }),
             ),
         );
+
         const service = new TextAiProbeService(
             store,
             createTextAiProbeExecutor({
@@ -253,11 +266,13 @@ run('native text probe accounting', () => {
             approvedMaximumCostUsd: '0.1',
             kind: 'quick',
         });
+
         expect(saved).toMatchObject({
             state: 'failed',
             measurement: 'measured',
             providerCostUsd: '0.200000',
         });
+
         expect(
             await db
                 .select()
@@ -267,6 +282,7 @@ run('native text probe accounting', () => {
             { amountUsdMicros: 200000n, measurement: 'measured' },
         ]);
     });
+
     it('rejects a caller-selected above-cap probe cost that differs from immutable native evidence', async () => {
         const reservation = await reserve();
         await expect(
@@ -290,6 +306,7 @@ run('native text probe accounting', () => {
                 })
                 .where(eq(textAiProbesTable.id, reservation.id)),
         ).rejects.toThrow();
+
         const saved = await store.finish(
             reservation,
             {
@@ -307,11 +324,13 @@ run('native text probe accounting', () => {
             },
             at,
         );
+
         expect(saved).toMatchObject({
             state: 'passed',
             providerCostUsd: '0.000042',
         });
     });
+
     it('rejects foreign reported money for a DeepSeek probe and retains tariff-only accounting', async () => {
         const reservation = await reserve();
         for (const foreignMoney of [
@@ -339,6 +358,7 @@ run('native text probe accounting', () => {
                 ),
             ).rejects.toThrow();
         }
+
         expect(
             await db
                 .select()
@@ -347,6 +367,7 @@ run('native text probe accounting', () => {
                     eq(aiProviderExpenseRecordsTable.actionId, reservation.id),
                 ),
         ).toHaveLength(0);
+
         const saved = await store.finish(
             reservation,
             {
@@ -364,6 +385,7 @@ run('native text probe accounting', () => {
             },
             at,
         );
+
         expect(saved).toMatchObject({
             state: 'passed',
             providerCostUsd: '0.000042',

@@ -1,0 +1,1494 @@
+{
+  "schemaVersion": 1,
+  "owner": "web-tests",
+  "baseCommit": "252de64cc8fecfb9a213e5ec1fdac3b8e72f4caf",
+  "mode": "read-only source audit; evidence ledger writes only",
+  "files": [
+    {
+      "path": "apps/web/tests/action-budget.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Budget decimal tables separate valid exact thousandths from ambiguous inputs; precision assertions retain tiny and large balances.",
+      "beforeSha256": "9bd16955c7a041fc6630d9261d7b1d2df753371a076e723ef36b47c1d32fc632",
+      "afterSha256": "9bd16955c7a041fc6630d9261d7b1d2df753371a076e723ef36b47c1d32fc632"
+    },
+    {
+      "path": "apps/web/tests/action-consent.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Consent hook tests make first/reduced quote, frozen request identity, duplicate confirm, cancellation and expired offer phases explicit with named quoteError/offer fixtures.",
+      "beforeSha256": "ea6bd0ff72cc88451399783242266c4412b4f2db590e825c8f15a695c53ac856",
+      "afterSha256": "ea6bd0ff72cc88451399783242266c4412b4f2db590e825c8f15a695c53ac856"
+    },
+    {
+      "path": "apps/web/tests/api-proxy-config.test.mjs",
+      "status": "reviewed-acceptable",
+      "reason": "Proxy environment mutation is bounded by try/finally restoration; origin rejection table clearly separates loopback targets and invalid credentials/path/query cases.",
+      "beforeSha256": "04c83067e0646589963d26594a9166e3f9034bcb13cb1c815bfd5128b2cfc94f",
+      "afterSha256": "04c83067e0646589963d26594a9166e3f9034bcb13cb1c815bfd5128b2cfc94f"
+    },
+    {
+      "path": "apps/web/tests/api-url.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "API URL tests use one named operation/path matrix across seven clients while asserting credential transport; setup and rejection are explicit.",
+      "beforeSha256": "366f16ca8fab36f3a55312bcaf782a9846023621a1af8260741d628520679961",
+      "afterSha256": "366f16ca8fab36f3a55312bcaf782a9846023621a1af8260741d628520679961"
+    },
+    {
+      "path": "apps/web/tests/app-shell.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ApplicationChrome suite shares bounded renderChrome/session/resource setup; independent named cases show palette, guest, focus, sidebar persistence and identity cache behavior. Long file is a scenario catalog, not a production component/controller.",
+      "beforeSha256": "681a0fd878b1b2eaa2acacc13a94d8eea32ac38e47418411f8a3cafb17a41919",
+      "afterSha256": "681a0fd878b1b2eaa2acacc13a94d8eea32ac38e47418411f8a3cafb17a41919"
+    },
+    {
+      "path": "apps/web/tests/assistant-draft-navigation.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Draft navigation test visibly follows dirty identities, keep editing, discard revision and final allowed navigation without hidden orchestration.",
+      "beforeSha256": "6ba51c2f58b96a1fbcebc053ebf06fb4dcfa6cb3054661d0339c92c2663b3011",
+      "afterSha256": "6ba51c2f58b96a1fbcebc053ebf06fb4dcfa6cb3054661d0339c92c2663b3011"
+    },
+    {
+      "path": "apps/web/tests/assistant-input.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Assistant input tests isolate ten-item, Unicode character, aggregate translated reference and excerpt boundaries with named attachment fixture.",
+      "beforeSha256": "fe03e01d3b6407cfd10f200d78ecf5a3d646b5bbc903d9fb419e49f087735449",
+      "afterSha256": "fe03e01d3b6407cfd10f200d78ecf5a3d646b5bbc903d9fb419e49f087735449"
+    },
+    {
+      "path": "apps/web/tests/auth-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth API cases state schema failure, safe errors, bearer/credential headers and canonical routes; empty-body operation matrix avoids duplicating transport assertions.",
+      "beforeSha256": "3c3c59d7599decfe1b7132e396d6acc1afd4d8db4bedd2bb8697cb434209b622",
+      "afterSha256": "3c3c59d7599decfe1b7132e396d6acc1afd4d8db4bedd2bb8697cb434209b622"
+    },
+    {
+      "path": "apps/web/tests/auth-forms.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Auth forms suite uses named locale harness and isolated response fixture; deferred promises expose busy and duplicate-submit boundaries. Each scenario retains readable interaction/assertion phases despite catalog size.",
+      "beforeSha256": "baa6a428c35810241fbac29287033dd7edfcae99d4d3d47c8678e906d601673d",
+      "afterSha256": "baa6a428c35810241fbac29287033dd7edfcae99d4d3d47c8678e906d601673d"
+    },
+    {
+      "path": "apps/web/tests/auth-session-refresh.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "AuthenticationResponse and RequestHarness expose token retry identity; deferred request completion cases explicitly fence old-owner retry and stale private response publication.",
+      "beforeSha256": "d3a245f4ec2e9742f40627fb24cdb9dfe3c1bc3b0ead1a3e2f20acc2b66c7418",
+      "afterSha256": "d3a245f4ec2e9742f40627fb24cdb9dfe3c1bc3b0ead1a3e2f20acc2b66c7418"
+    },
+    {
+      "path": "apps/web/tests/chat-markdown.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "ChatMarkdown fixtures expose unfinished emphasis/link, inert HTML/code and safe HTTP cases directly; selector assertions clearly express forbidden rendering.",
+      "beforeSha256": "9756299380832d48baf2c0dd033e1a625e59e7a94dde87b950037318a91783b0",
+      "afterSha256": "9756299380832d48baf2c0dd033e1a625e59e7a94dde87b950037318a91783b0"
+    },
+    {
+      "path": "apps/web/tests/conversation-api-events.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Conversation event tests preserve real SSE wire framing/heartbeat and actual SDK EOF resume; try/finally owns stop/close/completion. Public tool identity cases are a compact state matrix.",
+      "beforeSha256": "12bc2b0dad59dfe31f80f22d9567bc59666ac3152b1858f2e0528d9826bf3d23",
+      "afterSha256": "12bc2b0dad59dfe31f80f22d9567bc59666ac3152b1858f2e0528d9826bf3d23"
+    },
+    {
+      "path": "apps/web/tests/conversation-copied-material.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "CopiedMaterial uses named typed card/copy fixtures and explicit field/lang/dir assertions; legacy malicious-looking payload stays literal.",
+      "beforeSha256": "665fc26ee1bdbe86ff09286e2d205c7da90efb0f9c1d0fcb6bf14580c0e9abaf",
+      "afterSha256": "665fc26ee1bdbe86ff09286e2d205c7da90efb0f9c1d0fcb6bf14580c0e9abaf"
+    },
+    {
+      "path": "apps/web/tests/conversation-deletion.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Conversation deletion tests explicitly hold mutation to prove target/cancel locks and retain retry target after error; no helper hides the asynchronous boundary.",
+      "beforeSha256": "79c27161736274541f688e9e0900d635ea0e00a26988cb02dc5388f73e4824ee",
+      "afterSha256": "79c27161736274541f688e9e0900d635ea0e00a26988cb02dc5388f73e4824ee"
+    },
+    {
+      "path": "apps/web/tests/conversation-durable-transport.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Durable transport suite groups actual SDK resume, cursor replay, progressive suffix/truncation, history reconciliation and terminal access; local update/text helpers and finally cleanup keep protocol steps readable.",
+      "beforeSha256": "8d0d521498d0f8badd139087a54048be936267a4d202c033279621925014d2d9",
+      "afterSha256": "8d0d521498d0f8badd139087a54048be936267a4d202c033279621925014d2d9"
+    },
+    {
+      "path": "apps/web/tests/conversation-error-notice.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Error notice cases distinguish failure codes and locales, associate retry with original turn and assert suppressed provider/usage disclosure; schema fixture keeps durable identity explicit.",
+      "beforeSha256": "24390ceba1c08d65cf3091d37192e7330e84cf3779a145779b1c204badeb2449",
+      "afterSha256": "24390ceba1c08d65cf3091d37192e7330e84cf3779a145779b1c204badeb2449"
+    },
+    {
+      "path": "apps/web/tests/conversation-event-stream.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Event stream tests show byte-by-byte Unicode/CRLF framing and incomplete EOF suppression directly with small stream fixtures.",
+      "beforeSha256": "30ebaeace565d25b353d85db50ad87840698881235a69ec522791350794d1650",
+      "afterSha256": "30ebaeace565d25b353d85db50ad87840698881235a69ec522791350794d1650"
+    },
+    {
+      "path": "apps/web/tests/conversation-history-rename.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "History rename scenario preserves edited input through one failed save and explicit retry with exact title identity; sequential UI steps remain visible.",
+      "beforeSha256": "b2ae2d85666ebaa422471ef25bbd64b0417b12c8a2eb4ed1784d91c4081f9f85",
+      "afterSha256": "b2ae2d85666ebaa422471ef25bbd64b0417b12c8a2eb4ed1784d91c4081f9f85"
+    },
+    {
+      "path": "apps/web/tests/conversation-link.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Safe chat link test contrasts one HTTPS result with a compact rejected scheme/relative matrix; direct expectations need no abstraction.",
+      "beforeSha256": "fe56c2975cf177dcd627bc4ed08b89247b941d15d7f92c01fea97c199c3fed75",
+      "afterSha256": "fe56c2975cf177dcd627bc4ed08b89247b941d15d7f92c01fea97c199c3fed75"
+    },
+    {
+      "path": "apps/web/tests/conversation-stream-bootstrap.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Conversation bootstrap race suite explicitly controls pending GET, subscriber and cancellation promises; A/B/A and Suspense cases retain committed-session ownership with finally cleanup. Local detail/snapshot/append helpers expose stream invariants.",
+      "beforeSha256": "698665af24761b522ff9ac97260ef5cad49b28ba8d5000e2db953b0ba345f0eb",
+      "afterSha256": "698665af24761b522ff9ac97260ef5cad49b28ba8d5000e2db953b0ba345f0eb"
+    },
+    {
+      "path": "apps/web/tests/credit-balance.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Credit balance fixture separates exact/compact numeric values, unlimited state, error refresh and stale owner removal; account state cleanup is explicit.",
+      "beforeSha256": "8ff96463ec73c0c5b521ad9cabe05d6951eab5665232ef87961fa7746b521a44",
+      "afterSha256": "8ff96463ec73c0c5b521ad9cabe05d6951eab5665232ef87961fa7746b521a44"
+    },
+    {
+      "path": "apps/web/tests/dictionaries-page.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Dictionaries page fixture isolates summary/settings/languages and restores dialog polyfills; single scenario directly proves settings opens without leaving library.",
+      "beforeSha256": "380cad8f0764325508919149184f2bc41026e8d68c0b9bb4fbbce4f4404a4769",
+      "afterSha256": "380cad8f0764325508919149184f2bc41026e8d68c0b9bb4fbbce4f4404a4769"
+    },
+    {
+      "path": "apps/web/tests/dictionary-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Dictionary API suite uses jsonResponse and named request bodies to expose owner/share header boundaries, generation idempotency, signed upload and export cancellation; protocol expectations remain next to each call.",
+      "beforeSha256": "d2e1c5a8c3edf21d8babcfecb866ef51a4529973f559d3edf5b4abd56fa2ad1c",
+      "afterSha256": "d2e1c5a8c3edf21d8babcfecb866ef51a4529973f559d3edf5b4abd56fa2ad1c"
+    },
+    {
+      "path": "apps/web/tests/dictionary-batch-generation.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Batch generation suite names candidate/review/running/accepted/import fixtures and panel setup; row selection/refetch, inert content, conflict and retry semantics have independent readable scenarios.",
+      "beforeSha256": "d585180524c093cd20d046e864aeaa242e3988aa1b47ffadd2b570307cea2229",
+      "afterSha256": "d585180524c093cd20d046e864aeaa242e3988aa1b47ffadd2b570307cea2229"
+    },
+    {
+      "path": "apps/web/tests/dictionary-capability-return.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Capability continuation suite exposes fragment-only key transport across auth/shared destinations; safe path matrix and real LoginForm scenario keep URL secrecy assertions local.",
+      "beforeSha256": "d933049f85861ee6812321e31b70a83558be2567d86b63b2624d6d1175c6deca",
+      "afterSha256": "d933049f85861ee6812321e31b70a83558be2567d86b63b2624d6d1175c6deca"
+    },
+    {
+      "path": "apps/web/tests/dictionary-card-authoring.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Card authoring catalog names versioned/generated form harnesses and separates dependency, settings, source provenance, history and autosave scenarios. All 3192 lines read in contiguous spans; propsFor/useDraftAndSave isolate canonical hook setup. Large scenario catalog is cohesive around the authoring contract, and extraction of timing assertions would hide races.",
+      "beforeSha256": "1cee8f3d430893c5dc55ae34050356a69b8bed3a578dbbbade0ca0dbc4695aa4",
+      "afterSha256": "1cee8f3d430893c5dc55ae34050356a69b8bed3a578dbbbade0ca0dbc4695aa4"
+    },
+    {
+      "path": "apps/web/tests/dictionary-card-auto-save-coordination.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Coordination model fixture explicitly distinguishes current job and retained proposal owner; compact predicates cover cancelled consent, historical provenance and successor states.",
+      "beforeSha256": "7b2f80a757183e0aeba9c6ac54bca0f7fc119ac71077b9508cb90735f5e6331c",
+      "afterSha256": "7b2f80a757183e0aeba9c6ac54bca0f7fc119ac71077b9508cb90735f5e6331c"
+    },
+    {
+      "path": "apps/web/tests/dictionary-card-auto-save.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auto-saver fixture separates original input/canonical response and typed unavailable/stale errors; named cases expose accepted-readback, coalescing, no-op and ambiguous-write retry phases.",
+      "beforeSha256": "bb3facab4e8c883137eae2eb468da585936bbe574778e10f1957676df2d179c6",
+      "afterSha256": "bb3facab4e8c883137eae2eb468da585936bbe574778e10f1957676df2d179c6"
+    },
+    {
+      "path": "apps/web/tests/dictionary-card-list-speech.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Card-list speech fixture directly preserves stored strings and language while bounding visible playback fields; inline renderer is one native button.",
+      "beforeSha256": "dbd7709c04cf9478791fb9ea55f40e1dfb19b8c4b33b2e93ab09ef8a9652f186",
+      "afterSha256": "dbd7709c04cf9478791fb9ea55f40e1dfb19b8c4b33b2e93ab09ef8a9652f186"
+    },
+    {
+      "path": "apps/web/tests/dictionary-deletion-cache.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Cache cleanup test seeds named cache families and proves dictionary content removed while language catalog remains; direct keys make scope auditable.",
+      "beforeSha256": "92e2ac9c20f27f4a1c51642f42f5ba68c3313dee28be571d83e89f48e854db6e",
+      "afterSha256": "92e2ac9c20f27f4a1c51642f42f5ba68c3313dee28be571d83e89f48e854db6e"
+    },
+    {
+      "path": "apps/web/tests/dictionary-deletion-selection.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Deletion selection tests derive cap from contract and explicitly test rejected addition, permitted removal and loaded-set truncation.",
+      "beforeSha256": "95f0517a3b5f5dee87284f29445ba75a5af2d045cbce032e0be56828573f62df",
+      "afterSha256": "95f0517a3b5f5dee87284f29445ba75a5af2d045cbce032e0be56828573f62df"
+    },
+    {
+      "path": "apps/web/tests/dictionary-document-generation-panel.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Document panel catalog uses typed review/dictionary fixtures and callbacks helper; upload metadata, inert mixed-direction review, retryability and pending controls have local assertions.",
+      "beforeSha256": "255352ec1b047e12e931d9d7cb3bd0bf3dcb432be810c9cf6e5160fd7d6e1874",
+      "afterSha256": "255352ec1b047e12e931d9d7cb3bd0bf3dcb432be810c9cf6e5160fd7d6e1874"
+    },
+    {
+      "path": "apps/web/tests/dictionary-document-generation.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Document utility tests directly expose exact hash, cross-dictionary job guard and extension/MIME conflict cases without hidden setup.",
+      "beforeSha256": "6571c4e720dedfb9afc1d5ed4b25201e27a0c6c1d9870c27b1c4b29fd368de51",
+      "afterSha256": "6571c4e720dedfb9afc1d5ed4b25201e27a0c6c1d9870c27b1c4b29fd368de51"
+    },
+    {
+      "path": "apps/web/tests/dictionary-errors.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Dictionary error translation uses a concise code/key matrix and distinct network/generic case; provider message remains opaque in fixture.",
+      "beforeSha256": "f81fda3ad9000b47768041596598a0e381e1d6990e64a3161e15e6c4eac60d25",
+      "afterSha256": "f81fda3ad9000b47768041596598a0e381e1d6990e64a3161e15e6c4eac60d25"
+    },
+    {
+      "path": "apps/web/tests/dictionary-generation.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Generation review suite names original values and review snapshot, restores dialog lifecycle in beforeAll/afterAll, and isolates staleness, inert content, candidate provenance and bounds cases.",
+      "beforeSha256": "f57aa0ef38c95a6834246f6d686f45a2c4a96105f7dbcf955cce911a6fd2b460",
+      "afterSha256": "f57aa0ef38c95a6834246f6d686f45a2c4a96105f7dbcf955cce911a6fd2b460"
+    },
+    {
+      "path": "apps/web/tests/dictionary-idempotency.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Idempotency attempt test visibly follows first/retry/changed payload and asserts retained object identity plus key factory count.",
+      "beforeSha256": "2c3481074f7bd37846abfc262d23e4cda36dca375c8d841a9925016869d98927",
+      "afterSha256": "2c3481074f7bd37846abfc262d23e4cda36dca375c8d841a9925016869d98927"
+    },
+    {
+      "path": "apps/web/tests/dictionary-interchange.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Interchange catalog keeps raw input/preview freshness, sampled import cap, UTF-8 and stream/picker failure phases explicit; picker globals have finally cleanup and deferred load ordering is local.",
+      "beforeSha256": "f1b084b56f5803bd216b702a5cc4b63ffec99106273f60ac0aba0ea271aaa74e",
+      "afterSha256": "f1b084b56f5803bd216b702a5cc4b63ffec99106273f60ac0aba0ea271aaa74e"
+    },
+    {
+      "path": "apps/web/tests/dictionary-library.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Library suite names summary fixture and independently tests pagination/settings/archive/delete/cache/defaults; exact version and selected target assertions show destructive scope directly. Large fixture blocks retain scenario-specific ownership.",
+      "beforeSha256": "1f2f747291932b5092c067acf9b2d9a013b22d08b33e0b5105233d06cb1ecd45",
+      "afterSha256": "1f2f747291932b5092c067acf9b2d9a013b22d08b33e0b5105233d06cb1ecd45"
+    },
+    {
+      "path": "apps/web/tests/dictionary-speech-source.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Speech source fixtures distinguish fresh dictionary metadata from visible card settings revision and assert each expected version independently.",
+      "beforeSha256": "45c35c044df7a97599c7e176bec7a32ba652099cd54cb6c41e628cda51d7ea86",
+      "afterSha256": "45c35c044df7a97599c7e176bec7a32ba652099cd54cb6c41e628cda51d7ea86"
+    },
+    {
+      "path": "apps/web/tests/e2e/ai-accounting.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Accounting journey names signup/api/observe helpers and preserves live refresh tokens privately; quote flow visibly asserts frozen request IDs, budget confirmation and explicit new continuation.",
+      "beforeSha256": "5f09387881d57ba50cce36b7acfdb9e3f335d3810a6c23d99ae2503cf18cb027",
+      "afterSha256": "5f09387881d57ba50cce36b7acfdb9e3f335d3810a6c23d99ae2503cf18cb027"
+    },
+    {
+      "path": "apps/web/tests/e2e/ai-legacy-budgets.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Legacy budget journeys share signup/budget/dictionary/quote helpers but keep per-operation request capture and consent assertions local. Sentence preparation explicitly observes paused state and separate continue command; no hidden automatic retries.",
+      "beforeSha256": "64dcd5c5674b61b687ea882981cea7f57221914823fbf8029f35bf3d91268a22",
+      "afterSha256": "64dcd5c5674b61b687ea882981cea7f57221914823fbf8029f35bf3d91268a22"
+    },
+    {
+      "path": "apps/web/tests/e2e/app-shell.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "App-shell journeys isolate browser error/private request observation and synthetic signup; sequential desktop/mobile preferences and identity transitions preserve accessible locator ownership.",
+      "beforeSha256": "771cd1be1bff5fcde57463fbb9ee77e75b7d2731475c9741dd4746d0d0123273",
+      "afterSha256": "771cd1be1bff5fcde57463fbb9ee77e75b7d2731475c9741dd4746d0d0123273"
+    },
+    {
+      "path": "apps/web/tests/e2e/auth.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Auth journeys isolate email/authenticator/login helpers; password reset closes second context in finally and passkey flow explicitly toggles bogus signature before real verification.",
+      "beforeSha256": "2bfd7305869180f830e93bce2247b70bccce5b64cfe41df6ea253d9eb0867e72",
+      "afterSha256": "2bfd7305869180f830e93bce2247b70bccce5b64cfe41df6ea253d9eb0867e72"
+    },
+    {
+      "path": "apps/web/tests/e2e/contextual-assistant.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Contextual tutor journeys have cohesive named source/send, wire stream, rendered stream, preference retry and shared-placement helpers. All2349 lines read; actual user-visible timing/geometry and turn admission assertions remain explicit within scenario phases rather than hidden by generic wrappers.",
+      "beforeSha256": "f27a35ce3990276ebc93cefff5d27b0d27383492082be6351fb8bd1b12c33ce2",
+      "afterSha256": "f27a35ce3990276ebc93cefff5d27b0d27383492082be6351fb8bd1b12c33ce2"
+    },
+    {
+      "path": "apps/web/tests/e2e/dictionary-permanent-deletion.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Permanent-deletion journeys isolate dictionary/card actions and archive selection helpers; typed confirmation, stale-preview concurrency and surviving content assertions remain visible.",
+      "beforeSha256": "61e449f1068580ae16255bfa59f0a1e9d0e5ba119e3d445d447c9c6a62ae53a2",
+      "afterSha256": "61e449f1068580ae16255bfa59f0a1e9d0e5ba119e3d445d447c9c6a62ae53a2"
+    },
+    {
+      "path": "apps/web/tests/e2e/dictionary-platform.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Dictionary platform journeys group reusable geometry/editor/owner checks and explicit scenario IDs. All2416 lines read; owner editing, share capabilities, batch/document/import and inline provenance scenarios preserve local version and conflict steps. Long file is a journey catalog with focused helpers.",
+      "beforeSha256": "17422dcbe00a425ea814bcf1c4f001b8bd7a51d21b4b8efe07ea979bc5b10a0e",
+      "afterSha256": "17422dcbe00a425ea814bcf1c4f001b8bd7a51d21b4b8efe07ea979bc5b10a0e"
+    },
+    {
+      "path": "apps/web/tests/e2e/dictionary-pronunciation-audio.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Pronunciation serial suite names playback/count/evidence helpers and restores context; download delay/retry/cancel and archive denial phases keep actual media proof distinct from preparation response.",
+      "beforeSha256": "7df02826e4dd5451a83667bf55dbfcb1cb9c2fe2f6cfaf2e053633604be77109",
+      "afterSha256": "7df02826e4dd5451a83667bf55dbfcb1cb9c2fe2f6cfaf2e053633604be77109"
+    },
+    {
+      "path": "apps/web/tests/e2e/flashcard-training.journeys.spec.ts",
+      "status": "refactored",
+      "reason": "Bounded baseline fixture actualization; real behavior/assertions unchanged. See current independent review and final runtime evidence.",
+      "beforeSha256": "83661e909743c9413d443f293dcfc65e9478615964f17d1ee1219bc79ac20fa0",
+      "afterSha256": "13c8d299a57d46276b8ed3943b9a208bbf0b1ce0003ce031a4d0a48ce63ec336"
+    },
+    {
+      "path": "apps/web/tests/e2e/i18n.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "I18n journeys use one locale/expected-label matrix with JavaScript disabled and finally context cleanup; cookie switch scenario preserves URL and input values with explicit localization assertions.",
+      "beforeSha256": "061fe81705685bcdbc7812dd30fb2d4cdb49804dab67864965829aa18eff7022",
+      "afterSha256": "061fe81705685bcdbc7812dd30fb2d4cdb49804dab67864965829aa18eff7022"
+    },
+    {
+      "path": "apps/web/tests/e2e/interactive-workbooks.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Interactive workbook2769-line journey catalog has named addBlock, preview, language disclosure, AI/speech consent and WAV verification helpers; tests keep working-draft/publication, per-reader progress, block target identity and media byte assertions in explicit sequential phases. Full body read; generic controller extraction would hide consequential state boundaries.",
+      "beforeSha256": "5a7e2ab3f20a237506117c3f6d840af91f43335d5d18e62e5331c8a34294b495",
+      "afterSha256": "5a7e2ab3f20a237506117c3f6d840af91f43335d5d18e62e5331c8a34294b495"
+    },
+    {
+      "path": "apps/web/tests/e2e/knowledge-workspace.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Knowledge workspace1994-line catalog isolates desktop pane sizing including pointer/keyboard/cancel and breakpoint diagnostics, draft recovery and reference picker helpers. All body spans read; individual scenarios retain private/published branches, proposal target, undo and share-copy invariants visibly.",
+      "beforeSha256": "e70b6bea05a89941e68940ca8b015905d4d4da09e63b119ea1ff33fd2b365a60",
+      "afterSha256": "e70b6bea05a89941e68940ca8b015905d4d4da09e63b119ea1ff33fd2b365a60"
+    },
+    {
+      "path": "apps/web/tests/e2e/learner-portrait.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Portrait925-line journey catalog names paid-response acknowledgement, interview start, language details and sidebar helpers; optional paid/free branches keep quote identity, explicit approval, composer stop and insufficiency focus assertions visible.",
+      "beforeSha256": "416e99d20ce988cc6658d2381c1afaba78eb9f5bbfefefabb987b37e63709767",
+      "afterSha256": "416e99d20ce988cc6658d2381c1afaba78eb9f5bbfefefabb987b37e63709767"
+    },
+    {
+      "path": "apps/web/tests/e2e/profile.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Profile journey scenarios directly separate truthful placeholders, username/security/removal confirmation and exact funded credit balance; named synthetic identity and browser observation setup avoid repeated diagnostic policy.",
+      "beforeSha256": "49f7f5bacda01e0e07a3da4288f62dac4d992a6ca63c0fe8c4a9d433b22380ef",
+      "afterSha256": "49f7f5bacda01e0e07a3da4288f62dac4d992a6ca63c0fe8c4a9d433b22380ef"
+    },
+    {
+      "path": "apps/web/tests/e2e/sentence-practice.journeys.spec.ts",
+      "status": "refactored",
+      "reason": "Bounded baseline fixture actualization; real behavior/assertions unchanged. See current independent review and final runtime evidence.",
+      "beforeSha256": "c2275457e1f06b12ce8ace14d681b994782855357cac36c236e0fbeadace1ee4",
+      "afterSha256": "2e981164232e10662da6dbb6f7a4334867157345592bd6406973a69765a367c3"
+    },
+    {
+      "path": "apps/web/tests/e2e/shared-pronunciation.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Shared pronunciation serial journeys separate free normalized reuse, paid quote cancellation/settlement and unsupported language cases. Named learner/savedWord/preparation helpers keep cross-account asset and credit assertions explicit.",
+      "beforeSha256": "b7fb4c9bcbb8aa6143fd8b346f886e8be242fcfa4fc2cc4ea935b2c07d9725c7",
+      "afterSha256": "b7fb4c9bcbb8aa6143fd8b346f886e8be242fcfa4fc2cc4ea935b2c07d9725c7"
+    },
+    {
+      "path": "apps/web/tests/e2e/sidebar-navigation.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Sidebar navigation journey helpers isolate API dictionary creation, search and browser diagnostics; tests retain unopened-resource, actual-open, cross-device pin and identity isolation phases with responsive geometry/focus assertions.",
+      "beforeSha256": "3712324929fdbc19e2887e71721b3ae52328bcd07a06ab2d86657ba9dfb5f588",
+      "afterSha256": "3712324929fdbc19e2887e71721b3ae52328bcd07a06ab2d86657ba9dfb5f588"
+    },
+    {
+      "path": "apps/web/tests/e2e/support/action-accounting-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "customerBalance helper invokes reviewed backend CLI with argument array, explicit disposable database requirement and bounded timeout; no embedded SQL or hidden data mutation path.",
+      "beforeSha256": "400bad094e15a313756aef70aa1ab02f8ab3a566cbaadd6833d642447d18935e",
+      "afterSha256": "400bad094e15a313756aef70aa1ab02f8ab3a566cbaadd6833d642447d18935e"
+    },
+    {
+      "path": "apps/web/tests/e2e/support/contextual-assistant-playwright.config.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Contextual Playwright configuration begins with runner guard and declares serial fixtures, isolated backend/web ports and output/dist paths explicitly.",
+      "beforeSha256": "eea982fc9407757282c4e858cf7360861b203bed23bb7d3f687bcdbd0aee0e01",
+      "afterSha256": "eea982fc9407757282c4e858cf7360861b203bed23bb7d3f687bcdbd0aee0e01"
+    },
+    {
+      "path": "apps/web/tests/e2e/support/learner-portrait-playwright.config.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Portrait Playwright configuration binds runner guard, exclusive fixture, serial project and separate Next output; environment forwarding and service URLs are declarative.",
+      "beforeSha256": "a7d1ec5e2f8440eab87343c5a5428be6b3e813b40a25b1d1f532edc792b1b97a",
+      "afterSha256": "a7d1ec5e2f8440eab87343c5a5428be6b3e813b40a25b1d1f532edc792b1b97a"
+    },
+    {
+      "path": "apps/web/tests/e2e/support/speech-browser-audio.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Speech audio probe observes cloned real fetch bytes and native playing events; named browserAudioEvidence and playSpeechControl keep byte proof and playback proof distinct with cancellation comment.",
+      "beforeSha256": "b32baf2687fd04b60c9071641f3792eed640d61385eed1247a276b63e1eb5432",
+      "afterSha256": "b32baf2687fd04b60c9071641f3792eed640d61385eed1247a276b63e1eb5432"
+    },
+    {
+      "path": "apps/web/tests/e2e/support/speech-credit-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Speech credit fixture uses named repository root, bounded argument-array CLI invocation and test environment action; return shape makes available/reserved/consumed units explicit.",
+      "beforeSha256": "f2da3d8ca30b95acb67e29351cab62ec919be8f7205070c6893d0469013d4e61",
+      "afterSha256": "f2da3d8ca30b95acb67e29351cab62ec919be8f7205070c6893d0469013d4e61"
+    },
+    {
+      "path": "apps/web/tests/e2e/support/texts-playwright.config.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Texts Playwright configuration lists three mapped journey suites, one worker and paired backend/web reuse settings; ports and Next output remain explicit declarative setup.",
+      "beforeSha256": "da610750211bb4d32d2efa642bdc64240436029f6a4f2079ae61993a4b2220d1",
+      "afterSha256": "da610750211bb4d32d2efa642bdc64240436029f6a4f2079ae61993a4b2220d1"
+    },
+    {
+      "path": "apps/web/tests/e2e/texts.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Texts1573-line journey catalog names library organization, translated setup, native selection, padding and long-translation capacity checks. Full body read; scenario-specific sharing, stable membership and dirty navigation assertions preserve UI/API boundaries visibly.",
+      "beforeSha256": "2d9b3bb43582c4e6457ee959665706e45997647d9cdd15e810cfd0a11baea97a",
+      "afterSha256": "2d9b3bb43582c4e6457ee959665706e45997647d9cdd15e810cfd0a11baea97a"
+    },
+    {
+      "path": "apps/web/tests/e2e/ui-kit.journeys.spec.ts",
+      "status": "reviewed-acceptable",
+      "reason": "UI-kit journey directly verifies cookie/theme route persistence, accessible controls, responsive scale, reduced motion, contrast and forced colors; diagnostics are a cohesive helper.",
+      "beforeSha256": "ae594a2434e5e281a18f7f009a996671173aeca51af784c9dbca4f022236edef",
+      "afterSha256": "ae594a2434e5e281a18f7f009a996671173aeca51af784c9dbca4f022236edef"
+    },
+    {
+      "path": "apps/web/tests/editor-target-anchor.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Target anchor tests use minimal ProseMirror schema and document helper; exact UTF-16, duplicate occurrence, split-surrogate and paragraph boundary expectations are local.",
+      "beforeSha256": "92cbda2ed33100264c7680cde552626bee9aed97f9f0e2ffbc7f895d745825ea",
+      "afterSha256": "92cbda2ed33100264c7680cde552626bee9aed97f9f0e2ffbc7f895d745825ea"
+    },
+    {
+      "path": "apps/web/tests/exercise-evaluation.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Exercise evaluation suite names input/attempt/pending job fixtures; deferred admission demonstrates late-cancel ownership while poll and failure cases explicitly assert no re-admission or prepared-answer reveal.",
+      "beforeSha256": "24f55052ca7af89e42a083e48568c41584298d03b15cdbb13947cf57ade1dbd2",
+      "afterSha256": "24f55052ca7af89e42a083e48568c41584298d03b15cdbb13947cf57ade1dbd2"
+    },
+    {
+      "path": "apps/web/tests/flashcard-training-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Learning API cases use response/preferences/authenticated fixtures to expose owner refresh, anonymous/public capability and share-header boundaries; malformed payload and retry-after expectations remain local.",
+      "beforeSha256": "a6d8f95918fa6f0ec9a3f1276a029b6d408fe74dd18cb140c5d3de2ad1e9478d",
+      "afterSha256": "a6d8f95918fa6f0ec9a3f1276a029b6d408fe74dd18cb140c5d3de2ad1e9478d"
+    },
+    {
+      "path": "apps/web/tests/flashcard-training-interactions.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Interaction catalog separates fullscreen from drag behavior with CardHarness/pointer/start helpers; StrictMode replay, delayed grant, opacity barrier, pointer cancellation and text selection have explicit timing assertions and cleanup.",
+      "beforeSha256": "1a7bf85480eb747a43674a2baa91db72cfd827d6f12f31161a0971128ae2ba98",
+      "afterSha256": "1a7bf85480eb747a43674a2baa91db72cfd827d6f12f31161a0971128ae2ba98"
+    },
+    {
+      "path": "apps/web/tests/flashcard-training-launcher.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Launcher case directly observes capability load then menu availability; public request count and absence of personal wrapper calls make gating clear.",
+      "beforeSha256": "8d94ae3dfff1283b15dd0926de8b928d374abb738a17ae38e78aed9296e712eb",
+      "afterSha256": "8d94ae3dfff1283b15dd0926de8b928d374abb738a17ae38e78aed9296e712eb"
+    },
+    {
+      "path": "apps/web/tests/flashcard-training-manual-selection.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Manual selection suite names page/search fixtures, API, deferred and settle helpers; debounce and stale response race remain visible while final manual Start ordering is asserted exactly.",
+      "beforeSha256": "3f8462e95b77f3668299bbf6ad4ea86617a5b64332eda468c337014dc77ae4f7",
+      "afterSha256": "3f8462e95b77f3668299bbf6ad4ea86617a5b64332eda468c337014dc77ae4f7"
+    },
+    {
+      "path": "apps/web/tests/flashcard-training-retry-button.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Retry-button tests expose original absolute cooldown across remount and explicit-operation precedence using narrow fake-timer phases.",
+      "beforeSha256": "e2cd64a425cd77c0caf85bb1dd97884b5612de658232e3d5900f5a71520109c7",
+      "afterSha256": "e2cd64a425cd77c0caf85bb1dd97884b5612de658232e3d5900f5a71520109c7"
+    },
+    {
+      "path": "apps/web/tests/flashcard-training-setup.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Setup catalog uses typed API/deferred fixtures and isolates preference/prepare cooldown, version conflict, anonymous defaults and late-close/signout responses; exact version/write counts keep orchestration understandable.",
+      "beforeSha256": "ff95679f145481b750ffc3c90302261f131355678a3dc213485bf8981a54ec6e",
+      "afterSha256": "ff95679f145481b750ffc3c90302261f131355678a3dc213485bf8981a54ec6e"
+    },
+    {
+      "path": "apps/web/tests/flashcard-training-state.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "PracticeSession catalog names item/API/session/deferred helpers; each test exposes ACK versus fade order, exact idempotent retry, Undo snapshot, disposal/revocation and bounded item batches. Long file is cohesive state-machine scenario coverage.",
+      "beforeSha256": "51fb4c37568b4a76e93622b1f2f3f14acf727374388a2989a6d94b42a04606bb",
+      "afterSha256": "51fb4c37568b4a76e93622b1f2f3f14acf727374388a2989a6d94b42a04606bb"
+    },
+    {
+      "path": "apps/web/tests/generic-assistant-request.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Generic assistant fixture records boundary panel props and chat actions; cases explicitly distinguish editable prefill from submission/editor authority and selected material from unrelated private passages.",
+      "beforeSha256": "d1bb22e753aceded7b29275a96b22a09d11d101eda294307d8a7601fae7a20fd",
+      "afterSha256": "d1bb22e753aceded7b29275a96b22a09d11d101eda294307d8a7601fae7a20fd"
+    },
+    {
+      "path": "apps/web/tests/health-route.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Health route case restores release environment and directly checks no-store response identity.",
+      "beforeSha256": "92f9783a2b37041823b02dd55d01c26297fb2be118539e48d970af8a6d2e1133",
+      "afterSha256": "92f9783a2b37041823b02dd55d01c26297fb2be118539e48d970af8a6d2e1133"
+    },
+    {
+      "path": "apps/web/tests/home-page.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Home render helper owns QueryClient lifecycle and locale greeting table; guest no-fetch and authenticated portrait-entry cases keep identity boundaries explicit.",
+      "beforeSha256": "e14d9da488432d5a61a03629d695a898074dac01c8f3d76ab7c43fb1901d4f88",
+      "afterSha256": "e14d9da488432d5a61a03629d695a898074dac01c8f3d76ab7c43fb1901d4f88"
+    },
+    {
+      "path": "apps/web/tests/home-session-actions.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "HomeSessionActions fixture isolates bootstrap status and real refresh response; one case directly asserts canonical account links.",
+      "beforeSha256": "959c20075b5ce1942492cc45a3018cd26c44461948b7af5fd7bed7044204ce0b",
+      "afterSha256": "959c20075b5ce1942492cc45a3018cd26c44461948b7af5fd7bed7044204ce0b"
+    },
+    {
+      "path": "apps/web/tests/i18n.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "I18n harness captures setter for stale-locale race; tests separate negotiation, interpolation/fallback and safe error translation with concrete expected copy.",
+      "beforeSha256": "6022c873ba54b45c150a61677ba8f35e555265b0af61be95850fb84dc71f4a56",
+      "afterSha256": "6022c873ba54b45c150a61677ba8f35e555265b0af61be95850fb84dc71f4a56"
+    },
+    {
+      "path": "apps/web/tests/knowledge-audio-preparation.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Knowledge audio preparation fixture names source/job/asset identities; scenarios show preview-before-import, preserved preview failures, stale acceptance, held asset completion and session-loss object URL revocation explicitly.",
+      "beforeSha256": "c5278b129b61322705b79bbeb578f265fe1b4ae4b59118156c9e077f2cb25081",
+      "afterSha256": "c5278b129b61322705b79bbeb578f265fe1b4ae4b59118156c9e077f2cb25081"
+    },
+    {
+      "path": "apps/web/tests/knowledge-author-library-menu.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Author library menu test keeps flushed branch version and selected entry IDs explicit; one real editor/menu route proves preview does not change document.",
+      "beforeSha256": "c40613ec277fe824165b61f22cad22f9113d4afe2292712edb2ecc44662122e7",
+      "afterSha256": "c40613ec277fe824165b61f22cad22f9113d4afe2292712edb2ecc44662122e7"
+    },
+    {
+      "path": "apps/web/tests/knowledge-bilingual-study.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Bilingual study mount captures rendered override context; prepared/private target switching and held request tests retain language ownership, immutable block and private library fingerprint.",
+      "beforeSha256": "a90f72ebcae7b68ed07d67dd20855902dc95bf4654c3808a18764c6dade10aa0",
+      "afterSha256": "a90f72ebcae7b68ed07d67dd20855902dc95bf4654c3808a18764c6dade10aa0"
+    },
+    {
+      "path": "apps/web/tests/knowledge-block-controls.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Block controls suite names choose helper and schema fixture; edit/apply, duplicate/reorder/delete, host actions and native drop decisions preserve exact IDs/prose with direct assertions.",
+      "beforeSha256": "6bcb4751753836eda1e1f6b2b4a3c741b69a85735657d47ebb02cc511520fce9",
+      "afterSha256": "6bcb4751753836eda1e1f6b2b4a3c741b69a85735657d47ebb02cc511520fce9"
+    },
+    {
+      "path": "apps/web/tests/knowledge-block-copy.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Block copy suite uses schema-validated destination and context; preview/dependency/media counts, frozen uncertain operation and audio/exercise menu matrix keep authority and selected identities explicit.",
+      "beforeSha256": "c8269c23e8c5d4b9d21d92316ba0f23aa0ac6bbab787eb8acd527d90f4c91b9f",
+      "afterSha256": "c8269c23e8c5d4b9d21d92316ba0f23aa0ac6bbab787eb8acd527d90f4c91b9f"
+    },
+    {
+      "path": "apps/web/tests/knowledge-block-field-authoring.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Atomic field authoring suite names show/context/result fixtures; preview, source staleness, late cancellation, retry identity and per-language segment coverage remain separate named cases.",
+      "beforeSha256": "77f89dafb8aa8487f7b2c0ce3572ff50cd9955f2fa9988128b5205eb125f5a23",
+      "afterSha256": "77f89dafb8aa8487f7b2c0ce3572ff50cd9955f2fa9988128b5205eb125f5a23"
+    },
+    {
+      "path": "apps/web/tests/knowledge-block-groups.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Block group tests keep question/group/audio identities explicit; one transaction, fresh duplicate set, writable gaps and stale group edits retain prose and atomicity. State-specific fixture branches are local to one parametric stale edit case.",
+      "beforeSha256": "59e6ab69b47be6f8fe6100b26ac490b58ef9ece23d7bbc93f22a157abb02f472",
+      "afterSha256": "59e6ab69b47be6f8fe6100b26ac490b58ef9ece23d7bbc93f22a157abb02f472"
+    },
+    {
+      "path": "apps/web/tests/knowledge-block-insertion-bookmark.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Insertion bookmark tests use minimal real Editor and explicit release/destroy lifecycle; mapped versus deleted cursor assertions are immediate.",
+      "beforeSha256": "07815b1210502d6e95e11c64441a75bc157a9323254fa5f94c895b77edffff19",
+      "afterSha256": "07815b1210502d6e95e11c64441a75bc157a9323254fa5f94c895b77edffff19"
+    },
+    {
+      "path": "apps/web/tests/knowledge-block-language-defaults.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Language defaults tests separate explicit block language, transcript fallback and inherited note defaults; rerender proves existing edit stability and only explicit language change mutates transcript language.",
+      "beforeSha256": "7b2d38270849488de1235860e195f0556c9b9ec2d2b3fbcac352aae92945b593",
+      "afterSha256": "7b2d38270849488de1235860e195f0556c9b9ec2d2b3fbcac352aae92945b593"
+    },
+    {
+      "path": "apps/web/tests/knowledge-block-mentions.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Block mention tests isolate bounded unique selection, missing target retention, once-only requests and picker/chip actions; oversized group rejection is atomic and descriptors remain bounded.",
+      "beforeSha256": "5b6056f90e948c3aad8abe47b34ed03378b0a03ee56bcbc3ff997e4643bfb9a3",
+      "afterSha256": "5b6056f90e948c3aad8abe47b34ed03378b0a03ee56bcbc3ff997e4643bfb9a3"
+    },
+    {
+      "path": "apps/web/tests/knowledge-block-proposals.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Proposal suite names proposal/branch/context fixtures; per-turn placement, target staleness, held Apply, explicit retry, stale dependency copies, reversible dismissal and insertion bookmark ownership have local protocol assertions.",
+      "beforeSha256": "1d7b5d94fd50200fff361c859f3b6457d7a0fa883912ea50e1497353f0148cd9",
+      "afterSha256": "1d7b5d94fd50200fff361c859f3b6457d7a0fa883912ea50e1497353f0148cd9"
+    },
+    {
+      "path": "apps/web/tests/knowledge-block-reply.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Block reply state matrix distinguishes succeeded structured tool acknowledgement from failed/absent tool prose insertion; running tool test directly asserts preparation label and no mutation.",
+      "beforeSha256": "7ef5c78852d50cc44e584f9d05be99d76c60490e7a36edef391284e99054af3b",
+      "afterSha256": "7ef5c78852d50cc44e584f9d05be99d76c60490e7a36edef391284e99054af3b"
+    },
+    {
+      "path": "apps/web/tests/knowledge-block-rerender.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Block rerender case visibly replaces callback/object identities while retaining unsent answer and invoking only latest callback; no hidden harness state.",
+      "beforeSha256": "9b32114151e679f488153d9c4a19b2fb1ddcda9ed5c0966c2c8eef969a60243a",
+      "afterSha256": "9b32114151e679f488153d9c4a19b2fb1ddcda9ed5c0966c2c8eef969a60243a"
+    },
+    {
+      "path": "apps/web/tests/knowledge-block-target-integration.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Target integration actions fixture isolates current authorized block labels; rerender cases distinguish renamed, deleted and foreign IDs through real integration context.",
+      "beforeSha256": "4b337e143bcb0687ef7c76811024f1782b66c4acb504c261d321ffe4cc2f45dc",
+      "afterSha256": "4b337e143bcb0687ef7c76811024f1782b66c4acb504c261d321ffe4cc2f45dc"
+    },
+    {
+      "path": "apps/web/tests/knowledge-document-groups.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Document group helpers blockNode/paragraph/exercise/body/renderReader keep grouping and meaningful prose preservation explicit; reader action case proves no author controls or transport mutation.",
+      "beforeSha256": "5191e900f5cf54b4583cae75afa16c7e87fc40148d3d0854c0ecc530985a019f",
+      "afterSha256": "5191e900f5cf54b4583cae75afa16c7e87fc40148d3d0854c0ecc530985a019f"
+    },
+    {
+      "path": "apps/web/tests/knowledge-document-presence.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Document presence tests keep publication gate versus plain-text fallback separate; horizontal-rule offsets and decorative-only drafts are direct expectations.",
+      "beforeSha256": "a8667eeb476d0abdddc6f2b26ec55f5f1538068b44034d9a750c334f0a03ae5b",
+      "afterSha256": "a8667eeb476d0abdddc6f2b26ec55f5f1538068b44034d9a750c334f0a03ae5b"
+    },
+    {
+      "path": "apps/web/tests/knowledge-editor-initialization.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Editor initialization catalog uses real handle snapshots and named geometry restoration; scenarios expose no false initialization edits, undoable starters, stable selected targets and stale hash rejection.",
+      "beforeSha256": "d38cd7421887034e1d19532d00326ec95b14913cf23d5a2271ff072341269a05",
+      "afterSha256": "d38cd7421887034e1d19532d00326ec95b14913cf23d5a2271ff072341269a05"
+    },
+    {
+      "path": "apps/web/tests/knowledge-inline-proposal-position.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Inline proposal geometry cases directly state anchor, clamp, gutters and root font scale using compact numeric fixtures.",
+      "beforeSha256": "4e04f63b2f0af24d0563c762dfa420e53bf24419648ac12ecf88cc0be42ef224",
+      "afterSha256": "4e04f63b2f0af24d0563c762dfa420e53bf24419648ac12ecf88cc0be42ef224"
+    },
+    {
+      "path": "apps/web/tests/knowledge-learning-block-editor.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Learning block editor catalog separates form/schema normalization, identity copy constraints, real Apply/undo, upload retry and transcript stale replacement; schema fixtures and explicit handles retain mutation ownership.",
+      "beforeSha256": "17a8549f1384b1015265697fa32846168b9415ee25370fcae6194a3d42d87d41",
+      "afterSha256": "17a8549f1384b1015265697fa32846168b9415ee25370fcae6194a3d42d87d41"
+    },
+    {
+      "path": "apps/web/tests/knowledge-library-copy.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Library copy catalog names context/text/renderLibrary; tests expose alignment identities, access headers, cache invalidation and exact frozen requests versus explicit new preview after version conflict.",
+      "beforeSha256": "45ea344415dc8001e7500ecc5842c75bb446e54c61fcd741fae6bd99e0fdc5a3",
+      "afterSha256": "45ea344415dc8001e7500ecc5842c75bb446e54c61fcd741fae6bd99e0fdc5a3"
+    },
+    {
+      "path": "apps/web/tests/knowledge-markdown-insertion.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Markdown insertion helpers body/setup/target/apply isolate repeated editor plumbing; node-limit plugin behavior, atomic rejection, surrounding-text preservation, rich undo and HR offset invariants remain local.",
+      "beforeSha256": "1b803fa371ad9a9784f5b033e5ab1ed890f2ea1a7540ef361543dea45cd18a38",
+      "afterSha256": "1b803fa371ad9a9784f5b033e5ab1ed890f2ea1a7540ef361543dea45cd18a38"
+    },
+    {
+      "path": "apps/web/tests/knowledge-media-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Media API tests explicitly distinguish preflight file rejection, raw authenticated upload, shared header-only capability and nonaudio response rejection.",
+      "beforeSha256": "a50c8360930bc0377a23d7cf2b6c810fec88ceb201966aa257bfcc37ae1bceb7",
+      "afterSha256": "a50c8360930bc0377a23d7cf2b6c810fec88ceb201966aa257bfcc37ae1bceb7"
+    },
+    {
+      "path": "apps/web/tests/knowledge-media-tools.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "MediaTools fixtures and deferred jobs expose last-source removal, pending narration/quote retention and explicit Apply without silently aborting admitted work.",
+      "beforeSha256": "812e993994dd6be3acb1ab2b5b7b56fdb98199dce2d4c8df630045be3cbb2fd2",
+      "afterSha256": "812e993994dd6be3acb1ab2b5b7b56fdb98199dce2d4c8df630045be3cbb2fd2"
+    },
+    {
+      "path": "apps/web/tests/knowledge-narration.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Narration scenarios separate flush/version admission, explicit Apply and identity/session invalidation; late completions cannot revive revoked previews.",
+      "beforeSha256": "094571c75153c75bb838e123db875e735477579274781866fb035a9d78e5636b",
+      "afterSha256": "094571c75153c75bb838e123db875e735477579274781866fb035a9d78e5636b"
+    },
+    {
+      "path": "apps/web/tests/knowledge-private-translation-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Private translation transport cases isolate header-only share authority, structured allowance conflicts and unsupported-language preflight without HTTP.",
+      "beforeSha256": "fbd4b9a915e202609d3f460e8cbe54d82f61de8a2c32dd35461ddc13f2798e38",
+      "afterSha256": "fbd4b9a915e202609d3f460e8cbe54d82f61de8a2c32dd35461ddc13f2798e38"
+    },
+    {
+      "path": "apps/web/tests/knowledge-private-translation-target-switch.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Target-switch case explicitly resets original mode and replaces the visible overlay without admitting an AI request.",
+      "beforeSha256": "732d7c35336fe1634b3d734bca7fdf57e7ee471fab6dc4e619f8393db6419faa",
+      "afterSha256": "732d7c35336fe1634b3d734bca7fdf57e7ee471fab6dc4e619f8393db6419faa"
+    },
+    {
+      "path": "apps/web/tests/knowledge-private-translation-view.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Presentation-only translation limits are tested independently from persisted body validation, preserving the original long document.",
+      "beforeSha256": "3ac61ca138e92be463ba6f06ee4eb856914cdf293156a0ba8cfd4e917c93c249",
+      "afterSha256": "3ac61ca138e92be463ba6f06ee4eb856914cdf293156a0ba8cfd4e917c93c249"
+    },
+    {
+      "path": "apps/web/tests/knowledge-private-translation.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Private translation hook cases name explicit admission, immutable original, revoked cached results, uncertain operation reuse and eligible-source selection.",
+      "beforeSha256": "c97a3c9b87047795cb131fae0c45d89390f014380629e7d2152763b25856aa2d",
+      "afterSha256": "c97a3c9b87047795cb131fae0c45d89390f014380629e7d2152763b25856aa2d"
+    },
+    {
+      "path": "apps/web/tests/knowledge-proposal-audio.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Proposal audio fixtures restore object URL globals and distinguish shared authorized fetch, lazy offscreen loading and forbidden-response behavior.",
+      "beforeSha256": "108f1624111690b138442711afede183ee229f5a3e8197574ff76f46be54828b",
+      "afterSha256": "108f1624111690b138442711afede183ee229f5a3e8197574ff76f46be54828b"
+    },
+    {
+      "path": "apps/web/tests/knowledge-prose-block-drag.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Prose drag fixtures group selection, serialization, atomic group boundaries, stale drops, read-only affordances and pointer geometry into named scenarios; long catalog is coherent test coverage.",
+      "beforeSha256": "6e10184271d115da073aa9722ff3c5183f5052cb429310bf404e445c966fc73d",
+      "afterSha256": "6e10184271d115da073aa9722ff3c5183f5052cb429310bf404e445c966fc73d"
+    },
+    {
+      "path": "apps/web/tests/knowledge-safe-rendering.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Safe rendering uses hostile literal markup fixtures and explicit schema/link assertions for unsupported nodes, executable URLs and bounded heading levels.",
+      "beforeSha256": "a214cb073db2f8f2878bf636ca0514e9210994a929fa2836ce3ef8c192bf554b",
+      "afterSha256": "a214cb073db2f8f2878bf636ca0514e9210994a929fa2836ce3ef8c192bf554b"
+    },
+    {
+      "path": "apps/web/tests/knowledge-selection-bubble.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Selection bubble geometry table directly expresses viewport clamp, scroll offsets, flip and offscreen hiding for desktop and touch.",
+      "beforeSha256": "17b2667d1fc1c542209b6482861733d9d3476d7c7e91ff7ebcacd58228200291",
+      "afterSha256": "17b2667d1fc1c542209b6482861733d9d3476d7c7e91ff7ebcacd58228200291"
+    },
+    {
+      "path": "apps/web/tests/knowledge-sentence-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Sentence transport fixture separates source-bound endpoint/share headers, unsupported batch capability and canonical access-loss error type.",
+      "beforeSha256": "a67eaf50140e793f0b7e254e8493c8a8246fc8783c237add5a19dd8dbe2d365b",
+      "afterSha256": "a67eaf50140e793f0b7e254e8493c8a8246fc8783c237add5a19dd8dbe2d365b"
+    },
+    {
+      "path": "apps/web/tests/knowledge-snippet-selector.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Snippet fixtures distinguish vocabulary source terms/examples, bilingual originals and prepared grammar examples while excluding translated/private text.",
+      "beforeSha256": "815c7ca595dc82457c28f15a2345b8bd3e796779efb433236ee2954b22fd6c89",
+      "afterSha256": "815c7ca595dc82457c28f15a2345b8bd3e796779efb433236ee2954b22fd6c89"
+    },
+    {
+      "path": "apps/web/tests/knowledge-transcription-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Transcription API fixture checks explicit confirmation identity, asset/result validation and one-request failure without implicit retry.",
+      "beforeSha256": "51f927570f57e5afbc67f0427c0283a03417f1b386330e8c15de810b94b60597",
+      "afterSha256": "51f927570f57e5afbc67f0427c0283a03417f1b386330e8c15de810b94b60597"
+    },
+    {
+      "path": "apps/web/tests/knowledge-transcription.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Transcription scenario catalog distinguishes durable widget and local dialog lifecycle, inspected Apply, ambiguous operation identity, bounded polling and cancellation/readback races; named fixtures keep the large behavioral matrix navigable.",
+      "beforeSha256": "6c78746d58a4241e0910f24463283c36c710a33274815cf2c7075d7ca125bc99",
+      "afterSha256": "6c78746d58a4241e0910f24463283c36c710a33274815cf2c7075d7ca125bc99"
+    },
+    {
+      "path": "apps/web/tests/knowledge-vocabulary-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Flashcard transport make fixture directly verifies header-only share authority, canonical revocation errors and identical attempt payload on explicit retry.",
+      "beforeSha256": "06797b66146d6449e217d087cd52b7a6e67114f31adf30c68bbf59457643726f",
+      "afterSha256": "06797b66146d6449e217d087cd52b7a6e67114f31adf30c68bbf59457643726f"
+    },
+    {
+      "path": "apps/web/tests/knowledge-workspace-block-selection.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Real Tiptap editor fixture and cleanup separate node selection from prose selection and collapsed caret without mocking the selection mechanism.",
+      "beforeSha256": "9b31a90b84d5d04914ccc4072f2d93e464a8526a2491c8776bccc90a34059549",
+      "afterSha256": "9b31a90b84d5d04914ccc4072f2d93e464a8526a2491c8776bccc90a34059549"
+    },
+    {
+      "path": "apps/web/tests/knowledge-workspace-properties.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "One stateful form harness verifies a single normalized canvas title and optional summary edits while asserting unchanged document content.",
+      "beforeSha256": "b68c20ddb7667c4a64934bd41681eb56a80eefd12cef7d5d77a1dec11ee434f3",
+      "afterSha256": "b68c20ddb7667c4a64934bd41681eb56a80eefd12cef7d5d77a1dec11ee434f3"
+    },
+    {
+      "path": "apps/web/tests/knowledge-workspace-recovery.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Deferred saves and branch fixtures isolate unsaved second edits, combined rapid edits, rebased versions and initial hydration/error/branchless states; named recovery cases justify the test catalog length.",
+      "beforeSha256": "95b69c14a09b884168c5334841d60735245fc625a1de8eb8c4182d94d61f7ff1",
+      "afterSha256": "95b69c14a09b884168c5334841d60735245fc625a1de8eb8c4182d94d61f7ff1"
+    },
+    {
+      "path": "apps/web/tests/language-switcher.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Locale test explicitly checks cookie choice and one refresh while retaining pathname, query and hash.",
+      "beforeSha256": "fa966c2ab3984f3e9f24eff566ecb2dc8c6369d8140965bf7a1f241e2ac46bef",
+      "afterSha256": "fa966c2ab3984f3e9f24eff566ecb2dc8c6369d8140965bf7a1f241e2ac46bef"
+    },
+    {
+      "path": "apps/web/tests/learner-portrait-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Portrait transport and owner-cache describe groups separate strict private-response validation, bounded bytes, authenticated versioned writes, durable operation paths and stale cache receipts; named cases make the long contract catalog navigable.",
+      "beforeSha256": "468af112cdd69f31a63bffcdcfb85f6d1d712a65301ccabd86ceec643d65fc91",
+      "afterSha256": "468af112cdd69f31a63bffcdcfb85f6d1d712a65301ccabd86ceec643d65fc91"
+    },
+    {
+      "path": "apps/web/tests/learner-portrait-conflict-panel.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Conflict locale table keeps only changed field groups visible and requires each explicit radio choice before reconciliation; field-value edge cases remain separate.",
+      "beforeSha256": "f2c10b9a7f19b298b75ea093009c6744e105c13fefc16d287760b84021fdf696",
+      "afterSha256": "f2c10b9a7f19b298b75ea093009c6744e105c13fefc16d287760b84021fdf696"
+    },
+    {
+      "path": "apps/web/tests/learner-portrait-dialogs.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Destructive dialog fixture distinguishes Cancel, discard-before-restart with returned version, partial restart failure and deletion announcements.",
+      "beforeSha256": "4fe0fca32390f4f7d2c12565570528ba5254f7f6750de206a259757848ff837a",
+      "afterSha256": "4fe0fca32390f4f7d2c12565570528ba5254f7f6750de206a259757848ff837a"
+    },
+    {
+      "path": "apps/web/tests/learner-portrait-entry.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Entry state fixture explicitly separates empty/manual draft/resumable interview/approved disabled states, explicit enable invalidation and discovery retry.",
+      "beforeSha256": "8c46573868f8d53e626976a0b60bce58145f6d79269f0bc5884c81196fde4971",
+      "afterSha256": "8c46573868f8d53e626976a0b60bce58145f6d79269f0bc5884c81196fde4971"
+    },
+    {
+      "path": "apps/web/tests/learner-portrait-management.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Named state, approved and management fixtures isolate explicit manual Save/approve, conflict reconciliation and account change while preserving local values.",
+      "beforeSha256": "c2a5beb8c29b5e0095c4be7bea06af8b753965dbbdede0c6c909c48055b22c6c",
+      "afterSha256": "c2a5beb8c29b5e0095c4be7bea06af8b753965dbbdede0c6c909c48055b22c6c"
+    },
+    {
+      "path": "apps/web/tests/learner-portrait-privacy-copy.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Locale disclosure regex table asserts notice order, active-data deletion boundary and account privacy scope without admitting requests.",
+      "beforeSha256": "1e277e1d7df19303d9fbb6d37508ab456f25df65c766fb7497967330852c6c3c",
+      "afterSha256": "1e277e1d7df19303d9fbb6d37508ab456f25df65c766fb7497967330852c6c3c"
+    },
+    {
+      "path": "apps/web/tests/learning-block-context-text.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Immutable context fixture includes authored video description and exercise hints/group title while excluding presentation identities.",
+      "beforeSha256": "061843896ff7115f048f5fa754e8bf59b6754f5715ba48dd00c33bad73ef618f",
+      "afterSha256": "061843896ff7115f048f5fa754e8bf59b6754f5715ba48dd00c33bad73ef618f"
+    },
+    {
+      "path": "apps/web/tests/learning-blocks.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Learning block labels and source fixtures support a named catalog spanning local versus AI attempts, revision/draft hydration, reveal, source identity, safe media and timestamped hints; per-case assertions preserve distinct contracts despite total length.",
+      "beforeSha256": "7e935ab81aa3eabe7c91c998c0ee1e71ab79828a526551ba15d9189e71e59bb0",
+      "afterSha256": "7e935ab81aa3eabe7c91c998c0ee1e71ab79828a526551ba15d9189e71e59bb0"
+    },
+    {
+      "path": "apps/web/tests/learning-narrative.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Narrative cases distinguish heading semantics, formatted explanatory prose, literal source examples, unsafe links/media and reveal-only explanation.",
+      "beforeSha256": "fc849631214950d85e0351d4afc9466885b00b60346377fbe5ecae7a9fe3eb50",
+      "afterSha256": "fc849631214950d85e0351d4afc9466885b00b60346377fbe5ecae7a9fe3eb50"
+    },
+    {
+      "path": "apps/web/tests/library-navigation.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "StrictMode wrapper and loaded-resource fixture make once-only successful opens, unauthenticated suppression, bounded shortcuts and owner-cache isolation explicit.",
+      "beforeSha256": "97cfd99419811d74a8590e0e55aab33e278c4f7d3180ddbff4009c2020d82765",
+      "afterSha256": "97cfd99419811d74a8590e0e55aab33e278c4f7d3180ddbff4009c2020d82765"
+    },
+    {
+      "path": "apps/web/tests/menu.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Menu scenarios directly express tooltip/focus restoration, persistent dialog opener, enabled-item keyboard traversal and checked nonclosing options.",
+      "beforeSha256": "2c7a8b66d1c07b2b5d5f34500d00f26ffda88e3ee55301685d0935b0763da6a7",
+      "afterSha256": "2c7a8b66d1c07b2b5d5f34500d00f26ffda88e3ee55301685d0935b0763da6a7"
+    },
+    {
+      "path": "apps/web/tests/nested-popover.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "FlyoutWithMenu fixture and restored native descriptors isolate nested portal focus boundaries, temporary blur and layered Escape dismissal.",
+      "beforeSha256": "e2bb2d8992f12df98e66446b9e65e789c0b2f5ad77591c8c9f70ff2800f07054",
+      "afterSha256": "e2bb2d8992f12df98e66446b9e65e789c0b2f5ad77591c8c9f70ff2800f07054"
+    },
+    {
+      "path": "apps/web/tests/portrait-chat-preferences.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Manual/displayed preference fixtures distinguish inherited values from explicit overrides, automatic removal and legacy explanation-level fallback.",
+      "beforeSha256": "e687ee2fe0e1a1e92100e2e47ed9fd7e5e904f52d5eb46f1f65bcd26be2a6c19",
+      "afterSha256": "e687ee2fe0e1a1e92100e2e47ed9fd7e5e904f52d5eb46f1f65bcd26be2a6c19"
+    },
+    {
+      "path": "apps/web/tests/portrait-editor.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "EditablePortrait harness centralizes state while named scenarios retain confirmed-note edits, meaningful facts, locale rendering, grapheme bounds and immutable diffs; long catalog follows the editor contract.",
+      "beforeSha256": "11139f3d941113659925b2b01b94618a2a1ee456f1d5a4dbae5b8b6c9c1b6051",
+      "afterSha256": "11139f3d941113659925b2b01b94618a2a1ee456f1d5a4dbae5b8b6c9c1b6051"
+    },
+    {
+      "path": "apps/web/tests/portrait-interview.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Interview session/mount fixtures support distinct durable operation, paid acknowledgement, composer/recovery, stale proposal, account-fence and localized language scenarios; complete named behavior matrix justifies test length.",
+      "beforeSha256": "8a59a7cd8b4d188ce1a73f629e535a86b654aa67c906d6172cdf59b9e568aefc",
+      "afterSha256": "8a59a7cd8b4d188ce1a73f629e535a86b654aa67c906d6172cdf59b9e568aefc"
+    },
+    {
+      "path": "apps/web/tests/portrait-owner-mutation-state.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Deferred owner mutations explicitly label A/B and old/new work, proving pending/error/cache isolation across A-to-B-to-A and duplicate submissions; management and entry groups are cohesive.",
+      "beforeSha256": "5b27cbacc511924c006589882471a39f6301bef7d6fab3d3da12de43f0c39657",
+      "afterSha256": "5b27cbacc511924c006589882471a39f6301bef7d6fab3d3da12de43f0c39657"
+    },
+    {
+      "path": "apps/web/tests/portrait-owner-scoped-request.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Owner request cases make pre-session, callback retry, post-operation and deferred-coordinator ownership checkpoints explicit with controlled promises.",
+      "beforeSha256": "d5fca0668b2c2e4a26c467536d83175250fe848c81f59fcfd5dd1c8d98b3ceef",
+      "afterSha256": "d5fca0668b2c2e4a26c467536d83175250fe848c81f59fcfd5dd1c8d98b3ceef"
+    },
+    {
+      "path": "apps/web/tests/practice-history.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Practice fixture and direction-scoped queries separate authoritative totals from paged history, per-direction retry, close/reopen fencing and access-loss notification; dialog shims are restored explicitly.",
+      "beforeSha256": "c679e23d8c5878645727f1f0612bebd758549f0c94aaacca491388d9a0605adb",
+      "afterSha256": "c679e23d8c5878645727f1f0612bebd758549f0c94aaacca491388d9a0605adb"
+    },
+    {
+      "path": "apps/web/tests/proposal-markdown.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Markdown parser scenarios/table cases make atomic unsupported/unsafe rejection, literal fallback, heading mapping, rectangular tables and bounded adversarial input explicit; no opaque shared orchestration despite catalog length.",
+      "beforeSha256": "e3b451272e2fc927f5a0f51a81678a456fbc9cd1994ae59c8739a0133311bcb4",
+      "afterSha256": "e3b451272e2fc927f5a0f51a81678a456fbc9cd1994ae59c8739a0133311bcb4"
+    },
+    {
+      "path": "apps/web/tests/proposal-target.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Mapping helper exposes actual StepMap sequences for outside edits, changed targets, shifted later edits and insertion cursors.",
+      "beforeSha256": "9f5bf7ccb98c84dc16f367e225d1363796c7dd6033cd9cf52b4fd7e211dccdb9",
+      "afterSha256": "9f5bf7ccb98c84dc16f367e225d1363796c7dd6033cd9cf52b4fd7e211dccdb9"
+    },
+    {
+      "path": "apps/web/tests/reference-comparison.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Reference comparison table preserves meaningful symbol/number/accent differences while explicit Unicode/apostrophe/locale examples retain original strings.",
+      "beforeSha256": "26ee2c0834854ff246e71524e8eeacc5d20b5f4337c2c5e644805bdf41f99af7",
+      "afterSha256": "26ee2c0834854ff246e71524e8eeacc5d20b5f4337c2c5e644805bdf41f99af7"
+    },
+    {
+      "path": "apps/web/tests/refresh-coordinator.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "ChannelHub, FakeChannel and SerialLocks model separate transport/locking seams; cases directly express in-tab sharing, peer election, late joins and stale refresh outcomes.",
+      "beforeSha256": "3541f9b664f02dbbbc5f7a056cba6beadc017b3e49c152f18973ba81a827f27f",
+      "afterSha256": "3541f9b664f02dbbbc5f7a056cba6beadc017b3e49c152f18973ba81a827f27f"
+    },
+    {
+      "path": "apps/web/tests/render.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Render helper transparently selects a typed locale catalog and forwards remaining Testing Library options.",
+      "beforeSha256": "afe21ed850c895f99bcf2a451642dbfa7aab702242f081cb1c2dd9e1c9a953fe",
+      "afterSha256": "afe21ed850c895f99bcf2a451642dbfa7aab702242f081cb1c2dd9e1c9a953fe"
+    },
+    {
+      "path": "apps/web/tests/responsive-icon-button.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Responsive button cases directly assert semantic name, tooltip lifecycle, disabled loading and destination-preserving links.",
+      "beforeSha256": "6951910cac7f395cfa88fce06728ec111b15580cc3b75fb0546b7f04f550fa36",
+      "afterSha256": "6951910cac7f395cfa88fce06728ec111b15580cc3b75fb0546b7f04f550fa36"
+    },
+    {
+      "path": "apps/web/tests/return-path.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Return-path table states rejected origin/control/backslash shapes alongside a retained relative query/fragment.",
+      "beforeSha256": "c98d57822951409eb51c4182b09e0688cdb220da3f5ba3229e1a7f9924907c35",
+      "afterSha256": "c98d57822951409eb51c4182b09e0688cdb220da3f5ba3229e1a7f9924907c35"
+    },
+    {
+      "path": "apps/web/tests/sentence-library-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Saved library response fixture distinguishes header capability, frozen snapshot replay, domain conflicts, free detail preflight and identity-free display.",
+      "beforeSha256": "d4a33b0a11ff46bb09606d4398ec6fef5c5ee25eddcfbf4f255bff5a8c835852",
+      "afterSha256": "d4a33b0a11ff46bb09606d4398ec6fef5c5ee25eddcfbf4f255bff5a8c835852"
+    },
+    {
+      "path": "apps/web/tests/sentence-preparation-notice.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Preparation controller/error fixtures separate sign-in, unavailable manifest, cooldown, revocation, model retry and explicit new budget; named UI states justify catalog length.",
+      "beforeSha256": "7f68a5f1907aefad2a00fc02867c456cb3570df3aee33a658f64578a142b9e54",
+      "afterSha256": "7f68a5f1907aefad2a00fc02867c456cb3570df3aee33a658f64578a142b9e54"
+    },
+    {
+      "path": "apps/web/tests/sentence-preparation-state.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Preparation api/store fixtures isolate retained operation identity, read-only reconnect, explanation language, paged refresh, stale/access loss and disabled-result fencing; controlled storage/timers retain lifecycle context.",
+      "beforeSha256": "64024dd29c5a108cffe5eba34ef68baf4df6caf9b63bb8aff5c1a0fedc397d96",
+      "afterSha256": "64024dd29c5a108cffe5eba34ef68baf4df6caf9b63bb8aff5c1a0fedc397d96"
+    },
+    {
+      "path": "apps/web/tests/sentence-training-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Sentence transport fixtures keep confirmed allowance payload, authenticated versus public routes, header-only shares, explicit free reveal and validation/error classification distinct.",
+      "beforeSha256": "32e36a9ce76f58e4c18443817762e85eb91ad68052195dac5210c47eb58d84f1",
+      "afterSha256": "32e36a9ce76f58e4c18443817762e85eb91ad68052195dac5210c47eb58d84f1"
+    },
+    {
+      "path": "apps/web/tests/sentence-training-state.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Sentence state catalog uses typed API/deferred/job/progress fixtures and admission/query-store groups; exact replay, fresh generation result retention, uncertain identity, cancellation/access fences and counters each have explicit named scenarios, so splitting solely by line count would obscure the shared state-machine contracts.",
+      "beforeSha256": "628882023f43405ef5742d0353cd4d955e676c49fb3dd548e27d7dd2e2a6bcc9",
+      "afterSha256": "628882023f43405ef5742d0353cd4d955e676c49fb3dd548e27d7dd2e2a6bcc9"
+    },
+    {
+      "path": "apps/web/tests/sentence-training-ui.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Content and presentation-cleanup groups separate UTF-16/hint identity/reference semantics from native asynchronous close/fullscreen races; invariant comments explain the simulated lifecycle.",
+      "beforeSha256": "4ef1bbdec3c18c4410cd0fad58bf2c74414263578ad0f5d929b7b5c2de7142a5",
+      "afterSha256": "4ef1bbdec3c18c4410cd0fad58bf2c74414263578ad0f5d929b7b5c2de7142a5"
+    },
+    {
+      "path": "apps/web/tests/setup.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Setup comments bound jsdom media/modal shims and global cleanup, explicitly reserving top-layer proof for browser journeys.",
+      "beforeSha256": "ebac2d727f74f0a37cf2592e58528aca1bfd3f668d868a5df101340be8da6c02",
+      "afterSha256": "ebac2d727f74f0a37cf2592e58528aca1bfd3f668d868a5df101340be8da6c02"
+    },
+    {
+      "path": "apps/web/tests/shared-dictionary-page.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Public dictionary/render fixtures separate missing share capability, fragment changes, pronunciation scope, continuation failure and stale-cursor reload with visible retained content.",
+      "beforeSha256": "8343acac46d3cf1600c3ff519f34ec87ae4360f93e8d86e2928d3853f89a38c7",
+      "afterSha256": "8343acac46d3cf1600c3ff519f34ec87ae4360f93e8d86e2928d3853f89a38c7"
+    },
+    {
+      "path": "apps/web/tests/shared-knowledge-assistant-actions.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Captured assistant props isolate shared/saved read-only context removal from owner proposal controls while preserving independent feedback requests.",
+      "beforeSha256": "5b0bf9e29b5f598e5d6659bef6d894f8272db4a2f50c5a6653bcc232b34bef3f",
+      "afterSha256": "5b0bf9e29b5f598e5d6659bef6d894f8272db4a2f50c5a6653bcc232b34bef3f"
+    },
+    {
+      "path": "apps/web/tests/shared-popover.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Popover scenarios make dialog host, tooltip portal, hidden-before-measure and focus restoration explicit; native shim cleanup and comments explain temporary blur.",
+      "beforeSha256": "2d05496cc21caa98de8ae21ff7dd4c46545e64411da2a9482d436cbfb18d09fb",
+      "afterSha256": "2d05496cc21caa98de8ae21ff7dd4c46545e64411da2a9482d436cbfb18d09fb"
+    },
+    {
+      "path": "apps/web/tests/sidebar-hover-intent.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Hover timing assertions name exact open/travel delays, distinguish touch and explicit pinning, and verify unmount timer cleanup.",
+      "beforeSha256": "010b151890910b6d88eff55bd47fc68a23af75192c01c1e6b24d52f540502d82",
+      "afterSha256": "010b151890910b6d88eff55bd47fc68a23af75192c01c1e6b24d52f540502d82"
+    },
+    {
+      "path": "apps/web/tests/site-header.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Header fixture resets route/cookie and directly checks locale/theme/home controls across standalone route variants.",
+      "beforeSha256": "0523579837e2284d210aa1d25b943b1de067fbb99a29050f68d0857a624138f8",
+      "afterSha256": "0523579837e2284d210aa1d25b943b1de067fbb99a29050f68d0857a624138f8"
+    },
+    {
+      "path": "apps/web/tests/speech-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Speech source/transport cases isolate fifty-source batching, property-order matching, session batch separation and validated private audio bytes.",
+      "beforeSha256": "b7cc7f76e6cc77c76dd55ceeb4e9501daac9a631025e15e629d6608191477a9e",
+      "afterSha256": "b7cc7f76e6cc77c76dd55ceeb4e9501daac9a631025e15e629d6608191477a9e"
+    },
+    {
+      "path": "apps/web/tests/speech-billing-notice.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Speech Control/transport fixture and locale table distinguish generated, released and free cached billing notices with player/toast/session cleanup.",
+      "beforeSha256": "bb08048f96ce56f362458bfddc9eb22ae8b665c3e8be23eb1a2a574fa3745122",
+      "afterSha256": "bb08048f96ce56f362458bfddc9eb22ae8b665c3e8be23eb1a2a574fa3745122"
+    },
+    {
+      "path": "apps/web/tests/speech-confirmation.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Confirmation quote cases keep explicit Generate versus Cancel, unlimited balance, locale disclaimer and exact milli-credit affordability separate from rounded presentation.",
+      "beforeSha256": "eefc4165312972c303d4744bdf661acdd988a89317097e937787de964003a85b",
+      "afterSha256": "eefc4165312972c303d4744bdf661acdd988a89317097e937787de964003a85b"
+    },
+    {
+      "path": "apps/web/tests/speech-control.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Control helper maps explicit player phases to accessible labels/tooltips, announcements and cancel/play actions without opaque behavior.",
+      "beforeSha256": "42d8d2ce77b85dcf58e763e72bb9fb618087b2eb3c3b14f217ff6ae18cfe12b1",
+      "afterSha256": "42d8d2ce77b85dcf58e763e72bb9fb618087b2eb3c3b14f217ff6ae18cfe12b1"
+    },
+    {
+      "path": "apps/web/tests/speech-player.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "FakeAudio and transport seams expose paid confirmation gating, duplicate admission, stale selection, autoplay retry, quote expiry, known polling and external-media ownership; each lifecycle scenario is independently named.",
+      "beforeSha256": "099f25ba3463d03ea606d3237a2db69ed1ec3d4115e25e08b3f8e72f14e485f9",
+      "afterSha256": "099f25ba3463d03ea606d3237a2db69ed1ec3d4115e25e08b3f8e72f14e485f9"
+    },
+    {
+      "path": "apps/web/tests/text-ai-preferences-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Preference boundary cases directly state optimistic authenticated PUT, strict remote validation, canonical refresh errors and malformed failure fallback.",
+      "beforeSha256": "cd05922308e18794fbb72145120d144c8ce02a4ddfcfccff584f6e1b1f31c44e",
+      "afterSha256": "cd05922308e18794fbb72145120d144c8ce02a4ddfcfccff584f6e1b1f31c44e"
+    },
+    {
+      "path": "apps/web/tests/text-ai-preferences-navigation.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Navigation groups and invariant comment distinguish programmatic/document guards from real SPA traversal; Back/Forward/multistep, Next metadata, StrictMode and listener ordering remain explicit.",
+      "beforeSha256": "13e92d539564cdc907b39e8a5cc3f38153b66c64450a12cc068cbb6375127e0e",
+      "afterSha256": "13e92d539564cdc907b39e8a5cc3f38153b66c64450a12cc068cbb6375127e0e"
+    },
+    {
+      "path": "apps/web/tests/text-ai-preferences.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Preference mount/selection fixtures retain exact budget precision, failed draft/version retry, explicit conflict overwrite, account hiding and cache-refresh draft preservation; named cases form a cohesive persistence catalog.",
+      "beforeSha256": "e3a6efbdfa6f090a8be76bdd7994bc9a9b660733d82018075983514852bbc3c9",
+      "afterSha256": "e3a6efbdfa6f090a8be76bdd7994bc9a9b660733d82018075983514852bbc3c9"
+    },
+    {
+      "path": "apps/web/tests/texts-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Text transport json/failure fixtures make route verbs, version/input validation, header-only capabilities, Unicode/operation preservation, abort propagation and error envelopes explicit.",
+      "beforeSha256": "b3fd28d0ffbe3dd4a9b6c15007c302c9749d54c645e533bfb10bdc2f3d9abf51",
+      "afterSha256": "b3fd28d0ffbe3dd4a9b6c15007c302c9749d54c645e533bfb10bdc2f3d9abf51"
+    },
+    {
+      "path": "apps/web/tests/texts-library-controls.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Folder/action fixtures directly expose real counts, disabled untranslatable sharing and archived restore controls.",
+      "beforeSha256": "e882d26c835addf28b902094f07e99daebe914f367ad6bbc1575013b4809ae38",
+      "afterSha256": "e882d26c835addf28b902094f07e99daebe914f367ad6bbc1575013b4809ae38"
+    },
+    {
+      "path": "apps/web/tests/texts-library-query.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Owner library query setup separates active/archived cursor traversal, versioned restore, continuation merging and signed-out suppression.",
+      "beforeSha256": "a5e68b3fff6496f2259a68fb692af1fb920039e843703b7f4f9497d550875899",
+      "afterSha256": "a5e68b3fff6496f2259a68fb692af1fb920039e843703b7f4f9497d550875899"
+    },
+    {
+      "path": "apps/web/tests/texts-management.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Share/session fixtures isolate versioned issue/revoke, fragment-only links, late account changes and synchronous mutation serialization.",
+      "beforeSha256": "88a38809fbb2ade8b8cf0822ab00aa3eeef8a6df4c054d50bcfe3eb2d2f16cbc",
+      "afterSha256": "88a38809fbb2ade8b8cf0822ab00aa3eeef8a6df4c054d50bcfe3eb2d2f16cbc"
+    },
+    {
+      "path": "apps/web/tests/texts-organization.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Organization fixtures make independent defaults and versioned shared-destination acknowledgement explicit, preserving originals on failed move.",
+      "beforeSha256": "b99262b60f8d76d0c59d038edc4dd6d0ed319dc48900c8384b7e00f4ad19ef4c",
+      "afterSha256": "b99262b60f8d76d0c59d038edc4dd6d0ed319dc48900c8384b7e00f4ad19ef4c"
+    },
+    {
+      "path": "apps/web/tests/texts-public-capability.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Capability cases explicitly inspect nonsecret query identities, fragment retirement/unmount eviction and malformed capability suppression.",
+      "beforeSha256": "bebc3b956fda13f88d3c6f01633ab13ccb99c4bfb64f4fe53e7dea92013cfd51",
+      "afterSha256": "bebc3b956fda13f88d3c6f01633ab13ccb99c4bfb64f4fe53e7dea92013cfd51"
+    },
+    {
+      "path": "apps/web/tests/texts-public-copy.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Copy setup and actor cases preserve frozen operation identity, current destination-share confirmation, scoped invalidation ordering and deferred auth fences; long catalog follows the copy contract.",
+      "beforeSha256": "639ab5337e395f19a9087d03e3a84833966842a5d269ea997c70258815ab00c8",
+      "afterSha256": "639ab5337e395f19a9087d03e3a84833966842a5d269ea997c70258815ab00c8"
+    },
+    {
+      "path": "apps/web/tests/texts-reading-actor.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Reader fixture deliberately keeps a stable session wrapper while switching actor; real selection helper and deferred lists/jobs expose aborts and suppression of old private picker/toast/marks.",
+      "beforeSha256": "36bd94ca97b0fc8249988f1547a13c8cf3c94d7e32012ff9a1b9e59da8402ec9",
+      "afterSha256": "36bd94ca97b0fc8249988f1547a13c8cf3c94d7e32012ff9a1b9e59da8402ec9"
+    },
+    {
+      "path": "apps/web/tests/texts-reading-collect.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Collection fixtures distinguish ambiguous same-operation retry from terminal new-operation retry, frozen selection, unmount abort, immediate duplicate lock and concurrent distinct occurrences.",
+      "beforeSha256": "5170ddcfde3c82e6402e1ef32f1a88454f92a9d2c0448a243c6fe32e241c014a",
+      "afterSha256": "5170ddcfde3c82e6402e1ef32f1a88454f92a9d2c0448a243c6fe32e241c014a"
+    },
+    {
+      "path": "apps/web/tests/texts-reading-duplicate.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Duplicate preview cases expose normalized exact matching versus prefix lookalikes, working retry and distinct localized terminal failure keys.",
+      "beforeSha256": "5449851543d4dcbc1aeaea6b9b0b15b9795ce922b44d35144d414d491e4dfd8f",
+      "afterSha256": "5449851543d4dcbc1aeaea6b9b0b15b9795ce922b44d35144d414d491e4dfd8f"
+    },
+    {
+      "path": "apps/web/tests/texts-reading-selection.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Native range helper directly expresses live geometry, pair-relative UTF16 offsets, code-point limits, sentence/pair boundaries and structural-whitespace origins.",
+      "beforeSha256": "57a3736d52fe9443193e430c868808d38b20fadbeced39d50bd746945c366be0",
+      "afterSha256": "57a3736d52fe9443193e430c868808d38b20fadbeced39d50bd746945c366be0"
+    },
+    {
+      "path": "apps/web/tests/texts-reading-view.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Aligned document scenarios preserve lexical versus structural whitespace, keyboard matching, modal-host selection controls, CJK joins and counterpart text while asserting immutable originals; large catalog is coherent rendering coverage.",
+      "beforeSha256": "9095102877fcf5525a3365263ef069af73714edcfe3a4c3ad14617254587ec0e",
+      "afterSha256": "9095102877fcf5525a3365263ef069af73714edcfe3a4c3ad14617254587ec0e"
+    },
+    {
+      "path": "apps/web/tests/texts-workspace-account.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Actor fixture and ownerless-cache sentinel explicitly expose cached A content during B pending/error states and fence late session callbacks.",
+      "beforeSha256": "f2321130d9c78c9440f6faf267d1261c3b8aecdd7c07224df3510c1fe3537b7b",
+      "afterSha256": "f2321130d9c78c9440f6faf267d1261c3b8aecdd7c07224df3510c1fe3537b7b"
+    },
+    {
+      "path": "apps/web/tests/texts-workspace-auto.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Automatic flow harness composes real job hooks and separates explicit Translate detection, same-operation retry, invalid language, cancel/actor/input fences and manual bypass.",
+      "beforeSha256": "6354e300654348264bf571383872a4288169808dbef87a927734752d527f0ace",
+      "afterSha256": "6354e300654348264bf571383872a4288169808dbef87a927734752d527f0ace"
+    },
+    {
+      "path": "apps/web/tests/texts-workspace-boundaries.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DocumentFor/savePairs seams isolate editable lexical content from exact structural separators, including CRLF/NBSP and blank-edit preflight.",
+      "beforeSha256": "cf8537357b46494db68e15143787c81119d4ab729f118ae9860da9c94f1cdbc2",
+      "afterSha256": "cf8537357b46494db68e15143787c81119d4ab729f118ae9860da9c94f1cdbc2"
+    },
+    {
+      "path": "apps/web/tests/texts-workspace-content.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Workspace document/proposal fixtures separate Unicode limits/title fallback, explicit creation, attachment retry, reviewed overwrite and lost-commit reconciliation.",
+      "beforeSha256": "141576e36fcf098a95db5cedc3143732d9b16e40de02f68fcb675f38d37f801e",
+      "afterSha256": "141576e36fcf098a95db5cedc3143732d9b16e40de02f68fcb675f38d37f801e"
+    },
+    {
+      "path": "apps/web/tests/texts-workspace-controls.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "StubWorkspace and stateful harnesses isolate delayed-save field locks, failed-job dismissal and compact Source-tab recovery without altering saved input.",
+      "beforeSha256": "fc0c1a3b2d6a0f90968d67f65c59874c9ad4d75900e7e37538e8bfbff2e286ca",
+      "afterSha256": "fc0c1a3b2d6a0f90968d67f65c59874c9ad4d75900e7e37538e8bfbff2e286ca"
+    },
+    {
+      "path": "apps/web/tests/texts-workspace-error-recovery.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Save options fixture directly separates corrected-content error reset, admitted validation reset and explicit pre-translation clear.",
+      "beforeSha256": "3c91a6ca07685f062d6fb4ac396d6b54c6f8cb44c571fb478d694cff5c5698bd",
+      "afterSha256": "3c91a6ca07685f062d6fb4ac396d6b54c6f8cb44c571fb478d694cff5c5698bd"
+    },
+    {
+      "path": "apps/web/tests/texts-workspace-field-validation.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Stateful field harness maps errors to individual controls and checks immediate correction, Unicode limits, compose action placement and language-pair validation.",
+      "beforeSha256": "af7e8d721c77d957c77e16acd35119914daa3fb9ca775a7ee6783fce63c0e1d1",
+      "afterSha256": "af7e8d721c77d957c77e16acd35119914daa3fb9ca775a7ee6783fce63c0e1d1"
+    },
+    {
+      "path": "apps/web/tests/texts-workspace-job.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Durable job fixture exposes restore/discard, frozen enqueue identity, late cancellation and exact quoted consent payload without implicit draft save.",
+      "beforeSha256": "c71a91fbf3505d75b08490a404d782371728815b2275399114197824ae2ed108",
+      "afterSha256": "c71a91fbf3505d75b08490a404d782371728815b2275399114197824ae2ed108"
+    },
+    {
+      "path": "apps/web/tests/theme.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Theme cases state allowlisted persistence, document attribute/cookie updates and compact effective-theme toggle.",
+      "beforeSha256": "da3b51d1fd6f92b8df6db194ab100bd6e56a538d1fd13c9803d952cfea763c08",
+      "afterSha256": "da3b51d1fd6f92b8df6db194ab100bd6e56a538d1fd13c9803d952cfea763c08"
+    },
+    {
+      "path": "apps/web/tests/training-menu.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Training menu cases retain default disabled behavior, informational opt-in, keyboard focus and explicit nonclosing retry options.",
+      "beforeSha256": "b03cd8390ea8edf9be968e598097070a396b4130d4a6a0c66b6a56322e2df4bb",
+      "afterSha256": "b03cd8390ea8edf9be968e598097070a396b4130d4a6a0c66b6a56322e2df4bb"
+    },
+    {
+      "path": "apps/web/tests/tutor-budget-confirmation.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Budget quote fixtures isolate real API error validation, frozen request across repeated consent, duplicate confirmation guard and explicit new-action continuation.",
+      "beforeSha256": "404fb8dde18e83dccee17dd0ad7726d21ddbab758542a0f72c464c56f6e8a202",
+      "afterSha256": "404fb8dde18e83dccee17dd0ad7726d21ddbab758542a0f72c464c56f6e8a202"
+    },
+    {
+      "path": "apps/web/tests/tutor-conversation-composer.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Composer regression uses delayed creation and schema-parsed detail to prove passage/draft ownership per conversation; comment states its isolated transport seam.",
+      "beforeSha256": "d7d7ad7d57830d253d6f579d3166fed03fb395dba6c08871ba8c164c105606b4",
+      "afterSha256": "d7d7ad7d57830d253d6f579d3166fed03fb395dba6c08871ba8c164c105606b4"
+    },
+    {
+      "path": "apps/web/tests/tutor-message-scroll.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Transcript/layout fixtures make scrolled-up, selected and folded viewport positions explicit and reset follow only on conversation identity change.",
+      "beforeSha256": "8592837bfc165ab4112ea53b61c112d83ea21ed304b2f99c2de0a62c2f66605b",
+      "afterSha256": "8592837bfc165ab4112ea53b61c112d83ea21ed304b2f99c2de0a62c2f66605b"
+    },
+    {
+      "path": "apps/web/tests/tutor-model-selection.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Preference hook fixture directly asserts exact budget/server mode, conflict draft preservation and invalid-budget admission suppression.",
+      "beforeSha256": "b73fdcab70de2037ae8db43b05d7f822ba5cd80b445e8a287a036dd9b9dabe4f",
+      "afterSha256": "b73fdcab70de2037ae8db43b05d7f822ba5cd80b445e8a287a036dd9b9dabe4f"
+    },
+    {
+      "path": "apps/web/tests/tutor-preference-retry.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Assistant fixture separates defaults and preference retry payloads from tutor turns, invalidates obsolete retries and preserves manual versus effective portrait values; named workflow cases retain shared context.",
+      "beforeSha256": "15182fbf844efd1b3f68eff4b34d627d0c81a07e681b0248f42480b417fc206e",
+      "afterSha256": "15182fbf844efd1b3f68eff4b34d627d0c81a07e681b0248f42480b417fc206e"
+    },
+    {
+      "path": "apps/web/tests/tutor-published-knowledge.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Publication cases capture late completion across conversation switch and close only the matching draft editor.",
+      "beforeSha256": "ce24f0db6b7bdf9dfdf9230084249643ce1f881ff10f8be01d7eee5488db4714",
+      "afterSha256": "ce24f0db6b7bdf9dfdf9230084249643ce1f881ff10f8be01d7eee5488db4714"
+    },
+    {
+      "path": "apps/web/tests/tutor-response-modes.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Locale/provider fixtures and named settings harnesses separate confirmed mode, defaults persistence, concurrent writes, focus stability and global/per-chat portrait choices; test length reflects distinct contracts.",
+      "beforeSha256": "4a2e2e77f0ef0fd5bcd7c40f1f512b45dff1727be3025abf9816c2fc4d56ed55",
+      "afterSha256": "4a2e2e77f0ef0fd5bcd7c40f1f512b45dff1727be3025abf9816c2fc4d56ed55"
+    },
+    {
+      "path": "apps/web/tests/tutor-scroll-signature.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Throwing old-message getter proves scroll signature avoids historical bodies while detecting latest streamed growth and drafts.",
+      "beforeSha256": "b6fa479832a26573c4f484d1ecf16e3a836e3a9229333a04f368c9bf2b95809f",
+      "afterSha256": "b6fa479832a26573c4f484d1ecf16e3a836e3a9229333a04f368c9bf2b95809f"
+    },
+    {
+      "path": "apps/web/tests/tutor-streaming-activity.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Streaming fixtures use bounded fake timers for working/writing pauses, burst draining, final flush, grapheme safety and reduced-motion history.",
+      "beforeSha256": "af81df385844d7bf1c5a752e21fb77227cba565dcd139a6e40db2da1b6bfaf36",
+      "afterSha256": "af81df385844d7bf1c5a752e21fb77227cba565dcd139a6e40db2da1b6bfaf36"
+    },
+    {
+      "path": "apps/web/tests/ui-kit-public-contract.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Public barrel contract explicitly inventories value exports and prop types for catalog consumers without deep imports.",
+      "beforeSha256": "7497bb445a07e21482ab9779a1dede26bb1da595542bcac58f3a9b2072688e6b",
+      "afterSha256": "7497bb445a07e21482ab9779a1dede26bb1da595542bcac58f3a9b2072688e6b"
+    },
+    {
+      "path": "apps/web/tests/ui-kit.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "UI-kit accessibility catalog names independent field/tab/combobox/overlay/dialog contracts and toast queue/timer invariants; native shims restore in finally and ToastQueueHarness keeps queue admission explicit.",
+      "beforeSha256": "a60e3faa6a9f692dabee287deff7b1181f2a3f2f3685a0c5eadf2361306edd79",
+      "afterSha256": "a60e3faa6a9f692dabee287deff7b1181f2a3f2f3685a0c5eadf2361306edd79"
+    },
+    {
+      "path": "apps/web/tests/workbook-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Workbook response helper exposes ordered/versioned membership, sharing acknowledgement, public header authority, stable copy identity, strict envelopes and one-write conflict behavior.",
+      "beforeSha256": "0bb2edc3820dc912fbe484821a077ce21b8411b8d54311803248046b2075c550",
+      "afterSha256": "0bb2edc3820dc912fbe484821a077ce21b8411b8d54311803248046b2075c550"
+    },
+    {
+      "path": "apps/web/tests/workbook-audio.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Audio body/grant fixtures distinguish anonymous authorized bytes, ephemeral URL revoke on unmount and immediate removal after access loss.",
+      "beforeSha256": "4dfe52f21f9e1e3c1e97eaafe57c02529160c89c1aafb9ffb28606d205458a56",
+      "afterSha256": "4dfe52f21f9e1e3c1e97eaafe57c02529160c89c1aafb9ffb28606d205458a56"
+    },
+    {
+      "path": "apps/web/tests/workbook-copy.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Workbook model fixture explicitly contrasts saved and draft members, proving whole-copy blocking reason and enablement without silently dropping drafts.",
+      "beforeSha256": "494f5dd2c5980d604cdb213f25d7e000ec103d2deecd9c413e9ee842b6cbf852",
+      "afterSha256": "494f5dd2c5980d604cdb213f25d7e000ec103d2deecd9c413e9ee842b6cbf852"
+    },
+    {
+      "path": "apps/web/tests/workbook-exercise-source.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Source projection cases preserve validated video descriptors and selected passage order, exclude unselected sentinels from feedback and fail closed for unresolved segments.",
+      "beforeSha256": "a09923cf1234831e3545d5129687d165dba0f1d6bcc751767ad724e25acd2a7f",
+      "afterSha256": "a09923cf1234831e3545d5129687d165dba0f1d6bcc751767ad724e25acd2a7f"
+    },
+    {
+      "path": "apps/web/tests/workbook-learning-api.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Learning API cases assert aggregate endpoint/header-only grant plus bearer identity and reject injected client evaluation before transport.",
+      "beforeSha256": "2be2fe9be9fb19553a6ea406e390feabde0d68651c3dd9b2f8bcdc3281e8e297",
+      "afterSha256": "2be2fe9be9fb19553a6ea406e390feabde0d68651c3dd9b2f8bcdc3281e8e297"
+    },
+    {
+      "path": "apps/web/tests/workbook-learning.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Private learning fixtures keep server revisions/attempt identity explicit, separate observations from correctness and distinguish anonymous/stale suppression from inline AI evaluation; named cases justify catalog length.",
+      "beforeSha256": "f93f8747d0b788180ff19c3f1894d05f401ce9132343d54287da5b7e437a4825",
+      "afterSha256": "f93f8747d0b788180ff19c3f1894d05f401ce9132343d54287da5b7e437a4825"
+    },
+    {
+      "path": "apps/web/tests/workbook-membership.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Membership model exposes original/added order and explicit shared acknowledgement versus private addition with reset after success.",
+      "beforeSha256": "ab7064c5a96aaa21bce2c0a728bd567620f6863c480104e5bc0298e3a035a39f",
+      "afterSha256": "ab7064c5a96aaa21bce2c0a728bd567620f6863c480104e5bc0298e3a035a39f"
+    },
+    {
+      "path": "apps/web/tests/workbook-progress.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Progress fixture distinguishes explicit completion from updated material and hides stale data after failed refresh; anonymous case sends no private request.",
+      "beforeSha256": "9d44ccbbdc6ab9759fcd248e6f15724453583e83688f44da271e688079453ca4",
+      "afterSha256": "9d44ccbbdc6ab9759fcd248e6f15724453583e83688f44da271e688079453ca4"
+    },
+    {
+      "path": "apps/web/tests/workspace-assistant-context.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Assistant context fixture models onAccepted only after durable admission and names passage/reference budget, restored target, collapsed selection, branch flush and frozen block-reference races; complete scenario catalog preserves ownership context.",
+      "beforeSha256": "5b066e63da64ec312fc2289dcb087f178bcfbae9bf3f5f51765080b7923c77c6",
+      "afterSha256": "5b066e63da64ec312fc2289dcb087f178bcfbae9bf3f5f51765080b7923c77c6"
+    },
+    {
+      "path": "apps/web/tests/workspace-learner-preview.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Learner preview supplies hostile persistence callbacks deliberately and asserts local answer reveal plus no saved activity/AI admission.",
+      "beforeSha256": "5a2b8773928edf8685cfb00fabfaf68f191454d0b0c12de57c5bfaeee5a9c447",
+      "afterSha256": "5a2b8773928edf8685cfb00fabfaf68f191454d0b0c12de57c5bfaeee5a9c447"
+    },
+    {
+      "path": "apps/web/tests/workspace-proposal-conflict.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Conflict setup makes applied versus invalid insertion and markdown versus literal format explicit, retaining dialog until success and forwarding new-target format.",
+      "beforeSha256": "2d41d52072582e35d131c28ec84b3bdd7e6f8a8af62fc7e01ae4fb08af13978c",
+      "afterSha256": "2d41d52072582e35d131c28ec84b3bdd7e6f8a8af62fc7e01ae4fb08af13978c"
+    },
+    {
+      "path": "apps/web/tests/workspace-proposal-review.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Workspace/anchor preview fixtures support independent late-root, restored/changed target, single-review, asynchronous inline intent, rich/literal fallback and invalid/unsafe insertion scenarios; long review catalog remains a cohesive acceptance contract.",
+      "beforeSha256": "ef3c4686e445bb67d69ccb168a5c842ad245a9e87418e0be6173ec29a63a86f0",
+      "afterSha256": "ef3c4686e445bb67d69ccb168a5c842ad245a9e87418e0be6173ec29a63a86f0"
+    },
+    {
+      "path": "apps/web/tests/workspace-suggestion-preview.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "Preview cases distinguish inert rich read-only modal from acceptance/target inspection and explicitly bound Escape propagation plus hostile-source rendering.",
+      "beforeSha256": "7ed53b028d57b5e4ec164194d5cacdeb5d82c35eca2bfd42bd843aef82bebc8e",
+      "afterSha256": "7ed53b028d57b5e4ec164194d5cacdeb5d82c35eca2bfd42bd843aef82bebc8e"
+    },
+    {
+      "path": "apps/web/tests/workspace-tutor-auto-send.test.tsx",
+      "status": "reviewed-acceptable",
+      "reason": "StrictMode auto-send scenarios enumerate readiness of question, passage and conversation before one quick action, excluding Ask and edited prompts.",
+      "beforeSha256": "3f0fce563a6d6250e31d7684396df579090c5b3f2f5593f78192824e63980f2b",
+      "afterSha256": "3f0fce563a6d6250e31d7684396df579090c5b3f2f5593f78192824e63980f2b"
+    }
+  ],
+  "auditProgress": {
+    "fullyReviewedOriginalFiles": 211,
+    "remainingOriginalPaths": []
+  },
+  "checks": {
+    "executed": [],
+    "reason": "Read-only audit; root schedules tests. No test or source edits authorized in this scope.",
+    "coverageAndHashes": "All211 assigned paths have full actual-body review reasons and current SHA256 matches; no source/test edits or execution by this read-only scope."
+  }
+}

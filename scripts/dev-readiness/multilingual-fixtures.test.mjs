@@ -30,6 +30,7 @@ test('versioned synthetic references cover all agreed languages without claiming
             'ko',
         ].sort(),
     );
+
     assert.equal(
         new Set(dataset.cases.map((item) => item.id)).size,
         dataset.cases.length,
@@ -43,6 +44,7 @@ for (const item of dataset.cases) {
             item.sentenceCheck.expectedCorrection,
             item.sentenceCheck.valid,
         );
+
         assert.ok(item.sentenceCheck.expectedReason.length > 10);
         assert.equal(item.translation.source, item.sentenceCheck.valid);
         assert.equal(item.translation.targetLanguage, 'en');
@@ -51,21 +53,26 @@ for (const item of dataset.cases) {
                 value.startsWith('I '),
             ),
         );
+
         assert.ok(
             item.translation.mustPreserve.includes('first-person singular'),
         );
+
         assert.ok(item.translation.mustNotAdd.includes('diagnosis'));
         assert.ok(
             item.explanation.request.includes(item.sentenceCheck.invalid),
         );
+
         assert.ok(
             item.sentenceCheck.valid.includes(item.explanation.mustAddress[0]),
         );
+
         assert.ok(
             item.explanation.mustAvoid.includes(
                 'claim of assessed proficiency',
             ),
         );
+
         assert.equal(item.explanation.maximumSentences, 3);
     });
 }

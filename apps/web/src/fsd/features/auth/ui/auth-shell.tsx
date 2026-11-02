@@ -146,7 +146,9 @@ export function FormMessage({
     const message = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (tone === 'error') message.current?.focus();
+        if (tone === 'error') {
+            message.current?.focus();
+        }
     }, [tone]);
 
     return (
@@ -195,7 +197,9 @@ export function AuthLinks({
 
     const target = resolveTarget();
 
-    if (mode === 'login' && capabilities?.email.signUp === false) return null;
+    if (mode === 'login' && capabilities?.email.signUp === false) {
+        return null;
+    }
 
     return (
         <p className={styles.switch}>

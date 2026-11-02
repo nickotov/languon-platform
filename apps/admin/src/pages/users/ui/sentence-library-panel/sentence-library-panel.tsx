@@ -35,6 +35,7 @@ export function SentenceLibraryPanel({ userId, mutable }: Props) {
             <span>{t('sentences.title')}</span>
         </Space>
     );
+
     return (
         <Card className={styles.panel} title={header}>
             <div className={styles.intro}>

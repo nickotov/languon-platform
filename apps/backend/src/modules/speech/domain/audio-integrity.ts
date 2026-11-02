@@ -45,6 +45,7 @@ export function createFixtureAudio(): AudioBytes {
             44 + i * 2,
         );
     }
+
     return {
         bytes,
         checksum: audioChecksum(bytes),

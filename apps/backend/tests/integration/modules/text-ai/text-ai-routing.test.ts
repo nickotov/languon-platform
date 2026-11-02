@@ -42,6 +42,7 @@ const config: TextAiRoutingConfiguration = {
         ]),
     ),
 };
+
 run('immutable admin routing publication', () => {
     let client: PostgresClient;
     let database: PostgresJsDatabase<typeof databaseSchema>;
@@ -60,6 +61,7 @@ run('immutable admin routing publication', () => {
             createdAt: at,
             updatedAt: at,
         });
+
         await database.insert(adminMembershipsTable).values({
             id: randomUUID(),
             userId: actor,
@@ -69,6 +71,7 @@ run('immutable admin routing publication', () => {
             grantedAt: at,
             updatedAt: at,
         });
+
         store = new DrizzleTextAiRoutingStore(
             database,
             async () => {
@@ -77,9 +80,11 @@ run('immutable admin routing publication', () => {
             () => true,
         );
     });
+
     afterAll(async () => {
         await client?.end();
     });
+
     it('publishes exact per-flow tariffs with immutable legacy FK bridge and readiness evidence', async () => {
         const revision = await store.publish(
             {
@@ -90,16 +95,19 @@ run('immutable admin routing publication', () => {
             actor,
             at,
         );
+
         expect(revision.version).toBe(1);
         expect(readyCalls).toBe(12);
         expect(
             revision.configuration.flowTariffs['sentence-check']
                 ?.inputCreditsPerMillionTokens,
         ).toBe(0.001);
+
         const [bridge] = await database
             .select()
             .from(dictionaryAiConfigurationRevisionsTable)
             .where(eq(dictionaryAiConfigurationRevisionsTable.id, revision.id));
+
         expect(bridge?.catalogSnapshot.providerId).toBe('deepseek');
         await expect(
             database
@@ -107,12 +115,14 @@ run('immutable admin routing publication', () => {
                 .set({ reason: 'Changed history' })
                 .where(eq(textAiRoutingRevisionsTable.id, revision.id)),
         ).rejects.toThrow();
+
         await expect(
             database
                 .delete(textAiRoutingRevisionsTable)
                 .where(eq(textAiRoutingRevisionsTable.id, revision.id)),
         ).rejects.toThrow();
     });
+
     it('serializes concurrent publications without overwriting a newer revision', async () => {
         const results = await Promise.allSettled(
             [1, 2].map(() =>
@@ -136,12 +146,14 @@ run('immutable admin routing publication', () => {
                 ),
             ),
         );
+
         expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
         expect(results.filter((r) => r.status === 'rejected')).toHaveLength(1);
         expect((await store.current())?.version).toBe(2);
         // Unchanged active routes do not need new paid checks for a tariff-only revision.
         expect(readyCalls).toBe(12);
     });
+
     it('emergency disables the sole active route without fresh probes and preserves history', async () => {
         const callsBefore = readyCalls;
         const disabled = await store.disable(
@@ -153,20 +165,25 @@ run('immutable admin routing publication', () => {
             actor,
             at,
         );
+
         expect(readyCalls).toBe(callsBefore);
         expect(disabled.configuration.enabledRouteIds).toEqual([]);
         expect(disabled.configuration.default.primaryRouteId).toBe(
             'deepseek/deepseek-flash',
         );
+
         expect(
             await database.select().from(textAiRoutingRevisionsTable),
         ).toHaveLength(3);
+
         const [bridge] = await database
             .select()
             .from(dictionaryAiConfigurationRevisionsTable)
             .where(eq(dictionaryAiConfigurationRevisionsTable.id, disabled.id));
+
         expect(bridge).toBeDefined();
     });
+
     it('rejects missing paid tariffs, retired routes and unreviewed processing without changing active state', async () => {
         await expect(
             store.publish(
@@ -179,6 +196,7 @@ run('immutable admin routing publication', () => {
                 at,
             ),
         ).rejects.toThrow('tariff');
+
         await expect(
             store.publish(
                 {
@@ -193,6 +211,7 @@ run('immutable admin routing publication', () => {
                 at,
             ),
         ).rejects.toThrow();
+
         await expect(
             store.publish(
                 {
@@ -207,6 +226,7 @@ run('immutable admin routing publication', () => {
                 at,
             ),
         ).rejects.toThrow('processing');
+
         expect((await store.current())?.version).toBe(3);
     });
 });

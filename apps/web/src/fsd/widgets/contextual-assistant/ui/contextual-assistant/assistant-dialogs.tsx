@@ -17,6 +17,7 @@ export function AssistantDialogs({
 }) {
     const { locale, t } = useI18n();
     const copy = conversationCopy(locale);
+
     return (
         <>
             <AlertDialog

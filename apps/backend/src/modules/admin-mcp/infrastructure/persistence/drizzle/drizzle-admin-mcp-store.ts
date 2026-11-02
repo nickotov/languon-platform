@@ -99,9 +99,13 @@ export class DrizzleAdminMcpStore implements AdminMcpCredentialStore {
                 )
                 .for('update');
 
-            if (!token)
+            if (!token) {
                 throw new AdminMcpError('not_found', 'Credential not found.');
-            if (token.revokedAt) return;
+            }
+
+            if (token.revokedAt) {
+                return;
+            }
 
             await tx
                 .update(adminMcpTokensTable)
@@ -186,11 +190,12 @@ export class DrizzleAdminMcpStore implements AdminMcpCredentialStore {
                 ),
             );
 
-        if (!row)
+        if (!row) {
             throw new AdminMcpError(
                 'unauthorized',
                 'Invalid or inactive credential.',
             );
+        }
 
         await this.database
             .update(adminMcpTokensTable)

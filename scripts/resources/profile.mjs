@@ -40,11 +40,13 @@ function run(command, args, options = {}) {
         env: { ...process.env, ...options.env },
         stdio: options.capture === false ? 'inherit' : 'pipe',
     });
+
     if (result.status !== 0 && !options.allowFailure) {
         throw new Error(
             `${command} ${args.join(' ')} failed (${result.status}): ${(result.stderr || result.stdout || '').trim()}`,
         );
     }
+
     return result;
 }
 
@@ -64,6 +66,7 @@ function diskUsedPercent() {
     const lines = run('df', ['-Pk', repositoryRoot])
         .stdout.trim()
         .split(/\r?\n/);
+
     return (
         Number.parseFloat(
             lines.at(-1)?.trim().split(/\s+/)[4]?.replace('%', ''),
@@ -72,7 +75,10 @@ function diskUsedPercent() {
 }
 
 function dockerStatsForIds(ids) {
-    if (ids.length === 0) return [];
+    if (ids.length === 0) {
+        return [];
+    }
+
     const output = run('docker', [
         'stats',
         '--no-stream',
@@ -80,6 +86,7 @@ function dockerStatsForIds(ids) {
         '{{json .}}',
         ...ids,
     ]).stdout;
+
     return normalizeContainerStats(
         output
             .split(/\r?\n/)
@@ -108,6 +115,7 @@ function dockerStats(projectNames) {
                   allowFailure: true,
               }).stdout.split(/\s+/)
     ).filter(Boolean);
+
     return dockerStatsForIds(ids);
 }
 
@@ -122,8 +130,12 @@ async function sampleResources(projectNames, seconds, intervalMs) {
             recordedAt: new Date().toISOString(),
             containers: dockerStats(projectNames),
         });
-        if (Date.now() < deadline) await wait(intervalMs);
+
+        if (Date.now() < deadline) {
+            await wait(intervalMs);
+        }
     } while (Date.now() < deadline);
+
     return { samples, summary: summarizeSamples(samples) };
 }
 
@@ -138,9 +150,11 @@ function httpsGet(url, agent) {
                 }),
             );
         });
+
         request.setTimeout(10_000, () =>
             request.destroy(new Error('Load request timed out.')),
         );
+
         request.once('error', reject);
         request.end();
     });
@@ -157,6 +171,7 @@ async function runLoad(urls, seconds, concurrency, tlsCaPath) {
               maxSockets: concurrency,
           })
         : undefined;
+
     async function worker(workerIndex) {
         let requestIndex = workerIndex;
         while (Date.now() < deadline) {
@@ -169,6 +184,7 @@ async function runLoad(urls, seconds, concurrency, tlsCaPath) {
                     : await fetch(url, {
                           signal: AbortSignal.timeout(10_000),
                       });
+
                 samples.push({
                     ok: response.ok,
                     status: response.status,
@@ -183,10 +199,13 @@ async function runLoad(urls, seconds, concurrency, tlsCaPath) {
             }
         }
     }
+
     await Promise.all(
         Array.from({ length: concurrency }, (_, index) => worker(index)),
     );
+
     agent?.destroy();
+
     return summarizeLoad(samples, Date.now() - startedAt);
 }
 
@@ -203,6 +222,7 @@ async function buildImage(
         '.artifacts/resource-profile/build-cache',
         build.service,
     );
+
     await mkdir(dirname(cachePath), { recursive: true, mode: 0o700 });
     const log = createWriteStream(logPath, { flags: 'w', mode: 0o600 });
     const args = [
@@ -230,6 +250,7 @@ async function buildImage(
         cwd: repositoryRoot,
         env: process.env,
     });
+
     child.stdout.pipe(log);
     child.stderr.pipe(log);
     let finished = false;
@@ -238,6 +259,7 @@ async function buildImage(
             finished = true;
             reject(error);
         });
+
         child.once('close', (code) => {
             finished = true;
             resolvePromise(code);
@@ -263,18 +285,25 @@ async function buildImage(
                 containers: dockerStatsForIds(builderIds),
             });
         }
-        if (!finished) await wait(500);
+
+        if (!finished) {
+            await wait(500);
+        }
     }
+
     const exitCode = await completion;
     log.end();
-    if (exitCode !== 0)
+    if (exitCode !== 0) {
         throw new Error(
             `Production image build failed for ${build.service}; see ${logPath}`,
         );
+    }
+
     const inspect = JSON.parse(
         run('docker', ['image', 'inspect', build.image]).stdout,
     )[0];
     const buildResources = summarizeSamples(resourceSamples);
+
     return {
         service: build.service,
         durationMs: Date.now() - startedAt,
@@ -347,6 +376,7 @@ async function profileRuntime(config, rawDirectory, revision) {
             ),
             { mode: 0o600 },
         );
+
         return {
             idle: { resources: idle.summary },
             load: { resources: loadResources.summary, load },
@@ -359,6 +389,7 @@ async function profileRuntime(config, rawDirectory, revision) {
 
 export function parseArguments(argv) {
     const has = (flag) => argv.includes(flag);
+
     return {
         record: has('--record'),
         buildOnly: has('--build-only'),
@@ -370,12 +401,14 @@ export function assertLocalDocker(runCommand = run, environment = process.env) {
     if (environment.DOCKER_HOST) {
         throw new Error('Unset DOCKER_HOST before resource profiling.');
     }
+
     const endpoint = runCommand('docker', [
         'context',
         'inspect',
         '--format',
         '{{(index .Endpoints "docker").Host}}',
     ]).stdout.trim();
+
     if (!endpoint.startsWith('unix://')) {
         throw new Error(`Refusing non-local Docker endpoint: ${endpoint}`);
     }
@@ -383,16 +416,20 @@ export function assertLocalDocker(runCommand = run, environment = process.env) {
 
 export async function runProfile(options = {}) {
     const config = options.config ?? resourceProfileConfig;
-    if (options.record && options.buildOnly)
+    if (options.record && options.buildOnly) {
         throw new Error(
             '--record requires the complete runtime profile; remove --build-only',
         );
+    }
+
     const revision = gitValue(['rev-parse', 'HEAD']);
     const dirty = gitValue(['status', '--porcelain']).length > 0;
-    if (options.record && dirty)
+    if (options.record && dirty) {
         throw new Error(
             'Refusing --record from a dirty worktree; commit or omit --record',
         );
+    }
+
     assertLocalDocker();
     run('docker', ['info']);
     const recordedAt = new Date().toISOString();
@@ -402,6 +439,7 @@ export async function runProfile(options = {}) {
         '.artifacts/resource-profile/runs',
         runId,
     );
+
     await mkdir(rawDirectory, { recursive: true, mode: 0o700 });
     const resolvedConfig = {
         ...config,
@@ -422,6 +460,7 @@ export async function runProfile(options = {}) {
         '--driver',
         'docker-container',
     ]);
+
     try {
         run('docker', [
             'buildx',
@@ -430,6 +469,7 @@ export async function runProfile(options = {}) {
             builderName,
             '--bootstrap',
         ]);
+
         for (const build of config.builds) {
             builds.push(
                 await buildImage(
@@ -444,6 +484,7 @@ export async function runProfile(options = {}) {
     } finally {
         run('docker', ['buildx', 'rm', builderName], { allowFailure: true });
     }
+
     const runtime = options.buildOnly
         ? {}
         : await profileRuntime(resolvedConfig, rawDirectory, revision);
@@ -451,8 +492,11 @@ export async function runProfile(options = {}) {
     try {
         history = parseHistory(await readFile(defaultHistoryPath, 'utf8'));
     } catch (error) {
-        if (error.code !== 'ENOENT') throw error;
+        if (error.code !== 'ENOENT') {
+            throw error;
+        }
     }
+
     const observation = {
         schemaVersion: PROFILE_SCHEMA_VERSION,
         recordedAt,
@@ -472,6 +516,7 @@ export async function runProfile(options = {}) {
         comparability: null,
         flags: [],
     };
+
     observation.comparability = comparability(observation, history.at(-1));
     observation.flags = thresholdFlags(observation, config.thresholds);
     validateObservation(observation);
@@ -479,18 +524,22 @@ export async function runProfile(options = {}) {
     await writeFile(rawResult, `${JSON.stringify(observation, null, 2)}\n`, {
         mode: 0o600,
     });
-    if (options.record)
+
+    if (options.record) {
         await appendFile(
             defaultHistoryPath,
             `${JSON.stringify(observation)}\n`,
             'utf8',
         );
+    }
+
     await mkdir(dirname(defaultDashboardPath), { recursive: true });
     await writeFile(
         defaultDashboardPath,
         renderDashboard([...history, observation]),
         'utf8',
     );
+
     return {
         observation,
         rawDirectory,
@@ -507,10 +556,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         console.log(
             `History: ${result.recorded ? 'recorded' : 'not recorded (pass --record)'}`,
         );
-        if (result.observation.flags.length)
+
+        if (result.observation.flags.length) {
             console.log(
                 `Threshold flags: ${result.observation.flags.join(', ')}`,
             );
+        }
     } catch (error) {
         console.error(`Resource profile failed: ${error.message}`);
         process.exitCode = 1;

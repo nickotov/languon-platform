@@ -16,11 +16,19 @@ const options = {
     signedIn: true,
     requestWithSession: authenticate,
 };
+
 afterEach(() => vi.unstubAllGlobals());
 
 it('defaults to the public API prefix in every environment and preserves explicit paths', () => {
-    for (const environment of ['development', 'production', 'test', undefined])
+    for (const environment of [
+        'development',
+        'production',
+        'test',
+        undefined,
+    ]) {
         expect(resolveApiUrl(environment, undefined)).toBe('/api');
+    }
+
     expect(
         resolveApiUrl('development', 'https://api.example.test/custom/'),
     ).toBe('https://api.example.test/custom');
@@ -63,6 +71,7 @@ it('routes every web API client through /api while preserving authentication tra
             `/api/speech/requests/${id}`,
         ],
     ];
+
     for (const [operation, path] of calls) {
         fetcher.mockClear();
         await expect(operation()).rejects.toBeDefined();
@@ -71,6 +80,7 @@ it('routes every web API client through /api while preserving authentication tra
         expect(String(url)).toMatch(
             new RegExp(`^${path.replace(/[?]/g, '\\?')}`),
         );
+
         expect(init?.credentials).toBe('include');
     }
 });

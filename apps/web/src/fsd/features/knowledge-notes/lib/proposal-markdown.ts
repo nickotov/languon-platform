@@ -21,7 +21,6 @@ const manager = new MarkdownManager({
             // Parse every heading level before mapping to our persisted schema.
             heading: { levels: [1, 2, 3, 4, 5, 6] },
             codeBlock: false,
-            horizontalRule: false,
             link: { autolink: false, linkOnPaste: false },
         }),
         TableKit.configure({ table: { resizable: false } }),
@@ -45,6 +44,7 @@ type Token = {
 
 const supportedTokens = new Set([
     'space',
+    'hr',
     'paragraph',
     'heading',
     'text',
@@ -63,13 +63,17 @@ const supportedTokens = new Set([
 ]);
 
 function checkInput(text: string) {
-    if (text.length > 80_000) throw new ProposalMarkdownError('limit');
+    if (text.length > 80_000) {
+        throw new ProposalMarkdownError('limit');
+    }
+
     if (
         !text.trim() ||
         /[\uD800-\uDFFF]/u.test(text) ||
         text.includes('\u0000')
-    )
+    ) {
         throw new ProposalMarkdownError('invalid');
+    }
 }
 
 function tableRowWidth(line: string): number {
@@ -79,9 +83,13 @@ function tableRowWidth(line: string): number {
     let endsWithSeparator = false;
     for (const character of row) {
         endsWithSeparator = character === '|' && !escaped;
-        if (endsWithSeparator) separators += 1;
+        if (endsWithSeparator) {
+            separators += 1;
+        }
+
         escaped = character === '\\' ? !escaped : false;
     }
+
     return (
         separators + 1 - Number(row.startsWith('|')) - Number(endsWithSeparator)
     );
@@ -93,10 +101,15 @@ function preflight(text: string) {
         let quotes = 0;
         for (const character of line) {
             if (character === '>') {
-                if (++quotes > 12) throw new ProposalMarkdownError('limit');
-            } else if (character !== ' ' && character !== '\t') break;
+                if (++quotes > 12) {
+                    throw new ProposalMarkdownError('limit');
+                }
+            } else if (character !== ' ' && character !== '\t') {
+                break;
+            }
         }
     }
+
     const tokens = manager.instance.lexer(text) as unknown as Token[];
     const pending = tokens.map((token) => ({ token, depth: 0 }));
     let count = 0;
@@ -105,32 +118,52 @@ function preflight(text: string) {
     const linkedDestinations = new Set<string>();
     while (pending.length) {
         const { token, depth } = pending.pop()!;
-        if (++count > 5_000 || depth > 24)
+        if (++count > 5_000 || depth > 24) {
             throw new ProposalMarkdownError('limit');
-        if (!supportedTokens.has(token.type) || token.task)
+        }
+
+        if (!supportedTokens.has(token.type) || token.task) {
             throw new ProposalMarkdownError('unsupported');
-        if (['heading', 'link'].includes(token.type) && !token.text?.trim())
+        }
+
+        if (['heading', 'link'].includes(token.type) && !token.text?.trim()) {
             throw new ProposalMarkdownError('unsupported');
+        }
+
         if (
             ['link', 'def'].includes(token.type) &&
             !KnowledgeLinkSchema.safeParse(token.href).success
-        )
+        ) {
             throw new ProposalMarkdownError('unsafe-link');
-        if (token.type === 'def' && token.href) definitions.add(token.href);
-        if (token.type === 'link' && token.href)
+        }
+
+        if (token.type === 'def' && token.href) {
+            definitions.add(token.href);
+        }
+
+        if (token.type === 'link' && token.href) {
             linkedDestinations.add(token.href);
-        if (token.type === 'link' && token.title) formattingAdjusted = true;
+        }
+
+        if (token.type === 'link' && token.title) {
+            formattingAdjusted = true;
+        }
+
         if (token.type === 'table') {
             formattingAdjusted ||= token.align?.some(Boolean) ?? false;
             const width = token.header?.length ?? 0;
-            if (width > 8 || (token.rows?.length ?? 0) > 19)
+            if (width > 8 || (token.rows?.length ?? 0) > 19) {
                 throw new ProposalMarkdownError('limit');
+            }
+
             // Marked truncates surplus cells and pads missing cells during lexing.
             // Check the original rows so text cannot disappear before validation.
             const rows = (token.raw ?? '').trimEnd().split('\n');
-            if (rows.some((row) => tableRowWidth(row) !== width))
+            if (rows.some((row) => tableRowWidth(row) !== width)) {
                 throw new ProposalMarkdownError('unsupported');
+            }
         }
+
         const children = [
             ...(token.tokens ?? []),
             ...(token.items ?? []),
@@ -139,12 +172,18 @@ function preflight(text: string) {
                 row.flatMap((cell) => cell.tokens),
             ),
         ];
-        for (const child of children)
+
+        for (const child of children) {
             pending.push({ token: child, depth: depth + 1 });
+        }
     }
-    for (const href of definitions)
-        if (!linkedDestinations.has(href))
+
+    for (const href of definitions) {
+        if (!linkedDestinations.has(href)) {
             throw new ProposalMarkdownError('unsupported');
+        }
+    }
+
     return formattingAdjusted;
 }
 
@@ -155,22 +194,32 @@ function checkVisibleContent(node: JSONContent) {
         let count = 0;
         let visible = false;
         while (pending.length) {
-            if (++count > 5_000) throw new ProposalMarkdownError('limit');
+            if (++count > 5_000) {
+                throw new ProposalMarkdownError('limit');
+            }
+
             const current = pending.pop()!;
             if (current.text?.trim()) {
                 visible = true;
                 break;
             }
+
             pending.push(...(current.content ?? []));
         }
-        if (!visible) throw new ProposalMarkdownError('unsupported');
+
+        if (!visible) {
+            throw new ProposalMarkdownError('unsupported');
+        }
     }
+
     let href: string | undefined;
     let label = '';
     function finishLink() {
-        if (href && !label.trim())
+        if (href && !label.trim()) {
             throw new ProposalMarkdownError('unsupported');
+        }
     }
+
     for (const child of node.content ?? []) {
         const link = child.marks?.find((mark) => mark.type === 'link');
         const next = link?.attrs?.href as string | undefined;
@@ -179,8 +228,12 @@ function checkVisibleContent(node: JSONContent) {
             href = next;
             label = '';
         }
-        if (href) label += child.text ?? '';
+
+        if (href) {
+            label += child.text ?? '';
+        }
     }
+
     finishLink();
 }
 
@@ -199,22 +252,27 @@ export function parseProposalMarkdown(text: string): {
         let count = 0;
         while (pending.length) {
             const { node, depth } = pending.pop()!;
-            if (++count > 5_000 || depth > 12)
+            if (++count > 5_000 || depth > 12) {
                 throw new ProposalMarkdownError('limit');
+            }
+
             checkVisibleContent(node);
             if (node.type === 'heading') {
                 const original = node.attrs?.level as number;
-                const level = original === 1 ? 2 : original > 3 ? 3 : original;
+                const level = original > 3 ? 3 : original;
                 headingMapped ||= level !== original;
                 node.attrs = { level };
             }
+
             // The stored schema deliberately forbids code combined with other marks.
             // Reject the whole proposal rather than silently stripping emphasis/links.
             if (
                 node.marks?.some((mark) => mark.type === 'code') &&
                 node.marks.length > 1
-            )
+            ) {
                 throw new ProposalMarkdownError('unsupported');
+            }
+
             pending.push(
                 ...(node.content ?? []).map((child) => ({
                     node: child,
@@ -222,6 +280,7 @@ export function parseProposalMarkdown(text: string): {
                 })),
             );
         }
+
         return {
             document: toEditorDocument(
                 normalizeEditorDocument(document).document,
@@ -230,7 +289,10 @@ export function parseProposalMarkdown(text: string): {
             formattingAdjusted,
         };
     } catch (error) {
-        if (error instanceof ProposalMarkdownError) throw error;
+        if (error instanceof ProposalMarkdownError) {
+            throw error;
+        }
+
         throw new ProposalMarkdownError('invalid');
     }
 }
@@ -245,6 +307,7 @@ export function proposalPlainTextDocument(text: string): JSONContent {
             ...(line ? { content: [{ type: 'text', text: line }] } : {}),
         })),
     };
+
     try {
         return toEditorDocument(normalizeEditorDocument(document).document);
     } catch {

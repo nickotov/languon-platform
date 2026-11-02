@@ -67,6 +67,7 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
                         source: triggerRef.current ?? undefined,
                     });
                 }
+
                 setFloating(node);
                 assignRef(forwardedRef, node);
             },
@@ -76,6 +77,7 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
         useEffect(() => {
             setMounted(true);
         }, []);
+
         useLayoutEffect(() => {
             setPosition(
                 (side + (align === 'center' ? '' : '-' + align)) as Placement,
@@ -85,17 +87,26 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
 
         useLayoutEffect(() => {
             const panel = contentRef.current;
-            if (!open || !panel) return;
+            if (!open || !panel) {
+                return;
+            }
+
             return () => {
-                if (typeof panel.hidePopover === 'function')
+                if (typeof panel.hidePopover === 'function') {
                     panel.hidePopover();
+                }
             };
         }, [contentRef, mounted, open, triggerRef]);
 
         useEffect(() => {
             const panel = contentRef.current;
-            if (!open || !panel || !isPositioned) return;
-            if (autoFocus) panel.focus({ preventScroll: true });
+            if (!open || !panel || !isPositioned) {
+                return;
+            }
+
+            if (autoFocus) {
+                panel.focus({ preventScroll: true });
+            }
 
             function contains(target: EventTarget | null) {
                 return (
@@ -107,9 +118,13 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
                         ))
                 );
             }
+
             function dismiss(event: PointerEvent) {
-                if (!contains(event.target)) setOpen(false);
+                if (!contains(event.target)) {
+                    setOpen(false);
+                }
             }
+
             function escape(event: KeyboardEvent) {
                 // Native document listeners run in registration order. Let the
                 // innermost open layer handle dismissal and keyboard traversal.
@@ -118,8 +133,10 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
                     [...nestedPanels].some(
                         (child) => child.current?.isConnected,
                     )
-                )
+                ) {
                     return;
+                }
+
                 if (
                     event.key === 'Tab' &&
                     typeof panel!.showPopover !== 'function'
@@ -131,6 +148,7 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
                     const boundary = event.shiftKey
                         ? controls[0]
                         : controls[controls.length - 1];
+
                     if (
                         document.activeElement === boundary ||
                         controls.length === 0
@@ -143,22 +161,30 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
                         const next = event.shiftKey
                             ? triggerRef.current
                             : outside[index + 1];
+
                         next?.focus({ preventScroll: true });
                         setOpen(false);
                     }
+
                     return;
                 }
-                if (event.key !== 'Escape') return;
+
+                if (event.key !== 'Escape') {
+                    return;
+                }
+
                 event.preventDefault();
                 event.stopPropagation();
                 setOpen(false);
-                if (returnFocus)
+                if (returnFocus) {
                     restorePopoverFocus(
                         context.anchorElement instanceof HTMLElement
                             ? context.anchorElement
                             : triggerRef.current,
                     );
+                }
             }
+
             function blur(event: FocusEvent) {
                 // Native popover removal and disabled invokers can briefly
                 // clear focus. Pointer dismissal still handles outside clicks;
@@ -167,17 +193,22 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
                     closeOnFocusOut &&
                     event.relatedTarget !== null &&
                     !contains(event.relatedTarget)
-                )
+                ) {
                     setOpen(false);
+                }
             }
+
             function sync(event: Event) {
-                if ((event as ToggleEvent).newState === 'closed')
+                if ((event as ToggleEvent).newState === 'closed') {
                     setOpen(false);
+                }
             }
+
             document.addEventListener('pointerdown', dismiss);
             document.addEventListener('keydown', escape, true);
             panel.addEventListener('focusout', blur);
             panel.addEventListener('toggle', sync);
+
             return () => {
                 document.removeEventListener('pointerdown', dismiss);
                 document.removeEventListener('keydown', escape, true);
@@ -198,7 +229,10 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
             triggerRef,
         ]);
 
-        if (!mounted || !open) return null;
+        if (!mounted || !open) {
+            return null;
+        }
+
         const contentClassName = [styles.content, className]
             .filter(Boolean)
             .join(' ');
@@ -209,6 +243,7 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
                 ? ('visible' as const)
                 : ('hidden' as const),
         };
+
         return createPortal(
             <div
                 {...props}

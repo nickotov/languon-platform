@@ -70,12 +70,12 @@ Follow `.agent/DELIVERY.md`.
 
 ## Verification
 
-| Check                    | Result                 |
-| ------------------------ | ---------------------- |
-| Tests                    | Pass — focused 51/51, full web 239/239, mapped Playwright 1/1 |
-| Lint/typecheck/build     | Pass — web lint, typecheck, and production build |
+| Check                    | Result                                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------------------ |
+| Tests                    | Pass — focused 51/51, full web 239/239, mapped Playwright 1/1                              |
+| Lint/typecheck/build     | Pass — web lint, typecheck, and production build                                           |
 | Runtime/browser/database | Pass — managed Chrome desktop/mobile against disposable PostgreSQL/Redis; schema unchanged |
-| Documentation/user-flow  | Pass — guide validation and mapped revision check |
+| Documentation/user-flow  | Pass — guide validation and mapped revision check                                          |
 
 ## Outcome and evidence
 
@@ -94,7 +94,7 @@ Follow `.agent/DELIVERY.md`.
     - `pnpm --filter @languon/web test` — pass, 32 files / 239 tests.
     - `pnpm --filter @languon/web lint`, `typecheck`, and `build` — pass.
     - Focused mapped Playwright journey `creates a mixed card from replacement
-      inline AI field reviews` — pass, 1/1 in Chromium using deterministic AI and
+inline AI field reviews` — pass, 1/1 in Chromium using deterministic AI and
       task-owned PostgreSQL/Redis. It verifies whole-form version navigation plus
       the existing 320 px / 200% text overflow check. Containers were removed.
     - `pnpm docs:user-flows:check` and

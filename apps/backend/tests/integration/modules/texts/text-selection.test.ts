@@ -95,12 +95,14 @@ run('Dictionary vocabulary selection durable persistence', () => {
             { field: 'exampleTranslation', value: 'Hola, amigo.' },
         ],
     };
+
     beforeAll(async () => {
         client = createTestPostgresClient();
         db = createDrizzleDatabase(client, databaseSchema);
         await resetTestDatabase(client);
         await migrateTestDatabase(client);
     }, 120000);
+
     beforeEach(async () => {
         // Each test owns its disposable database and migrates a clean baseline, including
         // deferred credit guards, rather than deleting retained accounting ledgers.
@@ -112,6 +114,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
         await db.insert(usersTable).values({ id: owner, status: 'active' });
         const model = textAiModelCatalog[0]!,
             revisionId = randomUUID();
+
         await db.insert(dictionaryAiConfigurationRevisionsTable).values({
             id: revisionId,
             version: 1,
@@ -123,9 +126,11 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 supportedFormats: [...model.supportedFormats],
             },
         });
+
         await db
             .insert(dictionaryAiConfigurationTable)
             .values({ id: 'global', version: 1, activeRevisionId: revisionId });
+
         await db.insert(dictionaryAiWorkerObservationsTable).values({
             id: textsExecutionObservationId(
                 'selection-test',
@@ -147,6 +152,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
             checkedAt: now,
             expiresAt: new Date(now.getTime() + 3600000),
         });
+
         await db.transaction((tx) =>
             new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                 ownerId: owner,
@@ -157,6 +163,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 sourceReference: randomUUID(),
             }),
         );
+
         await seedLegacyActionFixture(db, '100');
         options = {
             selectionPolicy: {
@@ -174,8 +181,10 @@ run('Dictionary vocabulary selection durable persistence', () => {
                     !sourceAvailable ||
                     input.ownerId !== owner ||
                     input.jobId !== proposalId
-                )
+                ) {
                     throw new Error('unavailable');
+                }
+
                 return {
                     alignment,
                     sourceLanguage: 'en',
@@ -183,8 +192,10 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 };
             },
         };
+
         store = new DrizzleTextSelectionStore(db, options);
     }, 120000);
+
     afterEach(() => vi.unstubAllGlobals());
     afterAll(async () => client?.end());
     function request(): TextSelectionRequest {
@@ -201,15 +212,18 @@ run('Dictionary vocabulary selection durable persistence', () => {
             confirmDuplicate: false,
         };
     }
+
     async function sharedRequest() {
         const sourceOwnerId = randomUUID(),
             folderId = randomUUID(),
             textId = randomUUID(),
             shareId = randomUUID(),
             shareRowId = randomUUID();
+
         await db
             .insert(usersTable)
             .values({ id: sourceOwnerId, status: 'active' });
+
         await db.insert(textFoldersTable).values({
             id: folderId,
             ownerId: sourceOwnerId,
@@ -217,6 +231,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
             createdAt: now,
             updatedAt: now,
         });
+
         await db.insert(textsTable).values({
             id: textId,
             ownerId: sourceOwnerId,
@@ -230,6 +245,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
             createdAt: now,
             updatedAt: now,
         });
+
         await db.insert(textSharesTable).values({
             id: shareRowId,
             ownerId: sourceOwnerId,
@@ -240,6 +256,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
             version: 1,
             createdAt: now,
         });
+
         return {
             request: {
                 ...request(),
@@ -253,11 +270,14 @@ run('Dictionary vocabulary selection durable persistence', () => {
             shareRowId,
         };
     }
+
     async function claim() {
         const lease = await store.claim('selection-test');
         expect(lease).not.toBeNull();
+
         return lease!;
     }
+
     it.each([-1, 1])(
         'matches real provider input limits at the per-call boundary (%i byte)',
         async (offset) => {
@@ -290,6 +310,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
             expect(cardAuthoringProviderInputTokens(expectedInput)).toBe(
                 model.perCallMaxInputTokens + offset,
             );
+
             const longSource = segmentText(sentence, 'en', randomUUID);
             const longAlignment = validateTranslation(
                 longSource,
@@ -298,6 +319,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
                     text: 'Hola.',
                 })),
             );
+
             store = new DrizzleTextSelectionStore(db, {
                 ...options,
                 proposal: async () => ({
@@ -306,6 +328,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
                     targetLanguage: 'es',
                 }),
             });
+
             const selected = request();
             selected.selection.pairId = longSource[0]!.pairId;
             let calls = 0;
@@ -313,13 +336,16 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 expect(String(url)).toBe(
                     'https://api.deepseek.com/chat/completions',
                 );
+
                 expect(init?.method).toBe('POST');
                 const body = JSON.parse(String(init?.body));
                 expect(body.max_tokens).toBeGreaterThan(0);
                 expect(body.max_tokens).toBeLessThanOrEqual(
                     model.perCallMaxOutputTokens,
                 );
+
                 calls++;
+
                 return new Response(
                     JSON.stringify({
                         id: 'synthetic-selection-boundary',
@@ -345,19 +371,24 @@ run('Dictionary vocabulary selection durable persistence', () => {
                     { headers: { 'Content-Type': 'application/json' } },
                 );
             });
+
             if (offset > 0) {
                 await expect(
                     store.enqueue(owner, selected),
                 ).rejects.toMatchObject({ code: 'model_input_too_large' });
+
                 expect(await db.select().from(jobs)).toHaveLength(0);
                 expect(await db.select().from(actions)).toHaveLength(0);
                 expect(await db.select().from(actionAttempts)).toHaveLength(0);
                 expect(
                     await db.select().from(aiCreditReservationsTable),
                 ).toHaveLength(0);
+
                 expect(calls).toBe(0);
+
                 return;
             }
+
             await store.enqueue(owner, selected);
             const lease = await claim();
             expect(lease.input).toEqual(expectedInput);
@@ -376,6 +407,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
                     idempotencyKey: `text-selection:${lease.id}:${lease.attempt}`,
                     signal: new AbortController().signal,
                 });
+
             expect(calls).toBe(1);
             expect('delta' in result && result.delta).toEqual(delta);
             expect(
@@ -387,6 +419,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
             ).toBe(true);
         },
     );
+
     it.each([false, true])(
         'does not dispatch a disabled route or charge the learner (claimed: %s)',
         async (alreadyClaimed) => {
@@ -402,6 +435,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 .select()
                 .from(textAiRoutingRevisionsTable)
                 .where(eq(textAiRoutingRevisionsTable.id, current.id));
+
             await routing.disable(
                 {
                     expectedVersion: current.version,
@@ -411,18 +445,25 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 revision!.createdBy,
                 now,
             );
-            if (lease) expect(await store.dispatch(lease)).toBe(false);
-            else expect(await store.claim('selection-test')).toBeNull();
+
+            if (lease) {
+                expect(await store.dispatch(lease)).toBe(false);
+            } else {
+                expect(await store.claim('selection-test')).toBeNull();
+            }
+
             const [persisted] = await db
                 .select()
                 .from(jobs)
                 .where(eq(jobs.id, job.id));
+
             expect(persisted?.executionState).toBe('failed');
             expect(persisted?.aiCreditProviderDispatchedAt).toBeNull();
             const [settled] = await db
                 .select()
                 .from(actions)
                 .where(eq(actions.id, job.id));
+
             expect(settled).toMatchObject({
                 state: 'settled',
                 outcome: 'failure',
@@ -430,12 +471,14 @@ run('Dictionary vocabulary selection durable persistence', () => {
             });
         },
     );
+
     it('atomically saves a full card/new dictionary/revision once and redacts occurrence context', async () => {
         const input = request();
         const [first, replay] = await Promise.all([
             store.enqueue(owner, input),
             store.enqueue(owner, input),
         ]);
+
         expect(first.id).toBe(replay.id);
         expect(await db.select().from(dictionariesTable)).toHaveLength(0);
         const lease = await claim();
@@ -447,6 +490,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 outputTokens: 40,
             }),
         ).toBe(true);
+
         expect(await store.complete(lease, delta)).toBe(false);
         const result = await store.read(owner, first.id);
         expect(result.state).toBe('completed');
@@ -458,11 +502,13 @@ run('Dictionary vocabulary selection durable persistence', () => {
             definition: 'A greeting',
             definitionEnabledOverride: 'enabled',
         });
+
         const [settings] = await db.select().from(dictionarySettingsTable);
         expect(settings?.definitionEnabled).toBe(false);
         expect(
             await db.select().from(dictionaryCardRevisionsTable),
         ).toHaveLength(1);
+
         const [row] = await db.select().from(jobs);
         expect(row).toMatchObject({
             inputPayload: null,
@@ -470,11 +516,13 @@ run('Dictionary vocabulary selection durable persistence', () => {
             target: null,
             providerReservationState: 'settled',
         });
+
         expect(
             JSON.stringify(
                 await db.select().from(dictionaryCardRevisionsTable),
             ),
         ).not.toContain('Next sentence');
+
         await expect(
             store.enqueue(owner, {
                 ...input,
@@ -488,6 +536,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
             ...delta,
             sourceResult: { kind: 'suggested', value: 'the greeting' },
         };
+
         await store.enqueue(owner, request());
         const first = await claim();
         expect(first.input.source).toBe('Hello');
@@ -504,6 +553,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 expectedSettingsVersion: 1,
             },
         };
+
         // Raw Hello differs from saved the greeting, so admission succeeds.
         await store.enqueue(owner, input);
         const duplicate = await claim();
@@ -514,31 +564,36 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 outputTokens: 40,
             }),
         ).toBe(false);
+
         expect(await store.read(owner, duplicate.id)).toMatchObject({
             state: 'failed',
             failureCode: 'duplicate_confirmation_required',
         });
+
         const [action] = await db
             .select()
             .from(actions)
             .where(eq(actions.id, duplicate.id));
+
         expect(action).toMatchObject({
             state: 'settled',
             outcome: 'failure',
             chargedMilli: 0n,
         });
+
         expect(await db.select().from(dictionaryCardsTable)).toHaveLength(1);
         await store.enqueue(owner, {
             ...input,
             operationId: randomUUID(),
             confirmDuplicate: true,
         });
+
         const confirmed = await claim();
         await store.dispatch(confirmed);
         expect(await store.complete(confirmed, normalizedDelta)).toBe(true);
         const cards = await db.select().from(dictionaryCardsTable);
         expect(cards).toHaveLength(2);
-        for (const card of cards)
+        for (const card of cards) {
             expect(card).toMatchObject({
                 source: 'the greeting',
                 normalizedSource: 'the greeting',
@@ -548,20 +603,24 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 exampleTranslation: 'Hola, amigo.',
                 authorship: 'ai-generated',
             });
+        }
+
         const revisions = await db.select().from(dictionaryCardRevisionsTable);
         expect(revisions).toHaveLength(2);
         expect(revisions[0]).toMatchObject({
             authorship: 'ai-generated',
             mutationKind: 'ai_create',
         });
+
         expect(JSON.stringify(revisions)).not.toContain('Next sentence');
         const rows = await db.select().from(jobs);
-        for (const row of rows)
+        for (const row of rows) {
             expect(row).toMatchObject({
                 inputPayload: null,
                 sourceAuthority: null,
                 target: null,
             });
+        }
     });
 
     it('publishes a legacy worker lease without requested Source using its original selection', async () => {
@@ -580,15 +639,19 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 ),
             },
         };
+
         await store.dispatch(lease);
         expect(
             await store.complete(lease, { suggestions: delta.suggestions }),
         ).toBe(true);
+
         expect((await db.select().from(dictionaryCardsTable))[0]?.source).toBe(
             'Hello',
         );
+
         expect((await db.select().from(jobs))[0]?.inputPayload).toBeNull();
     });
+
     it('never creates an empty dictionary after cancellation, failure or a lost lease', async () => {
         const queued = await store.enqueue(owner, request());
         expect((await store.cancel(owner, queued.id)).state).toBe('cancelled');
@@ -602,32 +665,39 @@ run('Dictionary vocabulary selection durable persistence', () => {
         expect((await store.read(owner, lease.id)).failureCode).toBe(
             'provider_timeout',
         );
+
         expect(await db.select().from(dictionariesTable)).toHaveLength(0);
     });
+
     it('Feature052 keeps one bounded selection action and releases invalid model output', async () => {
         const admitted = await store.enqueue(owner, request());
         const first = await claim();
         expect(first.budget.maxOutputTokensPerAttempt).toBeLessThanOrEqual(
             10000,
         );
+
         await store.dispatch(first);
         await store.fail(first, 'invalid_model_output', {
             inputTokens: 100,
             outputTokens: 40,
         });
+
         const [action] = await db
             .select()
             .from(actions)
             .where(eq(actions.id, admitted.id));
+
         expect(action).toMatchObject({
             state: 'settled',
             outcome: 'failure',
             chargedMilli: 0n,
         });
+
         const [attempt] = await db
             .select()
             .from(actionAttempts)
             .where(eq(actionAttempts.actionId, admitted.id));
+
         expect(attempt).toMatchObject({
             state: 'settled',
             successful: 0,
@@ -635,17 +705,21 @@ run('Dictionary vocabulary selection durable persistence', () => {
             outputTokens: 40,
             actualCostMicros: 220n,
         });
+
         const expenses = await db.execute(
             sql`select measurement, amount_usd_micros from ai_provider_expense_records where action_id=${admitted.id}`,
         );
+
         expect(expenses[0]).toMatchObject({
             measurement: 'measured',
             amount_usd_micros: '220',
         });
+
         expect(await db.select().from(aiCreditReservationsTable)).toHaveLength(
             0,
         );
     });
+
     it('quiesces deletion-pending owners even after provider dispatch', async () => {
         await store.enqueue(owner, request());
         const lease = await claim();
@@ -654,13 +728,16 @@ run('Dictionary vocabulary selection durable persistence', () => {
             .update(usersTable)
             .set({ status: 'deletion_pending' })
             .where(eq(usersTable.id, owner));
+
         await store.fail(lease, 'provider_timeout');
         expect((await store.read(owner, lease.id)).state).toBe('cancelled');
         expect(
             (await db.select().from(aiCreditReservationsTable))[0]?.state,
         ).not.toBe('active');
+
         expect(await db.select().from(dictionariesTable)).toHaveLength(0);
     });
+
     it('retains unknown expense for a rejected selection attempt while using only its approved fallback', async () => {
         const fallback = textAiModelCatalog.find(
             (model) =>
@@ -677,6 +754,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
             .select()
             .from(textAiRoutingRevisionsTable)
             .where(eq(textAiRoutingRevisionsTable.id, revision.id));
+
         await new DrizzleTextAiRoutingStore(
             db,
             async () => {},
@@ -697,6 +775,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
             authority!.createdBy,
             now,
         );
+
         await db.insert(dictionaryAiWorkerObservationsTable).values({
             id: textsExecutionObservationId(
                 'selection-test',
@@ -718,6 +797,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
             checkedAt: now,
             expiresAt: new Date(now.getTime() + 3600000),
         });
+
         const job = await store.enqueue(owner, request());
         const first = await claim();
         expect(await store.dispatch(first)).toBe(true);
@@ -725,24 +805,29 @@ run('Dictionary vocabulary selection durable persistence', () => {
             .select()
             .from(actionAttempts)
             .where(eq(actionAttempts.actionId, job.id));
+
         await db.execute(
             sql`select languon_record_text_ai_route_health(${randomUUID()}::uuid,${attempt!.id}::uuid,${first.id}::uuid,null,${first.workerId},${first.fencingToken}::bigint,'rate_limited')`,
         );
+
         await store.fail(
             first,
             'provider_failure',
             undefined,
             'conclusive-provider-failure',
         );
+
         const [failedExpense] = await db
             .select()
             .from(aiProviderExpenseRecordsTable)
             .where(eq(aiProviderExpenseRecordsTable.attemptId, attempt!.id));
+
         expect(failedExpense).toMatchObject({
             measurement: 'unknown',
             costSource: 'unknown',
             amountUsdMicros: null,
         });
+
         now = new Date(now.getTime() + 1001);
         const second = await claim();
         expect(second.execution?.providerId).toBe('openrouter');
@@ -753,19 +838,23 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 outputTokens: 40,
             }),
         ).toBe(true);
+
         const [settled] = await db
             .select()
             .from(actions)
             .where(eq(actions.id, job.id));
+
         expect(settled?.outcome).toBe('success');
         const persistedAttempts = await db
             .select()
             .from(actionAttempts)
             .where(eq(actionAttempts.actionId, job.id));
+
         expect(persistedAttempts.map((item) => item.successful).sort()).toEqual(
             [0, 1],
         );
     });
+
     it('does not repeat a rejected route when no fallback was authorized; retains one hold', async () => {
         await store.enqueue(owner, request());
         const first = await claim();
@@ -781,14 +870,17 @@ run('Dictionary vocabulary selection durable persistence', () => {
         expect(await db.select().from(aiCreditReservationsTable)).toHaveLength(
             0,
         );
+
         const settled = await db.select().from(actions);
         expect(settled).toHaveLength(1);
         expect(settled[0]).toMatchObject({
             state: 'settled',
             chargedMilli: 0n,
         });
+
         expect(await db.select().from(actionAttempts)).toHaveLength(1);
     });
+
     it('rechecks the source before commit and leaves no dictionary after revocation', async () => {
         await store.enqueue(owner, request());
         const lease = await claim();
@@ -800,9 +892,11 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 outputTokens: 40,
             }),
         ).toBe(false);
+
         expect((await store.read(owner, lease.id)).state).toBe('failed');
         expect(await db.select().from(dictionariesTable)).toHaveLength(0);
     });
+
     it('settles a running cancellation after the provider returns without saving a card', async () => {
         await store.enqueue(owner, request());
         const lease = await claim();
@@ -814,12 +908,15 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 outputTokens: 40,
             }),
         ).toBe(false);
+
         expect((await store.read(owner, lease.id)).state).toBe('cancelled');
         expect(
             (await db.select().from(aiCreditReservationsTable))[0]?.state,
         ).not.toBe('active');
+
         expect(await db.select().from(dictionariesTable)).toHaveLength(0);
     });
+
     it('publishes a dictionary/full card/revision through the deployed restricted worker grants', async () => {
         const shared = await sharedRequest();
         const admitted = await store.enqueue(
@@ -842,13 +939,16 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 .filter((line) => !line.startsWith('\\'))
                 .join('\n')
                 .replaceAll(':"dictionary_worker_role"', `"${role}"`);
+
             await client.unsafe(grants);
             const restricted = Object.create(db) as SelectionDatabase;
             restricted.transaction = async (callback) =>
                 db.transaction(async (tx) => {
                     await tx.execute(sql.raw(`SET LOCAL ROLE "${role}"`));
+
                     return callback(tx);
                 });
+
             const worker = new DrizzleTextSelectionStore(restricted, options);
             const lease = await worker.claim('restricted-selection');
             expect(lease).not.toBeNull();
@@ -859,16 +959,20 @@ run('Dictionary vocabulary selection durable persistence', () => {
                     outputTokens: 40,
                 }),
             ).toBe(true);
+
             expect((await store.read(owner, admitted.id)).state).toBe(
                 'completed',
             );
+
             expect(await db.select().from(dictionariesTable)).toHaveLength(1);
             expect(await db.select().from(dictionaryCardsTable)).toHaveLength(
                 1,
             );
+
             expect(
                 await db.select().from(dictionaryCardRevisionsTable),
             ).toHaveLength(1);
+
             await expect(
                 restricted.transaction((tx) =>
                     tx.execute(
@@ -876,16 +980,19 @@ run('Dictionary vocabulary selection durable persistence', () => {
                     ),
                 ),
             ).rejects.toMatchObject({ cause: { code: '42501' } });
+
             await expect(
                 restricted.transaction((tx) =>
                     tx.execute(sql`update text_shares set version=version+1`),
                 ),
             ).rejects.toMatchObject({ cause: { code: '42501' } });
+
             await expect(
                 restricted.transaction((tx) =>
                     tx.execute(sql`delete from model_price_revisions`),
                 ),
             ).rejects.toMatchObject({ cause: { code: '42501' } });
+
             await expect(
                 restricted.transaction((tx) =>
                     tx.execute(sql`update users set status='purged'`),
@@ -896,6 +1003,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
             await client.unsafe(`DROP ROLE "${role}"`);
         }
     });
+
     it('rejects revoked shared-source authority after provider dispatch and settles the attempt', async () => {
         const shared = await sharedRequest();
         await store.enqueue(owner, shared.request, 'synthetic-share-key');
@@ -905,18 +1013,22 @@ run('Dictionary vocabulary selection durable persistence', () => {
             .update(textSharesTable)
             .set({ version: 2 })
             .where(eq(textSharesTable.id, shared.shareRowId));
+
         expect(
             await store.complete(lease, delta, {
                 inputTokens: 100,
                 outputTokens: 40,
             }),
         ).toBe(false);
+
         expect((await store.read(owner, lease.id)).state).toBe('failed');
         expect(
             (await db.select().from(aiCreditReservationsTable))[0]?.state,
         ).not.toBe('active');
+
         expect(await db.select().from(dictionariesTable)).toHaveLength(0);
     });
+
     it('serializes concurrent publication against the same pinned dictionary version', async () => {
         await store.enqueue(owner, request());
         const first = await claim();
@@ -937,12 +1049,15 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 expectedSettingsVersion: 1,
             },
         });
+
         await Promise.all([
             store.enqueue(owner, next()),
             store.enqueue(owner, next()),
         ]);
+
         const left = await claim(),
             right = await claim();
+
         await store.dispatch(left);
         await store.dispatch(right);
         const outcomes = await Promise.all([
@@ -952,17 +1067,20 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 outputTokens: 40,
             }),
         ]);
+
         expect(outcomes.filter(Boolean)).toHaveLength(1);
         expect(await db.select().from(dictionaryCardsTable)).toHaveLength(2);
         expect(
             await db.select().from(dictionaryCardRevisionsTable),
         ).toHaveLength(2);
+
         expect(
             (await db.select().from(jobs))
                 .map((job) => job.executionState)
                 .sort(),
         ).toEqual(['completed', 'completed', 'failed']);
     });
+
     it('requires explicit duplicate confirmation and pins target settings/version', async () => {
         await store.enqueue(owner, request());
         const lease = await claim();
@@ -978,9 +1096,11 @@ run('Dictionary vocabulary selection durable persistence', () => {
                 expectedSettingsVersion: 1,
             },
         };
+
         await expect(store.enqueue(owner, input)).rejects.toMatchObject({
             code: 'duplicate_confirmation_required',
         });
+
         const accepted = await store.enqueue(owner, {
             ...input,
             confirmDuplicate: true,
@@ -990,9 +1110,11 @@ run('Dictionary vocabulary selection durable persistence', () => {
             .update(dictionarySettingsTable)
             .set({ version: 2 })
             .where(eq(dictionarySettingsTable.dictionaryId, dictionary!.id));
+
         await expect(store.dispatch(second)).rejects.toMatchObject({
             code: 'stale_content',
         });
+
         await store.fail(second, 'stale_content');
         expect((await store.read(owner, accepted.id)).state).toBe('failed');
         expect(await db.select().from(dictionaryCardsTable)).toHaveLength(1);

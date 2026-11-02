@@ -40,6 +40,7 @@ run('model-scoped text AI outage circuits', () => {
         credential: process.env.DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED,
         deepseek: process.env.DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED,
     };
+
     beforeAll(async () => {
         process.env.DICTIONARY_AI_MANAGED_ROUTING_ENABLED = 'true';
         process.env.DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED = 'true';
@@ -49,16 +50,22 @@ run('model-scoped text AI outage circuits', () => {
         await resetTestDatabase(client);
         await migrateTestDatabase(client);
     });
+
     afterAll(async () => {
         await client?.end();
         for (const [key, value] of [
             ['DICTIONARY_AI_MANAGED_ROUTING_ENABLED', prior.routing],
             ['DICTIONARY_AI_KIE_CREDENTIAL_CONFIGURED', prior.credential],
+            ['DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED', prior.deepseek],
         ]) {
-            if (value === undefined) delete process.env[key!];
-            else process.env[key!] = value;
+            if (value === undefined) {
+                delete process.env[key!];
+            } else {
+                process.env[key!] = value;
+            }
         }
     });
+
     it('isolates failures and claims by pinned model while Auto and explicit share their actual model circuit', async () => {
         const ownerId = randomUUID();
         const jobId = randomUUID();
@@ -70,6 +77,7 @@ run('model-scoped text AI outage circuits', () => {
             createdAt: now,
             updatedAt: now,
         });
+
         const [base, selected] = textAiModelCatalog;
         const configuration = {
             adapterRevision: base!.adapterRevision,
@@ -83,6 +91,7 @@ run('model-scoped text AI outage circuits', () => {
             providerId: base!.providerId,
             supportedFormats: [...base!.supportedFormats],
         };
+
         await database.insert(dictionaryAiConfigurationRevisionsTable).values([
             {
                 id: revisionId,
@@ -97,9 +106,11 @@ run('model-scoped text AI outage circuits', () => {
                 catalogSnapshot: configuration,
             },
         ]);
+
         await database
             .insert(dictionaryAiConfigurationTable)
             .values({ id: 'global', version: 1, activeRevisionId: revisionId });
+
         await database.insert(dictionaryAiWorkerObservationsTable).values({
             id: `capable-worker/${selected!.providerId}/${selected!.id}/text-ai-selection:v1`,
             textAiSupportedFormats: [dictionaryGenerationFormat],
@@ -113,6 +124,7 @@ run('model-scoped text AI outage circuits', () => {
             workerId: 'capable-worker',
             textAiSelectionRevision: 1,
         });
+
         await database.insert(textAiPreferencesTable).values({
             userId: ownerId,
             mode: 'explicit',
@@ -121,6 +133,7 @@ run('model-scoped text AI outage circuits', () => {
             createdAt: now,
             updatedAt: now,
         });
+
         const dictionaryStore = new DrizzleDictionaryStore(database, {
             generate: randomUUID,
         });
@@ -179,6 +192,7 @@ run('model-scoped text AI outage circuits', () => {
             instruction: null,
             ownerId,
         };
+
         await store.enqueue(enqueueInput);
         const kieKey = `${selected!.providerId}/${selected!.id}/${dictionaryGenerationFormat}`;
         const deepseekKey = `${base!.providerId}/${base!.id}/${dictionaryGenerationFormat}`;
@@ -189,6 +203,7 @@ run('model-scoped text AI outage circuits', () => {
             openUntil: null,
             updatedAt: now,
         });
+
         const claimOptions = {
             context,
             globalConcurrency: 2,
@@ -212,14 +227,17 @@ run('model-scoped text AI outage circuits', () => {
             retryAt: new Date(now.getTime() + 1000),
             providerUsage: { inputTokens: 0, outputTokens: 0 },
         });
+
         await expect(
             new DrizzleDictionaryGenerationStore(database, {
                 generate: randomUUID,
             }).enqueue({ ...enqueueInput, idempotencyKey: 'kie-outage-new' }),
         ).rejects.toBeInstanceOf(DictionaryGenerationNotAvailableError);
+
         await database
             .delete(textAiPreferencesTable)
             .where(eq(textAiPreferencesTable.userId, ownerId));
+
         // Auto defaults to DeepSeek. Its new admission and claim must pass even with
         // the older Kie retry at the queue head and a format-only historical outage.
         await database.insert(dictionaryGenerationProviderCircuitTable).values({
@@ -228,19 +246,23 @@ run('model-scoped text AI outage circuits', () => {
             openUntil: new Date(now.getTime() + 60000),
             updatedAt: now,
         });
+
         const deepseekId = randomUUID();
         const deepseekStore = new DrizzleDictionaryGenerationStore(database, {
             generate: () => deepseekId,
         });
+
         await deepseekStore.enqueue({
             ...enqueueInput,
             context: { ...context, now: new Date(now.getTime() + 2000) },
             idempotencyKey: 'deepseek-auto-after-kie-outage',
         });
+
         const deepseekClaim = await deepseekStore.claim({
             ...claimOptions,
             context: { ...context, now: new Date(now.getTime() + 3000) },
         });
+
         expect(deepseekClaim?.id).toBe(deepseekId);
         expect(deepseekClaim?.providerExecution?.modelId).toBe(base!.id);
         await deepseekStore.complete({
@@ -267,22 +289,28 @@ run('model-scoped text AI outage circuits', () => {
             providerUsage: { inputTokens: 0, outputTokens: 0 },
             reviewExpiresAt: new Date(now.getTime() + 60000),
         });
+
         const circuits = await database
             .select()
             .from(dictionaryGenerationProviderCircuitTable);
+
         expect(
             circuits.find((row) => row.id === deepseekKey)?.consecutiveFailures,
         ).toBe(0);
+
         expect(
             circuits.find((row) => row.id === kieKey)?.consecutiveFailures,
         ).toBe(3);
+
         expect(
             circuits.find((row) => row.id === kieKey)?.openUntil,
         ).not.toBeNull();
+
         expect(
             circuits.find((row) => row.id === dictionaryGenerationFormat)
                 ?.consecutiveFailures,
         ).toBe(3);
+
         // Explicit DeepSeek and Auto consult the same immutable actual-model key.
         await database.insert(dictionaryAiWorkerObservationsTable).values({
             id: `capable-worker/${base!.providerId}/${base!.id}/text-ai-selection:v1`,
@@ -297,6 +325,7 @@ run('model-scoped text AI outage circuits', () => {
             textAiSelectionRevision: 1,
             textAiSupportedFormats: [dictionaryGenerationFormat],
         });
+
         await database
             .update(dictionaryGenerationProviderCircuitTable)
             .set({
@@ -306,6 +335,7 @@ run('model-scoped text AI outage circuits', () => {
             .where(
                 eq(dictionaryGenerationProviderCircuitTable.id, deepseekKey),
             );
+
         await database.insert(textAiPreferencesTable).values({
             userId: ownerId,
             mode: 'explicit',
@@ -314,6 +344,7 @@ run('model-scoped text AI outage circuits', () => {
             createdAt: now,
             updatedAt: now,
         });
+
         await expect(
             new DrizzleDictionaryGenerationStore(database, {
                 generate: randomUUID,
@@ -322,9 +353,11 @@ run('model-scoped text AI outage circuits', () => {
                 idempotencyKey: 'deepseek-explicit-same-circuit',
             }),
         ).rejects.toBeInstanceOf(DictionaryGenerationNotAvailableError);
+
         await database
             .delete(textAiPreferencesTable)
             .where(eq(textAiPreferencesTable.userId, ownerId));
+
         await expect(
             new DrizzleDictionaryGenerationStore(database, {
                 generate: randomUUID,

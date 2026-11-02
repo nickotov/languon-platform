@@ -39,6 +39,7 @@ const errors = {
     500: json(TextErrorResponseSchema, 'Unexpected failure'),
     503: json(TextErrorResponseSchema, 'Unavailable'),
 };
+
 export function createTextsJobRoutes({
     service,
     policy,
@@ -69,9 +70,11 @@ export function createTextsJobRoutes({
                     ? context.req.path.startsWith(path.slice(0, -1))
                     : context.req.path === path,
             );
+
             return owned ? middleware(context, next) : next();
         });
     };
+
     useOwned(async (c, next) => {
         c.header('Cache-Control', 'private, no-store');
         c.header('Referrer-Policy', 'no-referrer');
@@ -82,9 +85,11 @@ export function createTextsJobRoutes({
             c.header('Access-Control-Allow-Origin', origin);
             c.header('Vary', 'Origin');
         }
+
         await next();
     });
-    for (const path of ownedPaths)
+
+    for (const path of ownedPaths) {
         app.options(path, (c) => {
             const origin = c.req.header('Origin');
             policy.assertCookieRequestOrigin(origin ?? null);
@@ -94,9 +99,13 @@ export function createTextsJobRoutes({
                 'Access-Control-Allow-Headers',
                 'Authorization, Content-Type, X-Correlation-ID, X-Languon-Share-Key',
             );
+
             c.header('Vary', 'Origin');
+
             return c.body(null, 204);
         });
+    }
+
     useOwned(
         bodyLimit({
             maxSize: 512_000,
@@ -113,11 +122,15 @@ export function createTextsJobRoutes({
                 ),
         }),
     );
+
     app.use('*', actionAllowanceRequestMiddleware);
     app.onError((error, c) => {
         const allowanceError = actionAllowanceErrorResponse(error, c);
-        if (allowanceError) return allowanceError;
-        if (error instanceof InvalidRequestOriginError)
+        if (allowanceError) {
+            return allowanceError;
+        }
+
+        if (error instanceof InvalidRequestOriginError) {
             return c.json(
                 {
                     error: {
@@ -128,6 +141,8 @@ export function createTextsJobRoutes({
                 },
                 403,
             );
+        }
+
         if (error instanceof TextsAiError) {
             const parsed = TextErrorCodeSchema.safeParse(error.code);
             const code = parsed.success
@@ -153,6 +168,7 @@ export function createTextsJobRoutes({
                                 code === 'model_capacity_exceeded'
                               ? 400
                               : 503;
+
             return c.json(
                 {
                     error: {
@@ -167,7 +183,8 @@ export function createTextsJobRoutes({
                 status,
             );
         }
-        if (error instanceof TextAiSelectionUnavailableError)
+
+        if (error instanceof TextAiSelectionUnavailableError) {
             return c.json(
                 {
                     error: {
@@ -179,10 +196,12 @@ export function createTextsJobRoutes({
                 },
                 503,
             );
+        }
+
         if (
             error instanceof z.ZodError ||
             (error instanceof HTTPException && error.status === 400)
-        )
+        ) {
             return c.json(
                 {
                     error: {
@@ -193,8 +212,10 @@ export function createTextsJobRoutes({
                 },
                 400,
             );
+        }
+
         const mapped = mapDictionaryHttpError(error);
-        if (mapped && mapped.status === 401)
+        if (mapped && mapped.status === 401) {
             return c.json(
                 {
                     error: {
@@ -205,6 +226,8 @@ export function createTextsJobRoutes({
                 },
                 401,
             );
+        }
+
         return c.json(
             {
                 error: {
@@ -216,11 +239,13 @@ export function createTextsJobRoutes({
             500,
         );
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
     });
+
     const token = (authorization: string | undefined) =>
         authorization?.startsWith('Bearer ')
             ? authorization.slice(7)
@@ -260,6 +285,7 @@ export function createTextsJobRoutes({
                 202,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -294,6 +320,7 @@ export function createTextsJobRoutes({
                 202,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -316,6 +343,7 @@ export function createTextsJobRoutes({
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -338,5 +366,6 @@ export function createTextsJobRoutes({
                 200,
             ),
     );
+
     return app;
 }

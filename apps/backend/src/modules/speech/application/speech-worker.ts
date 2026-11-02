@@ -23,6 +23,7 @@ export class SpeechWorker {
     ) {
         this.now = options.now ?? (() => new Date());
     }
+
     public async runOnce(signal?: AbortSignal): Promise<boolean> {
         for (const item of await this.options.store.deletionInventory(
             this.now(),
@@ -34,9 +35,13 @@ export class SpeechWorker {
                 /* Durable deletion inventory remains unavailable and retries next tick. */
             }
         }
+
         await this.options.store.releaseDeadlines(this.now());
         const job = await this.options.store.claim(this.now());
-        if (!job) return false;
+        if (!job) {
+            return false;
+        }
+
         const provider = this.options.providers.get(
             job.profile.configurationId,
         );
@@ -48,6 +53,7 @@ export class SpeechWorker {
                     job.storage,
                     signal,
                 );
+
                 if (stored && stored.checksum === job.checksum) {
                     assertAudioIntegrity(stored);
                     await this.options.store.complete(
@@ -56,17 +62,21 @@ export class SpeechWorker {
                         stored,
                         this.now(),
                     );
+
                     return true;
                 }
             }
+
             // Missing a known output never causes resubmission. Immediate-provider
             // storage failures preserve inventory and require operator reconciliation.
             if (job.state === 'storing' && !job.taskId) {
                 await this.options.store.fail(job, 'unknown', this.now());
+
                 return true;
             }
+
             if (!provider) {
-                if (job.state === 'submitting')
+                if (job.state === 'submitting') {
                     await this.options.store.fail(
                         job,
                         'failure',
@@ -74,9 +84,21 @@ export class SpeechWorker {
                         undefined,
                         true,
                     );
-                else await this.options.store.pending(job, 30_000, this.now());
+                } else {
+                    await this.options.store.pending(job, 30_000, this.now());
+                }
+
                 return true;
             }
+
+            if (
+                !job.taskId &&
+                this.options.store.authorizeDispatch &&
+                !(await this.options.store.authorizeDispatch(job, this.now()))
+            ) {
+                return true;
+            }
+
             const result = job.taskId
                 ? await provider.poll({
                       taskId: job.taskId,
@@ -89,23 +111,27 @@ export class SpeechWorker {
                       requestId: job.id,
                       ...(signal ? { signal } : {}),
                   });
+
             submissionResolved = true;
             if (result.state === 'pending') {
-                if (job.taskId)
+                if (job.taskId) {
                     await this.options.store.pending(
                         job,
                         result.retryAfterMs,
                         this.now(),
                     );
-                else
+                } else {
                     await this.options.store.submitted(
                         job,
                         result.taskId,
                         result.retryAfterMs,
                         this.now(),
                     );
+                }
+
                 return true;
             }
+
             observation =
                 result.usage || result.execution
                     ? {
@@ -115,6 +141,7 @@ export class SpeechWorker {
                               : {}),
                       }
                     : undefined;
+
             assertAudioIntegrity(result.audio);
             if (
                 !(await this.options.store.storing(
@@ -128,13 +155,16 @@ export class SpeechWorker {
                             : {}),
                     },
                 ))
-            )
+            ) {
                 return true;
+            }
+
             const reference = await this.options.storage.putForReference(
                 job.storage,
                 result.audio,
                 signal,
             );
+
             await this.options.store.complete(
                 job,
                 reference,
@@ -152,7 +182,8 @@ export class SpeechWorker {
                         error.reason === 'provider_unavailable'
                             ? ('speech_provider_unavailable' as const)
                             : undefined;
-                    if (error.observation)
+
+                    if (error.observation) {
                         await this.options.store.fail(
                             job,
                             'failure',
@@ -161,19 +192,20 @@ export class SpeechWorker {
                             false,
                             error.observation,
                         );
-                    else if (reason)
+                    } else if (reason) {
                         await this.options.store.fail(
                             job,
                             'failure',
                             this.now(),
                             reason,
                         );
-                    else
+                    } else {
                         await this.options.store.fail(
                             job,
                             'failure',
                             this.now(),
                         );
+                    }
                 } else {
                     await this.options.store.fail(
                         job,
@@ -183,23 +215,27 @@ export class SpeechWorker {
                         true,
                     );
                 }
-            } else if (!submissionResolved)
+            } else if (!submissionResolved) {
                 await this.options.store.fail(job, 'unknown', this.now());
-            else {
+            } else {
                 const observed =
                     error instanceof SpeechOutputUnavailableError
                         ? error.observation
                         : observation;
-                if (observed)
+
+                if (observed) {
                     await this.options.store.pending(
                         job,
                         5000,
                         this.now(),
                         observed,
                     );
-                else await this.options.store.pending(job, 5000, this.now());
+                } else {
+                    await this.options.store.pending(job, 5000, this.now());
+                }
             }
         }
+
         return true;
     }
 }

@@ -41,6 +41,7 @@ async function fixture(t) {
     await writeFile(join(root, 'source.ts'), 'export const fixture = true;\n');
     await writeFile(join(root, 'docs/diagrams/fixture.md'), document);
     t.after(() => rm(root, { recursive: true, force: true }));
+
     return root;
 }
 
@@ -57,10 +58,12 @@ test('freshness notices changed source, stamp is explicit, source notes remain i
         await readFile(join(root, 'docs/diagrams/fixture.md'), 'utf8'),
         original,
     );
+
     assert.match(
         await sourceFingerprint(root, ['source.ts']),
         /^sha256:[a-f0-9]{64}$/u,
     );
+
     catalog = await loadCatalog(root, { stamp: true });
     assert.equal(catalog.diagrams[0].fresh, true);
     assert.equal((await loadCatalog(root)).diagrams[0].fresh, true);
@@ -75,6 +78,7 @@ test('invalid metadata, Mermaid directives and external resources fail closed', 
             'fixture',
         ),
     );
+
     assert.throws(() =>
         parseDiagram(
             document.replace(
@@ -84,6 +88,7 @@ test('invalid metadata, Mermaid directives and external resources fail closed', 
             'fixture',
         ),
     );
+
     assert.throws(() =>
         parseDiagram(
             document.replace(
@@ -93,6 +98,7 @@ test('invalid metadata, Mermaid directives and external resources fail closed', 
             'fixture',
         ),
     );
+
     assert.throws(() =>
         parseDiagram(
             document.replace(
@@ -102,6 +108,7 @@ test('invalid metadata, Mermaid directives and external resources fail closed', 
             'fixture',
         ),
     );
+
     assert.throws(() =>
         parseDiagram(
             document.replace(
@@ -111,6 +118,7 @@ test('invalid metadata, Mermaid directives and external resources fail closed', 
             'fixture',
         ),
     );
+
     assert.throws(() => parseDiagram(document, '../escape'));
 });
 
@@ -125,10 +133,12 @@ test('source and diagram symlinks cannot escape the repository boundary', async 
         sourceFingerprint(root, ['.env.local']),
         /Invalid source/u,
     );
+
     await symlink(
         join(outside, 'private.txt'),
         join(root, 'docs/diagrams/escape.md'),
     );
+
     const catalog = await loadCatalog(root);
     assert.equal(catalog.issues.length, 1);
     assert.equal(catalog.diagrams.length, 1);
@@ -151,6 +161,7 @@ function get(url, { method = 'GET', headers = {}, path } = {}) {
                 );
             },
         );
+
         call.on('error', reject);
         call.end();
     });
@@ -169,6 +180,7 @@ test('HTTP serves only read-only local assets/catalog and rejects hostile Host, 
         catalog.headers['content-security-policy'],
         /script-src 'self'/u,
     );
+
     assert.equal((await get(url)).status, 200);
     assert.equal((await get(`${url}/app.mjs`, { method: 'HEAD' })).body, '');
     assert.equal((await get(`${url}/vendor/mermaid.esm.min.mjs`)).status, 200);
@@ -176,22 +188,27 @@ test('HTTP serves only read-only local assets/catalog and rejects hostile Host, 
         (await get(url, { headers: { host: 'attacker.example' } })).status,
         403,
     );
+
     assert.equal(
         (await get(url, { headers: { origin: 'https://attacker.example' } }))
             .status,
         403,
     );
+
     assert.equal((await get(url, { headers: { origin: 'null' } })).status, 403);
     assert.equal(
         (await get(url, { headers: { 'sec-fetch-site': 'cross-site' } }))
             .status,
         403,
     );
-    for (const method of ['POST', 'PUT', 'DELETE', 'OPTIONS'])
+
+    for (const method of ['POST', 'PUT', 'DELETE', 'OPTIONS']) {
         assert.equal(
             (await get(`${url}/api/diagrams`, { method })).status,
             405,
         );
+    }
+
     for (const path of [
         '/.env.local',
         '/package.json',
@@ -199,8 +216,10 @@ test('HTTP serves only read-only local assets/catalog and rejects hostile Host, 
         '/vendor/package.json',
         '/vendor/chunks/mermaid.esm.min/private.map',
         '/vendor/../../package.json',
-    ])
+    ]) {
         assert.equal((await get(url, { path })).status, 404);
+    }
+
     assert.equal((await get(url, { path: '/vendor/%2fetc' })).status, 400);
     assert.equal((await get(url, { path: '/?file=.env.local' })).status, 400);
     assert.equal(

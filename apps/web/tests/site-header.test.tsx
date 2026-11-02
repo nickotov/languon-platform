@@ -33,6 +33,7 @@ describe('SiteHeader', () => {
         expect(
             screen.getByRole('link', { name: 'Languon home' }),
         ).toHaveAttribute('href', '/');
+
         expect(
             screen.getByRole('button', { name: 'Switch to dark theme' }),
         ).toBeInTheDocument();
@@ -41,6 +42,7 @@ describe('SiteHeader', () => {
             screen.getByRole('combobox', { name: 'Language' }),
             'ru',
         );
+
         expect(document.cookie).toContain('languon-locale=ru');
         expect(refresh).toHaveBeenCalledOnce();
     });
@@ -66,9 +68,11 @@ describe('SiteHeader', () => {
             expect(
                 screen.getByRole('link', { name: 'Languon home' }),
             ).toHaveAttribute('href', '/');
+
             expect(
                 screen.getByRole('combobox', { name: 'Language' }),
             ).toBeInTheDocument();
+
             expect(
                 screen.getByRole('button', { name: 'Switch to dark theme' }),
             ).toBeInTheDocument();

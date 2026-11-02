@@ -1,3 +1,6 @@
+import { syncLearningEpochs } from './learning-epochs';
+import { prepareMediaCopy } from './media-grants';
+import { copyWorkbookBody } from './workbook-copy';
 import { KnowledgeNoteContentSchema } from '@languon/contracts';
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
@@ -29,16 +32,23 @@ export async function getShare(
 ) {
     return persistence.database.transaction(async (tx) => {
         const row = await getOwnedKnowledgeRow(tx, ownerId, noteId);
-        if (row.status !== 'saved') throw knowledgeUnavailable();
+        if (row.status !== 'saved') {
+            throw knowledgeUnavailable();
+        }
+
         const [share] = await tx
             .select()
             .from(knowledgeSharesTable)
             .where(eq(knowledgeSharesTable.noteId, noteId));
 
-        if (!share) throw knowledgeUnavailable();
-        const key = persistence.shareCrypto.key(share.locator);
-        if (!persistence.shareCrypto.verify(key, share.keyDigest))
+        if (!share) {
             throw knowledgeUnavailable();
+        }
+
+        const key = persistence.shareCrypto.key(share.locator);
+        if (!persistence.shareCrypto.verify(key, share.keyDigest)) {
+            throw knowledgeUnavailable();
+        }
 
         return { locator: share.locator, key };
     });
@@ -51,11 +61,13 @@ export async function issueShare(
 ) {
     return persistence.database.transaction(async (tx) => {
         const row = await getOwnedKnowledgeRow(tx, ownerId, noteId);
-        if (row.status !== 'saved')
+        if (row.status !== 'saved') {
             throw new KnowledgeDomainError(
                 'invalid_request',
                 'Save the note before sharing.',
             );
+        }
+
         const [existing] = await tx
             .select()
             .from(knowledgeSharesTable)
@@ -64,8 +76,9 @@ export async function issueShare(
 
         if (existing) {
             const key = persistence.shareCrypto.key(existing.locator);
-            if (!persistence.shareCrypto.verify(key, existing.keyDigest))
+            if (!persistence.shareCrypto.verify(key, existing.keyDigest)) {
                 throw knowledgeUnavailable();
+            }
 
             return { locator: existing.locator, key };
         }
@@ -101,7 +114,7 @@ export async function revokeShare(
 }
 
 export async function shared(
-    persistence: KnowledgeStoreContext,
+    persistence: Pick<KnowledgeStoreContext, 'shareCrypto'>,
     tx: KnowledgeTransaction,
     locator: string,
     key: string,
@@ -111,14 +124,20 @@ export async function shared(
         .from(knowledgeSharesTable)
         .where(eq(knowledgeSharesTable.locator, locator));
     const valid = persistence.shareCrypto.verify(key, share?.keyDigest ?? null);
-    if (!valid || !share) throw knowledgeUnavailable();
+    if (!valid || !share) {
+        throw knowledgeUnavailable();
+    }
+
     const [row] = await tx
         .select()
         .from(knowledgeNotesTable)
         .where(eq(knowledgeNotesTable.id, share.noteId))
         .for('share');
 
-    if (!row || row.status !== 'saved') throw knowledgeUnavailable();
+    if (!row || row.status !== 'saved') {
+        throw knowledgeUnavailable();
+    }
+
     // Revocation locks the note before deleting this capability. Recheck
     // after the note lock so a queued read cannot use a revoked key.
     const [liveShare] = await tx
@@ -131,14 +150,18 @@ export async function shared(
         !liveShare ||
         liveShare.locator !== locator ||
         !persistence.shareCrypto.verify(key, liveShare.keyDigest)
-    )
+    ) {
         throw knowledgeUnavailable();
+    }
+
     const [owner] = await tx
         .select({ status: usersTable.status })
         .from(usersTable)
         .where(eq(usersTable.id, row.ownerId));
 
-    if (owner?.status !== 'active') throw knowledgeUnavailable();
+    if (owner?.status !== 'active') {
+        throw knowledgeUnavailable();
+    }
 
     return row;
 }
@@ -174,17 +197,23 @@ export async function copyShared(
             fingerprint,
         );
 
-        if (receipt) return replayKnowledgeNote(tx, ownerId, receipt);
+        if (receipt) {
+            return replayKnowledgeNote(tx, ownerId, receipt);
+        }
+
         const row = await shared(persistence, tx, locator, key);
-        if (row.version !== input.expectedVersion)
+        if (row.version !== input.expectedVersion) {
             throw new KnowledgeDomainError(
                 'version_conflict',
                 'The shared note changed. Refresh it before copying.',
             );
+        }
+
+        const media = await prepareMediaCopy(tx, row.id, row.body);
         const content = KnowledgeNoteContentSchema.parse({
             title: row.title,
             summary: row.summary,
-            body: row.body,
+            body: copyWorkbookBody(row.body, media.assetIds),
             categories: row.categories,
             studiedLanguage: row.studiedLanguage,
             explanationLanguage: row.explanationLanguage,
@@ -207,6 +236,8 @@ export async function copyShared(
             })
             .returning();
 
+        await media.grant(id);
+        await syncLearningEpochs(tx, id, content.body, 1);
         await tx
             .insert(knowledgeNoteRevisionsTable)
             .values({ noteId: id, version: 1, content, createdAt: now });

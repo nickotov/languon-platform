@@ -23,21 +23,26 @@ export const adminAuthProvider: AuthProvider = {
                           password: params.password ?? '',
                       }),
             );
+
             if (response.status !== 'authenticated') {
                 return {
                     error: new Error('A verified account is required.'),
                     success: false,
                 };
             }
+
             accessTokenStore.set(
                 response.accessToken,
                 response.accessTokenExpiresAt,
             );
+
             adminRefreshCoordinator.publishAuthenticated(response);
             actor = (await adminApi.me()).actor;
+
             return { redirectTo: '/', success: true };
         } catch (error) {
             accessTokenStore.clear();
+
             return {
                 error: normalizeError(error),
                 success: false,
@@ -52,11 +57,13 @@ export const adminAuthProvider: AuthProvider = {
             accessTokenStore.clear();
             adminRefreshCoordinator.publishSignedOut();
         }
+
         return { redirectTo: '/login', success: true };
     },
     check: async () => {
         try {
             actor = (await adminApi.me()).actor;
+
             return { authenticated: true };
         } catch (error) {
             if (
@@ -66,9 +73,11 @@ export const adminAuthProvider: AuthProvider = {
             ) {
                 return { authenticated: true, error };
             }
+
             actor = null;
             accessTokenStore.clear();
             adminRefreshCoordinator.publishSignedOut();
+
             return {
                 authenticated: false,
                 logout: true,
@@ -87,8 +96,10 @@ export const adminAuthProvider: AuthProvider = {
             actor = null;
             accessTokenStore.clear();
             adminRefreshCoordinator.publishSignedOut();
+
             return { logout: true, redirectTo: '/login' };
         }
+
         return {};
     },
 };
@@ -96,11 +107,18 @@ export const adminAuthProvider: AuthProvider = {
 async function passkeyLogin() {
     const challenge = await adminApi.passkeyOptions();
     const credential = await getPasskey(challenge.options);
+
     return adminApi.verifyPasskey({ credential, flowId: challenge.flowId });
 }
 
 function normalizeError(error: unknown): Error {
-    if (error instanceof AdminApiError) return new Error(error.detail.message);
-    if (error instanceof Error) return error;
+    if (error instanceof AdminApiError) {
+        return new Error(error.detail.message);
+    }
+
+    if (error instanceof Error) {
+        return error;
+    }
+
     return new Error('Authentication failed. Please try again.');
 }

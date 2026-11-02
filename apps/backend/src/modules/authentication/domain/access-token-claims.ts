@@ -44,6 +44,7 @@ export class AccessTokenClaims implements AccessTokenClaimsProperties {
         if (properties.expiresAt <= properties.issuedAt) {
             throw new RangeError('An access token must expire after issue.');
         }
+
         return new AccessTokenClaims(properties);
     }
 

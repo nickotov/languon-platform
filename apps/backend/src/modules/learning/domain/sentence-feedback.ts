@@ -27,8 +27,10 @@ export const SentenceCheckDraftSchema = z
     })
     .strict();
 export function sentenceRating(percentage: number): SentenceRating {
-    if (!Number.isInteger(percentage) || percentage < 0 || percentage > 100)
+    if (!Number.isInteger(percentage) || percentage < 0 || percentage > 100) {
         throw new RangeError('Invalid percentage');
+    }
+
     return percentage === 100
         ? 'perfect'
         : percentage >= 80
@@ -37,11 +39,13 @@ export function sentenceRating(percentage: number): SentenceRating {
             ? 'not-bad'
             : 'practise-again-later';
 }
+
 export function isSentenceSpanValid(
     answer: string,
     span: { start: number; end: number; quote: string },
 ): boolean {
     const boundaries = sentenceGraphemeBoundaries(answer);
+
     return (
         Number.isInteger(span.start) &&
         Number.isInteger(span.end) &&
@@ -52,9 +56,13 @@ export function isSentenceSpanValid(
         answer.slice(span.start, span.end) === span.quote
     );
 }
+
 /** Only an exact, unambiguous, grapheme-aligned quote can identify a highlight. */
 export function resolveSentenceIssueSpan(answer: string, quote: string | null) {
-    if (!quote) return null;
+    if (!quote) {
+        return null;
+    }
+
     const boundaries = sentenceGraphemeBoundaries(answer);
     let resolved: { start: number; end: number; quote: string } | null = null;
     for (
@@ -63,31 +71,43 @@ export function resolveSentenceIssueSpan(answer: string, quote: string | null) {
         start = answer.indexOf(quote, start + 1)
     ) {
         const end = start + quote.length;
-        if (!boundaries.has(start) || !boundaries.has(end)) continue;
-        if (resolved) return null;
+        if (!boundaries.has(start) || !boundaries.has(end)) {
+            continue;
+        }
+
+        if (resolved) {
+            return null;
+        }
+
         resolved = { start, end, quote };
     }
+
     return resolved;
 }
+
 export function validateSentenceCheck(
     input: SentenceCheckInput,
     value: SentenceCheckDraft,
 ): SentenceFeedback {
     if (
         !SentenceCheckRequestSchema.shape.answer.safeParse(input.answer).success
-    )
+    ) {
         throw new SentenceInvalidModelOutputError(
             'Invalid immutable answer',
             'input_invalid',
         );
+    }
+
     const parsed = SentenceCheckDraftSchema.safeParse(value);
-    if (!parsed.success)
+    if (!parsed.success) {
         throw new SentenceInvalidModelOutputError(
             undefined,
             parsed.error.issues.some((issue) => issue.path[0] === 'targets')
                 ? 'target_assessments_invalid'
                 : 'schema_invalid',
         );
+    }
+
     const draft = parsed.data;
     const admitted = new Set(input.targets.map((target) => target.entryId));
     if (
@@ -98,31 +118,39 @@ export function validateSentenceCheck(
         new Set(draft.targets.map((target) => target.entryId)).size !==
             admitted.size ||
         draft.targets.some((target) => !admitted.has(target.entryId))
-    )
+    ) {
         throw new SentenceInvalidModelOutputError(
             'Invalid target assessment',
             'target_assessments_invalid',
         );
+    }
+
     if (
         draft.issues.some(
             (issue) =>
                 issue.span !== null &&
                 !isSentenceSpanValid(input.answer, issue.span),
         )
-    )
+    ) {
         throw new SentenceInvalidModelOutputError(
             'Invalid answer span',
             'answer_span_invalid',
         );
+    }
+
     let percentage = draft.proposedPercentage;
-    if (draft.targets.some((target) => target.status === 'missing'))
+    if (draft.targets.some((target) => target.status === 'missing')) {
         percentage = Math.min(percentage, 79);
+    }
+
     if (
         draft.meaning !== 'correct' ||
         draft.grammar !== 'correct' ||
         draft.issues.length > 0
-    )
+    ) {
         percentage = Math.min(percentage, 99);
+    }
+
     return {
         percentage,
         rating: sentenceRating(percentage),

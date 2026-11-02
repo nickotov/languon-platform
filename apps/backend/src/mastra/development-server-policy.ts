@@ -55,6 +55,7 @@ export function createDevelopmentServerMiddleware(): Middleware[] {
                 const originFailure = validateLocalRequestAuthority(
                     context.req.raw,
                 );
+
                 if (originFailure) {
                     return context.json(
                         { error: originFailure.message },
@@ -77,6 +78,7 @@ export function createDevelopmentServerMiddleware(): Middleware[] {
                         403,
                     );
                 }
+
                 if (
                     isStateChangingMethod(context.req.method) &&
                     !isAllowedMutation(context.req.method, pathname)
@@ -97,18 +99,21 @@ export function createDevelopmentServerMiddleware(): Middleware[] {
             handler: async (context, next) => {
                 if (!hasRequestBody(context.req.method)) {
                     await next();
+
                     return;
                 }
 
                 const pathname = new URL(context.req.url).pathname;
                 if (!isAgentModelExecutionPath(pathname)) {
                     await next();
+
                     return;
                 }
 
                 const requestFailure = await validateAgentRequestBody(
                     context.req.raw,
                 );
+
                 if (requestFailure) {
                     return context.json(
                         { error: requestFailure.message },
@@ -119,6 +124,7 @@ export function createDevelopmentServerMiddleware(): Middleware[] {
                 context.req.raw = await normalizeAgentExecutionRequest(
                     context.req.raw,
                 );
+
                 context.req.bodyCache = {};
 
                 if (activeAgentExecutions >= 1) {
@@ -135,14 +141,18 @@ export function createDevelopmentServerMiddleware(): Middleware[] {
                 try {
                     await next();
                     const response = context.res;
-                    if (!response.body) return;
+                    if (!response.body) {
+                        return;
+                    }
 
                     responseOwnsLease = true;
                     context.res = withCompletionLease(response, () => {
                         activeAgentExecutions -= 1;
                     });
                 } finally {
-                    if (!responseOwnsLease) activeAgentExecutions -= 1;
+                    if (!responseOwnsLease) {
+                        activeAgentExecutions -= 1;
+                    }
                 }
             },
         },
@@ -163,6 +173,7 @@ export function enforceDevelopmentHarnessProcessPolicy(
     const configuredOverride = [...baseUrlVariables].find((name) =>
         environment[name]?.trim(),
     );
+
     if (configuredOverride) {
         throw new Error(
             `${configuredOverride} is not supported by the development harness; model destinations are resolved from the selected Mastra provider and the DeepSeek fallback uses its pinned HTTPS origin.`,
@@ -187,7 +198,9 @@ export function validateLocalRequestAuthority(
     }
 
     const origin = request.headers.get('origin');
-    if (!origin) return;
+    if (!origin) {
+        return;
+    }
 
     try {
         const parsed = new URL(origin);
@@ -218,6 +231,7 @@ export async function validateAgentRequestBody(
             status: 413,
         };
     }
+
     if (!text) {
         return {
             message: 'The development agent request body must be an object.',
@@ -245,6 +259,7 @@ export async function validateAgentRequestBody(
     const unsupportedKey = Object.keys(body).find(
         (key) => !allowedAgentRequestKeys.has(key),
     );
+
     if (unsupportedKey) {
         return {
             message: `The development agent request cannot set ${unsupportedKey}.`,
@@ -325,6 +340,7 @@ async function normalizeAgentExecutionRequest(
         ...body,
         maxSteps: body.maxSteps ?? developmentServerMaximumAgentSteps,
     };
+
     delete normalizedBody.memory;
     delete normalizedBody.modelSettings;
 
@@ -334,10 +350,16 @@ async function normalizeAgentExecutionRequest(
 }
 
 function isAllowedStudioMemory(value: unknown): boolean {
-    if (value === undefined) return true;
-    if (!isRecord(value)) return false;
+    if (value === undefined) {
+        return true;
+    }
+
+    if (!isRecord(value)) {
+        return false;
+    }
 
     const keys = Object.keys(value);
+
     return (
         keys.length === 2 &&
         keys.every((key) => studioMemoryKeys.has(key)) &&
@@ -348,11 +370,19 @@ function isAllowedStudioMemory(value: unknown): boolean {
 }
 
 function isAllowedStudioModelSettings(value: unknown): boolean {
-    if (value === undefined) return true;
-    if (!isRecord(value)) return false;
+    if (value === undefined) {
+        return true;
+    }
+
+    if (!isRecord(value)) {
+        return false;
+    }
 
     const keys = Object.keys(value);
-    if (keys.length === 0) return true;
+    if (keys.length === 0) {
+        return true;
+    }
+
     return (
         keys.every((key) => studioModelSettingsKeys.has(key)) &&
         value.maxRetries === 2
@@ -363,14 +393,21 @@ function findNestedForbiddenKey(
     body: Record<string, unknown>,
 ): string | undefined {
     for (const [key, value] of Object.entries(body)) {
-        if (key === 'modelSettings') continue;
+        if (key === 'modelSettings') {
+            continue;
+        }
+
         const result = findForbiddenKey(value);
-        if (result) return result;
+        if (result) {
+            return result;
+        }
     }
 }
 
 function hasPrivilegedMessageRole(messages: unknown): boolean {
-    if (!Array.isArray(messages)) return false;
+    if (!Array.isArray(messages)) {
+        return false;
+    }
 
     return messages.some(
         (message) =>
@@ -385,21 +422,35 @@ function findForbiddenKey(value: unknown): string | undefined {
     if (Array.isArray(value)) {
         for (const entry of value) {
             const result = findForbiddenKey(entry);
-            if (result) return result;
+            if (result) {
+                return result;
+            }
         }
+
         return;
     }
-    if (!isRecord(value)) return;
+
+    if (!isRecord(value)) {
+        return;
+    }
 
     for (const [key, entry] of Object.entries(value)) {
-        if (forbiddenRequestKeys.has(key)) return key;
+        if (forbiddenRequestKeys.has(key)) {
+            return key;
+        }
+
         const result = findForbiddenKey(entry);
-        if (result) return result;
+        if (result) {
+            return result;
+        }
     }
 }
 
 function readMaximumSteps(value: unknown): number | undefined {
-    if (!isRecord(value) || value.maxSteps === undefined) return;
+    if (!isRecord(value) || value.maxSteps === undefined) {
+        return;
+    }
+
     return typeof value.maxSteps === 'number' ? value.maxSteps : Number.NaN;
 }
 
@@ -412,7 +463,9 @@ function isStateChangingMethod(method: string): boolean {
 }
 
 function isAllowedMutation(method: string, pathname: string): boolean {
-    if (method.toUpperCase() !== 'POST') return false;
+    if (method.toUpperCase() !== 'POST') {
+        return false;
+    }
 
     if (pathname.startsWith(`${agentPath}/`)) {
         return isAgentModelExecutionPath(pathname);
@@ -426,9 +479,14 @@ function isAllowedMutation(method: string, pathname: string): boolean {
         '/api/workflows/development-verification-workflow/',
         '/api/workflows/developmentVerificationWorkflow/',
     ];
+
     return workflowPrefixes.some((prefix) => {
-        if (!pathname.startsWith(prefix)) return false;
+        if (!pathname.startsWith(prefix)) {
+            return false;
+        }
+
         const suffix = pathname.slice(prefix.length);
+
         return (
             ['create-run', 'start', 'stream'].includes(suffix) ||
             /^runs\/[A-Za-z0-9_-]+\/cancel$/.test(suffix)
@@ -437,8 +495,12 @@ function isAllowedMutation(method: string, pathname: string): boolean {
 }
 
 function isAgentModelExecutionPath(pathname: string): boolean {
-    if (!pathname.startsWith(`${agentPath}/`)) return false;
+    if (!pathname.startsWith(`${agentPath}/`)) {
+        return false;
+    }
+
     const suffix = pathname.slice(agentPath.length + 1);
+
     return /^(?:generate(?:\/vnext|-legacy)?|stream(?:-legacy|-until-idle|VNext|\/vnext(?:\/ui)?|\/ui)?)$/.test(
         suffix,
     );
@@ -472,11 +534,16 @@ function withCompletionLease(
     release: () => void,
 ): Response {
     const reader = response.body?.getReader();
-    if (!reader) return response;
+    if (!reader) {
+        return response;
+    }
 
     let released = false;
     const releaseOnce = () => {
-        if (released) return;
+        if (released) {
+            return;
+        }
+
         released = true;
         release();
     };
@@ -494,8 +561,10 @@ function withCompletionLease(
                 if (result.done) {
                     releaseOnce();
                     controller.close();
+
                     return;
                 }
+
                 controller.enqueue(result.value);
             } catch (error) {
                 releaseOnce();

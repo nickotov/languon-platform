@@ -9,6 +9,7 @@ import styles from './tutor-shell.module.css';
 export function TutorLauncher({ onOpen }: { onOpen(): void }) {
     const { locale } = useI18n();
     const copy = tutorShellCopy(locale);
+
     return (
         <div className={styles.area}>
             <Tooltip content={copy.launcher} placement='left'>

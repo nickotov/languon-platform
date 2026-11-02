@@ -12,6 +12,7 @@ describe('transaction-scoped capacity fence', () => {
         await lockTextAiCapacity({ execute } as unknown as Transaction);
         expect(execute).toHaveBeenCalledTimes(2);
     });
+
     it('does not retain a failed acquisition', async () => {
         const execute = vi
             .fn(async () => [])

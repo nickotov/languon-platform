@@ -43,6 +43,7 @@ export class CardProposalGeneratorError extends Error {
         cacheReadTokens?: number;
         cacheWriteTokens?: number;
     };
+
     public constructor(
         public readonly category:
             | 'invalid_model_output'

@@ -55,7 +55,9 @@ export function status(
                 ),
             );
 
-        if (!session) return null;
+        if (!session) {
+            return null;
+        }
 
         return {
             id: session.id,
@@ -73,8 +75,10 @@ export function start(
         await lockPortraitOwner(tx, input.ownerId);
         await expireOwner(tx, input.ownerId, input.now);
         const state = await readPortraitState(tx, input.ownerId);
-        if (state.version !== input.expectedVersion)
+        if (state.version !== input.expectedVersion) {
             throw new PortraitConflictError();
+        }
+
         const [current] = await tx
             .select()
             .from(interviews)
@@ -253,8 +257,10 @@ export function setLocale(
         await lockPortraitOwner(tx, input.ownerId);
         await expireOwner(tx, input.ownerId, input.now);
         const state = await readPortraitState(tx, input.ownerId);
-        if (state.version !== input.expectedVersion)
+        if (state.version !== input.expectedVersion) {
             throw new PortraitConflictError();
+        }
+
         const [session] = await tx
             .select()
             .from(interviews)
@@ -265,7 +271,10 @@ export function setLocale(
                 ),
             );
 
-        if (!session) throw new PortraitDraftUnavailableError();
+        if (!session) {
+            throw new PortraitDraftUnavailableError();
+        }
+
         const context = { ...session.context, locale: input.locale },
             expiresAt = new Date(input.now.getTime() + ttl);
 
@@ -275,7 +284,7 @@ export function setLocale(
             .set({ context, expiresAt, updatedAt: input.now })
             .where(eq(interviews.id, session.id));
 
-        if (state.draft)
+        if (state.draft) {
             await savePortraitState(
                 tx,
                 input.ownerId,
@@ -288,6 +297,7 @@ export function setLocale(
                 },
                 input.now,
             );
+        }
 
         return {
             interviewId: session.id,
@@ -319,7 +329,9 @@ export async function read(
                 ),
             );
 
-        if (!row || !session) return null;
+        if (!row || !session) {
+            return null;
+        }
 
         return withActionBilling(
             tx,
@@ -371,7 +383,8 @@ export async function stop(
             .from(operations)
             .where(and(eq(operations.id, id), eq(operations.ownerId, ownerId)));
 
-        if (stopped?.state === 'cancelled')
+        if (stopped?.state === 'cancelled') {
             await settleInterviewAction(tx, stopped, 'stopped', now);
+        }
     });
 }

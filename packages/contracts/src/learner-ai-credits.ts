@@ -4,6 +4,7 @@ import { parseCreditMilli } from './ai-credit-amount';
 const AvailableCreditsSchema = z.string().refine((value) => {
     try {
         parseCreditMilli(value);
+
         return true;
     } catch {
         return false;

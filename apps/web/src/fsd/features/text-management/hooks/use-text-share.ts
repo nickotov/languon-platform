@@ -11,8 +11,11 @@ type TextShareCapability = Awaited<
 >['capability'];
 const capabilities = new Map<string, TextShareCapability>();
 useSessionStore.subscribe((next, previous) => {
-    if (next.user?.id !== previous.user?.id) capabilities.clear();
+    if (next.user?.id !== previous.user?.id) {
+        capabilities.clear();
+    }
 });
+
 export function useTextShare(
     kind: 'text' | 'folder',
     resource: TextResource,
@@ -30,9 +33,11 @@ export function useTextShare(
     }));
     const capability =
         saved.identity === identity ? saved.capability : undefined;
+
     function setCapability(value: TextShareCapability | undefined) {
         setSaved({ identity, capability: value });
     }
+
     const [step, setStep] = useState<'normal' | 'confirm' | 'revoked'>(
         'normal',
     );
@@ -47,6 +52,7 @@ export function useTextShare(
             : '';
     const active =
         step !== 'revoked' && Boolean(resource.isShared || capability);
+
     function create() {
         void mutation.run(
             (token) =>
@@ -65,6 +71,7 @@ export function useTextShare(
             },
         );
     }
+
     function revoke() {
         void mutation.run(
             (token) =>
@@ -83,6 +90,7 @@ export function useTextShare(
             },
         );
     }
+
     return {
         ...mutation,
         capability,

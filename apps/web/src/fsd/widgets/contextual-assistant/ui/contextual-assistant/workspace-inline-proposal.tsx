@@ -37,24 +37,34 @@ export function WorkspaceInlineProposal({
     const position = workspace.getProposalPosition?.(targetId);
     const available = Boolean(root && position);
     useEffect(() => {
-        if (!available) onFullReview();
+        if (!available) {
+            onFullReview();
+        }
     }, [available, onFullReview]);
+
     useEffect(() => {
         ref.current?.focus({ preventScroll: true });
         ref.current?.scrollIntoView({ block: 'nearest' });
     }, [available]);
+
     function key(event: KeyboardEvent<HTMLElement>) {
-        if (event.key !== 'Escape') return;
+        if (event.key !== 'Escape') {
+            return;
+        }
+
         event.preventDefault();
         event.stopPropagation();
         onClose();
     }
+
     if (!root || !position) {
         const reviewRoot = workspace.proposalRootId
             ? document.getElementById(workspace.proposalRootId)
             : null;
+
         return reviewRoot ? createPortal(fallback, reviewRoot) : fallback;
     }
+
     return createPortal(
         <section
             ref={ref}

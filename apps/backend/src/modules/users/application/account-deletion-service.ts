@@ -14,6 +14,7 @@ export class AccountDeletionOwnerTransferRequiredError extends Error {
         super(
             'Transfer and revoke administrator ownership before removing this account.',
         );
+
         this.name = 'AccountDeletionOwnerTransferRequiredError';
     }
 }
@@ -53,6 +54,7 @@ export class AccountDeletionService {
         await this.dependencies.authentication.requireRecentlyAuthenticatedSession(
             input,
         );
+
         const now = this.dependencies.clock.now();
         const purgeAt = new Date(now.getTime() + accountDeletionGracePeriodMs);
         const scheduled = await this.dependencies.store.schedule({
@@ -75,6 +77,7 @@ export class AccountDeletionService {
             sessionId: input.sessionId,
             userId: input.userId,
         });
+
         try {
             await this.dependencies.journal.recordCommittedDeletion({
                 scheduledAt: scheduled.scheduledAt,
@@ -86,6 +89,7 @@ export class AccountDeletionService {
             // will fail-stop on an indeterminate intent until reconciled.
             throw new AccountDeletionJournalUnavailableError();
         }
+
         // Cancellation is an improvement in latency and provider cost, not the
         // authorization boundary. Status and session revocation already committed;
         // the purge worker verifies all work is terminal before erasing data.
@@ -97,6 +101,7 @@ export class AccountDeletionService {
             // Retry is driven by durable work and purge verification; never undo
             // a successful account-removal transaction after an external failure.
         }
+
         return scheduled;
     }
 }

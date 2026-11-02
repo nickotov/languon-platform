@@ -35,6 +35,7 @@ export async function doctor({
         maxConnections: 1,
         connectTimeoutSeconds: 3,
     });
+
     try {
         return await client.begin('read only', async (sql) => {
             await sql`set local statement_timeout='5000ms'`;
@@ -48,7 +49,7 @@ export async function doctor({
                 await expectedMigrations(root),
             );
             const checks = [migration];
-            if (migration.status === 'pass')
+            if (migration.status === 'pass') {
                 checks.push(
                     ...evaluateReadiness(
                         await readSnapshot(sql, learnerEmail),
@@ -57,6 +58,8 @@ export async function doctor({
                         selected,
                     ),
                 );
+            }
+
             return {
                 identity,
                 phase,
@@ -72,8 +75,10 @@ export async function doctor({
 }
 
 export function parseWaitMs(value) {
-    if (!/^(0|[1-9][0-9]*)$/.test(value) || Number(value) > 15000)
+    if (!/^(0|[1-9][0-9]*)$/.test(value) || Number(value) > 15000) {
         throw new Error('wait-ms must be an integer between 0 and 15000.');
+    }
+
     return Number(value);
 }
 
@@ -91,14 +96,19 @@ async function main() {
             help: { type: 'boolean', default: false },
         },
     });
+
     if (values.help) {
         console.log(
-            'node scripts/dev-doctor.mjs [--env-file FILE] [--phase configuration|runtime] [--learner-email EMAIL] [--capability texts,interview] [--wait-ms 15000] [--process-environment] [--json]\nRead-only local prerequisite inspection. Does not generate, configure, or charge.',
+            'node scripts/dev-doctor.mjs [--env-file FILE] [--phase configuration|runtime] [--learner-email EMAIL] [--capability texts,knowledge-actions,interview] [--wait-ms 15000] [--process-environment] [--json]\nRead-only local prerequisite inspection. Does not generate, configure, or charge.',
         );
+
         return;
     }
-    if (!['configuration', 'runtime'].includes(values.phase))
+
+    if (!['configuration', 'runtime'].includes(values.phase)) {
         throw new Error('Invalid phase.');
+    }
+
     const waitMs = parseWaitMs(values['wait-ms']);
     const options = {
         envFile: values['env-file'],
@@ -119,17 +129,23 @@ async function main() {
         await setTimeout(Math.min(1000, deadline - Date.now()));
         report = await doctor(options);
     }
-    if (values.json) console.log(JSON.stringify(report, null, 2));
-    else {
+
+    if (values.json) {
+        console.log(JSON.stringify(report, null, 2));
+    } else {
         console.log(
             `Development readiness (${report.phase}) — ${report.identity.host}:${report.identity.port}/${report.identity.database}`,
         );
-        for (const check of report.checks)
+
+        for (const check of report.checks) {
             console.log(
                 `${check.status.toUpperCase()} ${check.id}: ${check.message}`,
             );
+        }
+
         console.log(report.scope);
     }
+
     process.exitCode = report.ready ? 0 : 1;
 }
 
@@ -142,6 +158,7 @@ if (
         console.error(
             'Development doctor could not inspect this environment. Check the local env file, database availability, current package builds and read permissions. Only loopback development/test databases are accepted.',
         );
+
         process.exitCode = 1;
     });
 }

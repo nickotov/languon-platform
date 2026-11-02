@@ -12,10 +12,12 @@ export function PortraitDetailsList({
 }) {
     const rows = portraitDetails(items, locale);
     const text = labels[locale];
+
     return (
         <dl className={styles.list}>
             {rows.map((row) => {
                 const className = row.value ? styles.value : styles.unknown;
+
                 return (
                     <div key={row.key} className={styles.row}>
                         <dt className={styles.term}>{row.term}</dt>

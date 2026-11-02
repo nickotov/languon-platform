@@ -7,11 +7,15 @@ export function partitionSentencePreparation<T extends SentenceEntry>(
 ): T[][] {
     const initial = new Set(initialIds);
     const first = entries.filter((entry) => initial.has(entry.entryId));
-    if (first.length > limit)
+    if (first.length > limit) {
         throw new Error('Initial preparation round exceeds the practice limit');
+    }
+
     const remaining = entries.filter((entry) => !initial.has(entry.entryId));
     const partitions: T[][] = first.length ? [first] : [];
-    for (let offset = 0; offset < remaining.length; offset += limit)
+    for (let offset = 0; offset < remaining.length; offset += limit) {
         partitions.push(remaining.slice(offset, offset + limit));
+    }
+
     return partitions;
 }

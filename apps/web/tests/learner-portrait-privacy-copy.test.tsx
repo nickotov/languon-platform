@@ -11,9 +11,11 @@ import { render } from './render';
 const mocks = vi.hoisted(() => ({
     management: null as PortraitManagement | null,
 }));
+
 vi.mock('@/fsd/pages/learner-portrait/hooks/use-portrait-management', () => ({
     usePortraitManagement: () => mocks.management,
 }));
+
 vi.mock('next/navigation', () => ({
     useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
     useSearchParams: () => new URLSearchParams(),
@@ -96,15 +98,18 @@ describe('portrait privacy notice boundaries', () => {
             const start = screen.getByRole('button', {
                 name: portraitCopy(locale, 'start'),
             });
+
             expect(notice).toBeVisible();
             expect(
                 notice.compareDocumentPosition(start) &
                     Node.DOCUMENT_POSITION_FOLLOWING,
             ).not.toBe(0);
+
             expect(mocks.management!.requestWithSession).not.toHaveBeenCalled();
             const summary = screen
                 .getByText(portraitCopy(locale, 'data'))
                 .closest('summary')!;
+
             await userEvent.click(summary);
             const details = summary.closest('details')!;
             expect(details).toHaveAttribute('open');
@@ -130,6 +135,7 @@ describe('portrait privacy notice boundaries', () => {
                 summary: '',
                 updatedAt: '2026-10-21T10:00:00.000Z',
             };
+
             render(<PortraitOverviewPage />, { locale });
             expect(screen.getByText(owner)).toBeVisible();
         },

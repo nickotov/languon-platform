@@ -17,6 +17,7 @@ const headers = {
     Authorization: 'Bearer test.test.test',
     'Content-Type': 'application/json',
 };
+
 function fixture() {
     const ownerId = randomUUID();
     const operationId = randomUUID();
@@ -99,18 +100,22 @@ function fixture() {
             updatedAt: null,
         }),
     });
+
     return { app, ownerId, operationId, interviewId, interviewStore };
 }
+
 describe('learner portrait HTTP boundary', () => {
     it('privately discovers resumable metadata and pricing without starting work', async () => {
         const { app, interviewId, interviewStore, ownerId } = fixture();
         expect(
             (await app.request('/learner-portrait/interview/status')).status,
         ).toBe(401);
+
         const response = await app.request(
             '/learner-portrait/interview/status',
             { headers },
         );
+
         expect(response.status).toBe(200);
         expect(response.headers.get('cache-control')).toBe('private, no-store');
         expect(await response.json()).toEqual({
@@ -121,13 +126,16 @@ describe('learner portrait HTTP boundary', () => {
             },
             creditsBypass: true,
         });
+
         expect(interviewStore.status).toHaveBeenCalledWith(
             ownerId,
             expect.any(Date),
         );
+
         expect(interviewStore.start).not.toHaveBeenCalled();
         expect(interviewStore.enqueue).not.toHaveBeenCalled();
     });
+
     it('requires bearer identity and rejects untrusted request origin', async () => {
         const { app } = fixture();
         expect((await app.request('/learner-portrait')).status).toBe(401);
@@ -139,6 +147,7 @@ describe('learner portrait HTTP boundary', () => {
             ).status,
         ).toBe(403);
     });
+
     it('enqueues durable work with authenticated owner and returns no private execution context', async () => {
         const { app, ownerId, interviewId, interviewStore } = fixture();
         const response = await app.request(
@@ -155,6 +164,7 @@ describe('learner portrait HTTP boundary', () => {
                 }),
             },
         );
+
         expect(response.status).toBe(202);
         const output = await response.json();
         expect(output).not.toHaveProperty('ownerId');
@@ -163,13 +173,16 @@ describe('learner portrait HTTP boundary', () => {
         expect(interviewStore.enqueue).toHaveBeenCalledWith(
             expect.objectContaining({ ownerId, paidAcknowledged: false }),
         );
+
         expect(interviewStore.claim).not.toHaveBeenCalled();
     });
+
     it('reports the durable daily quota as a retryable rate limit', async () => {
         const { app, interviewId, interviewStore } = fixture();
         vi.mocked(interviewStore.enqueue).mockRejectedValue(
             new PortraitInterviewDailyQuotaError(),
         );
+
         const response = await app.request(
             '/learner-portrait/interview/responses',
             {
@@ -184,6 +197,7 @@ describe('learner portrait HTTP boundary', () => {
                 }),
             },
         );
+
         expect(response.status).toBe(429);
         expect(await response.json()).toMatchObject({
             error: {
@@ -193,6 +207,7 @@ describe('learner portrait HTTP boundary', () => {
             },
         });
     });
+
     it('rejects answer overflow and user-selected identity before admission', async () => {
         const { app, interviewId, interviewStore } = fixture();
         for (const extra of [
@@ -222,10 +237,13 @@ describe('learner portrait HTTP boundary', () => {
                     }),
                 },
             );
+
             expect(response.status).toBe(400);
         }
+
         expect(interviewStore.enqueue).not.toHaveBeenCalled();
     });
+
     it('replays by owner and hides an unavailable response', async () => {
         const { app, ownerId, operationId, interviewStore } = fixture();
         expect(
@@ -236,6 +254,7 @@ describe('learner portrait HTTP boundary', () => {
                 )
             ).status,
         ).toBe(200);
+
         expect(interviewStore.read).toHaveBeenCalledWith(ownerId, operationId);
         expect(
             (
@@ -246,6 +265,7 @@ describe('learner portrait HTTP boundary', () => {
             ).status,
         ).toBe(404);
     });
+
     it('starts with a deterministic localized question and truthful credit policy', async () => {
         const { app } = fixture();
         const response = await app.request('/learner-portrait/interview', {
@@ -253,11 +273,13 @@ describe('learner portrait HTTP boundary', () => {
             headers,
             body: JSON.stringify({ expectedVersion: 0, locale: 'en' }),
         });
+
         expect(response.status).toBe(200);
         expect(await response.json()).toMatchObject({
             creditsBypass: true,
             initialQuestion: { topic: 'languages' },
         });
+
         expect(response.headers.get('Cache-Control')).toBe('private, no-store');
     });
 });

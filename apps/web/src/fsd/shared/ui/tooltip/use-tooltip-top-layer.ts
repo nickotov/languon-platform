@@ -6,8 +6,10 @@ export function useTooltipTopLayer(
 ) {
     useLayoutEffect(() => {
         const panel = panelRef.current;
-        if (!panel || !visible || typeof panel.showPopover !== 'function')
+        if (!panel || !visible || typeof panel.showPopover !== 'function') {
             return;
+        }
+
         return () => panel.hidePopover();
     }, [panelRef, visible]);
 }

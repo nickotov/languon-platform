@@ -1,0 +1,131 @@
+{
+  "owner": "backend-conversations-texts",
+  "mode": "Read-only artifact and source diagnosis; no source edits, services or test execution.",
+  "run": "95941186-7ba2-4ed0-be24-46a57749a077",
+  "baseCommit": "252de64",
+  "trace": {
+    "path": "/private/tmp/languon-bl019-supplemental-95941186-7ba2-4ed0-be24-46a57749a077/admin-artifacts/admin-user-management.jour-0d1a0-in-their-selected-revisions-chromium/trace.zip",
+    "sha256": "babe7571732a62c16b1b2d72ce87ef20566126f65d6fda1769f4be38b50272a3",
+    "reportResponse": {
+      "url": "http://localhost:3436/api/admin/ai/accounting/report?from=2026-11-01T00%3A00%3A00.000Z&to=2026-11-02T00%3A00%3A00.000Z",
+      "time": "2026-11-01T10:19:51.477Z",
+      "status": 503,
+      "headers": [
+        {
+          "name": "retry-after",
+          "value": "2"
+        }
+      ],
+      "resource": "4867aec2a1158ef7fe12175f3fdd90eadd9854a3.json",
+      "body": {
+        "error": {
+          "code": "service_unavailable",
+          "message": "The report is being prepared. Retry shortly.",
+          "correlationId": "5fec6a1c-4e6a-435e-93e4-ec242eeb98cc"
+        }
+      }
+    },
+    "subsequentNavigation": "GET /api/admin/ai/routing at2026-11-01T10:19:52.469Z, about0.992seconds after503; no report retry/200 captured."
+  },
+  "knownCause": "HTTP503 is the route-specific AccountingReportPendingError mapping with Retry-After2. report() registers exact period key and returns pending for absent/stale materialized snapshot. It is a deliberate asynchronous reporting contract. UI bounded reportWhenReady would retry after2seconds, but Accounting unmounts when journey navigates to routing about1second later, aborting retry; final browsererror collector retains first cold-report503 despite passing business assertions.",
+  "classification": "Pre-existing reporting lifecycle interacting with strict browsererror assertion, not introduced report code. All6 reporting modules/facade/adminhook are byte-identical to252de64. No evidence establishes accounting computation/concurrency exception.",
+  "sourceIdentities": [
+    {
+      "path": "apps/backend/src/modules/ai-credits/interface/http/accounting.routes.ts",
+      "baseSha256": "dc67d4db91a01c3bc3d0f459d0d4c30b57839a6cdf67a5e25f29f67ec73d095b",
+      "currentSha256": "dc67d4db91a01c3bc3d0f459d0d4c30b57839a6cdf67a5e25f29f67ec73d095b",
+      "unchanged": true
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-accounting-store.ts",
+      "baseSha256": "b1e7c3ba1775f1dcbc7670f053ef9d91369546f0d5f3d3f0e3e2385102d6dab1",
+      "currentSha256": "b1e7c3ba1775f1dcbc7670f053ef9d91369546f0d5f3d3f0e3e2385102d6dab1",
+      "unchanged": true
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-report-operations.ts",
+      "baseSha256": "e2ab26f6d0326e0429b4142f519fd4993796b8642683d0a6c29afde8da2c93bf",
+      "currentSha256": "e2ab26f6d0326e0429b4142f519fd4993796b8642683d0a6c29afde8da2c93bf",
+      "unchanged": true
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/accounting-report-worker.ts",
+      "baseSha256": "ef8c5abd1ef4c24f45ea4dda16d92100cb0319c0ae5a3b8a04aaf88a3368a0ba",
+      "currentSha256": "ef8c5abd1ef4c24f45ea4dda16d92100cb0319c0ae5a3b8a04aaf88a3368a0ba",
+      "unchanged": true
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/hooks/use-accounting.ts",
+      "baseSha256": "f15cabe85efccb681614efb1a1ff492572d43af67e6f954c03ba107564965e2b",
+      "currentSha256": "f15cabe85efccb681614efb1a1ff492572d43af67e6f954c03ba107564965e2b",
+      "unchanged": true
+    },
+    {
+      "path": "apps/admin/src/pages/accounting/lib/report-when-ready.ts",
+      "baseSha256": "47cd48c77ce2c88e7f66fb948a2d0aadb31011bd30b9f7a85fc2ad9a80df2986",
+      "currentSha256": "47cd48c77ce2c88e7f66fb948a2d0aadb31011bd30b9f7a85fc2ad9a80df2986",
+      "unchanged": true
+    }
+  ],
+  "materializerTrace": {
+    "registration": "Global advisory transaction lock, at most64 registrations, expires1h inactive keys.",
+    "pendingBranches": "No report, no generatedAt, or generatedAt older60s; full queue also maps same external body. Trace does not expose exact branch. New period registration makes cold snapshot the supported leading inference, not proven DB state.",
+    "worker": "Default15s tick; one report per tick,120s lease, recompute dirty versions or renew unchanged, repeatable-read aggregation/30s total budget/15s statement timeout. Exceptions release lease after5s and report sanitized error.",
+    "observabilityLimit": "Artifact contains no backend worker exception or DB snapshot/queue state; cannot infer worker disabled, queue saturation, SQL error, stale lease or concurrency failure from this503 body alone."
+  },
+  "focusedPassingCoverage": {
+    "proof": "/private/tmp/languon-bl019-supplemental-9330ada1-d32f-4d4a-9a96-f7b13bc8d840/backend-vitest.json",
+    "cases": [
+      {
+        "name": "payment atomically issues one purchase lot; refunds revoke only explicit available credits",
+        "status": "passed"
+      },
+      {
+        "name": "refunds cannot claw back reserved or previously consumed credits",
+        "status": "passed"
+      },
+      {
+        "name": "reports measured, estimated and unknown costs independently of manual deposits and bill adjustment",
+        "status": "passed"
+      },
+      {
+        "name": "materializes a cold report with native null flat rates and exact expense beyond the old integer meter",
+        "status": "passed"
+      },
+      {
+        "name": "renews an unchanged report without history aggregation and recomputes after a committed change",
+        "status": "passed"
+      },
+      {
+        "name": "preserves anonymous historical paid consumption while purging private credit attribution and allowing later cash-only refunds",
+        "status": "passed"
+      },
+      {
+        "name": "retains immutable anonymous provider expense facts and denies public accounting-purge authority",
+        "status": "passed"
+      },
+      {
+        "name": "lets the restricted purge role retain anonymous cash/expense facts without reading payment JSON or resetting global operator cost",
+        "status": "passed"
+      },
+      {
+        "name": "pins immutable provider USD revisions by admission time with optimistic publication",
+        "status": "passed"
+      },
+      {
+        "name": "serializes simultaneous refund totals and prevents overlapping invoice periods",
+        "status": "passed"
+      }
+    ],
+    "result": "10passed, zero failed/skipped. Includes cold native report, repeated dirty/unchanged snapshots, and cash/expense retention after anonymous purge.",
+    "limit": "Focused report calculations and DB state transitions do not establish browser report readiness or eliminate actual console error."
+  },
+  "recommendedReproduction": [
+    "Keep final browsererror assertion and every tariff/routing business assertion unchanged.",
+    "Use the same runner-owned disposable environment and exact trace period (2026-11-01T00:00Z/2026-11-02T00:00Z); register report with authenticated direct backend request before Accounting navigation, record Retry-After and query result.",
+    "Allow materializer tick and inspect snapshot report/generated_at/change_version/computed_version/lease_until plus sanitized worker error marker; avoid overlapping runners or database resets.",
+    "Dwell on Accounting until report appears or retry bound fails, capturing network timeline. Compare first pending versus eventual200 and strict console collector.",
+    "If fixture needs ready reporting as prerequisite, explicitly register and await that exact snapshot in reviewed setup before browser observation, rather than swallowing errors or weakening assertion. A product/API status semantic change is outside BL019 readability authorization."
+  ],
+  "completion": "Diagnosis complete; existing failure remains valid evidence gap until bounded readiness/runtime proof. No automatic retry, whitelist or implementation change."
+}

@@ -26,9 +26,11 @@ export function usePalette(onClose: () => void) {
         { enabled: true, query, limit: 8, recent: true },
         requestWithSession,
     );
+
     function go(path: string) {
         requestGuardedNavigation(() => router.push(href(path)));
     }
+
     function toggleTheme() {
         const dark =
             preference === 'dark' ||
@@ -38,6 +40,7 @@ export function usePalette(onClose: () => void) {
         setPreference(next);
         document.cookie = `${themeCookieName}=${next}; Max-Age=31536000; Path=/; SameSite=Lax`;
     }
+
     const items: PaletteItem[] = (resources.data?.resources ?? []).map(
         (resource) => ({
             id: `${resource.kind}-${resource.id}`,
@@ -53,6 +56,7 @@ export function usePalette(onClose: () => void) {
         group: 'actions',
         run: () => create(section.kind),
     }));
+
     actions.push(
         {
             id: 'settings',
@@ -67,21 +71,26 @@ export function usePalette(onClose: () => void) {
             run: toggleTheme,
         },
     );
+
     const q = query.trim().toLocaleLowerCase();
     items.push(
         ...actions.filter(
             (action) => !q || action.label.toLocaleLowerCase().includes(q),
         ),
     );
+
     function run(item: PaletteItem) {
         onClose();
         item.run();
     }
+
     const selected =
         items[Math.max(0, Math.min(activeIndex, items.length - 1))];
+
     function select(id: string) {
         setActiveIndex(items.findIndex((item) => item.id === id));
     }
+
     function keyDown(event: KeyboardEvent<HTMLInputElement>) {
         if (event.key === 'ArrowDown') {
             event.preventDefault();
@@ -94,10 +103,12 @@ export function usePalette(onClose: () => void) {
             run(selected);
         }
     }
+
     function changeQuery(value: string) {
         setQuery(value);
         setActiveIndex(0);
     }
+
     return {
         query,
         changeQuery,

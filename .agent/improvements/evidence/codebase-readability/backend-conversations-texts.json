@@ -1,0 +1,1011 @@
+{
+  "owner": "backend-conversations-texts",
+  "baseCommit": "252de64",
+  "batches": [
+    {
+      "id": "persistence-decomposition",
+      "problem": "conversationSubmit mixes prepared-source revision validation with admission; text mutations combine folder and document responsibilities; texts admission combines enqueue, transaction policy and existing-job lifecycle.",
+      "chosenSeams": "Synchronous source snapshot assertion; folder mutations; shared texts transaction and job lifecycle. Keep original store-facing exports. Alternative arbitrary line splitting rejected because it hides related invariants.",
+      "invariants": "Preserve exact global capacity/source/chat lock order, original transaction callback, idempotency lookup before writes, cancellation/settlement/fencing predicates and conditional await placement. Callers are drizzle-conversation-store and drizzle-text-content-store/drizzle-texts-job-store, plus worker lifecycle operations.",
+      "verification": [
+        {
+          "command": "pnpm --filter @languon/backend exec vitest run tests/integration/modules/conversations/conversation-store.test.ts tests/integration/modules/conversations/conversation-lifecycle-capacity.test.ts tests/integration/modules/texts/infrastructure/text-content-store.test.ts tests/integration/modules/texts/texts-job-store.test.ts",
+          "setup": "Root must schedule disposable PostgreSQL/Redis using reviewed integration harness; no worker execution.",
+          "estimate": "Several minutes; cold migrations unknown."
+        },
+        {
+          "command": "node scripts/run-critical-flows.mjs --flow ai-conversation --flow ai-text",
+          "setup": "Root-owned deterministic critical infrastructure; external providers replaced by transport fixtures, no paid calls.",
+          "estimate": "Several minutes."
+        }
+      ],
+      "status": "implemented; scoped ESLint with ordinary 500-line override passed; Prettier passed; root-scheduled database/AI proof pending",
+      "rootEvidence": {
+        "result": "171 passed, 9 files, zero skips/retries",
+        "runId": "557b3ce9-80b4-49af-8703-1870079dd8d6",
+        "elapsedSeconds": 303,
+        "validity": "Early decomposition proof; subsequent policy/projection batch requires affected reruns."
+      }
+    },
+    {
+      "id": "policy-and-projection-clarity",
+      "status": "Implemented; scoped Prettier/ESLint passed, SQL token equality passed; root-scheduled focused/critical verification pending.",
+      "problem": "Fifteen repeated context objects obscure store arguments; nested worker retry and fixture tool-input ternaries hide policy alternatives; dictionary visibility projection interleaves large field mapping with source authority; SQL authority guards are densely packed.",
+      "chosenSeams": "Fresh private context factory preserves per-call identity; synchronous local retry/tool-input branches retain call timing; dictionary card projection is a pure typed module-local helper. SQL change is whitespace only with lexer-token equality proof. Alternative shared mutable context rejected to preserve identity; generic policy abstraction rejected because branch semantics are owner-specific.",
+      "invariants": "No public exports/contracts/schema/prompt changes; preserve conditional evaluation and now calls, serialized heartbeats, source-owner/resource lock order, field visibility defaults, tool selection priority, SQL literal/token sequence.",
+      "verification": [
+        {
+          "command": "pnpm --filter @languon/backend exec vitest run tests/unit/modules/texts/texts-worker.test.ts tests/support/contextual-assistant-fixture.test.ts tests/integration/modules/conversations/conversation-store.test.ts tests/integration/modules/texts/infrastructure/text-content-store.test.ts",
+          "setup": "Root schedules only; disposable DB for integration; scripted models/no paid calls.",
+          "estimate": "Several minutes; migration/setup cost varies."
+        },
+        {
+          "command": "node scripts/run-critical-flows.mjs --flow ai-conversation --flow ai-text",
+          "setup": "Root-owned deterministic integration/browser fixture; no paid model.",
+          "estimate": "Several minutes."
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "path": "apps/backend/src/modules/conversations/application/conversation-block-references.ts",
+      "status": "reviewed-acceptable",
+      "reason": "captureBlockReferences and prepareReferencedTutorMessage validate authorized frozen block IDs before message projection and retain retry references.",
+      "beforeSha256": "0f7834463094217efff4a6530b8d2ab595fe10180835e2946d995b245f7df8a3",
+      "afterSha256": "0f7834463094217efff4a6530b8d2ab595fe10180835e2946d995b245f7df8a3"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/conversation-service.ts",
+      "status": "reviewed-acceptable",
+      "reason": "admitStream/admitSubmission expose owner/global lease acquisition and idempotent release; access/revalidate clearly separate session revalidation from request admission.",
+      "beforeSha256": "9cbeeff7d9866f98a38b386feea4a3884627d58e9b0832eee341594db586b93a",
+      "afterSha256": "9cbeeff7d9866f98a38b386feea4a3884627d58e9b0832eee341594db586b93a"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/conversation-source-context.ts",
+      "status": "reviewed-acceptable",
+      "reason": "boundedMaterial/splitContent/rankedIndices separate UTF-8 budgeting and lexical ranking; projectConversationSource.select preserves source order and exact-block no-truncation failure.",
+      "beforeSha256": "cda58f0191519f9e24530a4cd8ccf8bdb35c915904623fca68c0430229af949b",
+      "afterSha256": "cda58f0191519f9e24530a4cd8ccf8bdb35c915904623fca68c0430229af949b"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/conversation-worker-service.ts",
+      "status": "reviewed-acceptable",
+      "reason": "processNext keeps heartbeat fencing, buffered deltas, tool/draft authorization and finish/cleanup ordering visible; conditional runner creation and final heartbeat await remain explicit.",
+      "beforeSha256": "bdc8ad30086d7ccb3d4a7e34da550a451cd265eca85284da75c504fd1320c54e",
+      "afterSha256": "bdc8ad30086d7ccb3d4a7e34da550a451cd265eca85284da75c504fd1320c54e"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/learning-block-source-material.ts",
+      "status": "reviewed-acceptable",
+      "reason": "learningBlockSourceMaterial separates transcript/bilingual metadata from stable segment material and retains block IDs for exact retrieval.",
+      "beforeSha256": "89d7895511b0b9e13d1ec315766e1d7a713ba0d89b2f26f87198f72cc5e42d20",
+      "afterSha256": "89d7895511b0b9e13d1ec315766e1d7a713ba0d89b2f26f87198f72cc5e42d20"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/learning-block-tool-contract.ts",
+      "status": "reviewed-acceptable",
+      "reason": "learningBlockToolInputSchema explicitly enumerates supported variants; description documents preview/apply and literal-versus-Markdown field semantics.",
+      "beforeSha256": "d0e48f802968b8e4338e191c7ff071029ab834e431890bb27ace47f13697af16",
+      "afterSha256": "d0e48f802968b8e4338e191c7ff071029ab834e431890bb27ace47f13697af16"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/portrait-context.ts",
+      "status": "reviewed-acceptable",
+      "reason": "resolveConversationPortrait fails closed on invalid approved data and applies only explicitly inherited fields while tracking origins.",
+      "beforeSha256": "85fc2442efee459ddf653b7d12abfb9a48c3a7474b24d8eebfdb4189952e6a37",
+      "afterSha256": "85fc2442efee459ddf653b7d12abfb9a48c3a7474b24d8eebfdb4189952e6a37"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/turn-text-buffer.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createTurnTextBuffer serializes bounded Unicode-safe batches, immediately handles pending rejection, and exposes flush/dispose ownership.",
+      "beforeSha256": "b92076875d903f19a9bdb1bf2b27891f8f885a69bdf230dd69f5bd45fd90d5f8",
+      "afterSha256": "b92076875d903f19a9bdb1bf2b27891f8f885a69bdf230dd69f5bd45fd90d5f8"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/tutor-context-budget.ts",
+      "status": "reviewed-acceptable",
+      "reason": "tutorReservedInputBytes distinguishes initial source/retrieval/tool framing and admitted message bytes; tutorAdmissionInputBytes adds frozen history/memory allowance.",
+      "beforeSha256": "2f34381d8e827be096a3e450c662121ed2cec948e8228b7638cbffd96ee62d5b",
+      "afterSha256": "2f34381d8e827be096a3e450c662121ed2cec948e8228b7638cbffd96ee62d5b"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/tutor-message-context.ts",
+      "status": "reviewed-acceptable",
+      "reason": "projectTutorUserMessage separates copied material, editor snapshot and source provenance; exact UTF-8 accounting retains transport envelope and fail-before-admission semantics.",
+      "beforeSha256": "2a084c923b621c29612fb043371a9a69cd4bde88f7ce01d0353aa0c2a5f3192b",
+      "afterSha256": "2a084c923b621c29612fb043371a9a69cd4bde88f7ce01d0353aa0c2a5f3192b"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/workspace-turn-context.ts",
+      "status": "reviewed-acceptable",
+      "reason": "assertEditorAnchor combines document hash, UTF-16 scalar boundaries and operation-specific anchor constraints; assertWorkspaceTurnContext separates editor/reference character budgets.",
+      "beforeSha256": "d8943f86663641f9e9dd3e125bf32b93342e5c82f4ed135a609bcb09f0c2031d",
+      "afterSha256": "d8943f86663641f9e9dd3e125bf32b93342e5c82f4ed135a609bcb09f0c2031d"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/domain/conversation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "ConversationError and snapshot/authority types keep public failure identity and read-only knowledge source predicate explicit.",
+      "beforeSha256": "41d24d13fd574bd7ac9cb7c896df691f9575775e9857c2a7ef05c9065222e134",
+      "afterSha256": "41d24d13fd574bd7ac9cb7c896df691f9575775e9857c2a7ef05c9065222e134"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/application/text-content-service.ts",
+      "status": "reviewed-acceptable",
+      "reason": "TextContentService.owner sequences anonymous throttling, authentication and owner throttling before typed store delegation; public reads apply anonymous limit.",
+      "beforeSha256": "e930760f1d90c0a58087e7d5e2e017431ddebfaf041c26b41e4603fc36143301",
+      "afterSha256": "e930760f1d90c0a58087e7d5e2e017431ddebfaf041c26b41e4603fc36143301"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/application/texts-job-service.ts",
+      "status": "reviewed-acceptable",
+      "reason": "admissionOwner maps burst infrastructure failures separately from rate rejection; detect/translate use capability-specific gates and get/cancel retain authentication.",
+      "beforeSha256": "7e40d573f94b486ea3226957ab7d495704c3aa816ed1a41e04ea1527554d867f",
+      "afterSha256": "7e40d573f94b486ea3226957ab7d495704c3aa816ed1a41e04ea1527554d867f"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/application/texts-worker-service.ts",
+      "status": "refactored",
+      "reason": "nextRetryAt separates pinned conclusive-fallback policy from historical controller/attempt/error-code retry rejection. Called in the original retryAt property position; short-circuit checks and clock call timing unchanged.",
+      "beforeSha256": "76f41bd8d855a0ce6f75a0b15672c96cc4db976a8fdecb48cf7ae03c639b0c12",
+      "afterSha256": "e5aa9b8c5cb287c847f2bd2252e47415c9e9b19b4ecd66aad09ab64c30890b93"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-admission.ts",
+      "status": "refactored",
+      "reason": "conversationSubmit delegates prepared snapshot equality to a synchronous assertion; idempotency lookup, source/context mutation, reservation and insert/event order unchanged.",
+      "beforeSha256": "c88863bc947bb25c3377487fc30cd486ddb2b4adb251b8ac350b52cf0d484318",
+      "afterSha256": "0fb9087192d4d87a1425af42b38e4a84243c6d535af6fd9fdb8db0b7a809712c"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts",
+      "status": "refactored",
+      "reason": "assertPreparedConversationCurrent owns complete prepared-versus-locked chat/source comparison with dictionary revision compatibility; synchronous to retain admission timing.",
+      "beforeSha256": null,
+      "afterSha256": "16713eb4e915d6f5e8095b710f421a9169a9ccf71a41b40a07ee15d57f6582be"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-persistence-authority.ts",
+      "status": "reviewed-acceptable",
+      "reason": "conversationTransaction takes pricing preparation then global capacity before run; conversationAuthorize takes active actor before source/chat and distinguishes read/write locks.",
+      "beforeSha256": "eae8a4b46d97b48b9daa40c703e248176d147c6430bdabf93556dd81ca5a0144",
+      "afterSha256": "eae8a4b46d97b48b9daa40c703e248176d147c6430bdabf93556dd81ca5a0144"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-persistence-context.ts",
+      "status": "reviewed-acceptable",
+      "reason": "chatView/turnView/messageView deliberately project public fields; typed dependencies carry existing transaction and distinguish optional admission preparation.",
+      "beforeSha256": "ffb949c21cbbe7ce7e708000eeb2aa0c6644b3cc9028333bf4073984633e5e14",
+      "afterSha256": "ffb949c21cbbe7ce7e708000eeb2aa0c6644b3cc9028333bf4073984633e5e14"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-folder-mutations.ts",
+      "status": "refactored",
+      "reason": "Folder create/update/lifecycle operations remain in original transactions and preserve version validation, share deletion and owner/folder lock ordering.",
+      "beforeSha256": null,
+      "afterSha256": "d79e598c40746506ff87469296b6abf9e6880bc2d5ef4c2a71ceb9307355af6a"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-lifecycle.ts",
+      "status": "refactored",
+      "reason": "Existing-job find/get/cancel and worker valid/terminal/lockJob share authorization and fenced settlement lifecycle; original expiry, failure mapping, lease ownership and SQL order copied unchanged.",
+      "beforeSha256": null,
+      "afterSha256": "39a6b3a83c0ca7766d32749d27ea3a4707504ed040ed73ca191a3c94d88670b8"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-transaction.ts",
+      "status": "refactored",
+      "reason": "transaction preserves modelPricingTransaction, capacity lock and compatibility settings before work; separate seam avoids admission/lifecycle circular imports.",
+      "beforeSha256": null,
+      "afterSha256": "5a84aecc9808a757cb06dc69136c94aad09cd2bbc96e8b6689f61b2803bf9ee4"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-content-mutations.ts",
+      "status": "refactored",
+      "reason": "Document mutations retain original public folder exports while cohesive folder operations move to text-folder-mutations; membership/idempotency/save transaction order unchanged.",
+      "beforeSha256": "c163d9c24f0942a3b1318811e924df20a7a32b6e0660aedd7b96132083d4d540",
+      "afterSha256": "7fee112e4472c2d5789f0eedeae967d1ad93490ca9bcbba8f0dfa27815ede647"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-admission.ts",
+      "status": "refactored",
+      "reason": "enqueue now owns only admission with original exports retained from lifecycle/transaction; policy, capacity, idempotency and billing order unchanged.",
+      "beforeSha256": "c1640ce58b038356a0fe19dc23f5544dbadf79301f758ce394b535c56eac8eaf",
+      "afterSha256": "a96846909de1836dea40152131bbbae1bf0c39f163dfbb74015687d4e602f5d8"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/ports/conversation-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "ConversationStore groups learner mutations, durable worker operations and memory port; ClaimedConversationTurn explicitly carries frozen source, lease and execution authority.",
+      "beforeSha256": "bc49f71b8542a0f6951663e1389ea85d332eedb9fccfeee94fe90a28845c047c",
+      "afterSha256": "bc49f71b8542a0f6951663e1389ea85d332eedb9fccfeee94fe90a28845c047c"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/ports/tutor-runner.ts",
+      "status": "reviewed-acceptable",
+      "reason": "TutorMemoryPort requires atomic fenced state writes; TutorAccountingPort distinguishes missing/failed/measured usage and TutorRunInput separates callbacks from source authority.",
+      "beforeSha256": "8bb8270587c8af16c26db5d328316051c3271609d1b7d94f0de6610e92dbfe4a",
+      "afterSha256": "8bb8270587c8af16c26db5d328316051c3271609d1b7d94f0de6610e92dbfe4a"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/conversation-block-references.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "snapshot fixture and authorized block references cases explicitly assert foreign/duplicate/oversize rejection, exact retrieval and complete editor preservation.",
+      "beforeSha256": "bf600e2295fb54e4f7774b08cc73a14ac88a627523a269dce673fb2bfbaf9ced",
+      "afterSha256": "bf600e2295fb54e4f7774b08cc73a14ac88a627523a269dce673fb2bfbaf9ced"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/learning-block-source-material.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Frozen structured block context cases retain transcript and segment identity and compare actual Unicode/escaped retrieval wrappers to reserved byte bounds.",
+      "beforeSha256": "f5ed7fbe40e727505b203f4aef7bb410a462fcca920ae79c055a53a039cbe804",
+      "afterSha256": "f5ed7fbe40e727505b203f4aef7bb410a462fcca920ae79c055a53a039cbe804"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/portrait-context.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "ordinary chat portrait policy cases separate global/chat exclusion, inherited fields, malformed-data fail-closed and mutation independence; independent detail/wording behavior explicit.",
+      "beforeSha256": "bb4e735591b6b89e2f24ae47e5fcd5e3c0d0579f0ba4e0f4811c1ea35154fbd1",
+      "afterSha256": "bb4e735591b6b89e2f24ae47e5fcd5e3c0d0579f0ba4e0f4811c1ea35154fbd1"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/turn-text-buffer.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "durable turn text batching cases use fake timers only for flush timing and assert Unicode byte ceilings, exact concatenation and rejected subsequent writes.",
+      "beforeSha256": "87e96191cf246b9de6f135ebfaeb4214ada8f32638f69b361f0e268ccf41131b",
+      "afterSha256": "87e96191cf246b9de6f135ebfaeb4214ada8f32638f69b361f0e268ccf41131b"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/tutor-context-budget.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "context fixture plus two admitted input cases distinguish actual framing from model maximum and include source/history/memory encoded bytes.",
+      "beforeSha256": "496e2349f63c5bf06b2dc121458a79377d0b35b8732ab7b12f97a9d2ea60fa2c",
+      "afterSha256": "496e2349f63c5bf06b2dc121458a79377d0b35b8732ab7b12f97a9d2ea60fa2c"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/workspace-turn-context.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "anchor/request helpers bind hashes to complete editor; explicit cases cover Unicode counting, stale selection, offset/hash/operation errors and complete reference projection.",
+      "beforeSha256": "bf5195de1dde983bbeeb6ea5d10b93e6c84e6a3f3e10e5133a931f4921397dac",
+      "afterSha256": "bf5195de1dde983bbeeb6ea5d10b93e6c84e6a3f3e10e5133a931f4921397dac"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/accounted-tutor-model.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createTutorModelGate owns shared per-operation counters and conservative reservations; prepare/settleUsage/trackStream divide admission, usage and exactly-once finalization while retaining provider failure witness.",
+      "beforeSha256": "663f00468b257b7e5e6443e3b7d30f4f27b0dbdb28a0b30c7cbc4b0217575af8",
+      "afterSha256": "663f00468b257b7e5e6443e3b7d30f4f27b0dbdb28a0b30c7cbc4b0217575af8"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/contextual-block-tools.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createLearningBlockProposalTool groups authority checks, content-keyed deduplication, bounded targets and callback lifecycle; rejected creation removes only its pending key.",
+      "beforeSha256": "dcef42fa4ae43d01b3ec20c8b4798889e1c9695b7191d75078e7fa63712c66f6",
+      "afterSha256": "dcef42fa4ae43d01b3ec20c8b4798889e1c9695b7191d75078e7fa63712c66f6"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-runner.ts",
+      "status": "reviewed-acceptable",
+      "reason": "requireSupportedTutorModel/createTutorMemory/tutorMemoryThresholds expose SDK compatibility and memory configuration before orchestration; run observes history before actor and maps context/provider failures separately.",
+      "beforeSha256": "7a0541228ef96af27cf5d2c7272c9bd12f572f6ba41a2011d32672e6b9b20f57",
+      "afterSha256": "7a0541228ef96af27cf5d2c7272c9bd12f572f6ba41a2011d32672e6b9b20f57"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-tools.ts",
+      "status": "reviewed-acceptable",
+      "reason": "execute wraps observable tool lifecycle; read_source_context enforces frozen retrieval counts/bytes and propose_knowledge_note retains readonly guard and single proposal rule.",
+      "beforeSha256": "30e20ce50ed71897232aba316a08b88cd61d2b6259ddc56c9e16d23de84e13b0",
+      "afterSha256": "30e20ce50ed71897232aba316a08b88cd61d2b6259ddc56c9e16d23de84e13b0"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/conversation-memory-storage.ts",
+      "status": "reviewed-acceptable",
+      "reason": "ConversationMemoryStorage implements one thread-bound SDK protocol with scope guards; saveMessages preserves canonical user copies, readRecord/writeRecord enforce indexed records, and unsupported methods reject explicitly.",
+      "beforeSha256": "c001296c732dbcb9173bc6b61255fd0d0d99db1621cde1e738f814b05cba7912",
+      "afterSha256": "c001296c732dbcb9173bc6b61255fd0d0d99db1621cde1e738f814b05cba7912"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/conversation-action-accounting.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createConversationActionAccounting separates fenced admission and independent recording; settleConversationAction terminalizes dispatched attempts before charge projection, retaining unknown expense and explicit-stop semantics.",
+      "beforeSha256": "3bed0c6c89aea7b00f225c07281d693a9fdf512ada36fe69c601f46504e5fcb7",
+      "afterSha256": "3bed0c6c89aea7b00f225c07281d693a9fdf512ada36fe69c601f46504e5fcb7"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/conversation-worker-composition.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createConversationWorkerComposition builds source validators then claimed runner; fallback publication witness fences output/tool/draft effects and selected budget/pricing stays pinned per attempt.",
+      "beforeSha256": "47fc71ec3e19c1c075051e8ca19ad6fe3c8b2227bb7cc822aa13cb24d9a38c8a",
+      "afterSha256": "47fc71ec3e19c1c075051e8ca19ad6fe3c8b2227bb7cc822aa13cb24d9a38c8a"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/conversations-composition.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createConversationsComposition visibly composes share verification, store, authenticated session service, routes and optional worker with transaction-bound Knowledge callbacks.",
+      "beforeSha256": "aa1b803f2b0b5b43e348fa3689f7663809d504683b50af1432938236c43ec9d9",
+      "afterSha256": "aa1b803f2b0b5b43e348fa3689f7663809d504683b50af1432938236c43ec9d9"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/block-proposal-content.ts",
+      "status": "reviewed-acceptable",
+      "reason": "blockContentHash canonicalizes JSON keys; freshProposalBlocks performs identity discovery then reference remapping including groups/segments without changing foreign links.",
+      "beforeSha256": "f557ad9693541ee56e748208f63e262592a4072ec40f6d9b2cf90e8673298e7f",
+      "afterSha256": "f557ad9693541ee56e748208f63e262592a4072ec40f6d9b2cf90e8673298e7f"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/block-proposal-insertion.ts",
+      "status": "reviewed-acceptable",
+      "reason": "nodeSize/splitNode/splitChildren model ProseMirror positions with surrogate checks; sharesGroup protects media/exercise adjacency before schema-validated root insertion.",
+      "beforeSha256": "d95758da550db38487a493a15a14ea7dc85db692a36f41b7910c1b454df996cd",
+      "afterSha256": "d95758da550db38487a493a15a14ea7dc85db692a36f41b7910c1b454df996cd"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-authority.sql",
+      "status": "refactored",
+      "reason": "languon_propose_learning_blocks lays out each declaration and guarded error separately with logical stage gaps. SQL lexer including comments/literals/operators proves token sequence unchanged; lease/source/branch/audio grants and search_path/revoke untouched.",
+      "beforeSha256": "330c29526502414a5b61bcfbeb171e52cf413e983199b96d7290457b21145edc",
+      "afterSha256": "8b8c9d1de797ebbd9713fdea3b1bacb5dab623a91f301511bc16e1ad18af9e49"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposal-schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "conversationBlockProposalsTable names target uniqueness, base/applied version and atomic apply constraints explicitly beside typed captured snapshots.",
+      "beforeSha256": "940a6732a0e07842cbc7846f9c19676784d46f24cc07304cdb6792e91b505223",
+      "afterSha256": "940a6732a0e07842cbc7846f9c19676784d46f24cc07304cdb6792e91b505223"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposals.ts",
+      "status": "reviewed-acceptable",
+      "reason": "ownerContext separates owner-only access; propose/list/apply preserve captured dependency hashes, target type checks, idempotent apply and atomic branch/proposal writes.",
+      "beforeSha256": "94b1254afda23eceb3dc8eeb22aa9edadaae80c6aa7e2e69e676b2b48513822d",
+      "afterSha256": "94b1254afda23eceb3dc8eeb22aa9edadaae80c6aa7e2e69e676b2b48513822d"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-target.ts",
+      "status": "reviewed-acceptable",
+      "reason": "captureConversationBlockTarget locks selected branch and validates optional version; editor/retry assertions reject read-only draft authority before admission reuse.",
+      "beforeSha256": "72e241d7201dac95659956f845580e8640a6e513d393a87aaf9ec985849f52c6",
+      "afterSha256": "72e241d7201dac95659956f845580e8640a6e513d393a87aaf9ec985849f52c6"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-chat-queries.ts",
+      "status": "reviewed-acceptable",
+      "reason": "conversationList uses read fast path then authorized share refresh transaction; create/read/update/delete/settings retain explicit source gates, inheritance decisions, quiescence and public projections.",
+      "beforeSha256": "793cddacd5ba09e3141f5acb1db835922b20254af83485e688f76090fcb8edcf",
+      "afterSha256": "793cddacd5ba09e3141f5acb1db835922b20254af83485e688f76090fcb8edcf"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-deletion-participant.ts",
+      "status": "reviewed-acceptable",
+      "reason": "scopePredicate encodes owner/source/conversation scope; cancellation, busy proof and erase operations retain capacity-first caller invariant and numerical archive before content deletion.",
+      "beforeSha256": "4877000169c0b571e72974d121b444b8b06315d543b99bc2b186a662da71361b",
+      "afterSha256": "4877000169c0b571e72974d121b444b8b06315d543b99bc2b186a662da71361b"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-draft-mutations.ts",
+      "status": "reviewed-acceptable",
+      "reason": "conversationPublishDraft checks readonly source, operation replay, optimistic version and legacy update target before note publication and draft/event writes in one transaction.",
+      "beforeSha256": "d12fe693c8ccd81b11fe5825fc5ebec712afa5fac96353116beae25481bb33d2",
+      "afterSha256": "d12fe693c8ccd81b11fe5825fc5ebec712afa5fac96353116beae25481bb33d2"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-events.ts",
+      "status": "reviewed-acceptable",
+      "reason": "conversationEvents clearly separates retained replay rows and first/last cursors, falling back to authorized canonical snapshot for reset/expired/future cursors.",
+      "beforeSha256": "2d58cd9cb469aec89409d59e12ed045d57384b652d2197c514f1495643ed25e5",
+      "afterSha256": "2d58cd9cb469aec89409d59e12ed045d57384b652d2197c514f1495643ed25e5"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-knowledge-share.ts",
+      "status": "reviewed-acceptable",
+      "reason": "readSharedConversationNote follows owner/workbook/note share locks and capability version/digest validation; known frozen authority and supplied secret are separate branches.",
+      "beforeSha256": "58bb490c031b66729ca06bec10ded45c01bcc319f3cb0d0bd0fbaddac0579e8b",
+      "afterSha256": "58bb490c031b66729ca06bec10ded45c01bcc319f3cb0d0bd0fbaddac0579e8b"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-legacy-note-target.ts",
+      "status": "reviewed-acceptable",
+      "reason": "assertLegacyNoteTarget holds owned target share lock until publication and rejects interactive schema before prose overwrite.",
+      "beforeSha256": "2438fe393efe4546d7cfc73b1197779de1c90db7030521bef658c40fc59565d9",
+      "afterSha256": "2438fe393efe4546d7cfc73b1197779de1c90db7030521bef658c40fc59565d9"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-provider-call-schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "conversationProviderCallsTable documents content-independent numerical accounting retention and exposes state/purpose/ordinal/settlement/amount constraints.",
+      "beforeSha256": "8d18bf33e667766f580059cb292859aa5f74cc213f423a6b86b84725a0516ae5",
+      "afterSha256": "8d18bf33e667766f580059cb292859aa5f74cc213f423a6b86b84725a0516ae5"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source-material.ts",
+      "status": "reviewed-acceptable",
+      "reason": "textChunks budgets escaped UTF-8 without splitting scalars; textSourceMaterial separates complete values from paired excerpts; noteSourceMaterial retains literal links and structural breaks.",
+      "beforeSha256": "cf0e053cac95ac441813a6be776e919aaa4095b35294ea216ca7eb3529e6ddcd",
+      "afterSha256": "cf0e053cac95ac441813a6be776e919aaa4095b35294ea216ca7eb3529e6ddcd"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source-queries.ts",
+      "status": "reviewed-acceptable",
+      "reason": "conversationContext and text reference reads use authorized read transactions, escaped search and owned active folder/text joins before projection.",
+      "beforeSha256": "d0a39cb5cd5eba3043693e5cfeee1e781fefaf3547a219b714bf28a8ab963792",
+      "afterSha256": "d0a39cb5cd5eba3043693e5cfeee1e781fefaf3547a219b714bf28a8ab963792"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/accounted-tutor-model.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "accounted tutor model cases use admission/settlement barriers, concurrent witness isolation, reserved-output accounting and stream-cancel assertions over scripted providers.",
+      "beforeSha256": "9a366c85dd8057912ae600deaef950117e3d559cee535be9444d5ebd50c607cd",
+      "afterSha256": "9a366c85dd8057912ae600deaef950117e3d559cee535be9444d5ebd50c607cd"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/contextual-block-tools.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Parallel identical proposals assert one callback/result; distinct targets cap at eight and readonly source prevents authoring callbacks.",
+      "beforeSha256": "baf32c51a5821d1ce9cd08bcf3d55dfac7c5558b9b43bcb98b891d683846ae92",
+      "afterSha256": "baf32c51a5821d1ce9cd08bcf3d55dfac7c5558b9b43bcb98b891d683846ae92"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-runner.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "runInput and real SDK cases retain Mastra tools/observation/reflection; assert sequential tool registration, frozen escaped retrieval, portrait isolation, fallback certainty and cancellation.",
+      "beforeSha256": "532474d8ce4dac45741afc2d634e5c0c1cd8560f7f8834e8598e49249b3e7c5c",
+      "afterSha256": "532474d8ce4dac45741afc2d634e5c0c1cd8560f7f8834e8598e49249b3e7c5c"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-tools.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "accepts validates actual standard-schema tool input; prose/future-version/disguised-interactive/readonly-tool cases have explicit expectations.",
+      "beforeSha256": "528c642cd61ae6b1cf2befd04759da8b610dde647ec30a1a9984e540a7d3b7af",
+      "afterSha256": "528c642cd61ae6b1cf2befd04759da8b610dde647ec30a1a9984e540a7d3b7af"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/conversation-memory-storage.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "fixture tests preserve canonical copies and historical editor snapshots; cross-thread/owner and fabricated learner messages reject before port effects.",
+      "beforeSha256": "f3da90debbc291d4e0b899ce8da388988f752d2bc99ad4d92363ffb643b1e6c2",
+      "afterSha256": "f3da90debbc291d4e0b899ce8da388988f752d2bc99ad4d92363ffb643b1e6c2"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/tutor-test-fixtures.ts",
+      "status": "reviewed-acceptable",
+      "reason": "scriptedTutorModel records real SDK text/tool lifecycle; tutorMemoryFixture clones state and preserves original learner content under deterministic filters.",
+      "beforeSha256": "2bdbac47053abaf2acd14b63967e6397bc456dc3e6d2781df7257476354f22ca",
+      "afterSha256": "2bdbac47053abaf2acd14b63967e6397bc456dc3e6d2781df7257476354f22ca"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts",
+      "status": "reviewed-acceptable",
+      "reason": "conversationAdmission stages routing/funding/reviewed provider clamp, continuation affordability search, quote consent and reservation; createConversationAccounting retains distinct historical per-call protocol, not a generic shared abstraction.",
+      "beforeSha256": "a430f382858a086dc2a08b67452345e6ad8b1e2aa7383302b318fbdd747e680e",
+      "afterSha256": "a430f382858a086dc2a08b67452345e6ad8b1e2aa7383302b318fbdd747e680e"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/block-proposal-content.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Block content tests canonical JSONB order equivalence, immutable target replacement and consistent fresh group identities.",
+      "beforeSha256": "ff9cc2eb2624b89a16d6d5523a74a24ae81ed58d3d9756d95301e9efc3d7b57a",
+      "afterSha256": "ff9cc2eb2624b89a16d6d5523a74a24ae81ed58d3d9756d95301e9efc3d7b57a"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/block-proposal-insertion.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Insertion tests make atomic PM sizes, exact marked prose splits, boundaries, surrogate interiors and exercise grouping expectations explicit.",
+      "beforeSha256": "03d1c6b3713a8f34b62b955a30d5d57cd7127591b833ffce8c3a2055614c2691",
+      "afterSha256": "03d1c6b3713a8f34b62b955a30d5d57cd7127591b833ffce8c3a2055614c2691"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source.ts",
+      "status": "refactored",
+      "reason": "resolve now delegates pure effective dictionary-card field projection after original queries and before original byte/hash checks. Source authority, lock ordering, query conditions and error bounds unchanged.",
+      "beforeSha256": "ae5ad0d51eccb099ef39b6f37fc75f2bcf4171560db8c2aee253b0619ae6d73d",
+      "afterSha256": "58f32f8a78c5c5630b8c16823af7fd23ad1d91ec1fa5f33afa6467c6e45ee62b"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-lifecycle.ts",
+      "status": "reviewed-acceptable",
+      "reason": "conversationMaintainAccounting bounds overdue recovery; conversationStop distinguishes queued terminal settlement and running cancellation under shared lifecycle locks.",
+      "beforeSha256": "aca5deccd1b3ae909022671ace173be2705f9e33b098b0385156eb40212b354a",
+      "afterSha256": "aca5deccd1b3ae909022671ace173be2705f9e33b098b0385156eb40212b354a"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-worker-authority.ts",
+      "status": "reviewed-acceptable",
+      "reason": "conversationFencedOperation exposes actor-source-chat-turn order and lease/cancel guards; progress bypasses capacity while preserving lifecycle authority.",
+      "beforeSha256": "356ec12d9f70f1539cc656df80cd241c9323865d937effa673aaa06df750118d",
+      "afterSha256": "356ec12d9f70f1539cc656df80cd241c9323865d937effa673aaa06df750118d"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-worker-claim.ts",
+      "status": "reviewed-acceptable",
+      "reason": "conversationClaim bounds replay cleanup/expired recovery, reads capacity before authorization and locked candidate, then persists claim/event before returning frozen execution.",
+      "beforeSha256": "eadcd163daa347d93d8fa498bac54408df6994da79d0a80c9c02578f5972ace9",
+      "afterSha256": "eadcd163daa347d93d8fa498bac54408df6994da79d0a80c9c02578f5972ace9"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-worker-completion.ts",
+      "status": "reviewed-acceptable",
+      "reason": "conversationTerminal prepares operator settlement before status projection/events; conversationMemory enforces canonical learner text and assistant segment ownership under fence.",
+      "beforeSha256": "2bb934c9d0285e5c757efa67953654383f3a7c8e0ed52a9834afa207e85c662c",
+      "afterSha256": "2bb934c9d0285e5c757efa67953654383f3a7c8e0ed52a9834afa207e85c662c"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-worker-output.ts",
+      "status": "reviewed-acceptable",
+      "reason": "heartbeat/append use progress authority; material/tool/proposal operations preserve bounded copies, terminal tool idempotency, readonly and legacy-note guards.",
+      "beforeSha256": "c075133182e5d8d0a37a0daf666580e2440ebe661165231d8b4a6dc3e5b53d4f",
+      "afterSha256": "c075133182e5d8d0a37a0daf666580e2440ebe661165231d8b4a6dc3e5b53d4f"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/drizzle-conversation-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DrizzleConversationStore keeps typed context and explicit port-to-operation delegation; operation fencing and public dependency export stay visible.",
+      "beforeSha256": "2d24b258283eddeebcba4324f01cbe9ba8d85b20705a1204fd2b59bfe56c1ea2",
+      "afterSha256": "2d24b258283eddeebcba4324f01cbe9ba8d85b20705a1204fd2b59bfe56c1ea2"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Chat/turn/message/event/draft/memory/settings mappings expose frozen data and named active-turn, replay and history constraints locally.",
+      "beforeSha256": "1e1f05cd8919d22059a373475ad2f4b53e6c518d11206ed946aee8d075386bf1",
+      "afterSha256": "1e1f05cd8919d22059a373475ad2f4b53e6c518d11206ed946aee8d075386bf1"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/interface/http/conversation-block-proposal.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "registerConversationBlockProposalRoutes exposes typed list/apply operations, optional-store availability guards and authenticated access before mutation.",
+      "beforeSha256": "a59e41ac74e35f9217386e279af69c4d70c9caaa042e56b22e00a09ca840c29d",
+      "afterSha256": "a59e41ac74e35f9217386e279af69c4d70c9caaa042e56b22e00a09ca840c29d"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/interface/http/conversation.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createConversationRoutes confines middleware to owned namespaces; SSE retains fresh authorization, active cadence, cursor progress, deadlines and lease cleanup with sanitized errors.",
+      "beforeSha256": "a7b0664fc259bec88824038da31d9988a8c026fb16b82e4cf6e6742c5834cbac",
+      "afterSha256": "a7b0664fc259bec88824038da31d9988a8c026fb16b82e4cf6e6742c5834cbac"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/application/ports/text-content-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "TextContentStore exposes versioned folder/document lifecycle, pagination and capability copy destinations separately from retained authority snapshots.",
+      "beforeSha256": "e0d182b9cedd33b00d5c998dffc279ff175f01f792ed9f4aaaaa3d85dfbcd5f1",
+      "afterSha256": "e0d182b9cedd33b00d5c998dffc279ff175f01f792ed9f4aaaaa3d85dfbcd5f1"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/application/ports/texts-ai-provider.ts",
+      "status": "reviewed-acceptable",
+      "reason": "TextJobInput/Result explicitly distinguish detection, translation and Knowledge actions; TextsAiError and invalid-output errors retain certainty and measured usage.",
+      "beforeSha256": "d9a6a8c26bda20a979c03631ba7df581ef87fbfabb51d2f8e4f1d8d3d914ee8c",
+      "afterSha256": "d9a6a8c26bda20a979c03631ba7df581ef87fbfabb51d2f8e4f1d8d3d914ee8c"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/application/ports/texts-job-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "TextsWorkerStore exposes dispatch/heartbeat/complete/fail boundaries and fencing lease; claimed work pins execution/budget/idempotency without leaking SDK types.",
+      "beforeSha256": "ab0f4b44fc2e73c88ab22b70460249765ec3de2e4a2d29767576f2b5b281cf62",
+      "afterSha256": "ab0f4b44fc2e73c88ab22b70460249765ec3de2e4a2d29767576f2b5b281cf62"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/domain/text.ts",
+      "status": "reviewed-acceptable",
+      "reason": "segmentText preserves paragraph whitespace and UTF-16 offsets; edits retain IDs/provenance; selection validates surrogate-safe sentence bounds before deriving neighbors and language direction.",
+      "beforeSha256": "d3dd1cb713a671f5275b42392d5987d67194ca13db542312c26b3eff5a03dc6c",
+      "afterSha256": "d3dd1cb713a671f5275b42392d5987d67194ca13db542312c26b3eff5a03dc6c"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/ai/texts-agents.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createTextsAgents registers fixed translation/detection prompts and zero SDK retries then composes existing Knowledge action agents.",
+      "beforeSha256": "8eddab3a8b9cb9cb6168b540f326d7dfb33baae056f88d664671b150318b21a5",
+      "afterSha256": "8eddab3a8b9cb9cb6168b540f326d7dfb33baae056f88d664671b150318b21a5"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/ai/texts-ai-provider.ts",
+      "status": "reviewed-acceptable",
+      "reason": "preflightTextsRequest separates complete framing from specialized Knowledge routes; provider dispatch validates usage/tripwire/length/structured output without truncation.",
+      "beforeSha256": "61e933ee0b37e94cd3e159738b26d3a24c4c29fd2b1e679d8a2b3ff49a98da7d",
+      "afterSha256": "61e933ee0b37e94cd3e159738b26d3a24c4c29fd2b1e679d8a2b3ff49a98da7d"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/navigation-reader.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createTextNavigationReader uses owned active independent/folder text SQL and canonical href through established navigation reader.",
+      "beforeSha256": "c423c43c9fd4d50a16b64b964ab8653ac3298167ad668eb8058a1236b7a25d39",
+      "afterSha256": "c423c43c9fd4d50a16b64b964ab8653ac3298167ad668eb8058a1236b7a25d39"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/drizzle-text-content-store.ts",
+      "status": "refactored",
+      "reason": "createPersistenceContext centralizes 15 identical dependency constructions while returning a fresh typed context at each original first-argument evaluation point; readonly constructor dependencies and public methods unchanged.",
+      "beforeSha256": "027e542095d98e987a64e8b90007dead3dd484ad17be13ace9564e8a62636b27",
+      "afterSha256": "e1f8f2d499710fba6b60f9fde49011505f323f25fdbacd7699299cef6cba5aa5"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/drizzle-texts-job-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DrizzleTextsJobStore keeps public admission and worker interfaces explicit; Knowledge enablement only affects knowledgeActionPersistence.",
+      "beforeSha256": "0193fbf441e1e2f6563279dbb52a277a859481612c92139d9b9825e59674fee0",
+      "afterSha256": "0193fbf441e1e2f6563279dbb52a277a859481612c92139d9b9825e59674fee0"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/knowledge-action-admission.ts",
+      "status": "reviewed-acceptable",
+      "reason": "enqueueKnowledgeTextAction canonicalizes replay identity, locks capacity before source authorization, validates v4 selection and attaches/reserves in one Texts transaction.",
+      "beforeSha256": "8ce7825b61e73a0ce6b88a754a3daed3a4e48a8fdb101d5f56a5d464b64191d2",
+      "afterSha256": "8ce7825b61e73a0ce6b88a754a3daed3a4e48a8fdb101d5f56a5d464b64191d2"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Schema separates folders/texts/revisions/shares/receipts and names owner-membership FK, positive versions, status-alignment and digest constraints.",
+      "beforeSha256": "16549d1d62d578d2cebb543fa9dd93682852fe016d47dde477f83eb1e8da51b7",
+      "afterSha256": "16549d1d62d578d2cebb543fa9dd93682852fe016d47dde477f83eb1e8da51b7"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-content-access.ts",
+      "status": "reviewed-acceptable",
+      "reason": "activeOwner/folder/text preserve owner-folder-document order and post-lock membership check; list/get distinguish owner count/share metadata from content.",
+      "beforeSha256": "d067e10fa481694a78785921316e7ec5d20c79778a6183027cf57926f1052ad4",
+      "afterSha256": "d067e10fa481694a78785921316e7ec5d20c79778a6183027cf57926f1052ad4"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-content-persistence-support.ts",
+      "status": "reviewed-acceptable",
+      "reason": "TextContentContext types database/id/clock/crypto and optional transactional proposal loader; proposal save pins version/folder/time.",
+      "beforeSha256": "42084913a5ff2861a711faf3b019bd63ed1129ae8ad8f73744a0bc0dd9ee4318",
+      "afterSha256": "42084913a5ff2861a711faf3b019bd63ed1129ae8ad8f73744a0bc0dd9ee4318"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-content-sharing.ts",
+      "status": "reviewed-acceptable",
+      "reason": "copyShared separates advisory replay, ordered folder locks, live capability, destination confirmation, fresh pair IDs and atomic revisions/receipt; share reads/revokes stay live.",
+      "beforeSha256": "269e4e1697433cff7a671ca791f712ef55f4ffb9e4bcbe6894e8dcdeca01b5f6",
+      "afterSha256": "269e4e1697433cff7a671ca791f712ef55f4ffb9e4bcbe6894e8dcdeca01b5f6"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-content-support.ts",
+      "status": "reviewed-acceptable",
+      "reason": "textDocument validates explicit public fields with TextSchema; textFolder exposes content and canonical ISO times; row/database types stay infrastructure-local.",
+      "beforeSha256": "bc7e5fb6ec4096b61edeec396f65195b7fd4e526a4d48620028326fe189a050c",
+      "afterSha256": "bc7e5fb6ec4096b61edeec396f65195b7fd4e526a4d48620028326fe189a050c"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-library-publication.ts",
+      "status": "reviewed-acceptable",
+      "reason": "appendLibraryAlignment accounts for separators and identity; publishLibraryText locks actor/idempotency, validates source/destination, and distinguishes new/append before revision/receipt.",
+      "beforeSha256": "209c6a0488fc59f3f7bc7f758f93d7200b45bcfba35d1cb5c4cf5a8c1092138c",
+      "afterSha256": "209c6a0488fc59f3f7bc7f758f93d7200b45bcfba35d1cb5c4cf5a8c1092138c"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-source-resolver.ts",
+      "status": "reviewed-acceptable",
+      "reason": "lockTextSource exposes owner-folder-text locks; capability authorization precedes foreign version revelation; retained authority rechecks current digest/version.",
+      "beforeSha256": "4bbaf97c76a7a84405f4e645ff3dc0af6f3857b3786ca0fb3c9cb39700d2bcb0",
+      "afterSha256": "4bbaf97c76a7a84405f4e645ff3dc0af6f3857b3786ca0fb3c9cb39700d2bcb0"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-deletion-participant.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Cancellation flags work without settling; busy proof checks leases/reservations; erase archives numerical usage then deletes owned content preserving foreign copies.",
+      "beforeSha256": "766fc9f0261486b90d22940c550592f2b19e984ca983c945c685a25acaed2874",
+      "afterSha256": "766fc9f0261486b90d22940c550592f2b19e984ca983c945c685a25acaed2874"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-accounting.ts",
+      "status": "reviewed-acceptable",
+      "reason": "reserveTextsAttempt/settleTextsAttempt retain separate current-action/historical-reservation protocols, unknown provider liability and customer success eligibility.",
+      "beforeSha256": "acf88d8c592d258e85cf1f83b2ba0af8594a9dce26ba678c6df878b04eb9dd8b",
+      "afterSha256": "acf88d8c592d258e85cf1f83b2ba0af8594a9dce26ba678c6df878b04eb9dd8b"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-claim.ts",
+      "status": "reviewed-acceptable",
+      "reason": "claimNext separates bounded retention transaction from recovery/claim; source validation, circuit/capacity and fence precede private completion token and admitted snapshot.",
+      "beforeSha256": "ac95844cfcc1d0578a970b226ec2120aec1a50786f4b7c899a40c9a3fb682a44",
+      "afterSha256": "ac95844cfcc1d0578a970b226ec2120aec1a50786f4b7c899a40c9a3fb682a44"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-execution.ts",
+      "status": "reviewed-acceptable",
+      "reason": "lockJob-based execution preserves dispatch guard, immutable proposal/alignment validation, settlement/private publication order and certainty-bounded retries.",
+      "beforeSha256": "35f2ba6ca2d945403dc7b842c9e6073d4a00b4189377a66af485f83a4a9239e5",
+      "afterSha256": "35f2ba6ca2d945403dc7b842c9e6073d4a00b4189377a66af485f83a4a9239e5"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-persistence-support.ts",
+      "status": "reviewed-acceptable",
+      "reason": "owned names running worker/fence/attempt/deadline conjunction; clearLease and scope keep lease cleanup and circuit snapshot fields cohesive.",
+      "beforeSha256": "4c561f584f71d082102889d11d615e27c345c9b6e313cf593996cd9f1239649b",
+      "afterSha256": "4c561f584f71d082102889d11d615e27c345c9b6e313cf593996cd9f1239649b"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "textsAiJobsTable groups request/execution/lease/accounting fields and names external-source/kind-format/version/lease/terminal constraints.",
+      "beforeSha256": "40ef3ecdd51c977c26d787e025deb47010d57856637a4ec0c69668e49473a804",
+      "afterSha256": "40ef3ecdd51c977c26d787e025deb47010d57856637a4ec0c69668e49473a804"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-support.ts",
+      "status": "reviewed-acceptable",
+      "reason": "authorizeTextsJob checks owner then Knowledge/folder/text grants; proposal read/write paths distinguish locks, expiry, reviewability, private result and one-time apply.",
+      "beforeSha256": "3e43290136efc5b341d0b3f1ab6af98c96965635d02ccad1d93f5db3f867f254",
+      "afterSha256": "3e43290136efc5b341d0b3f1ab6af98c96965635d02ccad1d93f5db3f867f254"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/text-library-publication.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createTextLibraryPublication shares append semantics while separating versioned preview transaction and atomic publish callback.",
+      "beforeSha256": "9c58e1fd657f11cea9b23308b35496a0f56c464e32f4169e0dd1ecbc949dd79f",
+      "afterSha256": "9c58e1fd657f11cea9b23308b35496a0f56c464e32f4169e0dd1ecbc949dd79f"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/texts-ai-composition.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createTextsAiComposition uses typed admission policy and explicit Knowledge enablement; worker composition reuses durable store.",
+      "beforeSha256": "6a20299c60d9b6450a57ede8a30feaae70056eb7858a47049ae48805bfa8f6a3",
+      "afterSha256": "6a20299c60d9b6450a57ede8a30feaae70056eb7858a47049ae48805bfa8f6a3"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/texts-composition.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createTextsCryptography namespaces capability HMAC; content composition retains active session auth then store/service/routes wiring.",
+      "beforeSha256": "c984b999236cecd4e02271451715b2cebc41e162b89f5915913285a15affa099",
+      "afterSha256": "c984b999236cecd4e02271451715b2cebc41e162b89f5915913285a15affa099"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/interface/http/text-content.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createTextContentRoutes confines namespace middleware, schema-validates versioned mutations, keeps capability in header and maps copy destinations explicitly.",
+      "beforeSha256": "e338b1f2e5614ef932ef6d3795e20b645122a3c094344685a5886766d314d10f",
+      "afterSha256": "e338b1f2e5614ef932ef6d3795e20b645122a3c094344685a5886766d314d10f"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/interface/http/texts-job.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createTextsJobRoutes applies allowance consent before safe error mapping; detection/translation/get/cancel remain schema-validated service operations.",
+      "beforeSha256": "5ed5e31a9453e180ba147557c3effb64c25826a14bb4d6e0ae015f24515187e4",
+      "afterSha256": "5ed5e31a9453e180ba147557c3effb64c25826a14bb4d6e0ae015f24515187e4"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/contextual-assistant.journeys.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "waitForAdmittedTurn follows the exact admitted ID across queued/running/terminal states; composed journeys retain real auth, private sharing, explicit draft publication, stale revision and deletion checks with stable scenario markers.",
+      "beforeSha256": "395cb137983224a818f9f5af127a3f2d69291a35be9069b39c5444118a7d3dfe",
+      "afterSha256": "395cb137983224a818f9f5af127a3f2d69291a35be9069b39c5444118a7d3dfe"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/conversation-accounting.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "accounting/configured/rows/wallet helpers keep historical tariff fixtures separate from live routing; explicit cases verify immutable calls, concurrency, missing usage, memory quotas, affordability and late provider-capacity exhaustion.",
+      "beforeSha256": "997638795178183e9059911414d3ee896953492397ea7d2ba3a46a64f33925a6",
+      "afterSha256": "997638795178183e9059911414d3ee896953492397ea7d2ba3a46a64f33925a6"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/conversation-action-accounting.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "reserve/attempt/record/settle helpers exercise actual action participants; cases cover wallet holds, unknown liability, exact rounding, operator budgets and a real operator lock wait before queued Stop projection.",
+      "beforeSha256": "7def5938bf070bc76cc5e303471b11e54742158c290649c9b635a5502878d608",
+      "afterSha256": "7def5938bf070bc76cc5e303471b11e54742158c290649c9b635a5502878d608"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/conversation-lifecycle-capacity.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "conversation/call/note/capacity fixtures retain numerical/content separation; cases assert quiescence, active uniqueness, legacy capacity fencing, cascading purge and restricted-role content denial.",
+      "beforeSha256": "96b3892454e50a4e5bbc2458edcbcf9b3110e6985fcfaffbb27faa7ddd4f50f4",
+      "afterSha256": "96b3892454e50a4e5bbc2458edcbcf9b3110e6985fcfaffbb27faa7ddd4f50f4"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/conversation-migrations.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Existing-schema migration test narrows a copied journal, seeds historical work, applies canonical migrations twice and checks unchanged identities plus new conversation tables/constraints; temporary folder cleanup is explicit.",
+      "beforeSha256": "4089a6cab5d5c83561e8bc67089f6590c85c5903af668720237d3cd8804adc78",
+      "afterSha256": "4089a6cab5d5c83561e8bc67089f6590c85c5903af668720237d3cd8804adc78"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/conversation-production-execution.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Production regression stages real admission, default worker, Mastra and accounting with only HTTP mocked; funding/outcome/append/update matrix checks outgoing caps, independent proposals, apply readback, expenses and immutable execution.",
+      "beforeSha256": "69da8ebbefca9810df78bb4a55a0e77fc529b14923b738126ff3fb0d67b9ead1",
+      "afterSha256": "69da8ebbefca9810df78bb4a55a0e77fc529b14923b738126ff3fb0d67b9ead1"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/conversation-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "durable conversation store fixture centralizes frozen clock/source authority; full cases explicitly cover shared-readonly proposals, stable IDs, portrait/modes, retry snapshots, publication, lock-wait races, progress/capacity isolation and bounded cleanup. latch/completes expose synchronization and cleanup without weakening assertions.",
+      "beforeSha256": "9ddf307a325a4a249aa2e5436197437299a8d47884835223962c79c8a323a8d3",
+      "afterSha256": "9ddf307a325a4a249aa2e5436197437299a8d47884835223962c79c8a323a8d3"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/sidebar-text-source.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "resolve helper retains real source resolver/transaction; owner independent draft/saved visibility and direct/folder capabilities after moving in/out are asserted with live DB state.",
+      "beforeSha256": "10a3e99d2389a765430ef94c4e3a85bcdf12a2b736a98c495f2796d548e6fb50",
+      "afterSha256": "10a3e99d2389a765430ef94c4e3a85bcdf12a2b736a98c495f2796d548e6fb50"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/infrastructure/text-content-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "fixture/translated helpers retain public store operations; cases assert independent membership, ordered concurrent moves, current share confirmation, idempotent create/copy, revision provenance, capability privacy and account-deletion fencing.",
+      "beforeSha256": "3ac33a8b1dc637a74b4b40cf3de8433d2854e706ccd9dfe72c0ed57015ed9164",
+      "afterSha256": "3ac33a8b1dc637a74b4b40cf3de8433d2854e706ccd9dfe72c0ed57015ed9164"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/knowledge-private-translation-authority.ts",
+      "status": "reviewed-acceptable",
+      "reason": "verifyPrivateTranslationBeforeCompletion deliberately rolls back tampered/capability/fence probes after real settlement; after-completion helper verifies immutable facts, one-shot authority, redaction and private receipt time under restricted grants.",
+      "beforeSha256": "c8addcd339150d74e542408a68df1353b5c5f0f29c5cae1cafaa16342a671e44",
+      "afterSha256": "c8addcd339150d74e542408a68df1353b5c5f0f29c5cae1cafaa16342a671e44"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/sidebar-migration.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Copied-journal upgrade preserves historical memberships/jobs then admits null folders; concurrent share rotation/move case asserts either confirmed publication or typed rejection and invalid old key.",
+      "beforeSha256": "f6fbce3929d8d2bd93f621593b329b55c48cbdd649ffed18cc74510cff335daa",
+      "afterSha256": "f6fbce3929d8d2bd93f621593b329b55c48cbdd649ffed18cc74510cff335daa"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/text-selection.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "request/sharedRequest/claim helpers retain real durable selection authority; boundary byte tests drive real SDK HTTP, publication is atomic, canonical duplicates need confirmation, restricted worker grants and safe fallback expense/readback are explicit.",
+      "beforeSha256": "d2fa619e0b630147c455892937dc43829a8b75756c66b58b2a4444068763d6ff",
+      "afterSha256": "d2fa619e0b630147c455892937dc43829a8b75756c66b58b2a4444068763d6ff"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/texts-account-purge.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "seed/settle model normal worker outcomes; purge cases assert flags versus actual settlement, numerical archive, restricted content SELECT denial and survival of independent copies/cards.",
+      "beforeSha256": "1e4cec3cdc1f086a4ae205e0a4bb6c9083eb75537d6bbcfe348755b4dccf4965",
+      "afterSha256": "1e4cec3cdc1f086a4ae205e0a4bb6c9083eb75537d6bbcfe348755b4dccf4965"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/texts-job-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "enqueueWithConsent preserves real reduced-offer rollback case separately; complete real SDK/restricted private publication journey plus format compatibility, proposal recovery, cancellation/fence, safe retry, exact charge and bounded 105-row retention cases remain staged explicitly.",
+      "beforeSha256": "9e542be2ff5902289a45faa04e8a588a5a9ecc0ed5991ea7ff1af34aa476f2a7",
+      "afterSha256": "9e542be2ff5902289a45faa04e8a588a5a9ecc0ed5991ea7ff1af34aa476f2a7"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/texts-migrations.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Fresh/pre-Texts/v1 job upgrade cases use copied journals and explicit disposable purpose, apply twice, retain admitted identity and clean only created temporary directories.",
+      "beforeSha256": "849dc4b705cb922e20b08382f3804234ca4b3c90b6f8a3a8ac615919d057091e",
+      "afterSha256": "849dc4b705cb922e20b08382f3804234ca4b3c90b6f8a3a8ac615919d057091e"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/texts.journeys.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Composed setup retains real auth/Redis/database with deterministic provider only; folder/translated/signup helpers reveal learner steps, stable scenarios prove explicit save/edit/collect and share-copy-revoke, plus middleware isolation and 205-row cleanup.",
+      "beforeSha256": "d1f0e13c4023534f3bd20905a49ac05f45b9b240be4c197f28206f5d812e8c32",
+      "afterSha256": "d1f0e13c4023534f3bd20905a49ac05f45b9b240be4c197f28206f5d812e8c32"
+    },
+    {
+      "path": "apps/backend/tests/support/contextual-assistant-accounting-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "contextualAssistantFixtureAllowance derives finite action allowance from actual aggregate bounds/tariff; seed function requires complete routing/settings and appends only changed synthetic limits.",
+      "beforeSha256": "4434516702ed59f5ce84bcca94b8fc6b87aafbf2ba1dc34dfc1cf04f6bc74f36",
+      "afterSha256": "4434516702ed59f5ce84bcca94b8fc6b87aafbf2ba1dc34dfc1cf04f6bc74f36"
+    },
+    {
+      "path": "apps/backend/tests/support/contextual-assistant-fixture.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Real accounting gate purpose binding and SDK tool registration tests verify synthetic fixture behavior, Markdown newlines, exact mentioned IDs and reconstructed bilingual segments.",
+      "beforeSha256": "6896aec058107c1df725e0590f30163e2c75e1395b1d04825e78f1ceebb8d325",
+      "afterSha256": "6896aec058107c1df725e0590f30163e2c75e1395b1d04825e78f1ceebb8d325"
+    },
+    {
+      "path": "apps/backend/tests/support/contextual-assistant-fixture.ts",
+      "status": "refactored",
+      "reason": "deterministicModel toolInputs replaces deeply nested ternary with ordered synchronous branches for mentioned reads/proposals, updates, audio, Markdown and vocabulary. Same callbacks/arguments/priority at original execution point; all real SDK/stream timing retained.",
+      "beforeSha256": "2877060c487a36b8279d10f9e597b6a2669a2ed0c2680a84e1e830ad216909ff",
+      "afterSha256": "697a6a2e998bf7b765dc501652ef9d4b531ea202c1d7309d3abde9189abce5d2"
+    },
+    {
+      "path": "apps/backend/tests/support/contextual-assistant-web-server.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Guarded fixture server credits verified synthetic users and drives durable worker under process signal; finally closes owned server and fixture.",
+      "beforeSha256": "2a8c5e2924d7fbc3cdcb1ed5dc88eab3cd8f83ed29e99cd93c06865232cd3821",
+      "afterSha256": "2a8c5e2924d7fbc3cdcb1ed5dc88eab3cd8f83ed29e99cd93c06865232cd3821"
+    },
+    {
+      "path": "apps/backend/tests/support/texts-web-server.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Explicit local DB/Redis opt-ins precede startup; synthetic provider/selection fixtures retain real transport/state/credit stores, exact occurrence assertions and process-owned worker/server/Redis cleanup.",
+      "beforeSha256": "02f29bac1f11ed94540bbe03568d7f4fe7eb55be467fe0186bc6859134911503",
+      "afterSha256": "02f29bac1f11ed94540bbe03568d7f4fe7eb55be467fe0186bc6859134911503"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/conversations/conversation-public-mapping.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "turnView DTO test explicitly denies provider/model/routing data while retaining exact public usage and unchanged execution object.",
+      "beforeSha256": "7e7355f90ee61e74ef01910eca82081e413abbb97b765a76f906b2bcb82f2164",
+      "afterSha256": "7e7355f90ee61e74ef01910eca82081e413abbb97b765a76f906b2bcb82f2164"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/conversations/conversation-routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "composedRoutes isolates namespace middleware; cases retain real HTTP/SSE headers, cadence, quote mapping and per-submission lease release using explicit barriers and request cleanup.",
+      "beforeSha256": "5400d0d237c8c1a58bfc52af4a44cce6994208aff9a019bf5b2ede96f157b6c2",
+      "afterSha256": "5400d0d237c8c1a58bfc52af4a44cce6994208aff9a019bf5b2ede96f157b6c2"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/conversations/conversation-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "fixture separates owner/global leases; tests verify acquisition order, exactly-once parallel release, capacity-failure cleanup and rate rejection before lease.",
+      "beforeSha256": "f934b43e76b7664db7a972a15880df74cc8f67c06c06801ac1ff3c8c7f3f6669",
+      "afterSha256": "f934b43e76b7664db7a972a15880df74cc8f67c06c06801ac1ff3c8c7f3f6669"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/conversations/conversation-source-material.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Frozen source projection cases assert versioned heading/rule flattening, complete paired short source and exact ordered multilingual passages with stable copy IDs and byte bounds.",
+      "beforeSha256": "e320d26248eacd51fb4895e0890cad07ed630c49ec836728c368e7697ca3f7fc",
+      "afterSha256": "e320d26248eacd51fb4895e0890cad07ed630c49ec836728c368e7697ca3f7fc"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/conversations/conversation-stream-polling.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "fixture keeps actual service/router with controlled store and fake timers; cases cover cadence, saturated replay/cursor progress, deadline/abort/revocation, exactly-once release and sanitized transient versus access loss.",
+      "beforeSha256": "5416712ebd7c34536be21ef65fde9428c5cedf4e2b138024c4c97d3769c2e5c8",
+      "afterSha256": "5416712ebd7c34536be21ef65fde9428c5cedf4e2b138024c4c97d3769c2e5c8"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/conversations/conversation-worker-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "longTurn/fixture build actual frozen translated source; worker plus real SDK cases assert complete near-limit escaped copies, bounded relevant retrieval/compaction, exact history and synchronous memory allowance thresholds.",
+      "beforeSha256": "69356abb029604764e82956dfab78e2bc634fcd3ce69718d4de52f46296ce3c8",
+      "afterSha256": "69356abb029604764e82956dfab78e2bc634fcd3ce69718d4de52f46296ce3c8"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/conversations/tutor-message-context.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "UTF-8 tests assert aggregate Unicode copies, exact typed-card fields/immutability and escaped provenance plus transport envelope without truncation.",
+      "beforeSha256": "6093b8cac6614e1903cc0a99a34b29982e03098da9ecba0408538d7da9ee3eb4",
+      "afterSha256": "6093b8cac6614e1903cc0a99a34b29982e03098da9ecba0408538d7da9ee3eb4"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/texts/domain/text.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "ids/aligned helpers retain actual segmentation/schema validation; cases cover exact Unicode whitespace reconstruction, pair order/provenance, repeated occurrence direction, neighboring sentences and surrogate boundaries.",
+      "beforeSha256": "aea7998dcf56e22c4ac757c7297aec3f2c0dae295c5139c2c6c2fd7ed9a36bfd",
+      "afterSha256": "aea7998dcf56e22c4ac757c7297aec3f2c0dae295c5139c2c6c2fd7ed9a36bfd"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/texts/texts-job-routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "fixture retains real job service/router and controlled burst/store ports; cases verify denial/unavailability before enqueue, Origin/auth precedence and typed credit exhaustion.",
+      "beforeSha256": "2e41a08b14d85816f8bc1c580f87b3010451d197e3edc1c719eb27d2dbba50db",
+      "afterSha256": "2e41a08b14d85816f8bc1c580f87b3010451d197e3edc1c719eb27d2dbba50db"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/texts/texts-provider-wire.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Pinned Flash test replaces only fetch, asserts actual SDK URL/model/cap/non-thinking body and complete source output; globals restored after each case.",
+      "beforeSha256": "781f17bd89a015f31ec3bdd9d72e522d3d256cf694ef9d7f05e1ef00a32c52ff",
+      "afterSha256": "781f17bd89a015f31ec3bdd9d72e522d3d256cf694ef9d7f05e1ef00a32c52ff"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/texts/texts-provider.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "call fixture pins selected execution; cases assert complete request/tracing, preflight before any HTTP, extended framing, length-stop rejection and measured invalid-output usage.",
+      "beforeSha256": "dcd1b6d25991c2e15c00b05bab5540d0d30b76397662332a24450672c4b7149f",
+      "afterSha256": "dcd1b6d25991c2e15c00b05bab5540d0d30b76397662332a24450672c4b7149f"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/texts/texts-worker.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "fixture exposes actual worker and deterministic ports; cases cover certainty metadata, exact proposal/source IDs, invalid output usage, dispatch fence, shutdown, attempt limit, timeout and heartbeat cancellation with timer cleanup.",
+      "beforeSha256": "f722b9a6c2f8e33f9df03a594266ffeacc3f1ef26ec5da24cd01a0a4be43d443",
+      "afterSha256": "f722b9a6c2f8e33f9df03a594266ffeacc3f1ef26ec5da24cd01a0a4be43d443"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts",
+      "beforeSha256": null,
+      "status": "refactored",
+      "reason": "projectConversationDictionaryCards owns typed effective visibility and language/custom-transcription projection, excluding dormant/private fields and preserving exact mapping order/serialized copy content.",
+      "afterSha256": "5b408f53ceaff84615b29e59367621122f816c5072ccab04ffe7a323a92224fa"
+    }
+  ]
+}

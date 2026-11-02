@@ -34,15 +34,20 @@ export async function stageDocumentProposal(
         if (
             !validScanAttestation(input.scanAttestation) ||
             input.scanAttestation.completedAt > input.context.now
-        )
+        ) {
             return false;
+        }
+
         const [job] = await tx
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(workerCas(input))
             .for('update');
 
-        if (!job || job.kind !== 'document-terms') return false;
+        if (!job || job.kind !== 'document-terms') {
+            return false;
+        }
+
         if (
             !Number.isSafeInteger(input.providerUsage.inputTokens) ||
             input.providerUsage.inputTokens < 0 ||
@@ -52,20 +57,27 @@ export async function stageDocumentProposal(
             input.providerUsage.outputTokens < 0 ||
             input.providerUsage.outputTokens >
                 job.providerMaxOutputTokensPerAttempt
-        )
+        ) {
             throw new Error('Invalid document provider usage');
+        }
+
         const [upload] = await tx
             .select()
             .from(dictionaryDocumentUploadsTable)
             .where(eq(dictionaryDocumentUploadsTable.jobId, job.id))
             .for('update');
 
-        if (!upload) return false;
+        if (!upload) {
+            return false;
+        }
+
         if (
             upload.uploadCompletedAt &&
             input.scanAttestation.completedAt < upload.uploadCompletedAt
-        )
+        ) {
             return false;
+        }
+
         const parsedProposal = parseDictionaryBatchGenerationProposal(
             input.proposal,
         );
@@ -74,10 +86,12 @@ export async function stageDocumentProposal(
             parsedProposal.candidates.length +
                 parsedProposal.failures.length !==
             input.observedUnitCount
-        )
+        ) {
             throw new Error(
                 'Document proposal rows do not match extracted unit count',
             );
+        }
+
         const existingSources = await tx
             .select({
                 cardId: dictionaryCardsTable.id,
@@ -226,16 +240,24 @@ export async function publishDocumentProposalAfterCleanup(
             !['waiting_capability_expiry', 'complete'].includes(
                 upload.cleanupState,
             )
-        )
+        ) {
             return false;
+        }
+
         const [proposal] = await tx
             .select()
             .from(dictionaryGenerationProposalsTable)
             .where(eq(dictionaryGenerationProposalsTable.jobId, input.jobId))
             .for('update');
 
-        if (!proposal?.documentStagedAt) return false;
-        if (proposal.documentPublishedAt) return true;
+        if (!proposal?.documentStagedAt) {
+            return false;
+        }
+
+        if (proposal.documentPublishedAt) {
+            return true;
+        }
+
         const [job] = await tx
             .select()
             .from(dictionaryGenerationJobsTable)
@@ -246,15 +268,18 @@ export async function publishDocumentProposalAfterCleanup(
             !job ||
             job.cancellationRequestedAt ||
             ['cancelled', 'failed', 'expired'].includes(job.executionState)
-        )
+        ) {
             return false;
-        if (usesLegacyAction(job.selectedExecutionSnapshot))
+        }
+
+        if (usesLegacyAction(job.selectedExecutionSnapshot)) {
             await settleLegacyAction(tx, {
                 id: job.id,
                 ownerId: job.ownerId,
                 outcome: 'success',
                 at: input.context.now,
             });
+        }
 
         await tx
             .update(dictionaryGenerationProposalsTable)
@@ -300,15 +325,24 @@ export async function publishStagedDocumentProposal(
         .where(eq(dictionaryGenerationProposalsTable.jobId, jobId))
         .for('update');
 
-    if (!proposal?.documentStagedAt) return false;
-    if (proposal.documentPublishedAt) return true;
+    if (!proposal?.documentStagedAt) {
+        return false;
+    }
+
+    if (proposal.documentPublishedAt) {
+        return true;
+    }
+
     const [job] = await tx
         .select()
         .from(dictionaryGenerationJobsTable)
         .where(eq(dictionaryGenerationJobsTable.id, jobId))
         .for('update');
 
-    if (!job) return false;
+    if (!job) {
+        return false;
+    }
+
     if (job.cancellationRequestedAt || job.executionState === 'cancelled') {
         await tx
             .update(dictionaryGenerationProposalsTable)
@@ -323,13 +357,15 @@ export async function publishStagedDocumentProposal(
         return false;
     }
 
-    if (usesLegacyAction(job.selectedExecutionSnapshot))
+    if (usesLegacyAction(job.selectedExecutionSnapshot)) {
         await settleLegacyAction(tx, {
             id: job.id,
             ownerId: job.ownerId,
             outcome: 'success',
             at: now,
         });
+    }
+
     await tx
         .update(dictionaryGenerationProposalsTable)
         .set({ documentPublishedAt: now, updatedAt: now })

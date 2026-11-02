@@ -46,10 +46,12 @@ function rules(variants?: ProviderNativeVariant[]): ProviderNativePricingRules {
         ],
     };
 }
+
 const usage = { inputTokens: 1_000, outputTokens: 2_000, requests: 1 as const };
 function cost(value: ProviderNativePricingRules, input = usage) {
     return evaluateNativeProviderCost(value, facts, input);
 }
+
 function single(
     pricePerUnit: string,
     applies: ProviderNativeVariant['applies'] = {},
@@ -75,6 +77,7 @@ describe('native provider financial arithmetic', () => {
             micros: 2700n,
             costSource: 'native-rules',
         });
+
         const precise = rules([
             {
                 id: 'precise',
@@ -89,10 +92,12 @@ describe('native provider financial arithmetic', () => {
                 ],
             },
         ]);
+
         expect(
             cost(precise, { ...usage, outputTokens: 1_000_000 }),
         ).toMatchObject({ status: 'calculated', micros: 83_334n });
     });
+
     it('keeps component minima distinct from a minimum on the entire request', () => {
         const priced = rules([
             {
@@ -117,10 +122,12 @@ describe('native provider financial arithmetic', () => {
                 ],
             },
         ]);
+
         expect(
             cost(priced, { inputTokens: 1, outputTokens: 1, requests: 1 }),
         ).toMatchObject({ status: 'calculated', micros: 2_000_000n });
     });
+
     it('rounds component subtotals in native UC before exact currency conversion', () => {
         const priced = rules([
             {
@@ -146,15 +153,18 @@ describe('native provider financial arithmetic', () => {
                 ],
             },
         ]);
+
         priced.currency = {
             code: 'UC',
             usdNumerator: '1',
             unitDenominator: '680000',
         };
+
         expect(
             cost(priced, { inputTokens: 1620, outputTokens: 331, requests: 1 }),
         ).toMatchObject({ status: 'calculated', micros: 299n });
     });
+
     it('preserves declared component and total rounding order including half-up ties', () => {
         const priced = rules([
             {
@@ -179,10 +189,12 @@ describe('native provider financial arithmetic', () => {
                 totalRounding: { quantum: '0.000003', mode: 'half-up' },
             },
         ]);
+
         expect(
             cost(priced, { inputTokens: 1, outputTokens: 1, requests: 1 }),
         ).toMatchObject({ status: 'calculated', micros: 3n });
     });
+
     it('does not apply a positive-usage component minimum to zero quantity', () => {
         const priced = rules([
             {
@@ -199,14 +211,17 @@ describe('native provider financial arithmetic', () => {
                 ],
             },
         ]);
+
         expect(
             cost(priced, { inputTokens: 0, outputTokens: 0, requests: 1 }),
         ).toMatchObject({ status: 'calculated', micros: 0n });
+
         priced.variants[0]!.components[0]!.chargeWhen = 'request';
         expect(
             cost(priced, { inputTokens: 0, outputTokens: 0, requests: 1 }),
         ).toMatchObject({ status: 'calculated', micros: 10_000_000n });
     });
+
     it('derives uncached input only from complete reported cache evidence', () => {
         const priced = rules([
             {
@@ -234,6 +249,7 @@ describe('native provider financial arithmetic', () => {
                 ],
             },
         ]);
+
         expect(cost(priced)).toMatchObject({ status: 'unknown' });
         expect(
             evaluateNativeProviderCost(priced, facts, {
@@ -242,6 +258,7 @@ describe('native provider financial arithmetic', () => {
                 cacheWriteTokens: 100,
             }),
         ).toMatchObject({ status: 'calculated', micros: 665n });
+
         expect(
             evaluateNativeProviderCost(priced, facts, {
                 ...usage,
@@ -250,6 +267,7 @@ describe('native provider financial arithmetic', () => {
             }),
         ).toMatchObject({ status: 'unknown' });
     });
+
     it('does not treat absent audio output tokens as zero or as characters', () => {
         const priced = rules([
             {
@@ -265,18 +283,21 @@ describe('native provider financial arithmetic', () => {
                 ],
             },
         ]);
+
         expect(
             evaluateNativeProviderCost(priced, facts, {
                 characters: 1000,
                 requests: 1,
             }),
         ).toMatchObject({ status: 'unknown' });
+
         expect(
             evaluateNativeProviderCost(priced, facts, {
                 audioOutputTokens: 1000,
                 requests: 1,
             }),
         ).toMatchObject({ status: 'calculated', micros: 4200n });
+
         expect(
             evaluateNativeProviderCost(
                 priced,
@@ -286,6 +307,7 @@ describe('native provider financial arithmetic', () => {
             ),
         ).toMatchObject({ status: 'unknown' });
     });
+
     it('honors context tier boundaries and includes lower tiers in upper bounds', () => {
         const priced = rules([
             {
@@ -299,16 +321,19 @@ describe('native provider financial arithmetic', () => {
                 id: 'long',
             },
         ]);
+
         expect(cost(priced, { ...usage, inputTokens: 272000 })).toMatchObject({
             status: 'calculated',
             micros: 544000n,
             variantIds: ['base'],
         });
+
         expect(cost(priced, { ...usage, inputTokens: 272001 })).toMatchObject({
             status: 'calculated',
             micros: 272001n,
             variantIds: ['long'],
         });
+
         expect(
             evaluateNativeProviderCost(
                 priced,
@@ -318,11 +343,13 @@ describe('native provider financial arithmetic', () => {
             ),
         ).toMatchObject({ status: 'calculated', micros: 600000n });
     });
+
     it('does not guess a resolved gateway endpoint from a reservation ceiling', () => {
         const priced = rules([
             single('1', { endpointIds: ['a'] }),
             single('2', { endpointIds: ['b'] }),
         ]);
+
         expect(cost(priced)).toMatchObject({ status: 'unknown' });
         expect(
             evaluateNativeProviderCost(
@@ -331,9 +358,11 @@ describe('native provider financial arithmetic', () => {
                 usage,
             ),
         ).toMatchObject({ status: 'calculated', micros: 1000n });
+
         expect(
             evaluateNativeProviderCost(priced, facts, usage, 'upper-bound'),
         ).toMatchObject({ status: 'calculated', micros: 2000n });
+
         expect(
             evaluateNativeProviderCost(
                 priced,
@@ -342,22 +371,26 @@ describe('native provider financial arithmetic', () => {
             ),
         ).toMatchObject({ status: 'unknown' });
     });
+
     it('can calculate a gateway amount when unresolved endpoints have identical prices', () => {
         const priced = rules([
             { ...single('1', { endpointIds: ['a'] }), id: 'a' },
             { ...single('1', { endpointIds: ['b'] }), id: 'b' },
         ]);
+
         expect(cost(priced)).toMatchObject({
             status: 'calculated',
             micros: 1000n,
             variantIds: ['a', 'b'],
         });
     });
+
     it('selects a declared service tier and does not presume an omitted one', () => {
         const priced = rules([
             single('1', { serviceTiers: ['standard'] }),
             single('2', { serviceTiers: ['priority'] }),
         ]);
+
         expect(cost(priced)).toMatchObject({ status: 'unknown' });
         expect(
             evaluateNativeProviderCost(
@@ -367,6 +400,7 @@ describe('native provider financial arithmetic', () => {
             ),
         ).toMatchObject({ status: 'calculated', micros: 1000n });
     });
+
     it('evaluates absolute half-open dispatch windows and refuses expired rules', () => {
         const priced = rules([
             single('1', {
@@ -386,10 +420,12 @@ describe('native provider financial arithmetic', () => {
                 ],
             }),
         ]);
+
         expect(cost(priced)).toMatchObject({
             status: 'calculated',
             micros: 2000n,
         });
+
         expect(
             evaluateNativeProviderCost(
                 priced,
@@ -397,6 +433,7 @@ describe('native provider financial arithmetic', () => {
                 usage,
             ),
         ).toMatchObject({ status: 'unknown' });
+
         expect(
             evaluateNativeProviderCost(
                 priced,
@@ -405,6 +442,7 @@ describe('native provider financial arithmetic', () => {
             ),
         ).toMatchObject({ status: 'unknown' });
     });
+
     it('reserves across price transitions but refuses uncovered dispatch-horizon gaps', () => {
         const priced = rules([
             single('1', {
@@ -428,15 +466,19 @@ describe('native provider financial arithmetic', () => {
             dispatchedAt: '2026-10-28T11:59:00Z',
             latestDispatchAt: '2026-10-28T12:01:00Z',
         };
+
         expect(
             evaluateNativeProviderCost(priced, future, usage, 'upper-bound'),
         ).toMatchObject({ status: 'calculated', micros: 2000n });
+
         priced.variants[1]!.applies.dispatchWindows![0]!.from =
             '2026-10-28T12:00:01Z';
+
         expect(
             evaluateNativeProviderCost(priced, future, usage, 'upper-bound'),
         ).toMatchObject({ status: 'unknown' });
     });
+
     it('uses independently conservative cache bounds and never subtracts cache maxima from input', () => {
         const priced = rules([
             {
@@ -464,10 +506,12 @@ describe('native provider financial arithmetic', () => {
                 ],
             },
         ]);
+
         expect(
             evaluateNativeProviderCost(priced, facts, usage, 'upper-bound'),
         ).toMatchObject({ status: 'calculated', micros: 2350n });
     });
+
     it('uses authenticated reported credits or USD only for actual expense, never reservation', () => {
         const priced = rules();
         priced.reportedCreditUsdPerCredit = '0.005';
@@ -481,6 +525,7 @@ describe('native provider financial arithmetic', () => {
             micros: 6150n,
             costSource: 'reported-credits',
         });
+
         expect(
             evaluateNativeProviderCost(priced, facts, {
                 ...usage,
@@ -491,6 +536,7 @@ describe('native provider financial arithmetic', () => {
             micros: 1235n,
             costSource: 'reported-usd',
         });
+
         expect(
             evaluateNativeProviderCost(
                 priced,
@@ -503,6 +549,7 @@ describe('native provider financial arithmetic', () => {
             micros: 2700n,
             costSource: 'native-rules',
         });
+
         expect(
             evaluateNativeProviderCost(
                 priced,
@@ -511,6 +558,7 @@ describe('native provider financial arithmetic', () => {
                 'upper-bound',
             ),
         ).toMatchObject({ status: 'calculated', micros: 2700n });
+
         expect(
             evaluateNativeProviderCost(priced, facts, {
                 ...usage,
@@ -519,16 +567,19 @@ describe('native provider financial arithmetic', () => {
             }),
         ).toMatchObject({ status: 'unknown' });
     });
+
     it('reports known zero requests as zero and rejects contradictory positive usage', () => {
         expect(
             evaluateNativeProviderCost(rules(), facts, { requests: 0 }),
         ).toMatchObject({ status: 'calculated', micros: 0n });
+
         expect(
             evaluateNativeProviderCost(rules(), facts, {
                 requests: 0,
                 inputTokens: 1,
             }),
         ).toMatchObject({ status: 'unknown' });
+
         expect(
             evaluateNativeProviderCost(
                 rules(),
@@ -538,6 +589,7 @@ describe('native provider financial arithmetic', () => {
             ),
         ).toMatchObject({ status: 'calculated', micros: 0n });
     });
+
     it('requires explicit credit/USD conversion before using a provider credit observation', () => {
         const priced = rules([
             {
@@ -553,12 +605,14 @@ describe('native provider financial arithmetic', () => {
                 ],
             },
         ]);
+
         expect(
             evaluateNativeProviderCost(priced, facts, {
                 requests: 1,
                 providerCreditsConsumed: '1',
             }),
         ).toMatchObject({ status: 'unknown' });
+
         priced.reportedCreditUsdPerCredit = '0.005';
         expect(
             evaluateNativeProviderCost(priced, facts, {
@@ -567,11 +621,13 @@ describe('native provider financial arithmetic', () => {
             }),
         ).toMatchObject({ status: 'calculated', micros: 5000n });
     });
+
     it('does not silently truncate sub-millisecond tariff or dispatch boundaries', () => {
         const priced = { ...rules(), validFrom: '2026-01-01T00:00:00.0001Z' };
         expect(ProviderNativePricingRulesSchema.safeParse(priced).success).toBe(
             false,
         );
+
         expect(
             evaluateNativeProviderCost(
                 rules(),
@@ -580,17 +636,20 @@ describe('native provider financial arithmetic', () => {
             ),
         ).toMatchObject({ status: 'unknown' });
     });
+
     it('validates tariff precision, windows, duplicate identities and rate/settlement separation', () => {
         expect(
             ProviderNativePricingRulesSchema.safeParse(
                 rules([single('0.0000000000000000000000001')]),
             ).success,
         ).toBe(false);
+
         expect(
             ProviderNativePricingRulesSchema.safeParse(
                 rules([single('1'), single('1')]),
             ).success,
         ).toBe(false);
+
         expect(
             ProviderNativePricingRulesSchema.safeParse(
                 rules([
@@ -605,6 +664,7 @@ describe('native provider financial arithmetic', () => {
                 ]),
             ).success,
         ).toBe(false);
+
         const publish = {
             providerId: 'kie',
             modelId: 'example',
@@ -622,15 +682,18 @@ describe('native provider financial arithmetic', () => {
             reason: 'Native pricing fixture',
             expectedVersion: 0,
         };
+
         expect(
             ProviderPricePublishRequestSchema.safeParse(publish).success,
         ).toBe(true);
+
         expect(
             ProviderPricePublishRequestSchema.safeParse({
                 ...publish,
                 usdPer1000Characters: '0.03',
             }).success,
         ).toBe(false);
+
         expect(
             ProviderPricePublishRequestSchema.safeParse({
                 ...publish,
@@ -639,6 +702,7 @@ describe('native provider financial arithmetic', () => {
             }).success,
         ).toBe(false);
     });
+
     it('binds every native variant to measurable units for its outer publication meter', () => {
         const component = (
             meter: ProviderNativeVariant['components'][number]['meter'],
@@ -670,6 +734,7 @@ describe('native provider financial arithmetic', () => {
             reason: 'Native pricing fixture',
             expectedVersion: 0,
         };
+
         for (const [meter, units, valid] of [
             ['text-tokens', ['characters'], false],
             ['text-tokens', ['audioOutputTokens'], false],
@@ -706,6 +771,7 @@ describe('native provider financial arithmetic', () => {
                 nativeProviderPricingMatchesMeter(meter, nativeRules),
                 `${meter}: ${units}`,
             ).toBe(valid);
+
             expect(
                 ProviderPricePublishRequestSchema.safeParse({
                     ...publish,
@@ -713,6 +779,7 @@ describe('native provider financial arithmetic', () => {
                     nativeRules,
                 }).success,
             ).toBe(valid);
+
             const { expectedVersion: _expectedVersion, ...snapshot } = publish;
             expect(
                 ProviderPriceSchema.safeParse({
@@ -726,6 +793,7 @@ describe('native provider financial arithmetic', () => {
                 }).success,
             ).toBe(valid);
         }
+
         const mixed = rules([
             {
                 ...tariff('inputTokens', 'outputTokens').variants[0]!,
@@ -733,10 +801,12 @@ describe('native provider financial arithmetic', () => {
             },
             { ...tariff('characters').variants[0]!, id: 'invalid' },
         ]);
+
         expect(nativeProviderPricingMatchesMeter('text-tokens', mixed)).toBe(
             false,
         );
     });
+
     it('bounds aggregate native rule work and UTF-8 serialized size', () => {
         const manyComponents = rules(
             Array.from({ length: 128 }, (_, index) => ({
@@ -759,9 +829,11 @@ describe('native provider financial arithmetic', () => {
                 })),
             })),
         );
+
         expect(
             ProviderNativePricingRulesSchema.safeParse(manyComponents).success,
         ).toBe(false); // serialized size cap
+
         const windows = Array.from({ length: 1025 }, () => ({
             from: '2026-01-01T00:00:00Z',
             until: '2027-01-01T00:00:00Z',
@@ -770,9 +842,11 @@ describe('native provider financial arithmetic', () => {
             single('1', { dispatchWindows: windows }),
             { ...single('2', { dispatchWindows: windows }), id: 'second' },
         ]);
+
         expect(ProviderNativePricingRulesSchema.safeParse(large).success).toBe(
             false,
         );
+
         const unicode = rules([
             single('1', {
                 endpointIds: Array.from({ length: 128 }, () =>
@@ -780,19 +854,23 @@ describe('native provider financial arithmetic', () => {
                 ),
             }),
         ]);
+
         expect(JSON.stringify(unicode).length).toBeLessThan(65_536);
         expect(
             ProviderNativePricingRulesSchema.safeParse(unicode).success,
         ).toBe(false);
+
         expect(
             ProviderNativePricingRulesSchema.safeParse(rules()).success,
         ).toBe(true);
     });
+
     it('returns unknown when single-call or aggregate USD micros exceed signed bigint storage', () => {
         const boundaryUsage = {
             inputTokens: 1_000_000_000_000,
             requests: 1 as const,
         };
+
         expect(
             evaluateNativeProviderCost(
                 rules([single('9223372.036854775807')]),
@@ -803,6 +881,7 @@ describe('native provider financial arithmetic', () => {
             status: 'calculated',
             micros: 9_223_372_036_854_775_807n,
         });
+
         expect(
             evaluateNativeProviderCost(
                 rules([single('9223372.036854775808')]),
@@ -810,6 +889,7 @@ describe('native provider financial arithmetic', () => {
                 boundaryUsage,
             ),
         ).toMatchObject({ status: 'unknown' });
+
         const expensive = rules([single('999999999999')]);
         expect(
             evaluateNativeProviderCost(expensive, facts, {
@@ -820,16 +900,19 @@ describe('native provider financial arithmetic', () => {
             status: 'unknown',
             reason: expect.stringContaining('range overflow'),
         });
+
         expect(
             evaluateNativeProviderCost(rules(), facts, {
                 requests: 1,
                 providerCostUsd: '999999999999',
             }),
         ).toMatchObject({ status: 'calculated', micros: 999999999999000000n });
+
         const reportedRules = {
             ...rules(),
             reportedCreditUsdPerCredit: '999999999999',
         };
+
         expect(
             evaluateNativeProviderCost(reportedRules, facts, {
                 requests: 1,
@@ -839,16 +922,19 @@ describe('native provider financial arithmetic', () => {
             status: 'unknown',
             reason: expect.stringContaining('range overflow'),
         });
+
         const callRules = rules([single('999999999999')]);
         const calls = [0, 1].map((index) => ({
             callId: `00000000-0000-4000-8000-00000000000${index}`,
             execution: facts,
             usage: { requests: 1 as const, inputTokens: 5_000_000 },
         }));
+
         expect(
             evaluateNativeProviderCost(callRules, facts, calls[0]!.usage)
                 .status,
         ).toBe('calculated');
+
         expect(evaluateNativeProviderCalls(callRules, calls)).toMatchObject({
             status: 'unknown',
             reason: expect.stringContaining('range overflow'),
@@ -875,6 +961,7 @@ describe('native price authority preserves legacy expense behavior', () => {
         sourceUrl: null,
         reason: 'Legacy behavior fixture',
     };
+
     it('preserves legacy flat token and character expenses without requiring execution facts', () => {
         expect(providerTextExpenseMicros(legacy, usage)).toBe(5000n);
         expect(
@@ -884,6 +971,7 @@ describe('native price authority preserves legacy expense behavior', () => {
             ),
         ).toBe(30000n);
     });
+
     it('never falls through native prices to flat amounts and requires authoritative dispatch time', () => {
         const native = {
             ...legacy,
@@ -891,6 +979,7 @@ describe('native price authority preserves legacy expense behavior', () => {
             inputUsdPerMillionTokens: null,
             outputUsdPerMillionTokens: null,
         };
+
         expect(providerTextExpenseMicros(native, usage)).toBeNull();
         expect(providerTextExpenseMicros(native, usage, facts)).toBe(2700n);
         const expired = { dispatchedAt: '2027-01-01T00:00:00Z' };
@@ -903,6 +992,7 @@ describe('native price authority preserves legacy expense behavior', () => {
             ),
         ).toBeNull();
     });
+
     it('settles native speech using reported credit cost without substituting character estimates', () => {
         const native = {
             meter: 'speech-tokens' as const,
@@ -925,6 +1015,7 @@ describe('native price authority preserves legacy expense behavior', () => {
                 reportedCreditUsdPerCredit: '0.005',
             },
         };
+
         expect(providerSpeechExpenseMicros(native, 1000, facts)).toBeNull();
         expect(
             providerSpeechExpenseMicros(native, 1000, facts, {
@@ -948,6 +1039,7 @@ describe('native provider attempts with several SDK requests', () => {
             execution: facts,
         };
     }
+
     it('applies the official minimum per call instead of once to aggregated token counts', () => {
         const priced = rules([
             {
@@ -964,10 +1056,12 @@ describe('native provider attempts with several SDK requests', () => {
                 ],
             },
         ]);
+
         expect(
             evaluateNativeProviderCalls(priced, [call(1), call(2)]),
         ).toMatchObject({ status: 'calculated', micros: 2_000_000n });
     });
+
     it('rounds internal USD micros once after summing exact costs from all calls', () => {
         const priced = rules([
             {
@@ -983,12 +1077,14 @@ describe('native provider attempts with several SDK requests', () => {
                 ],
             },
         ]);
+
         expect(
             evaluateNativeProviderCalls(
                 priced,
                 [1, 2, 3, 4, 5].map((index) => call(index)),
             ),
         ).toMatchObject({ status: 'calculated', micros: 2n });
+
         const uc = rules([
             {
                 id: 'uc',
@@ -1003,15 +1099,18 @@ describe('native provider attempts with several SDK requests', () => {
                 ],
             },
         ]);
+
         uc.currency = {
             code: 'UC',
             usdNumerator: '1',
             unitDenominator: '680000',
         };
+
         expect(
             evaluateNativeProviderCalls(uc, [call(1), call(2)]),
         ).toMatchObject({ status: 'calculated', micros: 3n });
     });
+
     it('evaluates each call context tier independently and retains mixed monetary provenance', () => {
         const priced = rules([
             {
@@ -1025,12 +1124,14 @@ describe('native provider attempts with several SDK requests', () => {
                 id: 'long',
             },
         ]);
+
         expect(
             evaluateNativeProviderCalls(priced, [
                 call(1, { inputTokens: 272000, requests: 1 }),
                 call(2, { inputTokens: 272001, requests: 1 }),
             ]),
         ).toMatchObject({ status: 'calculated', micros: 816001n });
+
         expect(
             evaluateNativeProviderCalls(priced, [
                 call(1),
@@ -1042,19 +1143,23 @@ describe('native provider attempts with several SDK requests', () => {
             costSource: 'mixed',
         });
     });
+
     it('rejects duplicate, empty or over-limit call lists and propagates unresolved usage', () => {
         expect(evaluateNativeProviderCalls(rules(), [])).toMatchObject({
             status: 'unknown',
         });
+
         expect(
             evaluateNativeProviderCalls(rules(), [call(1), call(1)]),
         ).toMatchObject({ status: 'unknown' });
+
         expect(
             evaluateNativeProviderCalls(
                 rules(),
                 [1, 2, 3, 4, 5, 6].map((index) => call(index)),
             ),
         ).toMatchObject({ status: 'unknown' });
+
         expect(
             evaluateNativeProviderCalls(rules(), [call(1), call(2)]),
         ).toMatchObject({ status: 'unknown' });

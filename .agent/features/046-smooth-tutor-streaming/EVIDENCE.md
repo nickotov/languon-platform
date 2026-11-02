@@ -5,13 +5,13 @@ Base: `e83bc49`; branch: `feature/smooth-tutor-streaming`.
 
 ## Acceptance coverage
 
-| ID | Implementation | Evidence | Result |
-| --- | --- | --- | --- |
-| AC-1 | Active125ms/idle1000ms authorized SSE and replay drain | DELIVERY.md; E1, E4 | Pass |
-| AC-2 | Native SDK suffix projection, explicit reconciliation and monotonic bootstrap | SDK.md; E2, E4 | Pass |
-| AC-3 | Localized queued/empty/tool/writing activity and pause detection | E2, E4; BROWSER.md | Pass |
-| AC-4 | Restricted Streamdown2.7.1, bounded grapheme reveal and reduced motion | RENDERER.md; E2–E4 | Pass |
-| AC-5 | Integrated app/static/guide proof and independent reviews | E1–E6 | Pass |
+| ID   | Implementation                                                                | Evidence            | Result |
+| ---- | ----------------------------------------------------------------------------- | ------------------- | ------ |
+| AC-1 | Active125ms/idle1000ms authorized SSE and replay drain                        | DELIVERY.md; E1, E4 | Pass   |
+| AC-2 | Native SDK suffix projection, explicit reconciliation and monotonic bootstrap | SDK.md; E2, E4      | Pass   |
+| AC-3 | Localized queued/empty/tool/writing activity and pause detection              | E2, E4; BROWSER.md  | Pass   |
+| AC-4 | Restricted Streamdown2.7.1, bounded grapheme reveal and reduced motion        | RENDERER.md; E2–E4  | Pass   |
+| AC-5 | Integrated app/static/guide proof and independent reviews                     | E1–E6               | Pass   |
 
 ## Verification
 

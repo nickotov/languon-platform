@@ -34,6 +34,7 @@ describe('dictionary API', () => {
         expect(String(url)).toContain(
             '/dictionaries?lifecycle=active&limit=25',
         );
+
         expect(init?.cache).toBe('no-store');
         expect(new Headers(init?.headers).get('authorization')).toBe(
             'Bearer owner-token',
@@ -63,10 +64,12 @@ describe('dictionary API', () => {
         expect(String(url)).toBe(
             '/api/shared/dictionaries/share-locator-1234?limit=25',
         );
+
         expect(String(url)).not.toContain(shareKey);
         expect(new Headers(init?.headers).get('x-languon-share-key')).toBe(
             shareKey,
         );
+
         expect(new Headers(init?.headers).get('authorization')).toBeNull();
     });
 
@@ -117,13 +120,16 @@ describe('dictionary API', () => {
         expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain(
             '/dictionary-deletions/preview',
         );
+
         const [url, init] = vi.mocked(fetch).mock.calls[1]!;
         expect(String(url)).toContain(
             `/dictionaries/${dictionaryId}/card-deletions`,
         );
+
         expect(new Headers(init?.headers).get('idempotency-key')).toBe(
             'deletion-key',
         );
+
         expect(JSON.parse(String(init?.body))).toEqual({
             expectedDictionaryVersion: 5,
             scope: {
@@ -160,6 +166,7 @@ describe('dictionary API', () => {
             pastedTermsGeneration: { available: true },
             singleCardGeneration: { available: true },
         });
+
         await expect(
             dictionaryApi.readLatestCardGeneration(
                 'owner-token',
@@ -167,6 +174,7 @@ describe('dictionary API', () => {
                 '20000000-0000-4000-8000-000000000001',
             ),
         ).resolves.toEqual({ job: null });
+
         await expect(
             dictionaryApi.enqueueCardGeneration(
                 'owner-token',
@@ -187,20 +195,24 @@ describe('dictionary API', () => {
                 '/dictionary-generation-capabilities',
             ),
         ).toBe(true);
+
         expect(
             String(vi.mocked(fetch).mock.calls[1]?.[0]).endsWith(
                 '/dictionaries/10000000-0000-4000-8000-000000000001/cards/20000000-0000-4000-8000-000000000001/generations/latest',
             ),
         ).toBe(true);
+
         const [enqueueUrl, enqueueInit] = vi.mocked(fetch).mock.calls[2]!;
         expect(
             String(enqueueUrl).endsWith(
                 '/dictionaries/10000000-0000-4000-8000-000000000001/cards/20000000-0000-4000-8000-000000000001/generations',
             ),
         ).toBe(true);
+
         expect(new Headers(enqueueInit?.headers).get('idempotency-key')).toBe(
             'generation-idempotency-key',
         );
+
         expect(JSON.parse(String(enqueueInit?.body))).toEqual(
             expect.objectContaining({ instruction: 'keep the art context' }),
         );
@@ -218,13 +230,16 @@ describe('dictionary API', () => {
                 'batch-idempotency-key',
             ),
         ).rejects.toMatchObject({ status: 502 });
+
         const [batchUrl, batchInit] = vi.mocked(fetch).mock.calls[3]!;
         expect(String(batchUrl)).toContain(
             '/dictionaries/10000000-0000-4000-8000-000000000001/batch-generations',
         );
+
         expect(new Headers(batchInit?.headers).get('idempotency-key')).toBe(
             'batch-idempotency-key',
         );
+
         expect(JSON.parse(String(batchInit?.body))).toEqual(
             expect.objectContaining({
                 context: 'legal vocabulary',
@@ -244,13 +259,16 @@ describe('dictionary API', () => {
                 'batch-retry-key',
             ),
         ).rejects.toMatchObject({ status: 502 });
+
         const [retryUrl, retryInit] = vi.mocked(fetch).mock.calls[4]!;
         expect(String(retryUrl)).toContain(
             '/dictionary-generation-jobs/30000000-0000-4000-8000-000000000001/retry-pasted-terms',
         );
+
         expect(new Headers(retryInit?.headers).get('idempotency-key')).toBe(
             'batch-retry-key',
         );
+
         expect(JSON.parse(String(retryInit?.body))).toMatchObject({
             rowIndexes: [4, 1],
         });
@@ -261,6 +279,7 @@ describe('dictionary API', () => {
             .mockResolvedValueOnce(jsonResponse({ job: null }))
             .mockResolvedValueOnce(jsonResponse({ job: null }))
             .mockResolvedValueOnce(jsonResponse({ job: null }));
+
         const draft = {
             overrides: {
                 definitionEnabled: null,
@@ -295,6 +314,7 @@ describe('dictionary API', () => {
                 'authoring-key',
             ),
         ).rejects.toMatchObject({ status: 502 });
+
         await expect(
             dictionaryApi.regenerateCardAuthoringGeneration(
                 'owner-token',
@@ -313,6 +333,7 @@ describe('dictionary API', () => {
                 'successor-key',
             ),
         ).rejects.toMatchObject({ status: 502 });
+
         await expect(
             dictionaryApi.enqueueCardAuthoringUpdateGeneration(
                 'owner-token',
@@ -335,24 +356,30 @@ describe('dictionary API', () => {
         expect(String(enqueueUrl)).toContain(
             '/dictionaries/10000000-0000-4000-8000-000000000001/card-authoring-generations',
         );
+
         expect(new Headers(enqueueInit?.headers).get('idempotency-key')).toBe(
             'authoring-key',
         );
+
         expect(JSON.parse(String(enqueueInit?.body)).source).toBe('medium');
         const [successorUrl, successorInit] = vi.mocked(fetch).mock.calls[1]!;
         expect(String(successorUrl)).toContain(
             '/dictionary-generation-jobs/30000000-0000-4000-8000-000000000001/regenerate-card-authoring',
         );
+
         expect(new Headers(successorInit?.headers).get('idempotency-key')).toBe(
             'successor-key',
         );
+
         const [updateUrl, updateInit] = vi.mocked(fetch).mock.calls[2]!;
         expect(String(updateUrl)).toContain(
             '/dictionaries/10000000-0000-4000-8000-000000000001/cards/20000000-0000-4000-8000-000000000001/card-authoring-generations',
         );
+
         expect(new Headers(updateInit?.headers).get('idempotency-key')).toBe(
             'authoring-update-key',
         );
+
         expect(JSON.parse(String(updateInit?.body))).toMatchObject({
             expectedCardVersion: 4,
             format: 'card-authoring:v2',
@@ -364,12 +391,14 @@ describe('dictionary API', () => {
         vi.mocked(fetch)
             .mockResolvedValueOnce(jsonResponse({ job: null }))
             .mockResolvedValueOnce(jsonResponse({ job: null }));
+
         const activeJobId = '30000000-0000-4000-8000-000000000001';
         const reviewJobId = '30000000-0000-4000-8000-000000000002';
 
         await expect(
             dictionaryApi.cancelGenerationJob('owner-token', activeJobId),
         ).rejects.toMatchObject({ status: 502 });
+
         await expect(
             dictionaryApi.discardGenerationJob('owner-token', reviewJobId),
         ).rejects.toMatchObject({ status: 502 });
@@ -378,11 +407,13 @@ describe('dictionary API', () => {
         expect(String(cancelUrl)).toContain(
             `/dictionary-generation-jobs/${activeJobId}/cancel`,
         );
+
         expect(cancelInit?.method).toBe('POST');
         const [discardUrl, discardInit] = vi.mocked(fetch).mock.calls[1]!;
         expect(String(discardUrl)).toContain(
             `/dictionary-generation-jobs/${reviewJobId}/discard`,
         );
+
         expect(discardInit?.method).toBe('POST');
     });
 
@@ -393,6 +424,7 @@ describe('dictionary API', () => {
                 status: 200,
             }),
         );
+
         const file = new Blob(['explicit terms']);
 
         await expect(
@@ -418,10 +450,12 @@ describe('dictionary API', () => {
         expect(new TextDecoder().decode(init?.body as ArrayBuffer)).toBe(
             'explicit terms',
         );
+
         expect(init?.headers).toEqual({
             'x-amz-checksum-sha256': 'signed-checksum',
             'x-product-upload': 'dictionary-document',
         });
+
         expect(new Headers(init?.headers).get('authorization')).toBeNull();
     });
 
@@ -442,6 +476,7 @@ describe('dictionary API', () => {
                     },
                 }),
             );
+
         const request = {
             content: 'source\ttranslation',
             options: {
@@ -462,6 +497,7 @@ describe('dictionary API', () => {
         await expect(
             dictionaryApi.previewImport('owner-token', request),
         ).rejects.toMatchObject({ status: 502 });
+
         await expect(
             dictionaryApi.importDictionary(
                 'owner-token',
@@ -469,6 +505,7 @@ describe('dictionary API', () => {
                 'import-idempotency-key',
             ),
         ).rejects.toMatchObject({ status: 502 });
+
         await expect(
             dictionaryApi.retryImportPairsGeneration(
                 'owner-token',
@@ -481,6 +518,7 @@ describe('dictionary API', () => {
                 'import-retry-key',
             ),
         ).rejects.toMatchObject({ status: 502 });
+
         const exported = await dictionaryApi.exportDictionary(
             'owner-token',
             '10000000-0000-4000-8000-000000000001',
@@ -492,17 +530,21 @@ describe('dictionary API', () => {
         expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain(
             '/dictionary-imports/preview',
         );
+
         expect(String(vi.mocked(fetch).mock.calls[1]?.[0])).toContain(
             '/dictionary-imports',
         );
+
         expect(
             new Headers(vi.mocked(fetch).mock.calls[1]?.[1]?.headers).get(
                 'idempotency-key',
             ),
         ).toBe('import-idempotency-key');
+
         expect(String(vi.mocked(fetch).mock.calls[2]?.[0])).toContain(
             '/retry-import-pairs',
         );
+
         expect(String(vi.mocked(fetch).mock.calls[3]?.[0])).toContain(
             '/export?format=quizlet-text',
         );
@@ -531,6 +573,7 @@ describe('dictionary API', () => {
         ).rejects.toMatchObject({
             detail: { correlationId: 'invalid-export-headers' },
         });
+
         expect(cancel).toHaveBeenCalledWith('invalid_export_headers');
     });
 
@@ -538,6 +581,7 @@ describe('dictionary API', () => {
         vi.mocked(fetch)
             .mockRejectedValueOnce(new TypeError('response lost'))
             .mockResolvedValueOnce(jsonResponse({ job: null }, 502));
+
         const upload = {
             expiresAt: '2026-08-26T12:00:00.000Z',
             id: '30000000-0000-4000-8000-000000000001',
@@ -553,6 +597,7 @@ describe('dictionary API', () => {
             upload,
             new Blob(['explicit terms']),
         );
+
         expect(completion).toEqual({});
         await expect(
             dictionaryApi.completeDocumentUpload(
@@ -561,6 +606,7 @@ describe('dictionary API', () => {
                 completion,
             ),
         ).rejects.toMatchObject({ status: 502 });
+
         expect(
             JSON.parse(String(vi.mocked(fetch).mock.calls[1]![1]?.body)),
         ).toEqual({});
@@ -589,9 +635,11 @@ describe('dictionary API', () => {
         expect(String(url)).toContain(
             '/dictionaries/10000000-0000-4000-8000-000000000001/document-uploads',
         );
+
         expect(new Headers(init?.headers).get('idempotency-key')).toBe(
             'document-upload-idempotency-key',
         );
+
         expect(JSON.parse(String(init?.body))).toEqual({
             expectedDictionaryVersion: 3,
             expectedSettingsVersion: 2,
@@ -617,13 +665,16 @@ describe('dictionary API', () => {
                 'document-retry-key',
             ),
         ).rejects.toMatchObject({ status: 502 });
+
         const [url, init] = vi.mocked(fetch).mock.calls[0]!;
         expect(String(url)).toContain(
             '/dictionary-generation-jobs/30000000-0000-4000-8000-000000000001/retry-document-terms',
         );
+
         expect(new Headers(init?.headers).get('idempotency-key')).toBe(
             'document-retry-key',
         );
+
         expect(JSON.parse(String(init?.body))).toMatchObject({
             rowIndexes: [4, 1],
         });

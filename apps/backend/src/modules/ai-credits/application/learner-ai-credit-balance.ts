@@ -14,6 +14,7 @@ export class LearnerAiCreditBalanceService {
         at = new Date(),
     ): Promise<LearnerAiCreditBalance> {
         const summary = await this.reader.accountSummary(ownerId, at);
+
         return summary.policy.effectiveMode === 'unlimited'
             ? { mode: 'unlimited', availableCredits: null }
             : {

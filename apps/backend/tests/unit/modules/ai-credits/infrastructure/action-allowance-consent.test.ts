@@ -26,6 +26,7 @@ describe('allowance transport metadata', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: text,
             });
+
             expect(request.headers.has('Content-Length')).toBe(false);
             const response = await app.request(request);
             expect(response.status).toBe(200);
@@ -34,6 +35,7 @@ describe('allowance transport metadata', () => {
             });
         },
     );
+
     it('removes confirmation metadata before domain request fingerprinting', async () => {
         const app = new Hono();
         app.use('*', actionAllowanceRequestMiddleware);
@@ -47,11 +49,13 @@ describe('allowance transport metadata', () => {
                 confirmedQuoteId: id,
             }),
         });
+
         expect(await response.json()).toEqual({
             operationId: 'same-operation',
             answer: 'same-input',
         });
     });
+
     it('rejects malformed consent before the mutation handler', async () => {
         const app = new Hono();
         app.use('*', actionAllowanceRequestMiddleware);
@@ -61,8 +65,10 @@ describe('allowance transport metadata', () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ confirmedQuoteId: 'forged' }),
         });
+
         expect(response.status).toBe(400);
     });
+
     it('returns only learner credit allowance details on the confirmation response', async () => {
         const app = new Hono();
         app.onError(
@@ -70,6 +76,7 @@ describe('allowance transport metadata', () => {
                 actionAllowanceErrorResponse(error, c) ??
                 c.json({ error: 'unexpected' }, 500),
         );
+
         app.post('/', () => {
             throw new ActionAllowanceConfirmationRequired({
                 id,
@@ -83,6 +90,7 @@ describe('allowance transport metadata', () => {
                 expiresAt: new Date('2030-01-01T00:00:00Z'),
             });
         });
+
         const response = await app.request('/', { method: 'POST' });
         expect(response.status).toBe(409);
         const body = await response.json();
@@ -96,6 +104,7 @@ describe('allowance transport metadata', () => {
                 },
             },
         });
+
         expect(JSON.stringify(body)).not.toMatch(/private-|ownerId|Usd|Milli/u);
     });
 });

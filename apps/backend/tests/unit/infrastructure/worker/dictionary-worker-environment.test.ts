@@ -37,15 +37,19 @@ describe('dictionary worker AI timeout configuration', () => {
                 sentenceAiTimeoutMs: 180_000,
                 textAiTimeoutMs: 180_000,
             });
+
             expect(warn).toHaveBeenCalledWith(
                 expect.stringContaining('SENTENCE_AI_TIMEOUT_MS'),
             );
+
             expect(warn).toHaveBeenCalledWith(
                 expect.stringContaining('TEXT_AI_TIMEOUT_MS'),
             );
+
             expect(warn.mock.calls.flat().join(' ')).not.toContain(
                 'DEEPSEEK_API_KEY',
             );
+
             expect(error).not.toHaveBeenCalled();
         },
     );
@@ -63,6 +67,7 @@ describe('dictionary worker AI timeout configuration', () => {
             sentenceAiTimeoutMs: 45_000,
             textAiTimeoutMs: 60_000,
         });
+
         const logged = warn.mock.calls.flat().join(' ');
         expect(logged).not.toContain('SENTENCE_AI_TIMEOUT_MS');
         expect(logged).not.toContain('TEXT_AI_TIMEOUT_MS');
@@ -85,6 +90,7 @@ describe('dictionary worker AI timeout configuration', () => {
                     }),
                 ).toThrow();
             }
+
             expect(error).toHaveBeenCalledTimes(4);
             for (const [message] of error.mock.calls) {
                 expect(message).toContain(key);
@@ -127,6 +133,7 @@ describe('dictionary worker environment', () => {
             'sentence-generation:v2',
         ]);
     });
+
     it('does not require HTTP authentication, Redis, or model credentials', () => {
         expect(loadDictionaryWorkerEnvironment(base)).toMatchObject({
             includeProviderReadiness: false,
@@ -141,6 +148,7 @@ describe('dictionary worker environment', () => {
                 DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: 'single-card:v1',
             }).includeProviderReadiness,
         ).toBe(true);
+
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...base,
@@ -148,6 +156,7 @@ describe('dictionary worker environment', () => {
                 DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: 'single-card:v1',
             }),
         ).toThrow(/processable.*provider|provider.*processable/i);
+
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...base,
@@ -163,6 +172,7 @@ describe('dictionary worker environment', () => {
             includeProviderReadiness: false,
             supportedFormats: [],
         });
+
         expect(
             loadDictionaryWorkerEnvironment({
                 ...base,
@@ -192,15 +202,18 @@ describe('dictionary worker environment', () => {
     it('reuses the API database URL only for local development and test', () => {
         const { DICTIONARY_WORKER_DATABASE_URL: _, ...withoutWorkerDatabase } =
             base;
+
         expect(
             loadDictionaryWorkerEnvironment({
                 ...withoutWorkerDatabase,
                 DATABASE_URL: 'postgres://local:pass@localhost:5432/languon',
             }).databaseUrl,
         ).toBe('postgres://local:pass@localhost:5432/languon');
+
         expect(() =>
             loadDictionaryWorkerEnvironment(withoutWorkerDatabase),
         ).toThrow(/DICTIONARY_WORKER_DATABASE_URL.*DATABASE_URL/);
+
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...withoutWorkerDatabase,
@@ -219,12 +232,14 @@ describe('dictionary worker environment', () => {
                     'single-card:v1,single-card:v1',
             }),
         ).toThrow(/unique comma-separated/);
+
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...base,
                 DICTIONARY_WORKER_CONCURRENCY: '33',
             }),
         ).toThrow();
+
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...base,
@@ -260,6 +275,7 @@ describe('dictionary worker environment', () => {
             DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
             ...liveProviderBudget,
         });
+
         expect(deepseek.provider).toMatchObject({
             apiKey: 'deepseek-test-key',
             catalogModel: {
@@ -269,6 +285,7 @@ describe('dictionary worker environment', () => {
             },
             modelId: 'deepseek/deepseek-flash',
         });
+
         expect(deepseek.providerCredentials).toEqual({
             DEEPSEEK_API_KEY: 'deepseek-test-key',
         });
@@ -280,6 +297,7 @@ describe('dictionary worker environment', () => {
             KIE_API_KEY: 'kie-test-key',
             ...liveProviderBudget,
         });
+
         expect(kie.provider).toMatchObject({
             apiKey: 'kie-test-key',
             catalogModel: {
@@ -289,6 +307,7 @@ describe('dictionary worker environment', () => {
             },
             modelId: 'kie/gemini-2.5-pro',
         });
+
         expect(kie.providerCredentials).toEqual({
             KIE_API_KEY: 'kie-test-key',
         });
@@ -303,6 +322,7 @@ describe('dictionary worker environment', () => {
                 ...liveProviderBudget,
             }),
         ).toThrow(/DEEPSEEK_API_KEY/);
+
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...base,
@@ -325,6 +345,7 @@ describe('dictionary worker environment', () => {
             DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
             ...liveProviderBudget,
         });
+
         expect(live.providerBudget).toEqual({
             inputCostMicrosPerMillionTokens: 1_000_000,
             maxCostMicrosPerAttempt: 100_000,
@@ -341,6 +362,7 @@ describe('dictionary worker environment', () => {
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
             }),
         ).toThrow(/all five/i);
+
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...base,
@@ -351,6 +373,7 @@ describe('dictionary worker environment', () => {
                 DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT: '1000',
             }),
         ).toThrow(/must cover/i);
+
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...base,
@@ -389,12 +412,14 @@ describe('dictionary worker environment', () => {
             maxOutputTokensPerAttempt: 40_960,
             outputCostMicrosPerMillionTokens: 10_000_000,
         });
+
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...activated,
                 DICTIONARY_GENERATION_MAX_INPUT_TOKENS: '262143',
             }),
         ).toThrow(/262144 input-token and 40960 output-token/);
+
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...activated,
@@ -428,24 +453,28 @@ describe('dictionary worker environment', () => {
             DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'document-terms:v1',
             DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: 'document-terms:v1',
         };
+
         expect(
             loadDictionaryWorkerEnvironment(document).document,
         ).toMatchObject({
             mode: 'deterministic',
             storage: { accessKeyId: 'worker-key' },
         });
+
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...document,
                 DICTIONARY_DOCUMENT_FINGERPRINT_HMAC_SECRET: '',
             }),
         ).toThrow(/runtime dependencies/);
+
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...document,
                 DICTIONARY_DOCUMENT_STORAGE_WORKER_SECRET_ACCESS_KEY: '',
             }),
         ).toThrow(/incomplete/);
+
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...document,
@@ -468,6 +497,7 @@ describe('dictionary worker environment', () => {
                 APP_ENV: 'production',
             }),
         ).toThrow(/non-local PostgreSQL/);
+
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...base,
@@ -485,6 +515,7 @@ describe('dictionary worker environment', () => {
                 DICTIONARY_AI_PROVIDER_FIXTURE_MODE: 'deterministic',
             }).providerFixtureMode,
         ).toBe('deterministic');
+
         expect(() =>
             loadDictionaryWorkerEnvironment({
                 ...base,
@@ -493,4 +524,30 @@ describe('dictionary worker environment', () => {
             }),
         ).toThrow(/only in tests/);
     });
+});
+
+it('registers transcription in the existing worker pool without requiring a text provider', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+        const configured = loadDictionaryWorkerEnvironment({
+            ...base,
+            DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS:
+                'knowledge-transcription:v1',
+            DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'knowledge-transcription:v1',
+            DICTIONARY_GENERATION_PROVIDER_MODE: 'unavailable',
+            OPENAI_API_KEY: 'synthetic-transcription-key',
+        });
+
+        expect(configured.supportedFormats).toEqual([
+            'knowledge-transcription:v1',
+        ]);
+
+        expect(configured.transcriptionApiKey).toBe(
+            'synthetic-transcription-key',
+        );
+
+        expect(configured.includeProviderReadiness).toBe(false);
+    } finally {
+        warn.mockRestore();
+    }
 });

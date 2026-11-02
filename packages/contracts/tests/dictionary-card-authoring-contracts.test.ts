@@ -41,6 +41,7 @@ describe('dictionary card authoring contracts', () => {
             ...draft,
             translationContext: '  Financial institutions  ',
         };
+
         expect(
             EnqueueDictionaryCardAuthoringGenerationRequestSchema.parse({
                 format: 'card-authoring:v3',
@@ -51,6 +52,7 @@ describe('dictionary card authoring contracts', () => {
                 scope: { kind: 'all' },
             }).draft.translationContext,
         ).toBe('Financial institutions');
+
         expect(() =>
             EnqueueDictionaryCardAuthoringGenerationRequestSchema.parse({
                 format: 'card-authoring:v2',
@@ -69,12 +71,15 @@ describe('dictionary card authoring contracts', () => {
             suggestions: [],
             translationContext: 'Financial institutions',
         } as const;
+
         expect(DictionaryCardAuthoringV3ProposalSchema.parse(proposal)).toEqual(
             proposal,
         );
+
         expect(() =>
             DictionaryCardAuthoringV2ProposalSchema.parse(proposal),
         ).toThrow();
+
         expect(
             DictionaryCardAuthoringV3GenerationJobSchema.parse({
                 id: '11111111-1111-4111-8111-111111111111',
@@ -134,6 +139,7 @@ describe('dictionary card authoring contracts', () => {
                 scope: { kind: 'all' },
             }),
         ).toBeDefined();
+
         expect(() =>
             EnqueueDictionaryCardAuthoringGenerationRequestSchema.parse({
                 expectedDictionaryVersion: 4,
@@ -143,6 +149,7 @@ describe('dictionary card authoring contracts', () => {
                 scope: { kind: 'field', field: 'translation' },
             }),
         ).toThrow();
+
         expect(
             ReadDictionaryGenerationCapabilitiesResponseSchema.parse({
                 singleCardGeneration: { available: false },
@@ -164,24 +171,28 @@ describe('dictionary card authoring contracts', () => {
             draft,
             discardedSuggestionIds: ['11111111-1111-4111-8111-111111111111'],
         } as const;
+
         expect(
             RegenerateDictionaryCardAuthoringGenerationRequestSchema.parse({
                 ...base,
                 scope: { kind: 'field', field: 'definition' },
             }),
         ).toBeDefined();
+
         expect(
             RegenerateDictionaryCardAuthoringGenerationRequestSchema.parse({
                 ...base,
                 scope: { kind: 'all' },
             }),
         ).toBeDefined();
+
         expect(() =>
             RegenerateDictionaryCardAuthoringGenerationRequestSchema.parse({
                 ...base,
                 scope: { kind: 'field', field: 'source' },
             }),
         ).toThrow();
+
         expect(() =>
             RegenerateDictionaryCardAuthoringGenerationRequestSchema.parse({
                 ...base,
@@ -203,29 +214,34 @@ describe('dictionary card authoring contracts', () => {
             draft,
             scope: { kind: 'field', field: 'source' },
         } as const;
+
         expect(
             EnqueueDictionaryCardAuthoringGenerationRequestSchema.parse(
                 request,
             ),
         ).toBeDefined();
+
         expect(
             EnqueueDictionaryCardAuthoringUpdateGenerationRequestSchema.parse({
                 ...request,
                 expectedCardVersion: 2,
             }),
         ).toBeDefined();
+
         expect(
             RegenerateDictionaryCardAuthoringGenerationRequestSchema.parse({
                 ...request,
                 discardedSuggestionIds: [],
             }),
         ).toBeDefined();
+
         expect(() =>
             EnqueueDictionaryCardAuthoringGenerationRequestSchema.parse({
                 ...request,
                 scope: { kind: 'field', field: 'exampleTranslation' },
             }),
         ).toThrow();
+
         expect(
             EnqueueDictionaryCardAuthoringGenerationRequestSchema.parse({
                 ...request,
@@ -257,6 +273,7 @@ describe('dictionary card authoring contracts', () => {
                 ],
             }),
         ).toBeDefined();
+
         expect(() =>
             DictionaryCardAuthoringV2ProposalSchema.parse({
                 source: 'teh atelier',
@@ -273,6 +290,7 @@ describe('dictionary card authoring contracts', () => {
                 ],
             }),
         ).toThrow();
+
         expect(() =>
             DictionaryCardAuthoringV2ProposalSchema.parse({
                 source: 'bank',
@@ -296,12 +314,14 @@ describe('dictionary card authoring contracts', () => {
             field: 'translation',
             value: `banco ${index}`,
         }));
+
         expect(
             DictionaryCardAuthoringProposalSchema.parse({
                 source: 'bank',
                 suggestions,
             }),
         ).toBeDefined();
+
         expect(() =>
             DictionaryCardAuthoringProposalSchema.parse({
                 source: 'bank',
@@ -329,6 +349,7 @@ describe('dictionary card authoring contracts', () => {
             },
             overrides,
         };
+
         expect(
             AcceptDictionaryCardAuthoringGenerationJobRequestSchema.parse({
                 format: 'card-authoring:v1',
@@ -341,6 +362,7 @@ describe('dictionary card authoring contracts', () => {
                 ],
             }),
         ).toBeDefined();
+
         expect(
             AcceptDictionaryCardAuthoringGenerationJobRequestSchema.parse({
                 format: 'card-authoring:v1',
@@ -348,6 +370,7 @@ describe('dictionary card authoring contracts', () => {
                 selectedSuggestions: [],
             }),
         ).toBeDefined();
+
         expect(() =>
             AcceptDictionaryCardAuthoringGenerationJobRequestSchema.parse({
                 format: 'card-authoring:v1',
@@ -375,6 +398,7 @@ describe('dictionary card authoring contracts', () => {
                 duplicateSource: true,
             }).duplicateSource,
         ).toBe(true);
+
         expect(() =>
             DictionaryCardAuthoringAcceptedOutcomeSchema.parse({
                 cardId: '11111111-1111-4111-8111-111111111111',
@@ -382,6 +406,7 @@ describe('dictionary card authoring contracts', () => {
                 dictionaryVersion: 2,
             }),
         ).toThrow();
+
         expect(
             DictionaryCardAuthoringGenerationJobSchema.parse({
                 id: '11111111-1111-4111-8111-111111111111',

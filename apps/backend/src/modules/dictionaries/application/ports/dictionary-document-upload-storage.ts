@@ -14,6 +14,7 @@ export class DictionaryDocumentUploadInspectionConflictError extends Error {
         super(
             'Document upload inspection conflicted with the expected object.',
         );
+
         this.name = 'DictionaryDocumentUploadInspectionConflictError';
     }
 }

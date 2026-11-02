@@ -56,6 +56,7 @@ describe('dictionary card settings inheritance', () => {
             exampleLanguageRole: 'target',
             exampleTranslationEnabled: 'enabled',
         });
+
         expect(effective).toMatchObject({
             exampleEnabled: false,
             exampleLanguageRole: 'target',
@@ -96,6 +97,7 @@ describe('dictionary card settings inheritance', () => {
                 },
             }),
         ).not.toThrow();
+
         expect(() =>
             assertCardSettingsOverrideTransition({
                 dictionary: {

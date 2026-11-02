@@ -36,6 +36,7 @@ The first owner grant omits --actor-email. Every later grant/revoke and every
 prune command requires an active owner actor. The active deployment must match
 the supplied immutable manifest.
 `);
+
     process.exit(status);
 }
 
@@ -47,15 +48,20 @@ function expandPath(value) {
     if (value?.startsWith('~/')) {
         return path.join(process.env.HOME || '', value.slice(2));
     }
+
     return value;
 }
 
 export function parseRemoteAdminArguments(values) {
-    if (values.includes('--help') || values.includes('-h')) usage(0);
+    if (values.includes('--help') || values.includes('-h')) {
+        usage(0);
+    }
+
     const [action, ...rest] = values;
     if (!['grant', 'list', 'prune', 'revoke'].includes(action ?? '')) {
         fail('The command must be grant, revoke, list, or prune.');
     }
+
     const options = new Map();
     for (let index = 0; index < rest.length; index += 2) {
         const flag = rest[index];
@@ -63,9 +69,14 @@ export function parseRemoteAdminArguments(values) {
         if (!flag?.startsWith('--') || value === undefined) {
             fail(`Invalid option near ${flag ?? 'end of command'}.`);
         }
-        if (options.has(flag.slice(2))) fail(`Duplicate option ${flag}.`);
+
+        if (options.has(flag.slice(2))) {
+            fail(`Duplicate option ${flag}.`);
+        }
+
         options.set(flag.slice(2), value);
     }
+
     const known = new Set([
         'actor-email',
         'config',
@@ -81,9 +92,13 @@ export function parseRemoteAdminArguments(values) {
         'state-directory',
         'target',
     ]);
+
     for (const key of options.keys()) {
-        if (!known.has(key)) fail(`Unknown option --${key}.`);
+        if (!known.has(key)) {
+            fail(`Unknown option --${key}.`);
+        }
     }
+
     const request = validateAdminOperatorRequest({
         action,
         ...(options.has('actor-email')
@@ -93,6 +108,7 @@ export function parseRemoteAdminArguments(values) {
         ...(options.has('email') ? { email: options.get('email') } : {}),
         ...(options.has('reason') ? { reason: options.get('reason') } : {}),
     });
+
     return { options, request };
 }
 
@@ -129,6 +145,7 @@ export function validateRemoteAdminPath(value, name) {
             `${name} must be a normalized absolute remote path using only letters, numbers, dot, underscore, dash, and slash.`,
         );
     }
+
     return value;
 }
 
@@ -136,6 +153,7 @@ export function validateRemoteAdminTarget(value) {
     if (!/^[A-Za-z_][A-Za-z0-9_-]*@[A-Za-z0-9.-]+$/.test(value ?? '')) {
         fail('--target must use the user@host form.');
     }
+
     return value;
 }
 
@@ -146,11 +164,20 @@ async function main() {
     const environment = validateEnvironment(options.get('environment'));
     const target = options.get('target');
     const manifestInput = options.get('manifest');
-    if (!target) fail('--target is required.');
+    if (!target) {
+        fail('--target is required.');
+    }
+
     validateRemoteAdminTarget(target);
-    if (!manifestInput) fail('--manifest is required.');
+    if (!manifestInput) {
+        fail('--manifest is required.');
+    }
+
     const home = process.env.HOME;
-    if (!home) fail('HOME is required for default SSH paths.');
+    if (!home) {
+        fail('HOME is required for default SSH paths.');
+    }
+
     const key = expandPath(
         options.get('ssh-key') || path.join(home, '.ssh/id_ed25519'),
     );
@@ -168,6 +195,7 @@ async function main() {
     if (!Number.isInteger(port) || port < 1 || port > 65_535) {
         fail('--ssh-port must be between 1 and 65535.');
     }
+
     const repositoryRoot = path.resolve(
         path.dirname(fileURLToPath(import.meta.url)),
         '..',
@@ -222,11 +250,13 @@ async function main() {
             '-f',
             path.posix.join(remoteDir, 'infra/deploy/admin-cli.mjs'),
         ]);
+
         await runLocal('scp', [
             ...scpArgs,
             requestPath,
             `${target}:${remoteRequest}`,
         ]);
+
         await runRemote(['chmod', '600', remoteRequest]);
         const result = await runRemote(
             [
@@ -245,6 +275,7 @@ async function main() {
             ],
             { capture: true },
         );
+
         process.stdout.write(
             result.stdout || result.stderr || 'Admin command completed.\n',
         );

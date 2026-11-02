@@ -47,6 +47,7 @@ export function createTestRedisClient(): AuthenticationRedisClient {
             'Set ALLOW_DISPOSABLE_REDIS_TESTS, AUTH_TEST_REDIS_URL, and AUTH_TEST_REDIS_CONFIRM.',
         );
     }
+
     assertDisposableTarget(redisUrl);
 
     return createAuthenticationRedisClient({
@@ -75,6 +76,7 @@ export async function deleteNamespacedKeys(
             'COUNT',
             100,
         );
+
         cursor = nextCursor;
         if (keys.length > 0) {
             await redis.unlink(...keys);

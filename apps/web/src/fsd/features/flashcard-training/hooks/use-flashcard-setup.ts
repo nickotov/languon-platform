@@ -30,6 +30,7 @@ export function useFlashcardSetup({ open, signedIn, activeCount, api }: Args) {
         setStarting(false);
         setScopeType('all');
         setManualIds(new Set());
+
         return () => {
             generation.current += 1;
         };
@@ -88,19 +89,33 @@ export function useFlashcardSetup({ open, signedIn, activeCount, api }: Args) {
             !preferences.canRequest() ||
             !preparation.canRequest() ||
             (retryAt.current && retryAt.current > Date.now())
-        )
+        ) {
             return null;
+        }
+
         inFlight.current = true;
         setStarting(true);
         const current = generation.current;
         preferences.setStartError(null);
         try {
             const prepared = await api.prepare({ configuration, scope });
-            if (generation.current !== current) return null;
+            if (generation.current !== current) {
+                return null;
+            }
+
             preparation.setPrepare({ status: 'ready', result: prepared });
-            if (!prepared.entryIds.length) return null;
-            if (!(await preferences.save())) return null;
-            if (generation.current !== current) return null;
+            if (!prepared.entryIds.length) {
+                return null;
+            }
+
+            if (!(await preferences.save())) {
+                return null;
+            }
+
+            if (generation.current !== current) {
+                return null;
+            }
+
             return {
                 configuration,
                 shuffle: preferences.draft.shuffle,
@@ -113,6 +128,7 @@ export function useFlashcardSetup({ open, signedIn, activeCount, api }: Args) {
                 retryAt.current = apiError.retryAt;
                 preferences.setStartError(apiError);
             }
+
             return null;
         } finally {
             if (generation.current === current) {
@@ -121,24 +137,35 @@ export function useFlashcardSetup({ open, signedIn, activeCount, api }: Args) {
             }
         }
     }
+
     function toggleManual(entryId: string) {
         setManualIds((previous) => {
             const next = new Set(previous);
-            if (next.has(entryId)) next.delete(entryId);
-            else if (next.size < 10_000) next.add(entryId);
+            if (next.has(entryId)) {
+                next.delete(entryId);
+            } else if (next.size < 10_000) {
+                next.add(entryId);
+            }
+
             return next;
         });
     }
+
     function setManualMany(ids: string[], selected: boolean) {
         setManualIds((previous) => {
             const next = new Set(previous);
             for (const id of ids) {
-                if (!selected) next.delete(id);
-                else if (next.size < 10_000) next.add(id);
+                if (!selected) {
+                    next.delete(id);
+                } else if (next.size < 10_000) {
+                    next.add(id);
+                }
             }
+
             return next;
         });
     }
+
     return {
         front,
         back,

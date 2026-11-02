@@ -123,6 +123,7 @@ function setup(
         overrides.actor ?? actor,
         'lmcp_abcdefghijklmnopqrstuvwxyz0123456789ABCDE',
     );
+
     return { tools, authenticate, run };
 }
 
@@ -136,6 +137,7 @@ beforeEach(() => {
         id: '00000000-0000-4000-8000-000000000005',
         replay: false,
     });
+
     doubles.effectiveMaximum.mockResolvedValue(10_000n);
     doubles.authorizeDispatch.mockResolvedValue(undefined);
     doubles.settle.mockResolvedValue(undefined);
@@ -175,6 +177,7 @@ describe('delegated MCP paid model checks', () => {
                 evidenceHours: 24,
             },
         });
+
         expect(new Date(status.limits.resetsAt).getUTCHours()).toBe(0);
         expect(doubles.reserve).not.toHaveBeenCalled();
     });
@@ -204,10 +207,12 @@ describe('delegated MCP paid model checks', () => {
                 },
             },
         };
+
         doubles.effectiveMaximum.mockResolvedValueOnce(5_000n);
         const run = vi.fn(
             async (_ownerId, _request, _signal, beforeDispatch) => {
                 await beforeDispatch();
+
                 return probe;
             },
         );
@@ -225,6 +230,7 @@ describe('delegated MCP paid model checks', () => {
             expect.any(Object),
             '0.005000',
         );
+
         expect(run).toHaveBeenCalledWith(
             restricted.userId,
             expect.objectContaining({ approvedMaximumCostUsd: '0.005000' }),
@@ -254,6 +260,7 @@ describe('delegated MCP paid model checks', () => {
             id: '00000000-0000-4000-8000-000000000005',
             replay: true,
         });
+
         const { tools, authenticate, run } = setup();
         const reply = await tools.get('admin_model_check')!({
             operationKey,
@@ -265,6 +272,7 @@ describe('delegated MCP paid model checks', () => {
         expect(JSON.parse(reply.content[0]!.text)).toEqual({
             state: 'settled',
         });
+
         expect(doubles.get).toHaveBeenCalledWith(actor, operationKey);
         expect(authenticate).not.toHaveBeenCalled();
         expect(run).not.toHaveBeenCalled();
@@ -274,6 +282,7 @@ describe('delegated MCP paid model checks', () => {
         const run = vi.fn(
             async (_ownerId, _request, _signal, beforeDispatch) => {
                 await beforeDispatch();
+
                 return probe;
             },
         );
@@ -289,12 +298,14 @@ describe('delegated MCP paid model checks', () => {
             actor,
             '00000000-0000-4000-8000-000000000005',
         );
+
         expect(doubles.settle).toHaveBeenCalledWith(
             actor,
             '00000000-0000-4000-8000-000000000005',
             '0.003000',
             probe,
         );
+
         expect(doubles.recordOutcome).toHaveBeenCalledWith(
             actor,
             'model-check.completed',
@@ -329,6 +340,7 @@ describe('delegated MCP paid model checks', () => {
             '0',
             expect.objectContaining({ code: 'check_not_dispatched' }),
         );
+
         expect(doubles.recordOutcome).toHaveBeenCalledWith(
             actor,
             'model-check.failed',
@@ -337,6 +349,7 @@ describe('delegated MCP paid model checks', () => {
             expect.objectContaining({ state: 'not_dispatched' }),
             'rejected',
         );
+
         expect(doubles.recordRejection).toHaveBeenCalledWith(
             actor,
             'model-check.rejected',
@@ -353,6 +366,7 @@ describe('delegated MCP paid model checks', () => {
         doubles.reserve.mockRejectedValueOnce(
             new TextAiProbeUnavailableError('probe_budget_insufficient'),
         );
+
         const { tools, run } = setup();
         const reply = await tools.get('admin_model_check')!({
             operationKey,

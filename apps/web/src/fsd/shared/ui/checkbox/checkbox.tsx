@@ -81,7 +81,9 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
                             ref={(node) => {
                                 inputRef.current = node;
 
-                                if (node) node.indeterminate = indeterminate;
+                                if (node) {
+                                    node.indeterminate = indeterminate;
+                                }
                             }}
                             type='checkbox'
                         />

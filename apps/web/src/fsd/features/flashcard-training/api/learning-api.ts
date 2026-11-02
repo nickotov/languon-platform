@@ -66,13 +66,16 @@ export function createLearningApi(options: Options): LearningApi {
                       DictionaryShareKeyHeadersSchema.safeParse({
                           'x-languon-share-key': target.shareKey,
                       }).success;
-            if (!parametersValid)
+
+            if (!parametersValid) {
                 throw new ApiError(400, {
                     code: 'invalid_request',
                     correlationId: 'client-invalid-target',
                     message: 'The learning target is invalid.',
                 });
+            }
         }
+
         const execute = async (token?: string): Promise<T> => {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 30_000);
@@ -102,9 +105,11 @@ export function createLearningApi(options: Options): LearningApi {
                 } catch {
                     payload = undefined;
                 }
+
                 if (!response.ok) {
                     const error =
                         LearningErrorResponseSchema.safeParse(payload);
+
                     throw new ApiError(
                         response.status,
                         error.success
@@ -117,6 +122,7 @@ export function createLearningApi(options: Options): LearningApi {
                               },
                     );
                 }
+
                 try {
                     return schema.parse(payload);
                 } catch {
@@ -127,7 +133,10 @@ export function createLearningApi(options: Options): LearningApi {
                     });
                 }
             } catch (error) {
-                if (error instanceof ApiError) throw error;
+                if (error instanceof ApiError) {
+                    throw error;
+                }
+
                 throw new ApiError(0, {
                     code: 'service_unavailable',
                     correlationId: 'client-network',
@@ -137,10 +146,14 @@ export function createLearningApi(options: Options): LearningApi {
                 clearTimeout(timeout);
             }
         };
-        if (!publicRequest && (target.kind === 'owner' || signedIn))
+
+        if (!publicRequest && (target.kind === 'owner' || signedIn)) {
             return requestWithSession(execute);
+        }
+
         return execute();
     }
+
     return {
         capabilities: () =>
             request(
@@ -181,8 +194,15 @@ export function createLearningApi(options: Options): LearningApi {
             const parameters = new URLSearchParams({
                 limit: String(query.limit),
             });
-            if (query.search) parameters.set('search', query.search);
-            if (query.cursor) parameters.set('cursor', query.cursor);
+
+            if (query.search) {
+                parameters.set('search', query.search);
+            }
+
+            if (query.cursor) {
+                parameters.set('cursor', query.cursor);
+            }
+
             return request(
                 `${prefix}/entries?${parameters}`,
                 LearningEntriesResponseSchema,
@@ -203,7 +223,10 @@ export function createLearningApi(options: Options): LearningApi {
         undo: (attemptId, operationId) => {
             // The attempt identifier is a path component, not a capability.
             const attempt = /^[0-9a-f-]{36}$/i.test(attemptId);
-            if (!attempt) throw new Error('Invalid attempt identifier');
+            if (!attempt) {
+                throw new Error('Invalid attempt identifier');
+            }
+
             return request(
                 `${prefix}/flashcards/attempts/${encodeURIComponent(attemptId)}/undo`,
                 FlashcardUndoResponseSchema,

@@ -26,8 +26,15 @@ export function PortraitSavePanel({
     const { locale, formatDate } = useI18n();
     let errorKey: 'actionError' | 'saveInvalid' | 'saveResource' =
         'actionError';
-    if (errorReason === 'invalid') errorKey = 'saveInvalid';
-    if (errorReason === 'resource') errorKey = 'saveResource';
+
+    if (errorReason === 'invalid') {
+        errorKey = 'saveInvalid';
+    }
+
+    if (errorReason === 'resource') {
+        errorKey = 'saveResource';
+    }
+
     return (
         <div className={review ? styles.panel : styles.compactStack}>
             {review && (
@@ -100,6 +107,7 @@ export function PortraitMobileSave({
     pending: boolean;
 }) {
     const { locale } = useI18n();
+
     return (
         <div className={styles.mobileSave}>
             <a className={styles.summaryLink} href='#portrait-summary'>

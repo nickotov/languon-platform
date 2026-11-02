@@ -20,6 +20,7 @@ describe('authentication email adapters', () => {
             available: true,
             delivery: 'development',
         });
+
         await expect(
             sender.sendVerificationCode(message),
         ).resolves.toBeUndefined();
@@ -40,6 +41,7 @@ describe('authentication email adapters', () => {
             available: false,
             delivery: 'unavailable',
         });
+
         await expect(
             sender.sendVerificationCode(message),
         ).rejects.toBeInstanceOf(EmailDeliveryUnavailableError);

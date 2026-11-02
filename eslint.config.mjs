@@ -4,6 +4,7 @@ import boundaries from 'eslint-plugin-boundaries';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import { persistenceReadabilityConfig } from './scripts/eslint-persistence-readability.mjs';
+import { readabilityConfig } from './scripts/eslint-readability.mjs';
 
 export default tseslint.config(
     {
@@ -19,6 +20,7 @@ export default tseslint.config(
             '**/storybook-static/**',
             // Imported design snapshots are immutable reference artifacts, not runtime source.
             '.agent/features/**/designs/**/source/**',
+            '.agent/features/**/designs/**/magic-patterns-source/**',
             'apps/mobile/.expo/**',
         ],
     },
@@ -323,4 +325,5 @@ export default tseslint.config(
     },
     eslintConfigPrettier,
     persistenceReadabilityConfig,
+    readabilityConfig,
 );

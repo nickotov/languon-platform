@@ -23,6 +23,7 @@ describe('AccessTokenClaims', () => {
             sid: '0198a941-7824-7de6-8200-e54baa45a926',
             sub: '0198a941-9498-7b8f-be17-cac0b0aca5b9',
         });
+
         expect('email' in claims.toJwtPayload()).toBe(false);
     });
 

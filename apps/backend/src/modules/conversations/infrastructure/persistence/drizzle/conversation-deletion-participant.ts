@@ -15,18 +15,21 @@ export type ConversationDeletionScope =
     | { conversationIds: readonly string[] };
 
 function scopePredicate(scope: ConversationDeletionScope): SQL {
-    if ('ownerId' in scope)
+    if ('ownerId' in scope) {
         return sql`(c.owner_id=${scope.ownerId}::uuid
         or (c.source_kind='dictionary' and c.source_id in (select id from dictionaries where owner_id=${scope.ownerId}::uuid))
         or (c.source_kind='text' and c.source_id in (select id from texts where owner_id=${scope.ownerId}::uuid))
         or (c.source_kind='knowledge' and c.source_id in (select id from knowledge_notes where owner_id=${scope.ownerId}::uuid)))`;
-    if ('conversationIds' in scope)
+    }
+
+    if ('conversationIds' in scope) {
         return scope.conversationIds.length
             ? sql`c.id in (${sql.join(
                   scope.conversationIds.map((id) => sql`${id}::uuid`),
                   sql`,`,
               )})`
             : sql`false`;
+    }
 
     return scope.sourceIds.length
         ? sql`c.source_kind=${scope.sourceKind} and c.source_id in (${sql.join(
@@ -73,8 +76,10 @@ export async function eraseConversationContent(
     scope: ConversationDeletionScope,
     now: Date,
 ): Promise<void> {
-    if (await conversationDeletionBusy(tx, scope, now))
+    if (await conversationDeletionBusy(tx, scope, now)) {
         throw new Error('Conversation work is not quiescent');
+    }
+
     const turns = sql`select t.id from conversation_turns t join conversation_chats c on c.id=t.conversation_id where (${scopePredicate(scope)})`;
     await tx.execute(sql`insert into dictionary_generation_provider_usage_archive (
         id,job_kind,owner_id,actual_cost_micros,actual_input_tokens,actual_output_tokens,

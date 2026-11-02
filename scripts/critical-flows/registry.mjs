@@ -1,55 +1,271 @@
 import { resolve } from 'node:path';
 
-export const backendExecutionFiles = Object.freeze([
-    'tests/integration/database/native-provider-pricing.test.ts',
-    'tests/integration/database/native-financial-admission.test.ts',
-    'tests/integration/database/ai-accounting.test.ts',
-    'tests/unit/modules/ai-credits/interface/provider-prices.routes.test.ts',
-    'tests/integration/database/native-call-monetary-authority.test.ts',
-    'tests/integration/modules/speech/native-speech-accounting.test.ts',
-    'tests/integration/modules/text-ai/native-text-pricing-execution.test.ts',
-    'tests/integration/modules/text-ai/native-probe-pricing.test.ts',
-    'tests/unit/modules/speech/native-speech-provider-observation.test.ts',
-    'tests/unit/modules/text-ai/infrastructure/native-provider-observations.test.ts',
-    'tests/unit/modules/admin-mcp/native-price-verification.test.ts',
-    'tests/unit/modules/ai-credits/infrastructure/native-text-expense.test.ts',
-    'tests/unit/modules/dictionaries/infrastructure/generation-completion-usage.test.ts',
-    'src/modules/ai-credits/domain/native-provider-pricing.test.ts',
-    'src/modules/ai-credits/infrastructure/pricing/provider-price-sources.test.ts',
-    'tests/integration/database/model-price-actualization.journeys.test.ts',
-    'tests/integration/modules/learning/infrastructure/drizzle-sentence-stores.test.ts',
-    'tests/integration/modules/texts/text-selection.test.ts',
-    'tests/integration/modules/dictionaries/infrastructure/dictionary-batch-provider-admission.test.ts',
-    'tests/unit/infrastructure/worker/sentence-worker-runtime.test.ts',
-    'tests/integration/modules/text-ai/text-ai-probes.test.ts',
-    'tests/integration/modules/text-ai/text-ai-routing.test.ts',
-    'tests/unit/modules/text-ai/infrastructure/gateway-provider-adapters.test.ts',
-    'tests/unit/infrastructure/probe-flow-registry.test.ts',
-    'tests/unit/modules/text-ai/text-ai-probe-service.test.ts',
-    'tests/unit/modules/text-ai/text-ai-probe-executor.test.ts',
-    'tests/unit/modules/administration/interface/http/admin-text-ai-probe.routes.test.ts',
-    'tests/unit/config/text-ai-probe-environment.test.ts',
-    'tests/unit/modules/text-ai/infrastructure/dictionary-router-gateway-runtime.test.ts',
-    'tests/unit/modules/text-ai/infrastructure/provider-runtime-observer.test.ts',
-    'tests/integration/database/provider-minimum-cost.test.ts',
-    'tests/integration/modules/conversations/conversation-accounting.test.ts',
-    'tests/integration/database/dictionary-worker-accounting-role.test.ts',
-    'src/modules/conversations/infrastructure/ai/contextual-tutor-runner.test.ts',
-    'src/modules/conversations/infrastructure/ai/accounted-tutor-model.test.ts',
-    'src/modules/learner-portraits/infrastructure/ai/learner-interviewer.test.ts',
-    'src/modules/learner-portraits/infrastructure/ai/validated-interview-accounting.test.ts',
-    'tests/unit/modules/text-ai/run-pinned-fallback.test.ts',
-    'tests/integration/modules/dictionaries/infrastructure/dictionary-card-authoring-generation-store.test.ts',
-    'tests/integration/modules/speech/openrouter-speech-execution.test.ts',
-    'tests/unit/modules/speech/openrouter-speech-provider.test.ts',
-    'tests/unit/modules/speech/openrouter-speech-configuration.test.ts',
-    'tests/unit/modules/dictionaries/infrastructure/audio-adapters.test.ts',
-    'tests/integration/modules/speech/speech-accounting.test.ts',
-    'tests/unit/modules/speech/speech-worker.test.ts',
-]);
+/** Reviewed, disjoint selections; the compatibility aggregate retains every suite. */
+export const backendExecutionGroups = Object.freeze({
+    conversation: Object.freeze([
+        'tests/integration/modules/conversations/conversation-accounting.test.ts',
+        'tests/integration/modules/conversations/conversation-production-execution.test.ts',
+        'src/modules/conversations/infrastructure/ai/contextual-tutor-runner.test.ts',
+        'src/modules/conversations/infrastructure/ai/accounted-tutor-model.test.ts',
+        'src/modules/learner-portraits/infrastructure/ai/learner-interviewer.test.ts',
+        'src/modules/learner-portraits/infrastructure/ai/validated-interview-accounting.test.ts',
+        'tests/integration/modules/conversations/conversation-store.test.ts',
+    ]),
+    knowledge: Object.freeze([
+        'src/modules/knowledge/infrastructure/persistence/drizzle/block-copy-store.test.ts',
+        'src/modules/knowledge/infrastructure/persistence/drizzle/media-store.test.ts',
+        'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-store.test.ts',
+        'src/modules/knowledge/infrastructure/persistence/drizzle/library-copy.database.test.ts',
+        'src/modules/knowledge/infrastructure/persistence/drizzle/workbook-store.test.ts',
+        'src/modules/knowledge/infrastructure/persistence/drizzle/learning-epochs.database.test.ts',
+        'src/modules/knowledge/infrastructure/persistence/drizzle/vocabulary-practice-store.test.ts',
+        'src/modules/knowledge/infrastructure/persistence/drizzle/private-translation.database.test.ts',
+        'src/modules/knowledge/infrastructure/persistence/drizzle/block-field-actions.database.test.ts',
+        'tests/integration/modules/knowledge/knowledge-account-purge.test.ts',
+        'tests/integration/modules/knowledge/knowledge-learning-purge.test.ts',
+    ]),
+    dictionary: Object.freeze([
+        'tests/unit/modules/dictionaries/infrastructure/generation-completion-usage.test.ts',
+        'tests/integration/modules/dictionaries/infrastructure/dictionary-batch-provider-admission.test.ts',
+        'tests/unit/modules/text-ai/infrastructure/dictionary-router-gateway-runtime.test.ts',
+        'tests/integration/database/dictionary-worker-accounting-role.test.ts',
+        'tests/integration/modules/dictionaries/infrastructure/dictionary-card-authoring-generation-store.test.ts',
+    ]),
+    text: Object.freeze([
+        'tests/integration/modules/texts/text-selection.test.ts',
+        'tests/integration/modules/texts/texts-job-store.test.ts',
+    ]),
+    sentence: Object.freeze([
+        'tests/integration/modules/learning/infrastructure/drizzle-sentence-stores.test.ts',
+        'tests/integration/modules/learning/infrastructure/sentence-worker-role.test.ts',
+        'tests/unit/infrastructure/worker/sentence-worker-runtime.test.ts',
+        'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-free-store.test.ts',
+        'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-paid.database.test.ts',
+        'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-private-retention.database.test.ts',
+    ]),
+    speech: Object.freeze([
+        'tests/integration/modules/speech/native-speech-accounting.test.ts',
+        'tests/unit/modules/speech/native-speech-provider-observation.test.ts',
+        'tests/integration/modules/speech/openrouter-speech-execution.test.ts',
+        'tests/unit/modules/speech/openrouter-speech-provider.test.ts',
+        'tests/unit/modules/speech/openrouter-speech-configuration.test.ts',
+        'tests/unit/modules/dictionaries/infrastructure/audio-adapters.test.ts',
+        'tests/integration/modules/speech/speech-accounting.test.ts',
+        'tests/integration/modules/speech/knowledge-speech-execution.test.ts',
+        'src/modules/knowledge/infrastructure/persistence/drizzle/transcription-store.database.test.ts',
+        'src/modules/knowledge/infrastructure/persistence/drizzle/transcription-admin-store.test.ts',
+        'tests/unit/modules/speech/speech-worker.test.ts',
+    ]),
+    'shared-invariants': Object.freeze([
+        'tests/integration/database/native-provider-pricing.test.ts',
+        'tests/integration/database/native-financial-admission.test.ts',
+        'tests/integration/database/ai-accounting.test.ts',
+        'tests/unit/modules/ai-credits/interface/provider-prices.routes.test.ts',
+        'tests/integration/database/native-call-monetary-authority.test.ts',
+        'tests/integration/modules/text-ai/native-text-pricing-execution.test.ts',
+        'tests/integration/modules/text-ai/native-probe-pricing.test.ts',
+        'tests/unit/modules/text-ai/infrastructure/native-provider-observations.test.ts',
+        'tests/unit/modules/admin-mcp/native-price-verification.test.ts',
+        'tests/unit/modules/ai-credits/infrastructure/native-text-expense.test.ts',
+        'src/modules/ai-credits/domain/native-provider-pricing.test.ts',
+        'src/modules/ai-credits/infrastructure/pricing/provider-price-sources.test.ts',
+        'tests/integration/database/model-price-actualization.journeys.test.ts',
+        'tests/integration/modules/text-ai/text-ai-probes.test.ts',
+        'tests/integration/modules/text-ai/text-ai-routing.test.ts',
+        'tests/unit/modules/text-ai/infrastructure/gateway-provider-adapters.test.ts',
+        'tests/unit/infrastructure/probe-flow-registry.test.ts',
+        'tests/unit/modules/text-ai/text-ai-probe-service.test.ts',
+        'tests/unit/modules/text-ai/text-ai-probe-executor.test.ts',
+        'tests/unit/modules/administration/interface/http/admin-text-ai-probe.routes.test.ts',
+        'tests/unit/config/text-ai-probe-environment.test.ts',
+        'tests/unit/modules/text-ai/infrastructure/provider-runtime-observer.test.ts',
+        'tests/integration/database/provider-minimum-cost.test.ts',
+        'tests/unit/modules/text-ai/run-pinned-fallback.test.ts',
+        'tests/integration/modules/users/infrastructure/drizzle-account-purge-store.test.ts',
+        'tests/integration/modules/users/infrastructure/recovery/account-deletion-recovery-store.test.ts',
+    ]),
+});
+
+export const backendExecutionFiles = Object.freeze(
+    Object.values(backendExecutionGroups).flat(),
+);
 
 /** Required incident regressions cannot disappear behind an aggregate passing count. */
 export const requiredBackendScenarios = Object.freeze([
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/block-field-actions.database.test.ts',
+        titles: [
+            'evaluates a private saved attempt through the real SDK and fenced publication (restricted=false)',
+            'evaluates a private saved attempt through the real SDK and fenced publication (restricted=true)',
+            'persists usable field suggestion through real SDK and settlement (restricted=false)',
+            'persists usable field suggestion through real SDK and settlement (restricted=true)',
+            'runs a bilingual-text field generate through the real bounded worker',
+            'runs a bilingual-text field check through the real bounded worker',
+            'rejects dispatched exercise feedback after material change without learner charge or publication',
+            'rejects dispatched exercise feedback after share revoked without learner charge or publication',
+        ],
+    },
+    {
+        file: 'tests/integration/modules/conversations/conversation-accounting.test.ts',
+        titles: [
+            'preserves reduced quotes and minimum output admission when reserving block continuation',
+        ],
+    },
+    {
+        file: 'tests/integration/modules/conversations/conversation-production-execution.test.ts',
+        titles: [
+            "'operator' 'success' 'append' survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'failure' 'append' survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'success' 'append' survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'failure' 'append' survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'success' 'update' survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'success' 'update' survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'success' 'multi-update' survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'success' 'multi-update' survives admission through the default worker and SDK without widening its budget",
+        ],
+    },
+    {
+        file: 'tests/integration/modules/conversations/conversation-store.test.ts',
+        titles: [
+            'retains typed proposals separately and applies only to the frozen owner working branch without publishing',
+            'updates only an unchanged target and copies a stale update separately with fresh identities',
+            'fences selected update identities in the repository and privileged SQL boundary',
+            'captures exercise source passages and copies stale grounding independently',
+        ],
+    },
+    {
+        file: 'src/modules/conversations/infrastructure/ai/contextual-tutor-runner.test.ts',
+        titles: [
+            'retains authorized source tools across sequential multi-proposal turns and pre-answer observation',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-private-retention.database.test.ts',
+        titles: [
+            'retains live-authorized app history after completed, failed and cancelled parent bodies are physically scrubbed',
+            'deletes source-bound links on permanent note deletion while an independently copied note keeps its own private job',
+            'erases a purged actor private source on a foreign note and preserves another actor independent material',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/transcription-admin-store.test.ts',
+        titles: [
+            'pins actual credential review privately and exposes only the attestation time and evidence',
+            'replays an identical published operation without creating another revision or audit',
+        ],
+    },
+    {
+        file: 'tests/integration/modules/learning/infrastructure/sentence-worker-role.test.ts',
+        titles: [
+            'claims, dispatches, settles and publishes through least privilege grants',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/library-copy.database.test.ts',
+        titles: [
+            'copies bilingual text with new identities and atomically appends while preserving manual pairs',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/workbook-store.test.ts',
+        titles: [
+            'rejects owner workbook copies with draft members atomically while shared copies expose only saved material',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/block-copy-store.test.ts',
+        titles: [
+            'previews dependency closure and copies hints/audio with fresh identities and independent lifetime',
+            'rejects foreign working sources, missing blocks and stale destinations without changing the draft',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/media-store.test.ts',
+        titles: [
+            'isolates drafts and foreign IDs, publishes only saved media, revokes playback live',
+            'grants copied media independent ownership and deletes bytes only after the last copy disappears',
+        ],
+    },
+    {
+        file: 'tests/integration/modules/speech/knowledge-speech-execution.test.ts',
+        titles: [
+            'authorizes immutable branches, isolates private cache and explicitly copies preview audio to owned media',
+            'persists technical failure without a customer charge and permits source cleanup',
+            'restricts private narration account erasure to its due fenced purge lease',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/transcription-store.database.test.ts',
+        titles: [
+            'runs production admission, worker and actual adapter through fake HTTP to usable transcript and exact settlement',
+            'blocks dispatch without code-owned processing approval despite valid billing and credentials',
+            'retains issued receipt identity and rejects foreign observations or changed replay',
+            'runs the real worker with deployed restricted grants and refuses raw media and forged receipts',
+            'serializes confirmed admission against permanent source deletion without deadlock or stranded holds',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/learning-epochs.database.test.ts',
+        titles: [
+            'A → B → restored A never resurrects a previous attempt revision',
+            'copies start independent epochs and source deletion cascades only source history',
+            'epoch updates roll back with failed publication and constraints reject invalid counters',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-free-store.test.ts',
+        titles: [
+            'privately seeds prepared examples, replays next and records free reveals without an AI check',
+            'keeps learner history private and unavailable after revocation',
+            'keeps historical reviews outdated across material changes and deletes them with source',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-paid.database.test.ts',
+        titles: [
+            'uses the existing provider and financial engine for private generation v1 and answer feedback',
+            'uses the existing provider and financial engine for private generation v2 and answer feedback',
+            'rejects revoked reads and settles a deleted source while an old worker fence cannot publish',
+            'quiesces foreign-reader sentence jobs for a due source-owner purge while independent copies survive',
+            'publishes private exercises under the deployment worker role and denies sheet editing',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/vocabulary-practice-store.test.ts',
+        titles: [
+            'uses existing projections with no library publication and isolates each learner behind live shared access',
+            'allows only latest-session latest-entry Undo and keeps retries idempotent',
+            'does not resurrect mastery when published vocabulary changes A to B to A',
+        ],
+    },
+    {
+        file: 'src/modules/knowledge/infrastructure/persistence/drizzle/private-translation.database.test.ts',
+        titles: [
+            'isolates actor overlays, hides stale source fingerprints, and denies revoked grants',
+            'pins verified source text/segment identity and bills the requester without accepting authored substitutions',
+            'pins the selected private translation through preview/publication and keeps the saved Text independent',
+            'erases an actor private overlays on another owner source without deleting its content',
+        ],
+    },
+    {
+        file: 'tests/integration/modules/texts/texts-job-store.test.ts',
+        titles: [
+            'executes a private shared-note translation through the real SDK and persists only the requesting actor overlay (restricted=false)',
+            'executes a private shared-note translation through the real SDK and persists only the requesting actor overlay (restricted=true)',
+        ],
+    },
+    {
+        file: 'tests/integration/modules/knowledge/knowledge-account-purge.test.ts',
+        titles: [
+            'erases owner content and foreign-source learner state under a due lease while preserving independent copies',
+        ],
+    },
+    {
+        file: 'tests/integration/modules/knowledge/knowledge-learning-purge.test.ts',
+        titles: [
+            'fences and refunds foreign-reader work on deleted sources, removes actor work, and preserves independent copies',
+        ],
+    },
     {
         file: 'tests/integration/database/native-financial-admission.test.ts',
         titles: [
@@ -110,6 +326,32 @@ export const requiredBackendScenarios = Object.freeze([
     },
 ]);
 
+const backendSelections = Object.freeze({
+    'ai-execution-contracts': {
+        files: backendExecutionFiles,
+        minimumTests: 463,
+    },
+    ...Object.fromEntries(
+        Object.entries(backendExecutionGroups).map(([seam, files]) => [
+            `ai-${seam}`,
+            {
+                files,
+                minimumTests: files.reduce(
+                    (sum, file) =>
+                        sum +
+                        Math.max(
+                            1,
+                            requiredBackendScenarios.find(
+                                (entry) => entry.file === file,
+                            )?.titles.length ?? 0,
+                        ),
+                    0,
+                ),
+            },
+        ]),
+    ),
+});
+
 /** Add future crucial journeys here; every entry runs against fresh owned services. */
 export const flows = [
     {
@@ -123,7 +365,7 @@ export const flows = [
     },
     {
         id: 'admin-text-ai-routing',
-        minimumTests: 1,
+        minimumTests: 2,
         app: 'admin',
         file: 'text-ai-routing.journeys.spec.ts',
         grep: '.',
@@ -174,6 +416,22 @@ export const flows = [
         dependsOn: ['setup-to-generation'],
     },
     {
+        id: 'interactive-workbooks',
+        minimumTests: 3,
+        app: 'assistant',
+        file: 'interactive-workbooks.journeys.spec.ts',
+        grep: '.',
+        prerequisite: 'deterministic-assistant',
+    },
+    {
+        id: 'knowledge-document-formatting',
+        minimumTests: 1,
+        app: 'assistant',
+        file: 'knowledge-workspace.journeys.spec.ts',
+        grep: 'Markdown proposals preserve rich document structure',
+        prerequisite: 'deterministic-assistant',
+    },
+    {
         id: 'chat-lifecycle',
         minimumTests: 1,
         app: 'assistant',
@@ -205,7 +463,7 @@ export const flows = [
         file: 'shared-pronunciation.journeys.spec.ts',
         grep: '.',
         prerequisite: 'deterministic-speech-services',
-        dependsOn: ['ai-execution-contracts'],
+        dependsOn: ['ai-speech'],
     },
     {
         id: 'admin-mcp',
@@ -216,96 +474,177 @@ export const flows = [
         prerequisite: 'empty-admin-database',
         env: { ADMIN_E2E_MCP: 'true' },
     },
-    {
-        id: 'ai-execution-contracts',
-        minimumTests: 300,
+    ...Object.entries(backendSelections).map(([id, selection]) => ({
+        id,
+        minimumTests: selection.minimumTests,
         app: 'backend',
-        files: [...backendExecutionFiles],
+        files: [...selection.files],
         prerequisite: 'disposable-backend-production-execution',
-    },
+    })),
 ];
 
 export function selectFlows(args, registry = flows) {
-    if (args[0] === '--') args = args.slice(1);
+    if (args[0] === '--') {
+        args = args.slice(1);
+    }
+
     validateRegistry(registry);
+    if (args.includes('--list') && args.includes('--plan')) {
+        throw new Error('Choose --list or --plan, not both');
+    }
+
     const ids = [];
     for (let i = 0; i < args.length; i++) {
-        if (args[i] === '--list') continue;
+        if (['--list', '--plan'].includes(args[i])) {
+            continue;
+        }
+
         if (
             args[i] !== '--flow' ||
             !args[i + 1] ||
             args[i + 1].startsWith('--')
-        )
-            throw new Error('Usage: --list or --flow <id> (repeatable)');
+        ) {
+            throw new Error(
+                'Usage: [--list | --plan] [--flow <id> (repeatable)]',
+            );
+        }
+
         ids.push(args[++i]);
     }
-    for (const id of ids)
-        if (!registry.some((flow) => flow.id === id))
+
+    for (const id of ids) {
+        if (!registry.some((flow) => flow.id === id)) {
             throw new Error(`Unknown critical flow: ${id}`);
+        }
+    }
+
+    // Default remains the comprehensive gate. The aggregate covers seam dependencies
+    // once; selecting a narrow flow must never pull in the aggregate implicitly.
+    const catalog = !ids.length && args.includes('--list');
+    const requested = registry.filter((flow) =>
+        ids.length
+            ? ids.includes(flow.id)
+            : catalog ||
+              !Object.keys(backendExecutionGroups).some(
+                  (seam) => flow.id === `ai-${seam}`,
+              ),
+    );
+    const aggregate =
+        !catalog &&
+        requested.find((flow) => flow.id === 'ai-execution-contracts');
     const selected = new Set();
     const ordered = [];
     const add = (flow) => {
-        if (selected.has(flow.id)) return;
-        for (const dependency of flow.dependsOn ?? [])
+        if (aggregate && flow.app === 'backend' && flow !== aggregate) {
+            add(aggregate);
+
+            return;
+        }
+
+        if (selected.has(flow.id)) {
+            return;
+        }
+
+        for (const dependency of flow.dependsOn ?? []) {
             add(registry.find((entry) => entry.id === dependency));
+        }
+
         selected.add(flow.id);
         ordered.push(flow);
     };
-    for (const flow of registry)
-        if (!ids.length || ids.includes(flow.id)) add(flow);
+
+    for (const flow of requested) {
+        add(flow);
+    }
+
     return ordered;
+}
+
+function hasValidBackendSelection(flow) {
+    return (
+        Object.hasOwn(backendSelections, flow.id) &&
+        Array.isArray(flow.files) &&
+        flow.files.length === backendSelections[flow.id].files.length &&
+        backendSelections[flow.id].files.every(
+            (file, index) => flow.files[index] === file,
+        ) &&
+        flow.env === undefined &&
+        flow.grep === undefined &&
+        flow.file === undefined &&
+        flow.minimumTests === backendSelections[flow.id].minimumTests
+    );
+}
+
+function hasValidBrowserSelection(flow) {
+    return (
+        ['web', 'admin', 'texts', 'assistant', 'portrait'].includes(flow.app) &&
+        /^[a-z-]+\.journeys\.spec\.ts$/.test(flow.file) &&
+        Boolean(flow.grep)
+    );
 }
 
 export function validateRegistry(registry = flows) {
     const ids = new Set();
     for (const flow of registry) {
-        if (!/^[a-z][a-z0-9-]+$/.test(flow.id) || ids.has(flow.id))
+        if (!/^[a-z][a-z0-9-]+$/.test(flow.id) || ids.has(flow.id)) {
             throw new Error('Invalid or duplicate critical flow id');
+        }
+
         ids.add(flow.id);
+
+        const validSelection =
+            flow.app === 'backend'
+                ? hasValidBackendSelection(flow)
+                : hasValidBrowserSelection(flow);
+
         if (
-            !(flow.app === 'backend'
-                ? flow.id === 'ai-execution-contracts' &&
-                  Array.isArray(flow.files) &&
-                  flow.files.length === backendExecutionFiles.length &&
-                  backendExecutionFiles.every(
-                      (file, index) => flow.files[index] === file,
-                  ) &&
-                  flow.env === undefined &&
-                  flow.grep === undefined &&
-                  flow.file === undefined &&
-                  flow.minimumTests >= 50
-                : ['web', 'admin', 'texts', 'assistant', 'portrait'].includes(
-                      flow.app,
-                  ) &&
-                  /^[a-z-]+\.journeys\.spec\.ts$/.test(flow.file) &&
-                  Boolean(flow.grep)) ||
+            !validSelection ||
             !flow.prerequisite ||
             !Number.isSafeInteger(flow.minimumTests) ||
             flow.minimumTests < 1
-        )
+        ) {
             throw new Error(`Incomplete critical flow: ${flow.id}`);
-        if (flow.grep) new RegExp(flow.grep);
+        }
+
+        if (flow.grep) {
+            new RegExp(flow.grep);
+        }
+
         validateFeatureFlags(flow.env);
-        if (flow.dependsOn !== undefined && !Array.isArray(flow.dependsOn))
+        if (flow.dependsOn !== undefined && !Array.isArray(flow.dependsOn)) {
             throw new Error(`Invalid dependencies: ${flow.id}`);
+        }
     }
-    if (!ids.size) throw new Error('Critical flow registry cannot be empty');
+
+    if (!ids.size) {
+        throw new Error('Critical flow registry cannot be empty');
+    }
+
     const complete = new Set();
     const visiting = new Set();
     const visit = (flow) => {
-        if (visiting.has(flow.id))
+        if (visiting.has(flow.id)) {
             throw new Error(`Cyclic critical flow dependency: ${flow.id}`);
-        if (complete.has(flow.id)) return;
+        }
+
+        if (complete.has(flow.id)) {
+            return;
+        }
+
         visiting.add(flow.id);
         for (const id of flow.dependsOn ?? []) {
             const dependency = registry.find((entry) => entry.id === id);
-            if (!dependency)
+            if (!dependency) {
                 throw new Error(`Unknown critical flow dependency: ${id}`);
+            }
+
             visit(dependency);
         }
+
         visiting.delete(flow.id);
         complete.add(flow.id);
     };
+
     registry.forEach(visit);
 }
 
@@ -313,10 +652,19 @@ export function validateRegistry(registry = flows) {
 export function assertPassingReport(report, flow = { minimumTests: 1 }) {
     const tests = [];
     const visit = (suite) => {
-        for (const spec of suite.specs ?? []) tests.push(...spec.tests);
-        for (const child of suite.suites ?? []) visit(child);
+        for (const spec of suite.specs ?? []) {
+            tests.push(...spec.tests);
+        }
+
+        for (const child of suite.suites ?? []) {
+            visit(child);
+        }
     };
-    for (const suite of report.suites ?? []) visit(suite);
+
+    for (const suite of report.suites ?? []) {
+        visit(suite);
+    }
+
     if (
         tests.length < flow.minimumTests ||
         report.errors?.length ||
@@ -327,10 +675,12 @@ export function assertPassingReport(report, flow = { minimumTests: 1 }) {
                 !test.results?.length ||
                 test.results.some((result) => result.status !== 'passed'),
         )
-    )
+    ) {
         throw new Error(
             'Critical flow did not pass cleanly: missing required tests, skipped, interrupted, flaky, or failed results are not accepted.',
         );
+    }
+
     return tests.length;
 }
 
@@ -348,10 +698,11 @@ export function validateFeatureFlags(flags = {}) {
         if (
             !Object.hasOwn(featureFlags, key) ||
             !featureFlags[key].includes(value)
-        )
+        ) {
             throw new Error(
                 `Unsafe critical flow environment override: ${key}`,
             );
+        }
     }
 }
 
@@ -366,19 +717,24 @@ export function assertPassingBackendReport(
     const assertions = Array.isArray(files)
         ? files.flatMap((file) => file.assertionResults ?? [])
         : [];
+
     if (
-        requiredBackendScenarios.some(({ file, titles }) => {
-            const result = files?.find(
-                (entry) => entry.name === resolve(backendRoot, file),
-            );
-            return titles.some(
-                (title) =>
-                    !result?.assertionResults?.some(
-                        (test) =>
-                            test.title === title && test.status === 'passed',
-                    ),
-            );
-        }) ||
+        requiredBackendScenarios
+            .filter(({ file }) => flow.files.includes(file))
+            .some(({ file, titles }) => {
+                const result = files?.find(
+                    (entry) => entry.name === resolve(backendRoot, file),
+                );
+
+                return titles.some(
+                    (title) =>
+                        !result?.assertionResults?.some(
+                            (test) =>
+                                test.title === title &&
+                                test.status === 'passed',
+                        ),
+                );
+            }) ||
         report.success !== true ||
         !Array.isArray(files) ||
         files.length !== expected.length ||
@@ -409,9 +765,11 @@ export function assertPassingBackendReport(
                 test.meta?.criticalRepeatCount !== 0 ||
                 test.meta?.criticalExpectedFailure !== false,
         )
-    )
+    ) {
         throw new Error(
             'Critical backend execution contracts did not pass cleanly: missing, unexpected, skipped, flaky, incomplete or failed tests are not accepted.',
         );
+    }
+
     return assertions.length;
 }

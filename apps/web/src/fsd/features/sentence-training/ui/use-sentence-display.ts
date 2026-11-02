@@ -2,9 +2,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function requestSentenceFullscreen(): Promise<boolean> {
-    if (document.fullscreenElement) return Promise.resolve(true);
+    if (document.fullscreenElement) {
+        return Promise.resolve(true);
+    }
+
     try {
         const request = document.documentElement.requestFullscreen?.();
+
         return request
             ? request.then(
                   () => true,
@@ -17,8 +21,9 @@ export function requestSentenceFullscreen(): Promise<boolean> {
 }
 
 export function exitSentenceFullscreen() {
-    if (document.fullscreenElement)
+    if (document.fullscreenElement) {
         void document.exitFullscreen().catch(() => undefined);
+    }
 }
 
 /** Presentation changes never own or reset a practice queue. */
@@ -31,16 +36,24 @@ export function useSentenceDisplay(fullscreenRequest?: Promise<boolean>) {
     const mounted = useRef(true);
 
     useEffect(() => {
-        if (!fullscreenRequest) return;
+        if (!fullscreenRequest) {
+            return;
+        }
+
         let alive = true;
         void fullscreenRequest.then((granted) => {
             if (!alive) {
-                if (granted && !mounted.current) exitSentenceFullscreen();
+                if (granted && !mounted.current) {
+                    exitSentenceFullscreen();
+                }
+
                 return;
             }
+
             setMode(granted ? 'fullscreen' : 'overlay');
             setNotice(!granted);
         });
+
         return () => {
             alive = false;
         };
@@ -50,12 +63,15 @@ export function useSentenceDisplay(fullscreenRequest?: Promise<boolean>) {
         const generation = ++lifecycle.current;
         mounted.current = true;
         function handleChange() {
-            if (!document.fullscreenElement)
+            if (!document.fullscreenElement) {
                 setMode((current) =>
                     current === 'fullscreen' ? 'dialog' : current,
                 );
+            }
         }
+
         document.addEventListener('fullscreenchange', handleChange);
+
         return () => {
             document.removeEventListener('fullscreenchange', handleChange);
             // StrictMode replays mount effects before microtasks run. Only a real
@@ -76,13 +92,18 @@ export function useSentenceDisplay(fullscreenRequest?: Promise<boolean>) {
     const toFullscreen = useCallback(() => {
         void requestSentenceFullscreen().then((granted) => {
             if (!mounted.current) {
-                if (granted) exitSentenceFullscreen();
+                if (granted) {
+                    exitSentenceFullscreen();
+                }
+
                 return;
             }
+
             setMode(granted ? 'fullscreen' : 'overlay');
             setNotice(!granted);
         });
     }, []);
+
     function dismissNotice() {
         setNotice(false);
     }

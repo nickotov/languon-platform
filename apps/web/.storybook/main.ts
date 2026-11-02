@@ -4,4 +4,5 @@ const config: StorybookConfig = {
     framework: '@storybook/nextjs-vite',
     stories: ['../src/**/*.stories.@(ts|tsx)'],
 };
+
 export default config;

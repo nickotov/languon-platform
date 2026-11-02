@@ -65,6 +65,7 @@ export function FolderCard({
             onSelect: open,
         },
     ];
+
     if (archived) {
         items.push({
             label: t('texts.library.restore'),
@@ -77,17 +78,20 @@ export function FolderCard({
         const shareLabel = canShare
             ? t('texts.library.share')
             : t('texts.library.shareDisabled');
+
         items.push({
             label: t('texts.library.edit'),
             icon: <PencilIcon className={styles.actionIcon} />,
             onSelect: edit,
         });
+
         items.push({
             label: shareLabel,
             icon: <Share2Icon className={styles.actionIcon} />,
             onSelect: share,
             disabled: !canShare,
         });
+
         items.push({
             label: t('texts.library.archive'),
             icon: <ArchiveIcon className={styles.actionIcon} />,

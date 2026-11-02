@@ -30,6 +30,7 @@ export function useCollectionJobs(
 
     useEffect(() => {
         const map = controls.current;
+
         return () => {
             map.forEach((control) => control.abort());
             map.clear();
@@ -45,8 +46,13 @@ export function useCollectionJobs(
         body: TextSelectionRequest,
         selection: ReadingSelection,
     ) => {
-        if (!props.requestWithSession || controls.current.has(body.operationId))
+        if (
+            !props.requestWithSession ||
+            controls.current.has(body.operationId)
+        ) {
             return;
+        }
+
         const control = new AbortController();
         controls.current.set(body.operationId, control);
         const previous = results.current.get(body.operationId);
@@ -59,6 +65,7 @@ export function useCollectionJobs(
             failureCode: null,
             terminal: false,
         };
+
         update(task);
         try {
             let response = task.jobId
@@ -84,7 +91,11 @@ export function useCollectionJobs(
                           ),
                       ),
                   );
-            if (control.signal.aborted) return;
+
+            if (control.signal.aborted) {
+                return;
+            }
+
             task = {
                 ...task,
                 jobId: response.job.id,
@@ -92,13 +103,17 @@ export function useCollectionJobs(
                     ? { billing: response.job.billing }
                     : {}),
             };
+
             update(task);
             while (
                 response.job.state === 'queued' ||
                 response.job.state === 'running'
             ) {
                 await waitForPoll(control.signal);
-                if (control.signal.aborted) return;
+                if (control.signal.aborted) {
+                    return;
+                }
+
                 response = await props.requestWithSession((token) =>
                     textsApi.getSelectionJob(
                         token,
@@ -107,13 +122,19 @@ export function useCollectionJobs(
                     ),
                 );
             }
-            if (control.signal.aborted) return;
+
+            if (control.signal.aborted) {
+                return;
+            }
+
             let state: CollectionTask['state'] = 'error';
-            if (response.job.state === 'completed') state = 'success';
-            else if (
+            if (response.job.state === 'completed') {
+                state = 'success';
+            } else if (
                 response.job.failureCode === 'duplicate_confirmation_required'
-            )
+            ) {
                 state = 'duplicate';
+            }
 
             task = {
                 ...task,
@@ -126,9 +147,13 @@ export function useCollectionJobs(
                 terminal: true,
             };
         } catch (error) {
-            if (control.signal.aborted) return;
+            if (control.signal.aborted) {
+                return;
+            }
+
             const code =
                 error instanceof TextsApiError ? error.detail.code : null;
+
             task = {
                 ...task,
                 state:
@@ -140,7 +165,11 @@ export function useCollectionJobs(
         } finally {
             controls.current.delete(body.operationId);
         }
-        if (control.signal.aborted) return;
+
+        if (control.signal.aborted) {
+            return;
+        }
+
         update(task);
         notify.current(task);
     };
@@ -152,18 +181,26 @@ export function useCollectionJobs(
 
     const cancel = async (task: CollectionTask) => {
         const control = controls.current.get(task.body.operationId);
-        if (!task.jobId || !props.requestWithSession || !control) return;
+        if (!task.jobId || !props.requestWithSession || !control) {
+            return;
+        }
+
         try {
             const response = await props.requestWithSession((token) =>
                 textsApi.cancelSelectionJob(token, task.jobId!, control.signal),
             );
-            if (control.signal.aborted || response.job.state === 'completed')
+
+            if (control.signal.aborted || response.job.state === 'completed') {
                 return;
+            }
+
             controls.current.get(task.body.operationId)?.abort();
             controls.current.delete(task.body.operationId);
             dismiss(task.body.operationId);
         } catch {
-            if (!control.signal.aborted) update({ ...task, state: 'error' });
+            if (!control.signal.aborted) {
+                update({ ...task, state: 'error' });
+            }
         }
     };
 

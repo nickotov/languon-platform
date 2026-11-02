@@ -55,6 +55,7 @@ export class LearningService {
     public capabilities() {
         return { flashcardsEnabled: this.dependencies.enabled };
     }
+
     public listEntries(
         target: LearningTarget,
         input: LearningEntriesQuery,
@@ -64,6 +65,7 @@ export class LearningService {
             this.dependencies.store.listEntries(access, input, context),
         );
     }
+
     public getPreferences(
         target: LearningTarget,
         context: LearningRequestContext,
@@ -72,6 +74,7 @@ export class LearningService {
             this.dependencies.store.getPreferences(access, context),
         );
     }
+
     public savePreferences(
         target: LearningTarget,
         input: FlashcardPreferencesPutRequest,
@@ -81,6 +84,7 @@ export class LearningService {
             this.dependencies.store.savePreferences(access, input, context),
         );
     }
+
     public prepare(
         target: LearningTarget,
         input: FlashcardPrepareRequest,
@@ -90,6 +94,7 @@ export class LearningService {
             this.dependencies.store.prepare(access, input, context),
         );
     }
+
     public items(
         target: LearningTarget,
         input: FlashcardItemsRequest,
@@ -99,11 +104,13 @@ export class LearningService {
             this.dependencies.store.items(access, input, context),
         );
     }
+
     public progress(target: LearningTarget, context: LearningRequestContext) {
         return this.run(target, context, 'content', true, (access) =>
             this.dependencies.store.progress(access, context),
         );
     }
+
     public recordAttempt(
         target: LearningTarget,
         input: FlashcardAttemptRequest,
@@ -113,6 +120,7 @@ export class LearningService {
             this.dependencies.store.recordAttempt(access, input, context),
         );
     }
+
     public undo(
         target: LearningTarget,
         attemptId: string,
@@ -132,8 +140,10 @@ export class LearningService {
         action: (access: LearningAccess) => Promise<T>,
     ): Promise<T> {
         context.signal.throwIfAborted();
-        if (!this.dependencies.enabled)
+        if (!this.dependencies.enabled) {
             throw new DictionaryServiceUnavailableError();
+        }
+
         // Public admission is before authentication/capability lookup, and does not trust forwarded headers.
         await this.limit('public', context.clientAddress, 180, context);
         const principal =
@@ -142,15 +152,19 @@ export class LearningService {
                 : await this.dependencies.authentication.authenticate(
                       target.accessToken,
                   );
-        if ((target.kind === 'owner' || personal) && !principal)
+
+        if ((target.kind === 'owner' || personal) && !principal) {
             throw new LearningAuthenticationRequiredError();
+        }
+
         const subject = principal?.userId ?? context.clientAddress;
         await this.limit(
             `${scope}.${principal ? 'learner' : 'visitor'}`,
             subject,
-            scope === 'prepare' ? 20 : scope === 'write' ? 180 : 180,
+            scope === 'prepare' ? 20 : 180,
             context,
         );
+
         let access: LearningAccess;
         if (target.kind === 'owner') {
             access = {
@@ -167,14 +181,17 @@ export class LearningService {
                         now: this.dependencies.clock.now(),
                     },
                 });
+
             if (
                 !this.dependencies.cryptography.verifyShare(
                     target.shareKey,
                     candidate?.shareDigest ?? null,
                 ) ||
                 !candidate
-            )
+            ) {
                 throw new SharedDictionaryNotFoundError();
+            }
+
             access = {
                 kind: 'shared',
                 shareId: target.shareId,
@@ -182,7 +199,9 @@ export class LearningService {
                 learnerId: principal?.userId ?? null,
             };
         }
+
         context.signal.throwIfAborted();
+
         return action(access);
     }
 
@@ -203,12 +222,19 @@ export class LearningService {
                 windowMs: 60_000,
                 signal: context.signal,
             });
-            if (!decision.allowed)
+
+            if (!decision.allowed) {
                 throw new DictionaryRateLimitError(decision.retryAfterSeconds);
+            }
         } catch (error) {
-            if (context.signal.aborted) throw error;
-            if (error instanceof RateLimitUnavailableError)
+            if (context.signal.aborted) {
+                throw error;
+            }
+
+            if (error instanceof RateLimitUnavailableError) {
                 throw new DictionaryServiceUnavailableError();
+            }
+
             throw error;
         }
     }

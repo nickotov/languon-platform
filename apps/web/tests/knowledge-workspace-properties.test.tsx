@@ -19,6 +19,7 @@ beforeEach(() => {
         },
     );
 });
+
 afterEach(() => vi.unstubAllGlobals());
 
 it('keeps a single in-canvas title and edits optional properties without changing document content', async () => {
@@ -37,6 +38,7 @@ it('keeps a single in-canvas title and edits optional properties without changin
         categories: [],
         body,
     };
+
     function Harness() {
         const [value, setValue] = useState(initial);
         function change(
@@ -47,9 +49,11 @@ it('keeps a single in-canvas title and edits optional properties without changin
             setValue((current) => {
                 const next = update(current);
                 onChange(next);
+
                 return next;
             });
         }
+
         return (
             <QueryClientProvider client={client}>
                 <KnowledgeNoteForm
@@ -66,24 +70,29 @@ it('keeps a single in-canvas title and edits optional properties without changin
             </QueryClientProvider>
         );
     }
+
     render(<Harness />);
     const title = screen.getByRole('textbox', { name: 'Title', exact: true });
     expect(
         screen.getAllByRole('textbox', { name: 'Title', exact: true }),
     ).toHaveLength(1);
+
     expect(title.closest('article')).not.toBeNull();
     fireEvent.change(title, { target: { value: 'My\nresearch' } });
     expect(title).toHaveValue('My research');
     fireEvent.click(
         screen.getByRole('button', { name: 'Properties', exact: true }),
     );
+
     fireEvent.click(
         screen.getByRole('button', { name: 'Summary', exact: true }),
     );
+
     const summary = await screen.findByRole('textbox', {
         name: 'Summary',
         exact: true,
     });
+
     fireEvent.change(summary, { target: { value: 'A learning document' } });
     await waitFor(() =>
         expect(onChange).toHaveBeenLastCalledWith(

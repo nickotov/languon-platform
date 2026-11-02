@@ -1,0 +1,430 @@
+{
+  "schemaVersion": 1,
+  "owner": "backend-dictionary-source",
+  "baseCommit": "252de64",
+  "files": [
+    {
+      "path": "apps/backend/src/modules/dictionaries/domain/card-authoring.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Card authoring schemas distinguish v1/v2/v3 target/context rules, bound/deduplicate suggestions and enforce requested fields; merge/provider-input/delta validators preserve source history, exclusion and identity semantics. Long module is schema-heavy with named pure policy helpers; no source edits authorized in this transferred audit.",
+      "beforeSha256": "2775e1f91b1a8b3d82af423156c24a9c17efe07e7e005543f6b1ce31ce77e617",
+      "afterSha256": "2775e1f91b1a8b3d82af423156c24a9c17efe07e7e005543f6b1ce31ce77e617"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/domain/generation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Generation schemas enumerate format-version translation-context rules, bounded row/lineage/feedback uniqueness and seven-day review lifetime; parse helpers retain runtime validation with explicit discriminated TypeScript unions. Schema catalog is long but kinds remain directly named.",
+      "beforeSha256": "29325e51804b96b6354b31fb696ae61d138523418ce8c5be556625a10bde41a9",
+      "afterSha256": "29325e51804b96b6354b31fb696ae61d138523418ce8c5be556625a10bde41a9"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/domain/interchange.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Dictionary interchange separates bounded UTF-8/delimited state machine, row normalization/warnings and page serializer; Unicode cell counting, RFC4180/formula escaping, inherited-null markers, output backpressure and serializer lifetime are explicit. Long metadata maps preserve exact CSV column contract.",
+      "beforeSha256": "346d8bb97dbb9a2c4f3a52831a451899a97723de9337acdf30d7679f9e2d6e6a",
+      "afterSha256": "346d8bb97dbb9a2c4f3a52831a451899a97723de9337acdf30d7679f9e2d6e6a"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/ai/card-authoring-proposal-generators.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createMastraCardAuthoringProposalGenerator keeps input envelope limits, queued provider attempt, output-received settlement classification, metered usage and abort precedence together; named validation/readiness/factory/deterministic helpers already separate concerns. Readiness rejects private hosts and diagnostics cannot change settlement. Long adapter justified by explicit production/deterministic/unavailable port implementations; read-only audit.",
+      "beforeSha256": "b2c1e970aa899b529279af3f7192bb4846c9bf0e0890caf785bbc4cce7749ba6",
+      "afterSha256": "b2c1e970aa899b529279af3f7192bb4846c9bf0e0890caf785bbc4cce7749ba6"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/ai/card-proposal-generators.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createMastraCardProposalGenerator distinguishes output validation from provider failure, preserves usage when output is invalid, and checks abort after provider work; factory, HTTPS readiness/IP exclusions and deterministic schema validation are separate named sections. Explicit structured-agent contract and adapter variants explain length; read-only audit.",
+      "beforeSha256": "3f4ea3f8f7dd69484ea78122670cbc5b9d55a7e7cd6ea2b5352e05ef4cf1439b",
+      "afterSha256": "3f4ea3f8f7dd69484ea78122670cbc5b9d55a7e7cd6ea2b5352e05ef4cf1439b"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/ai/dictionary-text-provider-router.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DictionaryTextProviderRouter.resolve validates budget/runtime identity before credential lookup and bounded LRU lookup; createProviderSet lazily instantiates only requested generator, while stableSnapshotKey explicitly includes route authority and prices. Adapter readiness stays bound to legacy instance; coherent routing boundary, no speculative cache redesign.",
+      "beforeSha256": "03ecbe50f30e84800985393ee6ad8fa0df8dfe58634099914c58ce8dbf8c47ee",
+      "afterSha256": "03ecbe50f30e84800985393ee6ad8fa0df8dfe58634099914c58ce8dbf8c47ee"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/ai/import-pairs-proposal-generators.ts",
+      "status": "reviewed-acceptable",
+      "reason": "proposalMatchesTrustedInput explicitly verifies every requested row exactly once, immutable source/translation, null overrides, enabled optional fields and failure lineage. createMastraImportPairsProposalGenerator keeps bounded chunk envelope, usage accounting, invalid-output versus provider outcome and abort priority; deterministic and unavailable variants use same trusted-input contract. Read-only audit retains explicit adapter branches.",
+      "beforeSha256": "728239f63c4c55659b448b353aef3beccf75a9962dc74995918d75d94b820148",
+      "afterSha256": "728239f63c4c55659b448b353aef3beccf75a9962dc74995918d75d94b820148"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/ai/pasted-terms-proposal-generators.ts",
+      "status": "reviewed-acceptable",
+      "reason": "validatedChunkOutput requires exact row coverage and unchanged row inputs before batch parse; boundedChunkInput rejects controls and oversized Unicode input. createMastraPastedTermsProposalGenerator preserves output-received classification, usage and abort priority, while envelope capability checks and deterministic long-term fixture are named independent seams. Large file combines explicit schemas and three port implementations coherently.",
+      "beforeSha256": "865e0cc7f08b2a1de8f03e2bd29efae9aa607db30905d7504c4ab2efc0d51bd2",
+      "afterSha256": "865e0cc7f08b2a1de8f03e2bd29efae9aa607db30905d7504c4ab2efc0d51bd2"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/dictionary-worker-composition.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createDictionaryWorkerComposition validates supported-format dependencies, composes fenced document upload loader/processor/executor/cleanup and generation store, and builds explicit readiness promises per enabled format. Bound storage/scanner/extractor/OCR receivers and Promise.all ordering are visible. Constructor assembly and readiness compose one established production boundary; read-only audit.",
+      "beforeSha256": "e8876b71fe100c3e9d60dfad159cf4c201c0e02f93801d054ef3b18926fd6ba4",
+      "afterSha256": "e8876b71fe100c3e9d60dfad159cf4c201c0e02f93801d054ef3b18926fd6ba4"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/document/bubblewrap-sandboxed-document-extractor.ts",
+      "status": "reviewed-acceptable",
+      "reason": "BubblewrapSandboxedDocumentExtractor separates manifest validation, bounded child stdin/stdout, no-follow/inode-checked file reads and OCR directory reconciliation. extract visibly fixes sandbox mounts/environment/process limits, combines timeout/abort and always terminates/removes temporary directory. Length preserves security settings and resource lifecycle in one adapter; no source edit in read-only audit.",
+      "beforeSha256": "220c8011eec02663ed7d50f19b5649f8e124b9382b2b07ee1e3b7d6880be9bd3",
+      "afterSha256": "220c8011eec02663ed7d50f19b5649f8e124b9382b2b07ee1e3b7d6880be9bd3"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/document/clamav-document-malware-scanner.ts",
+      "status": "reviewed-acceptable",
+      "reason": "ClamAvDocumentMalwareScanner separates connection/listener cleanup, bounded response parser, signature/limit attestation and INSTREAM framing. scan preserves socket destroy in finally, input abort priority over timeout/unavailable classification, and readiness rejects stale signatures or mismatched limits. Cohesive scanner protocol adapter with explicit lifecycle.",
+      "beforeSha256": "203ce3ec4e1929356972196b750aadbfd4fe8012a4ccd13c287736ee579daeb1",
+      "afterSha256": "203ce3ec4e1929356972196b750aadbfd4fe8012a4ccd13c287736ee579daeb1"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/document/deterministic-document-adapters.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DeterministicPrivateDocumentStorage copies bytes/references, keys exact versions, updates current tombstones and removes exact version; bounded collect is shared by scanner/extractor fixtures. Extractor/OCR preserve page/block location and unavailable OCR errors. Separate adapter classes make fixture behavior navigable without production abstraction.",
+      "beforeSha256": "2ba2ca780f6b540c2aa9cc33bbdfd479b7f95617b9bbd783bf7faf6695910942",
+      "afterSha256": "2ba2ca780f6b540c2aa9cc33bbdfd479b7f95617b9bbd783bf7faf6695910942"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/document/native-document-parser.ts",
+      "status": "reviewed-acceptable",
+      "reason": "parseNativeDictionaryDocument dispatches magic-validated formats to text/Markdown/DOCX/PDF/image helpers. Markdown AST bounds, ZIP entry/expansion/path checks, DOCX active-content rejection, PDF document/page preflight before rendering and aggregate OCR pixel/byte budgets are explicit named stages. Large multi-format parser has cohesive local helpers; moving security-sensitive format logic is unnecessary in read-only audit.",
+      "beforeSha256": "68f72da77f4d07d6cadcf088b4b3cc86b3c681d748fcc64a0921f8146bdf00cb",
+      "afterSha256": "68f72da77f4d07d6cadcf088b4b3cc86b3c681d748fcc64a0921f8146bdf00cb"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/document/s3-dictionary-document-storage.ts",
+      "status": "reviewed-acceptable",
+      "reason": "S3DictionaryDocumentUploadStorage signs immutable checksum/content headers and bounded expiry, then reconciles exactly one current version and bounded magic range under concurrency gate. S3PrivateDocumentStorage opens/deletes exact versions and creates explicit tombstones; listPhysicalVersions validates cursor/version bounds. Separate reconciliation/listing/format helpers keep version authority visible.",
+      "beforeSha256": "7b6ebd4e34dcdc7daf311f57c0cee7ea8025da1ebb843c86a849c54dfc86c12c",
+      "afterSha256": "7b6ebd4e34dcdc7daf311f57c0cee7ea8025da1ebb843c86a849c54dfc86c12c"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-aggregate-state.ts",
+      "status": "reviewed-acceptable",
+      "reason": "lockOwned/readOwnedState distinguish update/share ownership locks; owner capacity counts are protected by user-row lock, advisory permits fail fast and bumpDictionary uses owner/version compare-and-set. Small named query helpers expose aggregate invariants despite total length.",
+      "beforeSha256": "a144f45b6771bdac1a460548dfa2fc30aef8f860f727a87fd5fb5de2ec3b32cd",
+      "afterSha256": "a144f45b6771bdac1a460548dfa2fc30aef8f860f727a87fd5fb5de2ec3b32cd"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-creation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createDictionary reserves replay under owner lock, validates settings transition and writes settings atomically before completing idempotency. createCard orders permit/capacity/aggregate locks, expected versions, lifecycle/settings validation, revision and dictionary bump. Two explicit transactions are cohesive creation use cases; no extraction needed for read-only audit.",
+      "beforeSha256": "451170e507d4758be95badecadc8127a6661ed31554ef690e2b18b66e415619c",
+      "afterSha256": "451170e507d4758be95badecadc8127a6661ed31554ef690e2b18b66e415619c"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-deletion-content.ts",
+      "status": "reviewed-acceptable",
+      "reason": "deleteDictionaryContent visibly checks conversation/sentence busy state before erasure, locks direct and revision/proposal-related jobs, rejects active reservations or incomplete upload cleanup, archives settled financial usage and deletes dependency rows before direct jobs. Retained related jobs only lose input payload. Sequential transaction phases intentionally expose deletion ordering; audit is read-only.",
+      "beforeSha256": "25c21af07c6ea02bad04698e15c81c3b3b2e23d4a31c71abf8b3db82187c65f1",
+      "afterSha256": "25c21af07c6ea02bad04698e15c81c3b3b2e23d4a31c71abf8b3db82187c65f1"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-document-accounting.ts",
+      "status": "reviewed-acceptable",
+      "reason": "activeProviderExecution translates only admission/budget unavailability and retains selected model/pricing/action snapshots. settleAiCreditAttempt explicitly separates legacy recording/terminal settlement, undispatched release, failed attempt and measured success; documentCreditUsage uses bigint pricing and exact rounding. Named accounting operations form a focused boundary.",
+      "beforeSha256": "54c6498a64fb4b9946990dbdd012a3d6f2fa7c9d50ede39f8dddf4d2e4902183",
+      "afterSha256": "54c6498a64fb4b9946990dbdd012a3d6f2fa7c9d50ede39f8dddf4d2e4902183"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-document-authorization.ts",
+      "status": "reviewed-acceptable",
+      "reason": "authorize executes under modelPricingTransaction, admission/user/dictionary locks, idempotency fingerprint replay, expected versions and queue/physical-byte quotas before job/upload creation. Legacy versus reservation accounting branches and exact execution snapshot persist atomically. Long command records one authorization transaction with explicit financial/authority ordering; read-only audit retains it.",
+      "beforeSha256": "9ae80b27a18c1652a3c4605b5e4ebd298e3753afe4386e80ec65b675e8fe0bd4",
+      "afterSha256": "9ae80b27a18c1652a3c4605b5e4ebd298e3753afe4386e80ec65b675e8fe0bd4"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-document-processing.ts",
+      "status": "reviewed-acceptable",
+      "reason": "terminalizeExtraction and recordDocumentProcessingFailure validate scan attestation chronology, lock worker-fenced running job/upload, settle credits and explicitly choose retry/terminal fields. workerCas centralizes job/state/worker/token predicate. Distinct terminal versus retry transactions keep state/accounting ordering inspectable.",
+      "beforeSha256": "8bb513f571e5c387a60aa8f2413d05b52ac2c0befb1d7eff453a39c4121d5c8b",
+      "afterSha256": "8bb513f571e5c387a60aa8f2413d05b52ac2c0befb1d7eff453a39c4121d5c8b"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-document-proposal.ts",
+      "status": "reviewed-acceptable",
+      "reason": "stageDocumentProposal validates fenced job, scan chronology, provider token bounds and extracted-row count before staging proposal and starting cleanup; publication functions gate physical deletion and cancellation, settle legacy action and publish staged metrics. Separate stage/publish seams preserve privacy-before-review invariant.",
+      "beforeSha256": "f55e3ac80ae75ea1229d974b2d858076e04bb4d728779ba586cc51c2a0f7d71f",
+      "afterSha256": "f55e3ac80ae75ea1229d974b2d858076e04bb4d728779ba586cc51c2a0f7d71f"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-document-upload-queries.ts",
+      "status": "reviewed-acceptable",
+      "reason": "expireUploadAuthorizations selects bounded skip-locked expired authorizations then releases credit and schedules cleanup; owner read and worker load use different owner versus fencing predicates. persistObservedVersions explicitly controls current flags. Four focused operations keep ownership/worker authority distinct.",
+      "beforeSha256": "7724da55f2daf89fb1ef13773cdfe5dd535f97d6b58565e647a3aeeb8523e010",
+      "afterSha256": "7724da55f2daf89fb1ef13773cdfe5dd535f97d6b58565e647a3aeeb8523e010"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-document-upload.ts",
+      "status": "reviewed-acceptable",
+      "reason": "completeUpload orders admission/user/upload/job locks, validates replay exact version metadata and handles expired/conflicting uploads separately. Invalid versions persist physical-byte accounting and cleanup while releasing credits; valid versions check provider capacity then quarantine and reserve execution. Explicit single transaction keeps quota and reservation behavior visible.",
+      "beforeSha256": "f1bd9c6df0f001c6cdfe9e27f217eb1f67a1bc30cdf5aa238ebbb19d6f0a073e",
+      "afterSha256": "f1bd9c6df0f001c6cdfe9e27f217eb1f67a1bc30cdf5aa238ebbb19d6f0a073e"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-forks.ts",
+      "status": "reviewed-acceptable",
+      "reason": "forkSharedDictionary validates share digest/visibility/lifecycle under source lock, checks owner/card capacities, copies active cards in ordered keyset chunks and creates revisions with private translation context cleared. replayForkDictionary validates expiry/fingerprint/completed state. Long chunk transaction is cohesive and preserves idempotency and source snapshot.",
+      "beforeSha256": "a422d3bc6cfabcdcb98e86669454a6d37c03d7934c2087296f1ca33b3d4fc288",
+      "afterSha256": "a422d3bc6cfabcdcb98e86669454a6d37c03d7934c2087296f1ca33b3d4fc288"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-idempotency.ts",
+      "status": "reviewed-acceptable",
+      "reason": "reserveIdempotency/reserveBulkIdempotency delete bounded expired keys, use owner/operation/key uniqueness and lock completed replay before returning dictionary or schema-validated payload. Completion predicates require in_progress, with bulk requiring exactly one returned row. Explicit create/fork versus bulk response contracts justify parallel helpers.",
+      "beforeSha256": "cc0d2934b1fc720748db7e7c52c67fd2dcc825b1dbb91eabe53d90c8720e3c58",
+      "afterSha256": "cc0d2934b1fc720748db7e7c52c67fd2dcc825b1dbb91eabe53d90c8720e3c58"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-import.ts",
+      "status": "reviewed-acceptable",
+      "reason": "authorizeDictionaryImportTarget, previewDictionaryImport and importDictionary distinguish nonmutating capacity/duplicate preview from publication. importDictionary resolves prepared rows inside transaction after replay, locks owner and target, checks languages/capacity, writes ordered card/revision chunks then exact schema response and idempotency. Existing prepared seam exposes lifecycle; long transaction remains readable by named phase variables.",
+      "beforeSha256": "df5c1247e9da775ce40561437645f493bfda7f9c8e50080bcf1f7b1e3eccd4ce",
+      "afterSha256": "df5c1247e9da775ce40561437645f493bfda7f9c8e50080bcf1f7b1e3eccd4ce"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-lifecycle.ts",
+      "status": "reviewed-acceptable",
+      "reason": "dictionaryLifecycle/cardLifecycle preserve expected-version checks and idempotent no-op paths; dictionary transitions clear share credentials and restored cards append sort key with capacity check. reorderCards validates unique contiguous active-card window then chunked CASE assignments and one aggregate bump. Named lifecycle/reorder commands expose state transitions.",
+      "beforeSha256": "a6f10237e682e98722bf4f6d18f22cb1af428f4a780d82654f3398790a2c27dd",
+      "afterSha256": "a6f10237e682e98722bf4f6d18f22cb1af428f4a780d82654f3398790a2c27dd"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-queries.ts",
+      "status": "reviewed-acceptable",
+      "reason": "listDictionaries uses escaped search and descending updatedAt/id cursor; listCards locks owned aggregate state and rejects stale dictionary/settings cursor before ascending sortKey/id query. readCard/readOwned/export lookup retain owner/card scope and not-found distinctions. Focused query functions and cursor helpers make pagination authority explicit.",
+      "beforeSha256": "9f6c26fe35a9336a7b7cdcb8de2956737187308b19b9b532588105d6f440b67f",
+      "afterSha256": "9f6c26fe35a9336a7b7cdcb8de2956737187308b19b9b532588105d6f440b67f"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-sharing.ts",
+      "status": "reviewed-acceptable",
+      "reason": "rotateShare checks active owner/dictionary/version; findSharedCandidate returns only digest metadata; readSharedDictionary requires verified digest/lifecycle/visibility under share lock and version-bound cursor. PublicDictionary projection explicitly omits private context/overrides/ownership. Clear private versus public query seams.",
+      "beforeSha256": "b9552bf19e362fa9ea1f709e3596ce988724be45cf144e234c246e1f80c9949c",
+      "afterSha256": "b9552bf19e362fa9ea1f709e3596ce988724be45cf144e234c246e1f80c9949c"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-updates.ts",
+      "status": "reviewed-acceptable",
+      "reason": "updateDictionary validates language-pair retention and setting transitions, pages all cards including archived ones to advance learningVersion only for changed effective content, then clears share credentials when private. updateCard handles no-op before revision capacity and applies semantic authorship/learning-version/revision/aggregate bump. Explicit ordered mutation phases use existing pure helpers.",
+      "beforeSha256": "21a5a63e02ff5f64641d2650b60b2704deaeaa3d64421d2a98a15b784fdb7859",
+      "afterSha256": "21a5a63e02ff5f64641d2650b60b2704deaeaa3d64421d2a98a15b784fdb7859"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-deletion-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DrizzleDictionaryDeletionStore uses sorted version snapshot for preview, locks admission/owner and eligible archived rows, validates selected versus all-archived targets, delegates busy-safe derived-content erasure and stores schema-validated idempotent receipt. Card deletion bumps aggregate and clears bulk result payload. Named private snapshot/replay/receipt helpers bound the long deletion adapter.",
+      "beforeSha256": "70d2168f791f968bfc394f20c459425c251ae4683dbbaab311f247ae6b2b48f0",
+      "afterSha256": "70d2168f791f968bfc394f20c459425c251ae4683dbbaab311f247ae6b2b48f0"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DrizzleDictionaryStore is the DictionaryStore port facade: one immutable persistence context and dedicated deletion store forward each method to existing command/query modules without hidden branching. Repetitive method signatures document port coverage; no additional abstraction or flattening warranted.",
+      "beforeSha256": "bddd9a07d5e0992848937c88050a4ce08a1cfa8daa1ff7e5e19011ade65afdb2",
+      "afterSha256": "bddd9a07d5e0992848937c88050a4ce08a1cfa8daa1ff7e5e19011ade65afdb2"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-text-selection-store.ts",
+      "status": "reviewed-acceptable",
+      "reason": "DrizzleTextSelectionStore delegates enqueue/claim/target/lifecycle accounting to named modules; dispatch and complete recheck owner, lease, cancellation, source authority and target before provider mark/publication. fail retries only typed rate-limit or conclusive first routed failure, and worker release distinguishes dispatched ambiguous work from undispatched requeue/fencing. Explicit transaction methods preserve authority and financial ordering.",
+      "beforeSha256": "0ac57d11d5638df7495dae246eee4933e947e608c2349365c4570761db150e74",
+      "afterSha256": "0ac57d11d5638df7495dae246eee4933e947e608c2349365c4570761db150e74"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-accept-batch.ts",
+      "status": "reviewed-acceptable",
+      "reason": "acceptBatch sorts selected rows, locks capacity/owner/job/proposal, validates replay fingerprint/review expiry/document publication, compares semantic authorship, validates current aggregate/language/settings and retained owner capacities, restores insertion order by generated ids, then revisions/outcome/redaction. One acceptance transaction exposes required ordering; read-only audit leaves established helper seams intact.",
+      "beforeSha256": "536b240593c98212bd1bfceb9bf979add65a84cea3520f22c1963e954543919f",
+      "afterSha256": "536b240593c98212bd1bfceb9bf979add65a84cea3520f22c1963e954543919f"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-accept-card-authoring.ts",
+      "status": "reviewed-acceptable",
+      "reason": "acceptCardAuthoring delegates candidate/provenance validation, then locks aggregate and optional active target, checks resolved translation-context continuity, capacities, duplicates and override transition. Create/update branches preserve authorship, learningVersion and revision semantics before accepted-result redaction. Explicit target/format branching is domain-relevant and transaction-scoped.",
+      "beforeSha256": "3e08da3555146beb2c8a3a19db35afd574f8bb063f7c8aad3605dc4dfa9f04ea",
+      "afterSha256": "3e08da3555146beb2c8a3a19db35afd574f8bb063f7c8aad3605dc4dfa9f04ea"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-accept-single-card.ts",
+      "status": "reviewed-acceptable",
+      "reason": "acceptSingleCard validates fingerprint replay/review expiry and locks original aggregate/card snapshot, distinguishes semantic no-op from new revision, computes edited-proposal authorship and learningVersion, then redacts accepted proposal/input. No-op reuses current revision and avoids version bump. Named comparison/snapshot helpers expose consequential decisions.",
+      "beforeSha256": "80ae6d48879b1d5c803cd7bee1522cac4bd34a86859c502935d555648369a7f0",
+      "afterSha256": "80ae6d48879b1d5c803cd7bee1522cac4bd34a86859c502935d555648369a7f0"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-accounting.ts",
+      "status": "reviewed-acceptable",
+      "reason": "aiCreditJobValues and reserveInitialAiCreditAttempt persist selected pricing and distinguish legacy action from credit reservation, mapping only documented admission/balance errors. settleCurrentAiCreditAttempt separates record/terminal legacy settlement, undispatched release and provider-measured success versus failure; bigint charge helper remains pure.",
+      "beforeSha256": "f799d7f5b9f47f3fa764a6d11b5b38ff67860faaadebbedef30b36c09981d155",
+      "afterSha256": "f799d7f5b9f47f3fa764a6d11b5b38ff67860faaadebbedef30b36c09981d155"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-admission.ts",
+      "status": "reviewed-acceptable",
+      "reason": "assertGenerationAdmission resolves selected execution, prepares enforced legacy pricing, checks route-specific circuit, global/owner queue age and provider budget with explicit enforced-owner adjustments. persistedProviderBudget and providerBudgetUsage isolate mapping/query; exception translation is bounded to selection/admission unavailability.",
+      "beforeSha256": "6f02e06065a19f822322ca09d71a12285208f3096bc02bd63a58f6d80f973eb9",
+      "afterSha256": "6f02e06065a19f822322ca09d71a12285208f3096bc02bd63a58f6d80f973eb9"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-cancellation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "cancel distinguishes queued immediate settlement/redaction from running cancellation request, preserves incurred reservations, and discards unpublished staged document payload before scheduling cleanup. discard enforces review/publication/expiry; terminalizeCancelled is worker/lease/token CAS with access-revoked distinction. Focused lifecycle helpers expose financial and cleanup ordering.",
+      "beforeSha256": "144f4b629b05b82afd9a16d4623d8d8d155d94f96c0dd21bdc5ddc676b9ba5a5",
+      "afterSha256": "144f4b629b05b82afd9a16d4623d8d8d155d94f96c0dd21bdc5ddc676b9ba5a5"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-claim.ts",
+      "status": "reviewed-acceptable",
+      "reason": "claim sets capability revision flags, locks shared capacity, runs recovery, selects fair skip-locked runnable candidate with format/circuit/reservation/owner caps, then reserves exact next attempt and CAS increments fencing. Legacy admission failure terminalizes with document cleanup; returned execution uses admitted route and persisted revision. Long claim transaction intentionally keeps admission/lease ordering visible.",
+      "beforeSha256": "117a58edf15d177332bffd619b224d1d7f96be29bc77270b8cd9656527c6b593",
+      "afterSha256": "117a58edf15d177332bffd619b224d1d7f96be29bc77270b8cd9656527c6b593"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-complete.ts",
+      "status": "reviewed-acceptable",
+      "reason": "complete locks worker-fenced job, prioritizes cancellation, rejects direct document publication, validates authoring predecessor capacity and batch row lineage, recomputes duplicates and checks override transition. generationCompletionUsage isolates native-receipt projection, then proposal insert/credit settle/job CAS/provider-success happen in order. Existing typed input/helper seams bound format-specific logic; no edit in read-only audit.",
+      "beforeSha256": "44c2d02e4ae3730cd4f97c542c5fe830e0c5cb25e4fb55f678b6711a69f0ef1b",
+      "afterSha256": "44c2d02e4ae3730cd4f97c542c5fe830e0c5cb25e4fb55f678b6711a69f0ef1b"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-enqueue-card-authoring.ts",
+      "status": "reviewed-acceptable",
+      "reason": "enqueueCardAuthoring preserves owner/capacity/idempotency locks, validates active create/update target and effective fields, checks predecessor format/source/context/discard identity, accumulates bounded historical exclusions and persists validated snapshot before reservation. History/request/eligible field variables expose policy; long single admission transaction kept explicit.",
+      "beforeSha256": "4bfbcf7012752d7955e9499bd70d60bbe823dbec66e9fd8b078b964ca903f91b",
+      "afterSha256": "4bfbcf7012752d7955e9499bd70d60bbe823dbec66e9fd8b078b964ca903f91b"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-enqueue-import-pairs-retry.ts",
+      "status": "reviewed-acceptable",
+      "reason": "enqueueImportPairsRetry selects only persisted retryable predecessor failures in sorted original indices, requires reviewable unexpired predecessor, locks current dictionary/settings and validates language/version before new admission/reservation. Exact row lineage and shared instruction/import fingerprint remain visible in one bounded retry command.",
+      "beforeSha256": "1a902a4fb60b535606823f448b42db3ce31b0c68bffda5bf0eadd984f4f88de2",
+      "afterSha256": "1a902a4fb60b535606823f448b42db3ce31b0c68bffda5bf0eadd984f4f88de2"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-enqueue-import-pairs.ts",
+      "status": "reviewed-acceptable",
+      "reason": "enqueueImportPairs reserves bulk_commit uniqueness with bounded expiry cleanup, schema-validates replay, creates or locks target dictionary/settings, rejects all-disabled enrichment and persists per-row import lineage plus execution snapshot. Credit reservation and mapped response finish before idempotency completion; explicit transaction preserves all-or-nothing target creation.",
+      "beforeSha256": "573d8dc7edb5acbdbeed1bda2fe1894e632cab7355ce406f735d3ce7c9dc0abd",
+      "afterSha256": "573d8dc7edb5acbdbeed1bda2fe1894e632cab7355ce406f735d3ce7c9dc0abd"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-enqueue-pasted-terms.ts",
+      "status": "reviewed-acceptable",
+      "reason": "enqueuePastedTerms separates fresh parsed rows from retryable failure selection, requires document predecessor already published, carries original shared context and records predecessor indices while reindexing selected rows. Current aggregate check precedes admission and reservation; enqueueDocumentFailureRetry is a focused adapter to the same invariant.",
+      "beforeSha256": "45112568f96dc8a7bb623c90bb7acf807da8747f6d8be92b029a7a43a4dce631",
+      "afterSha256": "45112568f96dc8a7bb623c90bb7acf807da8747f6d8be92b029a7a43a4dce631"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-enqueue.ts",
+      "status": "reviewed-acceptable",
+      "reason": "enqueue locks capacity/owner/card aggregate, checks idempotent fingerprint and active versions, resolves effective settings and inherited translation context into immutable original snapshot, then persists selected execution/provider reservation and initial credits. Existing snapshot/accounting helpers make one single-card admission transaction cohesive.",
+      "beforeSha256": "96db852cddffb0c5dcd309986fc930e436373cce972dbf40cdd2d929f236adad",
+      "afterSha256": "96db852cddffb0c5dcd309986fc930e436373cce972dbf40cdd2d929f236adad"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-job-access.ts",
+      "status": "reviewed-acceptable",
+      "reason": "workerCas requires running state, worker, token, exact unexpired deadline; lockOwnedJob/card snapshot preserve owner scope. readView expires only visible reviewable proposals and redacts both payload/input before billing projection, while latestForCard orders createdAt/id. Named authority/query helpers are cohesive.",
+      "beforeSha256": "167f9866a24872299af5e546f24b363a27cbf43a8d0f4addd31b3ced652b875a",
+      "afterSha256": "167f9866a24872299af5e546f24b363a27cbf43a8d0f4addd31b3ced652b875a"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-job-mapping.ts",
+      "status": "reviewed-acceptable",
+      "reason": "publicState explicitly hides staged unpublished document proposals behind running/terminal state, then prioritizes accepted/discarded/expired review outcomes. mapJob schema-validates each format-specific public projection, guards authoring persisted target identity and limits original snapshot visibility. Large discriminated mapping is explicit contract coverage.",
+      "beforeSha256": "29921f342594a24bb109aeceb078f5ea39a31408ada982c902caaede6973068c",
+      "afterSha256": "29921f342594a24bb109aeceb078f5ea39a31408ada982c902caaede6973068c"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-maintenance.ts",
+      "status": "reviewed-acceptable",
+      "reason": "observeOperationalState validates measurement window and separates current queues, terminal outcomes, provider settlements, format queues, reviews, document/scanner cleanup and circuit queries with abort checks. Named normalization/queue-age helpers feed one explicit measurement contract. expireReviewPayloads uses bounded skip-locked visible review expiry; declarative metric field volume explains length.",
+      "beforeSha256": "40cf073de4cdbd4f0dbea8b92751dc6ed3432b0efe7c752e381bc4e16abb1d91",
+      "afterSha256": "40cf073de4cdbd4f0dbea8b92751dc6ed3432b0efe7c752e381bc4e16abb1d91"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-worker-leases.ts",
+      "status": "reviewed-acceptable",
+      "reason": "heartbeat requires worker CAS plus uncancelled job; markProviderDispatch distinguishes legacy recheck from unaccounted versus credit-reserved work. releaseWorkerLeases settles before state/fencing transition and treats cancellation or dispatched/exhausted legacy work as terminal, scheduling document cleanup. Focused lease lifecycle exposes exact order.",
+      "beforeSha256": "3e80002a14dd23c9ba0d5f3627012947bf28de33a30677064c109c961829f672",
+      "afterSha256": "3e80002a14dd23c9ba0d5f3627012947bf28de33a30677064c109c961829f672"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-worker-recovery.ts",
+      "status": "reviewed-acceptable",
+      "reason": "recoverGenerationJobs selects bounded skip-locked expired leases compatible with worker revisions, treats dispatched legacy work as exhausted, settles before token increment/redaction/requeue, then handles queued cancellation separately. Access-revoked settlement and document cleanup outcomes remain explicit; two recovery phases are cohesive.",
+      "beforeSha256": "33684622e3c2285af3533c947fd015a53deb3337def37517aea47fb3955d7aef",
+      "afterSha256": "33684622e3c2285af3533c947fd015a53deb3337def37517aea47fb3955d7aef"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/schema.ts",
+      "status": "reviewed-acceptable",
+      "reason": "schema.ts declares enums and tables in dependency order with named table-specific checks/indexes: owner/card compound FKs, lifecycle/share consistency, exact job lease/attempt/provider-credit states, accepted proposal/redaction shape, upload scan/quota/tombstone cleanup chronology, exact object versions, extraction lineage, idempotency and archives. Full constraints/literals read in four contiguous segments; declarative relational volume and cyclic references justify size; no schema restructuring authorized.",
+      "beforeSha256": "b0c47f99ea9b019765758a53b7bc374a8112de63c7916bcc3744834c9cfe4b4e",
+      "afterSha256": "b0c47f99ea9b019765758a53b7bc374a8112de63c7916bcc3744834c9cfe4b4e"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/text-selection-accounting.ts",
+      "status": "reviewed-acceptable",
+      "reason": "selectionBudget isolates persisted provider mapping; reserveSelectionAttempt distinguishes first legacy action from credit reservations and resets dispatch metadata. settleSelectionAttempt validates meters, separates customer eligibility from provider incurred usage, releases undispatched work, settles failure/success and accumulates provider actuals. Accounting remains one explicit financial boundary.",
+      "beforeSha256": "68d8d08f67b91c3ae778dc74ab2fe0122c276e252a26201f82832ce99fbbf241",
+      "afterSha256": "68d8d08f67b91c3ae778dc74ab2fe0122c276e252a26201f82832ce99fbbf241"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/text-selection-claim.ts",
+      "status": "reviewed-acceptable",
+      "reason": "claimSelectionJob rereads candidate under owner/job locks, terminalizes stale legacy/dispatched/expired work, rechecks source and target, enforces shared running/budget capacity and attempts, then increments fencing and admits route/reserves retry before returning lease. Named lifecycle/accounting/source/target seams expose ordering.",
+      "beforeSha256": "bc8da8ea642b5b3ef9e742d6b4553f8ce70e1df403d1ef0f83d75c404b72a204",
+      "afterSha256": "bc8da8ea642b5b3ef9e742d6b4553f8ce70e1df403d1ef0f83d75c404b72a204"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/text-selection-enqueue.ts",
+      "status": "reviewed-acceptable",
+      "reason": "enqueueSelectionJob validates operation-id fingerprint replay before admissions, resolves authoritative selection occurrence and target, prepares selected pricing and checks input envelope before job/reservation creation. Source authority/owner and request hash persist with bounded expiry; selected execution/billing composition is explicit.",
+      "beforeSha256": "27dc4a5625115d7dd5dc1cef8eba6536d2d0bb332ebdae3f5da342e594a4e787",
+      "afterSha256": "27dc4a5625115d7dd5dc1cef8eba6536d2d0bb332ebdae3f5da342e594a4e787"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/text-selection-target.ts",
+      "status": "reviewed-acceptable",
+      "reason": "selectionTarget locks owner dictionary/settings, validates versions/languages and duplicate confirmation; saveSelectionCard repeats target check, enforces retained owner/card capacity, creates target if needed, normalizes values and writes card/revision snapshot before existing aggregate bump. Clear target validation versus atomic publication seams.",
+      "beforeSha256": "5400bb533a2ddbba332faffe6ce80adbc4d322cd00d28e562fb0fb274fadd135",
+      "afterSha256": "5400bb533a2ddbba332faffe6ce80adbc4d322cd00d28e562fb0fb274fadd135"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/interface/http/dictionary-generation.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createDictionaryGenerationRoutes shares validation/error/body/response/bearer/request-context helpers, then explicitly pairs each schema/path/status with corresponding service arguments. Retry/regenerate idempotency headers and cancel/discard action helper preserve distinct contracts. Long file is declarative OpenAPI endpoint coverage; no route abstraction needed in read-only audit.",
+      "beforeSha256": "20676454c81994f355c1cd5a400600f12bb10fde1ad6e5fe582d835f0ff2e024",
+      "afterSha256": "20676454c81994f355c1cd5a400600f12bb10fde1ad6e5fe582d835f0ff2e024"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/interface/http/dictionary-http-error-mapping.ts",
+      "status": "reviewed-acceptable",
+      "reason": "mapDictionaryHttpError uses ordered instanceof mappings preserving authentication/recent-auth/not-found/conflict/credit/capacity/rate/service distinctions and retry-after metadata, then bounded invalid-request grouping and generic internal fallback. Explicit domain-to-HTTP policy table is readable without hiding inheritance priority.",
+      "beforeSha256": "a3f12f2463050edabd8a1a028b7add7bb6f4f40f3fc9cba8d8bd1968eda211d7",
+      "afterSha256": "a3f12f2463050edabd8a1a028b7add7bb6f4f40f3fc9cba8d8bd1968eda211d7"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/interface/http/dictionary.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createDictionaryRoutes orders body bound, security/no-store/origin headers and allowance/error middleware, scopes preflight paths to avoid consuming other modules, and explicitly pairs validated params/body/headers with CRUD/import/export/deletion/sharing services. Lifecycle loops retain archive/restore dispatch; shared key remains header-only. Declarative route count explains length.",
+      "beforeSha256": "3b3d8d43f2da2ad99d9707c68ff4fe089a5099239926a11d8f0cc526ade864b8",
+      "afterSha256": "3b3d8d43f2da2ad99d9707c68ff4fe089a5099239926a11d8f0cc526ade864b8"
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/interface/http/text-selection.routes.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createTextSelectionRoutes scopes security/body/rate-limit middleware to owned paths, handles origin and allowance errors before domain-specific HTTP mapping, and registers validated enqueue/read/cancel contracts with bearer parsing and bounded share-key header. Named useOwned seam prevents cross-module middleware effects; explicit error priority retained.",
+      "beforeSha256": "bf89c1365d117920da92f51df8bbef1494eea6ba63fbc04f39691ea13b342375",
+      "afterSha256": "bf89c1365d117920da92f51df8bbef1494eea6ba63fbc04f39691ea13b342375"
+    }
+  ],
+  "batches": [],
+  "auditCursor": 60,
+  "remaining": 0
+}

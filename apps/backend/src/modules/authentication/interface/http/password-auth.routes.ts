@@ -67,6 +67,7 @@ function getCookie(header: string | undefined, name: string): string | null {
             return pair.slice(separator + 1).trim();
         }
     }
+
     return null;
 }
 
@@ -104,6 +105,7 @@ export function createPasswordAuthRoutes(input: {
         for (const [name, value] of Object.entries(policy.securityHeaders())) {
             context.header(name, value);
         }
+
         const origin = context.req.header('Origin');
         if (origin) {
             try {
@@ -115,6 +117,7 @@ export function createPasswordAuthRoutes(input: {
                 // Operation-level validation maps disallowed origins to a safe response.
             }
         }
+
         await next();
     });
 
@@ -132,9 +135,11 @@ export function createPasswordAuthRoutes(input: {
         ) {
             context.header('Set-Cookie', policy.clearRefreshCookie());
         }
+
         if (mapped.retryAfterSeconds) {
             context.header('Retry-After', String(mapped.retryAfterSeconds));
         }
+
         return context.json(mapped.response(correlationId), mapped.status);
     });
 
@@ -142,7 +147,9 @@ export function createPasswordAuthRoutes(input: {
         if (!origin) {
             throw new InvalidRequestOriginError();
         }
+
         policy.assertCookieRequestOrigin(origin);
+
         return origin;
     };
     const refreshCredential = (cookie: string | undefined) => {
@@ -154,6 +161,7 @@ export function createPasswordAuthRoutes(input: {
                 401,
             );
         }
+
         return credential;
     };
     const bearer = (authorization: string | undefined) =>
@@ -167,11 +175,14 @@ export function createPasswordAuthRoutes(input: {
             'Access-Control-Allow-Headers',
             'Authorization, Content-Type, X-Correlation-ID',
         );
+
         context.header(
             'Access-Control-Allow-Methods',
             'GET, POST, PATCH, DELETE',
         );
+
         context.header('Vary', 'Origin');
+
         return context.body(null, 204);
     });
 
@@ -207,6 +218,7 @@ export function createPasswordAuthRoutes(input: {
         }),
         async (context) => {
             assertOrigin(context.req.header('Origin'));
+
             return context.json(
                 await operations.signUp(
                     context.req.valid('json'),
@@ -235,6 +247,7 @@ export function createPasswordAuthRoutes(input: {
         }),
         async (context) => {
             assertOrigin(context.req.header('Origin'));
+
             return context.json(
                 await operations.resendEmailVerification(
                     context.req.valid('json'),
@@ -267,6 +280,7 @@ export function createPasswordAuthRoutes(input: {
                 context.req.valid('json'),
                 authenticationRequestMetadata(context, policy),
             );
+
             context.header(
                 'Set-Cookie',
                 policy.createRefreshCookie(
@@ -274,6 +288,7 @@ export function createPasswordAuthRoutes(input: {
                     result.response.session.expiresAt,
                 ),
             );
+
             return context.json(result.response, 200);
         },
     );
@@ -295,6 +310,7 @@ export function createPasswordAuthRoutes(input: {
                 context.req.valid('json'),
                 authenticationRequestMetadata(context, policy),
             );
+
             if (
                 result.refreshCredential &&
                 result.response.status === 'authenticated'
@@ -307,6 +323,7 @@ export function createPasswordAuthRoutes(input: {
                     ),
                 );
             }
+
             return context.json(result.response, 200);
         },
     );
@@ -319,6 +336,7 @@ export function createPasswordAuthRoutes(input: {
         policy,
         refreshCredential,
     });
+
     return app;
 }
 
@@ -355,6 +373,7 @@ function registerSessionRoutes(input: SessionRouteDependencies): void {
                 refreshCredential(context.req.header('Cookie')),
                 authenticationRequestMetadata(context, policy),
             );
+
             context.header(
                 'Set-Cookie',
                 policy.createRefreshCookie(
@@ -362,6 +381,7 @@ function registerSessionRoutes(input: SessionRouteDependencies): void {
                     result.response.session.expiresAt,
                 ),
             );
+
             return context.json(result.response, 200);
         },
     );
@@ -386,7 +406,9 @@ function registerSessionRoutes(input: SessionRouteDependencies): void {
                 ),
                 authenticationRequestMetadata(context, policy),
             );
+
             context.header('Set-Cookie', policy.clearRefreshCookie());
+
             return context.json(response, 200);
         },
     );
@@ -416,7 +438,9 @@ function registerSessionRoutes(input: SessionRouteDependencies): void {
                 ),
                 authenticationRequestMetadata(context, policy),
             );
+
             context.header('Set-Cookie', policy.clearRefreshCookie());
+
             return context.json(response, 200);
         },
     );
@@ -445,6 +469,7 @@ function registerPasswordManagementRoutes(
         }),
         async (context) => {
             assertOrigin(context.req.header('Origin'));
+
             return context.json(
                 await operations.forgotPassword(
                     context.req.valid('json'),
@@ -475,7 +500,9 @@ function registerPasswordManagementRoutes(
                 context.req.valid('json'),
                 authenticationRequestMetadata(context, policy),
             );
+
             context.header('Set-Cookie', policy.clearRefreshCookie());
+
             return context.json(response, 200);
         },
     );
@@ -502,6 +529,7 @@ function registerPasswordManagementRoutes(
                 context.req.valid('json'),
                 authenticationRequestMetadata(context, policy),
             );
+
             context.header(
                 'Set-Cookie',
                 policy.createRefreshCookie(
@@ -509,6 +537,7 @@ function registerPasswordManagementRoutes(
                     result.response.session.expiresAt,
                 ),
             );
+
             return context.json(result.response, 200);
         },
     );

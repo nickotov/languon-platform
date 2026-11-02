@@ -50,17 +50,21 @@ export function ResourceList({
         total !== undefined
             ? `${t('shell.viewAll')} · ${total}`
             : t('shell.viewAll');
+
     function retry() {
         void resources.refetch();
     }
+
     function createResource() {
         onNavigate?.();
         create(section.kind);
     }
+
     const messageClass = panel
         ? styles.message
         : `${styles.message} ${styles.insetMessage}`;
-    if (resources.isPending)
+
+    if (resources.isPending) {
         return (
             <div aria-label={t('shell.loading')} className={messageClass}>
                 <Skeleton width='80%' />
@@ -68,6 +72,8 @@ export function ResourceList({
                 <Skeleton width='72%' />
             </div>
         );
+    }
+
     return (
         <div className={styles.resources}>
             {resources.isError ? (

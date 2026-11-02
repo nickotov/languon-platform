@@ -26,12 +26,16 @@ export function ConversationEmpty({
     const workspaceText = workspaceCopy(locale);
     const sourceCopy = sourceKind ? emptyStateCopy(locale, sourceKind) : null;
     let heading = labels.intro;
-    if (sourceCopy && contextLabel)
+    if (sourceCopy && contextLabel) {
         heading = `${sourceCopy.heading} “${contextLabel}”`;
-    if (workspace)
+    }
+
+    if (workspace) {
         heading = editorEmpty
             ? workspaceText.emptyHeading
             : workspaceText.heading;
+    }
+
     const intro = workspace
         ? editorEmpty
             ? workspaceText.emptyIntro
@@ -42,10 +46,13 @@ export function ConversationEmpty({
         labels.suggestionTwo,
         labels.suggestionThree,
     ];
-    if (workspace)
+
+    if (workspace) {
         suggestions = editorEmpty
             ? workspaceText.emptyPrompts
             : workspaceText.prompts;
+    }
+
     return (
         <section className={workspace ? styles.workspaceEmpty : styles.empty}>
             <h3>{heading}</h3>
@@ -68,6 +75,7 @@ export function ConversationEmpty({
         </section>
     );
 }
+
 function Suggestion({
     text,
     onSuggest,
@@ -80,6 +88,7 @@ function Suggestion({
     function choose() {
         onSuggest(text);
     }
+
     return (
         <li>
             <button

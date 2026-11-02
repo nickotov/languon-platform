@@ -62,6 +62,7 @@ beforeEach(() => {
         }),
     );
 });
+
 afterEach(() => {
     cleanup();
     accessTokenStore.clear();
@@ -84,14 +85,17 @@ describe('admin sentence management', () => {
             ({ enabled }) => useSentenceLibrary(userId, enabled),
             { initialProps: { enabled: false } },
         );
+
         expect(discover).not.toHaveBeenCalled();
         rerender({ enabled: true });
         await waitFor(() => expect(discover).toHaveBeenCalledOnce());
     });
+
     it('validates the API list boundary and keeps user/dictionary scope in the request', async () => {
         const fetch = vi
             .fn()
             .mockResolvedValue(json({ items: [item], nextCursor: null }));
+
         vi.stubGlobal('fetch', fetch);
         expect(
             await adminApi.sentences(userId, dictionaryId, {
@@ -99,15 +103,19 @@ describe('admin sentence management', () => {
                 limit: 25,
             }),
         ).toEqual({ items: [item], nextCursor: null });
+
         expect(String(fetch.mock.calls[0]?.[0])).toContain(
             `/admin/users/${userId}/dictionaries/${dictionaryId}/sentences?`,
         );
+
         expect(String(fetch.mock.calls[0]?.[0])).toContain(
             'personalArchive=all',
         );
+
         fetch.mockResolvedValue(
             json({ items: [{ ...item, version: -1 }], nextCursor: null }),
         );
+
         await expect(
             adminApi.sentences(userId, dictionaryId, {
                 ...initialSentenceFilters,
@@ -127,6 +135,7 @@ describe('admin sentence management', () => {
                 selection: sentenceSelection([item], [exerciseId]),
             }),
         ).rejects.toThrow();
+
         expect(fetch).not.toHaveBeenCalled();
     });
 
@@ -135,6 +144,7 @@ describe('admin sentence management', () => {
             type: 'selected',
             items: [{ exerciseId, expectedVersion: 42 }],
         });
+
         expect(() => sentenceSelection([], [exerciseId])).toThrow();
         expect(canDeleteSentences([item], [exerciseId])).toBe(false);
         expect(
@@ -154,10 +164,12 @@ describe('admin sentence management', () => {
         const { result } = renderHook(() =>
             useSentenceMutation(userId, dictionaryId, success),
         );
+
         act(() => result.current.openSelected('archive', [item], [exerciseId]));
         await act(() =>
             result.current.submit('Archive at learner request', false),
         );
+
         expect(result.current.confirmation).not.toBeNull();
         expect(result.current.error?.message).toBe('Network unavailable');
         await act(() =>
@@ -166,6 +178,7 @@ describe('admin sentence management', () => {
                 false,
             ),
         );
+
         expect(mutate.mock.calls[0]?.[2]).toEqual(mutate.mock.calls[1]?.[2]);
         expect(success).toHaveBeenCalledOnce();
         expect(result.current.confirmation).toBeNull();
@@ -191,10 +204,12 @@ describe('admin sentence management', () => {
             operation: 'delete',
             query: filters,
         });
+
         expect(result.current.confirmation?.count).toBe(83);
         await act(() =>
             result.current.submit('Permanently remove archived examples', true),
         );
+
         expect(mutate.mock.calls[0]?.[2]).toMatchObject({
             operation: 'delete',
             confirmation: 'delete-archived-examples',
@@ -217,17 +232,20 @@ describe('admin sentence management', () => {
                 selected={[]}
             />,
         );
+
         await userEvent.click(
             screen.getByRole('checkbox', {
                 name: `Select example: ${item.sourceText}`,
             }),
         );
+
         expect(selected).toHaveBeenCalledWith([exerciseId]);
         await userEvent.click(
             screen.getByRole('button', {
                 name: `Preview example: ${item.sourceText}`,
             }),
         );
+
         expect(preview).toHaveBeenCalledWith(exerciseId);
     });
 
@@ -239,19 +257,23 @@ describe('admin sentence management', () => {
                 correlationId: 'test',
             }),
         );
+
         const { result } = renderHook(() =>
             useSentenceMutation(userId, dictionaryId, vi.fn()),
         );
+
         act(() => result.current.openSelected('archive', [item], [exerciseId]));
         await act(() =>
             result.current.submit('Archive from support request', false),
         );
+
         render(
             <SentenceMutationDialog
                 mutation={result.current}
                 onReload={vi.fn()}
             />,
         );
+
         await waitFor(() =>
             expect(
                 screen.getByText(
@@ -259,9 +281,11 @@ describe('admin sentence management', () => {
                 ),
             ).toBeInTheDocument(),
         );
+
         await userEvent.click(
             screen.getByRole('button', { name: 'Sign in again' }),
         );
+
         expect(logout).toHaveBeenCalled();
         expect(result.current.confirmation).not.toBeNull();
     });

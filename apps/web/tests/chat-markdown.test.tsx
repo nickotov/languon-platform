@@ -7,9 +7,11 @@ describe('tutor Markdown', () => {
         const view = render(
             <ChatMarkdown content='Try **speaking slowly' streaming />,
         );
+
         expect(view.container.querySelector('strong')?.textContent).toBe(
             'speaking slowly',
         );
+
         view.rerender(<ChatMarkdown content='Try **speaking slowly**.' />);
         expect(view.container.textContent).toBe('Try speaking slowly.');
         expect(view.container.querySelector('strong')?.textContent).toBe(
@@ -25,11 +27,13 @@ describe('tutor Markdown', () => {
                 }
             />,
         );
+
         expect(screen.getAllByRole('listitem')).toHaveLength(2);
         expect(screen.getByRole('table')).toBeInTheDocument();
         expect(view.container.querySelector('pre code')?.textContent).toContain(
             'graph TD; A-->B',
         );
+
         expect(
             view.container.querySelector('svg, button, canvas, iframe'),
         ).toBeNull();
@@ -43,6 +47,7 @@ describe('tutor Markdown', () => {
                 }
             />,
         );
+
         const links = screen.getAllByRole('link');
         expect(links).toHaveLength(2);
         expect(links[0]).toHaveAttribute('href', 'https://example.test/lesson');
@@ -50,6 +55,7 @@ describe('tutor Markdown', () => {
             expect(link).toHaveAttribute('target', '_blank');
             expect(link).toHaveAttribute('rel', 'noopener noreferrer');
         }
+
         expect(screen.getByText('script').closest('a')).toBeNull();
     });
 
@@ -64,11 +70,13 @@ describe('tutor Markdown', () => {
                     streaming={streaming}
                 />,
             );
+
             expect(
                 view.container.querySelector(
                     'script, iframe, img, style, svg, video, audio, object, embed',
                 ),
             ).toBeNull();
+
             expect(
                 view.container.querySelector(
                     '[onclick], [onerror], [style*="color:red"]',
@@ -86,12 +94,15 @@ describe('tutor Markdown', () => {
                 streaming
             />,
         );
+
         expect(
             view.container.querySelector('[data-sd-animate]'),
         ).not.toBeNull();
+
         expect(view.container.textContent).toBe(
             'A finished answer. More words',
         );
+
         view.rerender(<ChatMarkdown content='Unclosed **literal' />);
         expect(view.container.textContent).toBe('Unclosed **literal');
         expect(view.container.querySelector('[data-sd-animate]')).toBeNull();
@@ -104,10 +115,12 @@ describe('tutor Markdown', () => {
                 streaming
             />,
         );
+
         expect(screen.queryByRole('link')).toBeNull();
         view.rerender(
             <ChatMarkdown content='Read [this lesson](https://example.test/lesson)' />,
         );
+
         expect(screen.getByRole('link')).toHaveAttribute(
             'href',
             'https://example.test/lesson',

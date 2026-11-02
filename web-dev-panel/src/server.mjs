@@ -44,15 +44,22 @@ function securityHeaders(contentType) {
 
 function parseCookies(header) {
     const cookies = new Map();
-    if (typeof header !== 'string') return cookies;
+    if (typeof header !== 'string') {
+        return cookies;
+    }
+
     for (const item of header.split(';')) {
         const separator = item.indexOf('=');
-        if (separator <= 0) continue;
+        if (separator <= 0) {
+            continue;
+        }
+
         cookies.set(
             item.slice(0, separator).trim(),
             item.slice(separator + 1).trim(),
         );
     }
+
     return cookies;
 }
 
@@ -62,6 +69,7 @@ function writeJson(response, status, value) {
         ...securityHeaders('application/json; charset=utf-8'),
         'Content-Length': Buffer.byteLength(body),
     });
+
     response.end(body);
 }
 
@@ -77,6 +85,7 @@ async function readJson(request) {
             { status: 415 },
         );
     }
+
     const contentLength = Number(request.headers['content-length'] ?? 0);
     if (
         !Number.isFinite(contentLength) ||
@@ -89,6 +98,7 @@ async function readJson(request) {
             { status: 413 },
         );
     }
+
     const chunks = [];
     let length = 0;
     for await (const chunk of request) {
@@ -100,8 +110,10 @@ async function readJson(request) {
                 { status: 413 },
             );
         }
+
         chunks.push(chunk);
     }
+
     try {
         return JSON.parse(Buffer.concat(chunks).toString('utf8'));
     } catch {
@@ -146,6 +158,7 @@ export function createWebDevPanelServer({
     const snapshot = () => {
         const catalog = catalogStore.publicSnapshot();
         const runs = processManager.snapshot();
+
         return {
             catalogIssues: catalog.issues,
             commands: catalog.commands.map((command) => ({
@@ -162,12 +175,17 @@ export function createWebDevPanelServer({
         `id: ${id}\nevent: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 
     const send = (response, event, data, id = sequence) => {
-        if (response.destroyed || response.writableEnded) return false;
+        if (response.destroyed || response.writableEnded) {
+            return false;
+        }
+
         response.write(eventPayload(event, data, id));
         if (response.writableLength > maximumSubscriberBufferBytes) {
             response.end();
+
             return false;
         }
+
         return true;
     };
 
@@ -186,6 +204,7 @@ export function createWebDevPanelServer({
     catalogStore.on('watch-error', ({ code }) =>
         broadcast('server-warning', () => ({ code })),
     );
+
     processManager.on('state', broadcastSnapshot);
     processManager.on('log', (value) => broadcast('log', () => value));
     processManager.on('agent', (value) => broadcast('agent', () => value));
@@ -194,6 +213,7 @@ export function createWebDevPanelServer({
         const address = server.address();
         const activePort =
             address && typeof address === 'object' ? address.port : port;
+
         return `${host}:${activePort}`;
     };
     const expectedOrigin = () => `http://${expectedHost()}`;
@@ -203,9 +223,13 @@ export function createWebDevPanelServer({
         sessionToken;
 
     const validLaunchToken = (value) => {
-        if (typeof value !== 'string') return false;
+        if (typeof value !== 'string') {
+            return false;
+        }
+
         const actual = Buffer.from(value);
         const expected = Buffer.from(launchToken);
+
         return (
             actual.length === expected.length &&
             timingSafeEqual(actual, expected)
@@ -226,6 +250,7 @@ export function createWebDevPanelServer({
                 { status: 401 },
             );
         }
+
         if (
             request.headers.origin !== expectedOrigin() ||
             request.headers['x-languon-dev-panel'] !== '1' ||
@@ -249,14 +274,21 @@ export function createWebDevPanelServer({
                 response.writeHead(204, securityHeaders('image/x-icon'));
                 response.end();
             }
+
             return true;
         }
+
         const staticFile = staticFiles.get(pathname);
-        if (!staticFile) return false;
+        if (!staticFile) {
+            return false;
+        }
+
         if (request.method !== 'GET') {
             writeJson(response, 405, { code: 'method_not_allowed' });
+
             return true;
         }
+
         if (pathname === '/' && !hasSession(request)) {
             if (
                 [...searchParams.keys()].length !== 1 ||
@@ -267,28 +299,37 @@ export function createWebDevPanelServer({
                     message:
                         'Open the private launch URL printed by the panel process.',
                 });
+
                 return true;
             }
+
             response.writeHead(303, {
                 ...securityHeaders('text/plain; charset=utf-8'),
                 Location: '/',
                 'Set-Cookie': `${sessionCookie}=${sessionToken}; HttpOnly; SameSite=Strict; Path=/`,
             });
+
             response.end('Authorized. Redirecting to the panel.');
+
             return true;
         }
+
         if (searchParams.size > 0) {
             writeJson(response, 400, { code: 'query_not_supported' });
+
             return true;
         }
+
         const [filename, contentType] = staticFile;
         const body = await readFile(join(publicDirectory, filename));
         const headers = {
             ...securityHeaders(contentType),
             'Content-Length': body.length,
         };
+
         response.writeHead(200, headers);
         response.end(body);
+
         return true;
     };
 
@@ -301,8 +342,10 @@ export function createWebDevPanelServer({
             } else {
                 writeJson(response, 200, snapshot());
             }
+
             return true;
         }
+
         if (pathname === '/api/events') {
             if (request.method !== 'GET') {
                 writeJson(response, 405, { code: 'method_not_allowed' });
@@ -313,10 +356,14 @@ export function createWebDevPanelServer({
                     ...securityHeaders('text/event-stream; charset=utf-8'),
                     Connection: 'keep-alive',
                 });
+
                 send(response, 'snapshot', snapshot(), sequence);
                 const heartbeat = setInterval(() => {
-                    if (!response.write(': keepalive\n\n')) response.end();
+                    if (!response.write(': keepalive\n\n')) {
+                        response.end();
+                    }
                 }, 15_000);
+
                 heartbeat.unref();
                 eventClients.set(response, heartbeat);
                 request.once('close', () => {
@@ -324,10 +371,14 @@ export function createWebDevPanelServer({
                     eventClients.delete(response);
                 });
             }
+
             return true;
         }
 
-        if (request.method !== 'POST') return false;
+        if (request.method !== 'POST') {
+            return false;
+        }
+
         requireMutationBoundary(request);
         const body = await readJson(request);
         if (pathname === '/api/start') {
@@ -338,10 +389,13 @@ export function createWebDevPanelServer({
                     { status: 400 },
                 );
             }
+
             const runs = await processManager.startBatch(body.selections);
             writeJson(response, 202, { runs });
+
             return true;
         }
+
         if (pathname === '/api/stop-all') {
             if (!validateEmptyBody(body)) {
                 throw new PanelOperationError(
@@ -350,10 +404,13 @@ export function createWebDevPanelServer({
                     { status: 400 },
                 );
             }
+
             const runs = await processManager.stopAll();
             writeJson(response, 202, { runs });
+
             return true;
         }
+
         if (pathname === '/api/stop-selected') {
             if (!validateStopSelectedBody(body)) {
                 throw new PanelOperationError(
@@ -362,11 +419,17 @@ export function createWebDevPanelServer({
                     { status: 400 },
                 );
             }
+
             const runs = await processManager.stopSelected(body.runs);
             writeJson(response, 202, { runs });
+
             return true;
         }
-        if (pathname !== '/api/stop') return false;
+
+        if (pathname !== '/api/stop') {
+            return false;
+        }
+
         if (!validateStopBody(body)) {
             throw new PanelOperationError(
                 'invalid_request',
@@ -374,8 +437,10 @@ export function createWebDevPanelServer({
                 { status: 400 },
             );
         }
+
         const result = await processManager.stop(body.commandId, body.runId);
         writeJson(response, 202, { runs: [result] });
+
         return true;
     };
 
@@ -383,8 +448,10 @@ export function createWebDevPanelServer({
         try {
             if (request.headers.host !== expectedHost()) {
                 writeJson(response, 421, { code: 'invalid_host' });
+
                 return;
             }
+
             const url = new URL(request.url ?? '/', expectedOrigin());
             if (
                 url.pathname === '/health' &&
@@ -395,19 +462,32 @@ export function createWebDevPanelServer({
                     204,
                     securityHeaders('text/plain; charset=utf-8'),
                 );
+
                 response.end();
+
                 return;
             }
+
             if (url.hash) {
                 writeJson(response, 400, { code: 'query_not_supported' });
+
                 return;
             }
-            if (await serveStatic(request, response, url)) return;
+
+            if (await serveStatic(request, response, url)) {
+                return;
+            }
+
             if (url.search) {
                 writeJson(response, 400, { code: 'query_not_supported' });
+
                 return;
             }
-            if (await handleApi(request, response, url.pathname)) return;
+
+            if (await handleApi(request, response, url.pathname)) {
+                return;
+            }
+
             writeJson(response, 404, { code: 'not_found' });
         } catch (error) {
             if (error instanceof PanelOperationError) {
@@ -416,14 +496,17 @@ export function createWebDevPanelServer({
                     issues: error.issues,
                     message: error.message,
                 });
+
                 return;
             }
+
             writeJson(response, 500, {
                 code: 'internal_error',
                 message: 'The panel could not complete this request.',
             });
         }
     });
+
     server.on('clientError', (_error, socket) => {
         socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
     });
@@ -431,34 +514,50 @@ export function createWebDevPanelServer({
     return {
         catalogStore,
         close: () => {
-            if (closePromise) return closePromise;
+            if (closePromise) {
+                return closePromise;
+            }
+
             closing = true;
             closePromise = (async () => {
-                if (startPromise) await startPromise.catch(() => {});
+                if (startPromise) {
+                    await startPromise.catch(() => {});
+                }
+
                 await processManager.shutdown();
                 catalogStore.close();
                 for (const [response, heartbeat] of eventClients) {
                     clearInterval(heartbeat);
                     response.end();
                 }
+
                 eventClients.clear();
                 if (started) {
                     await closeServer(server);
                     started = false;
                 }
             })();
+
             return closePromise;
         },
         processManager,
         server,
         snapshot,
         start: () => {
-            if (started || startPromise)
+            if (started || startPromise) {
                 throw new Error('panel server already started');
-            if (closing) throw new Error('panel server is shutting down');
+            }
+
+            if (closing) {
+                throw new Error('panel server is shutting down');
+            }
+
             startPromise = (async () => {
                 await catalogStore.refresh();
-                if (closing) throw new Error('panel server is shutting down');
+                if (closing) {
+                    throw new Error('panel server is shutting down');
+                }
+
                 await new Promise((resolveStart, rejectStart) => {
                     server.once('error', rejectStart);
                     server.listen(port, host, () => {
@@ -466,13 +565,17 @@ export function createWebDevPanelServer({
                         resolveStart();
                     });
                 });
+
                 started = true;
                 if (closing) {
                     await closeServer(server);
                     started = false;
+
                     throw new Error('panel server is shutting down');
                 }
+
                 catalogStore.startWatching();
+
                 return {
                     launchUrl: `${expectedOrigin()}/?launch=${encodeURIComponent(launchToken)}`,
                     origin: expectedOrigin(),
@@ -480,6 +583,7 @@ export function createWebDevPanelServer({
                     serverSessionId,
                 };
             })();
+
             startPromise.then(
                 () => {
                     startPromise = undefined;
@@ -488,6 +592,7 @@ export function createWebDevPanelServer({
                     startPromise = undefined;
                 },
             );
+
             return startPromise;
         },
     };

@@ -58,8 +58,10 @@ function setup() {
             },
             ...(input === undefined ? {} : { body: JSON.stringify(input) }),
         });
+
     return { ...base, store, library, service, app, request };
 }
+
 describe('sentence library HTTP boundaries', () => {
     it("requires a verified live share key for another learner's library", async () => {
         const f = setup();
@@ -74,6 +76,7 @@ describe('sentence library HTTP boundaries', () => {
                 },
             },
         );
+
         expect(response.status).toBe(200);
         expect(f.library.list).toHaveBeenCalledWith(
             {
@@ -85,9 +88,11 @@ describe('sentence library HTTP boundaries', () => {
             expect.anything(),
             expect.anything(),
         );
+
         expect(f.dependencies.cryptography.verifyShare).toHaveBeenCalledOnce();
         expect(f.store.next).not.toHaveBeenCalled();
     });
+
     it('rejects revoked share access before reading references', async () => {
         const f = setup();
         f.dependencies.cryptography.verifyShare.mockReturnValue(false);
@@ -100,15 +105,18 @@ describe('sentence library HTTP boundaries', () => {
                 },
             },
         );
+
         expect(response.status).toBe(404);
         expect(f.library.detail).not.toHaveBeenCalled();
     });
+
     it('lists saved examples without admitting generation or altering practice', async () => {
         const f = setup();
         f.library.list.mockResolvedValue({ items: [], nextCursor: null });
         const response = await f.request(
             `${prefix}?personalArchive=archived&limit=10`,
         );
+
         expect(response.status).toBe(200);
         expect(await response.json()).toEqual({ items: [], nextCursor: null });
         expect(f.library.list).toHaveBeenCalledWith(
@@ -116,9 +124,12 @@ describe('sentence library HTTP boundaries', () => {
             expect.objectContaining({ personalArchive: 'archived', limit: 10 }),
             expect.objectContaining({ now: f.dependencies.clock.now() }),
         );
-        for (const method of Object.values(f.store))
+
+        for (const method of Object.values(f.store)) {
             expect(method).not.toHaveBeenCalled();
+        }
     });
+
     it('preview routes to a read-only detail operation rather than reference reveal', async () => {
         const f = setup();
         f.library.detail.mockRejectedValue(new SentenceUnavailableError());
@@ -129,15 +140,18 @@ describe('sentence library HTTP boundaries', () => {
             id,
             expect.anything(),
         );
+
         expect(f.store.revealReference).not.toHaveBeenCalled();
         expect(f.store.next).not.toHaveBeenCalled();
     });
+
     it('rejects anonymous management requests without reaching persistence', async () => {
         const f = setup();
         expect((await f.app.request(prefix)).status).toBe(401);
         expect(f.library.list).not.toHaveBeenCalled();
         expect(f.library.mutate).not.toHaveBeenCalled();
     });
+
     it('validates archive operations and excludes admin capabilities at user boundary', async () => {
         const f = setup();
         for (const operation of [
@@ -153,10 +167,13 @@ describe('sentence library HTTP boundaries', () => {
                     items: [{ exerciseId: id, expectedVersion: 0 }],
                 },
             });
+
             expect(response.status).toBe(400);
         }
+
         expect(f.library.mutate).not.toHaveBeenCalled();
     });
+
     it('rejects duplicate selected IDs before any mutation', async () => {
         const f = setup();
         const response = await f.request(`${prefix}/mutations`, {
@@ -170,24 +187,29 @@ describe('sentence library HTTP boundaries', () => {
                 ],
             },
         });
+
         expect(response.status).toBe(400);
         expect(f.library.mutate).not.toHaveBeenCalled();
     });
+
     it('preserves stale confirmations as conflicts without automatic generation', async () => {
         const f = setup();
         f.library.mutate.mockRejectedValue(
             new SentenceConflictError('stale_content'),
         );
+
         const response = await f.request(`${prefix}/mutations`, {
             operationId: id,
             operation: 'archive',
             selection: { type: 'all-matching', snapshotToken: id },
         });
+
         expect(response.status).toBe(409);
         expect((await response.json()).error.code).toBe('stale_content');
         expect(f.library.mutate).toHaveBeenCalledOnce();
         expect(f.store.next).not.toHaveBeenCalled();
     });
+
     it('creates a scoped confirmation without performing its archive', async () => {
         const f = setup();
         f.library.snapshot.mockResolvedValue({
@@ -195,10 +217,12 @@ describe('sentence library HTTP boundaries', () => {
             matchingCount: 42,
             expiresAt: '2026-10-02T12:15:00.000Z',
         });
+
         const response = await f.request(`${prefix}/snapshots`, {
             operation: 'archive',
             query: {},
         });
+
         expect(response.status).toBe(200);
         expect((await response.json()).matchingCount).toBe(42);
         expect(f.library.snapshot).toHaveBeenCalledOnce();

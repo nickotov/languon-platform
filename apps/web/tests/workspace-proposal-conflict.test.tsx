@@ -35,6 +35,7 @@ function setup(
         shareEnabled: false,
         limits: { referenceChars: 40000, editorChars: 40000 },
     } satisfies KnowledgeWorkspace;
+
     render(
         <WorkspaceConflictDialogs
             workspace={workspace}
@@ -54,10 +55,12 @@ function setup(
             onNewTarget={onNewTarget}
         />,
     );
+
     const dialog = screen.getByRole('dialog', {
         name: 'The proposal target changed',
         exact: true,
     });
+
     return { dialog, applyProposal, onCloseProposal, onNewTarget };
 }
 
@@ -66,6 +69,7 @@ it('conflict append retains the explicit literal format and closes only after su
         'applied',
         'plain-text',
     );
+
     expect(dialog).toHaveTextContent('**New wording**');
     fireEvent.click(
         within(dialog).getByRole('button', {
@@ -73,12 +77,14 @@ it('conflict append retains the explicit literal format and closes only after su
             exact: true,
         }),
     );
+
     expect(applyProposal).toHaveBeenCalledWith(
         '**New wording**',
         'append',
         undefined,
         'plain-text',
     );
+
     expect(onCloseProposal).toHaveBeenCalledTimes(1);
 });
 
@@ -91,6 +97,7 @@ it('keeps the conflict visible and reports an atomic insertion failure', () => {
             exact: true,
         }),
     );
+
     expect(onCloseProposal).not.toHaveBeenCalled();
     expect(dialog).toHaveTextContent('your document has not changed');
 });
@@ -103,11 +110,13 @@ it('passes the selected literal format to new-target recovery', () => {
             exact: true,
         }),
     );
+
     fireEvent.click(
         within(dialog).getByRole('button', {
             name: 'Choose a new target',
             exact: true,
         }),
     );
+
     expect(onNewTarget).toHaveBeenCalledWith('plain-text');
 });

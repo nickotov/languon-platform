@@ -42,6 +42,7 @@ export function validateDictionaryLanguagePair(
     ) {
         throw new InvalidDictionaryLanguagePairError('unsupported_language');
     }
+
     if (sourceLanguageTag === targetLanguageTag) {
         throw new InvalidDictionaryLanguagePairError('same_language');
     }

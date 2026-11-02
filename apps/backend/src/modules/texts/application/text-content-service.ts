@@ -36,18 +36,23 @@ export class TextContentService {
             windowMs: 60000,
             signal: context.signal,
         });
-        if (!decision.allowed)
+
+        if (!decision.allowed) {
             throw new TextDomainError(
                 'rate_limited',
                 'Too many requests. Please try again shortly.',
             );
+        }
     }
+
     private async owner(token: string, context: TextRequestContext) {
         await this.rate(context.clientAddress, context, true);
         const principal = await this.dependencies.authenticate(token);
         await this.rate(principal.userId, context);
+
         return principal.userId;
     }
+
     async listFolders(
         token: string,
         context: TextRequestContext,
@@ -58,6 +63,7 @@ export class TextContentService {
             page,
         );
     }
+
     async createFolder(
         token: string,
         context: TextRequestContext,
@@ -68,6 +74,7 @@ export class TextContentService {
             request,
         );
     }
+
     async updateFolder(
         token: string,
         context: TextRequestContext,
@@ -80,6 +87,7 @@ export class TextContentService {
             request,
         );
     }
+
     async folderLifecycle(
         token: string,
         context: TextRequestContext,
@@ -94,6 +102,7 @@ export class TextContentService {
             lifecycle,
         );
     }
+
     async listTexts(
         token: string,
         context: TextRequestContext,
@@ -106,12 +115,14 @@ export class TextContentService {
             page,
         );
     }
+
     async pendingJob(token: string, context: TextRequestContext, id: string) {
         return this.dependencies.store.pendingJob(
             await this.owner(token, context),
             id,
         );
     }
+
     async moveText(
         token: string,
         context: TextRequestContext,
@@ -124,6 +135,7 @@ export class TextContentService {
             request,
         );
     }
+
     async createText(
         token: string,
         context: TextRequestContext,
@@ -134,12 +146,14 @@ export class TextContentService {
             request,
         );
     }
+
     async getText(token: string, context: TextRequestContext, id: string) {
         return this.dependencies.store.getText(
             await this.owner(token, context),
             id,
         );
     }
+
     async saveText(
         token: string,
         context: TextRequestContext,
@@ -152,6 +166,7 @@ export class TextContentService {
             request,
         );
     }
+
     async textLifecycle(
         token: string,
         context: TextRequestContext,
@@ -166,6 +181,7 @@ export class TextContentService {
             lifecycle,
         );
     }
+
     async issueShare(
         token: string,
         context: TextRequestContext,
@@ -180,6 +196,7 @@ export class TextContentService {
             version,
         );
     }
+
     async revokeShare(
         token: string,
         context: TextRequestContext,
@@ -194,14 +211,17 @@ export class TextContentService {
             version,
         );
     }
+
     async readShared(
         context: TextRequestContext,
         access: TextShareAccess,
         page: TextPage,
     ) {
         await this.rate(context.clientAddress, context, true);
+
         return this.dependencies.store.readShared(access, page);
     }
+
     async copyShared(
         token: string,
         context: TextRequestContext,

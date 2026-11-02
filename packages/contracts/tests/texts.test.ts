@@ -34,12 +34,14 @@ const alignment = {
     translation: [{ pairId: id, text: 'Hola.' }],
     editedPairIds: [],
 };
+
 describe('Texts contracts', () => {
     it('accepts explicit independent membership for creation, copying and jobs', () => {
         expect(
             CreateTextRequestSchema.parse({ folderId: null, ...content })
                 .folderId,
         ).toBeNull();
+
         expect(
             EnqueueTextDetectionRequestSchema.parse({
                 folderId: null,
@@ -47,6 +49,7 @@ describe('Texts contracts', () => {
                 sourceText: 'Hello.',
             }).folderId,
         ).toBeNull();
+
         expect(
             EnqueueTextTranslationRequestSchema.parse({
                 folderId: null,
@@ -54,6 +57,7 @@ describe('Texts contracts', () => {
                 ...content,
             }).folderId,
         ).toBeNull();
+
         expect(
             CopySharedTextRequestSchema.parse({
                 folderId: null,
@@ -61,6 +65,7 @@ describe('Texts contracts', () => {
                 expectedVersion: 1,
             }).folderId,
         ).toBeNull();
+
         expect(
             CopySharedTextRequestSchema.safeParse({
                 folderId: null,
@@ -70,10 +75,12 @@ describe('Texts contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('requires a version and exact shared-folder confirmation shape on moves', () => {
         expect(
             MoveTextRequestSchema.parse({ folderId: null, expectedVersion: 1 }),
         ).toEqual({ folderId: null, expectedVersion: 1 });
+
         expect(
             MoveTextRequestSchema.parse({
                 folderId: id,
@@ -81,9 +88,11 @@ describe('Texts contracts', () => {
                 sharedFolderConfirmation: { shareId: other, shareVersion: 3 },
             }).sharedFolderConfirmation?.shareVersion,
         ).toBe(3);
+
         expect(MoveTextRequestSchema.safeParse({ folderId: id }).success).toBe(
             false,
         );
+
         expect(
             MoveTextRequestSchema.safeParse({
                 folderId: id,
@@ -92,26 +101,32 @@ describe('Texts contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('counts Unicode code points and preserves source whitespace', () => {
         expect(TextSourceSchema.parse(' \nHello.\n ')).toBe(' \nHello.\n ');
         expect(TextSourceSchema.safeParse('😀'.repeat(20_000)).success).toBe(
             true,
         );
+
         expect(TextSourceSchema.safeParse('😀'.repeat(20_001)).success).toBe(
             false,
         );
+
         expect(TextSourceSchema.safeParse('\ud800')).toMatchObject({
             success: false,
         });
+
         expect(TextSourceSchema.safeParse('\u0000')).toMatchObject({
             success: false,
         });
     });
+
     it('requires supported distinct languages and paired existing text references', () => {
         expect(
             CreateTextRequestSchema.safeParse({ folderId: id, ...content })
                 .success,
         ).toBe(true);
+
         expect(
             CreateTextRequestSchema.safeParse({
                 folderId: id,
@@ -119,6 +134,7 @@ describe('Texts contracts', () => {
                 targetLanguage: 'en',
             }).success,
         ).toBe(false);
+
         expect(
             EnqueueTextTranslationRequestSchema.safeParse({
                 folderId: id,
@@ -128,6 +144,7 @@ describe('Texts contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('rejects reordered pairs, fabricated edited IDs, gaps, and truncated mappings', () => {
         expect(TextAlignmentSchema.parse(alignment)).toEqual(alignment);
         expect(
@@ -136,16 +153,19 @@ describe('Texts contracts', () => {
                 translation: [{ pairId: other, text: 'Hola.' }],
             }).success,
         ).toBe(false);
+
         expect(
             TextAlignmentSchema.safeParse({
                 ...alignment,
                 editedPairIds: [other],
             }).success,
         ).toBe(false);
+
         expect(
             TextAlignmentSchema.safeParse({ ...alignment, translation: [] })
                 .success,
         ).toBe(false);
+
         expect(
             TextAlignmentSchema.safeParse({
                 ...alignment,
@@ -153,6 +173,7 @@ describe('Texts contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('rejects proposal source rewriting and client assigned edit provenance', () => {
         const proposal = {
             id,
@@ -161,15 +182,18 @@ describe('Texts contracts', () => {
             textId: null,
             expectedTextVersion: null,
         };
+
         expect(TextTranslationProposalSchema.safeParse(proposal).success).toBe(
             true,
         );
+
         expect(
             TextTranslationProposalSchema.safeParse({
                 ...proposal,
                 sourceText: 'Changed.',
             }).success,
         ).toBe(false);
+
         expect(
             TextTranslationProposalSchema.safeParse({
                 ...proposal,
@@ -177,6 +201,7 @@ describe('Texts contracts', () => {
             }).success,
         ).toBe(false);
     });
+
     it('never accepts a capability key or raw context in collection requests', () => {
         const request = {
             operationId: id,
@@ -194,15 +219,18 @@ describe('Texts contracts', () => {
             },
             target: { kind: 'new', name: 'Words' },
         };
+
         expect(
             EnqueueTextSelectionRequestSchema.safeParse(request).success,
         ).toBe(true);
+
         expect(
             EnqueueTextSelectionRequestSchema.safeParse({
                 ...request,
                 source: { ...request.source, key: 'secret' },
             }).success,
         ).toBe(false);
+
         expect(
             EnqueueTextSelectionRequestSchema.safeParse({
                 ...request,
@@ -222,23 +250,28 @@ it('rejects impossible job state/result combinations and mismatched proposal ide
         createdAt: '2026-10-15T00:00:00Z',
         completedAt: '2026-10-15T00:00:01Z',
     };
+
     expect(TextAiJobSchema.safeParse(job).success).toBe(true);
     expect(
         TextAiJobSchema.safeParse({ ...job, state: 'running' }).success,
     ).toBe(false);
+
     expect(TextAiJobSchema.safeParse({ ...job, result: null }).success).toBe(
         false,
     );
+
     expect(
         TextAiJobSchema.safeParse({ ...job, kind: 'text-translation' }).success,
     ).toBe(false);
 });
+
 it('bounds cumulative manual edits and rejects duplicate pair identities', () => {
     const pair = { pairId: id, source: 'A'.repeat(11_000), translation: 'B' };
     expect(
         TextPairEditsSchema.safeParse([pair, { ...pair, pairId: other }])
             .success,
     ).toBe(false);
+
     expect(
         TextPairEditsSchema.safeParse([
             { ...pair, source: 'A' },
@@ -253,12 +286,14 @@ it('validates optional owner metadata and exactly one copy destination', () => {
         CopySharedTextRequestSchema.safeParse({ ...request, folderId: other })
             .success,
     ).toBe(true);
+
     expect(
         CopySharedTextRequestSchema.parse({
             ...request,
             newFolderName: '  Stories  ',
         }).newFolderName,
     ).toBe('Stories');
+
     for (const destination of [
         {},
         { folderId: other, newFolderName: 'Stories' },
@@ -272,6 +307,7 @@ it('validates optional owner metadata and exactly one copy destination', () => {
             }).success,
         ).toBe(false);
     }
+
     const folder = {
         id,
         name: 'Stories',
@@ -281,6 +317,7 @@ it('validates optional owner metadata and exactly one copy destination', () => {
         createdAt: '2026-10-15T00:00:00Z',
         updatedAt: '2026-10-15T00:00:00Z',
     };
+
     expect(TextFolderSchema.safeParse(folder).success).toBe(true);
     expect(
         TextFolderSchema.safeParse({
@@ -290,6 +327,7 @@ it('validates optional owner metadata and exactly one copy destination', () => {
             isShared: true,
         }).success,
     ).toBe(true);
+
     expect(
         TextFolderSchema.safeParse({ ...folder, textCount: -1 }).success,
     ).toBe(false);
@@ -300,12 +338,14 @@ it('validates optional whole-folder copy names while preserving legacy requests'
         CopySharedTextFolderRequestSchema.safeParse({ operationId: id })
             .success,
     ).toBe(true);
+
     expect(
         CopySharedTextFolderRequestSchema.parse({
             operationId: id,
             newFolderName: ' Stories ',
         }).newFolderName,
     ).toBe('Stories');
+
     expect(
         CopySharedTextFolderRequestSchema.safeParse({
             operationId: id,
@@ -322,6 +362,7 @@ it('accepts optional UUID operation identity for explicit draft creation', () =>
             operationId: other,
         }).success,
     ).toBe(true);
+
     expect(
         CreateTextRequestSchema.safeParse({
             folderId: id,

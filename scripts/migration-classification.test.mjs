@@ -30,6 +30,7 @@ test('rejects stale and contract migration classifications', () => {
         compatibility: 'expand',
         rationale: 'This remains compatible with both running slots.',
     };
+
     assert.throws(
         () =>
             validateMigrationClassification(
@@ -39,6 +40,7 @@ test('rejects stale and contract migration classifications', () => {
             ),
         /stale/,
     );
+
     assert.throws(
         () =>
             validateMigrationClassification(
@@ -52,6 +54,7 @@ test('rejects stale and contract migration classifications', () => {
             ),
         /cannot precede/,
     );
+
     assert.throws(
         () =>
             validateMigrationClassification(

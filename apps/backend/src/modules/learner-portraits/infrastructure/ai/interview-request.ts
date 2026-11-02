@@ -19,7 +19,10 @@ export function buildInterviewRequest(
     operation: Pick<InterviewOperation, 'input' | 'context'>,
 ) {
     const completed = new Set(operation.context.completedTopics);
-    if (operation.input.kind !== 'chat') completed.add(operation.input.topic);
+    if (operation.input.kind !== 'chat') {
+        completed.add(operation.input.topic);
+    }
+
     return JSON.stringify({
         nextCoreTopic:
             coreTopics.find((topic) => !completed.has(topic)) ?? 'update',
@@ -37,6 +40,7 @@ export function buildInterviewSchemaInstruction() {
         target: 'draft-7',
         unrepresentable: 'any',
     });
+
     return `Return your response as JSON matching this schema:\n\n${JSON.stringify(schema)}\n\nReturn only valid JSON. Do not include markdown or explanatory text.`;
 }
 
@@ -69,6 +73,7 @@ export function interviewInputTokenLimit(
         ],
         tools: [],
     };
+
     return Math.min(
         modelLimit,
         Buffer.byteLength(JSON.stringify(envelope), 'utf8') + 256,
@@ -87,9 +92,17 @@ export function chooseInterviewOutputTokenLimit(input: {
     availableCredits?: bigint;
 }): number | null {
     const maximum = Math.min(INTERVIEW_MAX_OUTPUT_TOKENS, input.modelLimit);
-    if (!Number.isSafeInteger(maximum) || maximum < INTERVIEW_MIN_OUTPUT_TOKENS)
+    if (
+        !Number.isSafeInteger(maximum) ||
+        maximum < INTERVIEW_MIN_OUTPUT_TOKENS
+    ) {
         return null;
-    if (input.availableCredits === undefined) return maximum;
+    }
+
+    if (input.availableCredits === undefined) {
+        return maximum;
+    }
+
     const affordable = (output: number) =>
         BigInt(
             maximumTextPrice(
@@ -100,14 +113,22 @@ export function chooseInterviewOutputTokenLimit(input: {
                 input.creditPricing,
             ),
         ) <= input.availableCredits!;
-    if (!affordable(INTERVIEW_MIN_OUTPUT_TOKENS)) return null;
+
+    if (!affordable(INTERVIEW_MIN_OUTPUT_TOKENS)) {
+        return null;
+    }
+
     let lower = INTERVIEW_MIN_OUTPUT_TOKENS;
     let upper = maximum;
     while (lower < upper) {
         const middle = Math.floor((lower + upper + 1) / 2);
-        if (affordable(middle)) lower = middle;
-        else upper = middle - 1;
+        if (affordable(middle)) {
+            lower = middle;
+        } else {
+            upper = middle - 1;
+        }
     }
+
     return lower;
 }
 
@@ -127,14 +148,17 @@ export function readInterviewInputTokenLimit(
         execution.interviewInputTokenLimit === undefined
             ? modelLimit
             : execution.interviewInputTokenLimit;
+
     if (
         !Number.isSafeInteger(limit) ||
         !modelLimit ||
         !limit ||
         limit < 1 ||
         limit > modelLimit
-    )
+    ) {
         throw new Error('Pinned interview input limit is invalid.');
+    }
+
     return limit;
 }
 
@@ -153,6 +177,7 @@ export function readInterviewOutputTokenLimit(
         execution.interviewOutputTokenLimit === undefined
             ? maximum
             : execution.interviewOutputTokenLimit;
+
     if (
         !Number.isSafeInteger(modelLimit) ||
         !modelLimit ||
@@ -161,7 +186,9 @@ export function readInterviewOutputTokenLimit(
         limit > maximum ||
         (execution.interviewOutputTokenLimit !== undefined &&
             limit < INTERVIEW_MIN_OUTPUT_TOKENS)
-    )
+    ) {
         throw new Error('Pinned interview output limit is invalid.');
+    }
+
     return limit;
 }

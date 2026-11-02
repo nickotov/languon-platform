@@ -77,11 +77,13 @@ run('real composed flashcard HTTP journeys', () => {
                 REDIS_URL: process.env.AUTH_TEST_REDIS_URL,
             }),
         );
+
         const dependencies = {
             ...authentication.productDependencies,
             dictionaryHmacSecret,
             policy: authentication.options.policy,
         };
+
         app = createApp({
             authentication: authentication.options,
             dictionaries: createDictionaryComposition(dependencies).routes,
@@ -90,6 +92,7 @@ run('real composed flashcard HTTP journeys', () => {
                 enabled: true,
             }).routes,
         });
+
         ownerToken = await signup('learning-owner');
     });
 
@@ -131,6 +134,7 @@ run('real composed flashcard HTTP journeys', () => {
             },
         });
     }
+
     async function signup(label: string) {
         const signupResponse = await request('/auth/sign-up', {
             method: 'POST',
@@ -139,6 +143,7 @@ run('real composed flashcard HTTP journeys', () => {
                 password: 'A safe learning password 47!',
             },
         });
+
         expect(signupResponse.status).toBe(202);
         const flowId = SignUpResponseSchema.parse(await signupResponse.json())
             .verification.flowId;
@@ -146,10 +151,13 @@ run('real composed flashcard HTTP journeys', () => {
             method: 'POST',
             body: { code: '0000', flowId },
         });
+
         expect(verified.status).toBe(200);
+
         return AuthenticationSuccessResponseSchema.parse(await verified.json())
             .accessToken;
     }
+
     async function dictionary() {
         const created = await request('/dictionaries', {
             method: 'POST',
@@ -161,6 +169,7 @@ run('real composed flashcard HTTP journeys', () => {
                 targetLanguage: 'fr',
             },
         });
+
         expect(created.status).toBe(201);
         const current = DictionaryResponseSchema.parse(
             await created.json(),
@@ -174,17 +183,20 @@ run('real composed flashcard HTTP journeys', () => {
                 values: { source: 'book', translation: 'livre' },
             },
         });
+
         expect(card.status).toBe(201);
         const body = (await card.json()) as {
             card: { id: string };
             dictionaryVersion: number;
         };
+
         return {
             id: current.id,
             entryId: body.card.id,
             version: body.dictionaryVersion,
         };
     }
+
     async function share(current: Awaited<ReturnType<typeof dictionary>>) {
         const rotated = await request(
             `/dictionaries/${current.id}/share-key/rotate`,
@@ -194,12 +206,15 @@ run('real composed flashcard HTTP journeys', () => {
                 body: { expectedDictionaryVersion: current.version },
             },
         );
+
         expect(rotated.status).toBe(200);
+
         return (await rotated.json()) as {
             capability: { shareId: string; shareKey: string };
             dictionary: { version: number };
         };
     }
+
     const attempt = (entryId: string, rating: 'known' | 'again' = 'known') => ({
         operationId: randomUUID(),
         sessionId: randomUUID(),
@@ -219,20 +234,24 @@ run('real composed flashcard HTTP journeys', () => {
             const document = (await openapi.json()) as {
                 paths: Record<string, unknown>;
             };
+
             expect(
                 document.paths[
                     '/learning/dictionaries/{dictionaryId}/flashcards/attempts'
                 ],
             ).toBeDefined();
+
             const current = await dictionary();
             const prefix = `/learning/dictionaries/${current.id}`;
             const initial = await request(`${prefix}/flashcards/preferences`, {
                 token: ownerToken,
             });
+
             expect(initial.status).toBe(200);
             expect(
                 FlashcardPreferencesSchema.parse(await initial.json()).version,
             ).toBe(0);
+
             const preferenceBody = {
                 configuration,
                 shuffle: true,
@@ -243,10 +262,12 @@ run('real composed flashcard HTTP journeys', () => {
                 token: ownerToken,
                 body: preferenceBody,
             });
+
             expect(saved.status).toBe(200);
             expect(
                 FlashcardPreferencesSchema.parse(await saved.json()).version,
             ).toBe(1);
+
             expect(
                 (
                     await request(`${prefix}/flashcards/preferences`, {
@@ -256,11 +277,13 @@ run('real composed flashcard HTTP journeys', () => {
                     })
                 ).status,
             ).toBe(409);
+
             const prepared = await request(`${prefix}/flashcards/prepare`, {
                 method: 'POST',
                 token: ownerToken,
                 body: { configuration, scope: { type: 'all' } },
             });
+
             expect(prepared.status).toBe(200);
             expect(
                 FlashcardPrepareResponseSchema.parse(await prepared.json()),
@@ -270,22 +293,26 @@ run('real composed flashcard HTTP journeys', () => {
                 skippedCount: 0,
                 fallbackCount: 1,
             });
+
             const items = await request(`${prefix}/flashcards/items`, {
                 method: 'POST',
                 token: ownerToken,
                 body: { configuration, entryIds: [current.entryId] },
             });
+
             expect(items.status).toBe(200);
             expect(
                 FlashcardItemsResponseSchema.parse(await items.json()).items[0]
                     ?.front[0],
             ).toMatchObject({ text: 'livre', fallback: true });
+
             const body = attempt(current.entryId);
             const rated = await request(`${prefix}/flashcards/attempts`, {
                 method: 'POST',
                 token: ownerToken,
                 body,
             });
+
             expect(rated.status).toBe(200);
             const result = FlashcardAttemptResponseSchema.parse(
                 await rated.json(),
@@ -295,10 +322,12 @@ run('real composed flashcard HTTP journeys', () => {
                 token: ownerToken,
                 body,
             });
+
             expect(replay.status).toBe(200);
             expect(
                 FlashcardAttemptResponseSchema.parse(await replay.json()),
             ).toEqual(result);
+
             expect(
                 (
                     await request(`${prefix}/flashcards/attempts`, {
@@ -308,12 +337,15 @@ run('real composed flashcard HTTP journeys', () => {
                     })
                 ).status,
             ).toBe(409);
+
             const progress = await request(`${prefix}/flashcards/progress`, {
                 token: ownerToken,
             });
+
             expect(
                 FlashcardProgressResponseSchema.parse(await progress.json()),
             ).toEqual({ total: 1, known: 1, again: 0, unstudied: 0 });
+
             const undoBody = { operationId: randomUUID() };
             const undoPath = `${prefix}/flashcards/attempts/${result.attemptId}/undo`;
             const undone = await request(undoPath, {
@@ -321,10 +353,12 @@ run('real composed flashcard HTTP journeys', () => {
                 token: ownerToken,
                 body: undoBody,
             });
+
             expect(undone.status).toBe(200);
             expect(
                 FlashcardUndoResponseSchema.parse(await undone.json()).rating,
             ).toBeNull();
+
             expect(
                 (
                     await request(undoPath, {
@@ -334,9 +368,11 @@ run('real composed flashcard HTTP journeys', () => {
                     })
                 ).status,
             ).toBe(200);
+
             const after = await request(`${prefix}/flashcards/progress`, {
                 token: ownerToken,
             });
+
             expect(
                 FlashcardProgressResponseSchema.parse(await after.json()),
             ).toEqual({ total: 1, known: 0, again: 0, unstudied: 1 });
@@ -351,6 +387,7 @@ run('real composed flashcard HTTP journeys', () => {
                     body: attempt(current.entryId),
                 },
             );
+
             expect(beforeArchive.status).toBe(200);
             const latestAttempt = FlashcardAttemptResponseSchema.parse(
                 await beforeArchive.json(),
@@ -359,6 +396,7 @@ run('real composed flashcard HTTP journeys', () => {
                 `/dictionaries/${current.id}/cards/${current.entryId}`,
                 { token: ownerToken },
             );
+
             expect(cardResponse.status).toBe(200);
             const card = DictionaryCardResponseSchema.parse(
                 await cardResponse.json(),
@@ -374,6 +412,7 @@ run('real composed flashcard HTTP journeys', () => {
                     },
                 },
             );
+
             expect(archived.status).toBe(200);
             const unavailableRequests = [
                 {
@@ -385,26 +424,31 @@ run('real composed flashcard HTTP journeys', () => {
                     body: { operationId: randomUUID() },
                 },
             ];
+
             for (const unavailable of unavailableRequests) {
                 const response = await request(unavailable.path, {
                     method: 'POST',
                     token: ownerToken,
                     body: unavailable.body,
                 });
+
                 expect(response.status).toBe(404);
                 expect(
                     LearningErrorResponseSchema.parse(await response.json())
                         .error.code,
                 ).toBe('entry_not_found');
             }
+
             expect(
                 (await request(`${prefix}/entries`, { token: ownerToken }))
                     .status,
             ).toBe(200);
+
             const currentProgress = await request(
                 `${prefix}/flashcards/progress`,
                 { token: ownerToken },
             );
+
             expect(currentProgress.status).toBe(200);
             expect(
                 FlashcardProgressResponseSchema.parse(
@@ -440,6 +484,7 @@ run('real composed flashcard HTTP journeys', () => {
                     },
                 },
             );
+
             expect(firstPreferences.status).toBe(200);
             const secondPreferences = await request(
                 `${prefix}/flashcards/preferences`,
@@ -448,6 +493,7 @@ run('real composed flashcard HTTP journeys', () => {
                     shareKey: shared.capability.shareKey,
                 },
             );
+
             expect(secondPreferences.status).toBe(200);
             expect(
                 FlashcardPreferencesSchema.parse(
@@ -458,6 +504,7 @@ run('real composed flashcard HTTP journeys', () => {
                 shuffle: true,
                 version: 0,
             });
+
             for (const [token, rating] of [
                 [first, 'known'],
                 [second, 'again'],
@@ -468,6 +515,7 @@ run('real composed flashcard HTTP journeys', () => {
                     shareKey: shared.capability.shareKey,
                     body: attempt(current.entryId, rating),
                 });
+
                 expect(rated.status).toBe(200);
                 const progress = await request(
                     `${prefix}/flashcards/progress`,
@@ -476,6 +524,7 @@ run('real composed flashcard HTTP journeys', () => {
                         shareKey: shared.capability.shareKey,
                     },
                 );
+
                 expect(progress.status).toBe(200);
                 expect(
                     FlashcardProgressResponseSchema.parse(
@@ -487,10 +536,12 @@ run('real composed flashcard HTTP journeys', () => {
                     again: rating === 'again' ? 1 : 0,
                 });
             }
+
             const owner = await request(
                 `/learning/dictionaries/${current.id}/flashcards/progress`,
                 { token: ownerToken },
             );
+
             expect(
                 FlashcardProgressResponseSchema.parse(await owner.json())
                     .unstudied,
@@ -512,10 +563,12 @@ run('real composed flashcard HTTP journeys', () => {
                 method: 'POST',
                 body: { configuration, scope: { type: 'all' } },
             });
+
             expect(content.status).toBe(200);
             expect(content.headers.get('cache-control')).toBe(
                 'private, no-store',
             );
+
             expect(content.headers.get('referrer-policy')).toBe('no-referrer');
             for (const operation of [
                 { path: 'preferences', method: 'GET' },
@@ -525,7 +578,7 @@ run('real composed flashcard HTTP journeys', () => {
                     method: 'POST',
                     body: attempt(current.entryId),
                 },
-            ])
+            ]) {
                 expect(
                     (
                         await request(
@@ -537,6 +590,8 @@ run('real composed flashcard HTTP journeys', () => {
                         )
                     ).status,
                 ).toBe(401);
+            }
+
             expect(
                 (
                     await request(`${prefix}/flashcards/items`, {
@@ -547,15 +602,18 @@ run('real composed flashcard HTTP journeys', () => {
                     })
                 ).status,
             ).toBe(401);
+
             const anonymousAfter = await request(
                 `/learning/dictionaries/${current.id}/flashcards/progress`,
                 { token: ownerToken },
             );
+
             expect(
                 FlashcardProgressResponseSchema.parse(
                     await anonymousAfter.json(),
                 ),
             ).toEqual({ total: 1, known: 0, again: 0, unstudied: 1 });
+
             const body = attempt(current.entryId);
             expect(
                 (
@@ -567,6 +625,7 @@ run('real composed flashcard HTTP journeys', () => {
                     })
                 ).status,
             ).toBe(200);
+
             const rotated = await request(
                 `/dictionaries/${current.id}/share-key/rotate`,
                 {
@@ -577,6 +636,7 @@ run('real composed flashcard HTTP journeys', () => {
                     },
                 },
             );
+
             expect(rotated.status).toBe(200);
             expect(
                 (
@@ -588,6 +648,7 @@ run('real composed flashcard HTTP journeys', () => {
                     })
                 ).status,
             ).toBe(404);
+
             expect(
                 (
                     await request(`${prefix}/flashcards/items`, {

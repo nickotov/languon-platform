@@ -148,6 +148,7 @@ const copy = {
         close: 'Cerrar ventana',
     },
 };
+
 export function preferenceCopy(locale: Locale) {
     return copy[locale];
 }

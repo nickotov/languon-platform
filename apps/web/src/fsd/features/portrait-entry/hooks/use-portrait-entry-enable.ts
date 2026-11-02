@@ -29,7 +29,10 @@ export function usePortraitEntryEnable({
 }) {
     const client = useQueryClient();
     const scopeRef = useRef<OwnerScope>({ ownerId });
-    if (scopeRef.current.ownerId !== ownerId) scopeRef.current = { ownerId };
+    if (scopeRef.current.ownerId !== ownerId) {
+        scopeRef.current = { ownerId };
+    }
+
     const scope = scopeRef.current;
     const activeRequest = useRef<EnableRequest | null>(null);
     const [mutation, setMutation] = useState<EnableState | null>(null);
@@ -43,8 +46,10 @@ export function usePortraitEntryEnable({
             !state ||
             scopeRef.current !== scope ||
             activeRequest.current?.scope === scope
-        )
+        ) {
             return;
+        }
+
         const request = { scope };
         activeRequest.current = request;
         setMutation({ request, pending: true, failed: false });
@@ -55,6 +60,7 @@ export function usePortraitEntryEnable({
                 useSessionStore.getState().user?.id === ownerId
             );
         }
+
         try {
             const next = await requestWithSession((token) =>
                 portraitApi.setUse(token, {
@@ -62,7 +68,11 @@ export function usePortraitEntryEnable({
                     enabled: true,
                 }),
             );
-            if (!ownsRequest()) return;
+
+            if (!ownsRequest()) {
+                return;
+            }
+
             setPortraitStateCache(client, ownerId, next);
             await Promise.all([
                 client.invalidateQueries({
@@ -73,8 +83,9 @@ export function usePortraitEntryEnable({
                 }),
             ]);
         } catch {
-            if (ownsRequest())
+            if (ownsRequest()) {
                 setMutation({ request, pending: true, failed: true });
+            }
         } finally {
             if (ownsRequest()) {
                 activeRequest.current = null;

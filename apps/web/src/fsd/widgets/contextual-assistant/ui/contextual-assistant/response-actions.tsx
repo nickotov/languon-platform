@@ -12,7 +12,7 @@ export function ResponseActions({
     disabled,
 }: {
     text: string;
-    onPropose(): void;
+    onPropose?: (() => void) | undefined;
     canPropose: boolean;
     disabled: boolean;
 }) {
@@ -21,6 +21,7 @@ export function ResponseActions({
     const labels = messagesCopy(locale);
     const [copied, setCopied] = useState(false);
     const [copyError, setCopyError] = useState(false);
+    const showPropose = canPropose && onPropose !== undefined;
     const copyLabel = copied ? labels.copied : labels.copy;
     async function copyAnswer() {
         try {
@@ -31,6 +32,7 @@ export function ResponseActions({
             setCopyError(true);
         }
     }
+
     return (
         <>
             <button type='button' className={styles.quiet} onClick={copyAnswer}>
@@ -41,7 +43,7 @@ export function ResponseActions({
                 )}
                 {copyLabel}
             </button>
-            {canPropose && (
+            {showPropose && (
                 <button
                     type='button'
                     className={styles.quiet}

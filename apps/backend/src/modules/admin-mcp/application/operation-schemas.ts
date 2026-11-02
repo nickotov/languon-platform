@@ -82,10 +82,14 @@ export function reportRange(
     const from = input.from
         ? new Date(input.from)
         : new Date(to.getTime() - 30 * 86_400_000);
-    if (to <= from || to.getTime() - from.getTime() > 366 * 86_400_000)
+
+    if (to <= from || to.getTime() - from.getTime() > 366 * 86_400_000) {
         throw new Error('Report range must be positive and at most 366 days.');
+    }
+
     return { from, to };
 }
+
 export const adminMcpReadSchemas = {
     'users.lookup': z.object({ email: z.email().max(320) }).strict(),
     'users.credits': z

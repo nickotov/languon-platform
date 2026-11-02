@@ -49,7 +49,9 @@ export function LoginForm({
     async function submitPassword(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (sessionStatus === 'bootstrapping') return;
+        if (sessionStatus === 'bootstrapping') {
+            return;
+        }
 
         setError(null);
 
@@ -107,7 +109,9 @@ export function LoginForm({
     }
 
     async function submitPasskey() {
-        if (sessionStatus === 'bootstrapping') return;
+        if (sessionStatus === 'bootstrapping') {
+            return;
+        }
 
         setError(null);
 
@@ -141,6 +145,10 @@ export function LoginForm({
         }
     }
 
+    function startPasskeyAuthentication() {
+        void submitPasskey();
+    }
+
     return (
         <>
             {passwordReset === 'complete' ? (
@@ -159,7 +167,7 @@ export function LoginForm({
                             sessionStatus === 'bootstrapping' ||
                             !passkeySupported
                         }
-                        onClick={() => void submitPasskey()}
+                        onClick={startPasskeyAuthentication}
                         loading={pending === 'passkey'}
                         type='button'
                         variant='secondary'

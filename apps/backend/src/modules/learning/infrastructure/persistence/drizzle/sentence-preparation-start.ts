@@ -65,8 +65,9 @@ export async function sentencePreparationStart(
             if (
                 previous.fingerprint !== fingerprint ||
                 previous.dictionaryId !== dictionary.id
-            )
+            ) {
                 throw new SentenceConflictError('operation_conflict');
+            }
 
             return sentencePreparationPresent(persistence, tx, previous);
         }
@@ -90,7 +91,10 @@ export async function sentencePreparationStart(
             )
             .limit(1);
 
-        if (active) throw new SentenceConflictError('operation_conflict');
+        if (active) {
+            throw new SentenceConflictError('operation_conflict');
+        }
+
         const contentRows = await tx
             .select({ id: preparations.id })
             .from(preparations)
@@ -102,8 +106,10 @@ export async function sentencePreparationStart(
             )
             .limit(20);
 
-        if (contentRows.length >= 20)
+        if (contentRows.length >= 20) {
             throw new SentenceCapacityUnavailableError();
+        }
+
         const all = (
             await sentenceCandidates(
                 tx,
@@ -160,7 +166,7 @@ export async function sentencePreparationStart(
             initial.map((entry) => entry.entryId),
         );
 
-        if (partitions.length)
+        if (partitions.length) {
             await tx.insert(batches).values(
                 partitions.map((entries, ordinal) => ({
                     id: randomUUID(),
@@ -182,6 +188,8 @@ export async function sentencePreparationStart(
                     manifest: [],
                 })),
             );
+        }
+
         if (all.length && input.mode !== 'review-only') {
             await sentencePreparationAuthorizeParent(
                 persistence,

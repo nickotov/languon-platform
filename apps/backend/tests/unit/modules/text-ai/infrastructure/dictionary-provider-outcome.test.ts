@@ -47,6 +47,7 @@ describe.each(factories)(
                             ),
                     },
                 });
+
                 await expect(
                     generator.generate({
                         input: JSON.parse(
@@ -60,6 +61,7 @@ describe.each(factories)(
                 ).rejects.toMatchObject({ executionOutcome });
             },
         );
+
         it('marks invalid returned JSON as completed while preserving zero charge semantics', async () => {
             const generator = create({
                 agent: {
@@ -69,6 +71,7 @@ describe.each(factories)(
                     }),
                 },
             });
+
             await expect(
                 generator.generate({
                     input: JSON.parse(

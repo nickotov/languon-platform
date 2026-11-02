@@ -5,6 +5,7 @@ title: 'Runtime UI kit authority'
 status: accepted
 date: 2026-08-25
 supersedes: 'ADR-0008 and ADR-0015; supersedes ADR-0010 in part for visual-source authority'
+superseded_in_part_by: 'ADR-0054: substantive new or redesigned visual direction only'
 ---
 
 # ADR-0016: Runtime UI kit authority

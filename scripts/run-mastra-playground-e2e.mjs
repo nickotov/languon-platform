@@ -10,6 +10,7 @@ export async function runMastraPlaygroundE2e() {
         ['docker', 'container', 'inspect', containerName],
         { allowFailure: true, quiet: true },
     );
+
     if (existing.code === 0) {
         throw new Error(
             `Refusing to reuse existing Docker container ${containerName}.`,
@@ -36,6 +37,7 @@ export async function runMastraPlaygroundE2e() {
             'POSTGRES_PASSWORD=languon-mastra-test',
             'postgres:17-alpine',
         ]);
+
         started = true;
         await waitForPostgres();
         await run(
@@ -81,9 +83,14 @@ async function waitForPostgres() {
             ],
             { allowFailure: true, quiet: true },
         );
-        if (result.code === 0) return;
+
+        if (result.code === 0) {
+            return;
+        }
+
         await new Promise((resolve) => setTimeout(resolve, 250));
     }
+
     throw new Error('Disposable Mastra PostgreSQL did not become ready.');
 }
 
@@ -96,6 +103,7 @@ function run(
             env: environment,
             stdio: quiet ? 'ignore' : 'inherit',
         });
+
         child.once('error', reject);
         child.once('exit', (code, signal) => {
             const result = { code: code ?? (signal ? 1 : 0), signal };
@@ -105,8 +113,10 @@ function run(
                         `${[executable, ...args].join(' ')} exited with code ${result.code}.`,
                     ),
                 );
+
                 return;
             }
+
             resolve(result);
         });
     });

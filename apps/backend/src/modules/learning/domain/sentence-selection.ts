@@ -8,8 +8,10 @@ export function selectSentenceCandidates(
         !Number.isInteger(limit) ||
         limit < 1 ||
         limit > SENTENCE_LIMITS.candidateEntries
-    )
+    ) {
         throw new RangeError('Invalid candidate limit');
+    }
+
     if (
         entries.some(
             (entry) =>
@@ -17,8 +19,10 @@ export function selectSentenceCandidates(
                 entry.exposureCount < 0,
         ) ||
         new Set(entries.map((entry) => entry.entryId)).size !== entries.length
-    )
+    ) {
         throw new RangeError('Invalid candidate entries');
+    }
+
     return [...entries]
         .sort(
             (a, b) =>

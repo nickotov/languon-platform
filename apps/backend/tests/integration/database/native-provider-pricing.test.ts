@@ -46,6 +46,7 @@ const usage: ProviderNativeUsage = {
     outputTokens: 2000,
     requests: 1,
 };
+
 describe.runIf(isDatabaseIntegrationEnabled())(
     'native price TypeScript and PostgreSQL parity',
     () => {
@@ -62,6 +63,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             );
         });
+
         afterAll(async () => {
             await client?.end();
         });
@@ -86,14 +88,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 costSource?: string;
                 variantIds?: string[];
             };
+
             expect(actual.status).toBe(ts.status);
             if (ts.status === 'calculated') {
                 expect(actual.amountUsdMicros).toBe(ts.micros.toString());
                 expect(actual.costSource).toBe(ts.costSource);
                 expect(actual.variantIds).toEqual(ts.variantIds);
             }
+
             return actual;
         }
+
         it('keeps TS and SQL mixed-card multi-call reservation envelopes identical', async () => {
             const rules = structuredClone(base);
             rules.currency = {
@@ -101,15 +106,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 usdNumerator: '1',
                 unitDenominator: '680000',
             };
+
             rules.variants[0]!.components.forEach((component) => {
                 component.minimum = '100';
                 component.chargeWhen = 'request';
                 component.rounding = { quantum: '1', mode: 'ceil' };
             });
+
             const price = {
                 meter: 'text-tokens',
                 nativeRules: rules,
             } as ProviderPrice;
+
             for (const maximumCalls of [1, 2, 5]) {
                 const expected = nativeTextProviderReservationMicros(
                     price,
@@ -120,12 +128,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 );
                 const rows =
                     await client`select languon_native_text_reservation(${client.json(price)},${client.json(facts)},1000,2000,${maximumCalls}) as value`;
+
                 expect(rows[0]!.value).toMatchObject({
                     status: 'calculated',
                     amountUsdMicros: expected!.toString(),
                 });
             }
         });
+
         it('rejects incompatible text meters, monetary overflow and excessive aggregate rules', async () => {
             const mismatched = structuredClone(base);
             mismatched.variants[0]!.components = [
@@ -136,8 +146,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     chargeWhen: 'positive-usage',
                 },
             ];
+
             const rejected =
                 await client`select languon_native_text_reservation(${client.json({ meter: 'text-tokens', nativeRules: mismatched })},${client.json(facts)},1000,1000,5) as value`;
+
             expect(rejected[0]!.value.status).toBe('unknown');
             const overflow = structuredClone(base);
             overflow.reportedCreditUsdPerCredit = '999999999999';
@@ -149,6 +161,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })
                 ).status,
             ).toBe('unknown');
+
             const large = structuredClone(base);
             large.variants = Array.from({ length: 3 }, (_, i) => ({
                 ...structuredClone(base.variants[0]!),
@@ -159,6 +172,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                 },
             }));
+
             expect((await parity(large)).status).toBe('unknown');
             const object = {
                 name: 'é / space',
@@ -167,10 +181,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             };
             const compact =
                 await client`select languon_native_json_bytes(${client.json(object)}) as value`;
+
             expect(Number(compact[0]!.value)).toBe(
                 new TextEncoder().encode(JSON.stringify(object)).length,
             );
         });
+
         it('retains exact rate precision independently of USD micro settlement', async () => {
             expect((await parity(base)).amountUsdMicros).toBe('2700');
             const precise = structuredClone(base);
@@ -182,6 +198,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     chargeWhen: 'positive-usage',
                 },
             ];
+
             expect(
                 (
                     await parity(precise, {
@@ -191,6 +208,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).amountUsdMicros,
             ).toBe('83334');
         });
+
         it('honors native currency rounding and minima before rational USD conversion', async () => {
             const rules = structuredClone(base);
             rules.currency = {
@@ -198,6 +216,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 usdNumerator: '1',
                 unitDenominator: '680000',
             };
+
             rules.variants[0]!.components = [
                 {
                     meter: 'inputTokens',
@@ -216,6 +235,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     rounding: { quantum: '1', mode: 'ceil' },
                 },
             ];
+
             expect(
                 (
                     await parity(rules, {
@@ -225,6 +245,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })
                 ).amountUsdMicros,
             ).toBe('299');
+
             expect(
                 (
                     await parity(rules, {
@@ -235,6 +256,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).amountUsdMicros,
             ).toBe('295');
         });
+
         it('separates component minima from a single request minimum', async () => {
             const rules = structuredClone(base);
             rules.variants[0]!.components.forEach((c) => {
@@ -242,6 +264,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 c.unitQuantity = 1;
                 c.pricePerUnit = '0.1';
             });
+
             expect(
                 (
                     await parity(rules, {
@@ -252,6 +275,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).amountUsdMicros,
             ).toBe('2000000');
         });
+
         it('uses exact context boundaries, endpoint ambiguity and maximum admission cards', async () => {
             const rules = structuredClone(base);
             const card = structuredClone(rules.variants[0]!);
@@ -273,6 +297,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })),
                 },
             ];
+
             await parity(rules, { ...usage, inputTokens: 272000 });
             await parity(rules, { ...usage, inputTokens: 272001 });
             await parity(
@@ -281,6 +306,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 facts,
                 'upper-bound',
             );
+
             rules.variants = [
                 { ...card, id: 'a', applies: { endpointIds: ['a'] } },
                 {
@@ -293,10 +319,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })),
                 },
             ];
+
             expect((await parity(rules)).status).toBe('unknown');
             await parity(rules, usage, { ...facts, endpointId: 'a' });
             await parity(rules, usage, facts, 'upper-bound');
         });
+
         it('prices schedule boundaries and rejects holes across authorized dispatch horizons', async () => {
             const rules = structuredClone(base);
             const card = rules.variants[0]!;
@@ -326,6 +354,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 },
             ];
+
             await parity(rules);
             await parity(
                 rules,
@@ -336,8 +365,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 'upper-bound',
             );
+
             rules.variants[1]!.applies.dispatchWindows![0]!.from =
                 '2026-10-28T12:00:00.001Z';
+
             expect(
                 (
                     await parity(
@@ -352,6 +383,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).status,
             ).toBe('unknown');
         });
+
         it('never substitutes missing token meters or reservation maxima as actual expense', async () => {
             const rules = structuredClone(base);
             rules.variants[0]!.components = [
@@ -374,10 +406,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     chargeWhen: 'positive-usage',
                 },
             ];
+
             expect(
                 (await parity(rules, { inputTokens: 1000, requests: 1 }))
                     .status,
             ).toBe('unknown');
+
             expect(
                 (
                     await parity(
@@ -388,6 +422,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     )
                 ).amountUsdMicros,
             ).toBe('2350');
+
             expect(
                 (
                     await parity(rules, {
@@ -399,11 +434,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).amountUsdMicros,
             ).toBe('665');
         });
+
         it('uses validated provider-reported costs only for actual settlement', async () => {
             const rules = {
                 ...structuredClone(base),
                 reportedCreditUsdPerCredit: '0.005',
             };
+
             expect(
                 (
                     await parity(rules, {
@@ -412,6 +449,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })
                 ).amountUsdMicros,
             ).toBe('6150');
+
             expect(
                 (
                     await parity(rules, {
@@ -420,6 +458,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })
                 ).amountUsdMicros,
             ).toBe('1235');
+
             expect(
                 (
                     await parity(rules, {
@@ -429,6 +468,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })
                 ).status,
             ).toBe('unknown');
+
             expect(
                 (
                     await parity(
@@ -440,19 +480,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).amountUsdMicros,
             ).toBe('2700');
         });
+
         it('fails closed for invalid versions, negative/unknown meters and forbidden submillisecond instants', async () => {
             await parity({
                 ...base,
                 version: 2,
             } as unknown as ProviderNativePricingRules);
+
             await parity(base, { ...usage, inputTokens: -1 });
             await parity(base, usage, {
                 dispatchedAt: '2026-10-28T12:00:00.0001Z',
             });
+
             await parity({
                 ...base,
                 extra: 'untrusted',
             } as unknown as ProviderNativePricingRules);
+
             await parity(base, {
                 ...usage,
                 privatePrompt: 'must never persist',

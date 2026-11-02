@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "reviewer": "backend-platform",
+  "mode": "initial independent source and security review",
+  "baseCommit": "252de64",
+  "scope": "Root changed source/config/tests including untracked privilege helper and dashboard; Conversation/Text changes and new helpers; two contracts schema extractions. Reviewer authored none of these paths.",
+  "files": [
+    {
+      "path": "eslint.config.mjs",
+      "beforeSha256": "45245dfcf3b83ff0575e848fd135886a32a5f22587359ca36d6c4c8a5721a53b",
+      "reviewedSha256": "5dda24f45a977b19b171aa880367a5df74dde50d25d9eac171a15660a4f791f3"
+    },
+    {
+      "path": "scripts/eslint-persistence-readability.mjs",
+      "beforeSha256": "3f2829248557c890bf2ba1614e470536f52b81c60b0b1303505bf421da74073c",
+      "reviewedSha256": "35a052b8cf841a3c04d9de76017bbd197f8ab4fd0f1a39b332d465f768fb61a0"
+    },
+    {
+      "path": "scripts/eslint-persistence-readability.test.mjs",
+      "beforeSha256": "489b6be3bb5562c4adb01955cb6e53cb06e2c1bc067b3fe0aedd69fe4e2c066e",
+      "reviewedSha256": "a1d1302d5dce356e2de62fa6b6748c8c03bb5e9b6315d1ae81f12ec0f58f3546"
+    },
+    {
+      "path": "infra/deploy/lib/config.mjs",
+      "beforeSha256": "c0cf1cd97f17e48956b5cab4deda81d264a22db489cc3e684b07a558102e97c3",
+      "reviewedSha256": "7180b7e61ddcdc95a17783b06151e8d0a44658ede05e4c9b64e48f48714998e1"
+    },
+    {
+      "path": "infra/deploy/lib/deployment.mjs",
+      "beforeSha256": "9229e40c6062995725ca8ff705f3804a775cf1e5cefdd7d190a514b6a9a7d3aa",
+      "reviewedSha256": "4f1a5130323be7281a15de71c1a736ed3eb09c92847304b443e14584143dfd3a"
+    },
+    {
+      "path": "infra/deploy/lib/worker-database-privileges.mjs",
+      "beforeSha256": null,
+      "reviewedSha256": "01b6c7c38398c92c1bc0b36bc2ba9c257df607782564f114d17bff54604d5441"
+    },
+    {
+      "path": "infra/deploy/tests/shared-speech.test.mjs",
+      "beforeSha256": "7c61efefb23e4220ef3020cc1371c3e9c8a0cd5220e41e12deb9a840f8a41550",
+      "reviewedSha256": "1450ed87b43350ae4e639df303cdf9e03b88f739d9064d9d96123461f86889cb"
+    },
+    {
+      "path": "scripts/release-manifest.mjs",
+      "beforeSha256": "fb0c24b2426b103a36b5b3a021677cf6cc6bd6cd90e00254410b0c49c1030101",
+      "reviewedSha256": "69f39a817b9210d45ecef8bb13686b6269b1f2a419bb23110ae1fb371f788cc8"
+    },
+    {
+      "path": "scripts/dev-readiness/worker.mjs",
+      "beforeSha256": "c83851e018447b7c27c07b299ce449d58ea731bb294c7b508a0bcaf14d4d3ba7",
+      "reviewedSha256": "975e03c9fc1225e023914ebf75ef575fcae06363bb20c390a21b95f99f2df3e2"
+    },
+    {
+      "path": "web-dev-panel/src/codex-events.mjs",
+      "beforeSha256": "10d39f33c5c865526fa391dacf8d586f3fbb65933c5ee3f9d6f7eefce6dd5474",
+      "reviewedSha256": "fb83c7f3a64f29af38f12061d6f80b5f5a2ff995d9385a81e4177b41dae711ff"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/application/texts-worker-service.ts",
+      "beforeSha256": "76f41bd8d855a0ce6f75a0b15672c96cc4db976a8fdecb48cf7ae03c639b0c12",
+      "reviewedSha256": "e5aa9b8c5cb287c847f2bd2252e47415c9e9b19b4ecd66aad09ab64c30890b93"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-admission.ts",
+      "beforeSha256": "c88863bc947bb25c3377487fc30cd486ddb2b4adb251b8ac350b52cf0d484318",
+      "reviewedSha256": "0fb9087192d4d87a1425af42b38e4a84243c6d535af6fd9fdb8db0b7a809712c"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts",
+      "beforeSha256": null,
+      "reviewedSha256": "16713eb4e915d6f5e8095b710f421a9169a9ccf71a41b40a07ee15d57f6582be"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-folder-mutations.ts",
+      "beforeSha256": null,
+      "reviewedSha256": "d79e598c40746506ff87469296b6abf9e6880bc2d5ef4c2a71ceb9307355af6a"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-lifecycle.ts",
+      "beforeSha256": null,
+      "reviewedSha256": "39a6b3a83c0ca7766d32749d27ea3a4707504ed040ed73ca191a3c94d88670b8"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-transaction.ts",
+      "beforeSha256": null,
+      "reviewedSha256": "5a84aecc9808a757cb06dc69136c94aad09cd2bbc96e8b6689f61b2803bf9ee4"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-content-mutations.ts",
+      "beforeSha256": "c163d9c24f0942a3b1318811e924df20a7a32b6e0660aedd7b96132083d4d540",
+      "reviewedSha256": "7fee112e4472c2d5789f0eedeae967d1ad93490ca9bcbba8f0dfa27815ede647"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-admission.ts",
+      "beforeSha256": "c1640ce58b038356a0fe19dc23f5544dbadf79301f758ce394b535c56eac8eaf",
+      "reviewedSha256": "a96846909de1836dea40152131bbbae1bf0c39f163dfbb74015687d4e602f5d8"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-authority.sql",
+      "beforeSha256": "330c29526502414a5b61bcfbeb171e52cf413e983199b96d7290457b21145edc",
+      "reviewedSha256": "8b8c9d1de797ebbd9713fdea3b1bacb5dab623a91f301511bc16e1ad18af9e49"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source.ts",
+      "beforeSha256": "ae5ad0d51eccb099ef39b6f37fc75f2bcf4171560db8c2aee253b0619ae6d73d",
+      "reviewedSha256": "58f32f8a78c5c5630b8c16823af7fd23ad1d91ec1fa5f33afa6467c6e45ee62b"
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/drizzle-text-content-store.ts",
+      "beforeSha256": "027e542095d98e987a64e8b90007dead3dd484ad17be13ace9564e8a62636b27",
+      "reviewedSha256": "e1f8f2d499710fba6b60f9fde49011505f323f25fdbacd7699299cef6cba5aa5"
+    },
+    {
+      "path": "apps/backend/tests/support/contextual-assistant-fixture.ts",
+      "beforeSha256": "2877060c487a36b8279d10f9e597b6a2669a2ed0c2680a84e1e830ad216909ff",
+      "reviewedSha256": "697a6a2e998bf7b765dc501652ef9d4b531ea202c1d7309d3abde9189abce5d2"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts",
+      "beforeSha256": null,
+      "reviewedSha256": "5b408f53ceaff84615b29e59367621122f816c5072ccab04ffe7a323a92224fa"
+    },
+    {
+      "path": "packages/contracts/src/dictionaries/card-authoring.ts",
+      "beforeSha256": "6c2ef95e09985273e20197035f256bdcd04c1bfc8c0a3f7523efe3b4e73c19bf",
+      "reviewedSha256": "e051e3b86f0a023496baf392fdd04f0a6e8dcac21fc74b4fbe32ec3af389b9c2"
+    },
+    {
+      "path": "packages/contracts/src/dictionaries/generation.ts",
+      "beforeSha256": "c151d50a630e9bfaefba70ccb334f0162b4de70167f92ee6e152639647180eca",
+      "reviewedSha256": "eb5553ff5c591500e94e9b29ae97556034ffa02d56a39f37dec9a99af6b4cd85"
+    },
+    {
+      "path": "scripts/resources/dashboard.mjs",
+      "beforeSha256": "242172d7ba96efb48d1895ba6aa66f28847ace1082f65214b743ef2a7dea6482",
+      "reviewedSha256": "1f4ab7c7ef54123b40a467437ded2b2b8c159683a44be51b590ee87920233c92"
+    },
+    {
+      "path": "scripts/critical-flows/registry.mjs",
+      "beforeSha256": "31ef8cf2687f82491c2de5a53bf1b12028347fc2180507133006bbb6f3dd9f84",
+      "reviewedSha256": "da99b63aba88727305cc6819b0a8f94a683155eacf3a389d6f511721df6d50b0"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/text-ai/text-ai-provider-circuit.test.ts",
+      "beforeSha256": "0626a63a4fbe94497b3201891a95af121a04e957d12fe10997232e43ef8d99ec",
+      "reviewedSha256": "ebe7d7f675211b2f122a53deca17831689d080be31c7f8b99d53fd0cf5a683a7"
+    },
+    {
+      "path": "apps/backend/tests/integration/database/ai-accounting.test.ts",
+      "beforeSha256": "e9405ecbf082b746315ed5d44c257fed71bbb242f38a2ad4fe69b8453fdf2233",
+      "reviewedSha256": "a3fdc0f433bf7432f22a9174be92ecefb0e3cd611231abce21fd6ab9c37d735e"
+    },
+    {
+      "path": "apps/web/tests/e2e/flashcard-training.journeys.spec.ts",
+      "beforeSha256": "83661e909743c9413d443f293dcfc65e9478615964f17d1ee1219bc79ac20fa0",
+      "reviewedSha256": "13c8d299a57d46276b8ed3943b9a208bbf0b1ce0003ce031a4d0a48ce63ec336"
+    },
+    {
+      "path": "apps/admin/tests/e2e/admin-user-management.journeys.spec.ts",
+      "beforeSha256": "d8fa4985b15eb1623f4bc4a1840289bd435b3cbd5a1cc68415bc0cb8b168d30d",
+      "reviewedSha256": "8de4f0c4774a2aa5ea667998e233477445f666be002db6004c499d8ee37c8b02"
+    },
+    {
+      "path": "apps/admin/tests/e2e/support/setup-admin.ts",
+      "beforeSha256": "809b9a209085fb7653d437b7124555369fd2ae711eda86b37ab648d5da5f1916",
+      "reviewedSha256": "5fbc6e01fe87ee5ae2b4a4bb2d0ec6398434cb573bac68d8511049fe6abaaf0c"
+    }
+  ],
+  "findings": [],
+  "verdict": "No material source findings. Initial source review passes; final evidence approval remains pending.",
+  "assessment": {
+    "clarity": "Cohesive persistence lifecycle/folder/snapshot/material helpers remove exact size exceptions; ordered retry/config/readiness/manifest decisions improve branch visibility; private schema refinements consolidate identical rules without adding public exports.",
+    "preservation": "Read complete scoped diffs and all new helpers with surrounding callers. Independently compared normalized TypeScript AST bodies of10 moved Text functions and privilege validator against252de64: identical. Checked preserved legacy re-exports, transaction/capacity lock and local set_config sequence, settlement-before-terminal mutation, deferred retry clock reads, prepared-snapshot check precedence, schema refinement issue ordering, and per-call persistence context freshness.",
+    "security": "No introduced auth/tenant/policy/secret/SQL/rendering issue found. Worker privilege allowlists/query construction and validator retain existing least-privilege semantics and deployment public exports. Conversation material still includes only effective visible fields; proposal SQL lease/source/branch checks retain token order. Dashboard JSON escapes angle brackets before script insertion; all dynamic string HTML cells retain esc; spark values are filtered finite numbers. No new URLs, model settings, dependencies or trust boundaries.",
+    "coverage": "Focused proof reported by root:171 DB,16 worker,30 contracts,39 root,31 readiness and10 resources cases. Later affected edits require reruns; this review does not treat prior preflights as final-state evidence. Additional registry proof reported by root:23 existing registry tests passed; supplied differential artifact records1782 malformed-flow cases matching outputs/errors and exact property-read order versus252de64, with public exports/declarations equal. Reviewer inspected the artifact and source; did not rerun tests.",
+    "registryAdditionalReview": "Read full registry, exact base diff and run-critical-flows/check-critical-flows callers plus relevant registry test bodies. Private backend/browser predicates preserve left-to-right short-circuit property reads, lazy selected-branch evaluation, id validation before selection, selection validation before prerequisite/count/regex/environment/dependency guards, exact allowlisted paths/minimums and first-error messages. No exports, declarations, authority, commands or environment flags changed. Naming positive selection validity removes mixed negation without introducing another state or policy. No material correctness, clarity or security finding.",
+    "testCleanupAdditionalReview": "Read full provider-circuit test and base diff. Sole change restores the already-captured DeepSeek credential environment value in afterAll alongside routing/Kie values, deleting it when originally absent. No setup, assertion, timeout, guard, production source or security policy changed; closes test isolation leak without weakening circuit coverage. No material finding.",
+    "accountingClockRemediation": "Independent remediation review: failing report fixture now obtains a real database clock reference, aligns only its manual payment/deposit/balance/bill dates and shared invoice/report period to reference \u00b11day. Existing payment helper defaults to original at for all other callers. Exact amounts, measured/estimated/unknown counts, pending snapshot, refresh and cached-read assertions unchanged. No Date/fake timer, production accounting, SQL guards, deadline, or report semantics changes; two-day window respects366-day query limit.",
+    "accountingClockTimestampFollowup": "Timestamp parsing followup independently reviewed: raw postgres query result is typed string and explicitly converted with new Date(clock[0]!.now) before getTime/toISOString; two-day DB-clock window, assertions and all prior fixture semantics unchanged. Root real disposable DB file report9330ada1-d32f-4d4a-9a96-f7b13bc8d840 inspected:10 passed,0 failed/skipped/retries, cleanup passed. No final runtime approval implied.",
+    "flashcardSpeechFixtureRemediation": "Independent test-only remediation review: installs response waiter before real UI signup/verification, parses AuthenticationSuccessResponseSchema, then uses verified actor UUID with existing setup-provider fixture before dictionary/playback. Guarded CLI requires opt-in test environment, disposable loopback non5432 E2E database and UUID; setup-provider adds synthetic fixture/tone-v1 tariffs without grants or policy overrides and requires finite wallet. Same pattern as sentence/shared speech journeys; existing playback/UI/error assertions and timeouts unchanged. No production/auth/provider activation or paid calls; runtime rerun pending root.",
+    "flashcardImportCompatibility": "Final import compatibility remediation reviewed: case-local await import(@languon/contracts) replaces static ESM import, matching existing shared-pronunciation fixture. It runs after verified response registration/UI auth and before schema parse/setup; no assertion, timeout, auth or admission semantic change. Inspected root browser runb30151e4-286c-4128-a6e2-f82adac76237 summary:1passed,0skips/retries, cleanup passed. Overall final evidence approval remains pending.",
+    "adminAccountingPrerequisite": "Independent bounded test fixture review: sole import+await invokes existing calibrateAccounting after real owner password login and before configureModel. Helper publishes finite action/operator limits and synthetic DeepSeek provider rate through real admin forms with PATCH200 assertion and dialog completion. Same prerequisite as current critical routing/setup journeys; no manual DB fixture, endpoint mock, credential/policy bypass, paid provider activation, assertion or timeout change. Isolated routing probes retain real admission and reviewed-price requirements; browser rerun pending root.",
+    "adminSelectedRouteAndQuoteRemediation": "Independent exact diff/context review passes. configureModel selected-tag filter uses a relative descendant combobox locator under each candidate ant-select rather than reusing config-scoped enabled locator, so existing selected route is recognized and not toggled off. Owner fixture calibration remains through real UI. Enqueue409 branch strictly parses dictionary error, asserts exact action_confirmation_required, validates bounded server quote, then retries once with same URL/payload/headers/idempotency key plus confirmedQuoteId. Other409 codes, malformed quotes, repeated conflicts and non202 outcomes still fail. Existing routing/tariff pinning assertions, timeouts and query cancellation allowlist unchanged; no mock/authority/budget bypass or production source change. Admin package type=module supports static contract imports. Current full browser rerun remains root-owned; no final evidence approval.",
+    "adminCredentialFixtureRemediation": "Final credential-fixture remediation independently reviewed: only worker DeepSeek/Kie synthetic credential literals align with actual admin Playwright API fixture; deterministic provider fixture mode remains enabled. Probe identity includes opaque credential revision and runtime resolver rejects mismatched admitted route fingerprint. Alignment satisfies that guard; no guard bypass, production credential/policy/source change, assertion or timeout weakening. Root full tariff/setup/routing browser execution and aggregate check remain pending.",
+    "adminNavigationCancellationRemediation": "Independent cancellation remediation review: inspected fc9e531d log and trace.zip2-trace.network; six newly allowlisted exact GET paths report net::ERR_ABORTED during accounting/settings navigation and later reload, alongside preexisting canceled model/routing/probe reads. Frontend use-accounting/use-provider-prices/capability-policies/accounting-settings/use-transcription-settings pass AbortController.signal and abort on effect cleanup; admin API maps these to typed authorized GET reads. Addition remains behind both GET and exact net::ERR_ABORTED gates and exact pathname allowlist. Mutations, HTTP error responses, non-abort transport failures and unrelated endpoints still fail; existing business/pinning assertions and final failedRequests equality retained. This is bounded recognition of intentional canceled reads, no production/security/behavior change. Final rerun and aggregate gates pending root.",
+    "adminColdReportRecoveryRemediation": "Cold-report remediation independently reviewed: report503 exception paired with listener validating exact admin origin/GET, Retry-After2, strict AdminErrorResponse service_unavailable/message and nonempty period. Mandatory typed200 response and matching body/query period awaited concurrently with calibration before navigation; final assertRecovered awaits caught validations and requires every observed pending period equal recovered period. Other network/HTTP/business/pinning checks retained. Inspected6e3a822d summary/report:1pass0skipretry cleanup passed. Passing artifacts contain no retained trace/network, so exact503 count cannot be independently established; source+pass proves mandatory200 and validation of any observed503, not guaranteed cold-path occurrence. Aggregate/affected critical gates pending root."
+  },
+  "verificationGaps": [
+    "Final static/full automated/build/critical and affected browser/DB gates pending root scheduling.",
+    "No paid/live-provider proof claimed or required for behavior-preserving deterministic refactor.",
+    "Any source hash change after this capture requires bounded remediation review."
+  ],
+  "checksExecuted": [
+    {
+      "check": "Independent read-only normalized AST comparison of moved text function bodies and privilege validator against base",
+      "result": "passed"
+    },
+    {
+      "check": "Read-only registry diff/caller/security review and inspection of /private/tmp/languon-bl019-registry-differential.json",
+      "result": "passed; no material findings; final evidence approval remains pending"
+    }
+  ]
+}

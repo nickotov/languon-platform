@@ -17,8 +17,11 @@ export function DiscardInterviewDialog({
     const router = useRouter();
     async function discard() {
         const result = await management.discard();
-        if (result) router.push('/portrait');
+        if (result) {
+            router.push('/portrait');
+        }
     }
+
     return (
         <Dialog
             open={open}

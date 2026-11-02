@@ -24,7 +24,10 @@ function metadata(passkey: {
 function extensionResults(input: {
     credProps?: { rk?: boolean | undefined } | undefined;
 }): PasskeyClientExtensionResults {
-    if (!input.credProps) return {};
+    if (!input.credProps) {
+        return {};
+    }
+
     return {
         credProps:
             input.credProps.rk === undefined ? {} : { rk: input.credProps.rk },
@@ -77,6 +80,7 @@ export class PasskeyHttpController implements PasskeyHttpOperations {
             sessionId: claims.sessionId,
             userId: claims.userId,
         });
+
         return {
             expiresAt: result.expiresAt.toISOString(),
             flowId: result.flowId,
@@ -135,6 +139,7 @@ export class PasskeyHttpController implements PasskeyHttpOperations {
             sessionId: claims.sessionId,
             userId: claims.userId,
         });
+
         return {
             passkey: metadata(result.passkey),
             status: result.status,
@@ -145,6 +150,7 @@ export class PasskeyHttpController implements PasskeyHttpOperations {
         const result = await this.authentication.beginPasskeyAuthentication({
             context: context(request),
         });
+
         return {
             expiresAt: result.expiresAt.toISOString(),
             flowId: result.flowId,
@@ -175,6 +181,7 @@ export class PasskeyHttpController implements PasskeyHttpOperations {
             },
             flowId: input.flowId,
         });
+
         return {
             refreshCredential: result.refreshCredential,
             response: successResponse(result),
@@ -183,6 +190,7 @@ export class PasskeyHttpController implements PasskeyHttpOperations {
 
     public async list(accessToken: string, _request: AuthHttpRequestMetadata) {
         const claims = await this.accessTokens.verify(accessToken);
+
         return {
             passkeys: (
                 await this.authentication.listPasskeys({
@@ -200,6 +208,7 @@ export class PasskeyHttpController implements PasskeyHttpOperations {
         request: AuthHttpRequestMetadata,
     ) {
         const claims = await this.accessTokens.verify(accessToken);
+
         return {
             passkey: metadata(
                 await this.authentication.renamePasskey({
@@ -219,6 +228,7 @@ export class PasskeyHttpController implements PasskeyHttpOperations {
         request: AuthHttpRequestMetadata,
     ) {
         const claims = await this.accessTokens.verify(accessToken);
+
         return this.authentication.revokePasskey({
             context: context(request),
             passkeyId,

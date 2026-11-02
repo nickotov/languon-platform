@@ -66,6 +66,7 @@ export class SentencePracticeService {
     public capabilities() {
         return { sentencesEnabled: this.dependencies.enabled };
     }
+
     public prepare(
         target: LearningTarget,
         input: SentencePrepareRequest,
@@ -78,6 +79,7 @@ export class SentencePracticeService {
             }),
         );
     }
+
     public next(
         target: LearningTarget,
         input: SentenceNextRequest,
@@ -90,6 +92,7 @@ export class SentencePracticeService {
             }),
         );
     }
+
     public getJob(
         target: LearningTarget,
         jobId: string,
@@ -102,6 +105,7 @@ export class SentencePracticeService {
             }),
         );
     }
+
     public cancelJob(
         target: LearningTarget,
         jobId: string,
@@ -114,6 +118,7 @@ export class SentencePracticeService {
             }),
         );
     }
+
     public enqueueCheck(
         target: LearningTarget,
         exerciseId: string,
@@ -127,6 +132,7 @@ export class SentencePracticeService {
             }),
         );
     }
+
     public attempts(
         target: LearningTarget,
         query: SentenceAttemptsQuery,
@@ -139,6 +145,7 @@ export class SentencePracticeService {
             }),
         );
     }
+
     public progress(
         target: LearningTarget,
         query: SentenceProgressQuery,
@@ -166,6 +173,7 @@ export class SentencePracticeService {
             }),
         );
     }
+
     public manualReviews(
         target: LearningTarget,
         query: SentenceManualReviewsQuery,
@@ -185,50 +193,61 @@ export class SentencePracticeService {
         context: LearningRequestContext,
     ) {
         return this.run(target, context, 'content', async (access) => {
-            if (!this.dependencies.library)
+            if (!this.dependencies.library) {
                 throw new SentenceUnavailableError();
+            }
+
             return this.dependencies.library.list(access, input, {
                 now: this.dependencies.clock.now(),
                 signal: context.signal,
             });
         });
     }
+
     public snapshotLibrary(
         target: LearningTarget,
         input: SentenceLibrarySnapshotRequest,
         context: LearningRequestContext,
     ) {
         return this.run(target, context, 'write', async (access) => {
-            if (!this.dependencies.library)
+            if (!this.dependencies.library) {
                 throw new SentenceUnavailableError();
+            }
+
             return this.dependencies.library.snapshot(access, input, {
                 now: this.dependencies.clock.now(),
                 signal: context.signal,
             });
         });
     }
+
     public mutateLibrary(
         target: LearningTarget,
         input: SentenceLibraryMutationRequest,
         context: LearningRequestContext,
     ) {
         return this.run(target, context, 'write', async (access) => {
-            if (!this.dependencies.library)
+            if (!this.dependencies.library) {
                 throw new SentenceUnavailableError();
+            }
+
             return this.dependencies.library.mutate(access, input, {
                 now: this.dependencies.clock.now(),
                 signal: context.signal,
             });
         });
     }
+
     public startPreparation(
         target: LearningTarget,
         input: SentencePreparationStartRequest,
         context: LearningRequestContext,
     ) {
         return this.run(target, context, 'prepare', async (access) => {
-            if (!this.dependencies.preparation)
+            if (!this.dependencies.preparation) {
                 throw new SentenceUnavailableError();
+            }
+
             return {
                 preparation: await this.dependencies.preparation.start(
                     access,
@@ -241,28 +260,34 @@ export class SentencePracticeService {
             };
         });
     }
+
     public detailLibrary(
         target: LearningTarget,
         id: string,
         context: LearningRequestContext,
     ) {
         return this.run(target, context, 'content', async (access) => {
-            if (!this.dependencies.library)
+            if (!this.dependencies.library) {
                 throw new SentenceUnavailableError();
+            }
+
             return this.dependencies.library.detail(access, id, {
                 now: this.dependencies.clock.now(),
                 signal: context.signal,
             });
         });
     }
+
     public getPreparation(
         target: LearningTarget,
         id: string,
         context: LearningRequestContext,
     ) {
         return this.run(target, context, 'content', async (access) => {
-            if (!this.dependencies.preparation)
+            if (!this.dependencies.preparation) {
                 throw new SentenceUnavailableError();
+            }
+
             return {
                 preparation: await this.dependencies.preparation.get(
                     access,
@@ -275,6 +300,7 @@ export class SentencePracticeService {
             };
         });
     }
+
     public preparationBatches(
         target: LearningTarget,
         id: string,
@@ -282,8 +308,10 @@ export class SentencePracticeService {
         context: LearningRequestContext,
     ) {
         return this.run(target, context, 'content', async (access) => {
-            if (!this.dependencies.preparation)
+            if (!this.dependencies.preparation) {
                 throw new SentenceUnavailableError();
+            }
+
             return this.dependencies.preparation.listBatches(
                 access,
                 id,
@@ -295,20 +323,24 @@ export class SentencePracticeService {
             );
         });
     }
+
     public preparedBatch(
         target: LearningTarget,
         id: string,
         context: LearningRequestContext,
     ) {
         return this.run(target, context, 'content', async (access) => {
-            if (!this.dependencies.preparation)
+            if (!this.dependencies.preparation) {
                 throw new SentenceUnavailableError();
+            }
+
             return this.dependencies.preparation.batch(access, id, {
                 now: this.dependencies.clock.now(),
                 signal: context.signal,
             });
         });
     }
+
     public commandPreparation(
         target: LearningTarget,
         id: string,
@@ -316,8 +348,10 @@ export class SentencePracticeService {
         context: LearningRequestContext,
     ) {
         return this.run(target, context, 'write', async (access) => {
-            if (!this.dependencies.preparation)
+            if (!this.dependencies.preparation) {
                 throw new SentenceUnavailableError();
+            }
+
             return {
                 preparation: await this.dependencies.preparation.command(
                     access,
@@ -331,6 +365,7 @@ export class SentencePracticeService {
             };
         });
     }
+
     private async run<T>(
         target: LearningTarget,
         context: LearningRequestContext,
@@ -338,8 +373,10 @@ export class SentencePracticeService {
         action: (access: LearningAccess) => Promise<T>,
     ): Promise<T> {
         context.signal.throwIfAborted();
-        if (!this.dependencies.enabled)
+        if (!this.dependencies.enabled) {
             throw new DictionaryServiceUnavailableError();
+        }
+
         // Public admission is before authentication/capability lookup, and does not trust forwarded headers.
         await this.limit('public', context.clientAddress, 180, context);
         const principal =
@@ -348,14 +385,19 @@ export class SentencePracticeService {
                 : await this.dependencies.authentication.authenticate(
                       target.accessToken,
                   );
-        if (!principal) throw new LearningAuthenticationRequiredError();
+
+        if (!principal) {
+            throw new LearningAuthenticationRequiredError();
+        }
+
         const subject = principal?.userId ?? context.clientAddress;
         await this.limit(
             `${scope}.${principal ? 'learner' : 'visitor'}`,
             subject,
-            scope === 'prepare' ? 20 : scope === 'write' ? 180 : 180,
+            scope === 'prepare' ? 20 : 180,
             context,
         );
+
         let access: LearningAccess;
         if (target.kind === 'owner') {
             access = {
@@ -372,14 +414,17 @@ export class SentencePracticeService {
                         now: this.dependencies.clock.now(),
                     },
                 });
+
             if (
                 !this.dependencies.cryptography.verifyShare(
                     target.shareKey,
                     candidate?.shareDigest ?? null,
                 ) ||
                 !candidate
-            )
+            ) {
                 throw new SharedDictionaryNotFoundError();
+            }
+
             access = {
                 kind: 'shared',
                 shareId: target.shareId,
@@ -387,7 +432,9 @@ export class SentencePracticeService {
                 learnerId: principal.userId,
             };
         }
+
         context.signal.throwIfAborted();
+
         return action(access);
     }
 
@@ -408,12 +455,19 @@ export class SentencePracticeService {
                 windowMs: 60_000,
                 signal: context.signal,
             });
-            if (!decision.allowed)
+
+            if (!decision.allowed) {
                 throw new DictionaryRateLimitError(decision.retryAfterSeconds);
+            }
         } catch (error) {
-            if (context.signal.aborted) throw error;
-            if (error instanceof RateLimitUnavailableError)
+            if (context.signal.aborted) {
+                throw error;
+            }
+
+            if (error instanceof RateLimitUnavailableError) {
                 throw new DictionaryServiceUnavailableError();
+            }
+
             throw error;
         }
     }

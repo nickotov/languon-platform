@@ -27,9 +27,13 @@ export function formatRow(row: Row, locale: UiLocale, vars: Vars = {}): string {
         const rule = new Intl.PluralRules(INTL[locale]).select(n);
         message = message[rule] ?? message.other;
     }
+
     return message.replace(/\{(\w+)\}/g, (match, key: string) => {
         const value = vars[key];
-        if (value === undefined) return match;
+        if (value === undefined) {
+            return match;
+        }
+
         return typeof value === 'number' ? formatNumber(value, locale) : value;
     });
 }
@@ -53,6 +57,7 @@ export function languageLabel(code: LanguageCode, locale: UiLocale): string {
             type: 'language',
         });
         const name = names.of(code) ?? code;
+
         // Russian, Spanish and French language names are lower-case mid-sentence; English is capitalized.
         return locale === 'en'
             ? name.charAt(0).toUpperCase() + name.slice(1)
@@ -65,6 +70,7 @@ export function languageLabel(code: LanguageCode, locale: UiLocale): string {
 export function makeTranslator<T extends Record<string, Row>>(table: T) {
     return (key: keyof T, locale: UiLocale, vars?: Vars) => {
         const row = table[key];
+
         // A missing row shows its key instead of crashing the screen.
         return row ? formatRow(row, locale, vars) : String(key);
     };

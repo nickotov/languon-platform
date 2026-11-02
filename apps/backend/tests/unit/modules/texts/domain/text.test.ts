@@ -8,15 +8,19 @@ import {
 } from '../../../../../src/modules/texts/domain/text';
 function ids() {
     let n = 0;
+
     return () => `00000000-0000-4000-8000-${String(++n).padStart(12, '0')}`;
 }
+
 function aligned(text: string, locale = 'en') {
     const source = segmentText(text, locale, ids());
+
     return validateTranslation(
         source,
         source.map((s) => ({ pairId: s.pairId, text: s.text })),
     );
 }
+
 describe('Text alignment and occurrence context', () => {
     it.each([
         '  First sentence. Second sentence.\r\n\r\nThird sentence!\n',
@@ -26,18 +30,23 @@ describe('Text alignment and occurrence context', () => {
     ])('reconstructs exact Unicode source and whitespace: %s', (text) => {
         const result = aligned(text);
         expect(result.source.map((s) => s.text).join('')).toBe(text);
-        for (const s of result.source)
+        for (const s of result.source) {
             expect(text.slice(s.startOffset, s.endOffset)).toBe(s.text);
+        }
+
         expect(result.source.every((s) => s.text.trim())).toBe(true);
     });
+
     it('rejects missing, duplicated, and reordered translations', () => {
         const a = aligned('First. Second.');
         expect(() =>
             validateTranslation(a.source, a.translation.slice(1)),
         ).toThrow();
+
         expect(() =>
             validateTranslation(a.source, [...a.translation].reverse()),
         ).toThrow();
+
         expect(() =>
             validateTranslation(a.source, [
                 a.translation[0]!,
@@ -45,6 +54,7 @@ describe('Text alignment and occurrence context', () => {
             ]),
         ).toThrow();
     });
+
     it('preserves pair identities, updates offsets, and retains edit provenance', () => {
         const a = aligned('First. Second.');
         const pairs = a.source.map((s, i) => ({
@@ -52,6 +62,7 @@ describe('Text alignment and occurrence context', () => {
             source: s.text,
             translation: a.translation[i]!.text,
         }));
+
         pairs[0]!.source = 'Edited first. ';
         const edited = applyTextEdits(a, pairs);
         expect(edited.editedPairIds).toEqual([pairs[0]!.pairId]);
@@ -59,8 +70,10 @@ describe('Text alignment and occurrence context', () => {
         expect(applyTextEdits(edited, pairs).editedPairIds).toEqual(
             edited.editedPairIds,
         );
+
         expect(() => applyTextEdits(a, pairs.slice(1))).toThrow();
     });
+
     it('selects the exact repeated occurrence with neighboring context and reversed languages', () => {
         const a = aligned('First bank. Second bank. Third bank.');
         const middle = a.translation[1]!;
@@ -74,6 +87,7 @@ describe('Text alignment and occurrence context', () => {
             },
             { sourceLanguage: 'en', targetLanguage: 'es' },
         );
+
         expect(result).toEqual({
             phrase: 'bank',
             startOffset: 7,
@@ -85,6 +99,7 @@ describe('Text alignment and occurrence context', () => {
             targetLanguage: 'en',
         });
     });
+
     it('rejects surrogate slicing and selection across sentences inside a translated pair', () => {
         const a = aligned('A 😀 smile.');
         const select = (startOffset: number, endOffset: number) =>
@@ -98,6 +113,7 @@ describe('Text alignment and occurrence context', () => {
                 },
                 { sourceLanguage: 'en', targetLanguage: 'es' },
             );
+
         expect(() => select(2, 3)).toThrow();
         expect(select(2, 4).phrase).toBe('😀');
         a.translation[0]!.text = 'One sentence. Another sentence.';
@@ -114,6 +130,7 @@ describe('Text alignment and occurrence context', () => {
             ),
         ).toThrow();
     });
+
     it.each(['source', 'translation'] as const)(
         'retains real neighboring context across paragraph whitespace on %s',
         (side) => {
@@ -132,16 +149,20 @@ describe('Text alignment and occurrence context', () => {
                 },
                 { sourceLanguage: 'en', targetLanguage: 'es' },
             );
+
             expect(result.previousSentence?.trim()).toBe(
                 'The river flows slowly.',
             );
+
             expect(result.nextSentence?.trim()).toBe('Birds sang nearby.');
         },
     );
+
     it('skips blank sentence units inside a manually edited pair without changing offsets', () => {
         const a = aligned('Original.');
         const text =
             '\n\nThe river flows slowly.\n\nWe rested on the bank.\n\nBirds sang nearby.\n\n';
+
         a.translation[0]!.text = text;
         const startOffset = text.indexOf('bank');
         const result = resolveTextSelection(
@@ -154,16 +175,19 @@ describe('Text alignment and occurrence context', () => {
             },
             { sourceLanguage: 'es', targetLanguage: 'en' },
         );
+
         expect(result.previousSentence?.trim()).toBe('The river flows slowly.');
         expect(result.nextSentence?.trim()).toBe('Birds sang nearby.');
         expect(
             result.sentence.slice(result.startOffset, result.endOffset),
         ).toBe('bank');
     });
+
     it('defaults title to the first nonblank line using code points', () => {
         expect(resolveTextTitle(undefined, '\n  A title\nContent')).toBe(
             'A title',
         );
+
         expect(
             Array.from(resolveTextTitle(undefined, '😀'.repeat(201))),
         ).toHaveLength(200);

@@ -72,11 +72,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     (tx) => new DrizzleAiCreditTransactionParticipant(tx),
                 ),
             });
+
             previews = new AdminMcpPreviewStore(database);
             administration = new AdminMcpAdministrationService(
                 new AdminMcpAdministrationAdapter(database, operations),
             );
         });
+
         beforeEach(async () => {
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
@@ -86,6 +88,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { id: ownerId, status: 'active' },
                 { id: targetUserId, status: 'active' },
             ]);
+
             await database.insert(userEmailsTable).values({
                 id: randomUUID(),
                 userId: ownerId,
@@ -93,12 +96,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 canonicalEmail: 'owner@example.test',
                 verifiedAt: new Date(),
             });
+
             await database.insert(userEmailsTable).values({
                 id: randomUUID(),
                 userId: targetUserId,
                 email: 'learner@example.test',
                 canonicalEmail: 'learner@example.test',
             });
+
             await database.insert(adminMembershipsTable).values({
                 id: randomUUID(),
                 userId: ownerId,
@@ -106,6 +111,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 grantedByUserId: ownerId,
                 grantReason: 'Synthetic MCP owner',
             });
+
             const credentials = new AdminMcpCredentialService(
                 new DrizzleAdminMcpStore(database),
             );
@@ -140,24 +146,30 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 reason: 'Synthetic operation integration',
             });
+
             actor = await credentials.authenticate(issued.secret);
         }, 60_000);
+
         afterAll(async () => {
             await client.end();
         });
+
         async function preview(name: AdminMcpWriteOperation, input: unknown) {
             return administration.preview(actor, name, input);
         }
+
         async function apply(id: string, key = randomUUID()) {
             return administration.apply(actor, {
                 previewId: id,
                 operationKey: key,
             });
         }
+
         it('resolves exact email and settles a grant once across retries, without creating purchase revenue', async () => {
             const lookup = await operations.read(actor, 'users.lookup', {
                 email: 'LEARNER@example.test',
             });
+
             expect(lookup).toMatchObject({ user: { id: targetUserId } });
             const item = await preview('credits.grant', {
                 targetUserId,
@@ -173,9 +185,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 availableCredits: '2.145',
                 managementVersion: 1,
             });
+
             const rows = await database.execute(
                 sql`select count(*)::int as count from ai_credit_grants where owner_id=${targetUserId}::uuid`,
             );
+
             expect(rows[0]?.count).toBe(1);
             const report = await operations.read(
                 actor,
@@ -186,17 +200,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     to: new Date(Date.now() + 3600000).toISOString(),
                 },
             );
+
             expect(report).toMatchObject({
                 cash: { paymentsUsd: '0.000000' },
                 credits: { granted: '2.145' },
                 usage: { allocatedPurchaseValueUsd: '0.000000' },
                 currentAccount: { availableCredits: '2.145' },
             });
+
             const defaultReport = await operations.read(
                 actor,
                 'financial-reports.user',
                 { userId: targetUserId },
             );
+
             expect(defaultReport).toMatchObject({
                 credits: { granted: '2.145' },
                 periodNote: expect.stringContaining(
@@ -204,6 +221,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             });
         });
+
         it('rolls back quota, receipt and wallet together on excessive revocation; permits a corrected preview', async () => {
             const grant = await preview('credits.grant', {
                 targetUserId,
@@ -212,6 +230,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expiresAt: null,
                 reason: 'Synthetic grant integration',
             });
+
             await apply(grant.id);
             const revoke = await preview('credits.revoke', {
                 targetUserId,
@@ -220,10 +239,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expiresAt: null,
                 reason: 'Synthetic invalid revocation',
             });
+
             await expect(apply(revoke.id)).rejects.toThrow();
             const reservations = await database.execute(
                 sql`select count(*)::int as count from admin_mcp_reservations where kind='credit-revoke'`,
             );
+
             expect(reservations[0]?.count).toBe(0);
             const corrected = await preview('credits.revoke', {
                 targetUserId,
@@ -232,11 +253,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expiresAt: null,
                 reason: 'Synthetic corrected revocation',
             });
+
             expect(await apply(corrected.id)).toMatchObject({
                 availableCredits: '0.680',
                 managementVersion: 2,
             });
         });
+
         it('rejects stale credit edits rather than overwriting a newer ledger change', async () => {
             const input = {
                 targetUserId,
@@ -251,13 +274,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await expect(apply(stale.id)).rejects.toMatchObject({
                 code: 'stale_preview',
             });
+
             const account = await operations.read(actor, 'users.credits', {
                 userId: targetUserId,
             });
+
             expect(account).toMatchObject({
                 account: { availableCredits: '1.000' },
             });
         });
+
         it('bounds user action budgets while preserving other existing AI preferences and checking their version', async () => {
             await database.insert(textAiPreferencesTable).values({
                 userId: targetUserId,
@@ -266,32 +292,38 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 version: 4,
                 maxCreditsPerAction: '2',
             });
+
             const input = {
                 targetUserId,
                 expectedVersion: 4,
                 maxCreditsPerAction: '3.145',
                 reason: 'Synthetic learner budget',
             };
+
             expect(
                 adminMcpWriteSchemas['spending-limits.write'].safeParse(input)
                     .success,
             ).toBe(true);
+
             const item = await preview('spending-limits.write', input);
             const stale = await preview('spending-limits.write', input);
             await apply(item.id);
             await expect(apply(stale.id)).rejects.toMatchObject({
                 code: 'stale_preview',
             });
+
             const [saved] = await database
                 .select()
                 .from(textAiPreferencesTable)
                 .where(eq(textAiPreferencesTable.userId, targetUserId));
+
             expect(saved).toMatchObject({
                 mode: 'explicit',
                 modelId: 'deepseek-flash',
                 version: 5,
                 maxCreditsPerAction: '3.145',
             });
+
             await expect(
                 preview('spending-limits.write', {
                     ...input,
@@ -300,6 +332,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             ).rejects.toThrow('delegated finite ceiling');
         });
+
         it('changes only an authoritative flow tariff without granting route authority or implicitly running checks', async () => {
             const configuration: TextAiRoutingConfiguration = {
                 default: {
@@ -327,11 +360,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: new Date(),
                 reason: 'Synthetic existing routing',
             });
+
             await database.insert(textAiRoutingStateTable).values({
                 id: 'global',
                 activeRevisionId: id,
                 updatedAt: new Date(),
             });
+
             const item = await preview('customer-tariffs.write', {
                 flowId: 'card-authoring',
                 expectedVersion: 1,
@@ -356,16 +391,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 },
             });
+
             expect(actor.permissions).not.toContain('routing.write');
         });
+
         it('fails closed when shared operator settings are missing or exhausted and creates no learner wallet', async () => {
             const budget = new AdminMcpCheckBudget(database);
             await expect(
                 budget.effectiveMaximum(actor, 50_000n),
             ).rejects.toThrow('must be configured');
+
             await expect(
                 budget.reserve(actor, randomUUID(), {}, '0.01'),
             ).rejects.toThrow('must be configured');
+
             await database.transaction((tx) =>
                 new DrizzleCapabilityPolicyParticipant(tx).publishSettings(
                     {
@@ -380,11 +419,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     new Date(),
                 ),
             );
+
             const first = await budget.reserve(actor, randomUUID(), {}, '0.04');
             expect(await budget.effectiveMaximum(actor, 10_000n)).toBe(10_000n);
             expect(await budget.effectiveMaximum(actor, 100_000n)).toBe(
                 50_000n,
             );
+
             expect(
                 await budget.effectiveMaximum(
                     {
@@ -401,19 +442,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     100_000n,
                 ),
             ).toBe(20_000n);
+
             await budget.settle(actor, first.id, '0.04', { state: 'passed' });
             await expect(
                 budget.reserve(actor, randomUUID(), {}, '0.02'),
             ).rejects.toThrow();
+
             const reservations = await database.execute(
                 sql`select count(*)::int as count from admin_mcp_reservations`,
             );
+
             expect(reservations[0]?.count).toBe(1);
             const wallets = await database.execute(
                 sql`select count(*)::int as count from ai_credit_accounts`,
             );
+
             expect(wallets[0]?.count).toBe(0);
         });
+
         it('authorizes dispatch once, rejects revoked authority and settles incurred cost after revocation', async () => {
             await database.transaction((tx) =>
                 new DrizzleCapabilityPolicyParticipant(tx).publishSettings(
@@ -429,6 +475,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     new Date(),
                 ),
             );
+
             const budget = new AdminMcpCheckBudget(database);
             const reservation = await budget.reserve(
                 actor,
@@ -436,10 +483,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 {},
                 '0.01',
             );
+
             await budget.authorizeDispatch(actor, reservation.id);
             await expect(
                 budget.authorizeDispatch(actor, reservation.id),
             ).rejects.toThrow('cannot be dispatched again');
+
             await new AdminMcpCredentialService(
                 new DrizzleAdminMcpStore(database),
             ).revoke(
@@ -447,21 +496,27 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 actor.tokenId,
                 'Synthetic client revocation',
             );
+
             await expect(
                 budget.authorizeDispatch(actor, reservation.id),
             ).rejects.toThrow('inactive credential');
+
             await budget.settle(actor, reservation.id, '0.005', {
                 state: 'passed',
             });
+
             const [operator] = await database.execute(
                 sql`select consumed_micros::text as amount from ai_operator_action_budgets where action_id=${reservation.id}::uuid`,
             );
+
             expect(operator?.amount).toBe('5000');
             const [quota] = await database.execute(
                 sql`select settled_units::text as amount from admin_mcp_reservations where id=${reservation.id}::uuid`,
             );
+
             expect(quota?.amount).toBe('5000');
         });
+
         it('settles retained operator expense after private MCP credentials are erased without recreating them', async () => {
             await database.transaction((tx) =>
                 new DrizzleCapabilityPolicyParticipant(tx).publishSettings(
@@ -477,6 +532,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     new Date(),
                 ),
             );
+
             const budget = new AdminMcpCheckBudget(database);
             const reservation = await budget.reserve(
                 actor,
@@ -484,35 +540,44 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 {},
                 '0.01',
             );
+
             await budget.authorizeDispatch(actor, reservation.id);
             await database.transaction((tx) =>
                 purgeAdminMcpForOwner(tx, actor.userId, new Date()),
             );
+
             await budget.settle(actor, reservation.id, '0.005', {
                 state: 'passed',
             });
+
             const [operator] = await database.execute(
                 sql`select consumed_micros::text as amount from ai_operator_action_budgets where action_id=${reservation.id}::uuid`,
             );
+
             expect(operator?.amount).toBe('5000');
             const [privateRows] = await database.execute(
                 sql`select count(*) as count from admin_mcp_reservations`,
             );
+
             expect(Number(privateRows?.count)).toBe(0);
         });
+
         it('inspects empty billing configuration and wallets without seeding or changing financial rows', async () => {
             const inspection = await operations.read(
                 actor,
                 'providers.inspect',
                 {},
             );
+
             expect(inspection).toMatchObject({ customerTariffs: [] });
             await operations.read(actor, 'users.credits', {
                 userId: targetUserId,
             });
+
             const [counts] = await database.execute(
                 sql`select (select count(*) from model_price_revisions)::int as tariffs,(select count(*) from dictionary_ai_configuration_revisions)::int as configuration,(select count(*) from ai_credit_accounts)::int as accounts,(select count(*) from ai_credit_grants)::int as grants,(select count(*) from ai_credit_history)::int as history`,
             );
+
             expect(counts).toEqual({
                 tariffs: 0,
                 configuration: 0,
@@ -521,6 +586,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 history: 0,
             });
         });
+
         it('previews a missing curated tariff without bootstrap and publishes its initial revision only on apply', async () => {
             const input = {
                 providerId: 'deepseek',
@@ -540,6 +606,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const [before] = await database.execute(
                 sql`select count(*)::int as count from model_price_revisions`,
             );
+
             expect(before?.count).toBe(0);
             expect(item.current).toEqual({ version: 0, published: false });
             const result = await apply(item.id);
@@ -548,14 +615,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 inputCreditsPerMillionTokens: 20,
                 outputCreditsPerMillionTokens: 60,
             });
+
             const [after] = await database.execute(
                 sql`select count(*)::int as count from model_price_revisions`,
             );
+
             expect(after?.count).toBe(1);
             await expect(apply(stale.id)).rejects.toMatchObject({
                 code: 'stale_preview',
             });
         });
+
         it('returns an explicit check-required prerequisite when routing is published without flow evidence', async () => {
             const credentials = new AdminMcpCredentialService(
                 new DrizzleAdminMcpStore(database),
@@ -618,11 +688,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     'explicit successful matching flow check',
                 ),
             });
+
             const [counts] = await database.execute(
                 sql`select (select count(*) from text_ai_probes)::int as probes,(select count(*) from ai_provider_expense_records)::int as expenses`,
             );
+
             expect(counts).toEqual({ probes: 0, expenses: 0 });
         });
+
         it('completes two simultaneous previews with only two database connections', async () => {
             const credentials = new AdminMcpCredentialService(
                 new DrizzleAdminMcpStore(database),
@@ -670,8 +743,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const work = (name: AdminMcpWriteOperation, input: unknown) =>
                 limitedDb.transaction(async (tx) => {
                     await tx.execute(sql`select 1`);
-                    if (++ready === 2) release();
+                    if (++ready === 2) {
+                        release();
+                    }
+
                     await bothOccupied;
+
                     return limitedOperations.preview(
                         tx,
                         limitedActor,
@@ -716,9 +793,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         );
                     }),
                 ]);
+
                 expect(results).toHaveLength(2);
             } finally {
-                if (timeout) clearTimeout(timeout);
+                if (timeout) {
+                    clearTimeout(timeout);
+                }
+
                 await limitedClient.end({ timeout: 1 });
             }
         });

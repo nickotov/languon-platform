@@ -38,6 +38,7 @@ test('parses values without evaluating shell syntax', () => {
             B: '$(touch /tmp/nope)',
         },
     );
+
     assert.throws(
         () => parseEnvironmentFile('export A=x'),
         /Invalid environment key/,
@@ -69,6 +70,7 @@ test('production refuses local data addresses', () => {
         TLS_CERTIFICATE_PATH: '/tls/cert',
         TLS_PRIVATE_KEY_PATH: '/tls/key',
     };
+
     assert.throws(
         () => assertDeployConfig('production', config),
         /private address/,
@@ -109,6 +111,7 @@ test('sanitized deployment examples accept the full batch output envelope', asyn
         const config = parseEnvironmentFile(
             await readFile(`infra/deploy/${environment}.env.example`, 'utf8'),
         );
+
         assert.equal(
             assertDeployConfig(environment, config)
                 .DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS,
@@ -121,6 +124,7 @@ test('document storage requires a separate account purge version-delete key', as
     const config = parseEnvironmentFile(
         await readFile('infra/deploy/stage.env.example', 'utf8'),
     );
+
     assert.throws(
         () =>
             assertDeployConfig('stage', {
@@ -129,6 +133,7 @@ test('document storage requires a separate account purge version-delete key', as
             }),
         /dedicated version-delete storage credentials/,
     );
+
     assert.throws(
         () =>
             assertDeployConfig('stage', {
@@ -173,6 +178,7 @@ test('production requires a dedicated dictionary worker database user', () => {
         () => assertDeployConfig('production', config),
         /dedicated production database user/,
     );
+
     assert.equal(
         assertDeployConfig('production', {
             ...config,
@@ -187,6 +193,7 @@ test('audio storage requires independent worker and API keys', async () => {
     const config = parseEnvironmentFile(
         await readFile('infra/deploy/stage.env.example', 'utf8'),
     );
+
     assert.throws(
         () =>
             assertDeployConfig('stage', {
@@ -195,6 +202,7 @@ test('audio storage requires independent worker and API keys', async () => {
             }),
         /distinct API and worker/,
     );
+
     const ready = {
         ...config,
         DICTIONARY_AUDIO_STORAGE: 's3',
@@ -203,6 +211,7 @@ test('audio storage requires independent worker and API keys', async () => {
         DICTIONARY_AUDIO_S3_WORKER_ACCESS_KEY_ID: 'worker',
         DICTIONARY_AUDIO_S3_WORKER_SECRET_ACCESS_KEY: 'test',
     };
+
     assert.doesNotThrow(() => assertDeployConfig('stage', ready));
     assert.throws(
         () =>
@@ -248,6 +257,7 @@ test('admin binding fails closed outside loopback', () => {
         TLS_PRIVATE_KEY_PATH: '/tls/key',
         ADMIN_BIND_ADDRESS: '0.0.0.0',
     };
+
     assert.throws(() => assertDeployConfig('stage', required), /loopback/);
 });
 
@@ -272,10 +282,12 @@ test('admin origin and password file fail closed', () => {
         TLS_CERTIFICATE_PATH: '/tls/cert',
         TLS_PRIVATE_KEY_PATH: '/tls/key',
     };
+
     assert.throws(
         () => assertDeployConfig('stage', required),
         /ADMIN_BASE_URL/,
     );
+
     assert.throws(
         () =>
             assertDeployConfig('stage', {
@@ -284,6 +296,7 @@ test('admin origin and password file fail closed', () => {
             }),
         /RP_ID/,
     );
+
     assert.throws(
         () =>
             assertDeployConfig('stage', {
@@ -300,6 +313,7 @@ test('admin password file is private, regular, and contains an entry', async () 
     await writeFile(passwordPath, 'operator:$2y$05$local-test-hash\n', {
         mode: 0o644,
     });
+
     await assert.rejects(() => validateAdminPasswordFile(passwordPath), /0600/);
     await chmod(passwordPath, 0o600);
     await validateAdminPasswordFile(passwordPath);
@@ -331,6 +345,7 @@ test('dictionary worker process and drain settings are bounded before deployment
         TLS_CERTIFICATE_PATH: '/tls/cert',
         TLS_PRIVATE_KEY_PATH: '/tls/key',
     };
+
     assert.throws(
         () =>
             assertDeployConfig('stage', {
@@ -339,6 +354,7 @@ test('dictionary worker process and drain settings are bounded before deployment
             }),
         /DICTIONARY_WORKER_CONCURRENCY/,
     );
+
     assert.throws(
         () =>
             assertDeployConfig('stage', {
@@ -347,6 +363,7 @@ test('dictionary worker process and drain settings are bounded before deployment
             }),
         /DICTIONARY_WORKER_DRAIN_TIMEOUT_MS/,
     );
+
     assert.equal(
         assertDeployConfig('stage', {
             ...required,
@@ -355,6 +372,7 @@ test('dictionary worker process and drain settings are bounded before deployment
         }).DICTIONARY_WORKER_CONCURRENCY,
         '4',
     );
+
     assert.throws(
         () =>
             assertDeployConfig('stage', {
@@ -367,6 +385,7 @@ test('dictionary worker process and drain settings are bounded before deployment
             }),
         /unsupported/,
     );
+
     assert.throws(
         () =>
             assertDeployConfig('stage', {
@@ -380,6 +399,7 @@ test('dictionary worker process and drain settings are bounded before deployment
             }),
         /unsupported/,
     );
+
     assert.equal(
         assertDeployConfig('stage', {
             ...required,
@@ -390,6 +410,7 @@ test('dictionary worker process and drain settings are bounded before deployment
         }).DICTIONARY_GENERATION_MODEL_ID,
         'deepseek/deepseek-flash',
     );
+
     assert.throws(
         () =>
             assertDeployConfig('stage', {
@@ -400,6 +421,7 @@ test('dictionary worker process and drain settings are bounded before deployment
             }),
         /KIE_API_KEY/,
     );
+
     assert.equal(
         assertDeployConfig('stage', {
             ...required,
@@ -414,6 +436,7 @@ test('dictionary worker process and drain settings are bounded before deployment
         }).DICTIONARY_GENERATION_MAX_INPUT_TOKENS,
         '32768',
     );
+
     assert.throws(
         () =>
             assertDeployConfig('stage', {
@@ -424,6 +447,7 @@ test('dictionary worker process and drain settings are bounded before deployment
             }),
         /missing required budget keys/,
     );
+
     assert.throws(
         () =>
             assertDeployConfig('stage', {
@@ -433,6 +457,7 @@ test('dictionary worker process and drain settings are bounded before deployment
             }),
         /DICTIONARY_GENERATION_MAX_INPUT_TOKENS/,
     );
+
     assert.throws(
         () =>
             assertDeployConfig('stage', {
@@ -442,6 +467,7 @@ test('dictionary worker process and drain settings are bounded before deployment
             }),
         /DICTIONARY_GENERATION_MAX_INPUT_TOKENS/,
     );
+
     assert.throws(
         () =>
             assertDeployConfig('stage', {

@@ -52,26 +52,45 @@ export function DictionaryExportPanel({
             {error ? <InlineAlert tone='danger'>{error}</InlineAlert> : null}
             <div className={styles.formats}>
                 {formats.map((item) => (
-                    <Card className={styles.format} key={item.format}>
-                        <div>
-                            <h4>{item.label}</h4>
-                            <p>{item.help}</p>
-                        </div>
-                        <Button
-                            disabled={pending}
-                            onClick={() =>
-                                void onExport(item.format).catch(
-                                    () => undefined,
-                                )
-                            }
-                            type='button'
-                            variant='secondary'
-                        >
-                            {item.label}
-                        </Button>
-                    </Card>
+                    <ExportFormatRow
+                        key={item.format}
+                        item={item}
+                        pending={pending}
+                        onExport={onExport}
+                    />
                 ))}
             </div>
         </section>
+    );
+}
+
+function ExportFormatRow({
+    item,
+    pending,
+    onExport,
+}: {
+    item: { format: DictionaryExportFormat; help: string; label: string };
+    pending: boolean;
+    onExport(format: DictionaryExportFormat): Promise<void>;
+}) {
+    function exportFormat() {
+        void onExport(item.format).catch(() => undefined);
+    }
+
+    return (
+        <Card className={styles.format}>
+            <div>
+                <h4>{item.label}</h4>
+                <p>{item.help}</p>
+            </div>
+            <Button
+                disabled={pending}
+                onClick={exportFormat}
+                type='button'
+                variant='secondary'
+            >
+                {item.label}
+            </Button>
+        </Card>
     );
 }

@@ -1,3 +1,4 @@
+import { knowledgeTranscriptionEnvironmentShape } from './knowledge-transcription-environment';
 import { Buffer } from 'node:buffer';
 import { isIP } from 'node:net';
 
@@ -56,6 +57,7 @@ const OptionalNonEmptyStringSchema = z.preprocess(
 const RawEnvironmentSchema = z
     .object({
         APP_ENV: z.enum(['development', 'test', 'staging', 'production']),
+        ...knowledgeTranscriptionEnvironmentShape,
         AUTH_ACCESS_TOKEN_TTL: z.string().optional(),
         AUTH_ALLOWED_ORIGINS: z.string().optional(),
         AUTH_ALLOW_INSECURE_FIXED_CODE: z.string().optional(),
@@ -350,12 +352,14 @@ export function loadEnvironment(
     const trustedProxyCidrs = parseTrustedProxyCidrs(
         raw.AUTH_TRUSTED_PROXY_CIDRS,
     );
+
     if (trustProxy && trustedProxyCidrs.length === 0) {
         throw configurationError(
             'AUTH_TRUSTED_PROXY_CIDRS',
             'Trusted proxy CIDRs are required when AUTH_TRUST_PROXY is true.',
         );
     }
+
     if (!trustProxy && trustedProxyCidrs.length > 0) {
         throw configurationError(
             'AUTH_TRUSTED_PROXY_CIDRS',
@@ -366,6 +370,7 @@ export function loadEnvironment(
     if (
         !allowedOrigins.every((origin) => {
             const hostname = new URL(origin).hostname;
+
             return (
                 hostname === webAuthnRpId ||
                 hostname.endsWith(`.${webAuthnRpId}`)
@@ -387,6 +392,7 @@ export function loadEnvironment(
                 'Deployed environments require an explicit non-local database.',
             );
         }
+
         if (['localhost', '127.0.0.1'].includes(redis.hostname)) {
             throw configurationError(
                 'REDIS_URL',
@@ -394,6 +400,7 @@ export function loadEnvironment(
             );
         }
     }
+
     if (raw.APP_ENV === 'production') {
         const database = new URL(raw.DATABASE_URL);
         const redis = new URL(raw.REDIS_URL);
@@ -403,6 +410,7 @@ export function loadEnvironment(
                 'Production PostgreSQL must use sslmode=verify-full.',
             );
         }
+
         if (
             redis.protocol !== 'rediss:' ||
             !redis.username ||
@@ -459,13 +467,18 @@ export function loadEnvironment(
             'DICTIONARY_JOB_API_READABLE_FORMATS',
         ),
     };
+
     for (const [capability, formats] of Object.entries(
         dictionaryJobCapabilities,
     )) {
-        if (capability === 'enqueued') continue;
+        if (capability === 'enqueued') {
+            continue;
+        }
+
         const missing = dictionaryJobCapabilities.enqueued.filter(
             (format) => !formats.includes(format),
         );
+
         if (missing.length > 0) {
             throw configurationError(
                 'DICTIONARY_JOB_API_ENQUEUED_FORMATS',
@@ -473,15 +486,18 @@ export function loadEnvironment(
             );
         }
     }
+
     const dictionaryGenerationProviderBudget =
         loadDictionaryGenerationProviderBudgetPolicy(values, {
             requireExplicit:
                 deployed && dictionaryJobCapabilities.enqueued.length > 0,
         });
+
     assertDictionaryGenerationProviderBudgetSupportsFormats(
         dictionaryGenerationProviderBudget,
         dictionaryJobCapabilities.enqueued,
     );
+
     const documentTermsLifecycleEnabled = Object.values(
         dictionaryJobCapabilities,
     ).some((formats) =>
@@ -497,11 +513,13 @@ export function loadEnvironment(
         values,
         { deployed, required: documentTermsLifecycleEnabled, role: 'api' },
     );
-    if (deployed && raw.DICTIONARY_DOCUMENT_OCR_MODE === 'deterministic')
+
+    if (deployed && raw.DICTIONARY_DOCUMENT_OCR_MODE === 'deterministic') {
         throw configurationError(
             'DICTIONARY_DOCUMENT_OCR_MODE',
             'Deterministic document OCR is local/test-only.',
         );
+    }
 
     reportEnvironmentFallbacks(values, [
         'AUTH_ACCESS_TOKEN_TTL',
@@ -511,6 +529,7 @@ export function loadEnvironment(
         'AUTH_WEBAUTHN_RP_ID',
         'LEARNING_SENTENCES_ENABLED',
     ]);
+
     return {
         ...environment,
         ADMIN_BASE_URL: adminBaseUrl,
@@ -545,7 +564,10 @@ export function loadEnvironment(
 }
 
 function parseDictionaryJobFormats(value: string, path: string): string[] {
-    if (value === '') return [];
+    if (value === '') {
+        return [];
+    }
+
     const formats = value.split(',');
     if (
         formats.length > 16 ||
@@ -561,6 +583,7 @@ function parseDictionaryJobFormats(value: string, path: string): string[] {
             'Dictionary job formats must be unique comma-separated composite format identifiers.',
         );
     }
+
     return formats.sort();
 }
 
@@ -575,8 +598,10 @@ function parseAdminBaseUrl(
                 'Deployed environments require an exact administration HTTPS origin.',
             );
         }
+
         return 'http://localhost:3001';
     }
+
     const parsed = new URL(value);
     if (
         parsed.origin !== value ||
@@ -588,11 +613,15 @@ function parseAdminBaseUrl(
             'Administration base URL must be an exact origin and use HTTPS outside local environments.',
         );
     }
+
     return parsed.origin;
 }
 
 function parseTrustedProxyCidrs(value: string | undefined): string[] {
-    if (!value) return [];
+    if (!value) {
+        return [];
+    }
+
     const cidrs = value.split(',').map((cidr) => cidr.trim());
     if (cidrs.length > 16 || cidrs.some((cidr) => cidr.length === 0)) {
         throw configurationError(
@@ -600,6 +629,7 @@ function parseTrustedProxyCidrs(value: string | undefined): string[] {
             'Configure between one and sixteen proxy CIDRs.',
         );
     }
+
     for (const cidr of cidrs) {
         const [address, rawPrefix, ...extra] = cidr.split('/');
         const family = address ? isIP(address) : 0;
@@ -617,6 +647,7 @@ function parseTrustedProxyCidrs(value: string | undefined): string[] {
             );
         }
     }
+
     return cidrs;
 }
 
@@ -631,6 +662,7 @@ function parseAllowedOrigins(
                 'Deployed environments require at least one exact HTTPS origin.',
             );
         }
+
         return ['http://localhost:3333'];
     }
 
@@ -652,6 +684,7 @@ function parseAllowedOrigins(
                 'Origins must be valid URLs.',
             );
         }
+
         if (
             parsed.origin !== origin ||
             (deployed && parsed.protocol !== 'https:') ||
@@ -670,6 +703,7 @@ function parseAllowedOrigins(
             'Origins must be unique.',
         );
     }
+
     return origins;
 }
 
@@ -701,6 +735,7 @@ function configurationError(path: string, message: string): z.ZodError {
     console.error(
         `Environment configuration invalid or required setting missing: ${path}. Startup aborted.`,
     );
+
     return new z.ZodError([
         {
             code: 'custom',

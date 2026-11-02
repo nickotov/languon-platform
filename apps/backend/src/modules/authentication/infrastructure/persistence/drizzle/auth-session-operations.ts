@@ -120,7 +120,9 @@ export function changePasswordAndReplaceSessions(
             eq(usersTable.id, input.userId),
         );
 
-        if (!updated) throw new Error('The password account disappeared.');
+        if (!updated) {
+            throw new Error('The password account disappeared.');
+        }
 
         return { account: updated, kind: 'issued' };
     });
@@ -158,7 +160,10 @@ export async function revokeSessionFamilyByDigest(
             .limit(1)
             .for('update');
         const session = rows[0];
-        if (!session) return;
+        if (!session) {
+            return;
+        }
+
         await revokeSessionFamily(transaction, {
             familyId: session.familyId,
             reason: input.reason,
@@ -184,7 +189,10 @@ export function rotateRefreshSession(
             .limit(1)
             .for('update');
         const current = rows[0];
-        if (!current) return { kind: 'unavailable' };
+        if (!current) {
+            return { kind: 'unavailable' };
+        }
+
         if (current.rotatedAt) {
             await revokeSessionFamily(transaction, {
                 familyId: current.familyId,
@@ -211,8 +219,10 @@ export function rotateRefreshSession(
             eq(usersTable.id, current.userId),
         );
 
-        if (!account || account.status !== 'active')
+        if (!account || account.status !== 'active') {
             return { kind: 'unavailable' };
+        }
+
         if (
             input.successor.userId !== current.userId ||
             input.successor.familyId !== current.familyId ||
@@ -275,7 +285,9 @@ export async function findRecentSession(
         .limit(1)
         .for('update', { of: authSessionsTable });
     const session = rows[0]?.session ?? null;
-    if (!session) return null;
+    if (!session) {
+        return null;
+    }
 
     return (await lockUser(transaction, session.userId)) === 'active'
         ? session

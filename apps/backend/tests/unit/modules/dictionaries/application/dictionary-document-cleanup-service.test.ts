@@ -10,6 +10,7 @@ const now = new Date('2026-08-26T00:00:00.000Z');
 
 function reference() {
     const bytes = Buffer.from('bank');
+
     return {
         bytes,
         reference: {
@@ -78,6 +79,7 @@ describe('DictionaryDocumentCleanupProcessor', () => {
                 ],
             }),
         );
+
         await expect(
             storage.listVersions({
                 objectKey: object.reference.objectKey,
@@ -95,11 +97,13 @@ describe('DictionaryDocumentCleanupProcessor', () => {
             objectKey: object.reference.objectKey,
             signal: new AbortController().signal,
         });
+
         await storage.deleteVersion({
             objectKey: object.reference.objectKey,
             signal: new AbortController().signal,
             versionId: object.reference.storageVersionId,
         });
+
         const documentStore = store({
             claimCleanup: vi.fn().mockResolvedValue({
                 capabilityExpiresAt: now,
@@ -130,6 +134,7 @@ describe('DictionaryDocumentCleanupProcessor', () => {
                 deletedTombstoneVersionId: tombstone.versionId,
             }),
         );
+
         await expect(
             storage.listVersions({
                 objectKey: object.reference.objectKey,

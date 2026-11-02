@@ -20,6 +20,7 @@ export function SpeechRecordingsPage() {
         library.selected.length === 0 ||
         library.loading ||
         library.error !== null;
+
     return (
         <main className={styles.stack}>
             <header className={styles.heading}>

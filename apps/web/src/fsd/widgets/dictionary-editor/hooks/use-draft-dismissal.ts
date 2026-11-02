@@ -60,10 +60,15 @@ export function useDraftDismissal({
             cardMutation.isPending ||
             cardAuthoringAction.isPending ||
             cardAutoSave.isPending
-        )
+        ) {
             return;
-        if (cardDraftDirty) setConfirmCardDiscard(true);
-        else discardCardDraft();
+        }
+
+        if (cardDraftDirty) {
+            setConfirmCardDiscard(true);
+        } else {
+            discardCardDraft();
+        }
     }
 
     return { discardCardDraft, requestCloseCardDraft, openCardDraft };

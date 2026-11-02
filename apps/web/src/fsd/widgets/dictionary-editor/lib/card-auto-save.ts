@@ -57,6 +57,7 @@ function sameDraft(card: DictionaryCard, draft: DictionaryCardDraft) {
             (draft.translationContext ?? '').trim() &&
         Object.entries(draft.values).every(([field, value]) => {
             const persisted = card.values[field as keyof typeof card.values];
+
             return (persisted ?? '').trim() === (value ?? '').trim();
         })
     );
@@ -76,6 +77,7 @@ export function createCardAutoSaver(
     requestWithSession: RequestWithSession,
 ) {
     const attempts = new Map<string, Attempt>();
+
     return (input: CardAutoSaveInput): Promise<CardAutoSaveResponse> => {
         const fingerprint = JSON.stringify({
             cardId: input.card.id,
@@ -87,6 +89,7 @@ export function createCardAutoSaver(
         if (attempt && attempt.fingerprint !== fingerprint) {
             return Promise.reject(new CardAutoSaveError(conflict(), true));
         }
+
         if (!attempt) {
             attempt = {
                 fingerprint,
@@ -94,13 +97,19 @@ export function createCardAutoSaver(
                 uncertain: false,
                 accepted: false,
             };
+
             attempts.set(input.generation.jobId, attempt);
         }
-        if (attempt.pending) return attempt.pending;
+
+        if (attempt.pending) {
+            return attempt.pending;
+        }
+
         const retained = attempt;
         retained.pending = save(retained).finally(() => {
             delete retained.pending;
         });
+
         return retained.pending;
     };
 
@@ -110,6 +119,7 @@ export function createCardAutoSaver(
             requestWithSession((token) =>
                 dictionaryApi.readCard(token, dictionaryId, input.card.id),
             );
+
         try {
             if (!attempt.accepted && input.selectedSuggestions.length) {
                 if (attempt.uncertain) {
@@ -119,6 +129,7 @@ export function createCardAutoSaver(
                             input.generation.jobId,
                         ),
                     );
+
                     attempt.accepted = response.job.state === 'accepted';
                     if (
                         response.job.state === 'accepted' &&
@@ -129,6 +140,7 @@ export function createCardAutoSaver(
                             response.job.outcome.cardVersion;
                     }
                 }
+
                 if (!attempt.accepted) {
                     const response = await requestWithSession((token) =>
                         dictionaryApi.acceptGenerationJob(
@@ -141,9 +153,11 @@ export function createCardAutoSaver(
                             ),
                         ),
                     );
+
                     attempt.accepted = true;
-                    if ('cardVersion' in response.outcome)
+                    if ('cardVersion' in response.outcome) {
                         attempt.acceptedVersion = response.outcome.cardVersion;
+                    }
                 }
             } else if (!attempt.accepted) {
                 if (attempt.uncertain) {
@@ -152,13 +166,17 @@ export function createCardAutoSaver(
                         if (
                             response.card.version !== input.card.version + 1 ||
                             !sameDraft(response.card, input.draft)
-                        )
+                        ) {
                             throw conflict();
+                        }
+
                         attempt.accepted = true;
                         attempt.acceptedVersion = response.card.version;
+
                         return response;
                     }
                 }
+
                 if (sameDraft(input.card, input.draft)) {
                     attempt.accepted = true;
                     attempt.acceptedVersion = input.card.version;
@@ -178,10 +196,12 @@ export function createCardAutoSaver(
                             },
                         ),
                     );
+
                     attempt.accepted = true;
                     attempt.acceptedVersion = response.card.version;
                 }
             }
+
             const response = await read();
             if (
                 response.card.version !== attempt.acceptedVersion ||
@@ -189,6 +209,7 @@ export function createCardAutoSaver(
             ) {
                 throw conflict();
             }
+
             return attempt.unchanged
                 ? { ...response, unchanged: true }
                 : response;
@@ -197,8 +218,12 @@ export function createCardAutoSaver(
                 !(error instanceof DictionaryApiError) ||
                 error.status === 0 ||
                 error.status >= 500;
+
             attempt.uncertain = attempt.accepted || ambiguous;
-            if (!attempt.uncertain) attempts.delete(input.generation.jobId);
+            if (!attempt.uncertain) {
+                attempts.delete(input.generation.jobId);
+            }
+
             throw new CardAutoSaveError(
                 error,
                 attempt.uncertain,

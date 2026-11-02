@@ -370,17 +370,12 @@ export function aiSettingsResponse(
                             model.processingControlsRevision ?? null,
                         processingApprovalRequired:
                             model.providerId === 'evolink',
-                        unavailableReason: model.retired
-                            ? 'Provider model is retired.'
-                            : model.processingControlsRevision
-                              ? 'Configure and verify this route in text AI routing.'
-                              : !routingEnabled
-                                ? 'Managed AI routing is not active for this deployment.'
-                                : configured && health.status === 'unavailable'
-                                  ? health.message
-                                  : configured
-                                    ? null
-                                    : 'Provider credential is missing.',
+                        unavailableReason: modelUnavailableReason(
+                            model,
+                            routingEnabled,
+                            configured,
+                            health,
+                        ),
                     })),
                 };
             },
@@ -393,4 +388,29 @@ export function aiSettingsResponse(
             version: row?.version ?? 0,
         },
     };
+}
+
+function modelUnavailableReason(
+    model: (typeof dictionaryAiModelCatalog)[number],
+    routingEnabled: boolean,
+    configured: boolean,
+    health: AdminAiSettingsResponse['providers'][number]['health'],
+): string | null {
+    if (model.retired) {
+        return 'Provider model is retired.';
+    }
+
+    if (model.processingControlsRevision) {
+        return 'Configure and verify this route in text AI routing.';
+    }
+
+    if (!routingEnabled) {
+        return 'Managed AI routing is not active for this deployment.';
+    }
+
+    if (configured && health.status === 'unavailable') {
+        return health.message;
+    }
+
+    return configured ? null : 'Provider credential is missing.';
 }

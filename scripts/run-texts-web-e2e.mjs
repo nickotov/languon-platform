@@ -4,18 +4,22 @@ assertDisposableEnvironment(process.env);
 if (
     new URL(process.env.AUTH_TEST_DATABASE_URL).pathname !==
     '/languon_auth_texts_ui_web_test'
-)
+) {
     throw new Error('Texts web runner requires its exclusive UI web database.');
+}
+
 const databaseTarget = new URL(process.env.AUTH_TEST_DATABASE_URL);
 const redisTarget = new URL(process.env.AUTH_TEST_REDIS_URL);
 if (
     databaseTarget.port !== '55443' ||
     redisTarget.port !== '56443' ||
     redisTarget.pathname !== '/1'
-)
+) {
     throw new Error(
         'Texts web runner requires PostgreSQL port 55443 and Redis port 56443 database 1.',
     );
+}
+
 const child = spawn(
     'pnpm',
     [
@@ -48,11 +52,13 @@ function cleanup() {
     process.removeListener('SIGINT', interrupt);
     process.removeListener('SIGTERM', terminate);
 }
+
 child.once('error', (error) => {
     cleanup();
     console.error(error.message);
     process.exitCode = 1;
 });
+
 child.once('exit', (code) => {
     cleanup();
     process.exitCode = code ?? 1;

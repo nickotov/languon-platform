@@ -12,6 +12,7 @@ export function PublishedNoteNotice({
     const { locale, href, t } = useI18n();
     const copy = conversationCopy(locale);
     const noteHref = href(`/knowledge/${note.id}`);
+
     return (
         <div className={styles.saved} role='status'>
             <Check size={16} aria-hidden />

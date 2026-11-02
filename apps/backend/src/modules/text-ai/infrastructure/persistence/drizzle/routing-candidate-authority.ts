@@ -22,7 +22,10 @@ export async function readRoutingCandidateAuthorities(
         { allowed: boolean; price: ProviderPrice | null; fingerprint: string }
     >
 > {
-    if (!candidates.length) return new Map();
+    if (!candidates.length) {
+        return new Map();
+    }
+
     const rows = await tx.execute(sql`
         select requested.route_id,
         case when price.data ? 'nativeRules' then

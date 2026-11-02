@@ -27,6 +27,7 @@ import styles from '../common.module.css';
 
 export function PortraitIntroPage() {
     const management = usePortraitManagement();
+
     return (
         <PortraitPageState management={management}>
             <PortraitIntro key={management.ownerId} management={management} />
@@ -50,11 +51,16 @@ function PortraitIntro({ management }: { management: PortraitManagement }) {
     ) : (
         <Coins aria-hidden />
     );
+
     function back() {
         router.push('/portrait');
     }
+
     async function start() {
-        if (pending || !management.ownerId) return;
+        if (pending || !management.ownerId) {
+            return;
+        }
+
         setPending(true);
         setFailed(false);
         try {
@@ -64,19 +70,23 @@ function PortraitIntro({ management }: { management: PortraitManagement }) {
                     locale,
                 }),
             );
+
             await invalidatePortraitInterviewStatusCache(
                 management.client,
                 management.ownerId,
             );
+
             router.push('/portrait/interview');
         } catch {
             setFailed(true);
             setPending(false);
         }
     }
+
     async function discard() {
         await management.discard();
     }
+
     return (
         <main className={`${styles.page} ${styles.intro} ${styles.stack}`}>
             <div>

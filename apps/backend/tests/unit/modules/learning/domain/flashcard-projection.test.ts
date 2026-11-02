@@ -34,6 +34,7 @@ function fixture(): FlashcardProjectionInput {
         configuration: defaultFlashcardConfiguration,
     };
 }
+
 describe('flashcard projection', () => {
     it('uses semantic examples and the language direction, not physical field names', () => {
         const input = fixture();
@@ -44,6 +45,7 @@ describe('flashcard projection', () => {
             direction: 'rtl',
             fallback: false,
         });
+
         expect(item.back[0]?.text).toBe('A book.');
         input.settings.exampleLanguageRole = 'target';
         input.settings.exampleTranslationLanguageRole = 'source';
@@ -51,6 +53,7 @@ describe('flashcard projection', () => {
         input.values.exampleTranslation = 'A book.';
         expect(projectFlashcard(input)).toEqual(item);
     });
+
     it('falls back when examples are absent or disabled without exposing dormant values', () => {
         const input = fixture();
         input.settings.exampleEnabled = false;
@@ -60,6 +63,7 @@ describe('flashcard projection', () => {
             text: 'كتاب',
             fallback: true,
         });
+
         input.values.example = null;
         input.values.exampleTranslation = '   ';
         input.settings.exampleEnabled = true;
@@ -70,6 +74,7 @@ describe('flashcard projection', () => {
             fallback: true,
         });
     });
+
     it('deduplicates a word selected explicitly and as an example fallback', () => {
         const input = fixture();
         input.values.exampleTranslation = null;
@@ -77,6 +82,7 @@ describe('flashcard projection', () => {
             front: ['targetExample', 'translation'],
             back: ['source'],
         };
+
         expect(projectFlashcard(input)!.front).toEqual([
             {
                 field: 'translation',
@@ -88,20 +94,24 @@ describe('flashcard projection', () => {
             },
         ]);
     });
+
     it('omits missing optional fields and excludes an empty side', () => {
         const input = fixture();
         input.configuration = {
             front: ['transcription'],
             back: ['definition'],
         };
+
         expect(projectFlashcard(input)).toBeNull();
         input.configuration.front.push('source');
         expect(
             projectFlashcard(input)!.front.map((field) => field.field),
         ).toEqual(['source']);
+
         input.settings.definitionEnabled = false;
         expect(projectFlashcard(input)).toBeNull();
     });
+
     it('keeps fixed display order and content as plaintext', () => {
         const input = fixture();
         input.values.source = '<img src=x onerror=alert(1)>';
@@ -109,9 +119,11 @@ describe('flashcard projection', () => {
             front: ['definition', 'source'],
             back: ['source'],
         };
+
         expect(
             projectFlashcard(input)!.front.map((field) => field.field),
         ).toEqual(['source', 'definition']);
+
         expect(projectFlashcard(input)!.front[0]?.text).toBe(
             input.values.source,
         );

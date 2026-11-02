@@ -107,24 +107,34 @@ export function loadDictionaryAudioEnvironment(
         const languages = configured
             .split(',')
             .map((language) => language.trim());
+
         if (
             configured.length > 512 ||
             languages.length > 32 ||
             languages.some(
                 (language) => !/^[a-z]{2,3}(?:-[A-Za-z]{2,8})*$/.test(language),
             )
-        )
+        ) {
             throw new Error('Invalid test speech fixture language allowlist.');
+        }
+
         fixtureSupportedLanguages = [...new Set(languages)];
     }
+
     const role = options.role ?? 'worker';
     const playbackEnabled = env.SPEECH_PLAYBACK_ENABLED === 'true';
     const generationEnabled = env.SPEECH_GENERATION_ENABLED === 'true';
     const enabled = playbackEnabled || generationEnabled;
-    if (options.deployed && enabled && !env.DICTIONARY_AUDIO_FINGERPRINT_SECRET)
+    if (
+        options.deployed &&
+        enabled &&
+        !env.DICTIONARY_AUDIO_FINGERPRINT_SECRET
+    ) {
         throw new Error(
             'Deployed audio requires a dedicated fingerprint secret.',
         );
+    }
+
     const fingerprintSecret = z
         .string()
         .min(32)
@@ -132,15 +142,18 @@ export function loadDictionaryAudioEnvironment(
             env.DICTIONARY_AUDIO_FINGERPRINT_SECRET ??
                 'dictionary-audio-development-secret-only',
         );
+
     if (
         options.deployed &&
         enabled &&
         (env.DICTIONARY_AUDIO_STORAGE !== 's3' ||
             env.DICTIONARY_AUDIO_PROVIDER === 'fixture')
-    )
+    ) {
         throw new Error(
             'Deployed audio requires S3 and a live speech provider.',
         );
+    }
+
     const profiles: Record<string, SpeechProfile> = {};
     if (env.DICTIONARY_AUDIO_VOICE_MAP) {
         for (const [language, profile] of Object.entries(
@@ -152,6 +165,7 @@ export function loadDictionaryAudioEnvironment(
             );
             const settingsVersion =
                 profile.settingsVersion ?? model?.defaultSettingsVersion;
+
             if (
                 !model ||
                 !Object.hasOwn(model.languageCodes, language) ||
@@ -159,10 +173,12 @@ export function loadDictionaryAudioEnvironment(
                 (model.settingsVersions !== null &&
                     !model.settingsVersions.includes(settingsVersion)) ||
                 (model.voices !== null && !model.voices.includes(profile.voice))
-            )
+            ) {
                 throw new Error(
                     'Unsupported curated speech model, language, voice, or settings.',
                 );
+            }
+
             profiles[language] = {
                 ...profile,
                 settingsVersion,
@@ -175,6 +191,7 @@ export function loadDictionaryAudioEnvironment(
             };
         }
     }
+
     const allowedDownloadHosts = (env.DICTIONARY_AUDIO_DOWNLOAD_HOSTS ?? '')
         .split(',')
         .map((s) => s.trim().toLowerCase())
@@ -191,11 +208,16 @@ export function loadDictionaryAudioEnvironment(
             ? 'fixture-v1'
             : env.DICTIONARY_AUDIO_CONFIGURATION_ID;
     const ids = retainedConfigurations.map((entry) => entry.configurationId);
-    if (ids.includes(currentId) || new Set(ids).size !== ids.length)
+    if (ids.includes(currentId) || new Set(ids).size !== ids.length) {
         throw new Error('Speech configuration identifiers must be unique.');
-    for (const host of allowedDownloadHosts)
-        if (!/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/u.test(host))
+    }
+
+    for (const host of allowedDownloadHosts) {
+        if (!/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/u.test(host)) {
             throw new Error('Audio download hosts must be exact DNS names.');
+        }
+    }
+
     if (
         generationEnabled &&
         env.DICTIONARY_AUDIO_PROVIDER === 'kie' &&
@@ -205,10 +227,12 @@ export function loadDictionaryAudioEnvironment(
             !Object.keys(profiles).length ||
             !env.DICTIONARY_AUDIO_OWNER_BUDGET_UNITS ||
             !env.DICTIONARY_AUDIO_GLOBAL_BUDGET_UNITS)
-    )
+    ) {
         throw new Error(
             'Live audio requires explicit credentials, voices, download hosts, and spend budgets.',
         );
+    }
+
     if (
         generationEnabled &&
         env.DICTIONARY_AUDIO_PROVIDER === 'openrouter' &&
@@ -216,10 +240,12 @@ export function loadDictionaryAudioEnvironment(
             !Object.keys(profiles).length ||
             !env.DICTIONARY_AUDIO_OWNER_BUDGET_UNITS ||
             !env.DICTIONARY_AUDIO_GLOBAL_BUDGET_UNITS)
-    )
+    ) {
         throw new Error(
             'Live OpenRouter audio requires explicit credentials, voices and spend budgets.',
         );
+    }
+
     let s3:
         | {
               endpoint: string;
@@ -230,10 +256,12 @@ export function loadDictionaryAudioEnvironment(
               forcePathStyle: boolean;
           }
         | undefined;
+
     if (env.DICTIONARY_AUDIO_STORAGE === 's3') {
         const endpoint = new URL(
             z.string().url().parse(env.DICTIONARY_AUDIO_S3_ENDPOINT),
         );
+
         if (
             endpoint.username ||
             endpoint.password ||
@@ -243,8 +271,10 @@ export function loadDictionaryAudioEnvironment(
             (options.deployed
                 ? endpoint.protocol !== 'https:'
                 : !['http:', 'https:'].includes(endpoint.protocol))
-        )
+        ) {
             throw new Error('Invalid audio storage endpoint.');
+        }
+
         s3 = {
             endpoint: endpoint.origin,
             bucket: z
@@ -263,6 +293,7 @@ export function loadDictionaryAudioEnvironment(
             forcePathStyle: env.DICTIONARY_AUDIO_S3_FORCE_PATH_STYLE === 'true',
         };
     }
+
     const retainedStorages = retainedStorageSchema
         .parse(
             JSON.parse(env.DICTIONARY_AUDIO_RETAINED_S3_CONFIGURATIONS ?? '[]'),
@@ -278,15 +309,20 @@ export function loadDictionaryAudioEnvironment(
                 (options.deployed
                     ? endpoint.protocol !== 'https:'
                     : !['http:', 'https:'].includes(endpoint.protocol))
-            )
+            ) {
                 throw new Error('Invalid retained audio storage endpoint.');
+            }
+
             return { ...storage, endpoint: endpoint.origin };
         });
     const storageIds = [...(s3 ? [s3] : []), ...retainedStorages].map(
         (storage) => `${storage.endpoint}/${storage.bucket}`,
     );
-    if (new Set(storageIds).size !== storageIds.length)
+
+    if (new Set(storageIds).size !== storageIds.length) {
         throw new Error('Audio storage identities must be unique.');
+    }
+
     return {
         playbackEnabled,
         fingerprintSecret,
@@ -323,6 +359,7 @@ export function loadDictionaryAudioEnvironment(
         globalActiveLimit: env.DICTIONARY_AUDIO_GLOBAL_ACTIVE_LIMIT,
     };
 }
+
 export type DictionaryAudioEnvironment = ReturnType<
     typeof loadDictionaryAudioEnvironment
 >;

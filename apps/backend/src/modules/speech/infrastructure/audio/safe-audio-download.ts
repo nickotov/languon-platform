@@ -20,8 +20,10 @@ for (const [address, prefix] of [
     ['198.51.100.0', 24],
     ['203.0.113.0', 24],
     ['224.0.0.0', 3],
-] as const)
+] as const) {
     blocked.addSubnet(address, prefix, 'ipv4');
+}
+
 // Restrict IPv6 to global unicast, then exclude special-use allocations.
 blocked.addSubnet('2001::', 23, 'ipv6');
 blocked.addSubnet('2001:db8::', 32, 'ipv6');
@@ -31,6 +33,7 @@ globalV6.addSubnet('2000::', 3, 'ipv6');
 
 export function isPublicAudioAddress(address: string): boolean {
     const family = isIP(address);
+
     return family === 4
         ? !blocked.check(address, 'ipv4')
         : family === 6 &&
@@ -51,8 +54,10 @@ export function validateAudioResultUrl(
         (url.port && url.port !== '443') ||
         isIP(url.hostname) ||
         !allowedHosts.includes(url.hostname.toLowerCase())
-    )
+    ) {
         throw new Error('Untrusted audio result location.');
+    }
+
     return url;
 }
 
@@ -72,8 +77,10 @@ export async function downloadAudioResult(
     if (
         !addresses.length ||
         addresses.some(({ address }) => !isPublicAudioAddress(address))
-    )
+    ) {
         throw new Error('Untrusted audio result address.');
+    }
+
     const pinned = addresses[0]!;
     const bytes = await new Promise<Buffer>((resolve, reject) => {
         const req = request(
@@ -83,8 +90,11 @@ export async function downloadAudioResult(
                 lookup: (_hostname, options, callback) => {
                     // Node's family selection requests the all-address callback shape.
                     // Both forms return only the address already checked above.
-                    if (options.all) callback(null, [pinned]);
-                    else callback(null, pinned.address, pinned.family);
+                    if (options.all) {
+                        callback(null, [pinned]);
+                    } else {
+                        callback(null, pinned.address, pinned.family);
+                    }
                 },
                 headers: { accept: 'audio/mpeg, audio/wav' },
             },
@@ -106,8 +116,10 @@ export async function downloadAudioResult(
                 ) {
                     response.destroy();
                     reject(new Error('Invalid audio download response.'));
+
                     return;
                 }
+
                 const chunks: Buffer[] = [];
                 let size = 0;
                 response.on('data', (chunk: Buffer) => {
@@ -115,21 +127,27 @@ export async function downloadAudioResult(
                     if (size > maximumAudioBytes) {
                         response.destroy();
                         reject(new Error('Audio download exceeds limit.'));
+
                         return;
                     }
+
                     chunks.push(chunk);
                 });
+
                 response.on('error', () =>
                     reject(new Error('Audio download failed.')),
                 );
+
                 response.on('end', () => resolve(Buffer.concat(chunks)));
             },
         );
+
         req.on('error', () => reject(new Error('Audio download failed.')));
         req.end();
     });
     const wav = bytes.subarray(0, 4).toString('ascii') === 'RIFF';
     const durationMs = wav ? validateWav(bytes) : validateMp3(bytes);
+
     return {
         bytes,
         mimeType: wav ? 'audio/wav' : 'audio/mpeg',
@@ -147,28 +165,38 @@ export function validateWav(input: Uint8Array): number {
         bytes.toString('ascii', 0, 4) !== 'RIFF' ||
         bytes.toString('ascii', 8, 12) !== 'WAVE' ||
         bytes.readUInt32LE(4) !== bytes.length - 8
-    )
+    ) {
         throw new Error('Invalid WAV.');
+    }
+
     let offset = 12;
     let byteRate = 0;
     let blockAlign = 0;
     let dataSize: number | undefined;
     while (offset < bytes.length) {
-        if (offset + 8 > bytes.length) throw new Error('Invalid WAV chunk.');
+        if (offset + 8 > bytes.length) {
+            throw new Error('Invalid WAV chunk.');
+        }
+
         const id = bytes.toString('ascii', offset, offset + 4);
         const size = bytes.readUInt32LE(offset + 4);
         const start = offset + 8;
         const end = start + size;
         const next = end + (size % 2);
-        if (next > bytes.length) throw new Error('Invalid WAV chunk.');
+        if (next > bytes.length) {
+            throw new Error('Invalid WAV chunk.');
+        }
+
         if (id === 'fmt ') {
             if (
                 byteRate ||
                 ![16, 18].includes(size) ||
                 bytes.readUInt16LE(start) !== 1 ||
                 (size === 18 && bytes.readUInt16LE(start + 16) !== 0)
-            )
+            ) {
                 throw new Error('Unsupported WAV format.');
+            }
+
             const channels = bytes.readUInt16LE(start + 2);
             const sampleRate = bytes.readUInt32LE(start + 4);
             byteRate = bytes.readUInt32LE(start + 8);
@@ -180,31 +208,45 @@ export function validateWav(input: Uint8Array): number {
                 bytes.readUInt16LE(start + 14) !== 16 ||
                 blockAlign !== channels * 2 ||
                 byteRate !== sampleRate * blockAlign
-            )
+            ) {
                 throw new Error('Unsupported WAV format.');
+            }
         } else if (id === 'data') {
-            if (!byteRate || dataSize !== undefined || !size || size % blockAlign)
+            if (
+                !byteRate ||
+                dataSize !== undefined ||
+                !size ||
+                size % blockAlign
+            ) {
                 throw new Error('Invalid WAV data.');
+            }
+
             dataSize = size;
         } else if (!['LIST', 'JUNK', 'PAD '].includes(id)) {
             // Reject alternate codec/container chunks and unrecognized payloads.
             throw new Error('Unsupported WAV chunk.');
         }
+
         offset = next;
     }
-    if (dataSize === undefined || dataSize / byteRate > 120)
+
+    if (dataSize === undefined || dataSize / byteRate > 120) {
         throw new Error('Audio duration or WAV data exceeds limit.');
+    }
+
     return Math.max(1, Math.round((dataSize / byteRate) * 1000));
 }
 
 /** Walk complete MPEG Layer III frames; reject non-audio, truncation, and >120s. */
 export function validateMp3(bytes: Uint8Array): number {
     let offset = 0;
-    let duration = 0;
-    let frames = 0;
+    let durationSeconds = 0;
+    let frameCount = 0;
     if (Buffer.from(bytes.subarray(0, 3)).toString() === 'ID3') {
-        if (bytes.length < 10 || [6, 7, 8, 9].some((i) => bytes[i]! > 127))
+        if (bytes.length < 10 || [6, 7, 8, 9].some((i) => bytes[i]! > 127)) {
             throw new Error('Invalid MP3.');
+        }
+
         offset =
             10 +
             ((bytes[6]! << 21) |
@@ -213,6 +255,7 @@ export function validateMp3(bytes: Uint8Array): number {
                 bytes[9]!) +
             (bytes[5]! & 16 ? 10 : 0);
     }
+
     while (offset + 4 <= bytes.length) {
         if (
             bytes.length - offset === 128 &&
@@ -221,28 +264,31 @@ export function validateMp3(bytes: Uint8Array): number {
             offset += 128;
             break;
         }
-        const a = bytes[offset]!;
-        const b = bytes[offset + 1]!;
-        const c = bytes[offset + 2]!;
-        const version = (b >> 3) & 3;
-        const layer = (b >> 1) & 3;
-        const rateIndex = (c >> 2) & 3;
-        const bitrateIndex = c >> 4;
+
+        const headerSyncByte = bytes[offset]!;
+        const headerVersionByte = bytes[offset + 1]!;
+        const headerRateByte = bytes[offset + 2]!;
+        const versionBits = (headerVersionByte >> 3) & 3;
+        const layerBits = (headerVersionByte >> 1) & 3;
+        const sampleRateIndex = (headerRateByte >> 2) & 3;
+        const bitrateIndex = headerRateByte >> 4;
         if (
-            a !== 255 ||
-            (b & 224) !== 224 ||
-            version === 1 ||
-            layer !== 1 ||
-            rateIndex === 3 ||
+            headerSyncByte !== 255 ||
+            (headerVersionByte & 224) !== 224 ||
+            versionBits === 1 ||
+            layerBits !== 1 ||
+            sampleRateIndex === 3 ||
             bitrateIndex === 0 ||
             bitrateIndex === 15
-        )
+        ) {
             throw new Error('Invalid MP3.');
-        const rate =
-            [44100, 48000, 32000][rateIndex]! /
-            (version === 3 ? 1 : version === 2 ? 2 : 4);
+        }
+
+        const sampleRateHz =
+            [44100, 48000, 32000][sampleRateIndex]! /
+            (versionBits === 3 ? 1 : versionBits === 2 ? 2 : 4);
         const bitrates =
-            version === 3
+            versionBits === 3
                 ? [
                       0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224,
                       256, 320,
@@ -251,18 +297,30 @@ export function validateMp3(bytes: Uint8Array): number {
                       0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144,
                       160,
                   ];
+
         offset +=
             Math.floor(
-                ((version === 3 ? 144 : 72) * bitrates[bitrateIndex]! * 1000) /
-                    rate,
+                ((versionBits === 3 ? 144 : 72) *
+                    bitrates[bitrateIndex]! *
+                    1000) /
+                    sampleRateHz,
             ) +
-            ((c >> 1) & 1);
-        duration += (version === 3 ? 1152 : 576) / rate;
-        frames++;
-        if (duration > 120 || offset > bytes.length)
+            ((headerRateByte >> 1) & 1);
+
+        durationSeconds += (versionBits === 3 ? 1152 : 576) / sampleRateHz;
+        frameCount++;
+        if (durationSeconds > 120 || offset > bytes.length) {
             throw new Error('Audio duration or frame exceeds limit.');
+        }
     }
-    if (!frames || offset !== bytes.length || bytes.length > maximumAudioBytes)
+
+    if (
+        !frameCount ||
+        offset !== bytes.length ||
+        bytes.length > maximumAudioBytes
+    ) {
         throw new Error('Invalid MP3.');
-    return Math.round(duration * 1000);
+    }
+
+    return Math.round(durationSeconds * 1000);
 }

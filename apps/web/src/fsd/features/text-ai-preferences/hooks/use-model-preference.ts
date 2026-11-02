@@ -33,38 +33,46 @@ export function useModelPreference(requestWithSession: SessionRequest) {
         gcTime: 0,
         refetchOnWindowFocus: false,
     });
+
     useEffect(() => {
         setBase(null);
         setBudgetDraft('');
         setLatest(null);
         setSaveState('idle');
         savingRef.current = false;
+
         return () => {
             void queryClient.cancelQueries({
                 queryKey: ['text-ai-preference', actor],
             });
+
             queryClient.removeQueries({
                 queryKey: ['text-ai-preference', actor],
             });
+
             queryClient.removeQueries({ queryKey: ['text-ai-catalog', actor] });
         };
     }, [actor, authenticated, queryClient]);
+
     useEffect(() => {
         if (pref.data && !base && authenticated) {
             setBase(pref.data);
             setBudgetDraft(pref.data.maxCreditsPerAction ?? '');
         }
     }, [pref.data, base, authenticated]);
+
     useEffect(() => {
         const update = () => setOnline(navigator.onLine);
         update();
         window.addEventListener('online', update);
         window.addEventListener('offline', update);
+
         return () => {
             window.removeEventListener('online', update);
             window.removeEventListener('offline', update);
         };
     }, []);
+
     const budgetValid =
         validActionBudget(budgetDraft) ||
         (budgetDraft === '' && base?.maxCreditsPerAction == null);
@@ -78,12 +86,17 @@ export function useModelPreference(requestWithSession: SessionRequest) {
         online &&
         saveState !== 'saving' &&
         saveState !== 'conflict';
+
     function cancel() {
-        if (!base || savingRef.current) return;
+        if (!base || savingRef.current) {
+            return;
+        }
+
         setBudgetDraft(base.maxCreditsPerAction ?? '');
         setLatest(null);
         setSaveState('idle');
     }
+
     async function reloadLatest() {
         setLatest(null);
         const owner = actor;
@@ -94,12 +107,14 @@ export function useModelPreference(requestWithSession: SessionRequest) {
                 useSessionStore.getState().user?.id === owner &&
                 result.isSuccess &&
                 result.data
-            )
+            ) {
                 setLatest(result.data);
+            }
         } catch {
             /* The query exposes its failure for retry. */
         }
     }
+
     async function save(overwrite = false) {
         const expected = overwrite ? latest : base;
         if (
@@ -108,9 +123,14 @@ export function useModelPreference(requestWithSession: SessionRequest) {
             !online ||
             !budgetValid ||
             savingRef.current
-        )
+        ) {
             return;
-        if (!overwrite && saveState === 'conflict') return;
+        }
+
+        if (!overwrite && saveState === 'conflict') {
+            return;
+        }
+
         const owner = actor;
         savingRef.current = true;
         setSaveState('saving');
@@ -123,12 +143,15 @@ export function useModelPreference(requestWithSession: SessionRequest) {
             const saved = await requestWithSession((token) =>
                 preferencesApi.save(token, body),
             );
+
             if (
                 actorRef.current !== owner ||
                 useSessionStore.getState().user?.id !== owner ||
                 useSessionStore.getState().status !== 'authenticated'
-            )
+            ) {
                 return;
+            }
+
             setBase(saved);
             setBudgetDraft(saved.maxCreditsPerAction ?? '');
             setLatest(null);
@@ -139,26 +162,37 @@ export function useModelPreference(requestWithSession: SessionRequest) {
                 actorRef.current !== owner ||
                 useSessionStore.getState().user?.id !== owner ||
                 useSessionStore.getState().status !== 'authenticated'
-            )
+            ) {
                 return;
+            }
+
             if (
                 error instanceof PreferenceApiError &&
                 error.code === 'conflict'
             ) {
                 setSaveState('conflict');
                 await reloadLatest();
-            } else setSaveState('error');
+            } else {
+                setSaveState('error');
+            }
         } finally {
-            if (actorRef.current === owner) savingRef.current = false;
+            if (actorRef.current === owner) {
+                savingRef.current = false;
+            }
         }
     }
+
     function useLatest() {
-        if (!latest) return;
+        if (!latest) {
+            return;
+        }
+
         setBase(latest);
         setBudgetDraft(latest.maxCreditsPerAction ?? '');
         setLatest(null);
         setSaveState('idle');
     }
+
     return {
         base: authenticated ? base : null,
         pref,
@@ -170,9 +204,14 @@ export function useModelPreference(requestWithSession: SessionRequest) {
         budgetDraft,
         budgetValid,
         selectBudget(value: string) {
-            if (savingRef.current) return;
+            if (savingRef.current) {
+                return;
+            }
+
             setBudgetDraft(value);
-            if (saveState !== 'conflict') setSaveState('idle');
+            if (saveState !== 'conflict') {
+                setSaveState('idle');
+            }
         },
         cancel,
         save,
@@ -180,4 +219,5 @@ export function useModelPreference(requestWithSession: SessionRequest) {
         useLatest,
     };
 }
+
 export type ModelPreferenceController = ReturnType<typeof useModelPreference>;

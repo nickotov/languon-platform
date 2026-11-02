@@ -49,6 +49,7 @@ export class DictionaryDocumentGenerationError extends Error {
         cacheReadTokens?: number;
         cacheWriteTokens?: number;
     };
+
     public constructor(
         public readonly category: DictionaryDocumentGenerationFailureCategory,
         public readonly retryable: boolean,
@@ -113,33 +114,41 @@ async function readVerifiedBytes(
     signal: AbortSignal,
 ): Promise<Uint8Array> {
     const opened = await storage.openExact(reference, signal);
-    if (!sameReference(opened.reference, reference))
+    if (!sameReference(opened.reference, reference)) {
         throw new DictionaryDocumentGenerationError('invalid_document', false);
+    }
+
     const chunks: Uint8Array[] = [];
     let byteLength = 0;
     const hash = createHash('sha256');
     for await (const chunk of opened.content) {
         signal.throwIfAborted();
         byteLength += chunk.byteLength;
-        if (byteLength > documentIngestionLimitsV1.upload.maximumFileBytes)
+        if (byteLength > documentIngestionLimitsV1.upload.maximumFileBytes) {
             throw new DictionaryDocumentGenerationError(
                 'invalid_document',
                 false,
             );
+        }
+
         chunks.push(chunk);
         hash.update(chunk);
     }
+
     if (
         byteLength !== reference.sizeBytes ||
         hash.digest('hex') !== reference.checksumSha256
-    )
+    ) {
         throw new DictionaryDocumentGenerationError('invalid_document', false);
+    }
+
     const bytes = new Uint8Array(byteLength);
     let offset = 0;
     for (const chunk of chunks) {
         bytes.set(chunk, offset);
         offset += chunk.byteLength;
     }
+
     return bytes;
 }
 
@@ -149,6 +158,7 @@ async function runWithDeadline<T>(
     operation: (signal: AbortSignal) => Promise<T>,
 ): Promise<T> {
     const timeoutSignal = AbortSignal.timeout(timeoutMs);
+
     return operation(AbortSignal.any([signal, timeoutSignal]));
 }
 
@@ -176,13 +186,15 @@ function validateOcrPage(
         pixels > documentIngestionLimitsV1.ocr.maximumPagePixels ||
         page.content.byteLength >
             documentIngestionLimitsV1.ocr.maximumPageInputBytes
-    )
+    ) {
         throw new DictionaryDocumentGenerationError(
             'invalid_document',
             false,
             undefined,
             scanAttestation,
         );
+    }
+
     return pixels;
 }
 
@@ -213,9 +225,13 @@ export class DictionaryDocumentGenerationProcessor {
             );
         } catch (error) {
             request.signal.throwIfAborted();
-            if (error instanceof DictionaryDocumentGenerationError) throw error;
+            if (error instanceof DictionaryDocumentGenerationError) {
+                throw error;
+            }
+
             throw new DictionaryDocumentGenerationError('scan_failed', true);
         }
+
         let scan;
         try {
             scan = await runWithDeadline(
@@ -229,8 +245,10 @@ export class DictionaryDocumentGenerationProcessor {
             );
         } catch {
             request.signal.throwIfAborted();
+
             throw new DictionaryDocumentGenerationError('scan_failed', true);
         }
+
         const observedAttestation = scan.attestation;
         const scanAttestation = observedAttestation
             ? {
@@ -238,18 +256,22 @@ export class DictionaryDocumentGenerationProcessor {
                   completedAt: this.dependencies.clock.now(),
               }
             : undefined;
-        if (scan.kind === 'infected')
+
+        if (scan.kind === 'infected') {
             throw new DictionaryDocumentGenerationError(
                 'malware_detected',
                 false,
                 undefined,
                 scanAttestation,
             );
+        }
+
         const signatureAgeMs =
             scan.kind === 'clean'
                 ? this.dependencies.clock.now().getTime() -
                   scan.attestation.signatureUpdatedAt.getTime()
                 : Number.NaN;
+
         if (
             scan.kind !== 'clean' ||
             scan.attestation.engineVersion.trim().length === 0 ||
@@ -258,8 +280,10 @@ export class DictionaryDocumentGenerationProcessor {
             signatureAgeMs < 0 ||
             signatureAgeMs >
                 documentIngestionLimitsV1.scanner.maximumSignatureAgeMs
-        )
+        ) {
             throw new DictionaryDocumentGenerationError('scan_failed', true);
+        }
+
         const cleanScanAttestation: DictionaryDocumentScanAttestation = {
             ...scan.attestation,
             completedAt: scanAttestation!.completedAt,
@@ -280,7 +304,10 @@ export class DictionaryDocumentGenerationProcessor {
             );
         } catch (error) {
             request.signal.throwIfAborted();
-            if (error instanceof DictionaryDocumentGenerationError) throw error;
+            if (error instanceof DictionaryDocumentGenerationError) {
+                throw error;
+            }
+
             throw new DictionaryDocumentGenerationError(
                 'extraction_failed',
                 false,
@@ -288,6 +315,7 @@ export class DictionaryDocumentGenerationProcessor {
                 cleanScanAttestation,
             );
         }
+
         if (
             !Array.isArray(extraction.entries) ||
             !Number.isSafeInteger(extraction.pageCount) ||
@@ -298,13 +326,14 @@ export class DictionaryDocumentGenerationProcessor {
             extraction.totalPixels < 0 ||
             extraction.totalPixels >
                 documentIngestionLimitsV1.document.maximumTotalPixels
-        )
+        ) {
             throw new DictionaryDocumentGenerationError(
                 'invalid_document',
                 false,
                 undefined,
                 cleanScanAttestation,
             );
+        }
 
         const blocks: DictionaryDocumentBlock[] = [];
         if (
@@ -313,23 +342,28 @@ export class DictionaryDocumentGenerationProcessor {
                     !entry ||
                     (entry.kind !== 'block' && entry.kind !== 'ocr-page'),
             )
-        )
+        ) {
             throw new DictionaryDocumentGenerationError(
                 'invalid_document',
                 false,
                 undefined,
                 cleanScanAttestation,
             );
+        }
+
         const ocrEntries = extraction.entries.filter(
             (entry) => entry.kind === 'ocr-page',
         );
-        if (ocrEntries.length > documentIngestionLimitsV1.ocr.maximumPages)
+
+        if (ocrEntries.length > documentIngestionLimitsV1.ocr.maximumPages) {
             throw new DictionaryDocumentGenerationError(
                 'invalid_document',
                 false,
                 undefined,
                 cleanScanAttestation,
             );
+        }
+
         let ocrPixels = 0;
         const ocrDocumentSignal = AbortSignal.any([
             request.signal,
@@ -337,39 +371,48 @@ export class DictionaryDocumentGenerationProcessor {
                 documentIngestionLimitsV1.ocr.documentTimeoutMs,
             ),
         ]);
+
         for (const entry of extraction.entries) {
             if (entry.kind === 'block') {
                 const parsedBlock = DictionaryDocumentBlockSchema.safeParse(
                     entry.block,
                 );
-                if (!parsedBlock.success)
+
+                if (!parsedBlock.success) {
                     throw new DictionaryDocumentGenerationError(
                         'invalid_document',
                         false,
                         undefined,
                         cleanScanAttestation,
                     );
+                }
+
                 if (
                     parsedBlock.data.location.pageNumber !== null &&
                     parsedBlock.data.location.pageNumber > extraction.pageCount
-                )
+                ) {
                     throw new DictionaryDocumentGenerationError(
                         'invalid_document',
                         false,
                         undefined,
                         cleanScanAttestation,
                     );
+                }
+
                 blocks.push(parsedBlock.data);
                 continue;
             }
+
             ocrPixels += validateOcrPage(entry.page, cleanScanAttestation);
-            if (ocrPixels > documentIngestionLimitsV1.ocr.maximumTotalPixels)
+            if (ocrPixels > documentIngestionLimitsV1.ocr.maximumTotalPixels) {
                 throw new DictionaryDocumentGenerationError(
                     'invalid_document',
                     false,
                     undefined,
                     cleanScanAttestation,
                 );
+            }
+
             await request.reportStage?.('ocr', 40);
             try {
                 const recognized = await runWithDeadline(
@@ -382,9 +425,11 @@ export class DictionaryDocumentGenerationProcessor {
                             signal,
                         }),
                 );
+
                 blocks.push(...recognized.lines);
             } catch (error) {
                 request.signal.throwIfAborted();
+
                 throw new DictionaryDocumentGenerationError(
                     'ocr_failed',
                     !(error instanceof DocumentOcrUnavailableError),
@@ -393,13 +438,16 @@ export class DictionaryDocumentGenerationProcessor {
                 );
             }
         }
-        if (ocrPixels > extraction.totalPixels)
+
+        if (ocrPixels > extraction.totalPixels) {
             throw new DictionaryDocumentGenerationError(
                 'invalid_document',
                 false,
                 undefined,
                 cleanScanAttestation,
             );
+        }
+
         try {
             validateDictionaryDocumentBlocks(blocks);
         } catch {
@@ -410,20 +458,24 @@ export class DictionaryDocumentGenerationProcessor {
                 cleanScanAttestation,
             );
         }
+
         const terms = classifyDictionaryDocumentTerms(blocks);
         const extractionFingerprint = this.dependencies.fingerprint.fingerprint(
             terms.kind === 'review'
                 ? { failures: terms.failures, rows: terms.rows }
                 : terms,
         );
-        if (terms.kind === 'no_terms_found')
+
+        if (terms.kind === 'no_terms_found') {
             throw new DictionaryDocumentGenerationError(
                 'no_terms_found',
                 false,
                 { fingerprint: extractionFingerprint, observedUnitCount: 0 },
                 cleanScanAttestation,
             );
-        if (terms.kind === 'too_many_terms')
+        }
+
+        if (terms.kind === 'too_many_terms') {
             throw new DictionaryDocumentGenerationError(
                 'too_many_terms',
                 false,
@@ -433,6 +485,7 @@ export class DictionaryDocumentGenerationProcessor {
                 },
                 cleanScanAttestation,
             );
+        }
 
         await request.reportStage?.('generating', 60);
         await request.markProviderDispatch?.();
@@ -502,6 +555,7 @@ export class DictionaryDocumentGenerationProcessor {
                                 : (request.providerExecution ?? null),
                         signal: request.signal,
                     });
+
                 addUsage(response.usage);
                 inputTokens += response.usage.inputTokens;
                 outputTokens += response.usage.outputTokens;
@@ -509,33 +563,41 @@ export class DictionaryDocumentGenerationProcessor {
                     request.providerBudget,
                     response.usage,
                 );
+
                 if (
                     inputTokens >
                         request.providerBudget.maxInputTokensPerAttempt ||
                     outputTokens >
                         request.providerBudget.maxOutputTokensPerAttempt ||
                     costMicros > request.providerBudget.maxCostMicrosPerAttempt
-                )
+                ) {
                     throw new DictionaryDocumentGenerationError(
                         'provider_unavailable',
                         false,
                     );
+                }
+
                 candidates.push(...response.proposal.candidates);
                 failures.push(...response.proposal.failures);
             }
         } catch (error) {
-            if (error instanceof CardProposalGeneratorError && error.usage)
+            if (error instanceof CardProposalGeneratorError && error.usage) {
                 addUsage(error.usage);
+            }
+
             if (
                 (error instanceof CardProposalGeneratorError ||
                     error instanceof DictionaryDocumentGenerationError) &&
                 totalUsage
-            )
+            ) {
                 error.usage = totalUsage;
+            }
+
             throw error;
         }
 
         await request.reportStage?.('validating', 90);
+
         return {
             proposal: parseDictionaryBatchGenerationProposal({
                 candidates: candidates.sort(

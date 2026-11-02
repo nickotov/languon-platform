@@ -10,17 +10,21 @@ import { render } from './render';
 const id = '123e4567-e89b-42d3-a456-426614174000';
 const request = <T,>(operation: (token: string) => Promise<T>) =>
     operation(useSessionStore.getState().user!.id);
+
 vi.mock('@/fsd/features/auth', () => ({
     useAuth: () => ({ requestWithSession: request }),
 }));
+
 vi.mock('next/navigation', () => ({
     useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
+
 vi.mock('@/fsd/features/text-reading', () => ({
     TextReading: ({ document }: { document: TextDocument }) => (
         <p>{document.sourceText}</p>
     ),
 }));
+
 const document: TextDocument = {
     id,
     folderId: id,
@@ -47,16 +51,19 @@ const document: TextDocument = {
     createdAt: '2026-10-15T00:00:00.000Z',
     updatedAt: '2026-10-15T00:00:00.000Z',
 };
+
 function actor(actorId: string) {
     useSessionStore.setState({
         status: 'authenticated',
         user: { id: actorId } as AuthUser,
     });
 }
+
 afterEach(() => {
     vi.restoreAllMocks();
     useSessionStore.getState().signOut();
 });
+
 describe('workspace account isolation', () => {
     it('never renders A cached document when B opens the same URL, during pending fetch or after 404', async () => {
         actor('actor-a');
@@ -78,6 +85,7 @@ describe('workspace account isolation', () => {
                     : [],
             nextCursor: null,
         }));
+
         let rejectB!: (reason: unknown) => void;
         vi.spyOn(textsApi, 'getText').mockImplementation((token) =>
             token === 'actor-a'
@@ -86,9 +94,11 @@ describe('workspace account isolation', () => {
                       rejectB = reject;
                   }),
         );
+
         const client = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         });
+
         // Also leave the old, ownerless cache entry in place to model a retained client.
         client.setQueryData(['text', id], { text: document });
         const view = render(
@@ -96,6 +106,7 @@ describe('workspace account isolation', () => {
                 <TextWorkspacePage folderId={id} textId={id} />
             </QueryClientProvider>,
         );
+
         await screen.findByText(document.sourceText);
         act(() => actor('actor-b'));
         await waitFor(() =>
@@ -103,6 +114,7 @@ describe('workspace account isolation', () => {
                 screen.queryByText(document.sourceText),
             ).not.toBeInTheDocument(),
         );
+
         expect(screen.queryByText(document.title)).not.toBeInTheDocument();
         expect(screen.getByText('Loading text…')).toBeInTheDocument();
         await act(async () => {
@@ -114,11 +126,13 @@ describe('workspace account isolation', () => {
                 }),
             );
         });
+
         await screen.findByText('This text isn’t available');
         expect(screen.queryByText(document.sourceText)).not.toBeInTheDocument();
         expect(client.getQueryData(['text', 'actor-b', id])).toBeUndefined();
         view.unmount();
     });
+
     it('rejects a late A response and refuses to retry its operation using B credentials', async () => {
         actor('actor-a');
         let resolve!: (value: string) => void;
@@ -126,6 +140,7 @@ describe('workspace account isolation', () => {
         const requestWithRetry = vi.fn(
             async (operation: (token: string) => Promise<string>) => {
                 retry = operation;
+
                 return operation('actor-a');
             },
         );

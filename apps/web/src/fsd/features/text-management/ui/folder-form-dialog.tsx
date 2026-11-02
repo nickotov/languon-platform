@@ -40,10 +40,13 @@ function FolderForm({ initial, onClose, onSaved, requestWithSession }: Props) {
             name,
             description: description.trim() || null,
         });
+
         if (!parsed.success) {
             setInvalid(true);
+
             return;
         }
+
         void mutation.run(
             (token) =>
                 initial

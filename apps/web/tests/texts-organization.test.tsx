@@ -32,14 +32,17 @@ const document = {
 } as TextDocument;
 const requestWithSession = <T,>(operation: (token: string) => Promise<T>) =>
     operation('token');
+
 function mount(ui: React.ReactElement) {
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
+
     return render(
         <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
     );
 }
+
 beforeEach(() => {
     vi.restoreAllMocks();
     push.mockClear();
@@ -49,11 +52,13 @@ beforeEach(() => {
             ReturnType<typeof useSessionStore.getState>['user']
         >,
     });
+
     vi.spyOn(textsApi, 'listFolders').mockResolvedValue({
         data: [folder],
         nextCursor: null,
     });
 });
+
 describe('text organization', () => {
     it('defaults global creation to independent', async () => {
         const close = vi.fn();
@@ -64,12 +69,14 @@ describe('text organization', () => {
                 requestWithSession={requestWithSession}
             />,
         );
+
         expect(screen.getByLabelText('Destination')).toHaveValue('');
         await screen.findByRole('option', { name: folder.name });
         fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
         expect(push).toHaveBeenCalledWith('/texts/new');
         expect(close).toHaveBeenCalled();
     });
+
     it('preselects the current folder and carries acknowledged sharing into creation', async () => {
         mount(
             <NewTextDialog
@@ -79,6 +86,7 @@ describe('text organization', () => {
                 requestWithSession={requestWithSession}
             />,
         );
+
         await screen.findByRole('option', { name: folder.name });
         expect(screen.getByLabelText('Destination')).toHaveValue(folderId);
         expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
@@ -88,6 +96,7 @@ describe('text organization', () => {
             `/texts/new?folderId=${folderId}&shareId=${shareId}&shareVersion=3`,
         );
     });
+
     it('requires shared destination acknowledgment and submits its version with text version', async () => {
         const moved = { ...document, folderId, version: 5 };
         const move = vi
@@ -102,17 +111,21 @@ describe('text organization', () => {
                 requestWithSession={requestWithSession}
             />,
         );
+
         await screen.findByRole('option', { name: folder.name });
         fireEvent.change(screen.getByLabelText('Destination'), {
             target: { value: folderId },
         });
+
         expect(
             screen.getByRole('button', { name: 'Move', exact: true }),
         ).toBeDisabled();
+
         fireEvent.click(screen.getByRole('checkbox'));
         fireEvent.click(
             screen.getByRole('button', { name: 'Move', exact: true }),
         );
+
         await waitFor(() => expect(saved).toHaveBeenCalledWith(moved));
         expect(move).toHaveBeenCalledWith('token', textId, {
             folderId,
@@ -120,6 +133,7 @@ describe('text organization', () => {
             sharedFolderConfirmation: { shareId, shareVersion: 3 },
         });
     });
+
     it('moves out without a sharing acknowledgment and preserves the original on failure', async () => {
         const move = vi
             .spyOn(textsApi, 'moveText')
@@ -133,19 +147,23 @@ describe('text organization', () => {
                 requestWithSession={requestWithSession}
             />,
         );
+
         await screen.findByRole('option', { name: folder.name });
         fireEvent.change(screen.getByLabelText('Destination'), {
             target: { value: '' },
         });
+
         fireEvent.click(
             screen.getByRole('button', { name: 'Move', exact: true }),
         );
+
         await waitFor(() =>
             expect(move).toHaveBeenCalledWith('token', textId, {
                 folderId: null,
                 expectedVersion: 4,
             }),
         );
+
         expect(saved).not.toHaveBeenCalled();
         expect(document.folderId).toBeNull();
     });

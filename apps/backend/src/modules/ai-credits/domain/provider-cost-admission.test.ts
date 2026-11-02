@@ -68,6 +68,7 @@ describe('native provider dispatch admission', () => {
             undefined,
             facts,
         );
+
         expect(budget.nativeProviderPrice).toBe(price);
         expect(
             providerAffordableOutputTokens({
@@ -76,6 +77,7 @@ describe('native provider dispatch admission', () => {
                 budget,
             }),
         ).toBe(2000);
+
         expect(
             providerAffordableOutputTokens({
                 inputTokens: 1000,
@@ -84,6 +86,7 @@ describe('native provider dispatch admission', () => {
                 budget,
             }),
         ).toBe(1000);
+
         expect(
             providerAffordableOutputTokens({
                 inputTokens: 1001,
@@ -92,6 +95,7 @@ describe('native provider dispatch admission', () => {
             }),
         ).toBe(0);
     });
+
     it('bounds mixed per-call context cards and repeated native component minimums', () => {
         const mixed = structuredClone(price);
         mixed.nativeRules!.variants = [
@@ -134,14 +138,17 @@ describe('native provider dispatch admission', () => {
                 ],
             },
         ];
+
         expect(
             nativeTextProviderReservationMicros(mixed, facts, 2000, 2000),
         ).toBe(10000n);
+
         mixed.nativeRules!.currency = {
             code: 'UC',
             usdNumerator: '1',
             unitDenominator: '680000',
         };
+
         mixed.nativeRules!.variants = [
             {
                 id: 'fees',
@@ -164,10 +171,12 @@ describe('native provider dispatch admission', () => {
                 ],
             },
         ];
+
         expect(
             nativeTextProviderReservationMicros(mixed, facts, 1000, 1000),
         ).toBe(1471n);
     });
+
     it('rejects incompatible or incomplete native text components before reserving money', () => {
         for (const meter of [
             'characters',
@@ -183,9 +192,11 @@ describe('native provider dispatch admission', () => {
                     chargeWhen: 'positive-usage',
                 },
             ];
+
             expect(
                 nativeTextProviderReservationMicros(invalid, facts, 1000, 1000),
             ).toBeNull();
+
             expect(() =>
                 reviewedTextProviderBudget(
                     invalid,
@@ -196,6 +207,7 @@ describe('native provider dispatch admission', () => {
             ).toThrow();
         }
     });
+
     it('fails closed when the dispatch horizon has an unpriced schedule gap', () => {
         const invalid = structuredClone(price);
         invalid.nativeRules!.validUntil = '2026-10-28T12:00:00.001Z';

@@ -17,10 +17,16 @@ export function TextReading(props: TextReadingProps) {
     const source = props.source;
     let sourceId = '';
 
-    if (source?.kind === 'translation-proposal') sourceId = source.jobId;
-    if (source?.kind === 'shared-text') sourceId = source.shareId;
+    if (source?.kind === 'translation-proposal') {
+        sourceId = source.jobId;
+    }
+
+    if (source?.kind === 'shared-text') {
+        sourceId = source.shareId;
+    }
 
     const key = `${props.collectionActorKey}:${props.document.id}:${props.document.version}:${source?.kind ?? 'none'}:${sourceId}`;
+
     return <ReadingSurface key={key} {...props} />;
 }
 
@@ -47,6 +53,7 @@ function ReadingSurface(props: TextReadingProps) {
         const change = () => setCompact(media.matches);
         change();
         media.addEventListener('change', change);
+
         return () => media.removeEventListener('change', change);
     }, []);
 
@@ -59,7 +66,10 @@ function ReadingSurface(props: TextReadingProps) {
     }, [matchMode]);
 
     useEffect(() => {
-        if (props.collectionDisabled || !doc.alignment || !props.source) return;
+        if (props.collectionDisabled || !doc.alignment || !props.source) {
+            return;
+        }
+
         let timer = 0;
         const handle = () => {
             window.clearTimeout(timer);
@@ -68,7 +78,9 @@ function ReadingSurface(props: TextReadingProps) {
                 220,
             );
         };
+
         window.document.addEventListener('selectionchange', handle);
+
         return () => {
             window.clearTimeout(timer);
             window.document.removeEventListener('selectionchange', handle);
@@ -85,9 +97,14 @@ function ReadingSurface(props: TextReadingProps) {
                 el.getBoundingClientRect().bottom >
                 (scroll.current?.getBoundingClientRect().top ?? 0) + 72,
         );
-        if (props.onTabChange) props.onTabChange(side);
-        else setInternalTab(side);
-        if (visible)
+
+        if (props.onTabChange) {
+            props.onTabChange(side);
+        } else {
+            setInternalTab(side);
+        }
+
+        if (visible) {
             window.requestAnimationFrame(() => {
                 const next = [
                     ...(content.current?.querySelectorAll<HTMLElement>(
@@ -99,8 +116,10 @@ function ReadingSurface(props: TextReadingProps) {
                             visible.dataset.readingPair &&
                         el.dataset.side === side,
                 );
+
                 next?.scrollIntoView({ block: 'start' });
             });
+        }
     };
 
     function selectTab(value: string) {
@@ -110,8 +129,10 @@ function ReadingSurface(props: TextReadingProps) {
     const paragraphs: number[][] = [];
     pairs.forEach((pair, index) => {
         const previous = pairs[index - 1];
-        if (!previous || previous.paragraphIndex !== pair.paragraphIndex)
+        if (!previous || previous.paragraphIndex !== pair.paragraphIndex) {
             paragraphs.push([]);
+        }
+
         paragraphs.at(-1)!.push(index);
     });
 

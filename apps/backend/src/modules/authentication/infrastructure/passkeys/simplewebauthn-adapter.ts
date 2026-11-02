@@ -177,6 +177,7 @@ export class SimpleWebAuthnAdapter implements PasskeyVerifier {
                 input.credential.rawId,
                 input.storedCredential.credentialId,
             );
+
             if (
                 !Number.isSafeInteger(input.storedCredential.counter) ||
                 input.storedCredential.counter < 0 ||
@@ -210,6 +211,7 @@ export class SimpleWebAuthnAdapter implements PasskeyVerifier {
             const deviceType = mapDeviceType(
                 result.authenticationInfo.credentialDeviceType,
             );
+
             if (
                 !result.verified ||
                 !result.authenticationInfo.userVerified ||
@@ -249,6 +251,7 @@ export class SimpleWebAuthnAdapter implements PasskeyVerifier {
                 input.credential.id,
                 input.credential.rawId,
             );
+
             const result = await verifyRegistrationResponse({
                 expectedChallenge: input.expectedChallenge,
                 expectedOrigin: this.origins,
@@ -267,6 +270,7 @@ export class SimpleWebAuthnAdapter implements PasskeyVerifier {
             const deviceType = mapDeviceType(
                 result.registrationInfo.credentialDeviceType,
             );
+
             if (
                 credential.id !== input.credential.id ||
                 !Number.isSafeInteger(credential.counter) ||
@@ -309,6 +313,7 @@ function decodeBase64Url(value: string): Uint8Array {
     ) {
         throw new RangeError('The WebAuthn user handle is invalid.');
     }
+
     return Buffer.from(value, 'base64url');
 }
 
@@ -323,6 +328,7 @@ function isCanonicalBase64Url(value: string): boolean {
 function isExactOrigin(value: string, rpId: string): boolean {
     try {
         const origin = new URL(value);
+
         return (
             origin.origin === value &&
             (origin.hostname === rpId || origin.hostname.endsWith(`.${rpId}`))
@@ -335,6 +341,7 @@ function isExactOrigin(value: string, rpId: string): boolean {
 function isValidRpId(value: string): boolean {
     try {
         const parsed = new URL(`https://${value}`);
+
         return (
             value.length > 0 &&
             value.length <= 253 &&

@@ -24,6 +24,7 @@ export function LoginPage() {
             setError(response.error?.message ?? translate('login.failed'));
         }
     };
+
     return (
         <main className={styles.page}>
             <section className={styles.intro}>

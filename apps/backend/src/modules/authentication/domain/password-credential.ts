@@ -31,6 +31,7 @@ export class PasswordCredential implements PasswordCredentialProperties {
         if (properties.parametersVersion < 1) {
             throw new RangeError('Password parameter versions start at one.');
         }
+
         return new PasswordCredential({
             ...properties,
             updatedAt: properties.createdAt,

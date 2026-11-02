@@ -25,6 +25,7 @@ function LocaleMessageHarness({
 }) {
     const [message, setMessage] = useLocaleSensitiveState<string | null>(null);
     useEffect(() => capture(setMessage), [capture, setMessage]);
+
     return createElement('output', null, message);
 }
 
@@ -41,21 +42,28 @@ describe('i18n primitives', () => {
         expect(t('home.signedInAs', { email: 'learner@example.com' })).toBe(
             'Signed in as learner@example.com',
         );
+
         expect(t('verify.resendIn')).toBe('Send a new code in {seconds}s');
     });
 
     it('keeps labels and interpolated safety copy visible when a runtime catalog is incomplete', () => {
         const incomplete = Object.fromEntries(
-            Object.entries(en).filter(([key]) => ![
-                'profile.fullName',
-                'profile.deleteAcknowledge',
-                'security.revokePasskeyDescription',
-            ].includes(key)),
+            Object.entries(en).filter(
+                ([key]) =>
+                    ![
+                        'profile.fullName',
+                        'profile.deleteAcknowledge',
+                        'security.revokePasskeyDescription',
+                    ].includes(key),
+            ),
         ) as typeof en;
         const t = createTranslator(incomplete);
 
         expect(t('profile.fullName')).toBe('Full name');
-        expect(t('profile.deleteAcknowledge')).toBe('I understand access ends now and purge follows.');
+        expect(t('profile.deleteAcknowledge')).toBe(
+            'I understand access ends now and purge follows.',
+        );
+
         expect(t('security.revokePasskeyDescription', { name: 'Laptop' })).toBe(
             'Laptop will stop working immediately. You can add it again later.',
         );
@@ -94,6 +102,7 @@ describe('i18n primitives', () => {
                 messages: ru,
             }),
         );
+
         await waitFor(() =>
             expect(screen.queryByText('English error')).not.toBeInTheDocument(),
         );

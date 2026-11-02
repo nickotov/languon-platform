@@ -39,7 +39,9 @@ export function TokenIssueForm({
     const handleFinish = async (values: AdminMcpIssueToken) => {
         const parsed = parseIssueTokenValues(values);
         setInvalid(!parsed.success);
-        if (parsed.success && (await onIssue(parsed.data))) form.resetFields();
+        if (parsed.success && (await onIssue(parsed.data))) {
+            form.resetFields();
+        }
     };
 
     return (

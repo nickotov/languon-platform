@@ -289,6 +289,9 @@ accounting behavior have separate real composed HTTP/integration coverage.
   Learners never see or choose a model. Exhausted routes show a neutral error
   with explicit Retry; questions remain. Capacity/credit failures never silently charge
   an unissued provider call; incurred dispatched work remains accounted.
+- Technical generation failures show **AI could not complete this response. Your
+  message is saved. You can retry.**, rather than a conversation-loading error.
+  A successfully queued turn is admission, not proof of completed generation.
 - Technical provider failures keep the learner question and incomplete assistant
   output, release the credit hold, and charge the learner nothing. Canonical
   API detail retains released billing and zero charged credits; the tutor shows

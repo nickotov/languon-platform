@@ -45,6 +45,7 @@ export function SentenceActions({
         onClick: ({ key }) => onAll(key as AdminSentenceLibraryOperation),
     };
     const selectionDisabled = disabled || count === 0;
+
     return (
         <div className={styles.actions}>
             <Typography.Text strong>

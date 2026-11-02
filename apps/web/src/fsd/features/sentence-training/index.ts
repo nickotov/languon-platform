@@ -12,3 +12,5 @@ export { useSentencePreparation } from './hooks/use-sentence-preparation';
 export { SentencePreparationChip } from './ui/sentence-preparation-chip/sentence-preparation-chip';
 export { SentencePreparationSheet } from './ui/sentence-preparation-sheet/sentence-preparation-sheet';
 export type { SentencePreparationController } from './types';
+
+export { ApiError as SentenceApiError } from './lib/api-error';

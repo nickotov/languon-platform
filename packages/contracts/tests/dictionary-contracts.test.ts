@@ -54,23 +54,28 @@ describe('dictionary HTTP contracts', () => {
             'single-card:v1',
             'single-card:v2',
         ]);
+
         expect(DictionaryPastedTermsGenerationFormatSchema.options).toEqual([
             'pasted-terms:v1',
             'pasted-terms:v2',
         ]);
+
         expect(DictionaryImportPairsGenerationFormatSchema.options).toEqual([
             'import-pairs:v1',
             'import-pairs:v2',
         ]);
+
         expect(DictionaryDocumentTermsGenerationFormatSchema.options).toEqual([
             'document-terms:v1',
             'document-terms:v2',
         ]);
+
         expect(
             DictionaryGenerationJobSchema.parse(
                 generationJob({ format: 'single-card:v2' }),
             ).format,
         ).toBe('single-card:v2');
+
         expect(
             AcceptDictionaryPastedTermsGenerationJobRequestSchema.parse({
                 format: 'pasted-terms:v2',
@@ -85,10 +90,12 @@ describe('dictionary HTTP contracts', () => {
                 '  Banking and financial institutions  ',
             ),
         ).toBe('Banking and financial institutions');
+
         expect(() => DictionaryTranslationContextSchema.parse('   ')).toThrow();
         expect(() =>
             DictionaryTranslationContextSchema.parse('x'.repeat(1_001)),
         ).toThrow();
+
         expect(() =>
             DictionaryTranslationContextSchema.parse('valid\u0000unsafe'),
         ).toThrow();
@@ -99,6 +106,7 @@ describe('dictionary HTTP contracts', () => {
                 translationContext: '  Legal terminology  ',
             }).translationContext,
         ).toBe('Legal terminology');
+
         expect(
             UpdateDictionaryCardRequestSchema.parse({
                 expectedDictionaryVersion: 3,
@@ -107,6 +115,7 @@ describe('dictionary HTTP contracts', () => {
                 translationContext: null,
             }).translationContext,
         ).toBeNull();
+
         expect(
             CreateDictionaryCardRequestSchema.parse({
                 expectedDictionaryVersion: 4,
@@ -121,10 +130,12 @@ describe('dictionary HTTP contracts', () => {
         expect(OwnedDictionarySchema.parse(dictionary).translationContext).toBe(
             'Financial institutions',
         );
+
         expect(
             DictionaryCardSchema.parse(dictionaryCardFixture())
                 .translationContext,
         ).toBe('A physical branch of a financial institution');
+
         expect(() => DictionarySummarySchema.parse(dictionary)).toThrow();
 
         const publicDictionary = {
@@ -150,12 +161,14 @@ describe('dictionary HTTP contracts', () => {
             archivedAt: _cardArchivedAt,
             ...publicCardFields
         } = publicCard;
+
         expect(
             PublicDictionarySchema.parse({
                 ...publicFields,
                 cards: [publicCardFields],
             }).cards,
         ).toHaveLength(1);
+
         expect(() => PublicDictionarySchema.parse(publicDictionary)).toThrow();
     });
 
@@ -169,12 +182,14 @@ describe('dictionary HTTP contracts', () => {
             catalogVersion: 1,
             languages: LANGUAGE_CATALOG,
         });
+
         expect(() =>
             LanguagesResponseSchema.parse({
                 catalogVersion: 2,
                 languages: LANGUAGE_CATALOG,
             }),
         ).toThrow();
+
         expect(() =>
             LanguagesResponseSchema.parse({
                 catalogVersion: 1,
@@ -197,6 +212,7 @@ describe('dictionary HTTP contracts', () => {
             name: 'Spanish basics',
             description: null,
         });
+
         expect(() =>
             CreateDictionaryRequestSchema.parse({
                 name: 'Invalid pair',
@@ -204,6 +220,7 @@ describe('dictionary HTTP contracts', () => {
                 targetLanguage: 'en',
             }),
         ).toThrow();
+
         expect(() =>
             CreateDictionaryRequestSchema.parse({
                 name: 'Non-canonical',
@@ -211,6 +228,7 @@ describe('dictionary HTTP contracts', () => {
                 targetLanguage: 'ZH-hans',
             }),
         ).toThrow();
+
         expect(() =>
             CreateDictionaryRequestSchema.parse({
                 name: 'Unknown field',
@@ -236,12 +254,14 @@ describe('dictionary HTTP contracts', () => {
         expect(DictionarySettingsValuesSchema.parse(defaults)).toEqual(
             defaults,
         );
+
         expect(
             DictionarySettingsValuesSchema.parse({
                 ...defaults,
                 exampleEnabled: false,
             }),
         ).toEqual({ ...defaults, exampleEnabled: false });
+
         expect(() =>
             CreateDictionaryRequestSchema.parse({
                 name: 'Invalid initial dependency',
@@ -250,6 +270,7 @@ describe('dictionary HTTP contracts', () => {
                 settings: { ...defaults, exampleEnabled: false },
             }),
         ).toThrow();
+
         expect(() =>
             DictionarySettingsValuesSchema.parse({
                 ...defaults,
@@ -264,6 +285,7 @@ describe('dictionary HTTP contracts', () => {
                 exampleTranslationLanguage: 'target',
             }),
         ).toBeDefined();
+
         expect(() =>
             DictionaryCardEffectiveSettingsSchema.parse({
                 ...defaults,
@@ -315,17 +337,20 @@ describe('dictionary HTTP contracts', () => {
                 settings: { definitionEnabled: true },
             }),
         ).toBeDefined();
+
         expect(() =>
             UpdateDictionaryRequestSchema.parse({
                 expectedDictionaryVersion: 3,
                 settings: { definitionEnabled: true },
             }),
         ).toThrow();
+
         expect(() =>
             UpdateDictionaryRequestSchema.parse({
                 expectedDictionaryVersion: 3,
             }),
         ).toThrow();
+
         expect(() =>
             UpdateDictionaryCardRequestSchema.parse({
                 expectedDictionaryVersion: 3,
@@ -341,19 +366,24 @@ describe('dictionary HTTP contracts', () => {
             limit: 25,
             lifecycle: 'active',
         });
+
         expect(ListDictionaryCardsQuerySchema.parse({ limit: '100' })).toEqual({
             limit: 100,
             lifecycle: 'active',
         });
+
         expect(() =>
             ListDictionaryCardsQuerySchema.parse({ limit: 101 }),
         ).toThrow();
+
         expect(() =>
             ListDictionaryCardsQuerySchema.parse({ search: 'x'.repeat(201) }),
         ).toThrow();
+
         expect(ListSharedDictionaryQuerySchema.parse({})).toEqual({
             limit: 25,
         });
+
         expect(() =>
             ListSharedDictionaryQuerySchema.parse({ limit: 26 }),
         ).toThrow();
@@ -364,6 +394,7 @@ describe('dictionary HTTP contracts', () => {
                 orderedCardIds: [CARD_ID_2, CARD_ID_1],
             }),
         ).toBeDefined();
+
         expect(() =>
             ReorderDictionaryCardsRequestSchema.parse({
                 expectedDictionaryVersion: 8,
@@ -380,11 +411,13 @@ describe('dictionary HTTP contracts', () => {
                 'idempotency-key': 'client-request-0001',
             }),
         ).toMatchObject({ 'idempotency-key': 'client-request-0001' });
+
         expect(() =>
             DictionaryEndpointSchemas.readSharedDictionary.headers.parse({
                 'x-languon-share-key': 'short',
             }),
         ).toThrow();
+
         expect(
             DictionaryEndpointSchemas.forkSharedDictionary.headers.parse({
                 'x-languon-share-key': 'a'.repeat(43),
@@ -402,24 +435,29 @@ describe('dictionary HTTP contracts', () => {
                 visibility: 'unlisted',
             }),
         ).toThrow();
+
         expect(() =>
             UpdateDictionaryRequestSchema.parse({
                 expectedDictionaryVersion: 1,
                 visibility: 'unlisted',
             }),
         ).toThrow();
+
         expect(
             UpdateDictionaryRequestSchema.parse({
                 expectedDictionaryVersion: 1,
                 visibility: 'private',
             }),
         ).toBeDefined();
+
         expect(DictionaryEndpointSchemas.createDictionary.response).toBe(
             DictionaryEndpointSchemas.readDictionary.response,
         );
+
         expect(DictionaryEndpointSchemas.updateDictionary.response).toBe(
             DictionaryEndpointSchemas.readDictionary.response,
         );
+
         expect(
             DictionaryEndpointSchemas.rotateDictionaryShareKey.response,
         ).not.toBe(DictionaryEndpointSchemas.readDictionary.response);
@@ -661,17 +699,21 @@ describe('dictionary HTTP contracts', () => {
                 access,
             })),
         );
+
         expect(DictionaryEndpointInventory).toHaveLength(
             Object.keys(DictionaryEndpointSchemas).length,
         );
+
         expect(DictionaryErrorCodeSchema.options).toContain(
             'shared_dictionary_not_found',
         );
+
         expect(DictionaryErrorCodeSchema.options).toContain('version_conflict');
         expect(DictionaryErrorCodeSchema.options).toContain('deletion_busy');
         expect(DictionaryErrorCodeSchema.options).toContain(
             'owner_capacity_exceeded',
         );
+
         expect(DictionaryErrorCodeSchema.options).not.toContain(
             'share_key_invalid',
         );
@@ -691,6 +733,7 @@ describe('dictionary HTTP contracts', () => {
                 targets: [{ dictionaryId: CARD_ID_1, expectedVersion: 2 }],
             },
         });
+
         expect(() =>
             DeleteDictionariesRequestSchema.parse({
                 scope: {
@@ -702,6 +745,7 @@ describe('dictionary HTTP contracts', () => {
                 },
             }),
         ).toThrow();
+
         expect(
             DeleteDictionaryCardsRequestSchema.parse({
                 expectedDictionaryVersion: 3,
@@ -711,6 +755,7 @@ describe('dictionary HTTP contracts', () => {
             expectedDictionaryVersion: 3,
             scope: { kind: 'all-archived', snapshot: 'abc_123' },
         });
+
         expect(
             DictionaryDeletionPreviewResponseSchema.parse({
                 eligibleCount: 0,
@@ -737,6 +782,7 @@ describe('dictionary HTTP contracts', () => {
             expectedCardVersion: 2,
             instruction: null,
         });
+
         expect(() =>
             EnqueueDictionaryCardGenerationRequestSchema.parse({
                 expectedDictionaryVersion: 4,
@@ -745,6 +791,7 @@ describe('dictionary HTTP contracts', () => {
                 instruction: 'x'.repeat(1_001),
             }),
         ).toThrow();
+
         expect(() =>
             AcceptDictionaryGenerationJobRequestSchema.parse({
                 candidate: generationCandidate,
@@ -767,6 +814,7 @@ describe('dictionary HTTP contracts', () => {
                 warnings: ['Review the regional meaning.'],
             }),
         ).toBeDefined();
+
         expect(() =>
             DictionaryGenerationProposalSchema.parse({
                 candidate: generationCandidate,
@@ -779,6 +827,7 @@ describe('dictionary HTTP contracts', () => {
                 ],
             }),
         ).toThrow();
+
         expect(() =>
             DictionaryGenerationProposalSchema.parse({
                 candidate: generationCandidate,
@@ -803,6 +852,7 @@ describe('dictionary HTTP contracts', () => {
             state: 'queued',
             progress: { stage: 'queued', percent: 0 },
         });
+
         expect(DictionaryGenerationJobSchema.parse(queued)).toBeDefined();
         expect(() =>
             DictionaryGenerationJobSchema.parse({
@@ -812,6 +862,7 @@ describe('dictionary HTTP contracts', () => {
                 expiresAt: '2026-08-28T12:00:00.000Z',
             }),
         ).toThrow();
+
         expect(
             DictionaryGenerationJobSchema.parse({
                 ...queued,
@@ -821,6 +872,7 @@ describe('dictionary HTTP contracts', () => {
                 completedAt: '2026-08-21T12:01:00.000Z',
             }),
         ).toBeDefined();
+
         expect(() =>
             DictionaryGenerationJobSchema.parse({
                 ...queued,
@@ -845,6 +897,7 @@ describe('dictionary HTTP contracts', () => {
             text: 'bank\nriver bank',
             context: 'Ecology and geography',
         });
+
         expect(() =>
             EnqueueDictionaryPastedTermsGenerationRequestSchema.parse({
                 expectedDictionaryVersion: 4,
@@ -852,6 +905,7 @@ describe('dictionary HTTP contracts', () => {
                 text: 'x'.repeat(20_201),
             }),
         ).toThrow();
+
         expect(
             EnqueueDictionaryPastedTermsGenerationRequestSchema.parse({
                 expectedDictionaryVersion: 4,
@@ -861,6 +915,7 @@ describe('dictionary HTTP contracts', () => {
                 ),
             }).text,
         ).toHaveLength(20_198);
+
         expect(() =>
             EnqueueDictionaryPastedTermsGenerationRequestSchema.parse({
                 expectedDictionaryVersion: 4,
@@ -868,6 +923,7 @@ describe('dictionary HTTP contracts', () => {
                 text: 'bank\u0000river',
             }),
         ).toThrow();
+
         expect(() =>
             EnqueueDictionaryPastedTermsGenerationRequestSchema.parse({
                 expectedDictionaryVersion: 4,
@@ -875,6 +931,7 @@ describe('dictionary HTTP contracts', () => {
                 text: 'bank\triver',
             }),
         ).toThrow();
+
         expect(() =>
             EnqueueDictionaryPastedTermsGenerationRequestSchema.parse({
                 expectedDictionaryVersion: 4,
@@ -882,6 +939,7 @@ describe('dictionary HTTP contracts', () => {
                 text: 'bank\u0085river',
             }),
         ).toThrow();
+
         expect(
             EnqueueDictionaryPastedTermsGenerationRequestSchema.parse({
                 expectedDictionaryVersion: 4,
@@ -897,6 +955,7 @@ describe('dictionary HTTP contracts', () => {
         expect(
             DictionaryPastedTermsGenerationProposalSchema.parse(proposal),
         ).toEqual(proposal);
+
         expect(() =>
             DictionaryPastedTermsGenerationProposalSchema.parse({
                 ...proposal,
@@ -923,6 +982,7 @@ describe('dictionary HTTP contracts', () => {
                 ],
             }),
         ).toBeDefined();
+
         expect(() =>
             AcceptDictionaryGenerationJobRequestSchema.parse({
                 format: 'pasted-terms:v1',
@@ -960,6 +1020,7 @@ describe('dictionary HTTP contracts', () => {
         expect(DictionaryGenerationJobResponseSchema.parse({ job })).toEqual({
             job,
         });
+
         expect(
             DictionaryGenerationJobResponseSchema.parse({
                 job: generationJob({}),
@@ -975,6 +1036,7 @@ describe('dictionary HTTP contracts', () => {
                 rowIndexes: [3, 1],
             }),
         ).toMatchObject({ rowIndexes: [3, 1] });
+
         expect(() =>
             RetryDictionaryPastedTermsGenerationRequestSchema.parse({
                 expectedDictionaryVersion: 4,
@@ -992,14 +1054,17 @@ describe('dictionary HTTP contracts', () => {
                 rowIndexes: [3, 1],
             }),
         ).toMatchObject({ rowIndexes: [3, 1] });
+
         expect(CompleteDictionaryDocumentUploadRequestSchema.parse({})).toEqual(
             {},
         );
+
         expect(
             CompleteDictionaryDocumentUploadRequestSchema.parse({
                 versionId: 'immutable-version-7',
             }),
         ).toEqual({ versionId: 'immutable-version-7' });
+
         expect(
             CreateDictionaryDocumentUploadRequestSchema.parse({
                 expectedDictionaryVersion: 4,
@@ -1010,6 +1075,7 @@ describe('dictionary HTTP contracts', () => {
                 sha256: 'a'.repeat(64),
             }),
         ).toBeDefined();
+
         expect(() =>
             CreateDictionaryDocumentUploadRequestSchema.parse({
                 expectedDictionaryVersion: 4,
@@ -1019,6 +1085,7 @@ describe('dictionary HTTP contracts', () => {
                 sha256: 'A'.repeat(64),
             }),
         ).toThrow();
+
         expect(() =>
             CreateDictionaryDocumentUploadRequestSchema.parse({
                 expectedDictionaryVersion: 4,
@@ -1039,21 +1106,25 @@ describe('dictionary HTTP contracts', () => {
                 'x-amz-checksum-sha256': 'abc',
             },
         };
+
         expect(
             DictionaryDocumentUploadCapabilitySchema.parse(capability),
         ).toEqual(capability);
+
         expect(() =>
             DictionaryDocumentUploadCapabilitySchema.parse({
                 ...capability,
                 requiredHeaders: { 'X-Bad-Header': 'safe' },
             }),
         ).toThrow();
+
         expect(() =>
             DictionaryDocumentUploadCapabilitySchema.parse({
                 ...capability,
                 requiredHeaders: { 'content-type': 'safe\r\ninjected: yes' },
             }),
         ).toThrow();
+
         expect(
             CompleteDictionaryDocumentUploadRequestSchema.parse({
                 versionId: 'opaque-version-1',
@@ -1071,6 +1142,7 @@ describe('dictionary HTTP contracts', () => {
             proposal: null,
             expiresAt: null,
         };
+
         expect(DictionaryGenerationJobSchema.parse(job)).toEqual(job);
         expect(
             AcceptDictionaryDocumentTermsGenerationJobRequestSchema.parse({
@@ -1078,6 +1150,7 @@ describe('dictionary HTTP contracts', () => {
                 selected: [{ rowIndex: 0, candidate: generationCandidate }],
             }),
         ).toBeDefined();
+
         expect(() =>
             DictionaryGenerationJobSchema.parse({
                 ...job,

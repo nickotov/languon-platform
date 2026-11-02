@@ -45,6 +45,7 @@ const result = {
     multiSelect: true,
     answerSummary: 'Travel comfortably',
 };
+
 function pinnedInterviewSnapshot(): TextAiExecutionSnapshot {
     const model = textAiModelCatalog.find(
         (model) => model.id === 'deepseek-flash',
@@ -82,6 +83,7 @@ function pinnedInterviewSnapshot(): TextAiExecutionSnapshot {
         sourceUrl: null,
         reason: 'Synthetic regression price',
     };
+
     return {
         ...primary,
         routingAuthority: {
@@ -129,8 +131,10 @@ describe('learner interviewer runner', () => {
                         inputTokens: 50,
                         outputTokens: 12,
                     });
+
                     expect(accounting.settle).not.toHaveBeenCalled();
                 }
+
                 return createLearnerInterviewerRunner({
                     model: attempt === 1 ? primary.model : alternative.model,
                     providerId: snapshot.providerId,
@@ -139,6 +143,7 @@ describe('learner interviewer runner', () => {
                 }).run({ operation, signal: new AbortController().signal });
             },
         });
+
         expect(response).toEqual(result);
         expect(used).toEqual(['deepseek-flash', 'qwen/qwen3.5-flash-02-23']);
         expect(primary.requests).toHaveLength(1);
@@ -150,16 +155,19 @@ describe('learner interviewer runner', () => {
             accounting.settle.mock.calls[0]![0].callId,
         );
     });
+
     it.each(['second-invalid', 'settlement-failed'] as const)(
         'cannot inflate a learner charge or issue a third request after %s',
         async (kind) => {
             const primary = scriptedTutorModel(['not JSON']);
             const secondary = scriptedTutorModel(['also not JSON']);
             const accounting = tutorAccountingFixture();
-            if (kind === 'settlement-failed')
+            if (kind === 'settlement-failed') {
                 accounting.fail.mockRejectedValueOnce(
                     new Error('Numerical settlement unavailable'),
                 );
+            }
+
             const attempted: number[] = [];
             const response = runPinnedFallback({
                 snapshot: pinnedInterviewSnapshot(),
@@ -167,6 +175,7 @@ describe('learner interviewer runner', () => {
                 hasPublished: () => false,
                 execute: async (snapshot, attempt) => {
                     attempted.push(attempt);
+
                     return createLearnerInterviewerRunner({
                         model: attempt === 1 ? primary.model : secondary.model,
                         providerId: snapshot.providerId,
@@ -175,21 +184,26 @@ describe('learner interviewer runner', () => {
                     }).run({ operation, signal: new AbortController().signal });
                 },
             });
-            if (kind === 'settlement-failed')
+
+            if (kind === 'settlement-failed') {
                 await expect(response).rejects.toThrow(
                     'Numerical settlement unavailable',
                 );
-            else
+            } else {
                 await expect(response).rejects.toBeInstanceOf(
                     PortraitInterviewInvalidModelOutputError,
                 );
+            }
+
             expect(attempted).toEqual(
                 kind === 'settlement-failed' ? [1] : [1, 2],
             );
+
             expect(accounting.settle).not.toHaveBeenCalled();
             expect(accounting.fail).toHaveBeenCalledTimes(
                 kind === 'settlement-failed' ? 1 : 2,
             );
+
             expect(secondary.requests).toHaveLength(
                 kind === 'settlement-failed' ? 0 : 1,
             );
@@ -204,8 +218,10 @@ describe('learner interviewer runner', () => {
             ...(await generate(options)),
             finishReason: 'content-filter',
         });
+
         primary.model.doStream = async (options) => {
             const response = await stream(options);
+
             return {
                 ...response,
                 stream: response.stream.pipeThrough(
@@ -224,6 +240,7 @@ describe('learner interviewer runner', () => {
                 ),
             };
         };
+
         const accounting = tutorAccountingFixture();
         const calls: number[] = [];
         await expect(
@@ -233,6 +250,7 @@ describe('learner interviewer runner', () => {
                 hasPublished: () => false,
                 execute: async (snapshot, attempt) => {
                     calls.push(attempt);
+
                     return createLearnerInterviewerRunner({
                         model: primary.model,
                         providerId: snapshot.providerId,
@@ -242,6 +260,7 @@ describe('learner interviewer runner', () => {
                 },
             }),
         ).rejects.toBeInstanceOf(PortraitInterviewInvalidModelOutputError);
+
         expect(calls).toEqual([1]);
         expect(primary.requests).toHaveLength(1);
         expect(accounting.settle).not.toHaveBeenCalled();
@@ -255,12 +274,15 @@ describe('learner interviewer runner', () => {
             const rejection = Object.assign(new Error('Synthetic rejection'), {
                 statusCode,
             });
+
             provider.model.doGenerate = async () => {
                 throw rejection;
             };
+
             provider.model.doStream = async () => {
                 throw rejection;
             };
+
             const accounting = tutorAccountingFixture();
             await expect(
                 createLearnerInterviewerRunner({
@@ -273,6 +295,7 @@ describe('learner interviewer runner', () => {
                 name: 'ProviderExecutionError',
                 executionOutcome: statusCode === 429 ? 'rejected' : 'ambiguous',
             });
+
             expect(accounting.fail).toHaveBeenCalledOnce();
             expect(accounting.settle).not.toHaveBeenCalled();
         },
@@ -312,9 +335,11 @@ describe('learner interviewer runner', () => {
                 operation: current,
                 signal: new AbortController().signal,
             });
+
             expect(
                 accounting.admit.mock.calls[0]![0].inputTokenEstimate,
             ).toBeLessThanOrEqual(limit);
+
             expect(limit).toBeLessThan(64000);
             const actual = Buffer.byteLength(
                 JSON.stringify({
@@ -323,26 +348,35 @@ describe('learner interviewer runner', () => {
                 }),
                 'utf8',
             );
+
             expect(accounting.admit.mock.calls[0]![0].inputTokenEstimate).toBe(
                 actual,
             );
+
             expect(actual).toBeLessThanOrEqual(limit);
             const userMessage = provider.requests[0]!.prompt.find(
                 (message) => message.role === 'user',
             );
+
             expect(userMessage?.content).toContainEqual({
                 type: 'text',
                 text: buildInterviewSchemaInstruction(),
             });
+
             expect(JSON.stringify(provider.requests[0]!.prompt)).toContain(
                 'proposedItems',
             );
+
             expect(JSON.stringify(provider.requests[0]!.prompt)).toContain(
                 'just-starting',
             );
-            if (kind === 'small') expect(limit).toBeLessThan(5900);
+
+            if (kind === 'small') {
+                expect(limit).toBeLessThan(5900);
+            }
         },
     );
+
     it('preserves the full historical bound for old operations and rejects invalid new pins', () => {
         const execution = { snapshot: { perCallMaxInputTokens: 64000 } };
         expect(readInterviewInputTokenLimit(execution as never)).toBe(64000);
@@ -355,6 +389,7 @@ describe('learner interviewer runner', () => {
             ).toThrow();
         }
     });
+
     it('rejects a provider envelope above its pin before admission or dispatch', async () => {
         const accounting = tutorAccountingFixture();
         const provider = scriptedTutorModel([JSON.stringify(result)]);
@@ -365,9 +400,11 @@ describe('learner interviewer runner', () => {
                 maxInputTokens: 1,
             }).run({ operation, signal: new AbortController().signal }),
         ).rejects.toThrow();
+
         expect(accounting.admit).not.toHaveBeenCalled();
         expect(provider.requests).toHaveLength(0);
     });
+
     it('registers an operation-only tool-free agent, validates output and accounts the provider request', async () => {
         const provider = scriptedTutorModel([JSON.stringify(result)]);
         const accounting = tutorAccountingFixture();
@@ -376,12 +413,14 @@ describe('learner interviewer runner', () => {
             accounting,
             maxInputTokens: 64000,
         });
+
         expect(
             await runner.run({
                 operation,
                 signal: new AbortController().signal,
             }),
         ).toEqual(result);
+
         expect(accounting.admit).toHaveBeenCalledOnce();
         expect(accounting.settle).toHaveBeenCalledOnce();
         expect(provider.requests).toHaveLength(1);
@@ -390,10 +429,12 @@ describe('learner interviewer runner', () => {
         expect(request).toContain(
             'Return your response as JSON matching this schema',
         );
+
         expect(provider.requests[0]?.toolChoice).toEqual({ type: 'none' });
         expect(request).toContain('never claim access');
         expect(provider.requests[0]?.tools ?? []).toHaveLength(0);
     });
+
     it('rejects over-limit answer proposals without repair or a second paid call', async () => {
         const provider = scriptedTutorModel([
             JSON.stringify({ ...result, answerSummary: 'a'.repeat(201) }),
@@ -403,11 +444,14 @@ describe('learner interviewer runner', () => {
             accounting: tutorAccountingFixture(),
             maxInputTokens: 64000,
         });
+
         await expect(
             runner.run({ operation, signal: new AbortController().signal }),
         ).rejects.toThrow();
+
         expect(provider.requests).toHaveLength(1);
     });
+
     it('rejects an external redirect and invented output fields', async () => {
         const provider = scriptedTutorModel([
             JSON.stringify({
@@ -421,10 +465,12 @@ describe('learner interviewer runner', () => {
             accounting: tutorAccountingFixture(),
             maxInputTokens: 64000,
         });
+
         await expect(
             runner.run({ operation, signal: new AbortController().signal }),
         ).rejects.toThrow();
     });
+
     it('rejects diagnostic labels in reusable proposed items', async () => {
         const provider = scriptedTutorModel([
             JSON.stringify({
@@ -443,11 +489,14 @@ describe('learner interviewer runner', () => {
             accounting: tutorAccountingFixture(),
             maxInputTokens: 64000,
         });
+
         await expect(
             runner.run({ operation, signal: new AbortController().signal }),
         ).rejects.toThrow();
+
         expect(provider.requests).toHaveLength(1);
     });
+
     it.each([
         ['non-JSON', 'This is a natural language reply'],
         ['malformed JSON', '{"message":'],
@@ -496,12 +545,15 @@ describe('learner interviewer runner', () => {
             const failure = await runner
                 .run({ operation, signal: new AbortController().signal })
                 .catch((error: unknown) => error);
+
             expect(failure).toBeInstanceOf(
                 PortraitInterviewInvalidModelOutputError,
             );
+
             expect((failure as Error).message).toBe(
                 'The interview response did not match the required format.',
             );
+
             expect(failure).not.toHaveProperty('cause');
             expect(provider.requests).toHaveLength(1);
             expect(accounting.admit).toHaveBeenCalledOnce();
@@ -514,6 +566,7 @@ describe('learner interviewer runner', () => {
             });
         },
     );
+
     it('returns a strict structured object with supported nested preferences', async () => {
         const expected = {
             ...result,
@@ -534,8 +587,10 @@ describe('learner interviewer runner', () => {
                 maxInputTokens: 64000,
             }).run({ operation, signal: new AbortController().signal }),
         ).resolves.toEqual(expected);
+
         expect(provider.requests).toHaveLength(1);
     });
+
     it('dispatches the exact admitted affordable output cap', async () => {
         const provider = scriptedTutorModel([JSON.stringify(result)]);
         const accounting = tutorAccountingFixture();
@@ -545,9 +600,11 @@ describe('learner interviewer runner', () => {
             maxInputTokens: 64000,
             maxOutputTokens: 3261,
         }).run({ operation, signal: new AbortController().signal });
+
         expect(provider.requests[0]?.maxOutputTokens).toBe(3261);
         expect(accounting.admit.mock.calls[0]?.[0].maxOutputTokens).toBe(3261);
     });
+
     it('does not dispatch when accounting admission fails', async () => {
         const provider = scriptedTutorModel([JSON.stringify(result)]);
         const accounting = tutorAccountingFixture();
@@ -557,9 +614,11 @@ describe('learner interviewer runner', () => {
             accounting,
             maxInputTokens: 64000,
         });
+
         await expect(
             runner.run({ operation, signal: new AbortController().signal }),
         ).rejects.toThrow();
+
         expect(provider.requests).toHaveLength(0);
     });
 });

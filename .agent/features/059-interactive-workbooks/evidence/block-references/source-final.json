@@ -1,0 +1,351 @@
+{
+    "base": "f0e299c",
+    "fingerprint": "1b0ed22f3d20136f50eb46c11d64ecf17e2d509b90ee6ffce8b877289ce970b2",
+    "excludedGenerated": ["apps/web/next-env.d.ts"],
+    "entries": [
+        {
+            "path": "apps/backend/drizzle/0160_conversation-block-mentions.sql",
+            "sha256": "3c7d9090946a23a06e92881ae0dafb20da0e3085856fd4486fef11221b36cfe8"
+        },
+        {
+            "path": "apps/backend/drizzle/0161_conversation-message-block-references.sql",
+            "sha256": "28ffb3aa10fb9434ccd325ae876d10d857e5f2417b7820cd7740fc439d2f07a5"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0160_snapshot.json",
+            "sha256": "d215cd245d61bf04fd22e96cda3e0b6774809886d9230496220b6dff60460c6f"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/0161_snapshot.json",
+            "sha256": "ce25fe73c93c37fb0e08501a3a1031d0fe1de6725f5eb0ad14af183f066fc378"
+        },
+        {
+            "path": "apps/backend/drizzle/meta/_journal.json",
+            "sha256": "0acdf1fcbfc1c38f2ed1eb7ee6e75870aded8879281e819b00a6f5560e96d915"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/application/conversation-block-references.test.ts",
+            "sha256": "86c4cb806d16a9ce5f9dac6199c5a5fb1eb1967b309a3cd8460c936a054e84a1"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/application/conversation-block-references.ts",
+            "sha256": "11a626d0b6444e19b58e3b046da2b1db37579b185d97ea9d432dc1f2f9674c6e"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/application/conversation-source-context.ts",
+            "sha256": "ce2bb47acb26e590ab685cef01400077ccaf6f02799515c6942c2a8f7ee0a9d0"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/application/conversation-worker-service.ts",
+            "sha256": "37345213a80259c5800c1437494b5572be69fad043335e3dc03d0958c9b800ed"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/application/learning-block-tool-contract.ts",
+            "sha256": "d0e48f802968b8e4338e191c7ff071029ab834e431890bb27ace47f13697af16"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/application/ports/conversation-store.ts",
+            "sha256": "bc49f71b8542a0f6951663e1389ea85d332eedb9fccfeee94fe90a28845c047c"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/application/ports/tutor-runner.ts",
+            "sha256": "8bb8270587c8af16c26db5d328316051c3271609d1b7d94f0de6610e92dbfe4a"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/application/tutor-message-context.ts",
+            "sha256": "d2cb579acc827b67793166c36bae4097bc534cd7bbbbaa6c40e01f85d3bf3601"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/domain/conversation.ts",
+            "sha256": "41d24d13fd574bd7ac9cb7c896df691f9575775e9857c2a7ef05c9065222e134"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/ai/contextual-block-tools.test.ts",
+            "sha256": "3f31ebb77330086459a9de429a07d071848242ab076e6c638b08bb0d48f84609"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/ai/contextual-block-tools.ts",
+            "sha256": "11fd5ccd57967ed75c02ed13ba8a141bdb3c6653dbc3e706425cb534d9513e97"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-runner.test.ts",
+            "sha256": "38dd536d8583347ce02c332dbea6e9cfd16542a2ee861e4a00529d7d352bb783"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-tools.ts",
+            "sha256": "c694176ebcd9970ee5cfcd2bf42c7c70952c646a08841b8bab9885b7f997c364"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/ai/tutor-test-fixtures.ts",
+            "sha256": "0c9369e1ff4b60ec3dfc87726fc4d79a79b2b79ea0875b5bba42ed6be4faba61"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/block-proposal-insertion.test.ts",
+            "sha256": "8eadaaa5c9c8aaccbbe464ea8275a53c9aad9c0de27cdf45d1d67c327fe36bcf"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/block-proposal-insertion.ts",
+            "sha256": "0f800cbad90fd41838edace6e3efcc5fba3b14616e0d56b1d41eaec6afeafa31"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposal-schema.ts",
+            "sha256": "940a6732a0e07842cbc7846f9c19676784d46f24cc07304cdb6792e91b505223"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposals.ts",
+            "sha256": "2ed821d5ffb101732f2b4a96ce0eeaefb69f6bcf0f25f4510f619d78ff547cfe"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-persistence-context.ts",
+            "sha256": "ffb949c21cbbe7ce7e708000eeb2aa0c6644b3cc9028333bf4073984633e5e14"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source.ts",
+            "sha256": "688c272d96cf2ef01dcece6c74569ccabfef8f14742af0e81f264a2cc08cfd31"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-admission.ts",
+            "sha256": "b00ef1e34d9372decf5809fe97020a4080d36208f82b5b22be5e9a6a7fdd58c6"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-worker-output.ts",
+            "sha256": "ff5c0ea2d6b176c40ba81fd80199eb1123548853f897f245ddf2e34874c6e760"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/drizzle-conversation-store.ts",
+            "sha256": "2d24b258283eddeebcba4324f01cbe9ba8d85b20705a1204fd2b59bfe56c1ea2"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/schema.ts",
+            "sha256": "3b19c32fe598f886d10f11916bd905bfbb01947f3300ec7248fb802e4f4ea8b2"
+        },
+        {
+            "path": "apps/backend/src/modules/conversations/interface/http/conversation-block-proposal.routes.ts",
+            "sha256": "f74e8c5a69f1d2245b5760d041856d7a8e908021cae2933b2be59b111bc89cba"
+        },
+        {
+            "path": "apps/backend/tests/integration/modules/conversations/conversation-production-execution.test.ts",
+            "sha256": "25f97b7afbec089c89b43a17210e4527f165eaef0c144c07479a02f981ee2633"
+        },
+        {
+            "path": "apps/backend/tests/integration/modules/conversations/conversation-store.test.ts",
+            "sha256": "5f3164cf7ad263f36553c38f8ab5f0c6128d6eee28535a6a8e2e4e6fba5ffa4a"
+        },
+        {
+            "path": "apps/backend/tests/support/contextual-assistant-fixture.test.ts",
+            "sha256": "abbf2b440b7952baddb77425cdcff9faf1952ec3f9ed3f19c7d456136f52acaa"
+        },
+        {
+            "path": "apps/backend/tests/support/contextual-assistant-fixture.ts",
+            "sha256": "3c6c67c6d9aabce86636f8d779d3c790360d8a0220f87b07b3ad4223c255cbda"
+        },
+        {
+            "path": "apps/backend/tests/support/contextual-block-proposal-fixture.ts",
+            "sha256": "09d4f75a9ad4ddd4823cec5e091ae316d093d90938b957f9d252aae3341741a0"
+        },
+        {
+            "path": "apps/backend/tests/support/contextual-fixture-block.ts",
+            "sha256": "c36de03af00108720517ff361ad9c49567a05ac226584ed7cb0b88ba32dbcecf"
+        },
+        {
+            "path": "apps/web/playwright.config.ts",
+            "sha256": "711ab7fa05d85d5e1d3d40ac814aeb8526313793775991c76f285a63e184bb9f"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-block.tsx",
+            "sha256": "723d116c74c00b3690b009c82a208e9c3f4aea89c6687674c0acb3d2fe39f66a"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-preview.tsx",
+            "sha256": "edb504398cf2cee4aabe52e03f29cf0ac806209f69fc4278201177e803395453"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/grammar-block/grammar-block.module.css",
+            "sha256": "331fcaec2511194502bd56bf369d09ab02c6d37241bb2404e50d02709d448126"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/grammar-block/grammar-block.tsx",
+            "sha256": "3fcd1a0b69d2464403c9f696967d1e02959ecc60f2adc9b45f14ea662c17f4c3"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/learning-block-view/learning-block-view.stories.tsx",
+            "sha256": "8b82e973b821e7fd549e45f25d1d069f5d368732feebcd977eebeb8f89eef0cd"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/learning-narrative/learning-narrative.module.css",
+            "sha256": "0d987c712f370428cf7872fa23c53f8150552c6ff4f2948eb5be47f3d1938b0c"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/learning-narrative/learning-narrative.tsx",
+            "sha256": "ef89dab5213313e1d147ec71f2439ed23de4855b7bcba2ad485385dd1e5ca461"
+        },
+        {
+            "path": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/media-block.tsx",
+            "sha256": "9908212ee8d106a0a80450c9cf9be4cd1fe309750ae4d87ca0550f906376457b"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/api/block-proposals-api.ts",
+            "sha256": "0552517d825c728263b20889e67827f67b748fb7429b7a42c714fdd301093589"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/hooks/use-knowledge-editor-handle.ts",
+            "sha256": "bbbb97a599ec13f79d589898b6434df27d31d8255deb7668f6e841fa522b7c5f"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/index.ts",
+            "sha256": "c12a53c60674aa40c3a1dd928f444ff2119960b7ba15ec7071f0973ce8a83576"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/lib/block-insertion-bookmark.ts",
+            "sha256": "54248e0a3f5c8c7734cb18d5ceb1ad78ac70b0230d86addcc78c9e1a752e464e"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/lib/knowledge-block-references.ts",
+            "sha256": "b830c7e17591f397420c1a71d900cfee7075ee666c43b1837cf29d3ab37a8d1c"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/block-proposal-card.tsx",
+            "sha256": "d3e7ebca3ffa123cd9437077b7594d860f66b38438245e3ed51034318de8a357"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/block-proposal-labels.ts",
+            "sha256": "2abc4200b66dae6364af9f182f477b58e2e6651f68cdd100616e28e9a6d17285"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/knowledge-block-proposals.tsx",
+            "sha256": "a547d5e01574afdd0e4cceb9b085e7a47e82f7acdcaf6af674c5e2dfc5a9180f"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/knowledge-editor.tsx",
+            "sha256": "ed9398115c378ac69be604dbabd8a7d2aa7a1eefe82a14d2abe7103c59a16d08"
+        },
+        {
+            "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/knowledge-note-form.tsx",
+            "sha256": "1e54482fd39e5c594ad07f1214fc84464f68dc033ff26cd55fd87c5e70f8c3d2"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/knowledge/hooks/use-knowledge-learning-integrations.ts",
+            "sha256": "362702a4bfa01513a433c5a90c6786cedad06a6da71233d76e3ed494f17ec3b5"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/knowledge/hooks/use-knowledge-workspace.ts",
+            "sha256": "d0c6127b2a0b5e21f406dd43a0d08ec119eb308c16475ca63fb1ab38be60fcf0"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/knowledge/hooks/use-workspace-presentation.ts",
+            "sha256": "44b648427533178213b5965702c721a851dd1285ecc0dedfe78124c74528196f"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/knowledge/ui/knowledge-detail-page/knowledge-detail-page.tsx",
+            "sha256": "b76616c6cf1e61d744ca399f31e1c40de5a9667d476fb261c746256cb04d5eea"
+        },
+        {
+            "path": "apps/web/src/fsd/pages/knowledge/ui/shared-knowledge-page/shared-note-learning.tsx",
+            "sha256": "b2fbae709b2d7aa18bf8d48351bfe4b0316b8eae027b31bbc074cfb9f70df919"
+        },
+        {
+            "path": "apps/web/src/fsd/shared/i18n/messages/knowledge.ts",
+            "sha256": "c0cbd29744e403d1ca1125cb54c9726e7b0bce0ea8b53590d940f8da268225f7"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/hooks/use-assistant-panel.ts",
+            "sha256": "11139030a50c8e4052c7a203ca898add080a87690bb3bad3030156c7d912aa01"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/hooks/use-block-references.ts",
+            "sha256": "28f26fbeb3cad6bf7c464f1c92fa877dd5425fffa718ae1a261897bcc26c3010"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/hooks/use-conversation-admission.ts",
+            "sha256": "93b9a2aa6ba179eecec1efca15ce9c5dd85c577418687164c53d2afe51501e28"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/lib/block-reference-copy.ts",
+            "sha256": "b846f9b95ec450a32ce34e218758c79e7f271694d7a0dcbe2ecf9df22f993b53"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/types.ts",
+            "sha256": "5eed370ef75f28df908d01929bc0c1d5d72f4dc510f9985a4d50fa694a55099d"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/assistant-panel.tsx",
+            "sha256": "0b120a122cae9cf7955e42b5c61eb33cef1d346faf58fd044362372f3e7a487f"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/block-context-picker.tsx",
+            "sha256": "2fe77c2f437976fcf02fd2c0554ba3b4173964449137b516e5e67ae6bb6ec743"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/block-reference-controls.module.css",
+            "sha256": "95c7eeb67839ce5283a23727ab91dcde3ef9498eef6f7132ac8fc07f67f73d63"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/block-reference-controls.tsx",
+            "sha256": "ed2212a08c752e9d691b1b26e06d625edbb8a82f87d4e6711fcd3df49b7318ae"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-composer.tsx",
+            "sha256": "d97efcb44cf0462b5b046af8596a3abf43b17cdf367692269ff7953b03899190"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-messages.tsx",
+            "sha256": "d70b25f842ef99a559c52fbb59df4ca0d900741e4c8d836088b8e9c264a74702"
+        },
+        {
+            "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-message.tsx",
+            "sha256": "9f41349a6336b8ca08cba037b682b085c82f665af600561e63bbcb7f0f2ba6d7"
+        },
+        {
+            "path": "apps/web/tests/e2e/interactive-workbooks.journeys.spec.ts",
+            "sha256": "25798356dbcf3ad7389d7edfa57ef0affe2aaa1568df022342c6ac66d694f587"
+        },
+        {
+            "path": "apps/web/tests/knowledge-block-insertion-bookmark.test.ts",
+            "sha256": "f59d18eaf10d6b19f1d298e083d4b5381079106cbdc076231be6f77a42caf178"
+        },
+        {
+            "path": "apps/web/tests/knowledge-block-mentions.test.tsx",
+            "sha256": "44e8b89c20baf5d643a863c923b1f21b83a412e72311929c9fc110f4e0305612"
+        },
+        {
+            "path": "apps/web/tests/knowledge-block-proposals.test.tsx",
+            "sha256": "bb736ee275824e3d48a691feb71219978d2f1765e112f2a1e4d28a55002c39c7"
+        },
+        {
+            "path": "apps/web/tests/knowledge-block-target-integration.test.tsx",
+            "sha256": "71e3b5521ce4ab06cca39842d27c635483246e727b2e6a5517921f9c7d2f1e2a"
+        },
+        {
+            "path": "apps/web/tests/knowledge-workspace-recovery.test.tsx",
+            "sha256": "218404638e3690298b3f9759280d827fc15eed6a662f8bed6ffd16dc411d29e2"
+        },
+        {
+            "path": "apps/web/tests/learning-narrative.test.tsx",
+            "sha256": "fb9e52fcbbd70db127f1e636141f0455c0c9e478dc9a01706a73badc9b1fd5a9"
+        },
+        {
+            "path": "apps/web/tests/workspace-assistant-context.test.tsx",
+            "sha256": "1faa642f9a49e23bfa63759ba2cf9e0234d24813f9d04ef56fbc5edcc06f6adc"
+        },
+        {
+            "path": "packages/contracts/src/block-references.test.ts",
+            "sha256": "6639ec9d7fca3f4501b8b8373813a5a0acfc64b109b0fcbf5e416c7eca073b5e"
+        },
+        {
+            "path": "packages/contracts/src/contextual-assistant.ts",
+            "sha256": "d0133e7b8750160189134c5320f47eb43839a9a80018698660ca241425a9fec6"
+        },
+        {
+            "path": "packages/contracts/src/knowledge-block-proposals.test.ts",
+            "sha256": "6a711ee23fdcf9bfe5ac2ad3faa747d6bef45b4d7fb36851c6613c39de282350"
+        },
+        {
+            "path": "packages/contracts/src/knowledge-block-proposals.ts",
+            "sha256": "824ed905d82db831d8a9338a62ab9434d82e0a22f7262bb6de51fb33e78498fc"
+        },
+        {
+            "path": "scripts/critical-flows/registry.mjs",
+            "sha256": "27dace59a12049c64be3b52f73c716c0c13017c9e4123ce61cb81d379c3c376b"
+        }
+    ]
+}

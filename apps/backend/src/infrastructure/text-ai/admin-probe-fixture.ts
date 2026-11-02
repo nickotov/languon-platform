@@ -8,8 +8,10 @@ export function createSyntheticAdminProbeExecutor(
         identity: (request) => executor.identity(request),
         async execute(reservation, signal) {
             signal.throwIfAborted();
-            if (!reservation.identity.fingerprint)
+            if (!reservation.identity.fingerprint) {
                 throw new Error('Missing synthetic route identity.');
+            }
+
             return {
                 valid: true,
                 failure: null,

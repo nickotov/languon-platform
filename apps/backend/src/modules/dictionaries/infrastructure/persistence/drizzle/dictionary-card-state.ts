@@ -34,7 +34,9 @@ export function mergeCardValues(
     current: DictionaryCardValues,
     patch: Parameters<DictionaryStore['updateCard']>[0]['request']['values'],
 ): DictionaryCardValues {
-    if (!patch) return current;
+    if (!patch) {
+        return current;
+    }
 
     return {
         definition:
@@ -59,7 +61,9 @@ export function mergeOverrides(
     current: DictionaryCardOverrides,
     patch: Parameters<DictionaryStore['updateCard']>[0]['request']['overrides'],
 ): DictionaryCardOverrides {
-    if (!patch) return current;
+    if (!patch) {
+        return current;
+    }
 
     return {
         definitionEnabled:
@@ -161,6 +165,7 @@ export function assertAggregateVersions(
     if (
         current.dictionary.version !== dictionaryVersion ||
         current.settings.version !== settingsVersion
-    )
+    ) {
         throw new DictionaryVersionConflictError();
+    }
 }

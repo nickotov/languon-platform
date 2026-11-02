@@ -98,6 +98,7 @@ function setup(
             ][sequence++] ?? '0198c202-9d49-7559-ac35-d13762fc3ee2',
     } satisfies IdGenerator;
     const clock = { now: () => now } satisfies Clock;
+
     return {
         authentication,
         service: new AdministrationService({
@@ -149,6 +150,7 @@ describe('AdministrationService', () => {
         expect(
             authentication.requireRecentlyAuthenticatedSession,
         ).toHaveBeenCalledWith({ sessionId, userId: actorId });
+
         expect(store.updateAiCreditPolicy).toHaveBeenCalledWith(
             expect.objectContaining({
                 ...input,
@@ -179,8 +181,10 @@ describe('AdministrationService', () => {
                 '0198c203-7c47-7334-9488-a1a5175127a5',
             ),
         ).rejects.toBeInstanceOf(AdminAiCreditAccountConflictError);
+
         expect(store.recordAudit).not.toHaveBeenCalled();
     });
+
     it('requires recent authentication and supplies immutable AI revision identity', async () => {
         const { authentication, service, store } = setup();
         const input = {
@@ -203,6 +207,7 @@ describe('AdministrationService', () => {
             sessionId,
             userId: actorId,
         });
+
         expect(store.updateAiSettings).toHaveBeenCalledWith(
             expect.objectContaining({
                 ...input,
@@ -212,6 +217,7 @@ describe('AdministrationService', () => {
             }),
         );
     });
+
     it('requires recent admin authentication and a distinct audited cancellation action', async () => {
         const { authentication, service, store } = setup();
         const input = {
@@ -226,9 +232,11 @@ describe('AdministrationService', () => {
             input,
             correlationId,
         );
+
         expect(
             authentication.requireRecentlyAuthenticatedSession,
         ).toHaveBeenCalledWith({ sessionId, userId: actorId });
+
         expect(store.cancelUserDeletion).toHaveBeenCalledWith(
             expect.objectContaining({
                 actorSessionId: sessionId,
@@ -240,6 +248,7 @@ describe('AdministrationService', () => {
             }),
         );
     });
+
     it('discovers dictionaries through the authorized learning projection', async () => {
         const library = {
             adminDictionaries: vi
@@ -259,6 +268,7 @@ describe('AdministrationService', () => {
                 sessionId,
             ),
         ).resolves.toEqual({ items: [], nextCursor: null });
+
         expect(library.adminDictionaries).toHaveBeenCalledWith(
             expect.objectContaining({
                 actorId,
@@ -268,6 +278,7 @@ describe('AdministrationService', () => {
             { limit: 25 },
             expect.any(Object),
         );
+
         expect(library.adminDictionaries.mock.calls[0]?.[0]).not.toHaveProperty(
             'dictionaryId',
         );
@@ -299,6 +310,7 @@ describe('AdministrationService', () => {
                 sessionId,
             ),
         ).resolves.toEqual({ items: [], nextCursor: null });
+
         expect(library.adminList).toHaveBeenCalledWith(
             expect.objectContaining({
                 actorId,
@@ -310,6 +322,7 @@ describe('AdministrationService', () => {
             expect.any(Object),
             expect.objectContaining({ now }),
         );
+
         expect(
             authentication.requireRecentlyAuthenticatedSession,
         ).not.toHaveBeenCalled();
@@ -327,6 +340,7 @@ describe('AdministrationService', () => {
             sentenceLibrary: library,
             membership: false,
         });
+
         await expect(
             service.sentenceLibraryList(
                 'access-token',
@@ -342,6 +356,7 @@ describe('AdministrationService', () => {
                 sessionId,
             ),
         ).rejects.toBeInstanceOf(AdminAccessDeniedError);
+
         expect(library.adminList).not.toHaveBeenCalled();
     });
 
@@ -356,10 +371,12 @@ describe('AdministrationService', () => {
         const { service, authentication, store } = setup({
             sentenceLibrary: library,
         });
+
         vi.mocked(store.findUser).mockResolvedValue({ id: targetId } as never);
         vi.mocked(
             authentication.requireRecentlyAuthenticatedSession,
         ).mockRejectedValue(new RecentAuthenticationRequiredError());
+
         await expect(
             service.mutateSentenceLibrary(
                 'access-token',
@@ -377,6 +394,7 @@ describe('AdministrationService', () => {
                 sessionId,
             ),
         ).rejects.toBeInstanceOf(RecentAuthenticationRequiredError);
+
         expect(library.adminMutate).not.toHaveBeenCalled();
         expect(store.recordAudit).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -424,6 +442,7 @@ describe('AdministrationService', () => {
                 sessionId,
             ),
         ).rejects.toBeInstanceOf(SentenceLibraryDeletionBusyError);
+
         expect(store.recordAudit).toHaveBeenCalledWith(
             expect.objectContaining({
                 action: 'sentence_permanently_deleted',
@@ -443,6 +462,7 @@ describe('AdministrationService', () => {
             primaryEmail: 'owner@example.com',
             role: 'owner',
         });
+
         expect(store.findActiveMembership).toHaveBeenCalledWith(actorId);
     });
 
@@ -452,6 +472,7 @@ describe('AdministrationService', () => {
         await expect(service.dashboard('access-token')).rejects.toBeInstanceOf(
             AdminAccessDeniedError,
         );
+
         expect(store.recordAudit).toHaveBeenCalledWith(
             expect.objectContaining({
                 action: 'access_denied',
@@ -467,6 +488,7 @@ describe('AdministrationService', () => {
         vi.mocked(
             authentication.requireRecentlyAuthenticatedSession,
         ).mockRejectedValue(new RecentAuthenticationRequiredError());
+
         vi.mocked(store.findUser).mockResolvedValue({
             id: targetId,
             status: 'active',
@@ -511,6 +533,7 @@ describe('AdministrationService', () => {
         expect(
             authentication.requireRecentlyAuthenticatedSession,
         ).toHaveBeenCalledWith({ sessionId, userId: actorId });
+
         expect(store.disableUser).toHaveBeenCalledWith(
             expect.objectContaining({
                 actorSessionId: sessionId,

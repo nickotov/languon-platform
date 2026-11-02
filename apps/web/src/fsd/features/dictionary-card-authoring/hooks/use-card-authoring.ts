@@ -65,25 +65,36 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
         props.pending ||
         autosave.autoSaveLocked,
     );
+
     useEffect(() => {
-        if (!active && !ai?.pending) setGeneratingScope(null);
+        if (!active && !ai?.pending) {
+            setGeneratingScope(null);
+        }
     }, [active, ai?.pending]);
+
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (locked || !validValues || !validTranslationContext) return;
+        if (locked || !validValues || !validTranslationContext) {
+            return;
+        }
+
         try {
             const restoring = Boolean(card) && !state.isLatestVersion;
             const selections =
                 stale || restoring
                     ? []
                     : authoringSelections(state.activeVersion, effective);
-            if (state.activeVersion.generation && !restoring)
+
+            if (state.activeVersion.generation && !restoring) {
                 await onSave(draft, selections, state.activeVersion.generation);
-            else await onSave(draft, selections);
+            } else {
+                await onSave(draft, selections);
+            }
         } catch {
             /* Owning mutation exposes recovery. */
         }
     }
+
     async function generate(
         scope:
             | { kind: 'all' }
@@ -95,19 +106,27 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
             !validTranslationContext ||
             locked ||
             !isLatestVersion
-        )
+        ) {
             return;
+        }
+
         if (
             scope.kind === 'field' &&
             scope.field === 'exampleTranslation' &&
             !draft.values.example?.trim()
-        )
+        ) {
             return;
+        }
+
         const successor = Boolean(proposal) && !stale;
         const createsVersion =
             Boolean(card) || successor || state.versionCount > 1;
+
         setGeneratingScope(scope);
-        if (createsVersion) state.beginSuccessor();
+        if (createsVersion) {
+            state.beginSuccessor();
+        }
+
         try {
             await ai.onAction({
                 discardedSuggestionIds: state.discardedSuggestionIds,
@@ -121,15 +140,19 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
             setGeneratingScope(null);
         }
     }
+
     function handleSubmit(event: FormEvent<HTMLFormElement>) {
         void submit(event);
     }
+
     function generateField(field: DictionaryCardAuthoringField) {
         void generate({ kind: 'field', field });
     }
+
     function generateAll() {
         void generate({ kind: 'all' });
     }
+
     return {
         ...state,
         ...autosave,
@@ -147,4 +170,5 @@ export function useCardAuthoring(props: DictionaryCardFormProps) {
         handleSubmit,
     };
 }
+
 export type CardAuthoring = ReturnType<typeof useCardAuthoring>;

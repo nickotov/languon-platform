@@ -33,6 +33,7 @@ export function PortraitUpdateDiff({
         'Aucune modification pour le moment.',
         'Todavía no hay cambios.',
     );
+
     return (
         <section className={common.section} aria-labelledby={id}>
             <h2 id={id} className={common.title}>
@@ -54,6 +55,7 @@ export function PortraitUpdateDiff({
                             entry.kind === 'removed'
                                 ? styles.removedValue
                                 : styles.value;
+
                         return (
                             <li key={entry.key} className={styles.row}>
                                 <Icon

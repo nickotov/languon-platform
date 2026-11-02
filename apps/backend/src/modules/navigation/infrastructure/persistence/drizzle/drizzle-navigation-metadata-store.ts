@@ -25,11 +25,13 @@ export class DrizzleNavigationMetadataStore implements NavigationMetadataStore {
                 .where(eq(usersTable.id, ownerId))
                 .for('share');
 
-            if (owner?.status !== 'active')
+            if (owner?.status !== 'active') {
                 throw new NavigationError(
                     'resource_not_found',
                     'The resource is unavailable.',
                 );
+            }
+
             const pinnedAt = mutation.pinned ? new Date() : null;
             const set = mutation.openedAt
                 ? {

@@ -50,15 +50,19 @@ export function SentenceRow({
     ]
         .filter(Boolean)
         .join(' ');
+
     function toggle() {
         onToggle(sentence.id);
     }
+
     function view(event: MouseEvent<HTMLButtonElement>) {
         onView(sentence.id, event.currentTarget);
     }
+
     function archive() {
         onArchiveToggle(sentence);
     }
+
     return (
         <li className={rowClass} data-sentence-id={sentence.id}>
             <div className={componentStyles.checkbox}>

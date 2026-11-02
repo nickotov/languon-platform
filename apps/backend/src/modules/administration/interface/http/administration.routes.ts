@@ -84,7 +84,10 @@ export function createAdministrationRoutes(
 ): OpenAPIHono {
     const app = new OpenAPIHono({
         defaultHook: (result, context) => {
-            if (result.success) return;
+            if (result.success) {
+                return;
+            }
+
             return context.json(
                 new AdministrationHttpError(
                     'invalid_request',
@@ -97,11 +100,13 @@ export function createAdministrationRoutes(
             );
         },
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'AdminJWT', {
         bearerFormat: 'JWT',
         scheme: 'bearer',
         type: 'http',
     });
+
     app.use('/admin/*', authHttpBodyLimit);
     app.use('/admin/*', async (context, next) => {
         for (const [name, value] of Object.entries(
@@ -109,6 +114,7 @@ export function createAdministrationRoutes(
         )) {
             context.header(name, value);
         }
+
         const origin = context.req.header('Origin');
         if (origin) {
             dependencies.policy.assertCookieRequestOrigin(origin);
@@ -116,8 +122,10 @@ export function createAdministrationRoutes(
             context.header('Access-Control-Allow-Credentials', 'true');
             context.header('Vary', 'Origin');
         }
+
         await next();
     });
+
     app.onError((error, context) => {
         const mapped = mapAdministrationHttpError(error);
         if (mapped.status === 401 && context.req.path.includes('/auth/')) {
@@ -126,9 +134,11 @@ export function createAdministrationRoutes(
                 dependencies.policy.clearRefreshCookie(),
             );
         }
+
         if (mapped.retryAfterSeconds) {
             context.header('Retry-After', String(mapped.retryAfterSeconds));
         }
+
         return context.json(
             mapped.response(
                 correlationId(context.req.header('X-Correlation-ID')),
@@ -138,7 +148,10 @@ export function createAdministrationRoutes(
     });
 
     const assertOrigin = (origin: string | undefined) => {
-        if (!origin) throw new InvalidRequestOriginError();
+        if (!origin) {
+            throw new InvalidRequestOriginError();
+        }
+
         dependencies.policy.assertCookieRequestOrigin(origin);
     };
     const metadata = (
@@ -156,8 +169,10 @@ export function createAdministrationRoutes(
             'Access-Control-Allow-Headers',
             'Authorization, Content-Type, X-Correlation-ID, X-Languon-Admin-Authorization',
         );
+
         context.header('Access-Control-Allow-Methods', 'GET, POST, PATCH');
         context.header('Vary', 'Origin');
+
         return context.body(null, 204);
     });
 
@@ -179,6 +194,7 @@ export function createAdministrationRoutes(
                 context.req.valid('json'),
                 requestMetadata,
             );
+
             if (
                 result.refreshCredential &&
                 result.response.status === 'authenticated'
@@ -193,8 +209,10 @@ export function createAdministrationRoutes(
                         result.refreshCredential,
                         requestMetadata,
                     );
+
                     throw error;
                 }
+
                 context.header(
                     'Set-Cookie',
                     dependencies.policy.createRefreshCookie(
@@ -203,6 +221,7 @@ export function createAdministrationRoutes(
                     ),
                 );
             }
+
             return context.json(result.response, 200);
         },
     );
@@ -225,6 +244,7 @@ export function createAdministrationRoutes(
         }),
         async (context) => {
             assertOrigin(context.req.header('Origin'));
+
             return context.json(
                 await dependencies.passkeys.authenticationOptions(
                     metadata(context),
@@ -257,6 +277,7 @@ export function createAdministrationRoutes(
                 context.req.valid('json'),
                 requestMetadata,
             );
+
             try {
                 await dependencies.administration.assertActiveMembership(
                     result.response.user.id,
@@ -267,8 +288,10 @@ export function createAdministrationRoutes(
                     result.refreshCredential,
                     requestMetadata,
                 );
+
                 throw error;
             }
+
             context.header(
                 'Set-Cookie',
                 dependencies.policy.createRefreshCookie(
@@ -276,6 +299,7 @@ export function createAdministrationRoutes(
                     result.response.session.expiresAt,
                 ),
             );
+
             return context.json(result.response, 200);
         },
     );
@@ -304,6 +328,7 @@ export function createAdministrationRoutes(
                 ),
                 requestMetadata,
             );
+
             try {
                 await dependencies.administration.assertActiveMembership(
                     result.response.user.id,
@@ -314,8 +339,10 @@ export function createAdministrationRoutes(
                     result.refreshCredential,
                     requestMetadata,
                 );
+
                 throw error;
             }
+
             context.header(
                 'Set-Cookie',
                 dependencies.policy.createRefreshCookie(
@@ -323,6 +350,7 @@ export function createAdministrationRoutes(
                     result.response.session.expiresAt,
                 ),
             );
+
             return context.json(result.response, 200);
         },
     );
@@ -347,16 +375,19 @@ export function createAdministrationRoutes(
                 ),
                 metadata(context),
             );
+
             context.header(
                 'Set-Cookie',
                 dependencies.policy.clearRefreshCookie(),
             );
+
             return context.json(response, 200);
         },
     );
 
     registerResourceRoutes(app, dependencies, bearer);
     registerAdminTextAiProbeRoutes(app, dependencies);
+
     return app;
 }
 
@@ -395,12 +426,14 @@ function registerResourceRoutes(
             );
         },
     );
+
     const libraryParams = z.object({
         userId: z.uuid(),
         dictionaryId: z.uuid(),
     });
     const libraryPath =
         '/admin/users/{userId}/dictionaries/{dictionaryId}/sentences';
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -421,6 +454,7 @@ function registerResourceRoutes(
         }),
         async (context) => {
             const { userId, dictionaryId } = context.req.valid('param');
+
             return context.json(
                 await dependencies.administration.sentenceLibraryList(
                     bearer(context.req.header('Authorization')),
@@ -433,6 +467,7 @@ function registerResourceRoutes(
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -451,6 +486,7 @@ function registerResourceRoutes(
         async (context) => {
             const { userId, dictionaryId, exerciseId } =
                 context.req.valid('param');
+
             return context.json(
                 await dependencies.administration.sentenceLibraryDetail(
                     bearer(context.req.header('Authorization')),
@@ -463,6 +499,7 @@ function registerResourceRoutes(
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -483,6 +520,7 @@ function registerResourceRoutes(
         }),
         async (context) => {
             const { userId, dictionaryId } = context.req.valid('param');
+
             return context.json(
                 await dependencies.administration.sentenceLibrarySnapshot(
                     bearer(context.req.header('Authorization')),
@@ -495,6 +533,7 @@ function registerResourceRoutes(
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -515,6 +554,7 @@ function registerResourceRoutes(
         }),
         async (context) => {
             const { userId, dictionaryId } = context.req.valid('param');
+
             return context.json(
                 await dependencies.administration.mutateSentenceLibrary(
                     bearer(context.req.header('Authorization')),
@@ -527,6 +567,7 @@ function registerResourceRoutes(
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -551,6 +592,7 @@ function registerResourceRoutes(
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -573,6 +615,7 @@ function registerResourceRoutes(
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -595,6 +638,7 @@ function registerResourceRoutes(
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -622,6 +666,7 @@ function registerResourceRoutes(
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -643,6 +688,7 @@ function registerResourceRoutes(
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -660,10 +706,15 @@ function registerResourceRoutes(
                 bearer(context.req.header('Authorization')),
                 context.req.valid('param').userId,
             );
-            if (!user) throw new AdminUserNotFoundError();
+
+            if (!user) {
+                throw new AdminUserNotFoundError();
+            }
+
             return context.json({ user }, 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -692,6 +743,7 @@ function registerResourceRoutes(
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -721,6 +773,7 @@ function registerResourceRoutes(
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -750,6 +803,7 @@ function registerResourceRoutes(
                 200,
             ),
     );
+
     for (const operation of ['disable', 'restore'] as const) {
         app.openapi(
             createRoute({
@@ -790,10 +844,12 @@ function registerResourceRoutes(
                               input,
                               id,
                           );
+
                 return context.json({ user }, 200);
             },
         );
     }
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -825,6 +881,7 @@ function registerResourceRoutes(
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -866,6 +923,7 @@ function getCookie(header: string | undefined, name: string): string | null {
             return pair.slice(separator + 1).trim();
         }
     }
+
     return null;
 }
 
@@ -881,6 +939,7 @@ function requireRefreshCookie(
             401,
         );
     }
+
     return value;
 }
 

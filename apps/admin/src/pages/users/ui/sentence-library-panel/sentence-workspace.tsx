@@ -44,6 +44,7 @@ export function SentenceWorkspace({ userId, mutable, library }: Props) {
         !!library.error;
     const canDelete = canDeleteSentences(library.items, library.selected);
     const canDeleteAll = library.filters.creatorArchived === true;
+
     return (
         <Space direction='vertical' size='large' className={styles.full}>
             <SentenceFilters

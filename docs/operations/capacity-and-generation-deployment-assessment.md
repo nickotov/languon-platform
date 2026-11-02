@@ -3,12 +3,12 @@ type: reference
 title: Capacity, generation continuity, and resource assessment
 assessed: 2026-10-20
 source_paths:
-  - infra/deploy/compose/apps.compose.yaml
-  - infra/deploy/compose/production-data.compose.yaml
-  - apps/backend/src/infrastructure/worker/dictionary-worker-runtime.ts
-  - apps/backend/src/infrastructure/worker/dictionary-worker-command.ts
-  - apps/backend/src/modules/dictionaries/application/dictionary-generation-worker-service.ts
-  - apps/backend/src/modules/conversations/application/conversation-worker-service.ts
+    - infra/deploy/compose/apps.compose.yaml
+    - infra/deploy/compose/production-data.compose.yaml
+    - apps/backend/src/infrastructure/worker/dictionary-worker-runtime.ts
+    - apps/backend/src/infrastructure/worker/dictionary-worker-command.ts
+    - apps/backend/src/modules/dictionaries/application/dictionary-generation-worker-service.ts
+    - apps/backend/src/modules/conversations/application/conversation-worker-service.ts
 ---
 
 # Capacity, generation continuity, and resource assessment
@@ -22,15 +22,15 @@ was run for this assessment. Estimates below are not production capacity promise
 
 AI generation capacity and ordinary database/API throughput have different limits.
 
-| Area | Current default |
-| --- | --- |
-| AI worker execution slots | 2 per worker process, shared across dictionary, speech, sentence, text, tutor, and related work |
-| Dictionary generation concurrency policy | 10 globally, 1 per owner |
-| Dictionary outstanding-work admission limit | 1,000 globally, 5 per owner, with additional queue-age and budget checks |
-| Backend database pool | 10 connections per backend process |
-| Worker database pool | 4 connections per worker process |
-| Account-purge database pool | 2 connections per worker process |
-| Production PostgreSQL | 50 total connections |
+| Area                                        | Current default                                                                                 |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| AI worker execution slots                   | 2 per worker process, shared across dictionary, speech, sentence, text, tutor, and related work |
+| Dictionary generation concurrency policy    | 10 globally, 1 per owner                                                                        |
+| Dictionary outstanding-work admission limit | 1,000 globally, 5 per owner, with additional queue-age and budget checks                        |
+| Backend database pool                       | 10 connections per backend process                                                              |
+| Worker database pool                        | 4 connections per worker process                                                                |
+| Account-purge database pool                 | 2 connections per worker process                                                                |
+| Production PostgreSQL                       | 50 total connections                                                                            |
 
 Sources: [application configuration](../../infra/deploy/compose/apps.compose.yaml),
 [PostgreSQL configuration](../../infra/deploy/compose/production-data.compose.yaml),
@@ -48,10 +48,10 @@ Assuming one job occupies one slot for its entire duration, with both slots
 available to the measured workload:
 
 | Average slot occupancy per job | Calculated throughput with 2 slots |
-| --- | --- |
-| 5 seconds | 0.4 jobs/second; 24/minute |
-| 15 seconds | 0.13 jobs/second; 8/minute |
-| 60 seconds | 0.033 jobs/second; 2/minute |
+| ------------------------------ | ---------------------------------- |
+| 5 seconds                      | 0.4 jobs/second; 24/minute         |
+| 15 seconds                     | 0.13 jobs/second; 8/minute         |
+| 60 seconds                     | 0.033 jobs/second; 2/minute        |
 
 The approximation is `completed jobs/second = occupied slots / average duration`.
 These are calculations, not measured generation results. Sustainable arrivals
@@ -94,10 +94,10 @@ See [ADR-0009](../adr/0009-release-and-deployment-platform.md),
 
 The important distinction is what happens when the old worker receives shutdown:
 
-| Workload | Current shutdown behavior |
-| --- | --- |
+| Workload              | Current shutdown behavior                                                                                                                      |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | Dictionary generation | Aborts the provider call; unfinished leased jobs are returned to the queue for another attempt, subject to cancellation and execution policies |
-| Tutor conversation | Aborts the response and records it as interrupted/cancelled; deliberately avoids automatically repeating an ambiguous provider request |
+| Tutor conversation    | Aborts the response and records it as interrupted/cancelled; deliberately avoids automatically repeating an ambiguous provider request         |
 
 Sources: [dictionary shutdown handling](../../apps/backend/src/modules/dictionaries/application/dictionary-generation-worker-service.ts),
 [dictionary lease release](../../apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-generation-store.ts),
@@ -121,12 +121,12 @@ A verified minimum has not been measured for the current application. Existing
 [monitoring and capacity guidance](./monitoring-capacity.md) defines these
 provisional starting envelopes:
 
-| Deployment role | vCPU | RAM | SSD/NVMe |
-| --- | --- | --- | --- |
-| Staging, entire stack on one host | 4 | 8 GB | 100 GB |
-| Production application host | 4 | 8 GB | 80 GB |
-| Production PostgreSQL and Redis host | 4 | 8 GB | At least 100 GB |
-| Reference image builder | 4 | 16 GB | At least 30 GB free |
+| Deployment role                      | vCPU | RAM   | SSD/NVMe            |
+| ------------------------------------ | ---- | ----- | ------------------- |
+| Staging, entire stack on one host    | 4    | 8 GB  | 100 GB              |
+| Production application host          | 4    | 8 GB  | 80 GB               |
+| Production PostgreSQL and Redis host | 4    | 8 GB  | At least 100 GB     |
+| Reference image builder              | 4    | 16 GB | At least 30 GB free |
 
 These are sizing hypotheses with deployment headroom, not measured minimums.
 The accepted production topology uses separate application and data hosts.

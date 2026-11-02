@@ -43,6 +43,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await migrateTestDatabase(client);
             store = new DrizzleNavigationMetadataStore(db);
         }, 120000);
+
         beforeEach(async () => {
             await db.delete(knowledgeNotesTable);
             await db.delete(textsTable);
@@ -56,9 +57,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { id: other, status: 'active' },
             ]);
         });
+
         afterAll(async () => {
             await client?.end();
         });
+
         async function dictionary(
             name: string,
             ownerId = owner,
@@ -75,8 +78,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 sourceLanguageTag: 'es',
                 targetLanguageTag: 'en',
             });
+
             return id;
         }
+
         it('searches whole library titles literally, hides other owners/archived and never fabricates recents', async () => {
             const id = await dictionary('MY 100%_Words');
             await dictionary('100 other');
@@ -93,11 +98,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 pinned: false,
                 lastOpenedAt: null,
             });
+
             expect(await reader.read(other, { id, limit: 1 })).toEqual([]);
             expect(
                 (await reader.read(owner, { q: 'my', limit: 1 })).length,
             ).toBe(1);
         });
+
         it('fills five section shortcuts from existing activity without fabricating global open history', async () => {
             const ids: string[] = [];
             for (let n = 0; n < 7; n++) {
@@ -113,27 +120,33 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     })
                     .where(eq(dictionariesTable.id, id));
             }
+
             const reader = createDictionaryNavigationReader(db);
             const existing = await reader.read(owner, {
                 kind: 'dictionary',
                 limit: 5,
             });
+
             expect(existing.map((r) => r.id)).toEqual(ids.slice(2).reverse());
             expect(existing.every((r) => r.lastOpenedAt === null)).toBe(true);
             expect(
                 await reader.read(owner, { recentOnly: true, limit: 5 }),
             ).toEqual([]);
+
             expect(await db.select().from(navigationResourcesTable)).toEqual(
                 [],
             );
+
             await store.record(owner, 'dictionary', ids[0]!, {
                 openedAt: new Date('2026-10-01T00:00:00Z'),
             });
+
             await store.record(owner, 'dictionary', ids[1]!, { pinned: true });
             const result = await reader.read(owner, {
                 kind: 'dictionary',
                 limit: 5,
             });
+
             expect(result.map((r) => r.id)).toEqual([
                 ids[1],
                 ids[0],
@@ -141,12 +154,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ids[5],
                 ids[4],
             ]);
+
             expect(
                 (await reader.read(owner, { recentOnly: true, limit: 5 })).map(
                     (r) => r.id,
                 ),
             ).toEqual([ids[0]]);
         });
+
         it('upserts one metadata row, preserves independent fields under concurrency and filters stale source refs', async () => {
             const id = await dictionary('First');
             const reader = createDictionaryNavigationReader(db);
@@ -156,49 +171,62 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
                 store.record(owner, 'dictionary', id, { pinned: true }),
             ]);
+
             const [entry] = await reader.read(owner, { limit: 8 });
             expect(entry).toMatchObject({
                 pinned: true,
                 lastOpenedAt: '2026-10-20T00:00:00.000Z',
             });
+
             await store.record(owner, 'dictionary', id, {
                 openedAt: new Date('2026-10-19T00:00:00Z'),
             });
+
             expect(
                 (await reader.read(owner, { limit: 8 }))[0]!.lastOpenedAt,
             ).toBe('2026-10-20T00:00:00.000Z');
+
             await db
                 .update(dictionariesTable)
                 .set({ name: 'Renamed' })
                 .where(eq(dictionariesTable.id, id));
+
             expect((await reader.read(owner, { limit: 8 }))[0]!.title).toBe(
                 'Renamed',
             );
+
             await store.record(owner, 'dictionary', id, { pinned: false });
             expect((await reader.read(owner, { limit: 8 }))[0]!.pinned).toBe(
                 false,
             );
+
             expect(
                 (await db.select().from(navigationResourcesTable)).length,
             ).toBe(1);
+
             await db
                 .update(dictionariesTable)
                 .set({ lifecycle: 'archived', archivedAt: new Date() })
                 .where(eq(dictionariesTable.id, id));
+
             expect(await reader.read(owner, { limit: 8 })).toEqual([]);
             await db
                 .update(dictionariesTable)
                 .set({ lifecycle: 'active', archivedAt: null })
                 .where(eq(dictionariesTable.id, id));
+
             expect(
                 (await reader.read(owner, { recentOnly: true, limit: 5 }))
                     .length,
             ).toBe(1);
+
             await db
                 .delete(dictionariesTable)
                 .where(eq(dictionariesTable.id, id));
+
             expect(await reader.read(owner, { limit: 8 })).toEqual([]);
         });
+
         it('includes independent texts and active folder metadata, hides texts in archived folders', async () => {
             const now = new Date();
             const folderId = randomUUID();
@@ -209,8 +237,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 updatedAt: now,
             });
+
             const independent = randomUUID(),
                 nested = randomUUID();
+
             await db.insert(textsTable).values([
                 {
                     id: independent,
@@ -235,23 +265,28 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     updatedAt: now,
                 },
             ]);
+
             const reader = createTextNavigationReader(db);
             expect(await reader.count(owner)).toBe(2);
             expect(await reader.count(other)).toBe(0);
             expect(
                 (await reader.read(owner, { q: 'independent', limit: 8 }))[0],
             ).toMatchObject({ id: independent, href: `/texts/${independent}` });
+
             expect(
                 (await reader.read(owner, { q: 'nested', limit: 8 }))[0],
             ).toMatchObject({ description: 'Folder' });
+
             await db
                 .update(textFoldersTable)
                 .set({ lifecycle: 'archived' })
                 .where(eq(textFoldersTable.id, folderId));
+
             expect(await reader.read(owner, { q: 'nested', limit: 8 })).toEqual(
                 [],
             );
         });
+
         it('includes private knowledge drafts using current preferred working titles', async () => {
             const id = randomUUID(),
                 branchId = randomUUID(),
@@ -263,6 +298,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     content: [{ type: 'paragraph' as const }],
                 },
             };
+
             await db.insert(knowledgeNotesTable).values({
                 id,
                 ownerId: owner,
@@ -277,6 +313,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 updatedAt: now,
             });
+
             await db.insert(knowledgeWorkingBranchesTable).values({
                 id: branchId,
                 noteId: id,
@@ -292,16 +329,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
                 updatedAt: now,
             });
+
             const reader = createKnowledgeNavigationReader(db);
             expect(await reader.count(owner)).toBe(1);
             expect(await reader.count(other)).toBe(0);
             expect(
                 (await reader.read(owner, { q: 'working', limit: 8 }))[0],
             ).toMatchObject({ id, title: 'Private working title' });
+
             expect(
                 await reader.read(other, { q: 'working', limit: 8 }),
             ).toEqual([]);
         });
+
         it('erases all owner metadata while retaining the purged user tombstone and foreign history', async () => {
             const id = await dictionary('Owner');
             const foreignId = await dictionary('Foreign', other);
@@ -309,19 +349,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await store.record(owner, 'text', randomUUID(), {
                 openedAt: new Date(),
             });
+
             await store.record(owner, 'knowledge', randomUUID(), {
                 pinned: true,
             });
+
             await store.record(other, 'dictionary', foreignId, {
                 openedAt: new Date(),
             });
+
             await db.transaction(async (tx) => {
                 await tx
                     .update(usersTable)
                     .set({ status: 'purged' })
                     .where(eq(usersTable.id, owner));
+
                 await eraseNavigationOwnedMetadata(tx, owner);
             });
+
             expect(
                 (
                     await db
@@ -330,16 +375,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .where(eq(usersTable.id, owner))
                 )[0]?.status,
             ).toBe('purged');
+
             const remaining = await db.select().from(navigationResourcesTable);
             expect(remaining).toHaveLength(1);
             expect(remaining[0]).toMatchObject({
                 ownerId: other,
                 resourceId: foreignId,
             });
+
             await expect(
                 store.record(owner, 'dictionary', id, { pinned: true }),
             ).rejects.toMatchObject({ code: 'resource_not_found' });
         });
+
         it('rejects metadata writes for inactive owners and cascades metadata during account deletion', async () => {
             const id = await dictionary('Account');
             await store.record(owner, 'dictionary', id, { pinned: true });
@@ -347,15 +395,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .update(usersTable)
                 .set({ status: 'deletion_pending' })
                 .where(eq(usersTable.id, owner));
+
             await expect(
                 store.record(owner, 'dictionary', id, { pinned: false }),
             ).rejects.toMatchObject({ code: 'resource_not_found' });
+
             expect(
                 await createDictionaryNavigationReader(db).read(owner, {
                     q: 'Account',
                     limit: 8,
                 }),
             ).toEqual([]);
+
             await db.delete(usersTable).where(eq(usersTable.id, owner));
             expect(await db.select().from(navigationResourcesTable)).toEqual(
                 [],

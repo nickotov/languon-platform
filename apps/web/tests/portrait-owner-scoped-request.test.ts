@@ -10,6 +10,7 @@ function deferred<T>() {
     const promise = new Promise<T>((complete) => {
         resolve = complete;
     });
+
     return { promise, resolve };
 }
 
@@ -30,9 +31,11 @@ describe('owner-scoped portrait requests', () => {
                 requestWithSession,
                 () => 'owner-a',
             );
+
             await expect(request(operation)).rejects.toMatchObject(
                 changedAccount,
             );
+
             expect(requestWithSession).not.toHaveBeenCalled();
             expect(operation).not.toHaveBeenCalled();
         },
@@ -45,6 +48,7 @@ describe('owner-scoped portrait requests', () => {
             operation,
         ) => {
             await ready.promise;
+
             return operation('owner-b-token');
         };
         const write = vi.fn().mockResolvedValue('personal-result');
@@ -73,8 +77,12 @@ describe('owner-scoped portrait requests', () => {
             try {
                 return await operation('owner-a-expired-token');
             } catch (error) {
-                if (error !== expired) throw error;
+                if (error !== expired) {
+                    throw error;
+                }
+
                 currentOwner = 'owner-b';
+
                 return operation('owner-b-fresh-token');
             }
         };
@@ -84,6 +92,7 @@ describe('owner-scoped portrait requests', () => {
             requestWithSession,
             () => currentOwner,
         );
+
         await expect(request(write)).rejects.toMatchObject(changedAccount);
         expect(write).toHaveBeenCalledTimes(1);
         expect(write).toHaveBeenCalledWith('owner-a-expired-token');
@@ -109,6 +118,7 @@ describe('owner-scoped portrait requests', () => {
         expect(JSON.stringify(error)).not.toContain(
             'private previous-owner result',
         );
+
         expect(cache).not.toHaveBeenCalled();
     });
 
@@ -122,6 +132,7 @@ describe('owner-scoped portrait requests', () => {
             const value = await operation('owner-a-token');
             received.resolve();
             await release.promise;
+
             return value;
         };
         const request = ownerScopedPortraitRequest(

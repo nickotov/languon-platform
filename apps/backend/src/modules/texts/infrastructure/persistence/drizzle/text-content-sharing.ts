@@ -123,7 +123,10 @@ export async function shared(
         .from(usersTable)
         .where(eq(usersTable.id, candidate.ownerId));
 
-    if (owner?.status !== 'active') throw textNotFound();
+    if (owner?.status !== 'active') {
+        throw textNotFound();
+    }
+
     const resource =
         access.kind === 'folder'
             ? await folder(
@@ -148,8 +151,9 @@ export async function shared(
         !share ||
         !persistence.crypto.verifyShare(access.key, share.keyDigest) ||
         ('status' in resource && resource.status === 'draft')
-    )
+    ) {
         throw textNotFound();
+    }
 
     return { share, resource };
 }
@@ -161,12 +165,14 @@ export async function readShared(
 ) {
     return persistence.db.transaction(async (tx) => {
         const { share, resource } = await shared(persistence, tx, access);
-        if (access.kind === 'text')
+        if (access.kind === 'text') {
             return {
                 folder: null,
                 texts: [textDocument(resource as TextRow)],
                 nextCursor: null,
             };
+        }
+
         const rows = await tx
             .select()
             .from(textsTable)
@@ -249,11 +255,12 @@ export async function copyShared(
             );
 
         if (prior) {
-            if (prior.fingerprint !== fingerprint)
+            if (prior.fingerprint !== fingerprint) {
                 throw new TextDomainError(
                     'idempotency_conflict',
                     'This request key was already used.',
                 );
+            }
 
             return prior.result;
         }
@@ -269,7 +276,10 @@ export async function copyShared(
                 ),
             );
 
-        if (!candidate) throw textNotFound();
+        if (!candidate) {
+            throw textNotFound();
+        }
+
         await activeOwner(persistence, tx, ownerId);
         await activeOwner(persistence, tx, candidate.ownerId);
         let sourceFolderId: string | null = candidate.resourceId;
@@ -279,7 +289,10 @@ export async function copyShared(
                 .from(textsTable)
                 .where(eq(textsTable.id, candidate.resourceId));
 
-            if (!source) throw textNotFound();
+            if (!source) {
+                throw textNotFound();
+            }
+
             sourceFolderId = source.folderId;
         }
 
@@ -300,7 +313,10 @@ export async function copyShared(
         const { share, resource } = await shared(persistence, tx, access);
         let child: TextRow | undefined;
         if (request.sourceTextId) {
-            if (access.kind !== 'folder') throw textNotFound();
+            if (access.kind !== 'folder') {
+                throw textNotFound();
+            }
+
             [child] = await tx
                 .select()
                 .from(textsTable)
@@ -314,13 +330,19 @@ export async function copyShared(
                 )
                 .for('update');
 
-            if (!child) throw textNotFound();
-            if (request.expectedVersion !== undefined)
+            if (!child) {
+                throw textNotFound();
+            }
+
+            if (request.expectedVersion !== undefined) {
                 assertTextVersion(child.version, request.expectedVersion);
+            }
         }
 
-        if (access.kind === 'text' && request.expectedVersion !== undefined)
+        if (access.kind === 'text' && request.expectedVersion !== undefined) {
             assertTextVersion(resource.version, request.expectedVersion);
+        }
+
         const now = persistence.clock.now();
         let folderId = request.destinationFolderId;
         if (access.kind === 'folder' && !child) {
@@ -338,11 +360,13 @@ export async function copyShared(
             });
         } else {
             if (request.newFolderName !== undefined) {
-                if (folderId)
+                if (folderId) {
                     throw new TextDomainError(
                         'invalid_request',
                         'Choose exactly one destination folder.',
                     );
+                }
+
                 folderId = persistence.ids.generate();
                 await tx.insert(textFoldersTable).values({
                     id: folderId,
@@ -354,11 +378,13 @@ export async function copyShared(
                 });
             }
 
-            if (folderId === undefined)
+            if (folderId === undefined) {
                 throw new TextDomainError(
                     'invalid_request',
                     'Choose Independent or a destination folder.',
                 );
+            }
+
             if (folderId) {
                 await folder(persistence, tx, ownerId, folderId);
                 await confirmDestination(
@@ -388,11 +414,13 @@ export async function copyShared(
                     .limit(501)
                     .for('update');
 
-        if (sources.length > 500)
+        if (sources.length > 500) {
             throw new TextDomainError(
                 'invalid_request',
                 'Copy individual texts from this large folder.',
             );
+        }
+
         let resultId = folderId!;
         for (const source of sources) {
             const id = persistence.ids.generate();
@@ -433,7 +461,9 @@ export async function copyShared(
                 .returning();
 
             await revision(persistence, tx, copy!);
-            if (access.kind === 'text' || child) resultId = id;
+            if (access.kind === 'text' || child) {
+                resultId = id;
+            }
         }
 
         const result = { id: resultId };

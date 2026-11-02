@@ -22,16 +22,20 @@ export async function userFinancialReport(
     input: Input,
 ) {
     const { from, to } = reportRange(input);
+
     return database.transaction(
         async (tx) => {
             await tx.execute(
                 sql`select set_config('statement_timeout', '1500', true)`,
             );
+
             const user = await tx.execute(
                 sql`select id from users where id=${input.userId}::uuid`,
             );
-            if (!user[0])
+
+            if (!user[0]) {
                 throw new AdminMcpError('not_found', 'User not found.');
+            }
 
             // A speech request has a payer; never attribute a shared cache hit to its later readers.
             const ownerExpense = sql`(${expenses.actionId} in (select id from ai_credit_actions where owner_id=${input.userId}::uuid) or (${expenses.sourceKind}='speech-attempt' and ${expenses.actionId} in (select id from speech_jobs where payer_id=${input.userId}::uuid)))`;
@@ -115,6 +119,7 @@ export async function userFinancialReport(
             const unknownCount =
                 (cost?.unknown ?? 0) +
                 missing.reduce((sum, row) => sum + Number(row.total ?? 0), 0);
+
             return {
                 userId: input.userId,
                 from: from.toISOString(),

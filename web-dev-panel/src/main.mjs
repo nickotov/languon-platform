@@ -18,7 +18,10 @@ const application = createWebDevPanelServer({
 
 let stopping = false;
 async function stop(signal) {
-    if (stopping) return;
+    if (stopping) {
+        return;
+    }
+
     stopping = true;
     console.log(`\nStopping web dev panel (${signal})...`);
     await application.close();
@@ -27,6 +30,7 @@ async function stop(signal) {
 process.once('SIGINT', () =>
     stop('SIGINT').catch(() => (process.exitCode = 1)),
 );
+
 process.once('SIGTERM', () =>
     stop('SIGTERM').catch(() => (process.exitCode = 1)),
 );
@@ -45,5 +49,6 @@ try {
     } else {
         console.error(error instanceof Error ? error.message : String(error));
     }
+
     process.exitCode = 1;
 }

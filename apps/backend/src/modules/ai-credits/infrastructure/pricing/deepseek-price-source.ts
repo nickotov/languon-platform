@@ -43,45 +43,68 @@ function pricingTable(html: string): string[][] {
     const table = [...html.matchAll(/<table\b[^>]*>[\s\S]*?<\/table>/gi)].find(
         ([value]) => /CACHE HIT/.test(value) && /OFF-PEAK/.test(value),
     )?.[0];
-    if (!table) throw new Error('Pricing table missing.');
+
+    if (!table) {
+        throw new Error('Pricing table missing.');
+    }
+
     const active = new Map<number, { text: string; rows: number }>();
     const grid: string[][] = [];
     for (const [rowHtml] of table.matchAll(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi)) {
-        if (grid.length >= 128)
+        if (grid.length >= 128) {
             throw new Error('Pricing table exceeds reviewed bounds.');
+        }
+
         const row: string[] = [];
         for (const [column, span] of active) {
             row[column] = span.text;
-            if (--span.rows === 0) active.delete(column);
+            if (--span.rows === 0) {
+                active.delete(column);
+            }
         }
+
         let column = 0;
         for (const cell of rowHtml.matchAll(
             /<(?:td|th)\b([^>]*)>([\s\S]*?)<\/(?:td|th)>/gi,
         )) {
-            while (row[column] !== undefined) column++;
+            while (row[column] !== undefined) {
+                column++;
+            }
+
             const span = Number(/colspan=["']?(\d+)/i.exec(cell[1]!)?.[1] ?? 1);
             const rows = Number(/rowspan=["']?(\d+)/i.exec(cell[1]!)?.[1] ?? 1);
-            if (column + span > 64)
+            if (column + span > 64) {
                 throw new Error('Pricing table exceeds reviewed bounds.');
-            if (span < 1 || span > 32 || rows < 1 || rows > 64)
+            }
+
+            if (span < 1 || span > 32 || rows < 1 || rows > 64) {
                 throw new Error('Invalid pricing table span.');
+            }
+
             const text = clean(cell[2]!);
             for (let index = 0; index < span; index++) {
                 row[column] = text;
-                if (rows > 1) active.set(column, { text, rows: rows - 1 });
+                if (rows > 1) {
+                    active.set(column, { text, rows: rows - 1 });
+                }
+
                 column++;
             }
         }
+
         grid.push(row);
     }
+
     return grid;
 }
 
 function schedules(at: Date) {
-    if (at.getUTCFullYear() !== 2026)
+    if (at.getUTCFullYear() !== 2026) {
         throw new Error(
             'Reviewed holiday calendar does not cover the requested year.',
         );
+    }
+
     const from = Date.UTC(
         at.getUTCFullYear(),
         at.getUTCMonth(),
@@ -96,33 +119,42 @@ function schedules(at: Date) {
             date.getUTCDay() === 0 ||
             date.getUTCDay() === 6 ||
             holidays.some(([start, end]) => key >= start! && key <= end!)
-        )
+        ) {
             continue;
+        }
+
         for (const [start, end] of [
             [60, 240],
             [360, 600],
-        ])
+        ]) {
             peak.push({
                 from: new Date(instant + start! * 60_000).toISOString(),
                 until: new Date(instant + end! * 60_000).toISOString(),
             });
+        }
     }
+
     const offPeak: Array<{ from: string; until: string }> = [];
     let cursor = from;
     for (const window of peak) {
         const start = Date.parse(window.from);
-        if (cursor < start)
+        if (cursor < start) {
             offPeak.push({
                 from: new Date(cursor).toISOString(),
                 until: window.from,
             });
+        }
+
         cursor = Date.parse(window.until);
     }
-    if (cursor < until)
+
+    if (cursor < until) {
         offPeak.push({
             from: new Date(cursor).toISOString(),
             until: new Date(until).toISOString(),
         });
+    }
+
     return {
         validFrom: new Date(from).toISOString(),
         validUntil: new Date(until).toISOString(),
@@ -139,13 +171,18 @@ function rules(
     const grid = pricingTable(html);
     const header = grid.find((row) => row[0] === 'MODEL');
     const column = header?.indexOf(modelId) ?? -1;
-    if (column < 3) return null;
+    if (column < 3) {
+        return null;
+    }
+
     if (
         !/01:00\s*-\s*04:00 and 06:00\s*-\s*10:00 UTC, Monday through Friday, excluding Chinese public holidays/.test(
             clean(html),
         )
-    )
+    ) {
         throw new Error('Published schedule changed.');
+    }
+
     const schedule = schedules(at);
     const components = (
         period: 'PEAK' | 'OFF-PEAK',
@@ -157,13 +194,19 @@ function rules(
                     row[1]?.includes(label) &&
                     row[2] === period,
             );
-            if (matching.length !== 1)
+
+            if (matching.length !== 1) {
                 throw new Error('Ambiguous model price row.');
+            }
+
             const text = matching[0]![column];
-            if (!text?.startsWith('$'))
+            if (!text?.startsWith('$')) {
                 throw new Error('USD model price missing.');
+            }
+
             return publishedRate(text.slice(1));
         };
+
         return [
             {
                 meter: 'uncachedInputTokens',
@@ -185,6 +228,7 @@ function rules(
             },
         ];
     };
+
     return {
         version: 1,
         validFrom: schedule.validFrom,
@@ -214,11 +258,15 @@ export class DeepSeekPriceSource implements ProviderPriceSource {
         private readonly fetcher: typeof fetch = fetch,
         private readonly now: () => Date = () => new Date(),
     ) {}
+
     async fetchPrices(
         targets: ProviderPriceTarget[],
         signal?: AbortSignal,
     ): Promise<ProviderPriceFetchResult[]> {
-        if (!targets.length) return [];
+        if (!targets.length) {
+            return [];
+        }
+
         let html: string;
         try {
             html = await readPricingText(
@@ -235,18 +283,22 @@ export class DeepSeekPriceSource implements ProviderPriceSource {
                 ),
             );
         }
+
         return targets.map((target) => {
             if (
                 target.providerId !== this.providerId ||
                 target.meter !== 'text-tokens'
-            )
+            ) {
                 return sourceFailure(
                     target,
                     'source-changed',
                     'The model meter does not match DeepSeek text pricing.',
                 );
+            }
+
             try {
                 const found = rules(html, target.modelId, this.now());
+
                 return found
                     ? {
                           target,

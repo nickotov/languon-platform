@@ -18,6 +18,7 @@ const MigrationEnvironmentSchema = z
     .superRefine((value, context) => {
         const deployed =
             value.APP_ENV === 'staging' || value.APP_ENV === 'production';
+
         if (deployed && !value.MIGRATION_DATABASE_URL) {
             context.addIssue({
                 code: 'custom',
@@ -32,6 +33,7 @@ const MigrationEnvironmentSchema = z
                 path: ['MIGRATION_DATABASE_URL'],
             });
         }
+
         const selected = value.MIGRATION_DATABASE_URL ?? value.DATABASE_URL;
         if (
             value.APP_ENV === 'production' &&
@@ -51,5 +53,6 @@ export function loadMigrationDatabaseUrl(values: NodeJS.ProcessEnv): string {
         MigrationEnvironmentSchema,
         values,
     );
+
     return environment.MIGRATION_DATABASE_URL ?? environment.DATABASE_URL!;
 }

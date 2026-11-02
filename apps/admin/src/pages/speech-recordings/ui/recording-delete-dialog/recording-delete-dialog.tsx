@@ -27,6 +27,7 @@ export function RecordingDeleteDialog({
         recordings?.reduce((sum, item) => sum + item.bindingCount, 0) ?? 0;
     const handleFinish = async (values: { reason: string }) =>
         onSubmit(values.reason.trim());
+
     return (
         <Modal
             title={t('speech.deleteTitle')}

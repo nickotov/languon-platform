@@ -77,8 +77,10 @@ export function EditorDocumentSheet({
         if (
             documentGenerationAction.error instanceof
             ActionConsentCancelledError
-        )
+        ) {
             return null;
+        }
+
         if (documentGenerationAction.error) {
             return dictionaryErrorMessage(documentGenerationAction.error, t);
         }

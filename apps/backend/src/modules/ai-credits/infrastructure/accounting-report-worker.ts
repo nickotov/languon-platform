@@ -9,12 +9,21 @@ export function startAccountingReportWorker(options: {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let inFlight: Promise<void> = Promise.resolve();
     const interval = options.intervalMs ?? 15000;
-    if (!Number.isSafeInteger(interval) || interval < 1000 || interval > 30000)
+    if (
+        !Number.isSafeInteger(interval) ||
+        interval < 1000 ||
+        interval > 30000
+    ) {
         throw new Error(
             'Accounting report interval must be between one and thirty seconds.',
         );
+    }
+
     const schedule = () => {
-        if (stopped) return;
+        if (stopped) {
+            return;
+        }
+
         timer = setTimeout(() => {
             inFlight = options
                 .refreshNextReport()
@@ -22,14 +31,19 @@ export function startAccountingReportWorker(options: {
                 .catch(options.onError)
                 .finally(schedule);
         }, interval);
+
         timer.unref();
     };
     const abort = () => {
         stopped = true;
-        if (timer) clearTimeout(timer);
+        if (timer) {
+            clearTimeout(timer);
+        }
     };
+
     options.signal?.addEventListener('abort', abort, { once: true });
     schedule();
+
     return {
         async stop() {
             abort();

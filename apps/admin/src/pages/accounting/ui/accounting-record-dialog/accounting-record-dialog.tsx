@@ -45,7 +45,9 @@ export function AccountingRecordDialog({
     const updateCreditLotAvailable = useCallback(
         (available: boolean) => {
             setCreditLotAvailable(available);
-            if (!available) form.setFieldValue('revokeAvailableCredits', '0');
+            if (!available) {
+                form.setFieldValue('revokeAvailableCredits', '0');
+            }
         },
         [form],
     );
@@ -90,6 +92,7 @@ export function AccountingRecordDialog({
                     idempotencyKey,
                     source: 'manual',
                 });
+
             setRetryBody(body);
             await onSubmit(body);
             onClose();
@@ -112,6 +115,7 @@ export function AccountingRecordDialog({
             <Input inputMode='decimal' />
         </Form.Item>
     );
+
     return (
         <Modal
             open

@@ -31,11 +31,15 @@ export function useSettingsDraft({
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setOutcome('');
-        if ([...draft.translationContext].length > 1000) return;
+        if ([...draft.translationContext].length > 1000) {
+            return;
+        }
+
         const settings = changedSettings(
             dictionary.settings.values,
             draft.settings,
         );
+
         try {
             await onSave({
                 description: draft.description.trim() || null,
@@ -45,6 +49,7 @@ export function useSettingsDraft({
                 targetLanguage: draft.targetLanguage,
                 translationContext: draft.translationContext.trim() || null,
             });
+
             setOutcome(t('dictionary.settings.saved'));
         } catch {
             // The owning mutation renders the recoverable error state.
@@ -69,12 +74,14 @@ export function useSettingsDraft({
     function changeSource(event: ChangeEvent<HTMLSelectElement>) {
         const sourceLanguage = event.currentTarget
             .value as OwnedDictionary['sourceLanguage'];
+
         setDraft((current) => ({ ...current, sourceLanguage }));
     }
 
     function changeTarget(event: ChangeEvent<HTMLSelectElement>) {
         const targetLanguage = event.currentTarget
             .value as OwnedDictionary['targetLanguage'];
+
         setDraft((current) => ({ ...current, targetLanguage }));
     }
 

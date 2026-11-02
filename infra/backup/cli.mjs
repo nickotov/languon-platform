@@ -41,24 +41,34 @@ const usage = `Usage:
 
 export function parseArguments(values) {
     const [command, ...rest] = values;
-    if (!['create', 'check-fresh', 'prune', 'restore'].includes(command))
+    if (!['create', 'check-fresh', 'prune', 'restore'].includes(command)) {
         throw new Error(usage);
+    }
+
     const options = { command };
     for (let index = 0; index < rest.length; index += 2) {
         const key = rest[index];
         const value = rest[index + 1];
-        if (!key?.startsWith('--') || value === undefined)
+        if (!key?.startsWith('--') || value === undefined) {
             throw new Error(usage);
+        }
+
         options[key.slice(2)] = value;
     }
+
     return options;
 }
 
 function integerOption(value, fallback, name, minimum = 1) {
-    if (value === undefined) return fallback;
+    if (value === undefined) {
+        return fallback;
+    }
+
     const parsed = Number(value);
-    if (!Number.isInteger(parsed) || parsed < minimum)
+    if (!Number.isInteger(parsed) || parsed < minimum) {
         throw new Error(`${name} must be an integer >= ${minimum}.`);
+    }
+
     return parsed;
 }
 
@@ -68,11 +78,13 @@ async function writeJsonAtomic(target, value) {
     await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, {
         mode: 0o600,
     });
+
     await rename(temporary, target);
 }
 
 function objectPrefix(config, environment) {
     const { bucket, prefix } = parseS3Uri(config.BACKUP_S3_URI);
+
     return { bucket, prefix: `${prefix}/${environment}` };
 }
 
@@ -106,8 +118,10 @@ async function migrationLedgerSha256(config, runner, prefix = '') {
             ],
             { env: { ...process.env, ...environment }, capture: true },
         );
+
         ledger = result.stdout.trim();
     }
+
     return createHash('sha256').update(ledger).digest('hex');
 }
 
@@ -115,7 +129,10 @@ export async function createBackup(options, dependencies = {}) {
     const runner = dependencies.runner || runCommand;
     const now = dependencies.now || new Date();
     const environment = assertEnvironment(options.environment);
-    if (!options.config || !options['output-manifest']) throw new Error(usage);
+    if (!options.config || !options['output-manifest']) {
+        throw new Error(usage);
+    }
+
     const config = assertCreateConfig(
         await readConfig(path.resolve(options.config)),
         environment,
@@ -146,6 +163,7 @@ export async function createBackup(options, dependencies = {}) {
             ],
             { env: { ...process.env, ...postgresEnvironment(config) } },
         );
+
         await runner('pg_restore', ['--list', dumpPath], { capture: true });
         await runner('age', [
             '--encrypt',
@@ -155,6 +173,7 @@ export async function createBackup(options, dependencies = {}) {
             encryptedPath,
             dumpPath,
         ]);
+
         const encryptedSha256 = await sha256File(encryptedPath);
         const encryptedBytes = (await stat(encryptedPath)).size;
         const s3Uri = `s3://${bucket}/${encryptedKey}`;
@@ -175,6 +194,7 @@ export async function createBackup(options, dependencies = {}) {
             ]),
             { env: { ...process.env, ...awsEnvironment(config) } },
         );
+
         const head = await runner(
             'aws',
             awsArgs(config, [
@@ -201,6 +221,7 @@ export async function createBackup(options, dependencies = {}) {
                 'Uploaded backup size or checksum metadata did not match.',
             );
         }
+
         const completedAt = new Date().toISOString();
         const manifest = {
             schemaVersion: 1,
@@ -229,11 +250,13 @@ export async function createBackup(options, dependencies = {}) {
             workspace,
             `${identifier}.metadata.json`,
         );
+
         await writeFile(
             metadataPath,
             `${JSON.stringify(manifest, null, 2)}\n`,
             { mode: 0o600 },
         );
+
         await runner(
             'aws',
             awsArgs(config, [
@@ -249,7 +272,9 @@ export async function createBackup(options, dependencies = {}) {
             ]),
             { env: { ...process.env, ...awsEnvironment(config) } },
         );
+
         await writeJsonAtomic(outputManifest, manifest);
+
         return manifest;
     } finally {
         await rm(workspace, { recursive: true, force: true });
@@ -257,7 +282,10 @@ export async function createBackup(options, dependencies = {}) {
 }
 
 export async function checkFresh(options, dependencies = {}) {
-    if (!options.manifest) throw new Error(usage);
+    if (!options.manifest) {
+        throw new Error(usage);
+    }
+
     const expectedEnvironment = assertEnvironment(options.environment);
     const backupPath = path.resolve(options.manifest);
     const restorePath = path.resolve(
@@ -266,6 +294,7 @@ export async function checkFresh(options, dependencies = {}) {
     );
     const backup = JSON.parse(await readFile(backupPath, 'utf8'));
     const restore = JSON.parse(await readFile(restorePath, 'utf8'));
+
     return checkFreshEvidence({
         backup,
         restore,
@@ -301,10 +330,12 @@ async function listMetadata(config, environment, runner) {
         { env: { ...process.env, ...awsEnvironment(config) }, capture: true },
     );
     const response = JSON.parse(result.stdout);
-    if (response.IsTruncated)
+    if (response.IsTruncated) {
         throw new Error(
             'Backup inventory is truncated; prune refuses an incomplete listing.',
         );
+    }
+
     return {
         bucket,
         objects: (response.Contents || []).map((object) => ({
@@ -317,7 +348,10 @@ async function listMetadata(config, environment, runner) {
 export async function pruneBackups(options, dependencies = {}) {
     const runner = dependencies.runner || runCommand;
     const environment = assertEnvironment(options.environment);
-    if (!options.config) throw new Error(usage);
+    if (!options.config) {
+        throw new Error(usage);
+    }
+
     const config = assertStorageConfig(
         await readConfig(path.resolve(options.config)),
     );
@@ -332,10 +366,12 @@ export async function pruneBackups(options, dependencies = {}) {
             `Applying prune requires --confirm "DELETE BACKUPS ${environment}".`,
         );
     }
+
     const objectKeys = deletions.flatMap(({ key }) => [
         key,
         key.replace(/\.metadata\.json$/, '.dump.age'),
     ]);
+
     if (apply) {
         for (const key of objectKeys) {
             await runner(
@@ -355,6 +391,7 @@ export async function pruneBackups(options, dependencies = {}) {
             );
         }
     }
+
     return {
         environment,
         mode: apply ? 'applied' : 'dry-run',
@@ -380,11 +417,13 @@ async function assertEmptyRestoreTarget(config, runner) {
         ],
         { env: environment, capture: true },
     );
+
     if (identity.stdout.trim() !== config.RESTORE_PGDATABASE) {
         throw new Error(
             'Connected restore database identity did not match configuration.',
         );
     }
+
     const tables = await runner(
         'psql',
         [
@@ -396,36 +435,47 @@ async function assertEmptyRestoreTarget(config, runner) {
         ],
         { env: environment, capture: true },
     );
-    if (Number(tables.stdout.trim()) !== 0)
+
+    if (Number(tables.stdout.trim()) !== 0) {
         throw new Error('Restore target is not empty.');
+    }
 }
 
 export async function restoreBackup(options, dependencies = {}) {
     const runner = dependencies.runner || runCommand;
     const now = dependencies.now || new Date();
     const environment = assertEnvironment(options.environment);
-    if (!options.manifest || !options.config) throw new Error(usage);
+    if (!options.manifest || !options.config) {
+        throw new Error(usage);
+    }
+
     const backupPath = path.resolve(options.manifest);
     const backup = validateBackupManifest(
         JSON.parse(await readFile(backupPath, 'utf8')),
     );
-    if (backup.environment !== environment)
+
+    if (backup.environment !== environment) {
         throw new Error(
             'Backup environment does not match restore environment.',
         );
+    }
+
     const config = assertRestoreConfig(
         await readConfig(path.resolve(options.config)),
         environment,
     );
+
     await assertPrivateFile(
         config.BACKUP_AGE_IDENTITY_FILE,
         'Backup age identity',
     );
+
     if (options.confirm !== `RESTORE ${config.RESTORE_PGDATABASE}`) {
         throw new Error(
             `Restore requires --confirm "RESTORE ${config.RESTORE_PGDATABASE}".`,
         );
     }
+
     await assertEmptyRestoreTarget(config, runner);
     const workspace = await mkdtemp(path.join(tmpdir(), 'languon-restore-'));
     const encryptedPath = path.join(workspace, 'backup.dump.age');
@@ -443,6 +493,7 @@ export async function restoreBackup(options, dependencies = {}) {
             ]),
             { env: { ...process.env, ...awsEnvironment(config) } },
         );
+
         if (
             (await sha256File(encryptedPath)) !== backup.encryptedObject.sha256
         ) {
@@ -450,6 +501,7 @@ export async function restoreBackup(options, dependencies = {}) {
                 'Downloaded encrypted backup checksum did not match manifest.',
             );
         }
+
         await runner('age', [
             '--decrypt',
             '--identity',
@@ -458,6 +510,7 @@ export async function restoreBackup(options, dependencies = {}) {
             dumpPath,
             encryptedPath,
         ]);
+
         const restoreVersion = await runner('pg_restore', ['--version'], {
             capture: true,
         });
@@ -467,6 +520,7 @@ export async function restoreBackup(options, dependencies = {}) {
                 'pg_restore major version does not match the backup tool major version.',
             );
         }
+
         await runner('pg_restore', ['--list', dumpPath], { capture: true });
         // Download/decryption can be slow. Recheck immediately before mutation so a
         // target populated after the initial guard is rejected as well.
@@ -488,6 +542,7 @@ export async function restoreBackup(options, dependencies = {}) {
                 },
             },
         );
+
         const restoredTables = await runner(
             'psql',
             [
@@ -505,6 +560,7 @@ export async function restoreBackup(options, dependencies = {}) {
                 capture: true,
             },
         );
+
         if (
             !Number.isSafeInteger(Number(restoredTables.stdout.trim())) ||
             Number(restoredTables.stdout.trim()) < 1
@@ -513,6 +569,7 @@ export async function restoreBackup(options, dependencies = {}) {
                 'Restored database did not contain any application tables.',
             );
         }
+
         const restoredLedgerSha256 = await migrationLedgerSha256(
             config,
             runner,
@@ -554,7 +611,9 @@ export async function restoreBackup(options, dependencies = {}) {
                     'restore-drill.latest.json',
                 ),
         );
+
         await writeJsonAtomic(output, result);
+
         return result;
     } finally {
         await rm(workspace, { recursive: true, force: true });
@@ -578,6 +637,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         process.stderr.write(
             `Backup command failed: ${sanitizeError(error)}\n`,
         );
+
         process.exitCode = 1;
     });
 }

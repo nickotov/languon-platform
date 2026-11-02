@@ -102,7 +102,10 @@ export class DrizzleDictionaryDeletionStore {
             )
             .limit(1);
 
-        if (!dictionary) throw new DictionaryNotFoundError();
+        if (!dictionary) {
+            throw new DictionaryNotFoundError();
+        }
+
         const rows = await this.database
             .select({
                 id: dictionaryCardsTable.id,
@@ -129,7 +132,10 @@ export class DrizzleDictionaryDeletionStore {
         return this.database.transaction(async (tx) => {
             await this.lockDeletion(tx, input.ownerId);
             const replay = await this.deletionReplay(tx, input, 'dictionary');
-            if (replay) return replay;
+            if (replay) {
+                return replay;
+            }
+
             const selectedIds =
                 input.request.scope.kind === 'selected'
                     ? input.request.scope.targets.map(
@@ -166,8 +172,10 @@ export class DrizzleDictionaryDeletionStore {
                     ? input.request.scope.snapshot !==
                       deletionSnapshot('dictionary', archived)
                     : !this.exactTargets(archived, targets))
-            )
+            ) {
                 throw new DictionaryVersionConflictError();
+            }
+
             const ids = targets.map((target) => target.id);
             await deleteDictionaryContent(tx, input, ids, null);
             await tx
@@ -209,7 +217,10 @@ export class DrizzleDictionaryDeletionStore {
         return this.database.transaction(async (tx) => {
             await this.lockDeletion(tx, input.ownerId);
             const replay = await this.deletionReplay(tx, input, 'card');
-            if (replay) return replay;
+            if (replay) {
+                return replay;
+            }
+
             const [dictionary] = await tx
                 .select({
                     id: dictionariesTable.id,
@@ -226,10 +237,16 @@ export class DrizzleDictionaryDeletionStore {
                 .limit(1)
                 .for('update');
 
-            if (!dictionary || dictionary.lifecycle !== 'active')
+            if (!dictionary || dictionary.lifecycle !== 'active') {
                 throw new DictionaryNotFoundError();
-            if (dictionary.version !== input.request.expectedDictionaryVersion)
+            }
+
+            if (
+                dictionary.version !== input.request.expectedDictionaryVersion
+            ) {
                 throw new DictionaryVersionConflictError();
+            }
+
             const selectedIds =
                 input.request.scope.kind === 'selected'
                     ? input.request.scope.targets.map((target) => target.cardId)
@@ -267,8 +284,10 @@ export class DrizzleDictionaryDeletionStore {
                     ? input.request.scope.snapshot !==
                       deletionSnapshot('card', archived)
                     : !this.exactTargets(archived, targets))
-            )
+            ) {
                 throw new DictionaryVersionConflictError();
+            }
+
             const cardIds = targets.map((target) => target.id);
             await deleteDictionaryContent(
                 tx,
@@ -316,7 +335,10 @@ export class DrizzleDictionaryDeletionStore {
                 .where(eq(dictionariesTable.id, input.dictionaryId))
                 .returning({ version: dictionariesTable.version });
 
-            if (!updated) throw new DictionaryVersionConflictError();
+            if (!updated) {
+                throw new DictionaryVersionConflictError();
+            }
+
             const receipt = {
                 deletedCount: cardIds.length,
                 operationId: this.ids.generate(),
@@ -398,14 +420,21 @@ export class DrizzleDictionaryDeletionStore {
             )
             .limit(1);
 
-        if (!existing) return null;
-        if (existing.requestFingerprint !== input.fingerprint)
+        if (!existing) {
+            return null;
+        }
+
+        if (existing.requestFingerprint !== input.fingerprint) {
             throw new DictionaryIdempotencyConflictError();
+        }
+
         const parsed = DictionaryDeletionReceiptResponseSchema.safeParse(
             existing.resultPayload,
         );
 
-        if (!parsed.success) throw new DictionaryIdempotencyConflictError();
+        if (!parsed.success) {
+            throw new DictionaryIdempotencyConflictError();
+        }
 
         return parsed.data;
     }

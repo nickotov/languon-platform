@@ -38,7 +38,9 @@ export async function lockSelectionOwner(
         .where(and(eq(usersTable.id, ownerId), eq(usersTable.status, 'active')))
         .for('share');
 
-    if (!user && !optional) throw new TextSelectionError('not_found');
+    if (!user && !optional) {
+        throw new TextSelectionError('not_found');
+    }
 
     return !!user;
 }

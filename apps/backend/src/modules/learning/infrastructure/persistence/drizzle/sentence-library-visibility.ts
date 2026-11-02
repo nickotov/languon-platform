@@ -20,5 +20,7 @@ export async function assertSentencePracticeVisible(
         sql`select ${exercises.id} from ${exercises} where ${exercises.id}=${exerciseId}::uuid and (${sentencePracticeVisibilityCondition(learnerId)})`,
     );
 
-    if (!rows.length) throw new SentenceUnavailableError();
+    if (!rows.length) {
+        throw new SentenceUnavailableError();
+    }
 }

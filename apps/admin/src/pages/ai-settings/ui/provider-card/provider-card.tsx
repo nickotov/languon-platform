@@ -45,6 +45,7 @@ export function ProviderCard({
         const otherProviderModels = enabledModelIds.filter(
             (modelId) => !providerModelIds.has(modelId),
         );
+
         onEnabledModelsChange([...otherProviderModels, ...values.map(String)]);
     };
 
@@ -167,11 +168,14 @@ function providerStatusDescription(
     if (provider.credentialStatus === 'missing') {
         return translate('aiSettings.missingCredential');
     }
+
     if (provider.health.status === 'unverified') {
         return translate('aiSettings.unverified');
     }
+
     if (provider.health.status === 'unavailable') {
         return translate('aiSettings.unavailable');
     }
+
     return null;
 }

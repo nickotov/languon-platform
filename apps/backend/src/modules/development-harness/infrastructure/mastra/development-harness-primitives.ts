@@ -47,6 +47,7 @@ export class DevelopmentModelConfigurationError extends Error {
         super(
             'Live development agent execution requires DEEPSEEK_API_KEY for the default and fallback model; deterministic tool, workflow, and scorer checks remain available.',
         );
+
         this.name = 'DevelopmentModelConfigurationError';
     }
 }
@@ -167,6 +168,7 @@ export function createDevelopmentHarnessPrimitives(
                             },
                         );
                     }
+
                     return messageList;
                 },
             },
@@ -250,7 +252,9 @@ async function abortableDelay(
     signal: AbortSignal | undefined,
 ): Promise<void> {
     signal?.throwIfAborted();
-    if (durationMs === 0) return;
+    if (durationMs === 0) {
+        return;
+    }
 
     await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(finish, durationMs);

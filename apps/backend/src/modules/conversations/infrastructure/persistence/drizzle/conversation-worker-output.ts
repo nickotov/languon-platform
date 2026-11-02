@@ -1,6 +1,8 @@
+import { isReadOnlyKnowledgeSource } from '../../../domain/conversation';
 import {
     ConversationToolCallSchema,
-    KnowledgeNoteContentSchema,
+    conversationToolCallLimit,
+    LegacyKnowledgeNoteContentSchema,
     type ConversationToolCall,
     type KnowledgeNoteContent,
 } from '@languon/contracts';
@@ -12,6 +14,7 @@ import {
     type SourceMaterial,
 } from '../../../domain/conversation';
 import { conversationEvent } from './conversation-events';
+import { assertLegacyNoteTarget } from './conversation-legacy-note-target';
 import {
     conflict,
     draftView,
@@ -48,7 +51,10 @@ export async function conversationAppend(
     turn: ClaimedConversationTurn,
     delta: string,
 ) {
-    if (!delta) return;
+    if (!delta) {
+        return;
+    }
+
     await conversationWithProgress(persistence, turn, async (tx) => {
         const [row] = await tx
             .update(messages)
@@ -63,7 +69,7 @@ export async function conversationAppend(
             )
             .returning();
 
-        if (row)
+        if (row) {
             await conversationEvent(
                 persistence,
                 tx,
@@ -71,6 +77,7 @@ export async function conversationAppend(
                 'message',
                 messageView(row),
             );
+        }
     });
 }
 
@@ -90,11 +97,15 @@ export async function conversationRecordMaterial(
                 ),
             );
 
-        if (!row) throw conversationUnavailable();
+        if (!row) {
+            throw conversationUnavailable();
+        }
+
         const combined = [...row.attachments];
         for (const item of material) {
-            if (!combined.some((existing) => existing.id === item.id))
+            if (!combined.some((existing) => existing.id === item.id)) {
                 combined.push(item);
+            }
         }
 
         const [updated] = await tx
@@ -130,18 +141,28 @@ export async function conversationRecordTool(
                 ),
             );
 
-        if (!row) throw conversationUnavailable();
+        if (!row) {
+            throw conversationUnavailable();
+        }
+
         const current = row.toolCalls.find((item) => item.id === call.id);
-        if (current && current.name !== call.name)
+        if (current && current.name !== call.name) {
             throw conflict('The tool call identifier was already used.');
-        if (current && current.state !== 'running') return;
+        }
+
+        if (current && current.state !== 'running') {
+            return;
+        }
+
         const toolCalls = [
             ...row.toolCalls.filter((item) => item.id !== call.id),
             call,
         ];
 
-        if (toolCalls.length > 10)
+        if (toolCalls.length > conversationToolCallLimit) {
             throw conflict('The response tool limit was reached.');
+        }
+
         const [updated] = await tx
             .update(messages)
             .set({ toolCalls })
@@ -165,13 +186,23 @@ export async function conversationPropose(
     target?: { noteId: string; version: number },
 ) {
     return conversationWithOperation(persistence, turn, async (tx) => {
+        if (isReadOnlyKnowledgeSource(turn.source)) {
+            throw conflict(
+                'Shared conversations cannot propose document changes.',
+            );
+        }
+
+        if (target) {
+            await assertLegacyNoteTarget(tx, turn.ownerId, target.noteId);
+        }
+
         const now = persistence.now();
         const [row] = await tx
             .insert(drafts)
             .values({
                 id: randomUUID(),
                 conversationId: turn.conversationId,
-                content: KnowledgeNoteContentSchema.parse(content),
+                content: LegacyKnowledgeNoteContentSchema.parse(content),
                 targetNoteId: target?.noteId ?? null,
                 expectedNoteVersion: target?.version ?? null,
                 createdAt: now,

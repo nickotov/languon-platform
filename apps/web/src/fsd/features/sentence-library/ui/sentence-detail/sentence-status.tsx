@@ -28,7 +28,7 @@ export function SentenceStatus({
         sentence.archivedByMe &&
         (sentence.outdated || sentence.globallyArchived);
     const reasons: { text: string; icon: ReactNode }[] = [];
-    if (usable)
+    if (usable) {
         reasons.push({
             text: L('statusCurrent'),
             icon: (
@@ -38,7 +38,9 @@ export function SentenceStatus({
                 />
             ),
         });
-    if (sentence.outdated)
+    }
+
+    if (sentence.outdated) {
         reasons.push({
             text: L('statusOutdatedBody'),
             icon: (
@@ -48,21 +50,28 @@ export function SentenceStatus({
                 />
             ),
         });
-    if (sentence.archivedByMe)
+    }
+
+    if (sentence.archivedByMe) {
         reasons.push({
             text: L('statusMineBody'),
             icon: <EyeOffIcon aria-hidden className={componentStyles.icon} />,
         });
-    if (sentence.globallyArchived)
+    }
+
+    if (sentence.globallyArchived) {
         reasons.push({
             text: L('statusGlobalBody'),
             icon: <ArchiveIcon aria-hidden className={componentStyles.icon} />,
         });
+    }
+
     const icon = sentence.archivedByMe ? (
         <RotateCcwIcon aria-hidden className={componentStyles.icon} />
     ) : (
         <EyeOffIcon aria-hidden className={componentStyles.icon} />
     );
+
     return (
         <section className={componentStyles.root}>
             <h3 className={componentStyles.heading}>{L('statusTitle')}</h3>

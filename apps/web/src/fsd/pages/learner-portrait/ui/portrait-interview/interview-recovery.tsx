@@ -42,6 +42,7 @@ export function InterviewRecovery({
     function changeText(event: ChangeEvent<HTMLTextAreaElement>) {
         setText(event.target.value);
     }
+
     function changeSelected(event: ChangeEvent<HTMLInputElement>) {
         const value = event.target.value;
         setSelected((previous) =>
@@ -50,20 +51,28 @@ export function InterviewRecovery({
                 : previous.filter((item) => item !== value),
         );
     }
+
     async function retry() {
-        if (over || empty || busy) return;
-        if (input.kind === 'skip') {
-            await onSubmit({ kind: 'skip', topic: input.topic });
+        if (over || empty || busy) {
             return;
         }
+
+        if (input.kind === 'skip') {
+            await onSubmit({ kind: 'skip', topic: input.topic });
+
+            return;
+        }
+
         if (input.kind === 'chat') {
             await onSubmit({
                 kind: 'chat',
                 topic: input.topic,
                 text: text.trim(),
             });
+
             return;
         }
+
         await onSubmit({
             kind: 'answer',
             topic: input.topic,
@@ -71,6 +80,7 @@ export function InterviewRecovery({
             ...(selected.length ? { selected } : {}),
         });
     }
+
     return (
         <section
             className={styles.question}

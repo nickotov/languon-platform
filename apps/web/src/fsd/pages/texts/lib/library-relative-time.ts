@@ -19,5 +19,6 @@ export function libraryRelativeTime(
             return formatter.format(Math.round(seconds / duration), unit);
         }
     }
+
     return formatter.format(0, 'second');
 }

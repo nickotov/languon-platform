@@ -50,17 +50,23 @@ async function request<T>(
             },
         );
     } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') throw error;
+        if (error instanceof Error && error.name === 'AbortError') {
+            throw error;
+        }
+
         throw new NavigationApiError(0, fallback);
     }
+
     const payload: unknown = await response.json();
     if (!response.ok) {
         const parsed = NavigationErrorResponseSchema.safeParse(payload);
+
         throw new NavigationApiError(
             response.status,
             parsed.success ? parsed.data.error : fallback,
         );
     }
+
     return schema.parse(payload);
 }
 
@@ -76,8 +82,12 @@ export const navigationApi = {
         signal?: AbortSignal,
     ) {
         const query = new URLSearchParams();
-        for (const [key, value] of Object.entries(input))
-            if (value !== undefined) query.set(key, String(value));
+        for (const [key, value] of Object.entries(input)) {
+            if (value !== undefined) {
+                query.set(key, String(value));
+            }
+        }
+
         return request(
             token,
             `resources?${query}`,

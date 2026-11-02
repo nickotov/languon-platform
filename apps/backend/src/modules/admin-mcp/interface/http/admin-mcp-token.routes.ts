@@ -39,19 +39,26 @@ export function createAdminMcpTokenRoutes(input: {
                       400,
                   ),
     });
+
     if (
         input.appEnvironment !== 'development' &&
         input.appEnvironment !== 'test'
-    )
+    ) {
         return app;
+    }
+
     app.use('/admin/mcp/*', authHttpBodyLimit);
     app.use('/admin/mcp/*', async (c, next) => {
         c.header('Cache-Control', 'no-store');
         c.header('Referrer-Policy', 'no-referrer');
         const origin = c.req.header('Origin');
-        if (origin) input.policy.assertCookieRequestOrigin(origin);
+        if (origin) {
+            input.policy.assertCookieRequestOrigin(origin);
+        }
+
         await next();
     });
+
     app.onError((error, c) => {
         if (error instanceof AdminMcpError) {
             const status =
@@ -60,6 +67,7 @@ export function createAdminMcpTokenRoutes(input: {
                     : error.code === 'not_found'
                       ? 404
                       : 403;
+
             return c.json(
                 {
                     error: {
@@ -71,9 +79,12 @@ export function createAdminMcpTokenRoutes(input: {
                 status,
             );
         }
+
         const mapped = mapAdministrationHttpError(error);
+
         return c.json(mapped.response(randomUUID()), mapped.status);
     });
+
     const body = <S extends z.ZodType>(schema: S) => ({
         required: true,
         content: { 'application/json': { schema } },
@@ -101,6 +112,7 @@ export function createAdminMcpTokenRoutes(input: {
     };
     const authorize = (header: string | undefined, sensitive: boolean) => {
         const bearer = input.policy.parseBearerAuthorization(header ?? null);
+
         return sensitive
             ? input.administration.authorizeSensitiveOperation(
                   bearer,
@@ -109,9 +121,13 @@ export function createAdminMcpTokenRoutes(input: {
             : input.administration.authorizeOperation(bearer, randomUUID());
     };
     const assertOrigin = (origin: string | undefined) => {
-        if (!origin) throw new InvalidRequestOriginError();
+        if (!origin) {
+            throw new InvalidRequestOriginError();
+        }
+
         input.policy.assertCookieRequestOrigin(origin);
     };
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -128,6 +144,7 @@ export function createAdminMcpTokenRoutes(input: {
                 c.req.header('Authorization'),
                 false,
             );
+
             return c.json(
                 {
                     tokens: await input.credentials.list(principal.actor.id),
@@ -136,6 +153,7 @@ export function createAdminMcpTokenRoutes(input: {
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -158,9 +176,11 @@ export function createAdminMcpTokenRoutes(input: {
                 principal.actor.id,
                 c.req.valid('json'),
             );
+
             return c.json(result, 201);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -183,14 +203,17 @@ export function createAdminMcpTokenRoutes(input: {
                 c.req.header('Authorization'),
                 false,
             );
+
             await input.credentials.revoke(
                 principal.actor.id,
                 c.req.valid('param').tokenId,
                 c.req.valid('json').reason,
             );
+
             return c.json({ success: true as const }, 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -208,6 +231,7 @@ export function createAdminMcpTokenRoutes(input: {
                 c.req.header('Authorization'),
                 false,
             );
+
             return c.json(
                 await input.credentials.audit(
                     principal.actor.id,
@@ -217,5 +241,6 @@ export function createAdminMcpTokenRoutes(input: {
             );
         },
     );
+
     return app;
 }

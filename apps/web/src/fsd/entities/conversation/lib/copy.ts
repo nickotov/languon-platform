@@ -10,6 +10,8 @@ const en = {
     outputTokens: 'Output tokens',
     chargedCredits: 'Charged credits',
 
+    generationFailed:
+        'AI could not complete this response. Your message is saved. You can retry.',
     modelUnavailable:
         'AI is unavailable right now. Your messages are kept. Try again later.',
     chooseModel: 'Change AI model',
@@ -98,6 +100,7 @@ const en = {
     delete: 'Delete',
     cancel: 'Cancel',
 } as const;
+
 type Copy = { [K in keyof typeof en]: string };
 const ru: Copy = {
     contextTooLarge:
@@ -109,6 +112,8 @@ const ru: Copy = {
     outputTokens: 'Выходные токены',
     chargedCredits: 'Списано кредитов',
 
+    generationFailed:
+        'ИИ не смог завершить ответ. Ваше сообщение сохранено. Можно повторить попытку.',
     modelUnavailable:
         'ИИ сейчас недоступен. Сообщения сохранены. Повторите позже.',
     chooseModel: 'Изменить модель ИИ',
@@ -206,6 +211,8 @@ const es: Copy = {
     outputTokens: 'Tokens de salida',
     chargedCredits: 'Créditos cobrados',
 
+    generationFailed:
+        'La IA no pudo completar esta respuesta. Tu mensaje está guardado. Puedes volver a intentarlo.',
     modelUnavailable:
         'La IA no está disponible. Tus mensajes se conservan. Reinténtalo más tarde.',
     chooseModel: 'Cambiar modelo de IA',
@@ -305,6 +312,8 @@ const fr: Copy = {
     outputTokens: 'Jetons de sortie',
     chargedCredits: 'Crédits facturés',
 
+    generationFailed:
+        'L’IA n’a pas pu terminer cette réponse. Votre message est conservé. Vous pouvez réessayer.',
     modelUnavailable:
         'L’IA est indisponible. Vos messages sont conservés. Réessayez plus tard.',
     chooseModel: 'Changer de modèle IA',
@@ -394,6 +403,7 @@ const fr: Copy = {
     delete: 'Supprimer',
     cancel: 'Annuler',
 };
+
 export function conversationCopy(locale: Locale): Copy {
     return { en, ru, es, fr }[locale];
 }

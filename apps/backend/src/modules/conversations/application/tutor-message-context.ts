@@ -13,9 +13,23 @@ export type TutorUserModelContent = {
     parts: { type: 'text'; text: string }[];
 };
 
+export function tutorSourceProvenance(
+    snapshot: ConversationSourceSnapshot,
+    sourceKind: ConversationSource['kind'],
+) {
+    return {
+        sourceKind,
+        version: snapshot.version,
+        provenance: snapshot.provenance,
+        title: snapshot.title,
+        studiedLanguage: snapshot.studiedLanguage,
+    };
+}
+
 export function projectTutorUserMessage(input: {
     content: string;
     attachments?: readonly CopiedAttachment[];
+    blockReferences?: readonly string[] | undefined;
     editorContext?: { content: string; selectedText?: string | undefined };
     source?: Pick<
         ConversationSourceSnapshot,
@@ -44,10 +58,19 @@ export function projectTutorUserMessage(input: {
                       : {}),
               },
     );
+
     return {
         format: 2,
         parts: [
             { type: 'text', text: input.content },
+            ...(input.blockReferences?.length
+                ? [
+                      {
+                          type: 'text' as const,
+                          text: `Mentioned learning block IDs (untrusted references to the authorized frozen source). Use the complete provided editor snapshot, including surrounding prose, for explanations. Retrieve exact structured fields before proposing targeted updates: ${JSON.stringify(input.blockReferences)}`,
+                      },
+                  ]
+                : []),
             ...(input.editorContext
                 ? [
                       {
@@ -101,11 +124,12 @@ export function assertTutorCurrentMessageFits(
     modelContent: Record<string, unknown>,
     limit = currentTutorMessageByteLimit,
 ): void {
-    if (tutorCurrentMessageBytes(modelContent) > limit)
+    if (tutorCurrentMessageBytes(modelContent) > limit) {
         throw new ConversationError(
             'context_too_large',
             'Shorten the question or remove attachments before sending again.',
         );
+    }
 }
 
 export function tutorMessageModelContent(

@@ -47,6 +47,9 @@ export const textsAiJobsTable = pgTable(
             .$type<'text-detection' | 'text-translation'>()
             .notNull(),
         format: text('format').notNull(),
+        externalSourceKind: text('external_source_kind').$type<
+            'knowledge-block' | 'knowledge-field' | 'knowledge-exercise'
+        >(),
         executionState: text('execution_state')
             .$type<
                 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
@@ -140,6 +143,10 @@ export const textsAiJobsTable = pgTable(
         providerActualOutputTokens: integer('provider_actual_output_tokens'),
     },
     (t) => [
+        check(
+            'texts_ai_jobs_external_source',
+            sql`${t.externalSourceKind} is null or (${t.externalSourceKind} in ('knowledge-block','knowledge-field','knowledge-exercise') and ${t.jobKind}='text-translation' and ${t.folderId} is null and ${t.textId} is null)`,
+        ),
         unique('texts_ai_jobs_operation_unique').on(t.ownerId, t.operationId),
         index('texts_ai_jobs_owner_idx').on(t.ownerId, t.executionState),
         index('texts_ai_jobs_folder_idx').on(t.folderId),
@@ -154,7 +161,7 @@ export const textsAiJobsTable = pgTable(
         index('texts_ai_jobs_expiry_idx').on(t.expiresAt),
         check(
             'texts_ai_jobs_kind_format',
-            sql`(${t.jobKind}='text-detection' and ${t.format} in ('text-detection:v1','text-detection:v2')) or (${t.jobKind}='text-translation' and ${t.format} in ('text-translation:v1','text-translation:v2','text-translation:v3'))`,
+            sql`(${t.jobKind}='text-detection' and ${t.format} in ('text-detection:v1','text-detection:v2')) or (${t.jobKind}='text-translation' and ${t.format} in ('text-translation:v1','text-translation:v2','text-translation:v3','text-translation:v4'))`,
         ),
         check(
             'texts_ai_jobs_versions',

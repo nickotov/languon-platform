@@ -23,6 +23,7 @@ function EditablePortrait({
     initialItems?: PortraitItems;
 }) {
     const [items, setItems] = useState<PortraitItems>(initialItems);
+
     return (
         <>
             <PortraitEditor items={items} onChange={setItems} />
@@ -43,6 +44,7 @@ describe('portrait editor confirmed preferences', () => {
             mixingNote: 'Short translations',
             notes: [note],
         };
+
         expect(hasMeaningfulPortraitItems(items)).toBe(true);
         const preview = previewPortraitSummary(items, 'en');
         expect(preview).toContain('Short translations');
@@ -53,12 +55,15 @@ describe('portrait editor confirmed preferences', () => {
             'explanation',
             'notes',
         ]);
+
         const excessive = {
             ...items,
             notes: [{ ...note, text: 'a'.repeat(201) }],
         };
+
         expect(PortraitItemsSchema.safeParse(excessive).success).toBe(false);
     });
+
     it('retains a sometimes preference separately from its note and legacy boolean', () => {
         const onChange = vi.fn();
         const items = {
@@ -67,57 +72,71 @@ describe('portrait editor confirmed preferences', () => {
             mixedLanguageFrequency: 'sometimes' as const,
             mixingNote: 'English rules with Spanish examples',
         };
+
         render(<PortraitEditor items={items} onChange={onChange} />);
         expect(screen.getByRole('radio', { name: 'Sometimes' })).toBeChecked();
         expect(screen.getByLabelText('In your words (optional)')).toHaveValue(
             items.mixingNote,
         );
+
         fireEvent.click(
             screen.getByRole('radio', { name: 'Keep one language' }),
         );
+
         expect(onChange).toHaveBeenLastCalledWith({
             ...items,
             mixedLanguage: false,
             mixedLanguageFrequency: 'avoid',
         });
+
         const explanations = screen.getByRole('region', {
             name: 'Explanation languages',
         });
+
         fireEvent.click(
             within(explanations).getByRole('radio', { name: 'No preference' }),
         );
+
         expect(onChange).toHaveBeenLastCalledWith({
             ...emptyPortraitItems(),
             mixingNote: items.mixingNote,
         });
     });
+
     it('edits and removes confirmed notes without silently creating new notes', () => {
         const note = {
             id: '8f86d1fe-56ba-4e86-a664-286b2bfc9912',
             topic: 'goals' as const,
             text: 'Prepare for travel conversations',
         };
+
         render(
             <EditablePortrait
                 initialItems={{ ...emptyPortraitItems(), notes: [note] }}
             />,
         );
+
         const notes = screen.getByRole('region', { name: 'Confirmed notes' });
         const input = within(notes).getByLabelText(
             'Note · Goals and situations',
         );
+
         fireEvent.change(input, {
             target: { value: 'Prepare for work conversations' },
         });
+
         expect(input).toHaveValue('Prepare for work conversations');
         fireEvent.click(
             within(notes).getByRole('button', { name: 'Remove note' }),
         );
+
         expect(
             screen.queryByRole('region', { name: 'Confirmed notes' }),
         ).not.toBeInTheDocument();
+
         expect(screen.getByText('Nothing to save yet')).toBeInTheDocument();
     });
+
     it.each(['en', 'ru', 'fr', 'es'] as const)(
         'renders saved mixing notes and confirmed notes in %s',
         (locale) => {
@@ -126,6 +145,7 @@ describe('portrait editor confirmed preferences', () => {
                 topic: 'goals' as const,
                 text: 'Travel conversations',
             };
+
             render(
                 <PortraitEditor
                     items={{
@@ -138,9 +158,11 @@ describe('portrait editor confirmed preferences', () => {
                 />,
                 { locale },
             );
+
             expect(
                 screen.getByDisplayValue('Short translations'),
             ).toBeInTheDocument();
+
             expect(
                 screen.getByDisplayValue('Travel conversations'),
             ).toBeInTheDocument();
@@ -163,6 +185,7 @@ describe('portrait editor confirmed preferences', () => {
                 ageRange: 'prefer-not-to-say',
             }),
         ).toBe(false);
+
         expect(
             hasMeaningfulPortraitItems({
                 ...emptyPortraitItems(),
@@ -170,34 +193,42 @@ describe('portrait editor confirmed preferences', () => {
             }),
         ).toBe(true);
     });
+
     it('keeps language knowledge and explanation language separate and updates summary from edits', () => {
         render(<EditablePortrait />);
         expect(screen.getByText('Nothing to save yet')).toBeInTheDocument();
         const languages = screen.getByRole('region', {
             name: 'Languages and levels',
         });
+
         fireEvent.click(
             within(languages).getByRole('button', { name: 'Spanish' }),
         );
+
         fireEvent.change(
             within(languages).getByLabelText('How you’d describe it'),
             { target: { value: 'basic' } },
         );
+
         fireEvent.click(within(languages).getByLabelText('Currently learning'));
         const explanations = screen.getByRole('region', {
             name: 'Explanation languages',
         });
+
         fireEvent.click(
             within(explanations).getByRole('button', { name: 'English' }),
         );
+
         const summary = screen.getByRole('region', {
             name: 'Portrait summary',
         });
+
         expect(summary).toHaveTextContent('Spanish (basic) — learning');
         expect(summary).toHaveTextContent(
             'You prefer explanations in: English',
         );
     });
+
     it('adds and removes custom answers with a 200-grapheme bound including emoji', () => {
         render(<EditablePortrait />);
         const goals = screen.getByRole('region', {
@@ -209,17 +240,21 @@ describe('portrait editor confirmed preferences', () => {
         expect(
             within(goals).getByRole('button', { name: 'Add' }),
         ).toBeDisabled();
+
         fireEvent.change(input, { target: { value: emoji.repeat(200) } });
         expect(portraitCharacterCount((input as HTMLInputElement).value)).toBe(
             200,
         );
+
         fireEvent.click(within(goals).getByRole('button', { name: 'Add' }));
         const remove = within(goals).getByRole('button', {
             name: `Remove: ${emoji.repeat(200)}`,
         });
+
         fireEvent.click(remove);
         expect(screen.getByText('Nothing to save yet')).toBeInTheDocument();
     });
+
     it('disables all editable controls while a save is pending', () => {
         render(
             <PortraitEditor
@@ -228,11 +263,16 @@ describe('portrait editor confirmed preferences', () => {
                 disabled
             />,
         );
-        for (const button of screen.getAllByRole('button'))
+
+        for (const button of screen.getAllByRole('button')) {
             expect(button).toBeDisabled();
-        for (const radio of screen.getAllByRole('radio'))
+        }
+
+        for (const radio of screen.getAllByRole('radio')) {
             expect(radio).toBeDisabled();
+        }
     });
+
     it.each(['en', 'ru', 'fr', 'es'] as const)(
         'renders controls and only confirmed preview facts in %s',
         (locale) => {
@@ -242,6 +282,7 @@ describe('portrait editor confirmed preferences', () => {
                 goals: ['Travel'],
                 accommodations: ['Short steps'],
             };
+
             expect(PortraitItemsSchema.safeParse(items).success).toBe(true);
             render(
                 <PortraitEditor
@@ -251,6 +292,7 @@ describe('portrait editor confirmed preferences', () => {
                 />,
                 { locale },
             );
+
             expect(screen.getAllByRole('radio').length).toBeGreaterThan(10);
             const preview = previewPortraitSummary(items, locale);
             expect(preview).toContain('Travel');
@@ -258,6 +300,7 @@ describe('portrait editor confirmed preferences', () => {
             expect(preview).not.toContain('native');
         },
     );
+
     it('distinguishes added, removed and changed confirmed fields without mutating inputs', () => {
         const before = {
             ...emptyPortraitItems(),
@@ -276,6 +319,7 @@ describe('portrait editor confirmed preferences', () => {
             ['style', 'changed'],
             ['hobbies', 'added'],
         ]);
+
         expect(JSON.stringify(before)).toBe(original);
     });
 });

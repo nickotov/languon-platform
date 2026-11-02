@@ -1,0 +1,451 @@
+{
+  "schemaVersion": 1,
+  "owner": "backend-content-tests",
+  "baseCommit": "252de64",
+  "files": [
+    {
+      "path": "apps/backend/tests/integration/modules/dictionaries/dictionary-composed-routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Composed route scenarios expose real auth/application/PostgreSQL path, lifecycle-only rollback, cooperative cancellation and non-enumerating retry-safe share/fork behavior; deterministic fixture boundaries are explicit.",
+      "beforeSha256": "63d3420c6bbd21c0b6a3b05bbed87268233ea5d4dbb84c7f1d78ea2423c2a8c9",
+      "afterSha256": "63d3420c6bbd21c0b6a3b05bbed87268233ea5d4dbb84c7f1d78ea2423c2a8c9"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/dictionaries/infrastructure/dictionary-batch-generation-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Batch persistence tests separate new/existing import admission, lineage retry, context isolation, legacy format, ordered atomic acceptance and no partial writes at conflict/capacity; helpers encode recurring setup without hiding assertions.",
+      "beforeSha256": "ac7ae0f47ffdf472800c84b9af6fae678d9dc82784215afde0feeeadeef895cb",
+      "afterSha256": "ac7ae0f47ffdf472800c84b9af6fae678d9dc82784215afde0feeeadeef895cb"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/dictionaries/infrastructure/dictionary-batch-provider-admission.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Production router test uses synthetic external HTTP only; real accounting, durable admission, SDK and worker assert pinned output caps and measured multi-chunk usage.",
+      "beforeSha256": "f5b6a98c69066bd7f2eb108ebe94182d7de0343379c5fba0608175085799d00b",
+      "afterSha256": "f5b6a98c69066bd7f2eb108ebe94182d7de0343379c5fba0608175085799d00b"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/dictionaries/infrastructure/dictionary-card-authoring-generation-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Authoring integration scenarios explicitly retain production SDK/accounting with synthetic HTTP and cover funding, native expense, routing pin/replay, dispatched timeout, predecessor merge, provenance, version fences and atomic acceptance/redaction; long successor scenario follows one durable lifecycle with assertions at each transition.",
+      "beforeSha256": "db8026124e43f2e9775841cf4591cf157f98bfbd439c8f25018ff79011519a3e",
+      "afterSha256": "db8026124e43f2e9775841cf4591cf157f98bfbd439c8f25018ff79011519a3e"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/dictionaries/infrastructure/dictionary-document-storage.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "S3 conformance test validates explicit loopback/disposable credential guard, create-only signed upload race, immutable checksum/version read, privacy, tombstones and complete cleanup.",
+      "beforeSha256": "c315441e119778ba55bf33aef9f8e368857f45c6964289fb6ed4676e6e64b17d",
+      "afterSha256": "c315441e119778ba55bf33aef9f8e368857f45c6964289fb6ed4676e6e64b17d"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/dictionaries/infrastructure/dictionary-document-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Document store scenarios separate exact upload admission, staged publication after physical deletion, saturated cleanup retry, concurrent reservation cap and consent-funded settlement only after cleanup.",
+      "beforeSha256": "3d8dc990c291716d130584c4b785ee3a9b5fb916411084df8528e44300d5095d",
+      "afterSha256": "3d8dc990c291716d130584c4b785ee3a9b5fb916411084df8528e44300d5095d"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/dictionaries/infrastructure/dictionary-worker-version-overlap.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Worker overlap suite uses independent clients and explicit lease/version/format fences; scenarios assert replay after redaction, exact provider reservations/settlements, cancellation, rolling caps and circuit exclusion.",
+      "beforeSha256": "77495902479d3bc13b4114cdca078dcbf8e0da93a442ddf4d674e447294e76e9",
+      "afterSha256": "77495902479d3bc13b4114cdca078dcbf8e0da93a442ddf4d674e447294e76e9"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/dictionaries/infrastructure/drizzle-dictionary-repository.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Repository integration tests group learning versus authored versions, atomic deletion/retained usage/privacy, admission-before-row lock proof, current typed source, immutable revision/context, optimistic concurrency, indexed10k limits and retry-safe import/fork/export; gate releases and client cleanup are visible.",
+      "beforeSha256": "f9598ea35beb925c11f87fdc324121dd8dbc27656d49bbacc3d1bdbf8e92caab",
+      "afterSha256": "f9598ea35beb925c11f87fdc324121dd8dbc27656d49bbacc3d1bdbf8e92caab"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/knowledge/knowledge-account-purge.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Restricted purge scenario constructs owned/foreign-source content, private practice, media, speech/transcription and MCP provenance; actual restricted role denies content reads and forged leases while purge preserves foreign copies and UUID-only financial attribution.",
+      "beforeSha256": "5a28868edb21e770f6cda1bda7d15054cbae4aa21afbbd7046bbdd7dbfd63cbf",
+      "afterSha256": "5a28868edb21e770f6cda1bda7d15054cbae4aa21afbbd7046bbdd7dbfd63cbf"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/knowledge/knowledge-learning-purge.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Learning purge scenario exercises restricted-role fencing/refunds of foreign-reader dispatched work, actor-owned removal, independent copy control, stale-worker rejection and cleanup of role/client resources.",
+      "beforeSha256": "4b1f176349d87b7b5f1be9301587e4eb3b5d711dbd2657f07dc54d9e6a52c8ee",
+      "afterSha256": "4b1f176349d87b7b5f1be9301587e4eb3b5d711dbd2657f07dc54d9e6a52c8ee"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learning/infrastructure/drizzle-learning-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Learning persistence tests isolate anonymous projection, scoped pagination/preferences, exact operation replay/undo, current-version history and share/lifecycle rechecks; real lock race/cascade/index/capacity fixtures assert no partial state.",
+      "beforeSha256": "37f552693a7c65e1062beb9d894ef97624d25ab079fdcc0b7bf0701c93b4cee4",
+      "afterSha256": "37f552693a7c65e1062beb9d894ef97624d25ab079fdcc0b7bf0701c93b4cee4"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learning/infrastructure/drizzle-sentence-stores.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Full sentence-store persistence scenarios keep explicit admission, dispatch, settlement and projection phases: pinned primary/fallback execution, live-only health witnesses, policy-version constraints, exact replay privacy/staleness, manual reference assistance, deletion tombstones, lease fencing, mixed queue capacity and circuit isolation. Local fixture builders remove setup repetition without obscuring transaction and concurrency assertions; no behavior-preserving simplification warranted.",
+      "beforeSha256": "f5af925fe5d46a2ae8de4032de671d11f9d7c4f6c10c05fc1c5ba08690f9dd1d",
+      "afterSha256": "f5af925fe5d46a2ae8de4032de671d11f9d7c4f6c10c05fc1c5ba08690f9dd1d"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learning/infrastructure/sentence-worker-role.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Restricted-role scenario keeps generation/check/preparation dispatch and settlement explicit, verifies positive grants plus denied user/profile/preferences mutations, and always drops randomized role in finally; fixture helpers preserve authority distinctions.",
+      "beforeSha256": "554016f4ae7e83d76fa68b1eb41534d34a297559579417284eff3f919dd3312e",
+      "afterSha256": "554016f4ae7e83d76fa68b1eb41534d34a297559579417284eff3f919dd3312e"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learning/learning-composed-routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Real HTTP/auth/DB/Redis journeys keep signup/request setup local and assertions on preference conflicts, retry-safe rating/undo, independent shared progress, anonymous read-only access and rotated-share replay denial visible.",
+      "beforeSha256": "603818c01f78df27315b0064824a9e176723cc7294025b9e83c26649f0d1d069",
+      "afterSha256": "603818c01f78df27315b0064824a9e176723cc7294025b9e83c26649f0d1d069"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learning/learning-lifecycle.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Lifecycle tests explicitly separate purge, concurrent deletion lock, cascades, archive/restore/fork independence and duplicate rating/stale undo; latch ordering and real stores remain visible.",
+      "beforeSha256": "d89f2d7a9cbcf08d2dfc405cd2aaef5cdf8eae7564e7490b36deb8e861ab576f",
+      "afterSha256": "d89f2d7a9cbcf08d2dfc405cd2aaef5cdf8eae7564e7490b36deb8e861ab576f"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learning/sentence-library-preparation.integration.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Library/preparation integration uses cohesive generated-exercise fixtures while preserving explicit personal/global archive, snapshot replay, unsettled deletion refusal, bounded batching/scans, Stop/Continue funding, shared parent retry/output limits, coordinator fencing and capacity-lock race assertions.",
+      "beforeSha256": "cb2a3a1abc8baaeac7af89d916f2be8e2de467a83a1e88b3af42b24c1deee2e6",
+      "afterSha256": "cb2a3a1abc8baaeac7af89d916f2be8e2de467a83a1e88b3af42b24c1deee2e6"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learning/sentence-library-safety.integration.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Safety scenarios retain live-content confirmation versions, capacity-before-user lock ordering, concurrent per-actor snapshot limits, bounded pruning and oversized-set rejection; explicit latches/finally cleanup make concurrency evidence understandable.",
+      "beforeSha256": "85de711064b8aca5d4135ff2e55c0de5ffe53128a0b82fcd5348d2609eb73df1",
+      "afterSha256": "85de711064b8aca5d4135ff2e55c0de5ffe53128a0b82fcd5348d2609eb73df1"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/learning/sentence-practice.journeys.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Full composed HTTP/worker journeys keep generation/check/reuse and free reference review phases visible, assert SQL/runtime script parity, exact replay without new accounting, bounded manual rounds versus lifetime progress, corrupt-content exclusion, partial preparation funding and share revocation. Scoped setup helpers and explanatory phase comments preserve the end-to-end scenario narrative.",
+      "beforeSha256": "1a12db688ba78c133e5d1fece3cc3967bc197ebd4137234b486001bbf982f5e1",
+      "afterSha256": "1a12db688ba78c133e5d1fece3cc3967bc197ebd4137234b486001bbf982f5e1"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/speech/knowledge-speech-execution.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Production private narration scenarios explicitly gate original payer authority before dispatch and publication, retain provider expense after revocation, scrub branch/note/proposal quotes and recordings, isolate private cache, authorize workbook/branch/proposal delivery, preserve owned media copies and require fenced purge leases. Source fixture and hooks expose concurrency phases without hiding authority checks.",
+      "beforeSha256": "678e62b24852eb18f4ffe632b317d0c95e3c03121b6e5040fef3e28d4adc559e",
+      "afterSha256": "678e62b24852eb18f4ffe632b317d0c95e3c03121b6e5040fef3e28d4adc559e"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/speech/native-speech-accounting.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Native accounting fixture isolates synthetic HTTP/download while real admission/storage/settlement verify reported broker credits, independent character customer tariff, unknown expense, CDN/storage recovery without resubmission, immutable observations, lease/contract guards and full overrun accounting. Named fixture operations keep native monetary invariants legible.",
+      "beforeSha256": "1d098d65d5b9cbfba0ed48fa8de9a685d7ee280831e57e8c038a537cd976a045",
+      "afterSha256": "1d098d65d5b9cbfba0ed48fa8de9a685d7ee280831e57e8c038a537cd976a045"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/speech/openrouter-speech-execution.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "OpenRouter production composition exposes external-only HTTP stubbing, exact customer hold and independent provider expense, private playback source checks, unknown submission deadline release, storage lease renewal across expiry, replaced/expired lease refusal and definitive rejection; reusable expectation helpers group consequential evidence without hiding execution.",
+      "beforeSha256": "eaecdb810ccd62d74c5e2ae33a59e585be83e70dcb6f66a8cb654e7bcf0c94f0",
+      "afterSha256": "eaecdb810ccd62d74c5e2ae33a59e585be83e70dcb6f66a8cb654e7bcf0c94f0"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/speech/shared-speech-sources.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Real source resolver tests directly cover effective language roles, stale settings rejection before admission, typed hidden-reference/disappearance HTTP errors, share/user/archive revocation, card/dictionary version fences, session-gated references and learner-private checked history. Local source builders keep authorization cases explicit.",
+      "beforeSha256": "6cb2b7d90c860b5a16e4e66fef113ac1b39c53a388f70da74d46b16d4a8fc161",
+      "afterSha256": "6cb2b7d90c860b5a16e4e66fef113ac1b39c53a388f70da74d46b16d4a8fc161"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/speech/shared-speech-store.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Full shared-store scenarios keep single-payer admission, success-only billing, cross-capability wallet contention, quote/profile pins, cache-class and retained-key rotation isolation, share-digest persistence, private failure cleanup, deletion-impact races, exact deadlines, unknown tombstones and lease fencing directly asserted. Existing fixture helpers expose relevant transaction phases; no safe clarity gain from merging distinct scenarios.",
+      "beforeSha256": "bb733542431bc1b1f942cdf74e4b67c99951f2f1118cfc60463fa70869e7b373",
+      "afterSha256": "bb733542431bc1b1f942cdf74e4b67c99951f2f1118cfc60463fa70869e7b373"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/speech/speech-accounting.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Speech accounting cases separately assert pinned USD prices, missing-price/limit rejection, conservative unknown versus known-zero provider cost, queue timeout without invented attempt, old-worker acknowledgement rejection, scheduled-deletion customer release with retained in-flight expense, and action ceilings. Small price/admission/worker readers centralize setup without obscuring authority decisions.",
+      "beforeSha256": "bbf16d01e2256554c55c182c979024ea1d9fa20ddec597d10fc5fc3e341f4a74",
+      "afterSha256": "bbf16d01e2256554c55c182c979024ea1d9fa20ddec597d10fc5fc3e341f4a74"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/speech/speech-worker-role.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Actual deployed-role tests keep grant provisioning and finally cleanup visible, verify denied direct monetary writes/forged observation references, require live dispatch leases and pinned contracts, then execute free-success/paid-failure with settled budgets and released wallets. Parameterized outcomes share setup while retaining distinct expected accounting facts.",
+      "beforeSha256": "959c3b8c6ea5ede4e32914f3b4b4611acc8a5e25e796874507ad584536872577",
+      "afterSha256": "959c3b8c6ea5ede4e32914f3b4b4611acc8a5e25e796874507ad584536872577"
+    },
+    {
+      "path": "apps/backend/tests/support/knowledge-private-translation-fixture.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Private translation fixture isolates only external HTTP and preserves production admission/SDK/publication/accounting; request parser bounds synthetic actions, worker lifecycle closes on abort and fetch restoration is in finally.",
+      "beforeSha256": "19860c796fc1181e7fc413cba5cd087c34fd9fac586cd88f5b534240421a0986",
+      "afterSha256": "19860c796fc1181e7fc413cba5cd087c34fd9fac586cd88f5b534240421a0986"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/application/dictionary-document-cleanup-processor.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Cleanup tests separate tombstone-before-delete phases, sanitized failure retry and bounded authorization sweep with deterministic storage state assertions.",
+      "beforeSha256": "ed316281e60710ad1d6aed90419f6a46ece5f4d8cfad15a7e6256afa2b1aa06e",
+      "afterSha256": "ed316281e60710ad1d6aed90419f6a46ece5f4d8cfad15a7e6256afa2b1aa06e"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/application/dictionary-document-generation-processor.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Processor tests isolate ordered scan/extract/OCR/generate/validate stages, persistent versus transient context, fail-closed malware, scan attestation, checksum/count rejection and abort.",
+      "beforeSha256": "0085b457912a5282803795fa1b05ab00dc33b67dcc2b1f7073e5ef21a0f5cdf3",
+      "afterSha256": "0085b457912a5282803795fa1b05ab00dc33b67dcc2b1f7073e5ef21a0f5cdf3"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/application/dictionary-document-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Document service fixture keeps exact authorization/inspection seams visible; tests distinguish stop-enqueue completion, expiry before signing/inspection, exact completed replay, OCR availability and typed storage failures.",
+      "beforeSha256": "5cdb9b6664d4f98f69e6bcef4c669331d60a5c448b877c2d75cad5d33ba05996",
+      "afterSha256": "5cdb9b6664d4f98f69e6bcef4c669331d60a5c448b877c2d75cad5d33ba05996"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/application/dictionary-generation-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Generation service tests keep trusted predecessor retry dispatch, sorted selection fingerprints, retained v2 targets and public retry categories explicit.",
+      "beforeSha256": "b9cfc793dd327d47ba9416390319fb99624e1475ea41f91bb5127c3bfe342a76",
+      "afterSha256": "b9cfc793dd327d47ba9416390319fb99624e1475ea41f91bb5127c3bfe342a76"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/application/dictionary-generation-worker-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Worker tests separate bounded field deltas, returned-usage settlement, completion conflicts, dispatch fencing, shutdown and chunked batch aggregation; document tests retain scan evidence and cleanup staging.",
+      "beforeSha256": "be3d58b8e7797a74f5ef7fe4b518a242d4e336c442957809e067976a04fab25f",
+      "afterSha256": "be3d58b8e7797a74f5ef7fe4b518a242d4e336c442957809e067976a04fab25f"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/application/dictionary-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Service tests expose recent-auth deletion, owner/public throttles, bounded concurrent previews, non-enumerating share failures, exact import rows and streamed export deadline.",
+      "beforeSha256": "51d806b1e031d3b0a5895628d8e37a5b1aa9baa200bf386807dc35bff3af39ae",
+      "afterSha256": "51d806b1e031d3b0a5895628d8e37a5b1aa9baa200bf386807dc35bff3af39ae"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/domain/batch-generation.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Batch domain tests name Unicode/control/count bounds, deterministic chunking, normalized duplicate warnings and unique resolved row invariants.",
+      "beforeSha256": "19c0b05b4b11b47b317fbdcfb5bef921d3b65a2a6a868ccc673d41d6c30eca48",
+      "afterSha256": "19c0b05b4b11b47b317fbdcfb5bef921d3b65a2a6a868ccc673d41d6c30eca48"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/domain/card-authoring.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Authoring domain scenarios distinguish enabled fields, ID-free provider context, source-basis/dependent fields, retained exclusions, bounded merge and legacy draining.",
+      "beforeSha256": "24796dbc58f669b931b108a2e2873a5866b639e5fcae274b8ec3fc5055d45142",
+      "afterSha256": "24796dbc58f669b931b108a2e2873a5866b639e5fcae274b8ec3fc5055d45142"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/domain/document-ingestion.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Document domain tests pin exact security envelope and validate ordered extraction, sanitized invalid rows, hard unit counts and IPC limits without truncation.",
+      "beforeSha256": "e83dd51a024ca11517e2e978dc474f32bd5d91d3ac31392a89825c2d950fdc44",
+      "afterSha256": "e83dd51a024ca11517e2e978dc474f32bd5d91d3ac31392a89825c2d950fdc44"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/domain/interchange.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Interchange tests isolate RFC4180/Unicode parsing, malformed-row recovery,10k cap, formula neutralization, reversible metadata and nullable override tags.",
+      "beforeSha256": "5a01c841bb70c16bff7e747ef765e5be5fa6f37c72c6c56190ff2c1459803be5",
+      "afterSha256": "5a01c841bb70c16bff7e747ef765e5be5fa6f37c72c6c56190ff2c1459803be5"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/domain/schema-contract.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Schema tests group typed relational source, immutable revisions, batch/document states, physical-version cleanup, bounded replay and indexed operational windows.",
+      "beforeSha256": "368c2691fa4bff671c81b3a36fe1bd72993485cd1c22290892f1cfc39623e22d",
+      "afterSha256": "368c2691fa4bff671c81b3a36fe1bd72993485cd1c22290892f1cfc39623e22d"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/domain/text-selection.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Selection tests bind exact substring offsets, neighboring context and semantic context separately, require complete requested fields and preserve legacy Source compatibility.",
+      "beforeSha256": "93dba9f836a806e8014a7e854a7098a64b1d667cc1a6aec24a018a7346353b6d",
+      "afterSha256": "93dba9f836a806e8014a7e854a7098a64b1d667cc1a6aec24a018a7346353b6d"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/infrastructure/ai/card-authoring-proposal-generators.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Authoring generator tests distinguish requested-field deltas, Source/exclusion semantics, genuine SDK caps, safe diagnostics, private DTO/tool/trace controls and canonical registration.",
+      "beforeSha256": "2a34e3215a1f7e4305793e6aa37d8d8783363e8f136dacef2ea1ef1f4473085a",
+      "afterSha256": "2a34e3215a1f7e4305793e6aa37d8d8783363e8f136dacef2ea1ef1f4473085a"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/infrastructure/ai/card-proposal-generators.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Single-card generator tests expose deterministic/live validation, conservative minimum/multibyte input envelope, model caps, cache usage preservation, sanitized errors and non-generation readiness.",
+      "beforeSha256": "7be13b457520a937901d39ae1f076abfef8b0a79faa84278c7d79dcd01100a5d",
+      "afterSha256": "7be13b457520a937901d39ae1f076abfef8b0a79faa84278c7d79dcd01100a5d"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/infrastructure/ai/dictionary-text-provider-catalog.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Catalog tests pin fixed identities/caps, separate aggregate limits, provider-specific non-generation readiness and cancellation.",
+      "beforeSha256": "7c23f8d6e2030f8294cf922d9c09f1b79c1f6e8fe17db1290bc84457e45d6656",
+      "afterSha256": "7c23f8d6e2030f8294cf922d9c09f1b79c1f6e8fe17db1290bc84457e45d6656"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/infrastructure/ai/dictionary-text-provider-router.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Router tests expose lazy provider construction under reduced budget, legacy/pinned isolation, bounded cache and immutable snapshot rejection.",
+      "beforeSha256": "c9bdbe39e0cfc3b424e73e0bd3acb23ca5a3537df27eabf76a93b087e10e968e",
+      "afterSha256": "c9bdbe39e0cfc3b424e73e0bd3acb23ca5a3537df27eabf76a93b087e10e968e"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/infrastructure/ai/dictionary-text-provider-wire-contract.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Wire matrix uses synthetic HTTP through actual router/SDK, checks retired route non-dispatch, capped model wire requests, schema mode and no hidden SDK retry.",
+      "beforeSha256": "bb2ebab076f9e500d151d1a064185eaa44e5b30cb947f2aa46525f0e2c7cafc0",
+      "afterSha256": "bb2ebab076f9e500d151d1a064185eaa44e5b30cb947f2aa46525f0e2c7cafc0"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/infrastructure/ai/import-pairs-proposal-generators.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Import generator tests assert trusted pairs remain immutable, private lineage is excluded from provider DTO, per-chunk bounds and canonical registration.",
+      "beforeSha256": "c4702b4f896b1fe67f7aeabd1a0da30b16ecc71df8dea8c417d7766132da77de",
+      "afterSha256": "c4702b4f896b1fe67f7aeabd1a0da30b16ecc71df8dea8c417d7766132da77de"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/infrastructure/ai/pasted-terms-proposal-generators.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Pasted generator tests identify partial row failures versus invented rows, Unicode limits, mandatory measured usage, per-call caps and maximum multibyte chunk admission.",
+      "beforeSha256": "0fa7479f4255f3ace390b848e2aa06f92a3d765d229a4579daeebe704cfe0744",
+      "afterSha256": "0fa7479f4255f3ace390b848e2aa06f92a3d765d229a4579daeebe704cfe0744"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/infrastructure/audio-adapters.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Audio adapter tests group deterministic fixtures, no-resubmit ambiguity, safe polling diagnostics, SSRF/MP3 bounds, role-limited composition and retained provider/profile compatibility.",
+      "beforeSha256": "ccde05d88ee507a67b37d944a564a77d1ae4a1fd72307d4092db5174d93354d8",
+      "afterSha256": "ccde05d88ee507a67b37d944a564a77d1ae4a1fd72307d4092db5174d93354d8"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/infrastructure/audio-download.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Transport fixtures pin validated DNS, reject mixed/private addresses and redirects, bound streams and validate complete PCM structure/duration with explicit mutation table.",
+      "beforeSha256": "63db388a48ce64b2c78fa86a1a8c47772df2aee2c200f03a3ff22468ee1554c5",
+      "afterSha256": "63db388a48ce64b2c78fa86a1a8c47772df2aee2c200f03a3ff22468ee1554c5"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/infrastructure/audio-storage.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Versioned storage fixture distinguishes commands and namespaces; tests assert exact checksum/version reads, neighbor-safe deletion and physical-version verification.",
+      "beforeSha256": "67aa0d233ec420b9af20395a59270eb90e63f07ed34948421eac6817bc65f7dc",
+      "afterSha256": "67aa0d233ec420b9af20395a59270eb90e63f07ed34948421eac6817bc65f7dc"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/infrastructure/document/native-document-parser.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Parser tests construct bounded text/Markdown/DOCX/image inputs and assert active PDF/Markdown rejection before extraction, exact ordering and malformed UTF8 failure.",
+      "beforeSha256": "76e93ee611b2c8efb196c33951ce8d3abe9851e70197b8dba2a8186e2cc464ba",
+      "afterSha256": "76e93ee611b2c8efb196c33951ce8d3abe9851e70197b8dba2a8186e2cc464ba"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/infrastructure/document/s3-dictionary-document-storage.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "S3 tests expose conditional signature headers, exact bounded range reconciliation and concurrency gate with deterministic release.",
+      "beforeSha256": "58f2ab20d544932f5de9f4206c0a4ced1645043773fb8cb6fe33f34b6fa6d969",
+      "afterSha256": "58f2ab20d544932f5de9f4206c0a4ced1645043773fb8cb6fe33f34b6fa6d969"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/interface/dictionary-generation-routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Generation HTTP cases assert OpenAPI billing failure, typed cardless/batch dispatch and domain rejection before persistence; retry remains server-owned.",
+      "beforeSha256": "5499b367c840b36ac4c912ed238fd70ecf2c00a934864c1061eb6d9ee43b97bd",
+      "afterSha256": "5499b367c840b36ac4c912ed238fd70ecf2c00a934864c1061eb6d9ee43b97bd"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/dictionaries/interface/dictionary-routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Dictionary HTTP cases distinguish router-owned preflight, safe auth/share errors, bounded import and fixed export bytes/security headers.",
+      "beforeSha256": "b9c4a80d8783b5349b12ce075bea36fca245247f8cf8acf36f30bd8dd208ca9b",
+      "afterSha256": "b9c4a80d8783b5349b12ce075bea36fca245247f8cf8acf36f30bd8dd208ca9b"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/learning/application/learning-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Learning service tests explicitly validate emitted production Redis scopes without network, authenticate supplied bearer, enforce shared/private quotas and abort before work.",
+      "beforeSha256": "387df9cd9795a4393d6ab3dd8cbf2871974f080d32888b7b059fed9ab1b020ab",
+      "afterSha256": "387df9cd9795a4393d6ab3dd8cbf2871974f080d32888b7b059fed9ab1b020ab"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/learning/application/sentence-library-http.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Library HTTP tests separate read-only list/detail/snapshot from generation/reveal/mutation and reject anonymous/admin/duplicate/stale operations.",
+      "beforeSha256": "af6d14267f66d8cfa2164e68f6c2f0e26ea21ad6a98467d908d3a104db7bbf5e",
+      "afterSha256": "af6d14267f66d8cfa2164e68f6c2f0e26ea21ad6a98467d908d3a104db7bbf5e"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/learning/application/sentence-practice-service.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Practice service tests expose capacity/billing/model conflicts, free reference/history authority and live shared provenance without paid admission.",
+      "beforeSha256": "cf1fac07778258e1b0975e8b65b8a80eed533138ffa619d54dad9fc4122d7020",
+      "afterSha256": "cf1fac07778258e1b0975e8b65b8a80eed533138ffa619d54dad9fc4122d7020"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/learning/infrastructure/ai/sentence-provider-failure.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Failure classifier tests cover bounded nested/cyclic/throwing error evidence, exact machine codes and policy403 isolation without sensitive strings.",
+      "beforeSha256": "6e8f79a61e052624c4e07139788e9debb7bfdc6e99a3edeaba5ede471bec2ec6",
+      "afterSha256": "6e8f79a61e052624c4e07139788e9debb7bfdc6e99a3edeaba5ede471bec2ec6"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/learning/infrastructure/sentence-ai-provider.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Provider tests distinguish request-local aliases, keyed assessment inventory, exact grapheme quote spans, safe usage retention and real worker failure settlement with SDK mocked explicitly.",
+      "beforeSha256": "7a005eba7acffbaad68cefaad0b7704ccf5cbd33009a3618495ecc6d3104911d",
+      "afterSha256": "7a005eba7acffbaad68cefaad0b7704ccf5cbd33009a3618495ecc6d3104911d"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/learning/interface/learning-routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Learning HTTP tests preserve unrelated preflight, entry versus source errors, authentication, anonymous shared reads, strict identity/configuration input and idempotent undo.",
+      "beforeSha256": "f2bda2c8fb9f0e795fa0f179db435a16302d4b77a209fedfe1d94dc47b893113",
+      "afterSha256": "f2bda2c8fb9f0e795fa0f179db435a16302d4b77a209fedfe1d94dc47b893113"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/learning/sentence-contextual-hints.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Hint tests separate lexical/contextual assistance, reject combined full-answer leakage, retain legacy policy, deduplicate hint identities and enforce grapheme/count bounds.",
+      "beforeSha256": "bd1049b8131d640d314bce2cc88381c4dad8252f1dd6ccaeae8b56d1fc4701c9",
+      "afterSha256": "bd1049b8131d640d314bce2cc88381c4dad8252f1dd6ccaeae8b56d1fc4701c9"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/learning/sentence-domain.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Sentence domain tests explicitly cover script/SQL parity, immutable candidate order, target/occurrence inventory, lexical hints, grapheme spans and deterministic scoring caps.",
+      "beforeSha256": "e5df7babd7448a9745c8e05e413498f03d43625492409e969039dc45a9439114",
+      "afterSha256": "e5df7babd7448a9745c8e05e413498f03d43625492409e969039dc45a9439114"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/speech/openrouter-speech-provider.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "OpenRouter speech matrix pins privacy/wire/profile controls, Unicode and bracket policy, definitive versus ambiguous failures, no retry and bounded/cancelled audio streams.",
+      "beforeSha256": "3ec931509d5512d2bc2071b2ab591ef0feb89246f9b8ac89ffc3e97d08b685b2",
+      "afterSha256": "3ec931509d5512d2bc2071b2ab591ef0feb89246f9b8ac89ffc3e97d08b685b2"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/speech/speech-routes.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Speech HTTP tests assert origin/bearer gates before admission, saved-reference-only input, authenticated actor and sanitized source errors.",
+      "beforeSha256": "8433c6cc792e094068607dfe69f0cb3098674120dac7b9dad9b2f8237e1e192e",
+      "afterSha256": "8433c6cc792e094068607dfe69f0cb3098674120dac7b9dad9b2f8237e1e192e"
+    },
+    {
+      "path": "apps/backend/tests/unit/modules/speech/speech-worker.test.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Speech worker harness separates known-task, storing and deleting recovery; tests retain usage before storage, stale lease nonpublication, ambiguity and no resubmission.",
+      "beforeSha256": "9bb1422f295239a1a0b88094f0c4d6bfb203685f4cee6866609276a4ca41f798",
+      "afterSha256": "9bb1422f295239a1a0b88094f0c4d6bfb203685f4cee6866609276a4ca41f798"
+    }
+  ],
+  "pendingPaths": [],
+  "coverageNotes": "Read-only full-body audit; no implementation/test mutations or execution. Only completed bodies receive disposition.",
+  "status": "complete"
+}

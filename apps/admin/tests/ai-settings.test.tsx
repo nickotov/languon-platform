@@ -97,6 +97,7 @@ describe('AI settings form behavior', () => {
                 response.settings.enabledModels,
             ),
         ).toEqual([response.providers[0]?.models[0]]);
+
         expect(
             enabledDefaultModels(response.providers, 'kie', ['gemini-2.5-pro']),
         ).toEqual([]);
@@ -138,9 +139,11 @@ describe('AI settings form behavior', () => {
         expect(
             screen.getByText(/1,000,000 input.*3,000,000 output.*400,000/),
         ).toBeInTheDocument();
+
         fireEvent.click(
             screen.getByRole('checkbox', { name: /DeepSeek Flash/i }),
         );
+
         expect(handleChange).toHaveBeenCalledWith(['gemini-2.5-pro']);
     });
 

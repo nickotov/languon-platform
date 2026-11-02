@@ -66,6 +66,7 @@ export function Popover({
                         '--popover-anchor-width',
                         `${rects.reference.width}px`,
                     );
+
                     Object.assign(elements.floating.style, {
                         maxWidth: `${Math.max(0, availableWidth)}px`,
                         maxHeight: `${Math.max(0, availableHeight)}px`,
@@ -81,7 +82,10 @@ export function Popover({
 
     const setOpen = useCallback(
         (next: boolean) => {
-            if (controlledOpen === undefined) setInternalOpen(next);
+            if (controlledOpen === undefined) {
+                setInternalOpen(next);
+            }
+
             onOpenChange?.(next);
         },
         [controlledOpen, onOpenChange],
@@ -105,6 +109,7 @@ export function Popover({
         (panel: React.MutableRefObject<HTMLDivElement | null>) => {
             nestedPanels.current.add(panel);
             const removeFromAncestor = registerInParent?.(panel);
+
             return () => {
                 nestedPanels.current.delete(panel);
                 removeFromAncestor?.();
@@ -112,6 +117,7 @@ export function Popover({
         },
         [registerInParent],
     );
+
     useEffect(() => registerInParent?.(contentRef), [registerInParent]);
 
     return (

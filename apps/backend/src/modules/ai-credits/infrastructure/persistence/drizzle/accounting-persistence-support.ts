@@ -40,10 +40,12 @@ export async function recordProviderExpense(
     fact: ProviderExpenseFact,
     options?: { nativePrice?: ProviderPrice | null | undefined },
 ): Promise<void> {
-    if (!fact.attemptId)
+    if (!fact.attemptId) {
         throw new AccountingInvalidRecordError(
             'Provider expense requires its authoritative text attempt.',
         );
+    }
+
     const assertion = {
         ...fact,
         amountUsdMicros: fact.amountUsdMicros?.toString() ?? null,

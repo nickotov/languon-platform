@@ -1,0 +1,40 @@
+.root {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-8);
+    min-width: 0;
+}
+
+.preview {
+    display: grid;
+    gap: var(--space-4);
+    width: 100%;
+    padding: var(--space-8) var(--space-12);
+    border: var(--size-1) solid var(--primary-200);
+    border-radius: var(--radius-8);
+}
+
+.title {
+    font-size: var(--size-12);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.note {
+    margin: 0;
+    font-size: var(--size-12);
+    line-height: 1.5;
+    color: var(--text-tertiary);
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4);
+    margin-top: var(--space-4);
+}
+
+.spacer {
+    flex: 1;
+}

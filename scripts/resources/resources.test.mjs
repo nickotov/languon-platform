@@ -100,6 +100,7 @@ test('summarizes resource samples and HTTP load deterministically', () => {
             ],
         },
     ]);
+
     assert.equal(resources.cpuPeakPercent, 40);
     assert.equal(resources.memoryPeakBytes, 120);
     assert.equal(percentile([4, 1, 3, 2], 95), 4);
@@ -131,6 +132,7 @@ test('marks threshold regressions across runtime phases and disk', () => {
             },
         },
     });
+
     assert.deepEqual(thresholdFlags(current), [
         'load.cpu',
         'load.errors',
@@ -145,15 +147,18 @@ test('requires the same profile, config, and host for comparisons', () => {
         comparable: true,
         reason: 'same-profile-and-host',
     });
+
     assert.equal(
         comparability(observation({ host: { id: 'host-2' } }), previous).reason,
         'host-fingerprint-changed',
     );
+
     assert.equal(
         comparability(observation({ configFingerprint: 'config-2' }), previous)
             .reason,
         'profile-config-changed',
     );
+
     assert.equal(
         comparability(observation({ dirty: true }), previous).reason,
         'dirty-worktree',
@@ -176,6 +181,7 @@ test('renders a self-contained CSP dashboard without embedding executable histor
     const html = renderDashboard([
         observation({ revision: maliciousRevision }),
     ]);
+
     assert.match(html, /Content-Security-Policy/);
     assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
     assert.doesNotMatch(html, /https?:\/\//);
@@ -188,6 +194,7 @@ test('renders a self-contained CSP dashboard without embedding executable histor
     await import('node:fs/promises').then(({ writeFile }) =>
         writeFile(historyPath, `${JSON.stringify(observation())}\n`),
     );
+
     const result = await generateDashboard({ historyPath, outputPath });
     assert.equal(result.observations, 1);
     assert.match(
@@ -216,10 +223,12 @@ test('resource profiling refuses remote Docker engines', () => {
             ),
         /Unset DOCKER_HOST/,
     );
+
     assert.throws(
         () => assertLocalDocker(() => ({ stdout: 'ssh://shared\n' }), {}),
         /non-local Docker endpoint/,
     );
+
     assert.doesNotThrow(() =>
         assertLocalDocker(
             () => ({ stdout: 'unix:///var/run/docker.sock\n' }),
@@ -240,6 +249,7 @@ test('uses isolated stage Compose projects for steady and overlap phases', async
                 writeFileSync(args[args.indexOf('-keyout') + 1], 'test-key');
                 writeFileSync(args[args.indexOf('-out') + 1], 'test-cert');
             }
+
             return { status: 0, stdout: '', stderr: '' };
         },
         repositoryRoot: '/repository',
@@ -263,14 +273,17 @@ test('uses isolated stage Compose projects for steady and overlap phases', async
     const commandText = calls
         .map(({ command, args }) => `${command} ${args.join(' ')}`)
         .join('\n');
+
     assert.match(
         commandText,
         /--project-name isolated-profile-blue up --detach --wait/,
     );
+
     assert.match(
         commandText,
         /--project-name isolated-profile-green up --detach --wait/,
     );
+
     assert.match(commandText, /stage-data\.compose\.yaml/);
     assert.match(commandText, /edge\.compose\.yaml/);
     assert.match(commandText, /down --volumes --remove-orphans/);
@@ -283,5 +296,6 @@ test('uses isolated stage Compose projects for steady and overlap phases', async
         join(directory, 'nginx/active-upstream.conf'),
         'utf8',
     );
+
     assert.match(upstream, /server blue-backend:4000/);
 });

@@ -22,17 +22,51 @@ export type {
     SpeechSynthesisProvider,
     SpeechProviderObservation,
 };
-export type StoredSpeechSource = {
-    [Kind in SpeechSource['kind']]: Omit<
-        Extract<SpeechSource, { kind: Kind }>,
-        'access'
-    > & {
-        access:
-            | { kind: 'owner'; dictionaryId: string }
-            | { kind: 'shared'; shareId: string; keyDigest: string };
-    };
-}[SpeechSource['kind']];
+export type KnowledgeSnippetSpeechSource = Extract<
+    SpeechSource,
+    { kind: 'knowledge-snippet' }
+>;
+export type StoredKnowledgeSnippetSpeechSource = Omit<
+    KnowledgeSnippetSpeechSource,
+    'origin'
+> & {
+    origin:
+        | Exclude<KnowledgeSnippetSpeechSource['origin'], { kind: 'saved' }>
+        | {
+              kind: 'saved';
+              expectedNoteVersion: number;
+              access?: {
+                  kind: 'note' | 'workbook';
+                  locator: string;
+                  keyDigest: string;
+              };
+          };
+};
+export type StoredSpeechSource =
+    | StoredKnowledgeSnippetSpeechSource
+    | Extract<
+          SpeechSource,
+          { kind: 'knowledge-block' | 'knowledge-audio-draft' }
+      >
+    | {
+          [
+              Kind in Exclude<
+                  SpeechSource['kind'],
+                  | 'knowledge-block'
+                  | 'knowledge-snippet'
+                  | 'knowledge-audio-draft'
+              >
+          ]: Omit<Extract<SpeechSource, { kind: Kind }>, 'access'> & {
+              access:
+                  | { kind: 'owner'; dictionaryId: string }
+                  | { kind: 'shared'; shareId: string; keyDigest: string };
+          };
+      }[Exclude<
+          SpeechSource['kind'],
+          'knowledge-block' | 'knowledge-snippet' | 'knowledge-audio-draft'
+      >];
 export interface ResolvedSpeechSource {
+    privateKnowledgeSource?: { noteId: string; ownerId: string };
     text: string;
     language: string;
     revision: string;
@@ -104,6 +138,7 @@ export interface SpeechStore {
         fixture: boolean;
     }>;
     claim(now: Date): Promise<SpeechJob | null>;
+    authorizeDispatch?(job: SpeechJob, now: Date): Promise<boolean>;
     submitted(
         job: SpeechJob,
         taskId: string,

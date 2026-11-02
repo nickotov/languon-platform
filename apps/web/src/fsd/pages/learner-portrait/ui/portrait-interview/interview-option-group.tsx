@@ -33,18 +33,28 @@ export function InterviewOptionGroup({
     );
     const canExpand =
         languageTopic && visibleOptions.length < question.options.length;
+
     function showMore() {
         setExpanded(true);
     }
-    if (question.topic === 'style' || question.options.length === 0)
+
+    if (question.topic === 'style' || question.options.length === 0) {
         return null;
+    }
+
     let label = interviewText(locale, question.topic);
-    if (question.topic === 'languages')
+    if (question.topic === 'languages') {
         label = interviewText(locale, 'knownLanguages');
-    if (question.topic === 'explanation-languages')
+    }
+
+    if (question.topic === 'explanation-languages') {
         label = interviewText(locale, 'comfortableLanguages');
-    if (question.topic === 'accommodations')
+    }
+
+    if (question.topic === 'accommodations') {
         label = interviewText(locale, 'helpfulApproaches');
+    }
+
     return (
         <fieldset className={styles.fieldset}>
             <legend>{label}</legend>

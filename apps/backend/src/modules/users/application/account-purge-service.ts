@@ -16,12 +16,16 @@ export class AccountPurgeService {
     }): Promise<boolean> {
         input.signal.throwIfAborted();
         const claim = await this.store.claimDue(input);
-        if (!claim) return false;
+        if (!claim) {
+            return false;
+        }
+
         try {
             const owner = await this.store.inspectOwner({
                 ...claim,
                 workerId: input.workerId,
             });
+
             if (
                 owner.activeJobs > 0 ||
                 owner.objects.some(
@@ -33,8 +37,10 @@ export class AccountPurgeService {
                     now: input.now,
                     workerId: input.workerId,
                 });
+
                 return true;
             }
+
             for (const object of owner.objects) {
                 input.signal.throwIfAborted();
                 if (
@@ -46,11 +52,13 @@ export class AccountPurgeService {
                 ) {
                     throw new Error('Account purge lease was lost.');
                 }
+
                 await this.storage.removeAllVersions(
                     object.objectKey,
                     input.signal,
                 );
             }
+
             input.signal.throwIfAborted();
             if (
                 !(await this.store.finish({
@@ -63,6 +71,7 @@ export class AccountPurgeService {
                     'Account purge lease was lost before finalization.',
                 );
             }
+
             return true;
         } catch (error) {
             await this.store.retry({
@@ -70,6 +79,7 @@ export class AccountPurgeService {
                 now: new Date(),
                 workerId: input.workerId,
             });
+
             throw error;
         }
     }

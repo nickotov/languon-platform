@@ -322,7 +322,10 @@ async function requireActor(
     transaction: AdministrationTransaction,
     actorEmail: string | undefined,
 ) {
-    if (!actorEmail) throw new AdminOperatorActorRequiredError();
+    if (!actorEmail) {
+        throw new AdminOperatorActorRequiredError();
+    }
+
     const actor = await findUserByEmail(transaction, actorEmail);
     if (
         !actor ||

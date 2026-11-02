@@ -92,6 +92,7 @@ async function createFixture(activeManifest = manifest) {
         }),
         { mode: 0o600 },
     );
+
     return { configPath, directory, manifestPath, stateDirectory };
 }
 
@@ -110,6 +111,7 @@ test('validates remote mutation requests and literal confirmation', () => {
             reason: 'Initial owner bootstrap',
         },
     );
+
     assert.throws(
         () =>
             validateAdminOperatorRequest({
@@ -120,6 +122,7 @@ test('validates remote mutation requests and literal confirmation', () => {
             }),
         /literal admin-membership-change/,
     );
+
     assert.throws(
         () => validateAdminOperatorRequest({ action: 'list', reason: 'extra' }),
         /does not accept mutation fields/,
@@ -145,6 +148,7 @@ test('rejects shell-active SSH targets and remote paths', () => {
         () => validateRemoteAdminTarget('root@host;touch-pwned'),
         /user@host form/,
     );
+
     assert.throws(
         () =>
             validateRemoteAdminPath(
@@ -153,6 +157,7 @@ test('rejects shell-active SSH targets and remote paths', () => {
             ),
         /normalized absolute remote path/,
     );
+
     assert.equal(
         validateRemoteAdminPath('/opt/languon/releases', '--remote-root'),
         '/opt/languon/releases',
@@ -175,9 +180,11 @@ test('runs the built operator in the active immutable backend slot', async () =>
         }),
         runner: async (command, args, options) => {
             calls.push({ args, command, options });
+
             return { stdout: '{"result":"revoked"}\n', stderr: '' };
         },
     });
+
     assert.equal(result.releaseIdentity, manifest.identity);
     assert.equal(calls.length, 1);
     const call = calls[0];
@@ -189,6 +196,7 @@ test('runs the built operator in the active immutable backend slot', async () =>
         'dist/infrastructure/administration/admin-command.js',
         '--request-stdin',
     ]);
+
     assert.deepEqual(JSON.parse(call.options.input), {
         actorEmail: 'actor@example.test',
         command: 'revoke',

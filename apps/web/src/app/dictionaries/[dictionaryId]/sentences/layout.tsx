@@ -8,6 +8,7 @@ export default async function Layout({
     children: ReactNode;
 }) {
     const { dictionaryId } = await params;
+
     return (
         <SentenceLibraryRoute dictionaryId={dictionaryId}>
             {children}

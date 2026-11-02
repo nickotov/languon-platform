@@ -22,6 +22,7 @@ export async function runAdminMcpJourney() {
         ),
     );
 }
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
     await runAdminMcpJourney().catch((error) => {
         console.error(error.message);

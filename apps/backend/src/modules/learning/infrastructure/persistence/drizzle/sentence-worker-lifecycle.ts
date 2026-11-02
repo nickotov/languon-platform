@@ -1,3 +1,8 @@
+import { lockSentenceWorkerRow } from './sentence-worker-jobs';
+import {
+    sentenceWorkerJobs as workerJobs,
+    authorizePrivateSentenceLease,
+} from './sentence-worker-jobs';
 import { recheckTextAiDispatch } from '../../../../text-ai/infrastructure/persistence/drizzle/text-ai-dispatch-guard';
 import { TextAiSelectionUnavailableError } from '../../../../text-ai/application/text-ai-admission-participant';
 import type { SentenceJobFailure } from '@languon/contracts';
@@ -37,14 +42,33 @@ export async function sentenceWorkerHeartbeat(
     context.signal.throwIfAborted();
 
     return modelPricingTransaction(persistence.database, async (tx) => {
-        const [job] = await tx
+        await lockSentenceWorkerRow(tx, lease.jobId);
+        let [job] = await tx
             .select()
-            .from(jobs)
-            .where(eq(jobs.id, lease.jobId))
-            .for('update');
+            .from(workerJobs)
+            .where(eq(workerJobs.id, lease.jobId));
 
-        if (!job || !leased(job, lease, context.now))
+        if (job?.sourceKind === 'knowledge-vocabulary') {
+            const authorized = await authorizePrivateSentenceLease(
+                tx,
+                job,
+                lease,
+            );
+
+            if (!authorized) {
+                return { owned: false, cancellationRequested: false };
+            }
+
+            job = authorized;
+            if (!job.inputPayload) {
+                return { owned: true, cancellationRequested: true };
+            }
+        }
+
+        if (!job || !leased(job, lease, context.now)) {
             return { owned: false, cancellationRequested: false };
+        }
+
         await tx
             .update(jobs)
             .set({
@@ -77,7 +101,10 @@ export async function sentenceWorkerMarkDispatched(
             context.now,
         );
 
-        if (!locked) return 'lost';
+        if (!locked) {
+            return 'lost';
+        }
+
         const { job, invalid } = locked;
         if (invalid || job.cancellationRequestedAt) {
             await sentenceWorkerTerminal(tx, job, context.now, invalid);
@@ -97,8 +124,10 @@ export async function sentenceWorkerMarkDispatched(
                     now: context.now,
                 });
             } catch (error) {
-                if (!(error instanceof TextAiSelectionUnavailableError))
+                if (!(error instanceof TextAiSelectionUnavailableError)) {
                     throw error;
+                }
+
                 await sentenceWorkerTerminal(
                     tx,
                     job,
@@ -111,7 +140,7 @@ export async function sentenceWorkerMarkDispatched(
         }
 
         if (!job.aiCreditProviderDispatchedAt) {
-            if (job.aiCreditAccounted && job.aiCreditReservationId)
+            if (job.aiCreditAccounted && job.aiCreditReservationId) {
                 await new DrizzleAiCreditTransactionParticipant(
                     tx,
                 ).markProviderDispatched({
@@ -119,6 +148,8 @@ export async function sentenceWorkerMarkDispatched(
                     reservationId: job.aiCreditReservationId,
                     dispatchedAt: context.now,
                 });
+            }
+
             await tx
                 .update(jobs)
                 .set({
@@ -154,7 +185,10 @@ export async function sentenceWorkerFail(
             context.now,
         );
 
-        if (!locked) return 'lost';
+        if (!locked) {
+            return 'lost';
+        }
+
         const { job, invalid } = locked;
         if (invalid || job.cancellationRequestedAt) {
             await sentenceWorkerTerminal(
@@ -204,11 +238,13 @@ export async function sentenceWorkerFail(
         );
 
         const category = circuitFailureCategory(failure.code);
-        if (category && job.aiCreditProviderDispatchedAt)
+        if (category && job.aiCreditProviderDispatchedAt) {
             await recordTextAiCircuitFailure(tx, {
                 ...circuitScope(job, context.now),
                 category,
             });
+        }
+
         if (safeRetry) {
             await tx
                 .update(jobs)
@@ -221,7 +257,7 @@ export async function sentenceWorkerFail(
                     aiCreditProviderDispatchedAt: null,
                 })
                 .where(eq(jobs.id, job.id));
-        } else
+        } else {
             await tx
                 .update(jobs)
                 .set({
@@ -232,6 +268,7 @@ export async function sentenceWorkerFail(
                     updatedAt: context.now,
                 })
                 .where(eq(jobs.id, job.id));
+        }
 
         return 'committed';
     });
@@ -244,15 +281,15 @@ export async function sentenceWorkerReleaseWorkerLeases(
 ) {
     const rows = await persistence.database
         .select()
-        .from(jobs)
+        .from(workerJobs)
         .where(
             and(
-                eq(jobs.workerId, workerId),
-                eq(jobs.executionState, 'running'),
+                eq(workerJobs.workerId, workerId),
+                eq(workerJobs.executionState, 'running'),
             ),
         );
 
-    for (const row of rows)
+    for (const row of rows) {
         await sentenceWorkerFail(
             persistence,
             {
@@ -264,4 +301,5 @@ export async function sentenceWorkerReleaseWorkerLeases(
             { code: 'provider_timeout', retryAt: context.now },
             context,
         );
+    }
 }

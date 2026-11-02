@@ -7,7 +7,10 @@ export function withQueuedTextAiProviderAttempt<T>(
     routed: boolean,
     operation: () => T,
 ): T {
-    if (!context || !routed) return operation();
+    if (!context || !routed) {
+        return operation();
+    }
+
     return withTextAiProviderAttemptWitness(
         {
             attemptId: legacyProviderAttemptId(context.jobId, context.attempt),

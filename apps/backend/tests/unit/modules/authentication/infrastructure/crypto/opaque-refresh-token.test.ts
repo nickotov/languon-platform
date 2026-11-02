@@ -31,6 +31,7 @@ describe('OpaqueRefreshTokenService', () => {
         expect(service.digest('presented-token')).toBe(
             service.digest('presented-token'),
         );
+
         expect(service.digest('presented-token')).not.toBe(
             service.digest('presented-toker'),
         );

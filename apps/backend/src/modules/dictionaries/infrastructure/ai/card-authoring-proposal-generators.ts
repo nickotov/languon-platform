@@ -60,6 +60,7 @@ export class CardAuthoringProposalGeneratorExecutionError extends CardAuthoringP
                 ? 'provider_unavailable'
                 : 'invalid_model_output',
         );
+
         this.name = 'CardAuthoringProposalGeneratorExecutionError';
     }
 }
@@ -109,11 +110,16 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                 const result = new CardAuthoringProposalGeneratorExecutionError(
                     reason,
                 );
-                if (meteredUsage) result.usage = meteredUsage;
+
+                if (meteredUsage) {
+                    result.usage = meteredUsage;
+                }
+
                 result.executionOutcome =
                     outputReceived && result.category === 'invalid_model_output'
                         ? 'completed'
                         : 'ambiguous';
+
                 return result;
             };
 
@@ -129,11 +135,14 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                         request.providerBudget.maxOutputTokensPerAttempt,
                 },
             });
+
             if (
                 cardAuthoringProviderInputTokens(input) >
                 requestLimits.maxInputTokens
-            )
+            ) {
                 throw failure('invalid_input');
+            }
+
             try {
                 const result = await withQueuedTextAiProviderAttempt(
                     request.providerAttempt,
@@ -160,6 +169,7 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                             },
                         }),
                 );
+
                 outputReceived = true;
                 request.signal.throwIfAborted();
                 if (result.usage) {
@@ -173,20 +183,26 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                         throw failure('invalid_output');
                     }
                 }
+
                 if (result.error || result.tripwire) {
                     reportProviderFailure(
                         result.error,
                         request.idempotencyKey,
                         options.onProviderFailure,
                     );
+
                     throw withProviderExecutionOutcome(
                         failure('provider_failure'),
                         result.error,
                         request.providerExecution?.providerId ?? 'unknown',
                     );
                 }
+
                 const delta = validatedOutput(result.object, input);
-                if (!result.usage) return delta;
+                if (!result.usage) {
+                    return delta;
+                }
+
                 let usage;
                 try {
                     usage = readProviderTokenUsage(
@@ -218,33 +234,42 @@ export function createMastraCardAuthoringProposalGenerator(options: {
                         /* Invalid/missing provider meters remain unknown. */
                     }
                 }
+
                 if (
                     error instanceof CardAuthoringProposalGeneratorError &&
                     meteredUsage
-                )
+                ) {
                     error.usage = meteredUsage;
+                }
 
-                if (request.signal.aborted)
+                if (request.signal.aborted) {
                     throw (
                         request.signal.reason ??
                         new DOMException('Aborted', 'AbortError')
                     );
+                }
+
                 if (
                     outputReceived &&
                     error instanceof CardAuthoringProposalGeneratorError &&
                     error.category === 'invalid_model_output'
-                )
+                ) {
                     error.executionOutcome = 'completed';
+                }
+
                 if (
                     error instanceof
                     CardAuthoringProposalGeneratorExecutionError
-                )
+                ) {
                     throw error;
+                }
+
                 reportProviderFailure(
                     error,
                     request.idempotencyKey,
                     options.onProviderFailure,
                 );
+
                 throw withProviderExecutionOutcome(
                     failure('provider_failure'),
                     error,
@@ -254,12 +279,15 @@ export function createMastraCardAuthoringProposalGenerator(options: {
         },
         readiness(signal) {
             signal.throwIfAborted();
-            if (!options.providerReadiness)
+            if (!options.providerReadiness) {
                 return Promise.reject(
                     new CardAuthoringProposalGeneratorUnavailableError(),
                 );
+            }
+
             return options.providerReadiness(signal).catch(() => {
                 signal.throwIfAborted();
+
                 throw new CardAuthoringProposalGeneratorUnavailableError();
             });
         },
@@ -283,18 +311,23 @@ export class DeterministicCardAuthoringProposalGenerator implements CardAuthorin
         try {
             const delta = validatedOutput(await this.resolve(request), input);
             request.signal.throwIfAborted();
+
             return {
                 delta,
                 usage: { inputTokens: 0, outputTokens: 0 },
             };
         } catch (error) {
-            if (request.signal.aborted)
+            if (request.signal.aborted) {
                 throw (
                     request.signal.reason ??
                     new DOMException('Aborted', 'AbortError')
                 );
-            if (error instanceof CardAuthoringProposalGeneratorExecutionError)
+            }
+
+            if (error instanceof CardAuthoringProposalGeneratorExecutionError) {
                 throw error;
+            }
+
             throw new CardAuthoringProposalGeneratorExecutionError(
                 'provider_failure',
             );
@@ -303,6 +336,7 @@ export class DeterministicCardAuthoringProposalGenerator implements CardAuthorin
 
     public readiness(signal: AbortSignal): Promise<void> {
         signal.throwIfAborted();
+
         return Promise.resolve();
     }
 }
@@ -310,6 +344,7 @@ export class DeterministicCardAuthoringProposalGenerator implements CardAuthorin
 export class UnavailableCardAuthoringProposalGenerator implements CardAuthoringProposalGenerator {
     public generate(request: CardAuthoringProposalGeneratorRequest) {
         request.signal.throwIfAborted();
+
         return Promise.reject(
             new CardAuthoringProposalGeneratorUnavailableError(),
         );
@@ -317,6 +352,7 @@ export class UnavailableCardAuthoringProposalGenerator implements CardAuthoringP
 
     public readiness(signal: AbortSignal): Promise<void> {
         signal.throwIfAborted();
+
         return Promise.reject(
             new CardAuthoringProposalGeneratorUnavailableError(),
         );
@@ -345,12 +381,16 @@ export type CardAuthoringProposalGeneratorFactoryOptions =
 export function createCardAuthoringProposalGenerator(
     options: CardAuthoringProposalGeneratorFactoryOptions,
 ): CardAuthoringProposalGenerator {
-    if (options.mode === 'unavailable')
+    if (options.mode === 'unavailable') {
         return new UnavailableCardAuthoringProposalGenerator();
-    if (options.mode === 'deterministic')
+    }
+
+    if (options.mode === 'deterministic') {
         return new DeterministicCardAuthoringProposalGenerator(
             options.proposal,
         );
+    }
+
     const agent: DictionaryCardAuthoringAgent =
         createDictionaryCardAuthoringAgent({ model: options.model });
     const runtime = new Mastra({
@@ -363,6 +403,7 @@ export function createCardAuthoringProposalGenerator(
             options.model,
             options.providerProbeFetch ?? globalThis.fetch,
         );
+
     return createMastraCardAuthoringProposalGenerator({
         agent: runtime.listAgents().dictionaryCardAuthoringAgent,
         onProviderFailure: (event) =>
@@ -387,8 +428,10 @@ function openAICompatibleProviderReadiness(
         !('url' in model) ||
         !model.url ||
         !model.apiKey
-    )
+    ) {
         return undefined;
+    }
+
     const baseUrl = new URL(model.url);
     const hostname = baseUrl.hostname.replace(/^\[|\]$/g, '').toLowerCase();
     if (
@@ -402,9 +445,12 @@ function openAICompatibleProviderReadiness(
         hostname.endsWith('.local') ||
         hostname.endsWith('.internal') ||
         isPrivateIpAddress(hostname)
-    )
+    ) {
         return undefined;
+    }
+
     baseUrl.pathname = `${baseUrl.pathname.replace(/\/$/, '')}/models`;
+
     return async (signal) => {
         const response = await fetchProvider(baseUrl, {
             cache: 'no-store',
@@ -418,15 +464,19 @@ function openAICompatibleProviderReadiness(
             referrerPolicy: 'no-referrer',
             signal,
         });
-        if (!response.ok)
+
+        if (!response.ok) {
             throw new CardAuthoringProposalGeneratorUnavailableError();
+        }
     };
 }
 
 function isPrivateIpAddress(hostname: string): boolean {
     if (isIP(hostname) === 6) {
-        if (hostname.startsWith('::ffff:'))
+        if (hostname.startsWith('::ffff:')) {
             return isPrivateIpAddress(hostname.slice('::ffff:'.length));
+        }
+
         return (
             hostname === '::' ||
             hostname === '::1' ||
@@ -435,8 +485,13 @@ function isPrivateIpAddress(hostname: string): boolean {
             /^fe[89ab]/.test(hostname)
         );
     }
-    if (isIP(hostname) !== 4) return false;
+
+    if (isIP(hostname) !== 4) {
+        return false;
+    }
+
     const [first = 0, second = 0] = hostname.split('.').map(Number);
+
     return (
         first === 0 ||
         first === 10 ||
@@ -452,8 +507,10 @@ function isPrivateIpAddress(hostname: string): boolean {
 
 function validatedInput(value: unknown) {
     const parsed = DictionaryCardAuthoringModelInputSchema.safeParse(value);
-    if (!parsed.success)
+    if (!parsed.success) {
         throw new CardAuthoringProposalGeneratorExecutionError('invalid_input');
+    }
+
     return parsed.data;
 }
 
@@ -487,6 +544,7 @@ function defaultDeterministicDelta(
         sourceResult?.kind === 'suggested'
             ? sourceResult.value
             : request.input.source;
+
     return {
         ...(sourceRequested ? { sourceResult } : {}),
         suggestions: request.input.requestedFields
@@ -522,6 +580,7 @@ function defaultDeterministicDelta(
                         maximum - [...suffix].length,
                     )}${suffix}`;
                 }
+
                 return {
                     field,
                     value: nextValue,
@@ -539,7 +598,10 @@ function reportProviderFailure(
     idempotencyKey: string,
     report: ((event: CardAuthoringProviderFailure) => void) | undefined,
 ) {
-    if (!report) return;
+    if (!report) {
+        return;
+    }
+
     try {
         report(cardAuthoringProviderFailure(error, idempotencyKey));
     } catch {

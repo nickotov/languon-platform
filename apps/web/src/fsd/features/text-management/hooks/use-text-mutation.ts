@@ -20,36 +20,52 @@ export function useTextMutation(request: RequestWithTextSession) {
         saved: (value: T) => void,
         success?: string,
     ) {
-        if (lock.current) return;
+        if (lock.current) {
+            return;
+        }
+
         lock.current = true;
         const actor = useSessionStore.getState().user?.id;
         setBusy(true);
         setError(null);
         try {
             const result = await request(operation);
-            if (actor !== useSessionStore.getState().user?.id) return;
+            if (actor !== useSessionStore.getState().user?.id) {
+                return;
+            }
+
             await Promise.all([
                 query.invalidateQueries({ queryKey: ['texts'] }),
                 query.invalidateQueries({ queryKey: ['text-folders'] }),
                 query.invalidateQueries({ queryKey: ['library-navigation'] }),
             ]);
-            if (actor !== useSessionStore.getState().user?.id) return;
+
+            if (actor !== useSessionStore.getState().user?.id) {
+                return;
+            }
+
             saved(result);
-            if (success)
+            if (success) {
                 showToast({
                     content: success,
                     tone: 'success',
                     dismissLabel: t('toast.dismiss'),
                 });
+            }
         } catch (cause) {
-            if (actor !== useSessionStore.getState().user?.id) return;
+            if (actor !== useSessionStore.getState().user?.id) {
+                return;
+            }
+
             let message = t('texts.manage.failed');
             if (cause instanceof TextsApiError) {
-                if (cause.detail.code === 'version_conflict')
+                if (cause.detail.code === 'version_conflict') {
                     message = t('texts.manage.conflict');
-                else if (cause.detail.code === 'text_busy')
+                } else if (cause.detail.code === 'text_busy') {
                     message = t('texts.organization.busy');
+                }
             }
+
             setError(message);
             showToast({
                 content: message,
@@ -61,5 +77,6 @@ export function useTextMutation(request: RequestWithTextSession) {
             lock.current = false;
         }
     }
+
     return { busy, error, run };
 }

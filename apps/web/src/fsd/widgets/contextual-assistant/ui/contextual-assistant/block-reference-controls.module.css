@@ -1,0 +1,103 @@
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+}
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-8);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-8);
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+    max-width: 100%;
+}
+.chip > span:first-of-type {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chip:where([data-missing='true']) {
+    color: var(--text-error);
+}
+.chip button {
+    display: inline-flex;
+    align-items: center;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+.picker {
+    display: grid;
+    gap: var(--space-8);
+    padding: var(--space-12);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-12);
+    background: var(--background-surface);
+}
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+}
+.search {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    color: var(--text-secondary);
+}
+.search input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+}
+.results {
+    display: grid;
+    max-height: var(--size-240);
+    overflow: auto;
+}
+.option {
+    display: flex;
+    gap: var(--space-8);
+    align-items: center;
+    padding: var(--space-8);
+    text-align: start;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+    border-radius: var(--radius-6);
+}
+.option span {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+}
+.option strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+.option small {
+    color: var(--text-tertiary);
+}
+.option:hover,
+.option:where([aria-pressed='true']) {
+    background: var(--background-subtle);
+}
+.option:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.option:focus-visible,
+.chip button:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: var(--size-2);
+}

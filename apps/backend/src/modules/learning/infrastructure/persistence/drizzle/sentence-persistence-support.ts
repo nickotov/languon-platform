@@ -1,3 +1,4 @@
+import { presentKnowledgeSentenceJob } from '../../../../knowledge/infrastructure/persistence/drizzle/knowledge-sentence-paid-presentation';
 import { readActionBilling } from '../../../../ai-credits/infrastructure/persistence/drizzle/action-billing';
 import { usesLegacyAction } from '../../../../ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
@@ -39,7 +40,9 @@ export type SentenceTransaction = Parameters<
 >[0];
 export type SentenceJobRow = typeof jobs.$inferSelect;
 export function sentenceLearner(access: LearningAccess): string {
-    if (!access.learnerId) throw new LearningAuthenticationRequiredError();
+    if (!access.learnerId) {
+        throw new LearningAuthenticationRequiredError();
+    }
 
     return access.learnerId;
 }
@@ -66,7 +69,10 @@ export async function authorizeSentence(
             )
             .limit(1);
 
-        if (!candidate) throw new SentenceUnavailableError();
+        if (!candidate) {
+            throw new SentenceUnavailableError();
+        }
+
         const ids = [...new Set([learnerId, candidate.ownerId])].sort();
         await tx
             .select({ id: usersTable.id })
@@ -79,8 +85,9 @@ export async function authorizeSentence(
     try {
         return await authorizeLearningDictionary(tx, access);
     } catch (error) {
-        if (error instanceof DictionaryNotFoundError)
+        if (error instanceof DictionaryNotFoundError) {
             throw new SentenceUnavailableError();
+        }
 
         throw error;
     }
@@ -88,15 +95,22 @@ export async function authorizeSentence(
 
 export async function lockSentenceActorBatch(
     tx: SentenceTransaction,
-    rows: readonly { learnerId: string; dictionaryId: string }[],
+    rows: readonly { learnerId: string; dictionaryId: string | null }[],
 ) {
-    if (!rows.length) return;
+    if (!rows.length) {
+        return;
+    }
+
     const owners = await tx
         .select({ id: dictionariesTable.ownerId })
         .from(dictionariesTable)
         .where(
             inArray(dictionariesTable.id, [
-                ...new Set(rows.map((r) => r.dictionaryId)),
+                ...new Set(
+                    rows.flatMap((r) =>
+                        r.dictionaryId ? [r.dictionaryId] : [],
+                    ),
+                ),
             ]),
         );
     const ids = [
@@ -147,8 +161,10 @@ export async function sentenceCandidates(
     if (
         scope.type === 'manual' &&
         scope.entryIds.some((id) => !all.some((c) => c.id === id))
-    )
+    ) {
         throw new SentenceUnavailableError();
+    }
+
     const eligible = all.filter(
         (c) =>
             selected.has(c.id) &&
@@ -199,7 +215,10 @@ export async function isSentenceCurrent(
     exerciseId: string,
 ) {
     const linked = await sentenceExerciseEntries(tx, exerciseId);
-    if (!linked.length) return false;
+    if (!linked.length) {
+        return false;
+    }
+
     const current = await tx
         .select({
             id: cards.id,
@@ -244,8 +263,9 @@ export async function readableExercise(
         !exercise ||
         (!exercise.shared && exercise.creatorId !== learnerId) ||
         (current && !(await isSentenceCurrent(tx, id)))
-    )
+    ) {
         throw new SentenceUnavailableError();
+    }
 
     return exercise;
 }
@@ -267,9 +287,12 @@ export async function exposeSentence(
         .onConflictDoNothing()
         .returning();
 
-    if (!inserted.length) return;
+    if (!inserted.length) {
+        return;
+    }
+
     const linked = await sentenceExerciseEntries(tx, exercise.id);
-    for (const entry of linked)
+    for (const entry of linked) {
         await tx
             .insert(coverage)
             .values({
@@ -289,6 +312,7 @@ export async function exposeSentence(
                 ],
                 set: { exposureCount: sql`${coverage.exposureCount}+1` },
             });
+    }
 }
 
 export async function presentSentenceAttempt(
@@ -300,7 +324,9 @@ export async function presentSentenceAttempt(
         .from(exercises)
         .where(eq(exercises.id, row.exerciseId));
 
-    if (!exercise) throw new SentenceUnavailableError();
+    if (!exercise) {
+        throw new SentenceUnavailableError();
+    }
 
     return {
         id: row.id,
@@ -326,6 +352,10 @@ export async function presentSentenceJob(
     row: SentenceJobRow,
 ): Promise<SentenceJob> {
     let result: SentenceJob['result'] = null;
+    if (row.sourceKind === 'knowledge-vocabulary') {
+        return presentKnowledgeSentenceJob(tx, row);
+    }
+
     if (row.executionState === 'completed') {
         if (row.resultExerciseId) {
             const [exercise] = await tx
@@ -333,22 +363,26 @@ export async function presentSentenceJob(
                 .from(exercises)
                 .where(eq(exercises.id, row.resultExerciseId));
 
-            if (exercise)
+            if (exercise) {
                 result = { kind: 'exercise', exercise: exercise.publicContent };
+            }
         } else if (row.resultAttemptId) {
             const [attempt] = await tx
                 .select()
                 .from(attempts)
                 .where(eq(attempts.id, row.resultAttemptId));
 
-            if (attempt)
+            if (attempt) {
                 result = {
                     kind: 'attempt',
                     attempt: await presentSentenceAttempt(tx, attempt),
                 };
+            }
         }
 
-        if (!result) throw new SentenceUnavailableError();
+        if (!result) {
+            throw new SentenceUnavailableError();
+        }
     }
 
     const actionId = usesLegacyAction(row.selectedExecutionSnapshot)

@@ -38,18 +38,24 @@ describe.runIf(redisIntegrationEnabled)(
             redis = createTestRedisClient();
             await redis.connect();
         });
+
         afterAll(async () => {
-            for (const namespace of namespaces)
+            for (const namespace of namespaces) {
                 await deleteNamespacedKeys(redis, namespace);
+            }
+
             await redis.quit();
         });
+
         function limiter() {
             const namespace = uniqueAuthRedisNamespace('generation-burst');
             namespaces.add(namespace);
+
             return new RedisGenerationBurstLimiter(
                 new RedisRateLimiter({ redis, namespace, hmacSecret: secret }),
             );
         }
+
         function apps(burstLimiter: RedisGenerationBurstLimiter) {
             const enqueue = vi.fn(async () => ({ state: 'queued' }));
             const resolve = vi.fn(async () => ({
@@ -59,6 +65,7 @@ describe.runIf(redisIntegrationEnabled)(
             }));
             const prepare = vi.fn(async () => ({ state: 'queued' }));
             const confirm = vi.fn(async () => ({ state: 'queued' }));
+
             return {
                 enqueue,
                 resolve,
@@ -86,12 +93,14 @@ describe.runIf(redisIntegrationEnabled)(
                 }),
             };
         }
+
         const source = () => ({
             kind: 'dictionary-field',
             access: { kind: 'owner', dictionaryId: randomUUID() },
             cardId: randomUUID(),
             field: 'source',
         });
+
         function request(body: unknown) {
             return {
                 method: 'POST',
@@ -102,6 +111,7 @@ describe.runIf(redisIntegrationEnabled)(
                 body: JSON.stringify(body),
             };
         }
+
         it.each(['text', 'prepare', 'confirm'] as const)(
             'admits only ten of 100 concurrent %s POSTs before resolver/store work',
             async (capability) => {
@@ -133,12 +143,15 @@ describe.runIf(redisIntegrationEnabled)(
                               ),
                     ),
                 );
+
                 expect(responses.filter((r) => r.status === 429)).toHaveLength(
                     90,
                 );
+
                 expect(
                     responses.filter((r) => r.status >= 200 && r.status < 300),
                 ).toHaveLength(10);
+
                 expect(
                     capability === 'text'
                         ? f.enqueue
@@ -146,34 +159,41 @@ describe.runIf(redisIntegrationEnabled)(
                           ? f.prepare
                           : f.confirm,
                 ).toHaveBeenCalledTimes(10);
+
                 expect(f.resolve).toHaveBeenCalledTimes(
                     capability === 'prepare' ? 10 : 0,
                 );
             },
         );
+
         it('isolates account and capability limits and never keys by caller operation id', async () => {
             const burst = limiter();
-            for (let index = 0; index < 10; index++)
+            for (let index = 0; index < 10; index++) {
                 expect(
                     await burst.consume({
                         actorId: 'first',
                         capability: 'text-detection',
                     }),
                 ).toEqual({ allowed: true });
+            }
+
             expect(
                 await burst.consume({
                     actorId: 'first',
                     capability: 'text-detection',
                 }),
             ).toEqual({ allowed: false });
+
             for (const capability of [
                 'text-translation',
                 'speech-prepare',
                 'speech-confirm',
-            ] as const)
+            ] as const) {
                 expect(
                     await burst.consume({ actorId: 'first', capability }),
                 ).toEqual({ allowed: true });
+            }
+
             expect(
                 await burst.consume({
                     actorId: 'second',
@@ -181,6 +201,7 @@ describe.runIf(redisIntegrationEnabled)(
                 }),
             ).toEqual({ allowed: true });
         });
+
         it('fails closed before all generation store/resolver work with an unavailable Redis endpoint', async () => {
             const unavailable = createAuthenticationRedisClient({
                 url: 'redis://127.0.0.1:1/4',
@@ -188,6 +209,7 @@ describe.runIf(redisIntegrationEnabled)(
                 connectTimeoutMs: 50,
                 maxConnectionRetries: 0,
             });
+
             try {
                 const f = apps(
                     new RedisGenerationBurstLimiter(
@@ -198,6 +220,7 @@ describe.runIf(redisIntegrationEnabled)(
                         }),
                     ),
                 );
+
                 expect(
                     (
                         await f.text.request(
@@ -210,6 +233,7 @@ describe.runIf(redisIntegrationEnabled)(
                         )
                     ).status,
                 ).toBe(503);
+
                 expect(
                     (
                         await f.speech.request(
@@ -221,6 +245,7 @@ describe.runIf(redisIntegrationEnabled)(
                         )
                     ).status,
                 ).toBe(503);
+
                 expect(
                     (
                         await f.speech.request(
@@ -232,6 +257,7 @@ describe.runIf(redisIntegrationEnabled)(
                         )
                     ).status,
                 ).toBe(503);
+
                 expect(f.enqueue).not.toHaveBeenCalled();
                 expect(f.resolve).not.toHaveBeenCalled();
                 expect(f.prepare).not.toHaveBeenCalled();

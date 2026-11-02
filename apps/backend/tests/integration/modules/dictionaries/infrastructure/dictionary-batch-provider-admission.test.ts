@@ -56,6 +56,7 @@ run('accounted batch admission through the production provider router', () => {
         client = createTestPostgresClient();
         database = createDrizzleDatabase(client, databaseSchema);
     });
+
     beforeEach(async () => {
         vi.stubEnv('APP_ENV', 'test');
         vi.stubEnv('DICTIONARY_AI_MANAGED_ROUTING_ENABLED', 'true');
@@ -64,6 +65,7 @@ run('accounted batch admission through the production provider router', () => {
             'DEEPSEEK_API_KEY',
             textAiFixtureCredentials.DEEPSEEK_API_KEY,
         );
+
         await resetTestDatabase(client);
         await migrateTestDatabase(client);
         now = new Date();
@@ -74,6 +76,7 @@ run('accounted batch admission through the production provider router', () => {
             createdAt: now,
             updatedAt: now,
         });
+
         await seedLegacyActionFixture(database);
         await database.insert(aiCreditAccountsTable).values({
             userId: ownerId,
@@ -82,6 +85,7 @@ run('accounted batch admission through the production provider router', () => {
             createdAt: now,
             updatedAt: now,
         });
+
         const model = textAiModelCatalog[0]!;
         const workerId = 'synthetic-batch-worker';
         await database.insert(dictionaryAiWorkerObservationsTable).values({
@@ -106,10 +110,12 @@ run('accounted batch admission through the production provider router', () => {
             conversationCapacityRevision: 1,
         });
     });
+
     afterEach(() => {
         vi.unstubAllGlobals();
         vi.unstubAllEnvs();
     });
+
     afterAll(async () => client.end());
 
     it.each([
@@ -184,11 +190,13 @@ run('accounted batch admission through the production provider router', () => {
                 .select()
                 .from(aiCreditActionsTable)
                 .where(eq(aiCreditActionsTable.id, enqueued.id));
+
             expect(action).toMatchObject({
                 state: 'active',
                 funding: 'unlimited',
                 outputLimit: 10_000,
             });
+
             const claimSpy = vi.spyOn(store, 'claim');
             const completeSpy = vi.spyOn(store, 'complete');
             // Only external HTTP is synthetic: accounting, durable admission,
@@ -196,8 +204,10 @@ run('accounted batch admission through the production provider router', () => {
             let providerCall = 0;
             const fetchProvider = vi.fn<typeof fetch>(async () => {
                 const claim = await claimSpy.mock.results[0]!.value;
-                if (!claim?.providerExecution)
+                if (!claim?.providerExecution) {
                     throw new Error('Expected an admitted batch.');
+                }
+
                 const start = providerCall++ * 20;
                 const request = {
                     idempotencyKey: claim.id,
@@ -234,6 +244,7 @@ run('accounted batch admission through the production provider router', () => {
                           : (() => {
                                 throw new Error('Unexpected batch format.');
                             })();
+
                 return new Response(
                     JSON.stringify({
                         id: 'synthetic-batch-completion',
@@ -259,6 +270,7 @@ run('accounted batch admission through the production provider router', () => {
                     { headers: { 'content-type': 'application/json' } },
                 );
             });
+
             vi.stubGlobal('fetch', fetchProvider);
             const unexpected = {
                 generate: async () => {
@@ -285,6 +297,7 @@ run('accounted batch admission through the production provider router', () => {
                 pastedTermsProvider: providers.pastedTerms,
                 store,
             });
+
             await expect(
                 worker.processNext({
                     signal: new AbortController().signal,
@@ -296,14 +309,18 @@ run('accounted batch admission through the production provider router', () => {
                     workerId: 'synthetic-batch-worker',
                 }),
             ).resolves.toBe(true);
+
             const claim = await claimSpy.mock.results[0]!.value;
-            if (!claim?.providerExecution)
+            if (!claim?.providerExecution) {
                 throw new Error('Expected an admitted, pinned batch claim.');
+            }
+
             expect(claim.id).toBe(enqueued.id);
             expect(claim.providerBudget.maxOutputTokensPerAttempt).toBe(8_192);
             expect(claim.providerExecution.aggregateBudget).toEqual(
                 claim.providerBudget,
             );
+
             const chunks = Math.ceil(rowCount / 20);
             expect(fetchProvider).toHaveBeenCalledTimes(chunks);
             const limits = fetchProvider.mock.calls.map(
@@ -311,6 +328,7 @@ run('accounted batch admission through the production provider router', () => {
                     (JSON.parse(String(init?.body)) as { max_tokens: number })
                         .max_tokens,
             );
+
             expect(limits).toEqual([8_192]);
             expect(completeSpy).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -320,9 +338,11 @@ run('accounted batch admission through the production provider router', () => {
                     }),
                 }),
             );
+
             expect(chunks * 30).toBeLessThanOrEqual(
                 claim.providerBudget.maxOutputTokensPerAttempt,
             );
+
             await expect(
                 store.read({ context: context(), jobId: claim.id, ownerId }),
             ).resolves.toMatchObject({ state: 'review' });

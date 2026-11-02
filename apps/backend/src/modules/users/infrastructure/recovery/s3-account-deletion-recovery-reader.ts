@@ -31,6 +31,7 @@ export class S3AccountDeletionRecoveryReader {
                 'Deletion journal sentinel is unavailable or invalid.',
             );
         }
+
         const events: JournalEvent[] = [];
         let keyMarker: string | undefined;
         let versionIdMarker: string | undefined;
@@ -45,10 +46,15 @@ export class S3AccountDeletionRecoveryReader {
                     VersionIdMarker: versionIdMarker,
                 }),
             );
-            if (page.IsTruncated && !page.NextKeyMarker)
+
+            if (page.IsTruncated && !page.NextKeyMarker) {
                 throw new Error('Deletion journal listing is incomplete.');
-            if (page.DeleteMarkers?.length)
+            }
+
+            if (page.DeleteMarkers?.length) {
                 throw new Error('Deletion journal contains a delete marker.');
+            }
+
             for (const object of page.Versions ?? []) {
                 if (
                     !object.Key ||
@@ -60,29 +66,38 @@ export class S3AccountDeletionRecoveryReader {
                         'Deletion journal contains an invalid object key.',
                     );
                 }
-                if (!object.VersionId || seenKeys.has(object.Key))
+
+                if (!object.VersionId || seenKeys.has(object.Key)) {
                     throw new Error(
                         'Deletion journal contains ambiguous object versions.',
                     );
+                }
+
                 seenKeys.add(object.Key);
                 const event = await this.read(object.Key, object.VersionId);
-                if (event.kind === 'sentinel')
+                if (event.kind === 'sentinel') {
                     throw new Error(
                         'Deletion journal contains an unexpected sentinel.',
                     );
+                }
+
                 events.push(event);
             }
+
             keyMarker = page.NextKeyMarker;
             versionIdMarker = page.NextVersionIdMarker;
             if (keyMarker) {
                 const marker = `${keyMarker}:${versionIdMarker ?? ''}`;
-                if (seenMarkers.has(marker))
+                if (seenMarkers.has(marker)) {
                     throw new Error(
                         'Deletion journal listing repeated a page.',
                     );
+                }
+
                 seenMarkers.add(marker);
             }
         } while (keyMarker);
+
         return events;
     }
 
@@ -97,9 +112,13 @@ export class S3AccountDeletionRecoveryReader {
                 ...(versionId ? { VersionId: versionId } : {}),
             }),
         );
-        if (!result.Body)
+
+        if (!result.Body) {
             throw new Error('Deletion journal object has no body.');
+        }
+
         const body = await result.Body.transformToByteArray();
+
         return decryptJournalEvent(body, this.options.encryptionKey, objectKey);
     }
 }

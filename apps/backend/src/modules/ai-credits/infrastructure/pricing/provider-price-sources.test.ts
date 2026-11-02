@@ -20,6 +20,7 @@ const flat = {
     input_cache_read: '0.00000001',
     input_cache_write: '0.000000125',
 };
+
 function openRouterFixture(
     options: {
         modelPricing?: Record<string, unknown>;
@@ -31,7 +32,7 @@ function openRouterFixture(
     const selected = options.modelTarget ?? target;
     const pricing = options.modelPricing ?? flat;
     const fetcher = vi.fn<typeof fetch>().mockImplementation(async (url) => {
-        if (String(url).includes('?'))
+        if (String(url).includes('?')) {
             return Response.json({
                 data: [
                     {
@@ -44,6 +45,8 @@ function openRouterFixture(
                     },
                 ],
             });
+        }
+
         return Response.json({
             data: {
                 id: selected.modelId,
@@ -58,25 +61,33 @@ function openRouterFixture(
             },
         });
     });
+
     return {
         source: createProviderPriceSources({ fetch: fetcher, now })[0]!,
         fetcher,
     };
 }
+
 function officialFixture() {
     const fetcher = vi
         .fn<typeof fetch>()
         .mockImplementation(async (input, init) => {
             const url = new URL(String(input));
-            if (url.origin === 'https://api-docs.deepseek.com')
+            if (url.origin === 'https://api-docs.deepseek.com') {
                 return new Response(fixtureText('deepseek-prices.html'));
-            if (url.origin === 'https://api.evolink.ai')
+            }
+
+            if (url.origin === 'https://api.evolink.ai') {
                 return Response.json(fixtureJson('evolink-luna.json'));
+            }
+
             if (url.origin === 'https://api.kie.ai') {
                 expect(init?.method).toBe('POST');
+
                 return Response.json(fixtureJson('kie-prices.json'));
             }
-            if (url.origin === 'https://kie.ai')
+
+            if (url.origin === 'https://kie.ai') {
                 return new Response(
                     fixtureText(
                         url.pathname.includes('gemini')
@@ -84,8 +95,12 @@ function officialFixture() {
                             : 'kie-eleven-product.html',
                     ),
                 );
-            if (url.pathname === '/api/v1/models')
+            }
+
+            if (url.pathname === '/api/v1/models') {
                 return Response.json(fixtureJson('openrouter-models.json'));
+            }
+
             const name = url.pathname.includes('gpt-6-luna')
                 ? 'luna'
                 : url.pathname.includes('qwen3.5')
@@ -93,15 +108,18 @@ function officialFixture() {
                   : url.pathname.includes('gemini-3.1')
                     ? 'gemini'
                     : 'eleven';
+
             return Response.json(
                 fixtureJson(`openrouter-${name}-endpoints.json`),
             );
         });
+
     return {
         sources: createProviderPriceSources({ fetch: fetcher, now }),
         fetcher,
     };
 }
+
 const catalog: ProviderPriceTarget[] = [
     { providerId: 'deepseek', modelId: 'deepseek-flash', meter: 'text-tokens' },
     { providerId: 'evolink', modelId: 'gpt-6-luna', meter: 'text-tokens' },
@@ -145,8 +163,10 @@ describe('complete official pricing source coverage', () => {
             'deepseek',
             'evolink',
             'kie',
+            'openai',
             'openrouter',
         ]);
+
         const results = (
             await Promise.all(
                 sources.map((source) =>
@@ -158,17 +178,21 @@ describe('complete official pricing source coverage', () => {
                 ),
             )
         ).flat();
+
         expect(results).toHaveLength(9);
         expect(
             results.filter((item) => item.status === 'available'),
         ).toHaveLength(8);
+
         expect(
             results.find((item) => item.target.modelId === 'gemini-2.5-pro'),
         ).toMatchObject({ status: 'model-not-found' });
+
         expect(results.some((item) => item.status === 'unsupported')).toBe(
             false,
         );
-        for (const item of results)
+
+        for (const item of results) {
             if (item.status === 'available') {
                 expect(item.price.nativeRules?.version).toBe(1);
                 for (const field of [
@@ -178,17 +202,24 @@ describe('complete official pricing source coverage', () => {
                     'cacheWriteUsdPerMillionTokens',
                     'usdPer1000Characters',
                     'minimumUsdPerRequest',
-                ] as const)
+                ] as const) {
                     expect(item.price[field]).toBeNull();
+                }
             }
+        }
     });
+
     it('preserves DeepSeek model columns and complete peak/offpeak windows with holiday provenance', async () => {
         const { sources } = officialFixture();
         const [result] = await sources
             .find((source) => source.providerId === 'deepseek')!
             .fetchPrices([catalog[0]!]);
+
         expect(result?.status).toBe('available');
-        if (result?.status !== 'available') return;
+        if (result?.status !== 'available') {
+            return;
+        }
+
         const rules = result.price.nativeRules!;
         expect(rules.validUntil).toBe('2026-11-29T00:00:00.000Z');
         expect(rules.variants[0]?.components).toContainEqual({
@@ -197,16 +228,19 @@ describe('complete official pricing source coverage', () => {
             unitQuantity: 1_000_000,
             chargeWhen: 'positive-usage',
         });
+
         expect(rules.variants[1]?.components).toContainEqual({
             meter: 'outputTokens',
             pricePerUnit: '0.6',
             unitQuantity: 1_000_000,
             chargeWhen: 'positive-usage',
         });
+
         expect(rules.variants[0]?.applies.dispatchWindows).toContainEqual({
             from: '2026-10-28T01:00:00.000Z',
             until: '2026-10-28T04:00:00.000Z',
         });
+
         const fetcher = vi
             .fn<typeof fetch>()
             .mockResolvedValue(
@@ -217,8 +251,10 @@ describe('complete official pricing source coverage', () => {
             now: () => new Date('2026-10-01T12:00:00Z'),
         }).find((item) => item.providerId === 'deepseek')!;
         const [holiday] = await source.fetchPrices([catalog[0]!]);
-        if (holiday?.status !== 'available')
+        if (holiday?.status !== 'available') {
             throw new Error('Expected holiday pricing.');
+        }
+
         expect(
             holiday.price.nativeRules?.variants
                 .find((item) => item.id === 'weekday-peak')
@@ -227,6 +263,7 @@ describe('complete official pricing source coverage', () => {
                 ),
         ).toBe(false);
     });
+
     it('does not invent holidays outside the reviewed calendar year', async () => {
         const fetcher = vi
             .fn<typeof fetch>()
@@ -237,31 +274,39 @@ describe('complete official pricing source coverage', () => {
             fetch: fetcher,
             now: () => new Date('2027-01-01T00:00:00Z'),
         }).find((item) => item.providerId === 'deepseek')!;
+
         expect(await source.fetchPrices([catalog[0]!])).toMatchObject([
             { status: 'source-changed' },
         ]);
     });
+
     it('retains EvoLink exact UC conversion, per-component minima/ceil and strictly-greater context tiers', async () => {
         const { sources } = officialFixture();
         const [result] = await sources
             .find((item) => item.providerId === 'evolink')!
             .fetchPrices([catalog[1]!]);
-        if (result?.status !== 'available')
+
+        if (result?.status !== 'available') {
             throw new Error('Expected native EvoLink pricing.');
+        }
+
         const rules = result.price.nativeRules!;
         expect(rules.currency).toEqual({
             code: 'UC',
             usdNumerator: '1',
             unitDenominator: '680000',
         });
+
         expect(rules.variants).toHaveLength(2);
         expect(rules.variants[0]?.applies.inputTokens).toEqual({
             minInclusive: 0,
             maxExclusive: 272001,
         });
+
         expect(rules.variants[1]?.applies.inputTokens).toEqual({
             minInclusive: 272001,
         });
+
         expect(rules.variants[0]?.components).toContainEqual({
             meter: 'outputTokens',
             pricePerUnit: '306',
@@ -270,12 +315,14 @@ describe('complete official pricing source coverage', () => {
             chargeWhen: 'request',
             rounding: { quantum: '1', mode: 'ceil' },
         });
+
         expect(
             rules.variants[1]?.components.find(
                 (item) => item.meter === 'outputTokens',
             )?.pricePerUnit,
         ).toBe('459');
     });
+
     it('rejects unknown EvoLink expressions or inconsistent native FX instead of executing them', async () => {
         for (const change of [
             (data: Record<string, unknown>) => {
@@ -295,6 +342,7 @@ describe('complete official pricing source coverage', () => {
                 string,
                 unknown
             >;
+
             change(raw);
             const fetcher = vi
                 .fn<typeof fetch>()
@@ -303,15 +351,18 @@ describe('complete official pricing source coverage', () => {
                 fetch: fetcher,
                 now,
             }).find((item) => item.providerId === 'evolink')!;
+
             expect(await source.fetchPrices([catalog[1]!])).toMatchObject([
                 { status: 'source-changed' },
             ]);
         }
     });
+
     it('rejects expired official EvoLink metadata without assigning its cache TTL to the tariff', async () => {
         const raw = fixtureJson('evolink-luna.json') as {
             meta: { fresh_until: string };
         };
+
         raw.meta.fresh_until = '2026-10-28T11:59:59.000Z';
         const fetcher = vi
             .fn<typeof fetch>()
@@ -319,20 +370,26 @@ describe('complete official pricing source coverage', () => {
         const source = createProviderPriceSources({ fetch: fetcher, now }).find(
             (item) => item.providerId === 'evolink',
         )!;
+
         expect(await source.fetchPrices([catalog[1]!])).toMatchObject([
             { status: 'source-changed' },
         ]);
+
         expect(fetcher.mock.calls[0]?.[1]?.headers).toMatchObject({
             'Cache-Control': 'no-cache',
         });
     });
+
     it('verifies Kie native audio-token prices and reported-credit conversion without character guesses', async () => {
         const { sources } = officialFixture();
         const [result] = await sources
             .find((item) => item.providerId === 'kie')!
             .fetchPrices([catalog[4]!]);
-        if (result?.status !== 'available')
+
+        if (result?.status !== 'available') {
             throw new Error('Expected native Kie pricing.');
+        }
+
         expect(result.price.meter).toBe('speech-tokens');
         expect(result.price.nativeRules).toMatchObject({
             reportedCreditUsdPerCredit: '0.005',
@@ -355,6 +412,7 @@ describe('complete official pricing source coverage', () => {
             ],
         });
     });
+
     it('never copies replacement-model pricing from a retired product URL that returns HTTP200', async () => {
         const rows = {
             code: 200,
@@ -385,14 +443,17 @@ describe('complete official pricing source coverage', () => {
         const source = createProviderPriceSources({ fetch: fetcher, now }).find(
             (item) => item.providerId === 'kie',
         )!;
+
         expect(await source.fetchPrices([catalog[2]!])).toMatchObject([
             { status: 'model-not-found' },
         ]);
     });
+
     it('refuses incomplete Kie pagination instead of publishing partial/ambiguous data', async () => {
         const raw = fixtureJson('kie-prices.json') as {
             data: { total: number };
         };
+
         raw.data.total++;
         const fetcher = vi
             .fn<typeof fetch>()
@@ -400,6 +461,7 @@ describe('complete official pricing source coverage', () => {
         const source = createProviderPriceSources({ fetch: fetcher, now }).find(
             (item) => item.providerId === 'kie',
         )!;
+
         expect(await source.fetchPrices([catalog[3]!])).toMatchObject([
             { status: 'unavailable' },
         ]);
@@ -443,22 +505,28 @@ describe('OpenRouter exact native discovery', () => {
                 },
             },
         });
+
         expect(fetcher).toHaveBeenCalledTimes(2);
-        for (const [, init] of fetcher.mock.calls)
+        for (const [, init] of fetcher.mock.calls) {
             expect(init).toMatchObject({
                 method: 'GET',
                 redirect: 'error',
                 headers: { Accept: 'application/json' },
             });
+        }
     });
+
     it('retains endpoint variation and high-precision cache rates rather than flattening them', async () => {
         const { sources } = officialFixture();
         const [result] = await sources[0]!.fetchPrices([catalog[7]!]);
-        if (result?.status !== 'available')
+        if (result?.status !== 'available') {
             throw new Error('Expected conditional Gemini prices.');
+        }
+
         const standard = result.price.nativeRules!.variants.filter((item) =>
             item.applies.serviceTiers?.includes('standard'),
         );
+
         expect(standard.length).toBeGreaterThan(1);
         expect(
             standard
@@ -467,6 +535,7 @@ describe('OpenRouter exact native discovery', () => {
                     (item) => item.pricePerUnit === '0.0000000833333333333333',
                 ),
         ).toBe(true);
+
         expect(
             new Set(
                 standard.flatMap((item) =>
@@ -480,6 +549,7 @@ describe('OpenRouter exact native discovery', () => {
             ).size,
         ).toBeGreaterThan(1);
     });
+
     it('resolves strictly-greater context tiers and per-key override inheritance', async () => {
         const pricing = {
             ...flat,
@@ -490,11 +560,14 @@ describe('OpenRouter exact native discovery', () => {
         };
         const { source } = openRouterFixture({ modelPricing: pricing });
         const [result] = await source.fetchPrices([target]);
-        if (result?.status !== 'available')
+        if (result?.status !== 'available') {
             throw new Error('Expected context price variants.');
+        }
+
         expect(
             result.price.nativeRules!.variants[0]?.applies.inputTokens,
         ).toEqual({ minInclusive: 0, maxExclusive: 272001 });
+
         expect(
             result.price.nativeRules!.variants[1]?.components,
         ).toContainEqual({
@@ -503,6 +576,7 @@ describe('OpenRouter exact native discovery', () => {
             unitQuantity: 1,
             chargeWhen: 'positive-usage',
         });
+
         expect(
             result.price.nativeRules!.variants[1]?.components,
         ).toContainEqual({
@@ -512,6 +586,7 @@ describe('OpenRouter exact native discovery', () => {
             chargeWhen: 'positive-usage',
         });
     });
+
     it('supports explicit UTC override windows with bounded validity and no gaps', async () => {
         const pricing = {
             ...flat,
@@ -526,21 +601,27 @@ describe('OpenRouter exact native discovery', () => {
         };
         const { source } = openRouterFixture({ modelPricing: pricing });
         const [result] = await source.fetchPrices([target]);
-        if (result?.status !== 'available')
+        if (result?.status !== 'available') {
             throw new Error('Expected schedule price variants.');
+        }
+
         expect(result.price.nativeRules!.validUntil).toBe(
             '2026-11-29T00:00:00.000Z',
         );
+
         expect(result.price.nativeRules!.variants).toHaveLength(2);
         const windows = result.price
             .nativeRules!.variants.flatMap(
                 (item) => item.applies.dispatchWindows!,
             )
             .sort((a, b) => a.from.localeCompare(b.from));
+
         expect(windows[0]?.from).toBe('2026-10-28T00:00:00.000Z');
-        for (let index = 1; index < windows.length; index++)
+        for (let index = 1; index < windows.length; index++) {
             expect(windows[index]?.from).toBe(windows[index - 1]?.until);
+        }
     });
+
     it('bounds the cross-product of context and scheduled price conditions', async () => {
         const changes = Array.from({ length: 32 }, (_, index) => ({
             min_prompt_tokens: index,
@@ -551,10 +632,12 @@ describe('OpenRouter exact native discovery', () => {
         const { source } = openRouterFixture({
             modelPricing: { ...flat, overrides: changes },
         });
+
         expect(await source.fetchPrices([target])).toMatchObject([
             { status: 'source-changed' },
         ]);
     });
+
     it('keeps absent cache meters absent and preserves actual zero prices', async () => {
         const { source } = openRouterFixture({
             modelPricing: { prompt: '0', completion: '0' },
@@ -576,6 +659,7 @@ describe('OpenRouter exact native discovery', () => {
             },
         });
     });
+
     it.each([
         { prompt: '-1', completion: '0' },
         { prompt: '1e-6', completion: '0' },
@@ -590,13 +674,16 @@ describe('OpenRouter exact native discovery', () => {
             { status: 'source-changed' },
         ]);
     });
+
     it('includes nonzero per-request charges instead of silently discarding them', async () => {
         const { source } = openRouterFixture({
             modelPricing: { ...flat, request: '0.01' },
         });
         const [result] = await source.fetchPrices([target]);
-        if (result?.status !== 'available')
+        if (result?.status !== 'available') {
             throw new Error('Expected request component.');
+        }
+
         expect(
             result.price.nativeRules!.variants[0]?.components,
         ).toContainEqual({
@@ -606,7 +693,8 @@ describe('OpenRouter exact native discovery', () => {
             chargeWhen: 'request',
         });
     });
-    for (const level of ['catalog', 'endpoint'] as const)
+
+    for (const level of ['catalog', 'endpoint'] as const) {
         it.each(['web_search', 'image', 'audio', 'input_audio_cache'])(
             `validates optional %s prices at ${level}, while scoping text-only execution`,
             async (field) => {
@@ -616,20 +704,25 @@ describe('OpenRouter exact native discovery', () => {
                         modelPricing: level === 'catalog' ? extra : flat,
                         endpointPricing: [level === 'endpoint' ? extra : flat],
                     });
+
                     expect(await source.fetchPrices([target])).toMatchObject([
                         { status: 'source-changed' },
                     ]);
                 }
+
                 const extra = { ...flat, [field]: '3' };
                 const { source } = openRouterFixture({
                     modelPricing: level === 'catalog' ? extra : flat,
                     endpointPricing: [level === 'endpoint' ? extra : flat],
                 });
+
                 expect(await source.fetchPrices([target])).toMatchObject([
                     { status: 'available' },
                 ]);
             },
         );
+    }
+
     it('requires exact model/provider identity and documented speech billing units', async () => {
         const { source } = openRouterFixture();
         expect(
@@ -641,6 +734,7 @@ describe('OpenRouter exact native discovery', () => {
             { status: 'model-not-found' },
             { status: 'model-not-found' },
         ]);
+
         const speech = {
             ...target,
             modelId: 'elevenlabs/future-speech',
@@ -651,6 +745,7 @@ describe('OpenRouter exact native discovery', () => {
             output: ['speech'],
             modelPricing: { prompt: '0.00004', completion: '0' },
         });
+
         expect(await speechSource.fetchPrices([speech])).toMatchObject([
             {
                 status: 'available',
@@ -670,15 +765,18 @@ describe('OpenRouter exact native discovery', () => {
                 },
             },
         ]);
+
         const { source: invalid } = openRouterFixture({
             modelTarget: speech,
             output: ['speech'],
             modelPricing: { prompt: '0', completion: '0.01' },
         });
+
         expect(await invalid.fetchPrices([speech])).toMatchObject([
             { status: 'source-changed' },
         ]);
     });
+
     it('returns sanitized failures and respects cancellation', async () => {
         const fetcher = vi
             .fn<typeof fetch>()
@@ -687,12 +785,14 @@ describe('OpenRouter exact native discovery', () => {
         expect(
             JSON.stringify(await source.fetchPrices([target])),
         ).not.toContain('secret');
+
         const { source: cancelled, fetcher: calls } = openRouterFixture();
         const controller = new AbortController();
         controller.abort();
         expect(
             await cancelled.fetchPrices([target], controller.signal),
         ).toMatchObject([{ status: 'unavailable' }]);
+
         expect(calls).not.toHaveBeenCalled();
     });
 });
@@ -703,6 +803,7 @@ describe('pricing HTTP boundary', () => {
         await expect(
             readPricingJson(fetcher, new URL('http://localhost/private')),
         ).rejects.toThrow();
+
         await expect(
             readPricingJson(
                 fetcher,
@@ -716,8 +817,10 @@ describe('pricing HTTP boundary', () => {
                 },
             ),
         ).rejects.toThrow();
+
         expect(fetcher).not.toHaveBeenCalled();
     });
+
     it('rejects advertised oversized bodies, streamed overflows and HTTP failures', async () => {
         const url = new URL('https://openrouter.ai/api/v1/models');
         for (const response of [
@@ -729,11 +832,13 @@ describe('pricing HTTP boundary', () => {
                 'too large',
             );
         }
+
         const fetcher = vi
             .fn<typeof fetch>()
             .mockResolvedValue(
                 new Response('server diagnostic', { status: 500 }),
             );
+
         await expect(readPricingJson(fetcher, url)).rejects.toThrow(
             'unavailable',
         );

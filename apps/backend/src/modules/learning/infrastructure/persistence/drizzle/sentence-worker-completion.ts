@@ -1,3 +1,4 @@
+import { privateSentenceQuery } from './sentence-worker-jobs';
 import type { SentenceFeedback } from '@languon/contracts';
 import { eq, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
@@ -56,7 +57,10 @@ export async function sentenceWorkerComplete(
             context.now,
         );
 
-        if (!locked) return 'lost';
+        if (!locked) {
+            return 'lost';
+        }
+
         const { job, invalid } = locked;
         if (invalid || job.cancellationRequestedAt) {
             await sentenceWorkerTerminal(tx, job, context.now, invalid, usage);
@@ -64,10 +68,12 @@ export async function sentenceWorkerComplete(
             return 'terminalized';
         }
 
-        if (!job.aiCreditProviderDispatchedAt)
+        if (!job.aiCreditProviderDispatchedAt) {
             throw new Error(
                 'Sentence publication requires dispatched provider attempt',
             );
+        }
+
         await write(tx, job);
         await settleSentenceAttempt(tx, job, context.now, usage, 'success');
         await recordTextAiCircuitSuccess(tx, circuitScope(job, context.now));
@@ -103,8 +109,10 @@ export async function sentenceWorkerCompleteGeneration(
         context,
         result.usage,
         async (tx, job) => {
-            if (job.jobKind !== 'sentence-generation')
+            if (job.jobKind !== 'sentence-generation') {
                 throw new Error('Wrong sentence job kind');
+            }
+
             const input = job.inputPayload as SentenceGenerationInput;
             const content = result.content;
             if (
@@ -125,8 +133,27 @@ export async function sentenceWorkerCompleteGeneration(
                 ) ||
                 new Set(content.targets.map((t) => t.entryId)).size !==
                     content.targets.length
-            )
+            ) {
                 throw new Error('Invalid sentence targets');
+            }
+
+            if (job.sourceKind === 'knowledge-vocabulary') {
+                if (!job.knowledgeSource) {
+                    throw new Error('Missing knowledge source');
+                }
+
+                await privateSentenceQuery(
+                    tx,
+                    sql`select public.languon_publish_knowledge_sentence_generation(${job.id}::uuid,${lease.workerId},${lease.fencingToken}::bigint,${JSON.stringify(content)}::jsonb)`,
+                );
+
+                return;
+            }
+
+            if (!job.dictionaryId) {
+                throw new Error('Missing dictionary source');
+            }
+
             const id = randomUUID();
             const publicContent = {
                 id,
@@ -161,7 +188,7 @@ export async function sentenceWorkerCompleteGeneration(
             await tx.insert(exerciseEntries).values(
                 content.targets.map((t) => ({
                     exerciseId: id,
-                    dictionaryId: job.dictionaryId,
+                    dictionaryId: job.dictionaryId!,
                     ...t,
                 })),
             );
@@ -174,10 +201,14 @@ export async function sentenceWorkerCompleteGeneration(
             if (
                 job.format.startsWith('sentence-preparation:') &&
                 !preparationChild
-            )
+            ) {
                 throw new Error('Preparation job has no durable parent');
-            if (!preparationChild)
+            }
+
+            if (!preparationChild) {
                 await exposeSentence(tx, job.learnerId, exercise!, context.now);
+            }
+
             await tx
                 .update(jobs)
                 .set({ resultExerciseId: id })
@@ -198,9 +229,28 @@ export async function sentenceWorkerCompleteCheck(
         context,
         result.usage,
         async (tx, job) => {
-            if (job.jobKind !== 'sentence-check')
+            if (job.jobKind !== 'sentence-check') {
                 throw new Error('Wrong sentence job kind');
+            }
+
             const input = job.inputPayload as SentenceCheckInput;
+            if (job.sourceKind === 'knowledge-vocabulary') {
+                if (!job.knowledgeSource) {
+                    throw new Error('Missing knowledge source');
+                }
+
+                await privateSentenceQuery(
+                    tx,
+                    sql`select public.languon_publish_knowledge_sentence_check(${job.id}::uuid,${lease.workerId},${lease.fencingToken}::bigint,${JSON.stringify(result.feedback)}::jsonb)`,
+                );
+
+                return;
+            }
+
+            if (!job.dictionaryId) {
+                throw new Error('Missing dictionary source');
+            }
+
             const id = randomUUID();
             await tx.insert(attempts).values({
                 id,

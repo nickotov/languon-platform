@@ -20,7 +20,10 @@ export function useCardLifecycle({
     const cardLifecycleMutation = useMutation({
         mutationFn: async (card: DictionaryCard) => {
             const versions = cards.data?.pages[0];
-            if (!versions) throw new Error('Dictionary unavailable');
+            if (!versions) {
+                throw new Error('Dictionary unavailable');
+            }
+
             return requestWithSession((token) =>
                 dictionaryApi.setCardLifecycle(
                     token,
@@ -40,6 +43,7 @@ export function useCardLifecycle({
                     ? t('dictionary.cards.archivedOutcome')
                     : t('dictionary.cards.restoredOutcome'),
             );
+
             await Promise.all([
                 queryClient.invalidateQueries({
                     queryKey: ['dictionary-cards', dictionaryId],
@@ -63,10 +67,17 @@ export function useCardLifecycle({
             const page = cards.data?.pages[0];
             const ordered =
                 cards.data?.pages.flatMap((entry) => entry.data) ?? [];
-            if (!page) throw new Error('Dictionary unavailable');
+
+            if (!page) {
+                throw new Error('Dictionary unavailable');
+            }
+
             const from = ordered.findIndex((entry) => entry.id === card.id);
             const to = from + direction;
-            if (from < 0 || to < 0 || to >= ordered.length) return;
+            if (from < 0 || to < 0 || to >= ordered.length) {
+                return;
+            }
+
             const ids = ordered.map((entry) => entry.id);
             [ids[from], ids[to]] = [ids[to]!, ids[from]!];
             await requestWithSession((token) =>

@@ -16,20 +16,31 @@ export interface JournalWriterOptions {
 /** This adapter only constructs PutObject calls; its runtime credential must have no read/delete grant. */
 export class S3AccountDeletionRecoveryJournal implements AccountDeletionRecoveryJournal {
     public constructor(private readonly options: JournalWriterOptions) {
-        if (!options.bucket || !options.prefix || !options.namespace) throw new Error('Deletion journal destination is required.');
+        if (!options.bucket || !options.prefix || !options.namespace) {
+            throw new Error('Deletion journal destination is required.');
+        }
     }
 
     public async initialize(): Promise<void> {
         const objectKey = `${this.options.prefix}/sentinel`;
         try {
-            await this.put(objectKey, { kind: 'sentinel', namespace: this.options.namespace });
+            await this.put(objectKey, {
+                kind: 'sentinel',
+                namespace: this.options.namespace,
+            });
         } catch (error) {
             // A concurrent initializer may have already created the immutable sentinel.
-            if (!isPreconditionFailure(error)) throw error;
+            if (!isPreconditionFailure(error)) {
+                throw error;
+            }
         }
     }
 
-    public async recordBlockingIntent(event: { scheduledAt: Date; userId: string; userVersion: number }): Promise<void> {
+    public async recordBlockingIntent(event: {
+        scheduledAt: Date;
+        userId: string;
+        userVersion: number;
+    }): Promise<void> {
         const objectKey = `${this.options.prefix}/events/${randomUUID()}`;
         await this.put(objectKey, {
             kind: 'blocking',
@@ -39,7 +50,11 @@ export class S3AccountDeletionRecoveryJournal implements AccountDeletionRecovery
         });
     }
 
-    public async recordCancellation(event: { cancelledAt: Date; userId: string; userVersion: number }): Promise<void> {
+    public async recordCancellation(event: {
+        cancelledAt: Date;
+        userId: string;
+        userVersion: number;
+    }): Promise<void> {
         const objectKey = `${this.options.prefix}/events/${randomUUID()}`;
         await this.put(objectKey, {
             kind: 'cancellation',
@@ -49,7 +64,11 @@ export class S3AccountDeletionRecoveryJournal implements AccountDeletionRecovery
         });
     }
 
-    public async recordCommittedDeletion(event: { scheduledAt: Date; userId: string; userVersion: number }): Promise<void> {
+    public async recordCommittedDeletion(event: {
+        scheduledAt: Date;
+        userId: string;
+        userVersion: number;
+    }): Promise<void> {
         await this.put(`${this.options.prefix}/events/${randomUUID()}`, {
             kind: 'committed',
             occurredAt: event.scheduledAt.toISOString(),
@@ -58,19 +77,33 @@ export class S3AccountDeletionRecoveryJournal implements AccountDeletionRecovery
         });
     }
 
-    private async put(objectKey: string, event: Parameters<typeof encryptJournalEvent>[0]): Promise<void> {
-        await this.options.client.send(new PutObjectCommand({
-            Bucket: this.options.bucket,
-            Key: objectKey,
-            Body: encryptJournalEvent(event, this.options.encryptionKey, objectKey),
-            ContentType: 'application/vnd.languon.deletion-journal+json',
-            IfNoneMatch: '*',
-            ServerSideEncryption: 'AES256',
-        }));
+    private async put(
+        objectKey: string,
+        event: Parameters<typeof encryptJournalEvent>[0],
+    ): Promise<void> {
+        await this.options.client.send(
+            new PutObjectCommand({
+                Bucket: this.options.bucket,
+                Key: objectKey,
+                Body: encryptJournalEvent(
+                    event,
+                    this.options.encryptionKey,
+                    objectKey,
+                ),
+                ContentType: 'application/vnd.languon.deletion-journal+json',
+                IfNoneMatch: '*',
+                ServerSideEncryption: 'AES256',
+            }),
+        );
     }
 }
 
 function isPreconditionFailure(error: unknown): boolean {
-    return typeof error === 'object' && error !== null && '$metadata' in error &&
-        (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 412;
+    return (
+        typeof error === 'object' &&
+        error !== null &&
+        '$metadata' in error &&
+        (error as { $metadata?: { httpStatusCode?: number } }).$metadata
+            ?.httpStatusCode === 412
+    );
 }

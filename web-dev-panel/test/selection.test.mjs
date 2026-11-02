@@ -48,6 +48,7 @@ test('production catalog exposes the worker and keeps migrations individual-only
         },
         { batchEligible: true, enabled: true, kind: 'service' },
     );
+
     assert.deepEqual(
         {
             batchEligible: byId.get('db:migrate')?.batchEligible,
@@ -72,6 +73,7 @@ test('custom-section start preserves every member and fails closed on missing ID
             runtimeReason: 'requires an interactive terminal',
         },
     ];
+
     assert.deepEqual(sectionStartSelections(commands, ['alpha', 'disabled']), {
         missingIds: [],
         nonBatchIds: [],
@@ -83,6 +85,7 @@ test('custom-section start preserves every member and fails closed on missing ID
         ],
         selections: [],
     });
+
     assert.deepEqual(sectionStartSelections(commands, ['alpha', 'missing']), {
         missingIds: ['missing'],
         nonBatchIds: [],
@@ -123,6 +126,7 @@ test('custom-section stop targets only active current member runs', () => {
             run: { id: 'run-outside', status: 'running' },
         },
     ];
+
     assert.deepEqual(sectionActiveRuns(commands, ['alpha', 'beta']), [
         { commandId: 'alpha', runId: 'run-alpha' },
     ]);

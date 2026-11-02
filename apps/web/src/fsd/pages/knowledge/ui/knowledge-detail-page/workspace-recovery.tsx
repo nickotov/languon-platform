@@ -46,16 +46,19 @@ export function WorkspaceRecovery({
         label = t('knowledge.unsavedEdits');
         state = 'dirty';
     }
+
     if (saveError) {
         label = t('knowledge.saveFailed');
         Icon = CircleAlert;
         state = 'error';
     }
+
     if (saving) {
         label = t('knowledge.saving');
         Icon = LoaderCircle;
         state = 'saving';
     }
+
     if (state === 'saved' && savedAt) {
         const date = new Date(savedAt);
         if (Number.isFinite(date.getTime())) {
@@ -64,15 +67,18 @@ export function WorkspaceRecovery({
                 minute: '2-digit',
                 hourCycle: 'h23',
             }).format(date);
+
             label = `${label} · ${time}`;
         }
     }
+
     const recoveryLabel = t(`knowledge.recovery.${status}`);
     const recoveryIssue =
         status === 'error' || status === 'conflict' || status === 'unsaved';
     const RecoveryIcon = status === 'unsaved' ? CloudOff : CloudAlert;
     const showDot = state === 'draft' || state === 'dirty';
     const showSaveRetry = saveError && canSave && !!onSave;
+
     return (
         <div className={styles.statusCluster}>
             <Popover>

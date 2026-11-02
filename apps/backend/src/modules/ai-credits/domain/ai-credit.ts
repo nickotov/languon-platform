@@ -53,6 +53,7 @@ export function effectiveAiCreditPolicy(
     ) {
         return 'unlimited';
     }
+
     return 'limited';
 }
 
@@ -63,6 +64,7 @@ export function validateAdminCreditAdjustment(amount: bigint): bigint {
             `Credit adjustment must be non-zero and no greater than ${maximumAdminCreditAdjustment.toString()} credits.`,
         );
     }
+
     return amount;
 }
 
@@ -72,6 +74,7 @@ export function validatePositiveCreditAmount(amount: bigint): bigint {
             `Credit amount must be between 1 and ${maximumAiCreditAmount.toString()}.`,
         );
     }
+
     return amount;
 }
 
@@ -95,14 +98,17 @@ export function calculateAiCreditUsage(input: {
             'Token counts and credit rates must be non-negative safe integers.',
         );
     }
+
     const credits =
         BigInt(input.inputTokens) * input.inputCreditsPerToken +
         BigInt(input.outputTokens) * input.outputCreditsPerToken;
+
     if (credits > maximumAiCreditAmount) {
         throw new AiCreditInvalidAmountError(
             'Calculated credit usage is too large.',
         );
     }
+
     return credits;
 }
 
@@ -110,9 +116,18 @@ export function resolveAiCreditMeasurement(
     policyMode: string,
     hasProviderUsage: boolean,
 ): AiCreditMeasurement {
-    if (hasProviderUsage) return 'provider_reported';
-    if (policyMode === 'unlimited') return 'unmetered';
-    if (policyMode === 'limited') return 'estimated';
+    if (hasProviderUsage) {
+        return 'provider_reported';
+    }
+
+    if (policyMode === 'unlimited') {
+        return 'unmetered';
+    }
+
+    if (policyMode === 'limited') {
+        return 'estimated';
+    }
+
     throw new AiCreditInvalidAmountError('AI credit policy mode is invalid.');
 }
 
@@ -132,19 +147,23 @@ export function settleAiCreditReservation(input: {
             'Settlement credit amount is invalid.',
         );
     }
+
     if (
         input.measurement === 'speech_success' ||
         input.measurement === 'speech_no_charge'
-    )
+    ) {
         throw new AiCreditInvalidAmountError(
             'Speech uses success-only settlement.',
         );
+    }
+
     if (input.measurement === 'technical_failure') {
         if (input.measuredCredits !== null) {
             throw new AiCreditInvalidAmountError(
                 'Technical failure cannot claim measured customer credits.',
             );
         }
+
         return {
             chargedCredits: 0n,
             measuredCredits: null,
@@ -152,6 +171,7 @@ export function settleAiCreditReservation(input: {
             releasedCredits: input.reservedCredits,
         };
     }
+
     if (input.measurement === 'provider_reported') {
         if (input.measuredCredits === null || input.measuredCredits < 0n) {
             throw new AiCreditInvalidAmountError(
@@ -163,20 +183,24 @@ export function settleAiCreditReservation(input: {
             'Estimated and unmetered settlement cannot claim measured credits.',
         );
     }
+
     if (input.policyMode === 'limited' && input.measurement === 'unmetered') {
         throw new AiCreditInvalidAmountError(
             'Settlement measurement does not match the pinned credit policy.',
         );
     }
+
     const chargedCredits =
         input.policyMode === 'unlimited'
             ? 0n
             : input.measurement === 'estimated'
               ? input.reservedCredits
               : (input.measuredCredits ?? 0n);
+
     if (chargedCredits > input.reservedCredits) {
         throw new AiCreditUsageExceedsReservationError();
     }
+
     return {
         chargedCredits,
         measuredCredits: input.measuredCredits,
@@ -201,24 +225,46 @@ export function allocateAiCredits(
     const allocations: AiCreditAllocation[] = [];
     let remaining = amount;
     for (const lot of eligible) {
-        if (remaining === 0n) break;
+        if (remaining === 0n) {
+            break;
+        }
+
         const credits =
             lot.availableCredits < remaining ? lot.availableCredits : remaining;
+
         allocations.push({ credits, grantId: lot.id });
         remaining -= credits;
     }
-    if (remaining > 0n) throw new AiCreditInsufficientBalanceError();
+
+    if (remaining > 0n) {
+        throw new AiCreditInsufficientBalanceError();
+    }
+
     return allocations;
 }
 
 function compareAiCreditLots(left: AiCreditLot, right: AiCreditLot) {
-    if (left.expiresAt === null && right.expiresAt !== null) return 1;
-    if (left.expiresAt !== null && right.expiresAt === null) return -1;
+    if (left.expiresAt === null && right.expiresAt !== null) {
+        return 1;
+    }
+
+    if (left.expiresAt !== null && right.expiresAt === null) {
+        return -1;
+    }
+
     const expiryDifference =
         (left.expiresAt?.getTime() ?? 0) - (right.expiresAt?.getTime() ?? 0);
-    if (expiryDifference !== 0) return expiryDifference;
+
+    if (expiryDifference !== 0) {
+        return expiryDifference;
+    }
+
     const creationDifference =
         left.createdAt.getTime() - right.createdAt.getTime();
-    if (creationDifference !== 0) return creationDifference;
+
+    if (creationDifference !== 0) {
+        return creationDifference;
+    }
+
     return left.id.localeCompare(right.id);
 }

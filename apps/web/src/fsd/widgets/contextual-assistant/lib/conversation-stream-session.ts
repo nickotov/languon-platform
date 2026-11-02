@@ -43,19 +43,26 @@ export function createConversationStreamSession({
     const listeners = new Set<() => void>();
     function updateFlags(next: Partial<typeof flags>) {
         flags = { ...flags, ...next };
-        for (const listener of listeners) listener();
+        for (const listener of listeners) {
+            listener();
+        }
     }
+
     function resetPublication(active: boolean) {
         state.epoch += 1;
         state.active = active;
         state.queue = Promise.resolve();
     }
+
     const transport = new DurableChatTransport({
         request,
         shareKey,
         getDetail: () => state.detail,
         onAdmitted(turn) {
-            if (!state.active) return;
+            if (!state.active) {
+                return;
+            }
+
             state.admission?.resolve(turn);
             state.admission = null;
         },
@@ -67,23 +74,32 @@ export function createConversationStreamSession({
         transport,
         sendAutomaticallyWhen: () => false,
         onData(part) {
-            if (!state.active) return;
-            if (part.type === 'data-connection') {
-                updateFlags({ reconnecting: part.data.reconnecting });
+            if (!state.active) {
                 return;
             }
+
+            if (part.type === 'data-connection') {
+                updateFlags({ reconnecting: part.data.reconnecting });
+
+                return;
+            }
+
             if (part.type === 'data-reconcile') {
                 if (part.data.conversation.id === id) {
                     state.bootstrapped = true;
                     chat.messages = conversationUIMessages(part.data);
                 }
+
                 return;
             }
+
             if (
                 part.type !== 'data-canonical' ||
                 part.data.conversationId !== id
-            )
+            ) {
                 return;
+            }
+
             state.bootstrapped = true;
             const epoch = state.epoch;
             // Cancellation may finish after a GET success continuation. Wait before
@@ -91,16 +107,23 @@ export function createConversationStreamSession({
             const cancelled = client.cancelQueries({ queryKey, exact: true });
             state.queue = state.queue.then(async () => {
                 await cancelled;
-                if (!state.active || state.epoch !== epoch) return;
+                if (!state.active || state.epoch !== epoch) {
+                    return;
+                }
+
                 client.setQueryData<ConversationDetail>(queryKey, (current) =>
                     reduceConversationEvent(current, part.data),
                 );
+
                 state.detail =
                     client.getQueryData<ConversationDetail>(queryKey);
             });
         },
         onError(error) {
-            if (!state.active) return;
+            if (!state.active) {
+                return;
+            }
+
             state.admission?.reject(error);
             state.admission = null;
             if (
@@ -116,6 +139,7 @@ export function createConversationStreamSession({
             }
         },
     });
+
     return {
         state,
         chat,
@@ -123,6 +147,7 @@ export function createConversationStreamSession({
         resetPublication,
         subscribe(listener: () => void) {
             listeners.add(listener);
+
             return () => {
                 listeners.delete(listener);
             };

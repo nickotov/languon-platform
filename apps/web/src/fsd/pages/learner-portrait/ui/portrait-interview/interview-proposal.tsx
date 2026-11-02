@@ -45,6 +45,7 @@ export function InterviewProposal({
     function edit() {
         setEditing((value) => !value);
     }
+
     function editNote(event: ChangeEvent<HTMLTextAreaElement>) {
         const text = event.target.value;
         setItems((previous) =>
@@ -58,10 +59,17 @@ export function InterviewProposal({
                 : previous,
         );
     }
+
     function accept() {
-        if (items && !over) onAccept(items);
+        if (items && !over) {
+            onAccept(items);
+        }
     }
-    if (!items) return null;
+
+    if (!items) {
+        return null;
+    }
+
     return (
         <article
             className={styles.proposal}

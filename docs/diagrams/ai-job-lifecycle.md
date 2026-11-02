@@ -36,8 +36,19 @@ source_paths:
     - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/worker-financial-authority.sql
     - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-provider-expense-guards.sql
     - apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store.ts
-source_fingerprint: sha256:fec8569689ca090296a62e3b56dae10daef04ebeaa976c7b1fb9f8d14e74b52e
-reviewed: 2026-10-22
+    - apps/backend/src/modules/knowledge/application/transcription-job-service.ts
+    - apps/backend/src/modules/knowledge/application/private-translation-service.ts
+    - apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts
+    - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts
+    - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-lifecycle.ts
+    - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-transaction.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts
+    - docs/adr/0049-native-provider-pricing-and-accounting.md
+    - docs/adr/0051-duration-based-transcription-accounting.md
+source_fingerprint: sha256:ceb1b69d9732813140a90839086c3a20d6408162882a325c53982267f0f9f055
+reviewed: 2026-11-01
 ---
 
 # AI job lifecycle and accounting
@@ -87,6 +98,8 @@ reconnect replays without another generation or charge"]
 operator limits still apply"]
     Usage -.-> Report["Background reports: provider USD expenses,
 purchase revenue, grants and unknown costs separately"]
+    Queue -.-> SourceFence["Knowledge source adapters: live saved-source/share/fence checks"]
+    SourceFence --> Worker
 ```
 
 Typed feature modules retain source authorization, job ownership and result publication.
@@ -120,6 +133,17 @@ browser subscriptions. Sentence preparation uses one explicit parent authorizati
 children share its hold, pins, 10,000 output tokens and five-call allowance rather than
 receiving fresh budgets automatically. Exhaustion requires explicit Continue with new
 authorization. Reporting and bounded cleanup run in background connections.
+
+Knowledge transcription is a native-duration action, not a token action. Its
+admission pins source bytes/duration, customer tariff, native provider pricing and
+code-owned processing approval; dispatch additionally requires a live worker
+observation and fenced lease. Receipt-bound terminal settlement records provider
+duration when supplied, otherwise unknown expense, and never lets cancelled output
+publish. Private Knowledge translations reuse the Texts action/job authority with
+actor-owned overlays; note sentence generation/checking reuses the Learning engine.
+Both source adapters recheck live saved-source/share authority and delete or fence
+their private work on source removal. These are present implementation paths, while
+external-provider activation remains separately gated.
 
 Disabling dictionary credit enforcement now disables new generation admission; it is
 not an unaccounted execution route. Read, Accept, cancellation and worker drain remain
@@ -182,3 +206,14 @@ performance or production activation claim.
 - [apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-provider-expense-guards.sql](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-provider-expense-guards.sql)
 
 - [apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store.ts](../../apps/backend/src/modules/learning/infrastructure/persistence/drizzle/drizzle-sentence-preparation-store.ts)
+- [apps/backend/src/modules/knowledge/application/transcription-job-service.ts](../../apps/backend/src/modules/knowledge/application/transcription-job-service.ts)
+- [apps/backend/src/modules/knowledge/application/private-translation-service.ts](../../apps/backend/src/modules/knowledge/application/private-translation-service.ts)
+- [apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts](../../apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts)
+- [docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md](../adr/0050-interactive-workbook-content-and-learning-boundaries.md)
+- [apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts)
+- [apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts)
+- [apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-lifecycle.ts](../../apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-lifecycle.ts)
+- [apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-transaction.ts](../../apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-transaction.ts)
+- [apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts](../../apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts)
+- [docs/adr/0049-native-provider-pricing-and-accounting.md](../../docs/adr/0049-native-provider-pricing-and-accounting.md)
+- [docs/adr/0051-duration-based-transcription-accounting.md](../../docs/adr/0051-duration-based-transcription-accounting.md)

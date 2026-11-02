@@ -14,13 +14,18 @@ export function calculateSpeechPrice(
     rate: number,
     minimum: number,
 ): bigint {
-    if (!Number.isSafeInteger(characters) || characters < 0)
+    if (!Number.isSafeInteger(characters) || characters < 0) {
         throw new AiCreditInvalidAmountError();
+    }
+
     const rateMilli = rateAmount(rate);
     const minimumMilli = rateAmount(minimum);
     const charge = (BigInt(characters) * rateMilli + 999n) / 1000n;
     const result = charge > minimumMilli ? charge : minimumMilli;
-    if (result > maximumAiCreditAmount) throw new AiCreditInvalidAmountError();
+    if (result > maximumAiCreditAmount) {
+        throw new AiCreditInvalidAmountError();
+    }
+
     return result;
 }
 
@@ -40,12 +45,16 @@ export function maximumTextPrice(
             input.maxInputTokensPerAttempt,
             input.maxOutputTokensPerAttempt,
         ].every((value) => Number.isSafeInteger(value) && value >= 0)
-    )
+    ) {
         throw new AiCreditInvalidAmountError();
+    }
+
     rateAmount(rates.inputCreditsPerMillionTokens);
     rateAmount(rates.outputCreditsPerMillionTokens);
-    if (rates.cachedInputCreditsPerMillionTokens != null)
+    if (rates.cachedInputCreditsPerMillionTokens != null) {
         rateAmount(rates.cachedInputCreditsPerMillionTokens);
+    }
+
     const amount = roundActionChargeMilli(
         maximumActionChargeNumerator(
             {
@@ -66,9 +75,12 @@ export function maximumTextPrice(
             },
         ),
     );
+
     // Operator-funded flows can legitimately have no customer tariff.
-    if (amount < 0n || amount > maximumAiCreditAmount)
+    if (amount < 0n || amount > maximumAiCreditAmount) {
         throw new AiCreditInvalidAmountError();
+    }
+
     return Number(amount);
 }
 
@@ -76,8 +88,10 @@ function rateAmount(value: number): bigint {
     try {
         return parseCreditMilli(String(value));
     } catch (error) {
-        if (error instanceof InvalidExactCreditAmountError)
+        if (error instanceof InvalidExactCreditAmountError) {
             throw new AiCreditInvalidAmountError();
+        }
+
         throw error;
     }
 }

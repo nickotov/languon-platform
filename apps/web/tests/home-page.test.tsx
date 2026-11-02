@@ -25,6 +25,7 @@ const greetings = {
 function renderHome(locale: keyof typeof greetings = 'en') {
     const client = new QueryClient();
     clients.push(client);
+
     return render(
         <QueryClientProvider client={client}>
             <HomePage dateLabel='21 October 2026' />
@@ -55,6 +56,7 @@ describe('home dashboard', () => {
                     exact: true,
                 }),
             ).toBeVisible();
+
             expect(screen.getByText('21 October 2026')).toBeVisible();
             expect(screen.queryByRole('link')).not.toBeInTheDocument();
             expect(fetcher).not.toHaveBeenCalled();
@@ -73,6 +75,7 @@ describe('home dashboard', () => {
                 createdAt: '2026-10-21T00:00:00.000Z',
             },
         });
+
         const fetcher = vi.fn().mockImplementation((url: string) => {
             const body = url.endsWith('/interview/status')
                 ? { interview: null, creditsBypass: false }
@@ -84,10 +87,12 @@ describe('home dashboard', () => {
                       approved: null,
                       draft: null,
                   };
+
             return Promise.resolve(
                 new Response(JSON.stringify(body), { status: 200 }),
             );
         });
+
         vi.stubGlobal('fetch', fetcher);
         renderHome();
         expect(
@@ -96,12 +101,15 @@ describe('home dashboard', () => {
                 name: 'Welcome back, @learner',
             }),
         ).toBeVisible();
+
         expect(
             await screen.findByRole('link', { name: 'Start interview' }),
         ).toHaveAttribute('href', '/portrait/intro');
+
         expect(
             screen.getByRole('link', { name: 'Fill it in myself' }),
         ).toHaveAttribute('href', '/portrait/manual');
+
         expect(fetcher).toHaveBeenCalledTimes(2);
     });
 });

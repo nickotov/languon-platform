@@ -21,6 +21,7 @@ const fields = z
         (value) => new Set(value).size === value.length,
         'Fields must be unique',
     );
+
 export const FlashcardConfigurationSchema = z
     .object({ front: fields, back: fields })
     .strict();
@@ -47,6 +48,7 @@ const entryIds = (maximum: number) =>
             (value) => new Set(value).size === value.length,
             'Entry IDs must be unique',
         );
+
 export const FlashcardPrepareRequestSchema = z
     .object({
         configuration: FlashcardConfigurationSchema,
@@ -167,6 +169,7 @@ export const LearningCapabilitiesResponseSchema = z
 export const LearningErrorCodeSchema = z.enum([
     'authentication_required',
     'dictionary_not_found',
+    'source_not_found',
     'shared_dictionary_not_found',
     'entry_not_found',
     'invalid_request',

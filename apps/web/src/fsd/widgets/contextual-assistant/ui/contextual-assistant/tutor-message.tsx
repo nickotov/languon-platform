@@ -1,4 +1,7 @@
+import { MessageBlockReferences } from './block-reference-controls';
+import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
 import { Check } from 'lucide-react';
+import { KnowledgeBlockProposalsForTurn } from '@/fsd/features/knowledge-notes';
 import type {
     ConversationEditorTarget,
     ConversationTurn,
@@ -28,6 +31,7 @@ import {
 import styles from './conversation-messages.module.css';
 
 export function TutorMessage({
+    blocks = [],
     message,
     changed,
     turn,
@@ -46,6 +50,7 @@ export function TutorMessage({
     reviewingProposalId,
     onReviewingProposal,
 }: {
+    blocks?: KnowledgeBlockReference[] | undefined;
     message: ConversationUIMessage;
     changed: boolean;
     turn: ConversationTurn | undefined;
@@ -54,7 +59,7 @@ export function TutorMessage({
     question: string;
     onRetry(turn: ConversationTurn): void;
     onContinue?: (() => void) | undefined;
-    onPropose(message?: ConversationUIMessage): void;
+    onPropose?: ((message?: ConversationUIMessage) => void) | undefined;
     workspaceTargetId?: string | undefined;
     workspaceAnchor?: ConversationEditorTarget | undefined;
     proposalRootId?: string | undefined;
@@ -91,7 +96,10 @@ export function TutorMessage({
         .map((part) => part.text)
         .join('');
     const displayedText = useStreamingText(text, streaming);
-    if (!canonical) return null;
+    if (!canonical) {
+        return null;
+    }
+
     const isUser = message.role === 'user';
     const materials = message.parts.filter(
         (part) => part.type === 'data-material',
@@ -99,9 +107,15 @@ export function TutorMessage({
     const tools = message.parts.filter(
         (part) =>
             part.type === 'tool-read_source_context' ||
-            part.type === 'tool-propose_knowledge_note',
+            part.type === 'tool-propose_knowledge_note' ||
+            part.type === 'tool-propose_learning_blocks',
     );
     const complete = !isUser && canonical.status === 'complete';
+    const hasBlockProposal = canonical.toolCalls.some(
+        (tool) =>
+            tool.name === 'propose_learning_blocks' &&
+            tool.state === 'succeeded',
+    );
     const workspaceMaterials = isUser && Boolean(onAcceptWorkspaceProposal);
     const copiedAttachments = materials.map((material) => material.data);
     const selectedPassage = workspaceMaterials
@@ -113,15 +127,26 @@ export function TutorMessage({
     const failedBeforeAnswer = isUser && failed && !hasAssistant;
     const failureLabel = `${copy.incomplete}: ${question}`;
     function propose() {
-        onPropose(message);
+        onPropose?.(message);
     }
+
+    const proposalAction = onPropose ? propose : undefined;
     function retry() {
-        if (turn) onRetry(turn);
+        if (turn) {
+            onRetry(turn);
+        }
     }
+
     return (
         <article className={styles.message}>
             {changed && <div className={styles.divider}>{copy.changed}</div>}
             <div className={isUser ? styles.userGroup : styles.answer}>
+                {isUser && (canonical.blockReferences?.length ?? 0) > 0 && (
+                    <MessageBlockReferences
+                        ids={canonical.blockReferences!}
+                        available={blocks}
+                    />
+                )}
                 {selectedPassage && (
                     <WorkspaceMessagePassage content={selectedPassage} />
                 )}
@@ -152,11 +177,17 @@ export function TutorMessage({
                     tools.map((tool) => {
                         const finished = tool.state === 'output-available';
                         const error = tool.state === 'output-error';
-                        const name =
-                            tool.type === 'tool-read_source_context'
-                                ? copy.reading
-                                : copy.preparingNote;
+                        let name = copy.preparingNote;
+                        if (tool.type === 'tool-read_source_context') {
+                            name = copy.reading;
+                        }
+
+                        if (tool.type === 'tool-propose_learning_blocks') {
+                            name = labels.preparingBlocks;
+                        }
+
                         const state = error ? copy.toolFailed : copy.running;
+
                         return (
                             <p key={tool.toolCallId} className={styles.notice}>
                                 {finished ? (
@@ -176,6 +207,9 @@ export function TutorMessage({
                         streaming={streaming}
                         workspace={Boolean(onAcceptWorkspaceProposal)}
                     />
+                )}
+                {!isUser && (
+                    <KnowledgeBlockProposalsForTurn turnId={canonical.turnId} />
                 )}
                 {canonical.sourceProvenance === 'draft' && (
                     <span className={styles.notice}>{copy.draftLabel}</span>
@@ -209,7 +243,7 @@ export function TutorMessage({
                         disabled={active}
                     />
                 )}
-                {complete && onAcceptWorkspaceProposal && (
+                {complete && onAcceptWorkspaceProposal && !hasBlockProposal && (
                     <WorkspaceProposal
                         content={text}
                         targetId={workspaceTargetId}
@@ -228,7 +262,7 @@ export function TutorMessage({
                     <div className={styles.actions}>
                         <ResponseActions
                             text={text}
-                            onPropose={propose}
+                            onPropose={proposalAction}
                             canPropose={!onAcceptWorkspaceProposal}
                             disabled={active}
                         />

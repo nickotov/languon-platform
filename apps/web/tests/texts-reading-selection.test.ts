@@ -5,6 +5,7 @@ afterEach(() => {
     document.body.replaceChildren();
     window.getSelection()?.removeAllRanges();
 });
+
 function select(text: string, start: number, end: number) {
     const root = document.createElement('div');
     const pair = document.createElement('span');
@@ -19,11 +20,14 @@ function select(text: string, start: number, end: number) {
     range.setEnd(pair.firstChild!, end);
     range.getBoundingClientRect = () =>
         ({ top: 0, left: 0, width: 30, height: 20 }) as DOMRect;
+
     const selection = window.getSelection()!;
     selection.removeAllRanges();
     selection.addRange(range);
+
     return { root, pair, selection, range };
 }
+
 describe('native contextual text selection', () => {
     it('retains live range geometry as the reader scrolls without changing phrase offsets', () => {
         const { root, pair, selection, range } = select('A word.', 2, 6);
@@ -33,14 +37,17 @@ describe('native contextual text selection', () => {
 
         range.getBoundingClientRect = () =>
             ({ top: 240, left: 180, width: 48, height: 20 }) as DOMRect;
+
         expect(result.anchor?.getBoundingClientRect()).toMatchObject({
             top: 240,
             left: 180,
         });
+
         expect(result.selection).toMatchObject({
             startOffset: 2,
             endOffset: 6,
         });
+
         expect(result.text).toBe('word');
     });
 
@@ -56,10 +63,12 @@ describe('native contextual text selection', () => {
             endOffset: 12,
         });
     });
+
     it('rejects selecting two actual sentences inside a single aligned pair', () => {
         const { root, selection } = select('One. Two.', 1, 8);
         expect(analyzeReadingSelection(root, selection)?.kind).toBe('cross');
     });
+
     it('counts Unicode code points while keeping UTF16 transport offsets', () => {
         const { root, selection } = select('😀'.repeat(200) + '.', 0, 400);
         expect(analyzeReadingSelection(root, selection)?.kind).toBe('valid');
@@ -68,6 +77,7 @@ describe('native contextual text selection', () => {
             analyzeReadingSelection(tooLong.root, tooLong.selection)?.kind,
         ).toBe('long');
     });
+
     it('rejects selection across pair boundaries', () => {
         const { root, pair, selection, range } = select('First.', 0, 3);
         const next = pair.cloneNode() as HTMLElement;
@@ -79,6 +89,7 @@ describe('native contextual text selection', () => {
         selection.addRange(range);
         expect(analyzeReadingSelection(root, selection)?.kind).toBe('cross');
     });
+
     it('maps visible repeated Unicode words to original offsets after structural edge whitespace is removed', () => {
         const original = ' \n 😀 word word.\n\n';
         const fragment = readingFragment(original);
@@ -86,6 +97,7 @@ describe('native contextual text selection', () => {
             text: '😀 word word.',
             offsetOrigin: 3,
         });
+
         const { root, pair, selection } = select(fragment.text, 8, 12);
         pair.dataset.offsetOrigin = String(fragment.offsetOrigin);
         const result = analyzeReadingSelection(root, selection)!;
@@ -94,12 +106,14 @@ describe('native contextual text selection', () => {
             startOffset: 11,
             endOffset: 15,
         });
+
         expect(
             original.slice(
                 result.selection.startOffset,
                 result.selection.endOffset,
             ),
         ).toBe('word');
+
         expect(result.sentenceStart).toBe(3);
         expect(
             result.sentence.slice(
@@ -107,6 +121,7 @@ describe('native contextual text selection', () => {
                 result.selection.endOffset - result.sentenceStart,
             ),
         ).toBe('word');
+
         expect(original).toBe(' \n 😀 word word.\n\n');
     });
 });

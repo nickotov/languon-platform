@@ -17,7 +17,10 @@ import {
     revisions,
     update,
 } from './knowledge-note-operations';
-import { type KnowledgeLifecycleParticipant } from './knowledge-persistence-support';
+import type {
+    KnowledgeLifecycleParticipant,
+    KnowledgeStoreContext,
+} from './knowledge-persistence-support';
 import {
     copyShared,
     getShare,
@@ -48,70 +51,33 @@ export class DrizzleKnowledgeStore implements KnowledgeStore {
         },
     ) {}
 
+    private get persistence(): KnowledgeStoreContext {
+        return {
+            database: this.database,
+            lifecycle: this.lifecycle,
+            shareCrypto: this.shareCrypto,
+            limits: this.limits,
+        };
+    }
+
     list(ownerId: string, query: ListKnowledgeQuery) {
-        return list(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            query,
-        );
+        return list(this.persistence, ownerId, query);
     }
 
     get(ownerId: string, noteId: string) {
-        return get(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            noteId,
-        );
+        return get(this.persistence, ownerId, noteId);
     }
 
     create(ownerId: string, input: CreateKnowledgeNoteRequest) {
-        return create(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            input,
-        );
+        return create(this.persistence, ownerId, input);
     }
 
     update(ownerId: string, noteId: string, input: UpdateKnowledgeNoteRequest) {
-        return update(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            noteId,
-            input,
-        );
+        return update(this.persistence, ownerId, noteId, input);
     }
 
     revisions(ownerId: string, noteId: string) {
-        return revisions(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            noteId,
-        );
+        return revisions(this.persistence, ownerId, noteId);
     }
 
     restore(
@@ -119,17 +85,7 @@ export class DrizzleKnowledgeStore implements KnowledgeStore {
         noteId: string,
         input: RestoreKnowledgeNoteRequest,
     ) {
-        return restore(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            noteId,
-            input,
-        );
+        return restore(this.persistence, ownerId, noteId, input);
     }
 
     async delete(
@@ -137,56 +93,19 @@ export class DrizzleKnowledgeStore implements KnowledgeStore {
         noteId: string,
         input: DeleteKnowledgeNoteRequest,
     ): Promise<void> {
-        return deleteNote(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            noteId,
-            input,
-        );
+        return deleteNote(this.persistence, ownerId, noteId, input);
     }
 
     async getWorkspace(ownerId: string, noteId: string) {
-        return getWorkspace(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            noteId,
-        );
+        return getWorkspace(this.persistence, ownerId, noteId);
     }
 
     async listWorkspaces(ownerId: string, query: ListKnowledgeQuery) {
-        return listWorkspaces(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            query,
-        );
+        return listWorkspaces(this.persistence, ownerId, query);
     }
 
     async createDraft(ownerId: string, input: { operationId: string }) {
-        return createDraft(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            input,
-        );
+        return createDraft(this.persistence, ownerId, input);
     }
 
     async updateWorking(
@@ -199,17 +118,7 @@ export class DrizzleKnowledgeStore implements KnowledgeStore {
             content: KnowledgeWorkingContent;
         },
     ) {
-        return updateWorking(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            noteId,
-            input,
-        );
+        return updateWorking(this.persistence, ownerId, noteId, input);
     }
 
     async resolveWorking(
@@ -222,17 +131,7 @@ export class DrizzleKnowledgeStore implements KnowledgeStore {
             discardBranches: { id: string; expectedVersion: number }[];
         },
     ) {
-        return resolveWorking(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            noteId,
-            input,
-        );
+        return resolveWorking(this.persistence, ownerId, noteId, input);
     }
 
     async saveWorkspace(
@@ -245,17 +144,7 @@ export class DrizzleKnowledgeStore implements KnowledgeStore {
             expectedPublishedVersion: number;
         },
     ) {
-        return saveWorkspace(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            noteId,
-            input,
-        );
+        return saveWorkspace(this.persistence, ownerId, noteId, input);
     }
 
     async saveWorkspaceCopy(
@@ -267,69 +156,23 @@ export class DrizzleKnowledgeStore implements KnowledgeStore {
             expectedVersion: number;
         },
     ) {
-        return saveWorkspaceCopy(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            noteId,
-            input,
-        );
+        return saveWorkspaceCopy(this.persistence, ownerId, noteId, input);
     }
 
     async getShare(ownerId: string, noteId: string) {
-        return getShare(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            noteId,
-        );
+        return getShare(this.persistence, ownerId, noteId);
     }
 
     async issueShare(ownerId: string, noteId: string) {
-        return issueShare(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            noteId,
-        );
+        return issueShare(this.persistence, ownerId, noteId);
     }
 
     async revokeShare(ownerId: string, noteId: string) {
-        return revokeShare(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            noteId,
-        );
+        return revokeShare(this.persistence, ownerId, noteId);
     }
 
     async readShared(locator: string, key: string) {
-        return readShared(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            locator,
-            key,
-        );
+        return readShared(this.persistence, locator, key);
     }
 
     async copyShared(
@@ -338,18 +181,7 @@ export class DrizzleKnowledgeStore implements KnowledgeStore {
         key: string,
         input: { operationId: string; expectedVersion: number },
     ) {
-        return copyShared(
-            {
-                database: this.database,
-                lifecycle: this.lifecycle,
-                shareCrypto: this.shareCrypto,
-                limits: this.limits,
-            },
-            ownerId,
-            locator,
-            key,
-            input,
-        );
+        return copyShared(this.persistence, ownerId, locator, key, input);
     }
 }
 export type { KnowledgeLifecycleParticipant } from './knowledge-persistence-support';

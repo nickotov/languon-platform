@@ -17,3 +17,11 @@ User accepted the source-backed [survey](../../../docs/surveys/chat-markdown-to-
 ## Exclusions
 
 No new document nodes/schema, Markdown storage, media/RAG, automatic reinterpretation of saved notes or ordinary paste, paid model calls or remote conversion. Existing literal Markdown remains unchanged unless explicitly reused.
+
+## Later authorized extension
+
+The original criteria and evidence above describe the2026-10-20 delivery.
+The user subsequently authorized preserving H1 and supporting horizontal rules
+through F059 DOC-1–DOC-5 and ADR-0053. That additive follow-up replaces the old
+H1 mapping/no-rule constraint for future editing/insertion; it does not rewrite
+saved documents or retroactively change this delivery's historical evidence.

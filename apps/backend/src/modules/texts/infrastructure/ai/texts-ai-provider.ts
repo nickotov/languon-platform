@@ -1,3 +1,11 @@
+import {
+    preflightKnowledgeExerciseEvaluation,
+    runKnowledgeExerciseEvaluation,
+} from '../../../knowledge/infrastructure/ai/exercise-evaluation-provider';
+import {
+    preflightKnowledgeFieldAction,
+    runKnowledgeFieldAction,
+} from '../../../knowledge/infrastructure/ai/block-field-provider';
 import { withQueuedTextAiProviderAttempt } from '../../../text-ai/infrastructure/ai/with-queued-text-ai-provider-attempt';
 import type { TextAiProviderRuntimeOptions } from '../../../text-ai/infrastructure/ai/text-ai-provider-runtime-observer';
 import { ProviderExecutionError } from '../../../text-ai/infrastructure/ai/provider-execution-outcome';
@@ -44,12 +52,36 @@ function request(input: TextJobInput) {
               supportedLanguages: SUPPORTED_LANGUAGE_TAGS,
           };
 }
+
 /** Conservative byte upper bounds: fail before reservation/provider, never silently truncate. */
 export function preflightTextsRequest(
     input: TextJobInput,
     execution: TextAiExecutionSnapshot,
     budget: TextAiProviderBudgetPolicy,
 ) {
+    if (
+        input.kind === 'text-translation' &&
+        input.knowledgeExerciseEvaluation
+    ) {
+        preflightKnowledgeExerciseEvaluation(
+            input.knowledgeExerciseEvaluation,
+            execution,
+            budget,
+        );
+
+        return;
+    }
+
+    if (input.kind === 'text-translation' && input.knowledgeFieldAction) {
+        preflightKnowledgeFieldAction(
+            input.knowledgeFieldAction,
+            execution,
+            budget,
+        );
+
+        return;
+    }
+
     const schema =
         input.kind === 'text-translation'
             ? TextTranslationProviderOutputSchema
@@ -81,6 +113,7 @@ export function preflightTextsRequest(
               ) +
               256
             : 256;
+
     if (
         inputBound >
             Math.min(
@@ -92,24 +125,30 @@ export function preflightTextsRequest(
                 execution.perCallMaxOutputTokens,
                 budget.maxOutputTokensPerAttempt,
             )
-    )
+    ) {
         throw new TextsAiError(
             'model_capacity_exceeded',
             'This text is too long to translate in one action. Shorten the text and try again.',
         );
+    }
 }
+
 function usageOf(
     value: unknown,
     limits: { maxInputTokens: number; maxOutputTokens: number },
     transportResult?: unknown,
 ): TextsTokenUsage | undefined {
-    if (value === undefined || value === null) return undefined;
+    if (value === undefined || value === null) {
+        return undefined;
+    }
+
     try {
         return readProviderTokenUsage(value, limits, transportResult);
     } catch {
         throw new TextsProviderInvalidOutputError();
     }
 }
+
 export function createTextsAiProvider(options: {
     runtime?: TextAiProviderRuntimeOptions;
     credentials: Partial<
@@ -126,6 +165,28 @@ export function createTextsAiProvider(options: {
     return {
         async run(call) {
             call.signal.throwIfAborted();
+            if (
+                call.input.kind === 'text-translation' &&
+                call.input.knowledgeExerciseEvaluation
+            ) {
+                return runKnowledgeExerciseEvaluation(
+                    { ...options.runtime, ...options },
+                    call,
+                    call.input.knowledgeExerciseEvaluation,
+                );
+            }
+
+            if (
+                call.input.kind === 'text-translation' &&
+                call.input.knowledgeFieldAction
+            ) {
+                return runKnowledgeFieldAction(
+                    { ...options.runtime, ...options },
+                    call,
+                    call.input.knowledgeFieldAction,
+                );
+            }
+
             preflightTextsRequest(call.input, call.execution, call.budget);
             const resolved = resolveTextAiProviderOptions({
                 ...options.runtime,
@@ -142,7 +203,7 @@ export function createTextsAiProvider(options: {
                 call.input.kind === 'text-translation'
                     ? agents.textTranslationAgent
                     : agents.textDetectionAgent;
-            const schema =
+            const schema: z.ZodType =
                 call.input.kind === 'text-translation'
                     ? TextTranslationProviderOutputSchema
                     : TextDetectionResultSchema;
@@ -190,38 +251,56 @@ export function createTextsAiProvider(options: {
                     typeof error === 'object' &&
                     'name' in error &&
                     error.name === 'AI_NoObjectGeneratedError'
-                )
+                ) {
                     throw new TextsProviderInvalidOutputError(
                         'usage' in error
                             ? usageOf(error.usage, limits)
                             : undefined,
                     );
+                }
+
                 throw new ProviderExecutionError(
                     error,
                     call.execution.providerId,
                 );
             }
+
             call.signal.throwIfAborted();
             const usage = usageOf(result.usage, limits, result);
             if (
                 result.tripwire &&
                 result.tripwire.processorId !== 'structured-output'
-            )
+            ) {
                 throw new TextsAiError('provider_policy_rejected');
-            if (result.error)
+            }
+
+            if (result.error) {
                 throw new ProviderExecutionError(
                     result.error,
                     call.execution.providerId,
                 );
-            if (result.tripwire || result.finishReason === 'length')
+            }
+
+            if (result.tripwire || result.finishReason === 'length') {
                 throw new TextsProviderInvalidOutputError(usage);
-            const parsed = schema.safeParse(result.object);
-            if (!parsed.success)
+            }
+
+            const parsed =
+                call.input.kind === 'text-translation'
+                    ? TextTranslationProviderOutputSchema.safeParse(
+                          result.object,
+                      )
+                    : TextDetectionResultSchema.safeParse(result.object);
+
+            if (!parsed.success) {
                 throw new TextsProviderInvalidOutputError(usage);
+            }
+
             return { draft: parsed.data, ...(usage ? { usage } : {}) };
         },
     };
 }
+
 /** Injected synthetic fixtures only; worker applies the same production validation. */
 export class DeterministicTextsAiProvider implements TextsAiProvider {
     constructor(
@@ -231,8 +310,10 @@ export class DeterministicTextsAiProvider implements TextsAiProvider {
             | ReturnType<TextsAiProvider['run']>
             | Awaited<ReturnType<TextsAiProvider['run']>>,
     ) {}
+
     async run(call: TextsProviderCall) {
         call.signal.throwIfAborted();
+
         return this.fixture(call.input);
     }
 }

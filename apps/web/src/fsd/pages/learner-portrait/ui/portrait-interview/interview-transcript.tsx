@@ -33,6 +33,7 @@ export function InterviewTranscript({
         latestUser?.role === 'user'
             ? latestUser.content
             : undefined;
+
     return (
         <div
             role='log'

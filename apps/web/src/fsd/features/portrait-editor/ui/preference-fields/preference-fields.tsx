@@ -85,6 +85,7 @@ export function PreferenceField({
     function handleChange(next: string) {
         onChange(field, next);
     }
+
     return (
         <RadioGroup
             label={definition.label}
@@ -98,6 +99,7 @@ export function PreferenceField({
         />
     );
 }
+
 export function StyleFields({
     items,
     onChange,
@@ -111,10 +113,15 @@ export function StyleFields({
 }) {
     function handleChange(field: PreferenceKey, value: string) {
         const next = { ...items };
-        if (value) Object.assign(next, { [field]: value });
-        else delete next[field];
+        if (value) {
+            Object.assign(next, { [field]: value });
+        } else {
+            delete next[field];
+        }
+
         onChange(next);
     }
+
     return (
         <div className={styles.fields}>
             {(['tone', 'detail', 'wording', 'approach'] as const).map(

@@ -27,7 +27,10 @@ import { AdministrationHttpError } from './administration-http-error';
 export function mapAdministrationHttpError(
     error: Error,
 ): AdministrationHttpError {
-    if (error instanceof AdministrationHttpError) return error;
+    if (error instanceof AdministrationHttpError) {
+        return error;
+    }
+
     if (error instanceof TextAiProbeUnavailableError) {
         const messages = {
             probe_recovery_required:
@@ -47,33 +50,41 @@ export function mapAdministrationHttpError(
             probe_check_required:
                 'Run a matching successful flow check before activation.',
         };
+
         return new AdministrationHttpError(
             error.code,
             messages[error.code],
             error.code === 'probe_limit_reached' ? 429 : 409,
         );
     }
-    if (error instanceof SentenceLibraryDeletionBusyError)
+
+    if (error instanceof SentenceLibraryDeletionBusyError) {
         return new AdministrationHttpError(
             'sentence_library_deletion_busy',
             'Related sentence work is still settling. Retry after it completes.',
             409,
         );
-    if (error instanceof SentenceConflictError)
+    }
+
+    if (error instanceof SentenceConflictError) {
         return new AdministrationHttpError(
             'sentence_library_conflict',
             'The saved sentence selection changed. Refresh and confirm again.',
             409,
         );
+    }
+
     if (
         error instanceof SentenceUnavailableError ||
         error instanceof AdminSentenceLibraryUnavailableError
-    )
+    ) {
         return new AdministrationHttpError(
             'sentence_library_unavailable',
             'The saved sentence library is unavailable.',
             404,
         );
+    }
+
     if (error instanceof AdminAccessDeniedError) {
         return new AdministrationHttpError(
             'admin_access_denied',
@@ -81,6 +92,7 @@ export function mapAdministrationHttpError(
             403,
         );
     }
+
     if (error instanceof RecentAuthenticationRequiredError) {
         return new AdministrationHttpError(
             'recent_authentication_required',
@@ -88,6 +100,7 @@ export function mapAdministrationHttpError(
             403,
         );
     }
+
     if (error instanceof AdminUserNotFoundError) {
         return new AdministrationHttpError(
             'user_not_found',
@@ -95,6 +108,7 @@ export function mapAdministrationHttpError(
             404,
         );
     }
+
     if (error instanceof AdminUserStateConflictError) {
         return new AdministrationHttpError(
             'user_state_conflict',
@@ -102,6 +116,7 @@ export function mapAdministrationHttpError(
             409,
         );
     }
+
     if (error instanceof AdminAiSettingsConflictError) {
         return new AdministrationHttpError(
             'ai_settings_conflict',
@@ -109,6 +124,7 @@ export function mapAdministrationHttpError(
             409,
         );
     }
+
     if (error instanceof AdminAiSettingsUnavailableError) {
         return new AdministrationHttpError(
             'capability_unavailable',
@@ -116,6 +132,7 @@ export function mapAdministrationHttpError(
             503,
         );
     }
+
     if (error instanceof AdminAiCreditAccountConflictError) {
         return new AdministrationHttpError(
             'ai_credit_account_conflict',
@@ -123,6 +140,7 @@ export function mapAdministrationHttpError(
             409,
         );
     }
+
     if (error instanceof AdminAiCreditAdjustmentExceedsAvailableError) {
         return new AdministrationHttpError(
             'ai_credit_adjustment_exceeds_available',
@@ -130,6 +148,7 @@ export function mapAdministrationHttpError(
             409,
         );
     }
+
     if (error instanceof AdminAiCreditTargetUnavailableError) {
         return new AdministrationHttpError(
             'ai_credit_target_unavailable',
@@ -137,6 +156,7 @@ export function mapAdministrationHttpError(
             409,
         );
     }
+
     if (error instanceof AdminAiCreditInvalidRequestError) {
         return new AdministrationHttpError(
             'invalid_request',
@@ -144,6 +164,7 @@ export function mapAdministrationHttpError(
             400,
         );
     }
+
     if (error instanceof AdminDeletionCancellationUnavailableError) {
         return new AdministrationHttpError(
             'deletion_cancellation_unavailable',
@@ -151,6 +172,7 @@ export function mapAdministrationHttpError(
             409,
         );
     }
+
     if (error instanceof AdminCancellationJournalUnavailableError) {
         return new AdministrationHttpError(
             'service_unavailable',
@@ -158,6 +180,7 @@ export function mapAdministrationHttpError(
             503,
         );
     }
+
     if (error instanceof AdminSelfDisableForbiddenError) {
         return new AdministrationHttpError(
             'self_disable_forbidden',
@@ -165,6 +188,7 @@ export function mapAdministrationHttpError(
             403,
         );
     }
+
     if (error instanceof AdminLastOwnerForbiddenError) {
         return new AdministrationHttpError(
             'last_owner_forbidden',
@@ -189,6 +213,7 @@ export function mapAdministrationHttpError(
         verification_failed: 'verification_failed',
     } as const;
     const code = supportedCodes[auth.code as keyof typeof supportedCodes];
+
     return new AdministrationHttpError(
         code ?? 'internal_error',
         auth.message,

@@ -59,7 +59,9 @@ function agent(routeId: string, minimumUsdPerRequest?: string) {
         defaultStreamOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
         defaultOptions: { maxSteps: 1 },
     });
+
     instance.__registerPrimitives({ logger: noopLogger });
+
     return instance;
 }
 
@@ -104,11 +106,14 @@ describe('reviewed gateway production adapters', () => {
                     const warnings =
                         body.response_format.json_schema.schema.properties
                             .warnings;
+
                     expect(warnings.items).toEqual({ type: 'string' });
                     expect(warnings.maxItems).toBe(0);
+
                     return completion(JSON.stringify(empty));
                 },
             );
+
             vi.stubGlobal('fetch', providerFetch);
 
             const result = await agent('openrouter/openai/gpt-6-luna').generate(
@@ -130,9 +135,11 @@ describe('reviewed gateway production adapters', () => {
             async (_url: unknown, init?: RequestInit) => {
                 const body = JSON.parse(String(init?.body));
                 expect(body.provider.max_price.request).toBe(0.00015);
+
                 return completion();
             },
         );
+
         vi.stubGlobal('fetch', providerFetch);
         await agent('openrouter/openai/gpt-6-luna', '0.000150').generate(
             'Synthetic fixture.',
@@ -142,6 +149,7 @@ describe('reviewed gateway production adapters', () => {
                 toolChoice: 'none',
             },
         );
+
         expect(providerFetch).toHaveBeenCalledOnce();
     });
 
@@ -154,6 +162,7 @@ describe('reviewed gateway production adapters', () => {
                     expect(String(url)).toBe(
                         `${model.apiBaseUrl}/chat/completions`,
                     );
+
                     expect(init?.method).toBe('POST');
                     const body = JSON.parse(String(init?.body));
                     expect(body).toMatchObject({
@@ -164,9 +173,10 @@ describe('reviewed gateway production adapters', () => {
                             json_schema: { strict: false },
                         },
                     });
+
                     expect(body.models).toBeUndefined();
                     expect(body.plugins).toBeUndefined();
-                    if (model.providerId === 'openrouter')
+                    if (model.providerId === 'openrouter') {
                         expect(body.provider).toEqual({
                             allow_fallbacks: false,
                             require_parameters: true,
@@ -179,9 +189,12 @@ describe('reviewed gateway production adapters', () => {
                                 image: 0,
                             },
                         });
+                    }
+
                     return completion();
                 },
             );
+
             vi.stubGlobal('fetch', providerFetch);
             const result = await agent(routeId).generate('Synthetic fixture.', {
                 modelSettings: { maxOutputTokens: 73, maxRetries: 0 },
@@ -203,11 +216,13 @@ describe('reviewed gateway production adapters', () => {
                 toolChoice: 'none',
                 tracingOptions: { hideInput: true, hideOutput: true },
             });
+
             expect(result.object).toEqual({ ok: true });
             expect(result.totalUsage).toMatchObject({
                 inputTokens: 12,
                 outputTokens: 5,
             });
+
             expect(providerFetch).toHaveBeenCalledTimes(1);
         },
     );
@@ -227,6 +242,7 @@ describe('reviewed gateway production adapters', () => {
                         zdr: true,
                     },
                 });
+
                 const chunks = [
                     {
                         id: 'synthetic',
@@ -254,6 +270,7 @@ describe('reviewed gateway production adapters', () => {
                         },
                     },
                 ];
+
                 return new Response(
                     chunks
                         .map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`)
@@ -262,18 +279,23 @@ describe('reviewed gateway production adapters', () => {
                 );
             },
         );
+
         vi.stubGlobal('fetch', providerFetch);
         const result = await agent('openrouter/openai/gpt-6-luna').stream(
             'Synthetic.',
             { modelSettings: { maxRetries: 0, maxOutputTokens: 21 } },
         );
         const text: string[] = [];
-        for await (const part of result.textStream) text.push(part);
+        for await (const part of result.textStream) {
+            text.push(part);
+        }
+
         expect(text.join('')).toBe('Hello');
         expect(await result.totalUsage).toMatchObject({
             inputTokens: 12,
             outputTokens: 1,
         });
+
         expect(providerFetch).toHaveBeenCalledTimes(1);
     });
 
@@ -283,6 +305,7 @@ describe('reviewed gateway production adapters', () => {
         const providerFetch = vi.fn(
             async (_url: unknown, init?: RequestInit) => {
                 transportSignal = init?.signal ?? undefined;
+
                 return await new Promise<Response>((_resolve, reject) => {
                     transportSignal?.addEventListener(
                         'abort',
@@ -292,6 +315,7 @@ describe('reviewed gateway production adapters', () => {
                 });
             },
         );
+
         vi.stubGlobal('fetch', providerFetch);
         const result = agent('openrouter/openai/gpt-6-luna').generate(
             'Synthetic.',
@@ -300,6 +324,7 @@ describe('reviewed gateway production adapters', () => {
                 modelSettings: { maxRetries: 0, maxOutputTokens: 16 },
             },
         );
+
         // Mastra represents an aborted generation as a tripwire result; owning
         // production providers recheck their signal before publishing it.
         await vi.waitFor(() => expect(providerFetch).toHaveBeenCalledTimes(1));
@@ -327,13 +352,16 @@ describe('reviewed gateway production adapters', () => {
                         },
                     },
                 ]);
+
                 expect(body.provider).toMatchObject({
                     allow_fallbacks: false,
                     require_parameters: true,
                     data_collection: 'deny',
                     zdr: true,
                 });
+
                 expect(body.max_tokens).toBe(37);
+
                 return new Response(
                     JSON.stringify({
                         id: 'synthetic',
@@ -369,6 +397,7 @@ describe('reviewed gateway production adapters', () => {
                 );
             },
         );
+
         vi.stubGlobal('fetch', providerFetch);
         const instance = new Agent({
             id: 'synthetic-tool-fixture',
@@ -391,11 +420,13 @@ describe('reviewed gateway production adapters', () => {
             },
             defaultOptions: { maxSteps: 1 },
         });
+
         instance.__registerPrimitives({ logger: noopLogger });
         const result = await instance.generate('Synthetic term: book.', {
             maxSteps: 1,
             modelSettings: { maxRetries: 0, maxOutputTokens: 37 },
         });
+
         expect(result.toolCalls).toHaveLength(1);
         expect(execute).toHaveBeenCalledOnce();
         expect(providerFetch).toHaveBeenCalledOnce();
@@ -426,10 +457,12 @@ describe('reviewed gateway production adapters', () => {
                     ),
             ),
         );
+
         const result = await agent('openrouter/openai/gpt-6-luna').generate(
             'Synthetic.',
             { modelSettings: { maxRetries: 0, maxOutputTokens: 21 } },
         );
+
         expect(result.totalUsage?.inputTokens).toBeUndefined();
         expect(result.totalUsage?.outputTokens).toBeUndefined();
     });
@@ -445,12 +478,14 @@ describe('reviewed gateway production adapters', () => {
                     { headers: { 'content-type': 'application/json' } },
                 ),
         );
+
         vi.stubGlobal('fetch', providerFetch);
         await expect(
             agent('openrouter/openai/gpt-6-luna').generate('Synthetic.', {
                 modelSettings: { maxRetries: 0, maxOutputTokens: 21 },
             }),
         ).rejects.toThrow();
+
         expect(providerFetch).toHaveBeenCalledTimes(1);
     });
 
@@ -473,12 +508,14 @@ describe('reviewed gateway production adapters', () => {
                         },
                     ),
             );
+
             vi.stubGlobal('fetch', providerFetch);
             await expect(
                 agent('openrouter/openai/gpt-6-luna').generate('Synthetic.', {
                     modelSettings: { maxRetries: 0, maxOutputTokens: 16 },
                 }),
             ).rejects.toThrow();
+
             expect(providerFetch).toHaveBeenCalledTimes(1);
         },
     );
@@ -490,6 +527,7 @@ describe('reviewed gateway production adapters', () => {
                 'fetch',
                 vi.fn(async () => completion('{"unrequested":true}')),
             );
+
             await expect(
                 agent(routeId).generate('Synthetic.', {
                     modelSettings: { maxRetries: 0, maxOutputTokens: 21 },
@@ -506,6 +544,7 @@ describe('reviewed gateway production adapters', () => {
         expect(() =>
             createTextAiMastraModel({ apiKey: 'synthetic', model }),
         ).toThrow();
+
         expect(() =>
             createTextAiMastraModel({
                 apiKey: 'synthetic',
@@ -519,6 +558,7 @@ describe('reviewed gateway production adapters', () => {
         const model = textAiModelCatalog.find(
             (model) => model.providerId === 'kie',
         )!;
+
         expect(model.retired).toBe(true);
         expect(() =>
             resolveTextAiExecutionSnapshot(
@@ -549,12 +589,14 @@ describe('reviewed gateway production adapters', () => {
             EVOLINK_API_KEY: 'synthetic-evolink',
             OPENROUTER_API_KEY: 'synthetic-openrouter',
         });
+
         expect(() =>
             loadTextAiProviderCredentials(
                 { EVOLINK_API_KEY: ' ' },
                 diagnostics,
             ),
         ).toThrow();
+
         expect(diagnostics.error).toHaveBeenCalledWith(
             expect.stringContaining('EVOLINK_API_KEY'),
         );
@@ -591,6 +633,7 @@ describe('production sentence gateway rejection metadata', () => {
                         },
                     ),
             );
+
             vi.stubGlobal('fetch', providerFetch);
             await expect(
                 createSentenceAiProvider({
@@ -651,6 +694,7 @@ describe('production sentence gateway rejection metadata', () => {
                     },
                 }),
             ).rejects.toMatchObject({ executionOutcome });
+
             expect(providerFetch).toHaveBeenCalledTimes(1);
         },
     );

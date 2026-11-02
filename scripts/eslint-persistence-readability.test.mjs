@@ -110,3 +110,19 @@ test('normal autofix introduces whitespace without changing expressions', async 
     assert.equal(result.output, source.replace('    return', '\n    return'));
     assert.deepEqual(await messages(result.output), []);
 });
+
+test('formerly oversized implementations follow the ordinary persistence limit', async () => {
+    const source = Array(501).fill('void 0;').join('\n');
+
+    for (const filePath of [
+        'apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-admission.ts',
+        'apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-content-mutations.ts',
+        'apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-admission.ts',
+    ]) {
+        assert.ok(
+            (await messages(source, filePath)).some(
+                ({ ruleId }) => ruleId === 'max-lines',
+            ),
+        );
+    }
+});

@@ -48,18 +48,25 @@ export function useCardInteraction({
         function update() {
             setReducedMotion(query.matches);
         }
+
         update();
         query.addEventListener('change', update);
+
         return () => query.removeEventListener('change', update);
     }, []);
+
     useEffect(() => {
         drag.current = null;
         offset.current = 0;
         setDx(0);
         departure.current = false;
         setDeparting(false);
+
         return () => {
-            if (timer.current) clearTimeout(timer.current);
+            if (timer.current) {
+                clearTimeout(timer.current);
+            }
+
             if (fade.current) {
                 clearTimeout(fade.current.timeout);
                 fade.current.finish();
@@ -69,7 +76,10 @@ export function useCardInteraction({
     }, [itemKey]);
 
     useEffect(() => {
-        if (!recover) return;
+        if (!recover) {
+            return;
+        }
+
         departure.current = false;
         setDeparting(false);
         setDx(0);
@@ -83,12 +93,15 @@ export function useCardInteraction({
             target.closest('button, a, input') ||
             disabled ||
             departure.current
-        )
+        ) {
             return;
+        }
+
         threshold.current = Math.min(
             120,
             (ref.current?.offsetWidth ?? 320) * 0.3,
         );
+
         drag.current = {
             x: event.clientX,
             y: event.clientY,
@@ -99,34 +112,45 @@ export function useCardInteraction({
                 Boolean(target.closest('[data-card-text]')),
         };
     }
+
     function onPointerMove(event: PointerEvent<HTMLDivElement>) {
         const current = drag.current;
-        if (!current || current.id !== event.pointerId) return;
+        if (!current || current.id !== event.pointerId) {
+            return;
+        }
+
         const x = event.clientX - current.x;
         const y = event.clientY - current.y;
         if (!current.axis) {
             if (Math.abs(x) > 12 && Math.abs(x) > Math.abs(y) * 1.2) {
                 moved.current = true;
                 current.axis = current.mouseText ? 'y' : 'x';
-                if (current.axis === 'x')
+                if (current.axis === 'x') {
                     ref.current?.setPointerCapture(event.pointerId);
+                }
             } else if (Math.abs(y) > 12) {
                 moved.current = true;
                 current.axis = 'y';
-            } else return;
+            } else {
+                return;
+            }
         }
+
         if (current.axis === 'x') {
             offset.current = x;
             setDx(x);
         }
     }
+
     function end(commit: boolean) {
         const current = drag.current;
         drag.current = null;
         const x = offset.current;
         offset.current = 0;
-        if (current && ref.current?.hasPointerCapture(current.id))
+        if (current && ref.current?.hasPointerCapture(current.id)) {
             ref.current.releasePointerCapture(current.id);
+        }
+
         if (
             commit &&
             !disabled &&
@@ -144,33 +168,49 @@ export function useCardInteraction({
                         fade.current = null;
                         finish();
                     }, 200);
+
                     fade.current = { timeout, finish };
                 });
             }
+
             onRate(x > 0 ? 'known' : 'again', beforeAdvance);
         } else if (!departure.current) {
             setDx(0);
         }
     }
+
     function onPointerUp() {
         end(true);
     }
+
     function onPointerCancel() {
         end(false);
     }
+
     function onClick(event: MouseEvent<HTMLDivElement>) {
         if (
             moved.current ||
             departure.current ||
             (event.target as HTMLElement).closest('button, a, input')
-        )
+        ) {
             return;
-        if (timer.current) clearTimeout(timer.current);
-        if (event.detail > 1) return;
+        }
+
+        if (timer.current) {
+            clearTimeout(timer.current);
+        }
+
+        if (event.detail > 1) {
+            return;
+        }
+
         timer.current = setTimeout(() => {
-            if (!window.getSelection()?.toString()) onFlip();
+            if (!window.getSelection()?.toString()) {
+                onFlip();
+            }
         }, 220);
     }
+
     const progress = Math.min(1, Math.abs(dx) / threshold.current);
     const transform = dx
         ? `translateX(${dx}px) rotate(${reducedMotion ? 0 : Math.max(-18, Math.min(18, dx / 40))}deg)`

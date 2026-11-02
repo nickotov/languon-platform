@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { eq, inArray, or } from 'drizzle-orm';
+import { eq, inArray, or, sql } from 'drizzle-orm';
 import { payloadHash, type AdminMcpTransaction } from './admin-mcp-persistence';
 import {
     adminMcpAuditTable,
@@ -14,7 +14,16 @@ export async function purgeAdminMcpForOwner(
     tx: AdminMcpTransaction,
     ownerUserId: string,
     at = new Date(),
+    authorization?: { workerId: string; fencingToken: number },
 ): Promise<void> {
+    if (authorization) {
+        await tx.execute(
+            sql`select languon_purge_admin_mcp_owner(${ownerUserId}::uuid, ${authorization.workerId}, ${authorization.fencingToken}, ${at.toISOString()}::timestamptz)`,
+        );
+
+        return;
+    }
+
     const tokens = await tx
         .select({ id: adminMcpTokensTable.id })
         .from(adminMcpTokensTable)
@@ -96,16 +105,19 @@ export async function purgeAdminMcpForOwner(
             'actionId',
         ]) {
             const value = event.metadata[key];
-            if (typeof value === 'string' && /^[0-9a-f-]{36}$/i.test(value))
+            if (typeof value === 'string' && /^[0-9a-f-]{36}$/i.test(value)) {
                 references[key] = value;
+            }
         }
 
         const expenses = event.metadata.providerExpenseIds;
-        if (Array.isArray(expenses))
+        if (Array.isArray(expenses)) {
             references.providerExpenseIds = expenses.filter(
                 (value): value is string =>
                     typeof value === 'string' && /^[0-9a-f-]{36}$/i.test(value),
             );
+        }
+
         await tx
             .update(adminMcpAuditTable)
             .set({

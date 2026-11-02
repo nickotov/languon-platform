@@ -52,17 +52,24 @@ export function TutorShell({
     const lastFocus = useRef<HTMLElement | null>(null);
     const firstMount = useRef(true);
     useEffect(() => {
-        if (!firstMount.current) return;
+        if (!firstMount.current) {
+            return;
+        }
+
         firstMount.current = false;
-        if (!folded)
+        if (!folded) {
             requestAnimationFrame(() =>
                 panelRef.current?.focus({ preventScroll: true }),
             );
+        }
     }, [folded]);
+
     function fold() {
         const focus = document.activeElement;
-        if (focus instanceof HTMLElement && panelRef.current?.contains(focus))
+        if (focus instanceof HTMLElement && panelRef.current?.contains(focus)) {
             lastFocus.current = focus;
+        }
+
         onFold();
         requestAnimationFrame(() => {
             if (workspace && placement && !placement.detached) {
@@ -70,14 +77,18 @@ export function TutorShell({
                 const control = window.matchMedia('(max-width: 767px)').matches
                     ? '[data-workspace-tab="document"]'
                     : '[data-workspace-layout-mode="focus"]';
+
                 content
                     ?.querySelector<HTMLElement>(control)
                     ?.focus({ preventScroll: true });
+
                 return;
             }
+
             launcherRef.current?.focus({ preventScroll: true });
         });
     }
+
     const placement = useCompanionLayout();
     const hasSlot = Boolean(placement && !placement.detached);
     const layout = useTutorLayout(fold, hasSlot, workspace);
@@ -85,25 +96,38 @@ export function TutorShell({
     function expand() {
         onExpand();
         requestAnimationFrame(() => {
-            if (lastFocus.current?.isConnected)
+            if (lastFocus.current?.isConnected) {
                 lastFocus.current.focus({ preventScroll: true });
-            else panelRef.current?.focus({ preventScroll: true });
+            } else {
+                panelRef.current?.focus({ preventScroll: true });
+            }
         });
     }
+
     function onKeyDown(event: KeyboardEvent<HTMLElement>) {
-        if (event.key !== 'Escape' || event.defaultPrevented) return;
+        if (event.key !== 'Escape' || event.defaultPrevented) {
+            return;
+        }
+
         if (
             document.querySelector(
                 '[role="menu"], [data-state="open"][role="dialog"]',
             )
-        )
+        ) {
             return;
+        }
+
         event.preventDefault();
         fold();
     }
+
     let panelWidth: CSSProperties['width'] = layout.width;
-    if (layout.mobile) panelWidth = undefined;
-    else if (layout.attached) panelWidth = '100%';
+    if (layout.mobile) {
+        panelWidth = undefined;
+    } else if (layout.attached) {
+        panelWidth = '100%';
+    }
+
     const geometry: CSSProperties = {
         height: layout.attached || embedded ? '100%' : layout.height,
         width: panelWidth,
@@ -111,13 +135,19 @@ export function TutorShell({
         bottom: layout.mobile && !embedded ? layout.keyboardInset : undefined,
     };
     let status = copy.title;
-    if (active) status = copy.responding;
-    else if (interrupted) status = copy.interrupted;
-    else if (unread) status = copy.ready;
+    if (active) {
+        status = copy.responding;
+    } else if (interrupted) {
+        status = copy.interrupted;
+    } else if (unread) {
+        status = copy.ready;
+    }
+
     const ready = unread && !active && !interrupted;
     const expandLabel = `${copy.open} — ${status}`;
     const sheetLabel = layout.sheetFull ? copy.partial : copy.expand;
     const showLauncher = folded && !(workspace && hasSlot);
+
     return (
         <div
             ref={layout.areaRef}

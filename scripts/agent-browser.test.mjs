@@ -34,6 +34,7 @@ test('builds safe local browser commands with the explicit project config', () =
         'open',
         'http://127.0.0.1:3333/login',
     ]);
+
     assert.equal(args[0], '--config');
     assert.match(args[1], /agent-browser\.json$/);
     assert.ok(args.includes('--allowed-domains'));
@@ -50,6 +51,7 @@ test('rejects external origins and unsafe browser capabilities', () => {
             ),
         /credential-free localhost/,
     );
+
     assert.throws(
         () =>
             buildAgentBrowserArgs(
@@ -90,6 +92,7 @@ test('rejects external origins and unsafe browser capabilities', () => {
             ]),
         /cannot contain command-line options/,
     );
+
     assert.throws(
         () =>
             buildOwnedArgs([
@@ -104,6 +107,7 @@ test('rejects external origins and unsafe browser capabilities', () => {
             ]),
         /unsupported find option/,
     );
+
     assert.throws(
         () =>
             buildOwnedArgs([
@@ -116,6 +120,7 @@ test('rejects external origins and unsafe browser capabilities', () => {
             ]),
         /locator and value cannot contain/,
     );
+
     assert.throws(
         () =>
             buildOwnedArgs([
@@ -135,14 +140,17 @@ test('requires an isolated, bounded task session', () => {
         () => buildAgentBrowserArgs(['open', 'http://localhost:3333']),
         /usage/,
     );
+
     assert.throws(
         () => buildAgentBrowserArgs(['--session', '../../shared', 'close']),
         /wrapper-owned/,
     );
+
     assert.throws(
         () => buildAgentBrowserArgs(['--session', 'default', 'get', 'url']),
         /wrapper-owned/,
     );
+
     assert.throws(
         () =>
             buildAgentBrowserArgs([
@@ -153,6 +161,7 @@ test('requires an isolated, bounded task session', () => {
             ]),
         /active wrapper-owned/,
     );
+
     assert.throws(
         () => buildOwnedArgs(['--session', ownedSession, 'close', '--all']),
         /expects 0 argument/,

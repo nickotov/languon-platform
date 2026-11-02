@@ -104,6 +104,7 @@ describe('loadEnvironment authentication settings', () => {
                 ).LEARNING_FLASHCARDS_ENABLED,
             ).toBe(enabled === 'true');
         }
+
         expect(() =>
             loadEnvironment(
                 values('development', { LEARNING_FLASHCARDS_ENABLED: 'yes' }),
@@ -172,6 +173,7 @@ describe('loadEnvironment authentication settings', () => {
                 }),
             ).AUTH_REDIS_NAMESPACE,
         ).toBe('languon:auth:e2e:run-123');
+
         expect(() =>
             loadEnvironment(
                 values('test', {
@@ -246,9 +248,11 @@ describe('loadEnvironment authentication settings', () => {
             DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'single-card:v1',
             DICTIONARY_JOB_API_READABLE_FORMATS: 'single-card:v1',
         };
+
         expect(() => loadEnvironment(values('staging', capabilities))).toThrow(
             /all five/i,
         );
+
         expect(
             loadEnvironment(
                 values('staging', {
@@ -263,6 +267,7 @@ describe('loadEnvironment authentication settings', () => {
             maxOutputTokensPerAttempt: 1_024,
             outputCostMicrosPerMillionTokens: 10_000_000,
         });
+
         expect(() =>
             loadEnvironment(
                 values('development', {
@@ -289,6 +294,7 @@ describe('loadEnvironment authentication settings', () => {
                 }),
             ),
         ).toThrow(/262144 input-token and 40960 output-token/i);
+
         expect(
             loadEnvironment(
                 values('staging', {
@@ -321,6 +327,7 @@ describe('loadEnvironment authentication settings', () => {
         expect(configuredEnvironment.LANGFUSE_PUBLIC_KEY).toBe(
             'local-public-key',
         );
+
         expect(configuredEnvironment.LANGFUSE_SECRET_KEY).toBe(
             'local-secret-key',
         );
@@ -331,6 +338,7 @@ describe('loadEnvironment authentication settings', () => {
             loadEnvironment(values('development', { BACKEND_HOST: '0.0.0.0' }))
                 .BACKEND_HOST,
         ).toBe('0.0.0.0');
+
         expect(() =>
             loadEnvironment(
                 values('development', { BACKEND_HOST: '192.0.2.10' }),
@@ -362,6 +370,7 @@ describe('loadEnvironment authentication settings', () => {
                 }),
             ),
         ).toThrow(/sslmode=verify-full/);
+
         expect(() =>
             loadEnvironment(
                 values('production', {
@@ -377,9 +386,11 @@ describe('loadEnvironment authentication settings', () => {
                 values('production', { DATABASE_MAX_CONNECTIONS: '0' }),
             ),
         ).toThrow();
+
         expect(() =>
             loadEnvironment(values('production', { RELEASE_SHA: 'latest' })),
         ).toThrow();
+
         expect(() =>
             loadEnvironment(
                 values('production', { SHUTDOWN_TIMEOUT_MS: '300001' }),
@@ -417,6 +428,7 @@ describe('loadEnvironment authentication settings', () => {
                 }),
             ),
         ).toThrow();
+
         expect(() =>
             loadEnvironment(
                 values('development', {
@@ -424,6 +436,7 @@ describe('loadEnvironment authentication settings', () => {
                 }),
             ),
         ).toThrow();
+
         expect(() =>
             loadEnvironment(
                 values('development', {
@@ -431,6 +444,7 @@ describe('loadEnvironment authentication settings', () => {
                 }),
             ),
         ).toThrow(/dictionary.*secret.*different/i);
+
         expect(() =>
             loadEnvironment(
                 values('development', {
@@ -438,6 +452,7 @@ describe('loadEnvironment authentication settings', () => {
                 }),
             ),
         ).toThrow(/dictionary.*secret.*different/i);
+
         expect(() =>
             loadEnvironment(
                 values('development', {
@@ -445,6 +460,7 @@ describe('loadEnvironment authentication settings', () => {
                 }),
             ),
         ).toThrow();
+
         const withoutDictionarySecret = values('development');
         delete withoutDictionarySecret.DICTIONARY_HMAC_SECRET;
         expect(() => loadEnvironment(withoutDictionarySecret)).toThrow();
@@ -462,6 +478,7 @@ describe('loadEnvironment authentication settings', () => {
         expect(after.AUTH_CODE_HMAC_SECRET).not.toBe(
             before.AUTH_CODE_HMAC_SECRET,
         );
+
         expect(after.DICTIONARY_HMAC_SECRET).toBe(
             before.DICTIONARY_HMAC_SECRET,
         );
@@ -512,6 +529,7 @@ describe('loadEnvironment authentication settings', () => {
                 }),
             ),
         ).toThrow();
+
         expect(() =>
             loadEnvironment(
                 values('production', {
@@ -520,6 +538,7 @@ describe('loadEnvironment authentication settings', () => {
                 }),
             ),
         ).toThrow();
+
         expect(() =>
             loadEnvironment(
                 values('production', {
@@ -536,6 +555,7 @@ describe('loadEnvironment authentication settings', () => {
                 values('development', { AUTH_ARGON2_MEMORY_COST_KIB: '19455' }),
             ),
         ).toThrow();
+
         expect(() =>
             loadEnvironment(
                 values('development', { AUTH_ARGON2_TIME_COST: '1' }),
@@ -571,6 +591,7 @@ describe('loadEnvironment authentication settings', () => {
                 values('development', { AUTH_TRUST_PROXY: 'true' }),
             ),
         ).toThrow();
+
         expect(() =>
             loadEnvironment(
                 values('development', {
@@ -608,16 +629,20 @@ describe('loadEnvironment authentication settings', () => {
             DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS:
                 '10000000',
         };
+
         expect(() => loadEnvironment(values('test', capabilities))).toThrow(
             /Document storage is required/,
         );
+
         const stopEnqueueCapabilities = {
             ...capabilities,
             DICTIONARY_JOB_API_ENQUEUED_FORMATS: '',
         };
+
         expect(() =>
             loadEnvironment(values('test', stopEnqueueCapabilities)),
         ).toThrow(/Document storage is required/);
+
         const storage = {
             DICTIONARY_DOCUMENT_STORAGE_API_ACCESS_KEY_ID: 'api-key',
             DICTIONARY_DOCUMENT_STORAGE_API_SECRET_ACCESS_KEY:
@@ -628,6 +653,7 @@ describe('loadEnvironment authentication settings', () => {
             DICTIONARY_DOCUMENT_STORAGE_MODE: 's3',
             DICTIONARY_DOCUMENT_STORAGE_REGION: 'us-east-1',
         };
+
         expect(
             loadEnvironment(values('test', { ...capabilities, ...storage })),
         ).toMatchObject({
@@ -639,6 +665,7 @@ describe('loadEnvironment authentication settings', () => {
                 forcePathStyle: true,
             },
         });
+
         expect(
             loadEnvironment(
                 values('test', { ...stopEnqueueCapabilities, ...storage }),
@@ -669,9 +696,11 @@ describe('loadEnvironment authentication settings', () => {
             'https://app.languon.example',
             'https://admin.app.languon.example',
         ]);
+
         expect(deployed.ADMIN_BASE_URL).toBe(
             'https://admin.app.languon.example',
         );
+
         expect(() =>
             loadEnvironment(
                 values('production', {
@@ -683,6 +712,7 @@ describe('loadEnvironment authentication settings', () => {
                 }),
             ),
         ).toThrow();
+
         expect(() =>
             loadEnvironment(
                 values('production', {
@@ -691,17 +721,20 @@ describe('loadEnvironment authentication settings', () => {
             ),
         ).toThrow(/ADMIN_BASE_URL|base URL/i);
     });
+
     it('expands sentence worker capability without activating contextual generation by default', () => {
         expect(
             loadEnvironment(values('development'))
                 .LEARNING_SENTENCE_GENERATION_FORMAT,
         ).toBe('sentence-generation:v1');
+
         expect(
             loadEnvironment({
                 ...values('development'),
                 LEARNING_SENTENCE_GENERATION_FORMAT: 'sentence-generation:v2',
             }).LEARNING_SENTENCE_GENERATION_FORMAT,
         ).toBe('sentence-generation:v2');
+
         expect(() =>
             loadEnvironment({
                 ...values('development'),

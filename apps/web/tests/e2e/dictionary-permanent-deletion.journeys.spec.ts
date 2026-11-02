@@ -73,11 +73,16 @@ test.describe('dictionary permanent deletion journeys', () => {
         const names = ['one', 'two', 'three'].map(
             (suffix) => `Archived ${suffix} ${runId}`,
         );
+
         for (const name of names) {
             await createDictionary(page, name);
             await backToLibrary(page);
         }
-        for (const name of names) await dictionaryAction(page, name, 'Archive');
+
+        for (const name of names) {
+            await dictionaryAction(page, name, 'Archive');
+        }
+
         await page
             .getByRole('button', { name: 'Archived', exact: true })
             .click();
@@ -86,9 +91,11 @@ test.describe('dictionary permanent deletion journeys', () => {
         const singleDialog = page.getByRole('alertdialog', {
             name: 'Delete dictionaries permanently?',
         });
+
         await expect(
             singleDialog.getByLabel(`Type “${names[0]}” to confirm`),
         ).toBeVisible();
+
         await singleDialog.getByRole('button', { name: 'Cancel' }).click();
         await expect(page.getByText(names[0], { exact: true })).toBeVisible();
 
@@ -98,15 +105,19 @@ test.describe('dictionary permanent deletion journeys', () => {
         const selectedDialog = page.getByRole('alertdialog', {
             name: 'Delete dictionaries permanently?',
         });
+
         await selectedDialog
             .getByLabel('Type “DELETE 2” to confirm')
             .fill('DELETE 2');
+
         await selectedDialog
             .getByRole('button', { name: 'Delete permanently' })
             .click();
+
         await expect(
             page.getByText('Dictionaries permanently deleted: 2.'),
         ).toBeVisible();
+
         await expect(page.getByText(names[0], { exact: true })).toHaveCount(0);
         await expect(page.getByText(names[2], { exact: true })).toBeVisible();
 
@@ -114,15 +125,19 @@ test.describe('dictionary permanent deletion journeys', () => {
         const allDialog = page.getByRole('alertdialog', {
             name: 'Delete dictionaries permanently?',
         });
+
         await allDialog
             .getByLabel('Type “DELETE 1” to confirm')
             .fill('DELETE 1');
+
         await allDialog
             .getByRole('button', { name: 'Delete permanently' })
             .click();
+
         await expect(
             page.getByText('Dictionaries permanently deleted: 1.'),
         ).toBeVisible();
+
         await expect(page.getByText(names[2], { exact: true })).toHaveCount(0);
     });
 
@@ -143,12 +158,14 @@ test.describe('dictionary permanent deletion journeys', () => {
         ]) {
             await cardAction(page, source, 'Archive');
         }
+
         await selectArchivedCards(page);
 
         await cardAction(page, 'archived one', 'Delete permanently');
         const singleDialog = page.getByRole('alertdialog', {
             name: 'Delete cards permanently?',
         });
+
         await expect(singleDialog.getByText('archived one')).toBeVisible();
         await expect(singleDialog.getByText('uno')).toBeVisible();
         await singleDialog.getByRole('button', { name: 'Cancel' }).click();
@@ -159,20 +176,25 @@ test.describe('dictionary permanent deletion journeys', () => {
         const selectedDialog = page.getByRole('alertdialog', {
             name: 'Delete cards permanently?',
         });
+
         await selectedDialog
             .getByLabel(
                 'I understand these cards cannot be recovered. Cards: 2.',
             )
             .check();
+
         await selectedDialog
             .getByRole('button', { name: 'Delete permanently' })
             .click();
+
         await expect(
             page.getByText('Cards permanently deleted: 2.'),
         ).toBeVisible();
+
         await expect(
             page.getByText('archived one', { exact: true }),
         ).toHaveCount(0);
+
         await expect(
             page.getByText('archived three', { exact: true }),
         ).toBeVisible();
@@ -181,24 +203,30 @@ test.describe('dictionary permanent deletion journeys', () => {
         const allDialog = page.getByRole('alertdialog', {
             name: 'Delete cards permanently?',
         });
+
         await allDialog
             .getByLabel(
                 'I understand these cards cannot be recovered. Cards: 1.',
             )
             .check();
+
         await allDialog
             .getByRole('button', { name: 'Delete permanently' })
             .click();
+
         await expect(
             page.getByText('Cards permanently deleted: 1.'),
         ).toBeVisible();
+
         await expect(
             page.getByText('archived three', { exact: true }),
         ).toHaveCount(0);
+
         await page
             .getByRole('group', { name: 'Card status' })
             .getByRole('button', { name: /Active/, exact: false })
             .click();
+
         await expect(
             page.getByText('active survivor', { exact: true }),
         ).toBeVisible();
@@ -219,11 +247,13 @@ test.describe('dictionary permanent deletion journeys', () => {
         const dialog = page.getByRole('alertdialog', {
             name: 'Delete cards permanently?',
         });
+
         await dialog
             .getByLabel(
                 'I understand these cards cannot be recovered. Cards: 2.',
             )
             .check();
+
         const concurrentPage = await page.context().newPage();
         await concurrentPage.goto(page.url());
         await selectArchivedCards(concurrentPage);
@@ -231,29 +261,36 @@ test.describe('dictionary permanent deletion journeys', () => {
         await dialog
             .getByRole('button', { name: 'Delete permanently' })
             .click();
+
         await expect(dialog.getByText('Deletion failed')).toBeVisible();
         await expect(
             dialog.getByRole('button', { name: 'Reload' }),
         ).toBeVisible();
+
         const verificationPage = await page.context().newPage();
         await verificationPage.goto(page.url());
         await selectArchivedCards(verificationPage);
         await expect(
             verificationPage.getByText('stale two', { exact: true }),
         ).toBeVisible();
+
         await expect(
             verificationPage.getByText('stale one', { exact: true }),
         ).toHaveCount(0);
+
         await verificationPage
             .getByRole('group', { name: 'Card status' })
             .getByRole('button', { name: /Active/, exact: false })
             .click();
+
         await expect(
             verificationPage.getByText('stale one', { exact: true }),
         ).toBeVisible();
+
         await expect(
             verificationPage.getByText('stale two', { exact: true }),
         ).toHaveCount(0);
+
         await verificationPage.close();
         await concurrentPage.close();
     });

@@ -14,6 +14,7 @@ describe('bounded authentication Redis client', () => {
         for (const client of clients) {
             client.disconnect(false);
         }
+
         clients.length = 0;
     });
 
@@ -53,6 +54,7 @@ describe('bounded authentication Redis client', () => {
                 'too-short',
             ),
         ).toThrow('at least 32 bytes');
+
         expect(() =>
             createAuthenticationRedisClient({
                 maxRetriesPerRequest: 4,
@@ -69,6 +71,7 @@ describe('bounded authentication Redis client', () => {
             maxRetriesPerRequest: 0,
             url: 'redis://127.0.0.1:1',
         });
+
         clients.push(client);
 
         expect(client.options.commandTimeout).toBe(75);

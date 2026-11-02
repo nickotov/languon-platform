@@ -123,6 +123,7 @@ const witness = {
     attemptId: '00000000-0000-4000-8000-000000000002',
     jobId: '00000000-0000-4000-8000-000000000003',
 };
+
 function agent(
     authorize: (input: {
         witness: { attemptId: string; jobId: string };
@@ -163,9 +164,12 @@ function agent(
         defaultOptions: { maxSteps: 1 },
         defaultGenerateOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
     });
+
     value.__registerPrimitives({ logger: noopLogger });
+
     return { value, authorize };
 }
+
 describe('native text production SDK execution evidence', () => {
     it('requires a durable receipt before synthetic external HTTP and settles trusted reported USD exactly', async () => {
         const fetch = vi.fn(async () =>
@@ -189,6 +193,7 @@ describe('native text production SDK execution evidence', () => {
                 },
             }),
         );
+
         vi.stubGlobal('fetch', fetch);
         const { value, authorize } = agent();
         const result = await withTextAiProviderAttemptWitness(witness, () =>
@@ -202,11 +207,13 @@ describe('native text production SDK execution evidence', () => {
             { maxInputTokens: 10000, maxOutputTokens: 100 },
             result,
         );
+
         expect(authorize).toHaveBeenCalledOnce();
         expect(fetch).toHaveBeenCalledOnce();
         expect(usage.calls).toHaveLength(1);
         expect(providerTextExpenseMicros(price, usage)).toBe(1n);
     });
+
     it('does not turn missing endpoint and missing reported cost into an invented native cost', async () => {
         vi.stubGlobal(
             'fetch',
@@ -231,10 +238,13 @@ describe('native text production SDK execution evidence', () => {
                         total_tokens: 11,
                     },
                 }).json()) as Record<string, unknown>;
+
                 delete body.provider;
+
                 return Response.json(body);
             }),
         );
+
         const { value } = agent();
         const result = await withTextAiProviderAttemptWitness(witness, () =>
             value.generate('Synthetic.', {
@@ -242,6 +252,7 @@ describe('native text production SDK execution evidence', () => {
                 toolChoice: 'none',
             }),
         );
+
         expect(
             providerTextExpenseMicros(
                 price,
@@ -265,6 +276,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             client = createTestPostgresClient();
             db = createDrizzleDatabase(client, databaseSchema);
         });
+
         // Forward-migrating a fresh disposable schema can exceed Vitest's default
         // hook budget under disk load; SDK and test-body deadlines stay unchanged.
         beforeEach(async () => {
@@ -274,6 +286,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await db
                 .insert(usersTable)
                 .values({ id: ownerId, status: 'active' });
+
             await db.insert(aiProviderPriceRevisionsTable).values({
                 id: randomUUID(),
                 providerId: price.providerId,
@@ -286,9 +299,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 data: price,
             });
         }, 30_000);
+
         afterAll(async () => {
             await client?.end();
         });
+
         async function admit(
             options: {
                 pinnedPrice?: ProviderPrice;
@@ -345,6 +360,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 const rows = await db.execute(
                     sql`select languon_authorize_native_text_call(${admitted.id}::uuid, 9000::integer, 800::integer) as receipt`,
                 );
+
                 return rows[0]!.receipt as {
                     callId: string;
                     dispatchedAt: string;
@@ -397,8 +413,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             admitted.id,
                         ),
                     );
+
             return { action, admitted, generate, settle, expenses };
         }
+
         function fakeResponse(
             usage: Record<string, number> = {
                 prompt_tokens: 10,
@@ -423,9 +441,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     usage,
                 }),
             );
+
             vi.stubGlobal('fetch', fetch);
+
             return fetch;
         }
+
         function sdkUsage(
             result: Awaited<
                 ReturnType<Awaited<ReturnType<typeof admit>>['generate']>
@@ -437,6 +458,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 result,
             );
         }
+
         it('binds SDK dispatch to a DB receipt and settles its checkpointed native evidence', async () => {
             fakeResponse();
             const execution = await admit();
@@ -451,6 +473,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     observedAt: expect.any(Date),
                 },
             ]);
+
             await execution.settle(usage);
             expect(
                 await db
@@ -465,10 +488,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ).toMatchObject([
                 { state: 'settled', providerUsage: expect.anything() },
             ]);
+
             expect(await execution.expenses()).toMatchObject([
                 { amountUsdMicros: 1n, measurement: 'measured' },
             ]);
         });
+
         it('retains raw reported cost checkpoint when SDK aggregate token usage is absent', async () => {
             fakeResponse({ cost: 0.0000001 });
             const execution = await admit();
@@ -479,6 +504,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 inputTokens: 0,
                 outputTokens: 0,
             });
+
             expect(
                 await db.select().from(aiCreditNativeCallDispatchesTable),
             ).toMatchObject([
@@ -487,6 +513,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     observedAt: expect.any(Date),
                 },
             ]);
+
             // Production failure cleanup has no usable aggregate SDK counters.
             await execution.settle();
             expect(
@@ -502,6 +529,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ).toMatchObject([
                 { inputTokens: null, outputTokens: null, successful: 0 },
             ]);
+
             expect(await execution.expenses()).toMatchObject([
                 {
                     amountUsdMicros: 1n,
@@ -510,6 +538,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
             ]);
         });
+
         it('reuses the observed remainder for two sequential SDK calls instead of reserving both full envelopes', async () => {
             const fetch = fakeResponse();
             const execution = await admit();
@@ -519,6 +548,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const receipts = await db
                 .select()
                 .from(aiCreditNativeCallDispatchesTable);
+
             expect(receipts).toHaveLength(2);
             expect(
                 receipts.every(
@@ -528,12 +558,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         receipt.observedAt !== null,
                 ),
             ).toBe(true);
+
             await execution.settle(sumTextAiProviderUsage(first, second));
             // Exact per-call fractions are summed before the final USD-micro ceil.
             expect(await execution.expenses()).toMatchObject([
                 { amountUsdMicros: 1n, measurement: 'measured' },
             ]);
         });
+
         it('rejects missing, foreign and duplicate receipt sets without losing the real checkpoint', async () => {
             fakeResponse();
             const execution = await admit();
@@ -549,22 +581,26 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     execution.settle({ ...usage, calls }),
                 ).rejects.toThrow();
             }
+
             await expect(
                 db.execute(
                     sql`select languon_observe_native_text_call(${randomUUID()}::uuid, ${JSON.stringify({ usage: { requests: 1 } })}::jsonb)`,
                 ),
             ).rejects.toThrow();
+
             await expect(
                 db.execute(
                     sql`select languon_observe_native_text_call(${call.callId}::uuid, ${JSON.stringify({ usage: { ...call.usage, providerCostUsd: '0' }, execution: { endpointId: 'openai', serviceTier: 'standard' } })}::jsonb)`,
                 ),
             ).rejects.toThrow();
+
             expect(await execution.expenses()).toHaveLength(0);
             await execution.settle(usage);
             expect(await execution.expenses()).toMatchObject([
                 { amountUsdMicros: 1n, measurement: 'measured' },
             ]);
         });
+
         it('preserves an incurred reported-cost overrun and blocks the next SDK dispatch before HTTP', async () => {
             const fetch = fakeResponse({
                 prompt_tokens: 10,
@@ -603,6 +639,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 })),
             ),
         );
+
         it.each(familyCases)(
             'native $providerId $funding $outcome completes the production SDK and financial action path',
             async ({
@@ -673,6 +710,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     modelId,
                     nativeRules,
                 };
+
                 await db.insert(aiProviderPriceRevisionsTable).values({
                     id: pinnedPrice.id,
                     providerId,
@@ -684,7 +722,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     createdBy: ownerId,
                     data: pinnedPrice,
                 });
-                if (funding === 'customer')
+
+                if (funding === 'customer') {
                     await db.transaction((tx) =>
                         new DrizzleAiCreditTransactionParticipant(
                             tx,
@@ -697,10 +736,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             expiresAt: null,
                         }),
                     );
+                }
+
                 const execution = await admit({ pinnedPrice, funding });
                 expect(execution.action.heldMilli).toBe(
                     funding === 'customer' ? 1000n : 0n,
                 );
+
                 const fetch = vi.fn(
                     async (_url: unknown, _request?: RequestInit) =>
                         outcome === 'failure'
@@ -735,6 +777,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                   },
                               }),
                 );
+
                 vi.stubGlobal('fetch', fetch);
                 let text = '';
                 if (outcome === 'success') {
@@ -746,14 +789,17 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     await expect(execution.generate()).rejects.toThrow();
                     await execution.settle();
                 }
+
                 expect(fetch).toHaveBeenCalledOnce();
                 const request = JSON.parse(
                     String(fetch.mock.calls[0]![1]!.body),
                 ) as Record<string, unknown>;
+
                 expect(request.model).toBe(modelId);
                 expect(
                     request.max_tokens ?? request.max_completion_tokens,
                 ).toBe(10);
+
                 const receipts = await db
                     .select()
                     .from(aiCreditNativeCallDispatchesTable)
@@ -763,10 +809,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             execution.admitted.id,
                         ),
                     );
+
                 expect(receipts).toHaveLength(1);
                 expect(receipts[0]!.observedAt !== null).toBe(
                     outcome === 'success',
                 );
+
                 await db.transaction(async (tx) => {
                     const [turn] = await tx
                         .select()
@@ -774,8 +822,9 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .where(
                             eq(conversationTurnsTable.id, execution.action.id),
                         );
+
                     await prepareConversationActionSettlement(tx, turn!);
-                    if (outcome === 'success')
+                    if (outcome === 'success') {
                         await tx.insert(conversationMessagesTable).values({
                             id: randomUUID(),
                             conversationId: turn!.conversationId,
@@ -788,6 +837,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             sourceProvenance: 'saved',
                             createdAt: new Date(),
                         });
+                    }
+
                     const [terminal] = await tx
                         .update(conversationTurnsTable)
                         .set({
@@ -804,12 +855,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             eq(conversationTurnsTable.id, execution.action.id),
                         )
                         .returning();
+
                     await settleConversationAction(tx, terminal!);
                 });
+
                 const [turn] = await db
                     .select()
                     .from(conversationTurnsTable)
                     .where(eq(conversationTurnsTable.id, execution.action.id));
+
                 expect(turn).toMatchObject({
                     status: outcome === 'success' ? 'succeeded' : 'failed',
                     billing: {
@@ -826,6 +880,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 : '0',
                     },
                 });
+
                 const messages = await db
                     .select()
                     .from(conversationMessagesTable)
@@ -835,9 +890,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             execution.action.id,
                         ),
                     );
+
                 expect(messages.map((message) => message.content)).toEqual(
                     outcome === 'success' ? ['Usable native answer.'] : [],
                 );
+
                 expect(await execution.expenses()).toMatchObject([
                     {
                         providerId,
@@ -848,7 +905,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             outcome === 'success' ? 'measured' : 'unknown',
                     },
                 ]);
-                if (funding === 'customer')
+
+                if (funding === 'customer') {
                     expect(
                         await db
                             .select()
@@ -862,6 +920,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                 outcome === 'success' ? 4999n : 5000n,
                         },
                     ]);
+                }
             },
         );
     },

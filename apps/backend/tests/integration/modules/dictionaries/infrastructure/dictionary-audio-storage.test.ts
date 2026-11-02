@@ -25,9 +25,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createDrizzleDatabase(client, databaseSchema),
             );
         });
+
         afterAll(async () => {
             await client?.end();
         });
+
         it('round trips actual fixture bytea, enforces immutable key integrity and verifies deletion', async () => {
             const key = `dictionary-audio/test/${randomUUID()}`;
             const fixture = createFixtureAudio();
@@ -40,16 +42,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await expect(storage.put(key, changed)).rejects.toThrow(
                     'integrity',
                 );
+
                 changed.checksum = audioChecksum(changed.bytes);
                 await expect(storage.put(key, changed)).rejects.toThrow(
                     'different bytes',
                 );
+
                 await expect(
                     storage.read({ ...ref, namespace: 'other' }),
                 ).rejects.toThrow('identity');
             } finally {
                 await storage.delete(ref);
             }
+
             expect(await storage.read(ref)).toBeNull();
             await storage.delete(ref);
         });

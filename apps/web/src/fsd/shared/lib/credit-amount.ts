@@ -8,10 +8,15 @@ export function compactCreditAmount(value: string, locale: string): string {
         new Intl.NumberFormat(locale)
             .formatToParts(1.1)
             .find((part) => part.type === 'decimal')?.value ?? '.';
-    if (milli > 0n && milli < 10n) return `<0${separator}01`;
+
+    if (milli > 0n && milli < 10n) {
+        return `<0${separator}01`;
+    }
+
     const hundredths = (milli + 5n) / 10n;
     const fraction = String(hundredths % 100n)
         .padStart(2, '0')
         .replace(/0+$/, '');
+
     return `${formatter.format(hundredths / 100n)}${fraction ? separator + fraction : ''}`;
 }

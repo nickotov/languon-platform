@@ -78,6 +78,7 @@ const selectionPolicy = {
     credentialConfigured: () => true,
     pricingAdmissionEnabled: true,
 };
+
 run('Texts real composed authenticated HTTP journeys', () => {
     let authentication: AuthenticationComposition;
     let app: ReturnType<typeof createApp>;
@@ -109,18 +110,22 @@ run('Texts real composed authenticated HTTP journeys', () => {
                 REDIS_URL: process.env.AUTH_TEST_REDIS_URL,
             }),
         );
+
         const d = authentication.productDependencies;
         const authenticate = async (token: string) => {
             const claims = await d.accessTokens.verify(token);
             await d.authentication.requireActiveSession(claims);
+
             return { userId: claims.userId, sessionId: claims.sessionId };
         };
+
         content = createTextsContentComposition({
             ...d,
             dictionaryHmacSecret: secret,
             policy: authentication.options.policy,
             loadProposal: loadTextTranslationProposal,
         });
+
         ai = createTextsAiComposition({
             burstLimiter: { consume: async () => ({ allowed: true }) },
             database: d.database,
@@ -132,6 +137,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
             admissionParticipant: (tx) =>
                 new DrizzleTextAiAdmissionParticipant(tx, selectionPolicy),
         });
+
         const execution = createTextsWorkerComposition({
             database: d.database,
             clock: d.clock,
@@ -165,6 +171,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
                 },
             },
         });
+
         worker = execution.worker;
         selection = createTextSelectionModule({
             database: d.database,
@@ -197,6 +204,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
                 },
             },
         });
+
         app = createApp({
             authentication: authentication.options,
             texts: content.routes,
@@ -223,6 +231,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
                 rateLimiter: {
                     consume: async (input) => {
                         selectionRateCalls++;
+
                         return new BoundedDictionaryRateLimiter(
                             d.rateLimiter,
                         ).consume(input);
@@ -230,6 +239,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
                 },
             }),
         });
+
         const administrator = await signup();
         fixtureToken = administrator;
         const creator = await d.accessTokens.verify(administrator);
@@ -262,6 +272,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
                     supportedFormats: [...textAiTextsFormats],
                 },
             });
+
         await d.database
             .insert(dictionaryAiConfigurationTable)
             .values({
@@ -274,6 +285,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
                 target: dictionaryAiConfigurationTable.id,
                 set: { activeRevisionId: revisionId, updatedAt: now },
             });
+
         await d.database
             .insert(dictionaryAiWorkerObservationsTable)
             .values({
@@ -299,6 +311,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
             })
             .onConflictDoNothing();
     }, 30000);
+
     afterAll(async () => {
         await authentication?.close();
         const redis = createTestRedisClient();
@@ -306,6 +319,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
         await deleteNamespacedKeys(redis, namespace);
         await redis.quit();
     });
+
     async function request(
         path: string,
         token?: string,
@@ -324,11 +338,13 @@ run('Texts real composed authenticated HTTP journeys', () => {
             ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
     }
+
     async function signup() {
         const response = await request('/auth/sign-up', undefined, {
             email: `texts-${randomUUID()}@example.test`,
             password: 'Synthetic safe journey password 47!',
         });
+
         expect(response.status).toBe(202);
         const { verification } = SignUpResponseSchema.parse(
             await response.json(),
@@ -338,12 +354,14 @@ run('Texts real composed authenticated HTTP journeys', () => {
             undefined,
             { flowId: verification.flowId, code: '0000' },
         );
+
         expect(verified.status).toBe(200);
         const token = AuthenticationSuccessResponseSchema.parse(
             await verified.json(),
         ).accessToken;
         const claims =
             await authentication.productDependencies.accessTokens.verify(token);
+
         await authentication.productDependencies.database.transaction((tx) =>
             new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
                 ownerId: claims.userId,
@@ -354,15 +372,20 @@ run('Texts real composed authenticated HTTP journeys', () => {
                 sourceReference: randomUUID(),
             }),
         );
+
         return token;
     }
+
     async function folder(token: string) {
         const response = await request('/text-folders', token, {
             name: 'Journey folder',
         });
+
         expect(response.status).toBe(201);
+
         return TextFolderResponseSchema.parse(await response.json()).folder;
     }
+
     async function translated(token: string) {
         const parent = await folder(token);
         const created = await request('/texts', token, {
@@ -371,6 +394,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
             sourceLanguage: 'en',
             targetLanguage: 'es',
         });
+
         expect(created.status).toBe(201);
         const draft = TextResponseSchema.parse(await created.json()).text;
         const input = {
@@ -386,32 +410,39 @@ run('Texts real composed authenticated HTTP journeys', () => {
         expect(queued.status, JSON.stringify(await queued.clone().json())).toBe(
             202,
         );
+
         const job = TextAiJobResponseSchema.parse(await queued.json()).job;
         const replay = await request('/texts/ai/translation', token, input);
         expect(TextAiJobResponseSchema.parse(await replay.json()).job.id).toBe(
             job.id,
         );
+
         expect(await worker.processNext(signal)).toBe(true);
         const completed = await request(`/texts/ai/jobs/${job.id}`, token);
         expect(
             TextAiJobResponseSchema.parse(await completed.json()).job.state,
         ).toBe('completed');
+
         const unsaved = await request(`/texts/${draft.id}`, token);
         expect(TextResponseSchema.parse(await unsaved.json()).text.status).toBe(
             'draft',
         );
+
         const saved = await request(
             `/texts/${draft.id}`,
             token,
             { kind: 'proposal', expectedVersion: 1, jobId: job.id },
             'PUT',
         );
+
         expect(saved.status, await saved.clone().text()).toBe(200);
+
         return {
             parent,
             text: TextResponseSchema.parse(await saved.json()).text,
         };
     }
+
     it('composed preflight preserves each module methods and real share-key header', async () => {
         const baseline = selectionRateCalls;
         const id = randomUUID();
@@ -425,6 +456,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
             [`/dictionaries/${id}`, 'PATCH'],
             ['/users/me/handle', 'PATCH'],
         ];
+
         for (const [path, method] of cases) {
             const response = await app.request(path!, {
                 method: 'OPTIONS',
@@ -435,28 +467,33 @@ run('Texts real composed authenticated HTTP journeys', () => {
                         'authorization,content-type,x-languon-share-key',
                 },
             });
+
             expect(response.status, path).toBe(204);
             expect(
                 response.headers.get('Access-Control-Allow-Origin'),
                 path,
             ).toBe(origin);
+
             expect(
                 response.headers
                     .get('Access-Control-Allow-Methods')
                     ?.split(/,\s*/),
                 path,
             ).toContain(method);
+
             if (
                 path!.startsWith('/shared-') ||
                 path === '/dictionaries/text-selections'
-            )
+            ) {
                 expect(
                     response.headers
                         .get('Access-Control-Allow-Headers')
                         ?.toLowerCase(),
                     path,
                 ).toContain('x-languon-share-key');
+            }
         }
+
         expect(selectionRateCalls).toBe(baseline);
         for (const path of [
             '/texts',
@@ -470,12 +507,14 @@ run('Texts real composed authenticated HTTP journeys', () => {
                     'Access-Control-Request-Method': 'POST',
                 },
             });
+
             expect(denied.status).toBe(403);
             expect(
                 denied.headers.get('Access-Control-Allow-Origin'),
             ).toBeNull();
         }
     });
+
     it('accepts contract-valid ASCII and Unicode text above selection body limit without consuming selection quota', async () => {
         const token = await signup(),
             parent = await folder(token);
@@ -487,15 +526,18 @@ run('Texts real composed authenticated HTTP journeys', () => {
                 sourceLanguage: 'en',
                 targetLanguage: 'es',
             });
+
             expect(response.status, await response.clone().text()).toBe(201);
             expect(
                 TextResponseSchema.parse(await response.json()).text.sourceText,
             ).toBe(sourceText);
         }
+
         const languages = await request('/languages');
         expect(languages.status).toBe(200);
         expect(selectionRateCalls).toBe(baseline);
     }, 30000);
+
     // @user-flow texts/owner-translates-edits-and-collects
     it('owner explicitly saves translation, edits alignment, and atomically creates dictionary/card', async () => {
         const token = await signup();
@@ -514,6 +556,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
             { kind: 'edits', expectedVersion: 2, pairs },
             'PUT',
         );
+
         expect(response.status).toBe(200);
         const edited = TextResponseSchema.parse(await response.json()).text;
         expect(edited.status).toBe('edited');
@@ -538,14 +581,17 @@ run('Texts real composed authenticated HTTP journeys', () => {
             request('/dictionaries/text-selections', token, input),
             request('/dictionaries/text-selections', token, input),
         ]);
+
         expect(selected.status, await selected.clone().text()).toBe(202);
         const job = TextSelectionJobResponseSchema.parse(
             await selected.json(),
         ).job;
+
         expect(duplicate.status).toBe(202);
         expect(
             TextSelectionJobResponseSchema.parse(await duplicate.json()).job.id,
         ).toBe(job.id);
+
         expect(job.dictionaryId).toBeNull();
         expect(
             await authentication.productDependencies.database
@@ -553,15 +599,18 @@ run('Texts real composed authenticated HTTP journeys', () => {
                 .from(dictionariesTable)
                 .where(eq(dictionariesTable.name, targetName)),
         ).toHaveLength(0);
+
         expect(await selection.worker.processNext(signal)).toBe(true);
         const polled = await request(
             `/dictionaries/text-selections/${job.id}`,
             token,
         );
+
         expect(polled.status).toBe(200);
         const result = TextSelectionJobResponseSchema.parse(
             await polled.json(),
         ).job;
+
         expect(result.state).toBe('completed');
         expect(result.dictionaryId).not.toBeNull();
         expect(result.cardId).not.toBeNull();
@@ -569,16 +618,19 @@ run('Texts real composed authenticated HTTP journeys', () => {
             .select()
             .from(dictionaryCardsTable)
             .where(eq(dictionaryCardsTable.dictionaryId, result.dictionaryId!));
+
         expect(cards).toHaveLength(1);
         const retry = await request(
             '/dictionaries/text-selections',
             token,
             input,
         );
+
         expect(
             TextSelectionJobResponseSchema.parse(await retry.json()).job.id,
         ).toBe(job.id);
     }, 30000);
+
     // @user-flow texts/shared-reading-copy-and-revocation
     it('anonymous shared reading, reader copy, and revocation preserve the private copy', async () => {
         const owner = await signup(),
@@ -588,6 +640,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
         const issued = await request(`/texts/${text.id}/share`, owner, {
             expectedVersion: 2,
         });
+
         expect(issued.status, await issued.clone().text()).toBe(200);
         const { capability } = TextShareResponseSchema.parse(
             await issued.json(),
@@ -601,6 +654,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
             'GET',
             capability.key,
         );
+
         expect(read.status).toBe(200);
         expect(read.headers.get('cache-control')).toContain('no-store');
         expect(read.headers.get('referrer-policy')).toBe('no-referrer');
@@ -609,6 +663,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
             SharedTextResponseSchema.parse(await read.json()).texts[0]!
                 .sourceText,
         ).toBe(text.sourceText);
+
         const selected = await request(
             '/dictionaries/text-selections',
             reader,
@@ -631,6 +686,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
             'POST',
             capability.key,
         );
+
         expect(selected.status, await selected.clone().text()).toBe(202);
         const sharedJob = TextSelectionJobResponseSchema.parse(
             await selected.json(),
@@ -640,11 +696,13 @@ run('Texts real composed authenticated HTTP journeys', () => {
             reader,
             {},
         );
+
         expect(cancelled.status).toBe(200);
         expect(
             TextSelectionJobResponseSchema.parse(await cancelled.json()).job
                 .state,
         ).toBe('cancelled');
+
         const body = {
             folderId: destination.id,
             expectedVersion: 2,
@@ -657,31 +715,37 @@ run('Texts real composed authenticated HTTP journeys', () => {
             'POST',
             capability.key,
         );
+
         expect(copied.status, await copied.clone().text()).toBe(201);
         const copiedId = ((await copied.json()) as { id: string }).id;
         const copy = TextResponseSchema.parse(
             await (await request(`/texts/${copiedId}`, reader)).json(),
         ).text;
+
         expect(copy.id).not.toBe(text.id);
         expect(copy.alignment!.source[0]!.pairId).not.toBe(
             text.alignment!.source[0]!.pairId,
         );
+
         const revoked = await request(
             `/texts/${text.id}/share`,
             owner,
             { expectedVersion: 2 },
             'DELETE',
         );
+
         expect(revoked.status).toBe(204);
         expect(
             (await request(path, undefined, undefined, 'GET', capability.key))
                 .status,
         ).toBe(404);
+
         const retained = await request(`/texts/${copy.id}`, reader);
         expect(
             TextResponseSchema.parse(await retained.json()).text.sourceText,
         ).toBe(text.sourceText);
     }, 30000);
+
     it('bounded expiry cleanup makes progress across more than one batch of terminal raw results', async () => {
         const token = fixtureToken;
         const owner =
@@ -690,6 +754,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
             name: 'Cleanup fixture',
             description: null,
         });
+
         await ai.store.enqueue(
             owner.userId,
             'text-detection',
@@ -700,12 +765,14 @@ run('Texts real composed authenticated HTTP journeys', () => {
             },
             { now: new Date(), signal },
         );
+
         await worker.processNext(signal);
         const database = authentication.productDependencies.database;
         const [template] = await database
             .select()
             .from(textsAiJobsTable)
             .where(eq(textsAiJobsTable.ownerId, owner.userId));
+
         expect(template?.executionState).toBe('completed');
         const ids = Array.from({ length: 205 }, () => randomUUID());
         await database
@@ -713,6 +780,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
                 await tx.execute(
                     sql`select set_config('languon.texts_execution_revision','1',true),set_config('languon.texts_capacity_revision','1',true),set_config('languon.text_ai_selection_revision','1',true),set_config('languon.ai_credit_settlement_revision','1',true)`,
                 );
+
                 await tx.insert(textsAiJobsTable).values(
                     ids.map((id) => ({
                         ...template!,
@@ -727,7 +795,8 @@ run('Texts real composed authenticated HTTP journeys', () => {
                     String((error as { cause?: Error }).cause?.message),
                 );
             });
-        for (let i = 0; i < 3; i++)
+
+        for (let i = 0; i < 3; i++) {
             await ai.store.claimNext(
                 {
                     workerId: 'cleanup',
@@ -741,6 +810,8 @@ run('Texts real composed authenticated HTTP journeys', () => {
                 },
                 { now: new Date(), signal },
             );
+        }
+
         const remaining = await database
             .select({ id: textsAiJobsTable.id })
             .from(textsAiJobsTable)
@@ -753,6 +824,7 @@ run('Texts real composed authenticated HTTP journeys', () => {
                     ),
                 ),
             );
+
         expect(remaining).toHaveLength(0);
         expect(
             await database

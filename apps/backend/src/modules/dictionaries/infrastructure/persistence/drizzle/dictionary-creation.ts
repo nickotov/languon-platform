@@ -51,7 +51,10 @@ export async function createDictionary(
         abort(input.context);
         await lockOwnerCapacity(tx, input.ownerId);
         const replay = await reserveIdempotency(context, tx, input, 'create');
-        if (replay) return readOwned(tx, input.ownerId, replay);
+        if (replay) {
+            return readOwned(tx, input.ownerId, replay);
+        }
+
         await assertOwnerCapacityLocked(context, tx, input.ownerId, 1, 0);
         abort(input.context);
         const details = normalizeDictionaryDetails(input.request);
@@ -136,8 +139,10 @@ export async function createCard(
             input.request.expectedSettingsVersion,
         );
 
-        if (current.dictionary.lifecycle !== 'active')
+        if (current.dictionary.lifecycle !== 'active') {
             throw new DictionaryVersionConflictError();
+        }
+
         const activeCount = await activeCardCount(tx, input.dictionaryId);
         assertDictionaryCardCapacity(activeCount + 1);
         const values = normalizeCardValues(input.request.values);
@@ -171,7 +176,10 @@ export async function createCard(
             })
             .returning();
 
-        if (!row) throw new DictionaryVersionConflictError();
+        if (!row) {
+            throw new DictionaryVersionConflictError();
+        }
+
         await insertRevision(
             context,
             tx,

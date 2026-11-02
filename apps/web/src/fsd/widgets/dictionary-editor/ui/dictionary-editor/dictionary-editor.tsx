@@ -57,6 +57,7 @@ export function DictionaryEditor({
         languages.isSuccess &&
         cards.isSuccess &&
         !dictionary.isPlaceholderData;
+
     useRecordResourceOpen(
         'dictionary',
         dictionaryId,
@@ -73,8 +74,9 @@ export function DictionaryEditor({
         languages.error ??
         (cards.data ? null : cards.error);
 
-    if (loadError)
+    if (loadError) {
         return <EditorLoadError model={loadErrorModel} error={loadError} />;
+    }
 
     if (!dictionary.data || !languages.data || !cards.data) {
         return (

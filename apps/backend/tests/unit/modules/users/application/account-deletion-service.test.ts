@@ -18,6 +18,7 @@ function harness() {
     const schedule = vi.fn(
         async (input: Parameters<AccountDeletionStore['schedule']>[0]) => {
             await input.beforeCommit(2, scheduledAt);
+
             return {
                 scheduledAt,
                 purgeAt: new Date('2026-10-15T10:00:00.000Z'),
@@ -38,6 +39,7 @@ function harness() {
         preparation: { requestCancellation },
         store: { schedule },
     });
+
     return {
         recordBlockingIntent,
         recordCommittedDeletion,
@@ -53,21 +55,25 @@ describe('AccountDeletionService journal commit boundary', () => {
         await expect(
             fixture.service.schedule({ userId, sessionId }),
         ).resolves.toMatchObject({ userVersion: 2 });
+
         expect(fixture.recordBlockingIntent).toHaveBeenCalledWith({
             scheduledAt,
             userId,
             userVersion: 2,
         });
+
         expect(fixture.recordCommittedDeletion).toHaveBeenCalledWith({
             scheduledAt,
             userId,
             userVersion: 2,
         });
+
         expect(
             fixture.recordBlockingIntent.mock.invocationCallOrder[0],
         ).toBeLessThan(
             fixture.recordCommittedDeletion.mock.invocationCallOrder[0]!,
         );
+
         expect(fixture.requestCancellation).toHaveBeenCalledWith(userId);
     });
 
@@ -77,6 +83,7 @@ describe('AccountDeletionService journal commit boundary', () => {
         await expect(
             fixture.service.schedule({ userId, sessionId }),
         ).rejects.toThrow('SQL failed');
+
         expect(fixture.recordCommittedDeletion).not.toHaveBeenCalled();
         expect(fixture.requestCancellation).not.toHaveBeenCalled();
     });
@@ -86,9 +93,11 @@ describe('AccountDeletionService journal commit boundary', () => {
         fixture.recordCommittedDeletion.mockRejectedValueOnce(
             new Error('object store offline'),
         );
+
         await expect(
             fixture.service.schedule({ userId, sessionId }),
         ).rejects.toBeInstanceOf(AccountDeletionJournalUnavailableError);
+
         expect(fixture.requestCancellation).not.toHaveBeenCalled();
     });
 });

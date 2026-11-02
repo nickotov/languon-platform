@@ -40,7 +40,9 @@ export async function aiCredits(
 ): Promise<AdminAiCreditsResponse> {
     return persistence.database.transaction(async (transaction) => {
         const target = await creditTarget(persistence, transaction, userId);
-        if (!target) throw new AdminUserNotFoundError();
+        if (!target) {
+            throw new AdminUserNotFoundError();
+        }
 
         return aiCreditsResponse(persistence, transaction, userId, query, at);
     });
@@ -153,7 +155,9 @@ export async function mutateAiCredits(
             );
         } catch (error) {
             rejection = aiCreditRejection(error);
-            if (rejection === null) throw error;
+            if (rejection === null) {
+                throw error;
+            }
         }
 
         const afterVersion = response?.account.managementVersion ?? null;

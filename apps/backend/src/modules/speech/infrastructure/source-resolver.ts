@@ -1,4 +1,8 @@
+import { resolveKnowledgeAudioDraftSource } from './knowledge-audio-draft-source';
+import { resolveKnowledgeSnippetSource } from './knowledge-snippet-source';
+import type { KnowledgeShareCrypto } from '../../knowledge/infrastructure/knowledge-share-crypto';
 import type { StoredSpeechSource } from '../application/ports';
+import { resolveKnowledgeSpeechSource } from './knowledge-speech-source';
 import { SpeechError } from '../domain/speech-policy';
 import { and, eq } from 'drizzle-orm';
 import type { PostgresJsDatabase } from '@languon/database';
@@ -28,6 +32,7 @@ export class DrizzleSpeechSourceResolver {
     constructor(
         private readonly database: Database,
         private readonly cryptography: DictionaryCryptography,
+        private readonly knowledgeCrypto?: KnowledgeShareCrypto,
     ) {}
 
     resolve(actorId: string, source: SpeechSource | StoredSpeechSource) {
@@ -45,11 +50,33 @@ export class DrizzleSpeechSourceResolver {
         language: string;
         revision: string;
         authority: StoredSpeechSource;
-        dictionaryId: string;
+        dictionaryId?: string;
+        privateKnowledgeSource?: { noteId: string; ownerId: string };
         cardId?: string;
         exerciseId?: string;
         attemptId?: string;
     }> {
+        if (source.kind === 'knowledge-audio-draft') {
+            return resolveKnowledgeAudioDraftSource(tx, actorId, source);
+        }
+
+        if (source.kind === 'knowledge-snippet') {
+            if (!this.knowledgeCrypto) {
+                throw new SpeechError('speech_source_unavailable', 404);
+            }
+
+            return resolveKnowledgeSnippetSource(
+                tx,
+                actorId,
+                source,
+                this.knowledgeCrypto,
+            );
+        }
+
+        if (source.kind === 'knowledge-block') {
+            return resolveKnowledgeSpeechSource(tx, actorId, source);
+        }
+
         const access: LearningAccess =
             source.access.kind === 'owner'
                 ? {
@@ -92,6 +119,7 @@ export class DrizzleSpeechSourceResolver {
         ) {
             throw new SpeechError('speech_source_changed', 409);
         }
+
         if (
             source.kind === 'dictionary-field' ||
             source.kind === 'flashcard-field'
@@ -106,6 +134,7 @@ export class DrizzleSpeechSourceResolver {
                     ),
                 )
                 .for('share');
+
             if (
                 !card ||
                 card.lifecycle !== 'active' ||
@@ -115,41 +144,57 @@ export class DrizzleSpeechSourceResolver {
                 (source.kind === 'flashcard-field' &&
                     source.expectedLearningVersion !== undefined &&
                     source.expectedLearningVersion !== card.learningVersion)
-            )
+            ) {
                 throw new SpeechError('speech_source_unavailable', 404);
+            }
+
             const settings = learningCardSettings(owned.settings, card);
-            const field =
+            let field:
+                'source' | 'translation' | 'example' | 'exampleTranslation';
+
+            if (
                 source.kind === 'flashcard-field' &&
                 (source.field === 'sourceExample' ||
                     source.field === 'targetExample')
-                    ? (source.field === 'sourceExample'
-                          ? 'source'
-                          : 'target') === settings.exampleLanguageRole
+            ) {
+                const exampleRole =
+                    source.field === 'sourceExample' ? 'source' : 'target';
+
+                field =
+                    exampleRole === settings.exampleLanguageRole
                         ? 'example'
-                        : 'exampleTranslation'
-                    : (source.field as
-                          | 'source'
-                          | 'translation'
-                          | 'example'
-                          | 'exampleTranslation');
-            if (field === 'example' && !settings.exampleEnabled)
+                        : 'exampleTranslation';
+            } else {
+                field = source.field as typeof field;
+            }
+
+            if (field === 'example' && !settings.exampleEnabled) {
                 throw new SpeechError('speech_source_unavailable', 404);
+            }
+
             if (
                 field === 'exampleTranslation' &&
                 !settings.exampleTranslationEnabled
-            )
+            ) {
                 throw new SpeechError('speech_source_unavailable', 404);
+            }
+
             const text = card[field];
-            if (!text?.trim())
+            if (!text?.trim()) {
                 throw new SpeechError('speech_source_unavailable', 404);
-            const role =
-                field === 'source'
-                    ? 'source'
-                    : field === 'translation'
-                      ? 'target'
-                      : field === 'example'
-                        ? settings.exampleLanguageRole
-                        : settings.exampleTranslationLanguageRole;
+            }
+
+            let role: 'source' | 'target';
+            if (field === 'source') {
+                role = 'source';
+            } else if (field === 'translation') {
+                role = 'target';
+            } else if (field === 'example') {
+                role = settings.exampleLanguageRole;
+            } else {
+                role = settings.exampleTranslationLanguageRole;
+            }
+
             return {
                 authority,
                 text,
@@ -175,8 +220,11 @@ export class DrizzleSpeechSourceResolver {
                     ),
                 )
                 .for('share');
-            if (!attempt)
+
+            if (!attempt) {
                 throw new SpeechError('speech_source_unavailable', 404);
+            }
+
             const exercise = await readableExercise(
                 tx,
                 attempt.exerciseId,
@@ -184,6 +232,7 @@ export class DrizzleSpeechSourceResolver {
                 actorId,
                 false,
             );
+
             return {
                 authority,
                 text: attempt.answer,
@@ -202,8 +251,11 @@ export class DrizzleSpeechSourceResolver {
             actorId,
             source.kind === 'sentence-practice',
         );
-        if (source.kind === 'sentence-practice')
+
+        if (source.kind === 'sentence-practice') {
             await assertSentencePracticeVisible(tx, exercise.id, actorId);
+        }
+
         if (
             source.kind === 'sentence-practice' &&
             source.field === 'reference'
@@ -231,9 +283,12 @@ export class DrizzleSpeechSourceResolver {
                     ),
                 )
                 .limit(1);
-            if (!review && !attempt)
+
+            if (!review && !attempt) {
                 throw new SpeechError('speech_reference_hidden', 403);
+            }
         }
+
         return {
             authority,
             text:

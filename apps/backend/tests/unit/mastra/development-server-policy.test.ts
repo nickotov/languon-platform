@@ -34,12 +34,14 @@ describe('Mastra development server policy', () => {
                 MASTRA_MODEL_ID: 'deepseek/deepseek-flash',
             }),
         ).toThrow('DEEPSEEK_BASE_URL is not supported');
+
         expect(() =>
             enforceDevelopmentHarnessProcessPolicy({
                 ANTHROPIC_BASE_URL: 'https://attacker.example',
                 MASTRA_MODEL_ID: 'anthropic/claude-sonnet-4-5',
             }),
         ).toThrow('ANTHROPIC_BASE_URL is not supported');
+
         expect(() =>
             enforceDevelopmentHarnessProcessPolicy({
                 MASTRA_MODEL_ID: 'wafer.ai/GLM-5.1',
@@ -56,6 +58,7 @@ describe('Mastra development server policy', () => {
                 }),
             ),
         ).toBeUndefined();
+
         expect(
             validateLocalRequestAuthority(
                 new Request('http://localhost:4111/api/agents', {
@@ -66,11 +69,13 @@ describe('Mastra development server policy', () => {
                 }),
             ),
         ).toBeUndefined();
+
         expect(
             validateLocalRequestAuthority(
                 new Request('http://attacker.example/api/agents'),
             ),
         ).toMatchObject({ status: 403 });
+
         expect(
             validateLocalRequestAuthority(
                 new Request('http://127.0.0.1:4111/api/agents', {
@@ -140,21 +145,25 @@ describe('Mastra development server policy', () => {
                 }),
             ),
         ).resolves.toBeUndefined();
+
         await expect(
             validateAgentRequestBody(
                 jsonRequest({ maxSteps: 4, messages: 'hello' }),
             ),
         ).resolves.toMatchObject({ status: 400 });
+
         await expect(
             validateAgentRequestBody(
                 jsonRequest({ messages: 'hello', runId: 'not-a-uuid' }),
             ),
         ).resolves.toMatchObject({ status: 400 });
+
         await expect(
             validateAgentRequestBody(
                 jsonRequest({ messages: 'hello', untilIdle: false }),
             ),
         ).resolves.toMatchObject({ status: 400 });
+
         await expect(
             validateAgentRequestBody(
                 new Request(agentGenerateUrl, {
@@ -208,12 +217,14 @@ describe('Mastra development server policy', () => {
                 messages: 'hello',
             }),
         );
+
         expect(memoryOverride.status).toBe(403);
 
         const lowerBound = await app.request(
             'http://127.0.0.1:4111/api/agents/development-verification-agent/stream',
             jsonRequestInit({ maxSteps: 1, messages: 'hello' }),
         );
+
         await expect(lowerBound.json()).resolves.toEqual({
             maxSteps: 1,
             messages: 'hello',
@@ -223,6 +234,7 @@ describe('Mastra development server policy', () => {
             'http://127.0.0.1:4111/api/agents/development-verification-agent/stream',
             jsonRequestInit({ messages: 'hello' }),
         );
+
         await expect(omitted.json()).resolves.toEqual({
             maxSteps: 3,
             messages: 'hello',
@@ -249,17 +261,21 @@ describe('Mastra development server policy', () => {
                     enteredFirst();
                     await firstRelease;
                 }
+
                 return context.json({ executionCount });
             },
         );
+
         app.post(
             '/api/workflows/development-verification-workflow/start',
             (context) => context.json({ status: 'success' }),
         );
+
         app.post(
             '/api/workflows/development-verification-workflow/stream',
             (context) => context.json({ status: 'success' }),
         );
+
         app.post('/__refresh', (context) => context.json({ refreshed: true }));
         app.post('/__restart-active-workflow-runs', (context) =>
             context.json({ restarted: true }),
@@ -271,6 +287,7 @@ describe('Mastra development server policy', () => {
             agentGenerateUrl,
             jsonRequestInit(),
         );
+
         expect(concurrent.status).toBe(429);
 
         releaseFirst();
@@ -286,30 +303,35 @@ describe('Mastra development server policy', () => {
             'http://127.0.0.1:4111/api/responses',
             jsonRequestInit(),
         );
+
         expect(proxy.status).toBe(403);
 
         const unrelatedMutation = await app.request(
             'http://127.0.0.1:4111/api/datasets',
             jsonRequestInit(),
         );
+
         expect(unrelatedMutation.status).toBe(403);
 
         const modelMutation = await app.request(
             'http://127.0.0.1:4111/api/agents/development-verification-agent/model',
             jsonRequestInit(),
         );
+
         expect(modelMutation.status).toBe(403);
 
         const workflow = await app.request(
             'http://127.0.0.1:4111/api/workflows/development-verification-workflow/start',
             jsonRequestInit(),
         );
+
         expect(workflow.status).toBe(200);
 
         const workflowStream = await app.request(
             'http://127.0.0.1:4111/api/workflows/development-verification-workflow/stream?runId=verification-run',
             jsonRequestInit(),
         );
+
         expect(workflowStream.status).toBe(200);
 
         for (const path of ['/__refresh', '/__restart-active-workflow-runs']) {
@@ -324,6 +346,7 @@ describe('Mastra development server policy', () => {
                     },
                 },
             );
+
             expect(hostileOrigin.status, path).toBe(403);
         }
 
@@ -338,6 +361,7 @@ describe('Mastra development server policy', () => {
                 },
             },
         );
+
         expect(localRefresh.status).toBe(200);
 
         for (const [method, url] of [
@@ -382,6 +406,7 @@ describe('Mastra development server policy', () => {
                 ...jsonRequestInit(),
                 method,
             });
+
             expect(response.status, `${method} ${url}`).toBe(403);
         }
     });
@@ -399,6 +424,7 @@ function createPolicyTestApp(): Hono {
             );
         }
     }
+
     return app;
 }
 

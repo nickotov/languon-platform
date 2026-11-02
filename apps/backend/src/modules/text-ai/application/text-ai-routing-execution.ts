@@ -5,20 +5,30 @@ import type { TextAiExecutionSnapshot } from './text-ai-provider-catalog';
 export function effectiveTextAiExecutionForAttempt<
     T extends TextAiExecutionSnapshot,
 >(snapshot: T, attempt: number): T {
-    if (attempt <= 1 || !snapshot.routingAuthority) return snapshot;
-    if (attempt !== 2)
+    if (attempt <= 1 || !snapshot.routingAuthority) {
+        return snapshot;
+    }
+
+    if (attempt !== 2) {
         throw new Error('Automatic routing attempt allowance exhausted.');
+    }
+
     const candidate = snapshot.routingAuthority.candidates[1];
-    if (!candidate) return snapshot;
+    if (!candidate) {
+        return snapshot;
+    }
+
     if (
         candidate.snapshot.perCallMaxInputTokens <
             snapshot.perCallMaxInputTokens ||
         candidate.snapshot.perCallMaxOutputTokens <
             snapshot.perCallMaxOutputTokens
-    )
+    ) {
         throw new Error(
             'Fallback cannot reduce the confirmed execution allowance.',
         );
+    }
+
     return {
         ...snapshot,
         ...candidate.snapshot,
@@ -47,8 +57,10 @@ export function hasConclusiveTextAiFailure(error: unknown): boolean {
             !error ||
             typeof error !== 'object' ||
             !('executionOutcome' in error)
-        )
+        ) {
             return false;
+        }
+
         return (
             error.executionOutcome === 'rejected' ||
             error.executionOutcome === 'completed'

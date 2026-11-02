@@ -80,6 +80,7 @@ export const aiProviderExpenseRecordsTable = pgTable(
             .$type<
                 | 'text-attempt'
                 | 'speech-attempt'
+                | 'transcription-attempt'
                 | 'admin-probe'
                 | 'legacy-unverified'
             >()
@@ -104,7 +105,7 @@ export const aiProviderExpenseRecordsTable = pgTable(
     (t) => [
         check(
             'ai_provider_expense_source_kind',
-            sql`${t.sourceKind} in ('text-attempt','speech-attempt','admin-probe','legacy-unverified')`,
+            sql`${t.sourceKind} in ('text-attempt','speech-attempt','transcription-attempt','admin-probe','legacy-unverified')`,
         ),
         check(
             'ai_provider_expense_cost_source',

@@ -2,6 +2,7 @@ import type { TextAiProviderUsage } from '../../../text-ai/application/ports/tex
 import type {
     ChatPreferences,
     KnowledgeNoteContent,
+    LearningBlockProposalInput,
     ConversationToolCall,
     ConversationEditorTarget,
 } from '@languon/contracts';
@@ -73,6 +74,12 @@ export interface TutorContextMaterial {
 
 export interface TutorRunInput {
     conversationId: string;
+    /** Server-resolved source capability; never inferred from model instructions. */
+    readOnlySource?: boolean;
+    canProposeBlocks?: boolean;
+    onBlockProposal?(
+        input: LearningBlockProposalInput,
+    ): Promise<{ id: string }>;
     ownerId: string;
     operationId: string;
     conversationCreatedAt: string;
@@ -90,6 +97,7 @@ export interface TutorRunInput {
     readContext(input: {
         query: string;
         limit: number;
+        blockIds?: string[] | undefined;
     }): Promise<{ material: TutorContextMaterial[]; total: number }>;
 }
 

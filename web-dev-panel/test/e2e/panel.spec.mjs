@@ -7,6 +7,7 @@ test('parallel-command-control-and-isolated-logs', async ({ page }) => {
     const navigation = page.getByRole('navigation', {
         name: 'Command sections',
     });
+
     await expect(navigation.getByRole('link')).toHaveCount(4);
     await expect(page.locator('.command-group[open]')).toHaveCount(0);
     await navigation.getByRole('link', { name: /Services/u }).click();
@@ -14,19 +15,23 @@ test('parallel-command-control-and-isolated-logs', async ({ page }) => {
         'open',
         '',
     );
+
     const alpha = page.locator(
         '#command-section-services [data-command-id="alpha"]',
     );
     const beta = page.locator(
         '#command-section-services [data-command-id="beta"]',
     );
+
     await expect(alpha).not.toHaveAttribute('open', '');
     await expect(alpha.locator(':scope > summary')).toContainText(
         'Alpha fixture',
     );
+
     await expect(alpha.locator(':scope > summary')).toContainText(
         'Runs the first long-lived safe fixture command.',
     );
+
     await expect(alpha.locator(':scope > summary .status')).toHaveText('Idle');
     await alpha.locator(':scope > summary').click();
     await beta.locator(':scope > summary').click();
@@ -37,9 +42,11 @@ test('parallel-command-control-and-isolated-logs', async ({ page }) => {
     await expect(alpha.locator('.status')).toHaveText('running', {
         ignoreCase: true,
     });
+
     await expect(beta.locator('.status')).toHaveText('running', {
         ignoreCase: true,
     });
+
     await expect(page.locator('#selection-count')).toHaveText('0 selected');
     await expect(alpha.locator('.terminal')).toContainText('alpha: started');
     await expect(beta.locator('.terminal')).toContainText('beta: started');
@@ -48,6 +55,7 @@ test('parallel-command-control-and-isolated-logs', async ({ page }) => {
     await expect(alpha.locator('.status')).toHaveText('cancelled', {
         ignoreCase: true,
     });
+
     await expect(beta.locator('.status')).toHaveText('running', {
         ignoreCase: true,
     });
@@ -57,15 +65,18 @@ test('parallel-command-control-and-isolated-logs', async ({ page }) => {
     const aggregate = page.locator(
         '#command-section-tasks [data-command-id="aggregate"]',
     );
+
     await aggregate.locator(':scope > summary').click();
     await aggregate.getByLabel('Select').check();
     await page.getByRole('button', { name: 'Run selected' }).click();
     await expect(page.getByRole('alert')).toContainText(
         'No commands were started because the selection is invalid.',
     );
+
     await expect(page.getByRole('alert')).toContainText(
         "aggregate: conflicts with selected command 'alpha'",
     );
+
     await expect(aggregate.locator('.status')).toHaveText('idle', {
         ignoreCase: true,
     });
@@ -74,13 +85,16 @@ test('parallel-command-control-and-isolated-logs', async ({ page }) => {
     const disabled = page.locator(
         '#command-section-unavailable [data-command-id="disabled-fixture"]',
     );
+
     await disabled.locator(':scope > summary').click();
     await expect(disabled.locator('.disabled-reason')).toContainText(
         'Why unavailable',
     );
+
     await expect(disabled.locator('.disabled-reason')).toContainText(
         'requires an interactive terminal',
     );
+
     await expect(
         disabled.getByRole('button', { name: 'Start' }),
     ).toBeDisabled();
@@ -95,6 +109,7 @@ test('cross-tab-single-source-of-truth', async ({ browser }) => {
         first.goto('/?launch=web-dev-panel-fixture-launch'),
         second.goto('/?launch=web-dev-panel-fixture-launch'),
     ]);
+
     await first.locator('#command-section-services > summary').click();
     await second.locator('#command-section-services > summary').click();
 
@@ -106,19 +121,23 @@ test('cross-tab-single-source-of-truth', async ({ browser }) => {
     await expect(secondBeta.locator('.status')).toHaveText('running', {
         ignoreCase: true,
     });
+
     await expect(
         secondBeta.getByRole('button', { name: 'Stop' }),
     ).toBeEnabled();
+
     const third = await context.newPage();
     await third.goto('/');
     await expect(third.locator('[data-command-id="beta"] .status')).toHaveText(
         'running',
         { ignoreCase: true },
     );
+
     await secondBeta.getByRole('button', { name: 'Stop' }).click();
     await expect(firstBeta.locator('.status')).toHaveText('cancelled', {
         ignoreCase: true,
     });
+
     await context.close();
 });
 
@@ -138,9 +157,11 @@ test('portable-custom-command-sections', async ({ browser }) => {
     const navigation = page.getByRole('navigation', {
         name: 'Command sections',
     });
+
     await expect(
         navigation.getByRole('link', { name: /Daily workspace/u }),
     ).toBeVisible();
+
     await expect(navigation.getByRole('link').first()).toContainText(
         'Daily workspace',
     );
@@ -152,11 +173,13 @@ test('portable-custom-command-sections', async ({ browser }) => {
     const catalogBeta = page.locator(
         '#command-section-services [data-command-id="beta"]',
     );
+
     await catalogAlpha.locator(':scope > summary').click();
     await catalogAlpha
         .getByRole('group', { name: 'Quick-access sections' })
         .getByLabel('Daily workspace')
         .check();
+
     await catalogBeta.locator(':scope > summary').click();
     await catalogBeta
         .getByRole('group', { name: 'Quick-access sections' })
@@ -172,9 +195,11 @@ test('portable-custom-command-sections', async ({ browser }) => {
     await expect(customAlpha.locator(':scope > summary')).toContainText(
         'Alpha fixture',
     );
+
     await expect(customAlpha.locator(':scope > summary')).toContainText(
         'Runs the first long-lived safe fixture command.',
     );
+
     await expect(customAlpha.locator(':scope > summary .status')).toHaveText(
         /Idle|Cancelled/u,
     );
@@ -188,6 +213,7 @@ test('portable-custom-command-sections', async ({ browser }) => {
     const stopDialog = page.getByRole('dialog', {
         name: 'Stop this section?',
     });
+
     await expect(stopDialog).toContainText('2 active commands');
     await stopDialog.getByRole('button', { name: 'Stop section' }).click();
     await expect(customAlpha.locator('.status')).toHaveText('Cancelled');
@@ -197,10 +223,12 @@ test('portable-custom-command-sections', async ({ browser }) => {
     const serialized = await manager
         .getByLabel('Portable custom sections JSON')
         .inputValue();
+
     await manager.getByRole('button', { name: 'Copy JSON' }).click();
     await expect(
         manager.locator('#custom-sections-dialog-notice'),
     ).toContainText(/copied|Clipboard access was unavailable/u);
+
     const exported = JSON.parse(serialized);
     expect(exported).toMatchObject({
         schema: 'languon.web-dev-panel.custom-sections',
@@ -212,6 +240,7 @@ test('portable-custom-command-sections', async ({ browser }) => {
             },
         ],
     });
+
     await manager.getByLabel('Portable custom sections JSON').fill(
         JSON.stringify({
             ...exported,
@@ -223,10 +252,12 @@ test('portable-custom-command-sections', async ({ browser }) => {
             ],
         }),
     );
+
     await manager.getByRole('button', { name: 'Import and replace' }).click();
     await expect(manager.getByRole('alert')).toContainText(
         'missing-colleague-command',
     );
+
     await expect(customSection.locator('[data-command-id]')).toHaveCount(2);
 
     await manager.getByLabel('Portable custom sections JSON').fill(serialized);
@@ -238,20 +269,24 @@ test('portable-custom-command-sections', async ({ browser }) => {
     await expect(
         second.getByRole('link', { name: /Daily workspace/u }),
     ).toBeVisible();
+
     await page.getByRole('button', { name: 'Manage quick access' }).click();
     await manager.getByLabel('Section name').fill('Review checks');
     await manager.getByRole('button', { name: 'Create section' }).click();
     await expect(
         second.getByRole('link', { name: /Review checks/u }),
     ).toBeVisible();
+
     await manager.getByRole('button', { name: 'Close' }).click();
     await catalogAlpha
         .getByRole('group', { name: 'Quick-access sections' })
         .getByLabel('Review checks')
         .check();
+
     const reviewSection = page.locator('.custom-command-group').filter({
         has: page.getByRole('button', { name: /Review checks/u }),
     });
+
     await expect(
         reviewSection.locator('[data-command-id="alpha"]'),
     ).toHaveCount(1);
@@ -260,23 +295,28 @@ test('portable-custom-command-sections', async ({ browser }) => {
     await expect(
         reviewSection.locator('[data-command-id="alpha"] .status'),
     ).toHaveText('Running');
+
     await reviewSection.getByRole('button', { name: 'Stop all' }).click();
     const staleStopDialog = page.getByRole('dialog', {
         name: 'Stop this section?',
     });
+
     await second.getByRole('link', { name: /Services/u }).click();
     const secondCatalogAlpha = second.locator(
         '#command-section-services [data-command-id="alpha"]',
     );
+
     await secondCatalogAlpha.locator(':scope > summary').click();
     await secondCatalogAlpha
         .getByRole('group', { name: 'Quick-access sections' })
         .getByLabel('Review checks')
         .uncheck();
+
     await staleStopDialog.getByRole('button', { name: 'Stop section' }).click();
     await expect(page.getByRole('alert')).toContainText(
         'changed while Stop all was open',
     );
+
     await expect(catalogAlpha.locator('.status')).toHaveText('Running');
     await catalogAlpha.getByRole('button', { name: 'Stop' }).click();
     await expect(catalogAlpha.locator('.status')).toHaveText('Cancelled');
@@ -285,20 +325,25 @@ test('portable-custom-command-sections', async ({ browser }) => {
     await expect(page.locator('.custom-command-group').first()).toContainText(
         'Daily workspace',
     );
+
     await expect(
         page.locator('.custom-command-group').first().locator('.command-grid'),
     ).toBeHidden();
+
     await reviewSection.getByRole('button', { name: 'Remove' }).click();
     const removeDialog = page.getByRole('dialog', {
         name: 'Remove quick-access section?',
     });
+
     await removeDialog.getByRole('button', { name: 'Remove section' }).click();
     await expect(
         page.getByRole('link', { name: /Review checks/u }),
     ).toHaveCount(0);
+
     await expect(
         second.getByRole('link', { name: /Review checks/u }),
     ).toHaveCount(0);
+
     await expect(
         page.getByRole('link', { name: /Daily workspace/u }),
     ).toBeVisible();
@@ -313,34 +358,42 @@ test('portable-custom-command-sections', async ({ browser }) => {
                     'QuotaExceededError',
                 );
             }
+
             return originalSetItem.call(this, key, value);
         };
     });
+
     await storageFailure.goto('/');
     await storageFailure
         .getByRole('navigation', { name: 'Command sections' })
         .getByRole('link', { name: /Services/u })
         .click();
+
     const storageFailureAlpha = storageFailure.locator(
         '#command-section-services [data-command-id="alpha"]',
     );
+
     await storageFailureAlpha.locator(':scope > summary').click();
     const storedMembership = storageFailureAlpha
         .getByRole('group', { name: 'Quick-access sections' })
         .getByLabel('Daily workspace');
+
     await expect(storedMembership).toBeChecked();
     await storedMembership.click();
     await expect(storedMembership).toBeChecked();
     await expect(storageFailure.locator('#preference-issues')).toContainText(
         'could not be saved to browser storage',
     );
+
     await storageFailure
         .getByRole('navigation', { name: 'Command sections' })
         .getByRole('link', { name: /Tasks/u })
         .click();
+
     await expect(storageFailure.locator('#preference-issues')).toContainText(
         'could not be saved to browser storage',
     );
+
     await storageFailure.close();
     await context.close();
 });
@@ -352,6 +405,7 @@ test('whole-app-command-control', async ({ page }) => {
     await expect(runningServices.locator('summary')).toContainText(
         '0 available',
     );
+
     await page.locator('#command-section-development > summary').click();
     const command = page.locator('[data-command-id="dev:all"]');
     await command.locator(':scope > summary').click();
@@ -359,12 +413,14 @@ test('whole-app-command-control', async ({ page }) => {
     await expect(
         command.getByRole('checkbox', { name: 'Select', exact: true }),
     ).toBeDisabled();
+
     await command.getByRole('button', { name: 'Start', exact: true }).click();
     await expect(command.locator('.status')).toHaveText('Running');
     await expect(command.locator('pre')).toContainText('whole-app: started');
     await expect(runningServices.locator('summary')).toContainText(
         '3 available',
     );
+
     await runningServices.locator('summary').focus();
     await runningServices.locator('summary').press('Enter');
     await expect(runningServices).toHaveAttribute('open', '');
@@ -373,16 +429,20 @@ test('whole-app-command-control', async ({ page }) => {
             name: 'Default local URL',
         }),
     ).toBeVisible();
+
     await expect(runningServices).toContainText(
         'If you override a port, use the command ready log',
     );
+
     await expect(
         runningServices.getByRole('link', { name: 'http://localhost:3333' }),
     ).toHaveAttribute('href', 'http://localhost:3333');
+
     await expect(runningServices.getByRole('row')).toHaveCount(4);
     await expect(
         runningServices.getByRole('cell', { name: 'Running' }),
     ).toHaveCount(3);
+
     await page.reload();
     await page.locator('#command-section-development > summary').click();
     await expect(command.locator('.status')).toHaveText('Running');

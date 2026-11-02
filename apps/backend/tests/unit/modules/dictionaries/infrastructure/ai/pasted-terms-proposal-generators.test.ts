@@ -154,6 +154,7 @@ describe('pasted-terms proposal generators', () => {
             ],
             warnings: [],
         }));
+
         await expect(valid.generate(request())).resolves.toMatchObject({
             proposal: {
                 candidates: [{ rowIndex: 0 }],
@@ -166,6 +167,7 @@ describe('pasted-terms proposal generators', () => {
             failures: [],
             warnings: [],
         }));
+
         await expect(invalid.generate(request())).rejects.toMatchObject({
             category: 'invalid_model_output',
             reason: 'invalid_output',
@@ -195,9 +197,11 @@ describe('pasted-terms proposal generators', () => {
             proposal: { ...proposal, warnings: [] },
             usage: { inputTokens: 400, outputTokens: 300 },
         });
+
         expect(JSON.parse(generate.mock.calls[0]![0])).toEqual(
             generationRequest.input,
         );
+
         expect(generate.mock.calls[0]![1]).toEqual(
             expect.objectContaining({
                 abortSignal: generationRequest.signal,
@@ -217,6 +221,7 @@ describe('pasted-terms proposal generators', () => {
             object: proposal,
             tripwire: undefined,
         });
+
         await expect(
             generator.generate(generationRequest),
         ).rejects.toMatchObject({
@@ -295,6 +300,7 @@ describe('pasted-terms proposal generators', () => {
             proposal: { failures: expect.any(Array) },
             usage: { inputTokens: 50_000, outputTokens: 1_000 },
         });
+
         expect(generate).toHaveBeenCalledOnce();
     });
 
@@ -309,6 +315,7 @@ describe('pasted-terms proposal generators', () => {
                 },
             }),
         ).toThrow(PastedTermsProposalGeneratorCapabilityError);
+
         expect(() =>
             createPastedTermsProposalGenerator({
                 mode: 'mastra',

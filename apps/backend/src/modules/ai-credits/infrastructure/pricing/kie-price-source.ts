@@ -65,6 +65,7 @@ const months = [
     'nov',
     'dec',
 ];
+
 function anchorUrl(raw: string): URL {
     const url = new URL(raw);
     if (
@@ -72,49 +73,71 @@ function anchorUrl(raw: string): URL {
         url.username ||
         url.password ||
         !/^\/[a-zA-Z0-9/_.-]+$/.test(url.pathname)
-    )
+    ) {
         throw new Error('Invalid official product anchor.');
+    }
+
     return url;
 }
+
 function productData(html: string) {
     const script =
         /<script\b[^>]*\bid=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i.exec(
             html,
         )?.[1];
-    if (!script) throw new Error('Official product data missing.');
+
+    if (!script) {
+        throw new Error('Official product data missing.');
+    }
+
     return productSchema.parse(JSON.parse(script)).props.pageProps.pageData
         .groupData;
 }
+
 function multiply(value: string, integer: bigint): bigint {
     const [whole, fraction = ''] = publishedRate(value).split('.');
+
     return BigInt(`${whole}${fraction.padEnd(24, '0')}`) * integer;
 }
+
 function creditUsd(rows: z.infer<typeof rowSchema>[]): string | undefined {
     const ratios = rows
         .map((row) => {
             const usd = multiply(row.usdPrice, 1n),
                 credits = multiply(row.creditPrice, 1n);
+
             if (credits === 0n) {
-                if (usd !== 0n) throw new Error('Credit conversion missing.');
+                if (usd !== 0n) {
+                    throw new Error('Credit conversion missing.');
+                }
+
                 return undefined;
             }
+
             const numerator = usd * 10n ** 24n;
-            if (numerator % credits)
+            if (numerator % credits) {
                 throw new Error(
                     'Credit conversion requires unsupported precision.',
                 );
+            }
+
             const digits = (numerator / credits).toString().padStart(25, '0');
+
             return publishedRate(
                 `${digits.slice(0, -24)}.${digits.slice(-24)}`,
             );
         })
         .filter((value): value is string => value !== undefined);
-    if (new Set(ratios).size > 1)
+
+    if (new Set(ratios).size > 1) {
         throw new Error(
             'Provider credit conversion differs across components.',
         );
+    }
+
     return ratios[0];
 }
+
 function expiry(description: string): string | null {
     const dates = [
         ...description.matchAll(
@@ -123,19 +146,30 @@ function expiry(description: string): string | null {
     ].map((match) => {
         const month = months.indexOf(match[1]!.toLowerCase().slice(0, 3));
         const date = Number(match[2]);
-        if (month < 0 || date < 1 || date > 31)
+        if (month < 0 || date < 1 || date > 31) {
             throw new Error('Unknown promotional expiry.');
+        }
+
         // The source does not declare its expiry timezone. Expire at the start
         // of the named UTC day instead of silently extending the promotion.
         const instant = new Date(Date.UTC(Number(match[3]), month, date));
-        if (instant.getUTCMonth() !== month)
+        if (instant.getUTCMonth() !== month) {
             throw new Error('Invalid promotion date.');
+        }
+
         return instant.toISOString();
     });
-    if (/limited.time|promotional pricing/i.test(description) && !dates.length)
+
+    if (
+        /limited.time|promotional pricing/i.test(description) &&
+        !dates.length
+    ) {
         throw new Error('Promotional validity is unknown.');
+    }
+
     return dates.sort()[0] ?? null;
 }
+
 function rateComponents(
     rows: z.infer<typeof rowSchema>[],
     target: ProviderPriceTarget,
@@ -172,7 +206,10 @@ function rateComponents(
         ) {
             meter = 'outputTokens';
             quantity = 1_000_000;
-        } else throw new Error('Official billing meter changed.');
+        } else {
+            throw new Error('Official billing meter changed.');
+        }
+
         return {
             meter,
             pricePerUnit: publishedRate(row.usdPrice),
@@ -188,11 +225,15 @@ export class KiePriceSource implements ProviderPriceSource {
         private readonly fetcher: typeof fetch = fetch,
         private readonly now: () => Date = () => new Date(),
     ) {}
+
     async fetchPrices(
         targets: ProviderPriceTarget[],
         signal?: AbortSignal,
     ): Promise<ProviderPriceFetchResult[]> {
-        if (!targets.length) return [];
+        if (!targets.length) {
+            return [];
+        }
+
         const records: Record<string, unknown>[] = [];
         try {
             const first = listSchema.parse(
@@ -203,11 +244,14 @@ export class KiePriceSource implements ProviderPriceSource {
                     interfaceType: '',
                 }),
             );
+
             if (
                 first.data.current !== 1 ||
                 (first.data.pages === 0 && first.data.records.length)
-            )
+            ) {
                 throw new Error('Invalid price pagination.');
+            }
+
             records.push(...first.data.records);
             for (let page = 2; page <= first.data.pages; page++) {
                 const next = listSchema.parse(
@@ -218,18 +262,23 @@ export class KiePriceSource implements ProviderPriceSource {
                         interfaceType: '',
                     }),
                 );
+
                 if (
                     next.data.current !== page ||
                     next.data.pages !== first.data.pages ||
                     next.data.total !== first.data.total
-                )
+                ) {
                     throw new Error(
                         'Official catalog changed during pagination.',
                     );
+                }
+
                 records.push(...next.data.records);
             }
-            if (records.length !== first.data.total)
+
+            if (records.length !== first.data.total) {
                 throw new Error('Incomplete official pricing list.');
+            }
         } catch {
             return targets.map((target) =>
                 sourceFailure(
@@ -239,6 +288,7 @@ export class KiePriceSource implements ProviderPriceSource {
                 ),
             );
         }
+
         const products = new Map<string, ReturnType<typeof productData>>();
         const results: ProviderPriceFetchResult[] = [];
         for (const target of targets) {
@@ -250,13 +300,19 @@ export class KiePriceSource implements ProviderPriceSource {
                         'The provider does not match Kie pricing.',
                     ),
                 );
+
                 continue;
             }
+
             const core = normalized(target.modelId.split('/').at(-1)!);
             const candidates = records.filter((record) => {
-                if (typeof record.anchor !== 'string') return false;
+                if (typeof record.anchor !== 'string') {
+                    return false;
+                }
+
                 try {
                     const url = anchorUrl(record.anchor);
+
                     return (
                         url.searchParams.get('model') === target.modelId ||
                         (typeof record.modelDescription === 'string' &&
@@ -268,6 +324,7 @@ export class KiePriceSource implements ProviderPriceSource {
                     return false;
                 }
             });
+
             if (candidates.length > 32) {
                 results.push(
                     sourceFailure(
@@ -276,8 +333,10 @@ export class KiePriceSource implements ProviderPriceSource {
                         'The model pricing identity is ambiguous.',
                     ),
                 );
+
                 continue;
             }
+
             const selected: z.infer<typeof rowSchema>[] = [];
             let description = '';
             let sourceUrl = 'https://kie.ai/pricing';
@@ -292,12 +351,18 @@ export class KiePriceSource implements ProviderPriceSource {
                         groups = productData(
                             await readPricingText(this.fetcher, url, signal),
                         );
+
                         products.set(key, groups);
                     }
+
                     const matching = groups.filter(
                         (group) => group.model === target.modelId,
                     );
-                    if (matching.length !== 1) continue; // A 200 product page may now advertise a different model.
+
+                    if (matching.length !== 1) {
+                        continue;
+                    } // A 200 product page may now advertise a different model.
+
                     selected.push(row);
                     description = matching[0]!.pricingDesc;
                     sourceUrl = url.href;
@@ -306,6 +371,7 @@ export class KiePriceSource implements ProviderPriceSource {
                     break;
                 }
             }
+
             if (failed) {
                 results.push(
                     sourceFailure(
@@ -314,8 +380,10 @@ export class KiePriceSource implements ProviderPriceSource {
                         'Kie product identity or public price data needs review.',
                     ),
                 );
+
                 continue;
             }
+
             if (!selected.length) {
                 results.push(
                     sourceFailure(
@@ -324,8 +392,10 @@ export class KiePriceSource implements ProviderPriceSource {
                         'No current official price matches the exact model identity; replacement models and similarly named TTS models are not substituted.',
                     ),
                 );
+
                 continue;
             }
+
             try {
                 const components = rateComponents(selected, target);
                 if (
@@ -345,14 +415,18 @@ export class KiePriceSource implements ProviderPriceSource {
                             !components.some(
                                 (item) => item.meter === 'outputTokens',
                             )))
-                )
+                ) {
                     throw new Error(
                         'Incomplete or duplicate price components.',
                     );
+                }
+
                 const validUntil = expiry(description);
                 const at = currentInstant(this.now);
-                if (validUntil !== null && validUntil <= at)
+                if (validUntil !== null && validUntil <= at) {
                     throw new Error('Published promotion expired.');
+                }
+
                 const conversion = creditUsd(selected);
                 const rules: ProviderNativePricingRules = {
                     version: 1,
@@ -365,6 +439,7 @@ export class KiePriceSource implements ProviderPriceSource {
                         { id: 'public-default', applies: {}, components },
                     ],
                 };
+
                 results.push({
                     target,
                     status: 'available',
@@ -385,6 +460,7 @@ export class KiePriceSource implements ProviderPriceSource {
                 );
             }
         }
+
         return results;
     }
 }

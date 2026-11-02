@@ -8,6 +8,7 @@ export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
     const { t } = await getRequestI18n();
+
     return {
         referrer: 'no-referrer',
         robots: { follow: false, index: false },
@@ -21,5 +22,6 @@ export default async function Page({
     params: Promise<{ locator: string }>;
 }) {
     const { locator } = await params;
+
     return <SharedKnowledgePage locator={locator} />;
 }

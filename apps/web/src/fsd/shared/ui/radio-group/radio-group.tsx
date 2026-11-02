@@ -187,7 +187,9 @@ export function Radio({
                 onChange={() => {
                     group?.onChange?.(value);
 
-                    if (!group) onChange?.(value);
+                    if (!group) {
+                        onChange?.(value);
+                    }
                 }}
                 type='radio'
                 value={value}

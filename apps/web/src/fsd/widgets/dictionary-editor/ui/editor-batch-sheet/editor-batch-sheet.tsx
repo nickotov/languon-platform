@@ -74,8 +74,12 @@ export function EditorBatchSheet({
                     current.targetLanguage));
 
     function resolveErrorValue() {
-        if (batchGenerationAction.error instanceof ActionConsentCancelledError)
+        if (
+            batchGenerationAction.error instanceof ActionConsentCancelledError
+        ) {
             return null;
+        }
+
         if (batchGenerationAction.error) {
             return dictionaryErrorMessage(batchGenerationAction.error, t);
         }

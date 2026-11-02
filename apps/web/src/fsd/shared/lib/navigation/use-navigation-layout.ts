@@ -17,9 +17,13 @@ export const useNavigationLayout = create<LayoutState>((set) => ({
     companions: new Map(),
     publish(id, open) {
         set((state) => {
-            if (state.companions.get(id) === open) return state;
+            if (state.companions.get(id) === open) {
+                return state;
+            }
+
             const companions = new Map(state.companions);
             companions.set(id, open);
+
             return {
                 companions,
                 editorOpen: true,
@@ -31,6 +35,7 @@ export const useNavigationLayout = create<LayoutState>((set) => ({
         set((state) => {
             const companions = new Map(state.companions);
             companions.delete(id);
+
             return {
                 companions,
                 editorOpen: companions.size > 0,

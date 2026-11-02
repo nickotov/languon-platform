@@ -20,11 +20,13 @@ describe('text AI preference remote boundary', () => {
                 { status: 200 },
             ),
         );
+
         vi.stubGlobal('fetch', fetcher);
         await preferencesApi.save('session-token', {
             mode: 'auto',
             expectedVersion: 1,
         });
+
         expect(fetcher).toHaveBeenCalledWith(
             expect.stringContaining('/users/me/ai-model-preference'),
             expect.objectContaining({
@@ -38,6 +40,7 @@ describe('text AI preference remote boundary', () => {
             }),
         );
     });
+
     it('rejects malformed or extra remote fields instead of treating them as a saved preference', async () => {
         vi.stubGlobal(
             'fetch',
@@ -54,8 +57,10 @@ describe('text AI preference remote boundary', () => {
                 ),
             ),
         );
+
         await expect(preferencesApi.read('token')).rejects.toThrow();
     });
+
     it('preserves typed authentication errors for the shared refresh coordinator', async () => {
         vi.stubGlobal(
             'fetch',
@@ -72,12 +77,15 @@ describe('text AI preference remote boundary', () => {
                 ),
             ),
         );
+
         const result = await preferencesApi
             .read('expired-token')
             .catch((error) => error);
+
         expect(result).toBeInstanceOf(PreferenceApiError);
         expect(isAuthenticationRequiredError(result)).toBe(true);
     });
+
     it('maps malformed failure bodies to a safe retryable error', async () => {
         vi.stubGlobal(
             'fetch',
@@ -87,6 +95,7 @@ describe('text AI preference remote boundary', () => {
                     new Response('gateway failed', { status: 503 }),
                 ),
         );
+
         await expect(preferencesApi.catalog('token')).rejects.toMatchObject({
             code: 'internal_error',
             status: 503,

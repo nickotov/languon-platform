@@ -19,16 +19,23 @@ export function RecordingFiltersForm({
             'state',
         ] as const) {
             const value = values[key]?.trim();
-            if (value) Object.assign(filters, { [key]: value });
+            if (value) {
+                Object.assign(filters, { [key]: value });
+            }
         }
-        if (values.createdFrom)
+
+        if (values.createdFrom) {
             filters.createdFrom = new Date(
                 `${values.createdFrom}T00:00:00.000Z`,
             ).toISOString();
-        if (values.createdTo)
+        }
+
+        if (values.createdTo) {
             filters.createdTo = new Date(
                 `${values.createdTo}T23:59:59.999Z`,
             ).toISOString();
+        }
+
         onApply(filters);
     };
     const linkedOptions = [
@@ -38,6 +45,7 @@ export function RecordingFiltersForm({
     const stateOptions = ['pending', 'ready', 'deleting', 'failed'].map(
         (value) => ({ value, label: t(`speech.status.${value}`) }),
     );
+
     return (
         <Form layout='vertical' onFinish={handleFinish}>
             <Space align='start' wrap>

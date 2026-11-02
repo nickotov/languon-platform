@@ -12,6 +12,7 @@ it('keeps an edited conversation title after a failed save and retries it', asyn
         .fn<() => Promise<void>>()
         .mockRejectedValueOnce(new Error('Temporary failure'))
         .mockResolvedValueOnce();
+
     render(
         <ConversationHistory
             id='00000000-0000-4000-8000-000000000001'
@@ -36,6 +37,7 @@ it('keeps an edited conversation title after a failed save and retries it', asyn
             name: /Rename conversation: Original title/,
         }),
     );
+
     const input = screen.getByRole('textbox', { name: 'Rename conversation' });
     await user.clear(input);
     await user.type(input, 'My language research');
@@ -44,6 +46,7 @@ it('keeps an edited conversation title after a failed save and retries it', asyn
     expect(await screen.findByRole('alert')).toHaveTextContent(
         'Could not save the title',
     );
+
     expect(input).toHaveValue('My language research');
 
     await user.click(screen.getByRole('button', { name: 'Save title' }));
@@ -53,6 +56,7 @@ it('keeps an edited conversation title after a failed save and retries it', asyn
         '00000000-0000-4000-8000-000000000001',
         'My language research',
     );
+
     await waitFor(() =>
         expect(
             screen.queryByRole('textbox', { name: 'Rename conversation' }),

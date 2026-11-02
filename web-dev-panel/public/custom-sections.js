@@ -18,12 +18,15 @@ export class CustomSectionsError extends Error {
         super(message);
         this.name = 'CustomSectionsError';
         this.code = code;
-        if (issues !== undefined) this.issues = issues;
+        if (issues !== undefined) {
+            this.issues = issues;
+        }
     }
 }
 
 function fail(code, message, path) {
     const issues = path === undefined ? undefined : [{ code, message, path }];
+
     throw new CustomSectionsError(code, message, issues);
 }
 
@@ -31,7 +34,9 @@ function isPlainObject(value) {
     if (value === null || typeof value !== 'object' || Array.isArray(value)) {
         return false;
     }
+
     const prototype = Object.getPrototypeOf(value);
+
     return prototype === Object.prototype || prototype === null;
 }
 
@@ -39,6 +44,7 @@ function assertExactKeys(value, expected, path) {
     if (!isPlainObject(value)) {
         fail('invalid-shape', `${path} must be an object.`, path);
     }
+
     const keys = Object.keys(value);
     if (
         keys.length !== expected.size ||
@@ -55,6 +61,7 @@ function assertExactKeys(value, expected, path) {
 function hasControlCharacter(value) {
     return [...value].some((character) => {
         const codePoint = character.codePointAt(0);
+
         return codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f);
     });
 }
@@ -73,6 +80,7 @@ function validateName(value, path) {
             path,
         );
     }
+
     return value;
 }
 
@@ -84,6 +92,7 @@ function validateSectionId(value, path) {
             path,
         );
     }
+
     return value;
 }
 
@@ -95,6 +104,7 @@ function validateCommandId(value, path) {
             path,
         );
     }
+
     return value;
 }
 
@@ -107,6 +117,7 @@ function validateDocument(value) {
             'document.schema',
         );
     }
+
     if (value.version !== CUSTOM_SECTIONS_VERSION) {
         fail(
             'unsupported-version',
@@ -114,6 +125,7 @@ function validateDocument(value) {
             'document.version',
         );
     }
+
     if (!Array.isArray(value.sections)) {
         fail(
             'invalid-shape',
@@ -121,6 +133,7 @@ function validateDocument(value) {
             'document.sections',
         );
     }
+
     if (value.sections.length > maximumSections) {
         fail(
             'too-many-sections',
@@ -143,6 +156,7 @@ function validateDocument(value) {
                 `${path}.id`,
             );
         }
+
         sectionIds.add(id);
 
         const name = validateName(section.name, `${path}.name`);
@@ -154,6 +168,7 @@ function validateDocument(value) {
                 `${path}.name`,
             );
         }
+
         sectionNames.add(foldedName);
 
         if (!Array.isArray(section.commandIds)) {
@@ -163,6 +178,7 @@ function validateDocument(value) {
                 `${path}.commandIds`,
             );
         }
+
         if (section.commandIds.length > maximumMembersPerSection) {
             fail(
                 'too-many-section-members',
@@ -170,6 +186,7 @@ function validateDocument(value) {
                 `${path}.commandIds`,
             );
         }
+
         totalMembers += section.commandIds.length;
         if (totalMembers > maximumTotalMembers) {
             fail(
@@ -190,9 +207,12 @@ function validateDocument(value) {
                     memberPath,
                 );
             }
+
             memberIds.add(validated);
+
             return validated;
         });
+
         return { id, name, commandIds };
     });
 
@@ -228,9 +248,11 @@ function catalogIds(catalog) {
                 `catalog[${index}]`,
             );
         }
+
         ids.add(id);
         index += 1;
     }
+
     return ids;
 }
 
@@ -252,8 +274,10 @@ export function createSectionId(randomUuid = () => crypto.randomUUID()) {
             'A new section ID could not be generated.',
         );
     }
+
     const id = `section-${uuid}`;
     validateSectionId(id, 'section.id');
+
     return id;
 }
 
@@ -261,18 +285,21 @@ export function parseCustomSections(text) {
     if (typeof text !== 'string') {
         fail('invalid-json', 'Custom-sections data must be JSON text.');
     }
+
     if (textEncoder.encode(text).byteLength > maximumDocumentBytes) {
         fail(
             'document-too-large',
             `Custom-sections JSON must not exceed ${maximumDocumentBytes} bytes.`,
         );
     }
+
     let value;
     try {
         value = JSON.parse(text);
     } catch {
         fail('invalid-json', 'Custom-sections data is not valid JSON.');
     }
+
     return validateDocument(value);
 }
 
@@ -285,6 +312,7 @@ export function serializeCustomSections(document) {
             `Custom-sections JSON must not exceed ${maximumDocumentBytes} bytes.`,
         );
     }
+
     return serialized;
 }
 
@@ -294,9 +322,12 @@ export function missingCatalogCommandIds(document, catalog) {
     const missing = new Set();
     for (const section of canonical.sections) {
         for (const commandId of section.commandIds) {
-            if (!currentIds.has(commandId)) missing.add(commandId);
+            if (!currentIds.has(commandId)) {
+                missing.add(commandId);
+            }
         }
     }
+
     return [...missing];
 }
 
@@ -310,11 +341,13 @@ export function parseImportedCustomSections(text, catalog) {
             'document.sections',
         );
     }
+
     return document;
 }
 
 export function createSection(document, name, id = createSectionId()) {
     const canonical = validateDocument(document);
+
     return validateDocument({
         ...canonical,
         sections: [...canonical.sections, { id, name, commandIds: [] }],
@@ -328,6 +361,7 @@ export function deleteSection(document, sectionId) {
     if (sections.length === canonical.sections.length) {
         fail('section-not-found', 'The requested section does not exist.');
     }
+
     return { ...canonical, sections };
 }
 
@@ -344,10 +378,16 @@ export function setSectionMembership(document, sectionId, commandId, included) {
 
     let found = false;
     const sections = canonical.sections.map((section) => {
-        if (section.id !== sectionId) return section;
+        if (section.id !== sectionId) {
+            return section;
+        }
+
         found = true;
         const currentlyIncluded = section.commandIds.includes(commandId);
-        if (currentlyIncluded === included) return section;
+        if (currentlyIncluded === included) {
+            return section;
+        }
+
         return {
             ...section,
             commandIds: included
@@ -355,9 +395,11 @@ export function setSectionMembership(document, sectionId, commandId, included) {
                 : section.commandIds.filter((id) => id !== commandId),
         };
     });
+
     if (!found) {
         fail('section-not-found', 'The requested section does not exist.');
     }
+
     return validateDocument({ ...canonical, sections });
 }
 
@@ -367,6 +409,7 @@ export function toggleSectionMembership(document, sectionId, commandId) {
     if (!section) {
         fail('section-not-found', 'The requested section does not exist.');
     }
+
     return setSectionMembership(
         canonical,
         sectionId,
@@ -385,13 +428,18 @@ export function loadCustomSections(storage) {
             'Custom sections could not be read from browser storage.',
         );
     }
-    if (serialized === null) return emptyCustomSectionsDocument();
+
+    if (serialized === null) {
+        return emptyCustomSectionsDocument();
+    }
+
     if (typeof serialized !== 'string') {
         fail(
             'storage-read-failed',
             'Custom sections could not be read from browser storage.',
         );
     }
+
     return parseCustomSections(serialized);
 }
 
@@ -405,5 +453,6 @@ export function saveCustomSections(storage, document) {
             'Custom sections could not be saved to browser storage.',
         );
     }
+
     return serialized;
 }

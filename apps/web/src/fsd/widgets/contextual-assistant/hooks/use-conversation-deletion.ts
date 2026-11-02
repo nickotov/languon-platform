@@ -14,13 +14,22 @@ export function useConversationDeletion({
     const [deletingPending, setDeletingPending] = useState(false);
     const inFlight = useRef(false);
     function requestDelete(id: string) {
-        if (!inFlight.current) setDeleting(id);
+        if (!inFlight.current) {
+            setDeleting(id);
+        }
     }
+
     function cancelDelete() {
-        if (!inFlight.current) setDeleting(null);
+        if (!inFlight.current) {
+            setDeleting(null);
+        }
     }
+
     async function confirmDelete() {
-        if (!deleting || inFlight.current) return;
+        if (!deleting || inFlight.current) {
+            return;
+        }
+
         const target = deleting;
         inFlight.current = true;
         setDeletingPending(true);
@@ -35,6 +44,7 @@ export function useConversationDeletion({
             setDeletingPending(false);
         }
     }
+
     return {
         deleting,
         deletingPending,

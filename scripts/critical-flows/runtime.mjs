@@ -9,14 +9,18 @@ export function setInterrupted(value) {
 }
 
 export function assertNotInterrupted() {
-    if (interrupted)
+    if (interrupted) {
         throw new Error(
             'Critical-flow run interrupted; owned services will be cleaned up.',
         );
+    }
 }
 
 export function execute(command, args, options = {}) {
-    if (!options.cleanup) assertNotInterrupted();
+    if (!options.cleanup) {
+        assertNotInterrupted();
+    }
+
     return new Promise((resolve, reject) => {
         const child = spawn(command, args, {
             stdio: options.capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
@@ -27,9 +31,11 @@ export function execute(command, args, options = {}) {
         child.stdout?.on('data', (data) => {
             output += data;
         });
+
         child.stderr?.on('data', (data) => {
             errors += data;
         });
+
         const stop = () => child.kill('SIGTERM');
         process.once('SIGINT', stop);
         process.once('SIGTERM', stop);
@@ -37,25 +43,29 @@ export function execute(command, args, options = {}) {
             process.off('SIGINT', stop);
             process.off('SIGTERM', stop);
         };
+
         child.once('error', (error) => {
             cleanup();
             reject(error);
         });
+
         child.once('exit', (code) => {
             cleanup();
-            if (code === 0) resolve(output.trim());
-            else
+            if (code === 0) {
+                resolve(output.trim());
+            } else {
                 reject(
                     new Error(
                         `${command} exited ${code}${errors || output ? `: ${errors || output}` : ''}`,
                     ),
                 );
+            }
         });
     });
 }
 
 export async function assertFreePorts(ports) {
-    for (const port of ports)
+    for (const port of ports) {
         await new Promise((resolve, reject) => {
             const server = createServer();
             server.once('error', (error) =>
@@ -67,8 +77,10 @@ export async function assertFreePorts(ports) {
                     ),
                 ),
             );
+
             server.listen(port, '127.0.0.1', () => server.close(resolve));
         });
+    }
 }
 
 export function infrastructure(flow) {
@@ -100,6 +112,7 @@ export function infrastructure(flow) {
     const [pg, redis, database, web, backend, admin] = fixture;
     const databaseUrl = `postgres://critical:critical_test_only@127.0.0.1:${pg}/${database}`;
     const redisUrl = `redis://127.0.0.1:${redis}/1`;
+
     return {
         ports: [
             ...fixture.filter((value) => typeof value === 'number'),
@@ -154,6 +167,7 @@ export function createFlowEnvironment(
             .filter((key) => parent[key])
             .map((key) => [key, parent[key]]),
     );
+
     return {
         ...inherited,
         ...flow.env,

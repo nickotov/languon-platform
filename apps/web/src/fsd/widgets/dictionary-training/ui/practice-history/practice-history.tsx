@@ -50,7 +50,10 @@ export function PracticeHistory({
 }) {
     const { locale } = useI18n();
     const copy = historyCopy[locale];
-    if (inline && !open) return null;
+    if (inline && !open) {
+        return null;
+    }
+
     const items = [
         {
             value: 'flashcards',
@@ -90,7 +93,8 @@ export function PracticeHistory({
             fullWidth
         />
     );
-    if (inline)
+
+    if (inline) {
         return (
             <section
                 className={componentStyles.content}
@@ -100,6 +104,8 @@ export function PracticeHistory({
                 {content}
             </section>
         );
+    }
+
     return (
         <Dialog open={open} onClose={onClose} size='lg' title={copy.title}>
             {open ? content : null}
@@ -116,6 +122,7 @@ function FlashcardStatistics({
 }) {
     const read = useCallback(() => api.getProgress(), [api]);
     const progress = useSavedStatistics(read);
+
     return (
         <SavedProgress
             progress={progress.result}
@@ -145,9 +152,11 @@ function SentenceHistoryTab({
 }) {
     const history = useSentenceHistory({ api, identity });
     useEffect(() => {
-        if (history.error && isSentenceAccessLoss(history.error))
+        if (history.error && isSentenceAccessLoss(history.error)) {
             onAccessLoss?.();
+        }
     }, [history.error, onAccessLoss]);
+
     return (
         <div className={componentStyles.statistics}>
             <SentenceStatistics

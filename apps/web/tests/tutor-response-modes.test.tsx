@@ -30,12 +30,14 @@ vi.mock(
     '../src/fsd/widgets/contextual-assistant/hooks/use-conversation-stream',
     () => ({ useConversationStream: () => ({}) }),
 );
+
 afterEach(() => vi.restoreAllMocks());
 beforeEach(() => {
     vi.spyOn(dictionaryApi, 'listLanguages').mockResolvedValue({
         languages: [],
     });
 });
+
 const preferences = ChatPreferencesSchema.parse({
     tone: 'academic',
     replyLanguage: 'es',
@@ -46,6 +48,7 @@ function wrapper(locale: Locale = 'en') {
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
+
     return function Provider({ children }: PropsWithChildren) {
         return (
             <QueryClientProvider client={client}>
@@ -68,14 +71,17 @@ it('submits a mode preference without losing language, tone or level and reflect
         />,
         { wrapper: wrapper() },
     );
+
     expect(screen.getByRole('radiogroup', { name: 'Mode' })).toBeVisible();
     await user.click(
         screen.getByRole('radio', { name: 'Correct', exact: true }),
     );
+
     expect(change).toHaveBeenCalledWith({ ...preferences, mode: 'correct' });
     expect(
         screen.getByRole('radio', { name: 'Auto', exact: true }),
     ).toBeChecked();
+
     view.rerender(
         <TutorModeControl
             value={{ ...preferences, mode: 'correct' }}
@@ -83,12 +89,15 @@ it('submits a mode preference without losing language, tone or level and reflect
             disabled={true}
         />,
     );
+
     expect(
         screen.getByRole('radio', { name: 'Correct', exact: true }),
     ).toBeChecked();
+
     await user.click(
         screen.getByRole('radio', { name: 'Practice', exact: true }),
     );
+
     expect(change).toHaveBeenCalledTimes(1);
 });
 
@@ -106,9 +115,11 @@ it.each([
         />,
         { wrapper: wrapper(locale) },
     );
+
     expect(screen.getByRole('radiogroup', { name: label })).toBeVisible();
-    for (const name of options)
+    for (const name of options) {
         expect(screen.getByRole('radio', { name, exact: true })).toBeVisible();
+    }
 });
 
 it('uses the real defaults callback and does not claim success before the caller confirms persistence', async () => {
@@ -127,13 +138,16 @@ it('uses the real defaults callback and does not claim success before the caller
     const view = render(<ComposerPreferences {...props} />, {
         wrapper: wrapper(),
     });
+
     await user.click(screen.getByRole('button', { name: 'Response settings' }));
     expect(
         screen.getByRole('radio', { name: 'Practice', exact: true }),
     ).toBeChecked();
+
     await user.click(
         screen.getByRole('button', { name: 'Use as my defaults' }),
     );
+
     expect(defaults).toHaveBeenCalledOnce();
     expect(screen.queryByRole('status')).toBeNull();
     view.rerender(<ComposerPreferences {...props} defaultsSaved />);
@@ -158,9 +172,11 @@ it('locks concurrent preference writes, retains the last confirmed mode on failu
         drafts: [],
         turns: [],
     });
+
     vi.spyOn(conversationApi, 'list').mockImplementation(async () => ({
         conversations: [saved.conversation],
     }));
+
     vi.spyOn(conversationApi, 'detail').mockImplementation(async () => saved);
     let reject!: (reason: Error) => void;
     const update = vi.spyOn(conversationApi, 'update').mockImplementationOnce(
@@ -175,6 +191,7 @@ it('locks concurrent preference writes, retains the last confirmed mode on failu
             mutations: { retry: false },
         },
     });
+
     function Provider({ children }: PropsWithChildren) {
         return (
             <QueryClientProvider client={client}>
@@ -182,12 +199,14 @@ it('locks concurrent preference writes, retains the last confirmed mode on failu
             </QueryClientProvider>
         );
     }
+
     const request = <T,>(operation: (token: string) => Promise<T>) =>
         operation('synthetic-token');
     const { result } = renderHook(
         () => useConversation('actor', source, request),
         { wrapper: Provider },
     );
+
     await waitFor(() => expect(result.current.detail.isSuccess).toBe(true));
     let pending!: Promise<void>;
     act(() => {
@@ -196,6 +215,7 @@ it('locks concurrent preference writes, retains the last confirmed mode on failu
             mode: 'correct',
         });
     });
+
     expect(result.current.preferencesPending).toBe(true);
     await act(async () => {
         await result.current.updatePreferences({
@@ -203,34 +223,41 @@ it('locks concurrent preference writes, retains the last confirmed mode on failu
             mode: 'practice',
         });
     });
+
     expect(update).toHaveBeenCalledTimes(1);
     await act(async () => {
         reject(new Error('synthetic unavailable'));
         await pending;
     });
+
     expect(result.current.actionError).toBe(true);
     expect(result.current.preferencesPending).toBe(false);
     expect(result.current.detail.data?.conversation.preferences.mode).toBe(
         'auto',
     );
+
     update.mockImplementation(async (_token, _id, next) => {
         saved = {
             ...saved,
             conversation: { ...saved.conversation, preferences: next },
         };
+
         return { conversation: saved.conversation };
     });
+
     await act(async () => {
         await result.current.updatePreferences({
             ...preferences,
             mode: 'explain',
         });
     });
+
     await waitFor(() =>
         expect(result.current.detail.data?.conversation.preferences.mode).toBe(
             'explain',
         ),
     );
+
     expect(result.current.actionError).toBe(false);
     client.clear();
 });
@@ -250,6 +277,7 @@ it('keeps the settings popover and focused radio stable throughout a pending pre
                 setPending(false);
             };
         }
+
         return (
             <ComposerPreferences
                 value={value}
@@ -260,12 +288,14 @@ it('keeps the settings popover and focused radio stable throughout a pending pre
             />
         );
     }
+
     render(<Settings />, { wrapper: wrapper() });
     await user.click(screen.getByRole('button', { name: 'Response settings' }));
     const practice = screen.getByRole('radio', {
         name: 'Practice',
         exact: true,
     });
+
     await user.click(practice);
     expect(screen.getByRole('dialog')).toBeVisible();
     expect(practice).toHaveFocus();
@@ -296,6 +326,7 @@ it('global portrait off cannot be silently enabled by a chat and manual values r
             draft: null,
         }),
     );
+
     const change = vi.fn();
     render(
         <ComposerPreferences
@@ -311,10 +342,12 @@ it('global portrait off cannot be silently enabled by a chat and manual values r
         />,
         { wrapper: wrapper() },
     );
+
     await user.click(screen.getByRole('button', { name: 'Response settings' }));
     const control = await screen.findByRole('switch', {
         name: 'Use portrait in this chat',
     });
+
     expect(control).toBeDisabled();
     expect(control).not.toBeChecked();
     await user.click(control);
@@ -322,6 +355,7 @@ it('global portrait off cannot be silently enabled by a chat and manual values r
     expect(
         screen.getByText('Your portrait is off for all chats'),
     ).toBeVisible();
+
     expect(screen.getAllByText('Manual')).toHaveLength(5);
 });
 
@@ -342,6 +376,7 @@ it('per-chat exclusion warns about retained history and offers a real fresh chat
             draft: null,
         }),
     );
+
     const fresh = vi.fn();
     function Settings() {
         const [value, setValue] = useState(
@@ -350,6 +385,7 @@ it('per-chat exclusion warns about retained history and offers a real fresh chat
                 portrait: { enabled: true, inheritedFields: ['tone'] },
             }),
         );
+
         return (
             <ComposerPreferences
                 value={value}
@@ -365,11 +401,13 @@ it('per-chat exclusion warns about retained history and offers a real fresh chat
             />
         );
     }
+
     render(<Settings />, { wrapper: wrapper() });
     await user.click(screen.getByRole('button', { name: 'Response settings' }));
     const control = await screen.findByRole('switch', {
         name: 'Use portrait in this chat',
     });
+
     await user.click(control);
     expect(control).not.toBeChecked();
     expect(
@@ -377,8 +415,10 @@ it('per-chat exclusion warns about retained history and offers a real fresh chat
             /Earlier messages may still contain personal information/,
         ),
     ).toBeVisible();
+
     await user.click(
         screen.getByRole('button', { name: 'Start a fresh chat' }),
     );
+
     expect(fresh).toHaveBeenCalledOnce();
 });

@@ -30,6 +30,7 @@ import type { TutorMemoryMessage } from '../../../application/ports/tutor-runner
 
 const time = (name: string) =>
     timestamp(name, { withTimezone: true }).notNull();
+
 export const conversationsTable = pgTable(
     'conversation_chats',
     {
@@ -144,6 +145,10 @@ export const conversationMessagesTable = pgTable(
             .default([])
             .$type<ConversationToolCall[]>(),
         modelContent: jsonb('model_content').$type<TutorMemoryMessage[]>(),
+        blockReferences: jsonb('block_references')
+            .$type<string[]>()
+            .notNull()
+            .default(sql`'[]'::jsonb`),
         editorTarget: jsonb('editor_target').$type<ConversationEditorTarget>(),
         status: text('status')
             .notNull()

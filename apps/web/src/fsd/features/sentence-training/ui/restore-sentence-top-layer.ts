@@ -1,7 +1,10 @@
 /** Native fullscreen places the document above an already-open modal. Reinsert
  * only this practice modal without remounting its session or nested state. */
 export function restoreSentenceTopLayer(dialog: HTMLDialogElement | null) {
-    if (!dialog?.open || !document.fullscreenElement) return;
+    if (!dialog?.open || !document.fullscreenElement) {
+        return;
+    }
+
     const focused =
         document.activeElement instanceof HTMLElement &&
         dialog.contains(document.activeElement)
@@ -14,6 +17,7 @@ export function restoreSentenceTopLayer(dialog: HTMLDialogElement | null) {
         dialog,
         ...dialog.querySelectorAll<HTMLDialogElement>('dialog[open]'),
     ];
+
     for (const modal of modals) {
         // close() queues a native close event. Suppress exactly that refresh
         // transition so the shared Dialog does not treat it as a user exit.
@@ -22,8 +26,10 @@ export function restoreSentenceTopLayer(dialog: HTMLDialogElement | null) {
             (event) => event.stopImmediatePropagation(),
             { once: true, capture: true },
         );
+
         modal.close();
         modal.showModal();
     }
+
     focused?.focus({ preventScroll: true });
 }

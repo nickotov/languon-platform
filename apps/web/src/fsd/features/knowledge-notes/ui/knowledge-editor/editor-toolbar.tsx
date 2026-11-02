@@ -33,8 +33,13 @@ export function EditorToolbar({
     const workspace = variant === 'workspace';
     const full = variant !== 'tutor';
     let iconSize = 18;
-    if (workspace) iconSize = 16;
-    if (!full) iconSize = 14;
+    if (workspace) {
+        iconSize = 16;
+    }
+
+    if (!full) {
+        iconSize = 14;
+    }
 
     const tutorControls = new Set([
         'knowledge.bold',
@@ -45,9 +50,11 @@ export function EditorToolbar({
     const controls = full
         ? toolbar.controls
         : toolbar.controls.filter((control) => tutorControls.has(control.key));
+
     function preserveSelection(event: React.MouseEvent) {
         event.preventDefault();
     }
+
     return (
         <>
             <div
@@ -68,6 +75,7 @@ export function EditorToolbar({
                                 value: 'paragraph',
                                 label: t('knowledge.paragraph'),
                             },
+                            { value: '1', label: t('knowledge.heading1') },
                             { value: '2', label: t('knowledge.heading2') },
                             { value: '3', label: t('knowledge.heading3') },
                         ]}
@@ -163,6 +171,7 @@ const extraKeys = new Set([
     'knowledge.strike',
     'knowledge.link',
     'knowledge.table',
+    'knowledge.horizontalRule',
 ]);
 const groupStarts = new Set([
     'knowledge.bold',
@@ -170,9 +179,11 @@ const groupStarts = new Set([
     'knowledge.link',
     'knowledge.undo',
 ]);
+
 function isExtraControl(control: ToolbarControlModel) {
     return extraKeys.has(control.key);
 }
+
 function ToolbarControl({
     control,
     disabled,
@@ -189,14 +200,19 @@ function ToolbarControl({
     const { t } = useI18n();
     const Icon = control.icon;
     const classNames = [workspace ? styles.workspaceTool : styles.tool];
-    if (workspace && extraKeys.has(control.key) && !inPopover)
+    if (workspace && extraKeys.has(control.key) && !inPopover) {
         classNames.push(styles.extraTool);
-    if (workspace && groupStarts.has(control.key) && !inPopover)
+    }
+
+    if (workspace && groupStarts.has(control.key) && !inPopover) {
         classNames.push(styles.groupStart);
+    }
+
     const className = classNames.join(' ');
     function preserveSelection(event: React.MouseEvent) {
         event.preventDefault();
     }
+
     return (
         <button
             type='button'

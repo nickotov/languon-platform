@@ -49,8 +49,9 @@ export async function sentencePracticeGetJob(
                     ),
                 );
 
-            if (!job || job.format.startsWith('sentence-preparation:'))
+            if (!job || job.format.startsWith('sentence-preparation:')) {
                 throw new SentenceUnavailableError();
+            }
 
             return presentSentenceJob(tx, job);
         },
@@ -80,8 +81,10 @@ export async function sentencePracticeCancelJob(
                 )
                 .for('update');
 
-            if (!job || job.format.startsWith('sentence-preparation:'))
+            if (!job || job.format.startsWith('sentence-preparation:')) {
                 throw new SentenceUnavailableError();
+            }
+
             if (job.executionState === 'queued') {
                 await settleSentenceAttempt(
                     tx,
@@ -101,7 +104,7 @@ export async function sentencePracticeCancelJob(
                         failureCategory: 'explicit_stop',
                     })
                     .where(eq(jobs.id, job.id));
-            } else if (job.executionState === 'running')
+            } else if (job.executionState === 'running') {
                 await tx
                     .update(jobs)
                     .set({
@@ -110,6 +113,8 @@ export async function sentencePracticeCancelJob(
                         updatedAt: context.now,
                     })
                     .where(eq(jobs.id, job.id));
+            }
+
             const [updated] = await tx
                 .select()
                 .from(jobs)
@@ -149,8 +154,10 @@ export async function sentencePracticeEnqueueCheck(
                     ),
                 );
 
-            if (manualConflict)
+            if (manualConflict) {
                 throw new SentenceConflictError('operation_conflict');
+            }
+
             const [receipt] = await tx
                 .select()
                 .from(receipts)
@@ -161,7 +168,10 @@ export async function sentencePracticeEnqueueCheck(
                     ),
                 );
 
-            if (receipt) throw new SentenceConflictError('operation_conflict');
+            if (receipt) {
+                throw new SentenceConflictError('operation_conflict');
+            }
+
             const [prior] = await tx
                 .select()
                 .from(jobs)
@@ -177,8 +187,9 @@ export async function sentencePracticeEnqueueCheck(
                     prior.jobKind !== 'sentence-check' ||
                     prior.dictionaryId !== owned.dictionary.id ||
                     prior.requestFingerprint !== hash
-                )
+                ) {
                     throw new SentenceConflictError('operation_conflict');
+                }
 
                 return presentSentenceJob(tx, prior);
             }
@@ -197,8 +208,10 @@ export async function sentencePracticeEnqueueCheck(
                     (h) =>
                         !exercise.publicContent.hints.some((v) => v.id === h),
                 )
-            )
+            ) {
                 throw new LearningInvalidRequestError();
+            }
+
             const targets = await sentenceExerciseEntries(tx, exerciseId);
             const payload: SentenceCheckInput = {
                 schemaVersion: 1,

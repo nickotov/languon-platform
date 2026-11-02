@@ -36,6 +36,7 @@ export function createProviderPriceRoutes(options: {
                       400,
                   ),
     });
+
     app.use(
         '/admin/ai/accounting/provider-prices',
         bodyLimit({
@@ -53,12 +54,14 @@ export function createProviderPriceRoutes(options: {
                 ),
         }),
     );
+
     app.use('/admin/ai/accounting/provider-prices', async (c, next) => {
         c.header('Cache-Control', 'no-store');
         await next();
     });
+
     app.onError((error, c) => {
-        if (error instanceof AccountingConflictError)
+        if (error instanceof AccountingConflictError) {
             return c.json(
                 {
                     error: {
@@ -70,9 +73,13 @@ export function createProviderPriceRoutes(options: {
                 },
                 409,
             );
+        }
+
         const mapped = mapAdministrationHttpError(error);
+
         return c.json(mapped.response(randomUUID()), mapped.status);
     });
+
     const errors = {
         400: {
             content: {
@@ -134,9 +141,11 @@ export function createProviderPriceRoutes(options: {
                 ),
                 randomUUID(),
             );
+
             return c.json({ prices: await options.store.list() }, 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -172,7 +181,10 @@ export function createProviderPriceRoutes(options: {
         }),
         async (c) => {
             const origin = c.req.header('Origin');
-            if (!origin) throw new InvalidRequestOriginError();
+            if (!origin) {
+                throw new InvalidRequestOriginError();
+            }
+
             options.policy.assertCookieRequestOrigin(origin);
             const principal =
                 await options.administration.authorizeSensitiveOperation(
@@ -181,6 +193,7 @@ export function createProviderPriceRoutes(options: {
                     ),
                     randomUUID(),
                 );
+
             return c.json(
                 await options.store.publish(
                     c.req.valid('json'),
@@ -191,5 +204,6 @@ export function createProviderPriceRoutes(options: {
             );
         },
     );
+
     return app;
 }

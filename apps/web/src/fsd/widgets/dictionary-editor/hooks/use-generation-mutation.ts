@@ -39,31 +39,45 @@ export function useGenerationMutation({
                 | { kind: 'regenerate' | 'start'; instruction?: string },
         ) => {
             const currentDictionary = dictionary.data?.dictionary;
-            if (!generationTarget || !currentDictionary)
+            if (!generationTarget || !currentDictionary) {
                 throw new Error('Dictionary generation unavailable');
+            }
+
             if (action.kind === 'cancel') {
                 const jobId = generationJob.data?.job?.id;
-                if (!jobId) throw new Error('Generation job unavailable');
+                if (!jobId) {
+                    throw new Error('Generation job unavailable');
+                }
+
                 return requestWithSession((token) =>
                     dictionaryApi.cancelGenerationJob(token, jobId),
                 );
             }
+
             if (action.kind === 'discard') {
                 const jobId = generationJob.data?.job?.id;
-                if (!jobId) throw new Error('Generation job unavailable');
+                if (!jobId) {
+                    throw new Error('Generation job unavailable');
+                }
+
                 return requestWithSession((token) =>
                     dictionaryApi.discardGenerationJob(token, jobId),
                 );
             }
+
             if (action.kind === 'accept') {
                 const jobId = generationJob.data?.job?.id;
-                if (!jobId) throw new Error('Generation job unavailable');
+                if (!jobId) {
+                    throw new Error('Generation job unavailable');
+                }
+
                 return requestWithSession((token) =>
                     dictionaryApi.acceptGenerationJob(token, jobId, {
                         candidate: action.candidate,
                     }),
                 );
             }
+
             const currentCardResponse = await requestWithSession((token) =>
                 dictionaryApi.readCard(
                     token,
@@ -85,7 +99,10 @@ export function useGenerationMutation({
             const key = crypto.randomUUID();
             if (action.kind === 'regenerate') {
                 const jobId = generationJob.data?.job?.id;
-                if (!jobId) throw new Error('Generation job unavailable');
+                if (!jobId) {
+                    throw new Error('Generation job unavailable');
+                }
+
                 return actionConsent.run((confirmedQuoteId) =>
                     requestWithSession((token) =>
                         dictionaryApi.regenerateGenerationJob(
@@ -102,6 +119,7 @@ export function useGenerationMutation({
                     ),
                 );
             }
+
             return actionConsent.run((confirmedQuoteId) =>
                 requestWithSession((token) =>
                     dictionaryApi.enqueueCardGeneration(
@@ -118,7 +136,10 @@ export function useGenerationMutation({
             );
         },
         onSuccess: async (response) => {
-            if (response.job.kind !== 'single-card') return;
+            if (response.job.kind !== 'single-card') {
+                return;
+            }
+
             const cardId = response.job.cardId;
             const nextTarget = { cardId, jobId: response.job.id };
             setGenerationTarget(nextTarget);
@@ -132,6 +153,7 @@ export function useGenerationMutation({
                 ],
                 { job: response.job },
             );
+
             if (response.job.state === 'accepted') {
                 setOutcome(t('dictionary.generation.state.accepted'));
                 await Promise.all([

@@ -63,7 +63,7 @@ export function createSpeechRoutes(options: {
 }): OpenAPIHono {
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
-            if (!result.success)
+            if (!result.success) {
                 return c.json(
                     {
                         error: {
@@ -74,8 +74,10 @@ export function createSpeechRoutes(options: {
                     },
                     400,
                 );
+            }
         },
     });
+
     app.use(
         '*',
         bodyLimit({
@@ -93,6 +95,7 @@ export function createSpeechRoutes(options: {
                 ),
         }),
     );
+
     app.use('*', async (c, next) => {
         c.header('Cache-Control', 'private, no-store');
         c.header('X-Content-Type-Options', 'nosniff');
@@ -105,12 +108,15 @@ export function createSpeechRoutes(options: {
                 'Access-Control-Expose-Headers',
                 'Cache-Control, Content-Type, X-Content-Type-Options',
             );
+
             c.header('Vary', 'Origin');
         }
+
         await next();
     });
+
     app.onError((error, c) => {
-        if (error instanceof SpeechError)
+        if (error instanceof SpeechError) {
             return c.json(
                 {
                     error: {
@@ -122,7 +128,9 @@ export function createSpeechRoutes(options: {
                 },
                 error.status,
             );
-        if (error instanceof AiCreditInsufficientBalanceError)
+        }
+
+        if (error instanceof AiCreditInsufficientBalanceError) {
             return c.json(
                 {
                     error: {
@@ -133,13 +141,18 @@ export function createSpeechRoutes(options: {
                 },
                 409,
             );
+        }
+
         const mapped = mapDictionaryHttpError(error);
+
         return c.json(mapped.response(randomUUID()), mapped.status);
     });
+
     const actor = (authorization: string | undefined) =>
         options.authenticate(
             options.policy.parseBearerAuthorization(authorization ?? null),
         );
+
     // Keep preflight scoped to this module so other modules retain their policy.
     app.options('/speech/*', (c) => {
         const origin = c.req.header('Origin');
@@ -150,10 +163,13 @@ export function createSpeechRoutes(options: {
             'Access-Control-Allow-Headers',
             'Authorization, Content-Type, X-Correlation-ID',
         );
+
         c.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
         c.header('Vary', 'Origin');
+
         return c.body(null, 204);
     });
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -191,6 +207,7 @@ export function createSpeechRoutes(options: {
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -215,12 +232,14 @@ export function createSpeechRoutes(options: {
                 c.req.valid('json'),
                 c.req.raw.signal,
             );
+
             return c.json(
                 result,
                 ['queued', 'processing'].includes(result.state) ? 202 : 200,
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -245,12 +264,14 @@ export function createSpeechRoutes(options: {
                 c.req.valid('json'),
                 c.req.raw.signal,
             );
+
             return c.json(
                 result,
                 ['queued', 'processing'].includes(result.state) ? 202 : 200,
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -269,6 +290,7 @@ export function createSpeechRoutes(options: {
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -284,12 +306,15 @@ export function createSpeechRoutes(options: {
                 c.req.valid('param').id,
                 c.req.raw.signal,
             );
+
             c.header('Content-Type', result.audio.mimeType);
             c.header('Content-Length', String(result.audio.bytes.length));
             c.header('X-Speech-Fixture', String(result.fixture));
+
             return c.body(new Uint8Array(result.audio.bytes), 200);
         },
     );
+
     return app;
 }
 
@@ -303,7 +328,7 @@ export function createAdminSpeechRoutes(options: {
     const now = options.now ?? (() => new Date());
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
-            if (!result.success)
+            if (!result.success) {
                 return c.json(
                     {
                         error: {
@@ -314,15 +339,19 @@ export function createAdminSpeechRoutes(options: {
                     },
                     400,
                 );
+            }
         },
     });
+
     app.use('*', bodyLimit({ maxSize: 64 * 1024 }));
     app.use('*', async (c, next) => {
         c.header('Cache-Control', 'private, no-store');
         for (const [name, value] of Object.entries(
             options.policy.securityHeaders(),
-        ))
+        )) {
             c.header(name, value);
+        }
+
         const origin = c.req.header('Origin');
         if (origin) {
             options.policy.assertCookieRequestOrigin(origin);
@@ -330,10 +359,12 @@ export function createAdminSpeechRoutes(options: {
             c.header('Access-Control-Allow-Credentials', 'true');
             c.header('Vary', 'Origin');
         }
+
         await next();
     });
+
     app.onError((error, c) => {
-        if (error instanceof SpeechError)
+        if (error instanceof SpeechError) {
             return c.json(
                 {
                     error: {
@@ -344,11 +375,16 @@ export function createAdminSpeechRoutes(options: {
                 },
                 error.status,
             );
+        }
+
         const mapped = mapAdministrationHttpError(error);
+
         return c.json(mapped.response(randomUUID()), mapped.status);
     });
+
     const token = (authorization: string | undefined) =>
         options.policy.parseBearerAuthorization(authorization ?? null);
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -373,12 +409,14 @@ export function createAdminSpeechRoutes(options: {
                 token(c.req.header('Authorization')),
                 randomUUID(),
             );
+
             return c.json(
                 await options.store.listRecordings(c.req.valid('query')),
                 200,
             );
         },
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -394,22 +432,29 @@ export function createAdminSpeechRoutes(options: {
                 accessToken,
                 randomUUID(),
             );
+
             const reference = await options.store.adminPlayback(
                     c.req.valid('param').id,
                 ),
                 audio = await options.storage.read(reference, c.req.raw.signal);
-            if (!audio)
+
+            if (!audio) {
                 throw new SpeechError('speech_recording_unavailable', 404);
+            }
+
             await options.administration.authorizeOperation(
                 accessToken,
                 randomUUID(),
             );
+
             await options.store.adminPlayback(c.req.valid('param').id);
             c.header('Content-Type', audio.mimeType);
             c.header('Content-Length', String(audio.bytes.length));
+
             return c.body(new Uint8Array(audio.bytes), 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -442,6 +487,7 @@ export function createAdminSpeechRoutes(options: {
             options.policy.assertCookieRequestOrigin(
                 c.req.header('Origin') ?? null,
             );
+
             const correlationId = randomUUID();
             const { actor } =
                 await options.administration.authorizeSensitiveOperation(
@@ -458,12 +504,15 @@ export function createAdminSpeechRoutes(options: {
                     occurredAt: now(),
                 },
             });
+
             for (const target of selected) {
                 await options.storage.delete(target.storage);
                 await options.store.deleted(target.id, now());
             }
+
             return c.json({ deletedIds: selected.map((item) => item.id) }, 200);
         },
     );
+
     return app;
 }

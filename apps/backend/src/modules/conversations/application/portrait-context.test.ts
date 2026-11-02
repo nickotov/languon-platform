@@ -18,12 +18,14 @@ const portrait = {
         goals: ['Travel'],
     },
 };
+
 describe('ordinary chat portrait policy', () => {
     it('retains all legacy manual values while supplying enabled extra context', () => {
         const result = resolveConversationPortrait(manual, {
             enabled: true,
             portrait,
         });
+
         expect(result.preferences).toEqual(manual);
         expect(Object.values(result.origins)).toEqual([
             'manual',
@@ -33,9 +35,11 @@ describe('ordinary chat portrait policy', () => {
             'manual',
             'manual',
         ]);
+
         expect(result.context?.goals).toEqual(['Travel']);
         expect(result.context).not.toHaveProperty('summary');
     });
+
     it.each([false, true])(
         'omits every portrait value when global off (chat enabled %s)',
         (enabled) => {
@@ -53,10 +57,12 @@ describe('ordinary chat portrait policy', () => {
                 },
                 { enabled: false, portrait },
             );
+
             expect(result).not.toHaveProperty('context');
             expect(result.preferences.replyLanguage).toBe('en');
         },
     );
+
     it('chat exclusion wins over global enablement', () => {
         expect(
             resolveConversationPortrait(
@@ -68,6 +74,7 @@ describe('ordinary chat portrait policy', () => {
             ),
         ).not.toHaveProperty('context');
     });
+
     it('only explicitly inherited fields follow the portrait and mode stays independent', () => {
         const result = resolveConversationPortrait(
             {
@@ -79,29 +86,34 @@ describe('ordinary chat portrait policy', () => {
             },
             { enabled: true, portrait },
         );
+
         expect(result.preferences).toMatchObject({
             mode: 'practice',
             replyLanguage: 'es',
             tone: 'academic',
             explanationLevel: 'beginner',
         });
+
         expect(result.origins).toMatchObject({
             replyLanguage: 'portrait',
             tone: 'manual',
             explanationLevel: 'portrait',
         });
     });
+
     it('missing preferences use manual fallback; malformed data fails closed', () => {
         const prefs = {
             ...manual,
             portrait: { enabled: true, inheritedFields: ['tone' as const] },
         };
+
         expect(
             resolveConversationPortrait(prefs, {
                 enabled: true,
                 portrait: { ...portrait, items: { goals: ['Only a goal'] } },
             }).preferences.tone,
         ).toBe('academic');
+
         expect(
             resolveConversationPortrait(prefs, {
                 enabled: true,
@@ -109,6 +121,7 @@ describe('ordinary chat portrait policy', () => {
             }),
         ).not.toHaveProperty('context');
     });
+
     it('resolved values are independent of subsequent portrait mutations', () => {
         const policy = { enabled: true, portrait: structuredClone(portrait) };
         const admitted = resolveConversationPortrait(manual, policy);
@@ -144,15 +157,18 @@ it('independent length, wording and presentation preserve manual fallback and mo
         approach: 'examples-first',
         explanationLevel: 'detailed',
     });
+
     expect(enabled.origins).toMatchObject({
         detail: 'portrait',
         wording: 'manual',
         approach: 'portrait',
     });
+
     const disabled = resolveConversationPortrait(preferences, {
         ...policy,
         enabled: false,
     });
+
     expect(disabled.preferences).toEqual(preferences);
     expect(disabled).not.toHaveProperty('context');
 });

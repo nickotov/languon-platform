@@ -184,7 +184,10 @@ export function aiCreditRejection(
         return 'adjustment_exceeds_available';
     }
 
-    if (error instanceof AiCreditInvalidAmountError) return 'invalid_request';
+    if (error instanceof AiCreditInvalidAmountError) {
+        return 'invalid_request';
+    }
+
     if (error instanceof AdminAiCreditTargetUnavailableError) {
         return 'target_unavailable';
     }
@@ -193,7 +196,9 @@ export function aiCreditRejection(
         return 'recent_authentication_required';
     }
 
-    if (error instanceof AdminAccessDeniedError) return 'admin_access_denied';
+    if (error instanceof AdminAccessDeniedError) {
+        return 'admin_access_denied';
+    }
 
     return null;
 }

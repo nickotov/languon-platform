@@ -27,11 +27,14 @@ import type { AdminSpeechRecording, ModelPrice } from '@languon/contracts';
 
 vi.mock('@refinedev/core', () => ({
     useTranslate: () => (key: string, values?: Record<string, unknown>) => {
-        if (key === 'speech.deleteImpact')
+        if (key === 'speech.deleteImpact') {
             return `Remove ${values?.count} recordings affecting ${values?.links} links`;
+        }
+
         return key;
     },
 }));
+
 beforeAll(() => {
     vi.stubGlobal(
         'matchMedia',
@@ -44,6 +47,7 @@ beforeAll(() => {
         }),
     );
 });
+
 const id = '00000000-0000-4000-8000-000000000042';
 const recording: AdminSpeechRecording = {
     id,
@@ -72,6 +76,7 @@ const price: ModelPrice = {
     provisional: true,
     updatedAt: '2026-01-01T00:00:00.000Z',
 };
+
 beforeEach(() => {
     vi.restoreAllMocks();
 });
@@ -84,6 +89,7 @@ describe('admin recording mutation fencing', () => {
             recordings: [recording],
             total: 1,
         });
+
         const remove = vi
             .spyOn(adminApi, 'deleteSpeechRecordings')
             .mockRejectedValue(new Error('Impact changed'));
@@ -94,24 +100,29 @@ describe('admin recording mutation fencing', () => {
         await act(async () => {
             await result.current.submitDelete('Bad pronunciation');
         });
+
         expect(result.current.mutationBlocked).toBe(true);
         expect(remove).toHaveBeenCalledTimes(1);
         await act(async () => {
             await result.current.submitDelete('Bad pronunciation');
         });
+
         expect(remove).toHaveBeenCalledTimes(1);
         expect(remove.mock.calls[0]?.[0]).toMatchObject({
             recordings: [{ id, expectedVersion: 2, expectedBindingCount: 3 }],
         });
+
         act(() => result.current.reviewAgain());
         expect(result.current.confirmation).toBeNull();
         expect(result.current.selected).toEqual([]);
     });
+
     it('clears selections when page or filters change', async () => {
         vi.spyOn(adminApi, 'speechRecordings').mockResolvedValue({
             recordings: [recording],
             total: 26,
         });
+
         const { result } = renderHook(() => useRecordings());
         await waitFor(() => expect(result.current.loading).toBe(false));
         act(() => result.current.setSelected([id]));
@@ -122,6 +133,7 @@ describe('admin recording mutation fencing', () => {
         expect(result.current.page).toBe(1);
         expect(result.current.selected).toEqual([]);
     });
+
     it('shows linked impact and requires a reason before sending', async () => {
         const submit = vi.fn().mockResolvedValue(undefined);
         render(
@@ -136,25 +148,31 @@ describe('admin recording mutation fencing', () => {
                 onSubmit={submit}
             />,
         );
+
         expect(
             screen.getByText('Remove 1 recordings affecting 3 links'),
         ).toBeInTheDocument();
+
         fireEvent.click(
             screen.getByRole('button', { name: 'speech.confirmDelete' }),
         );
+
         await waitFor(() =>
             expect(screen.getByRole('textbox')).toHaveAttribute(
                 'aria-invalid',
                 'true',
             ),
         );
+
         expect(submit).not.toHaveBeenCalled();
         fireEvent.change(screen.getByRole('textbox'), {
             target: { value: 'Faulty pronunciation' },
         });
+
         fireEvent.click(
             screen.getByRole('button', { name: 'speech.confirmDelete' }),
         );
+
         await waitFor(() =>
             expect(submit).toHaveBeenCalledWith('Faulty pronunciation'),
         );
@@ -182,14 +200,17 @@ describe('model price revisions', () => {
                 />
             </>,
         );
+
         const dialog = screen.getByRole('dialog');
         const reason = within(dialog).getByRole('textbox', {
             name: 'user.reason',
         });
+
         expect(reason).toHaveAttribute('id', 'model-price-publication_reason');
         fireEvent.change(reason, {
             target: { value: 'Reviewed model price publication' },
         });
+
         expect(reason).toHaveValue('Reviewed model price publication');
         expect(
             screen.getByRole('textbox', { name: 'Background reason' }),
@@ -207,9 +228,11 @@ describe('model price revisions', () => {
                 inputCreditsPerMillionTokens: 1.125,
                 outputCreditsPerMillionTokens: 2,
             };
+
             vi.spyOn(adminApi, 'modelPrices').mockResolvedValue({
                 prices: [textPrice],
             });
+
             const publish = vi
                 .spyOn(adminApi, 'publishModelPrice')
                 .mockResolvedValue(textPrice);
@@ -225,6 +248,7 @@ describe('model price revisions', () => {
                     reason: 'Publish cached customer tariff',
                 });
             });
+
             expect(publish.mock.calls[0]?.[0]).toMatchObject({
                 inputCreditsPerMillionTokens: 1.125,
                 outputCreditsPerMillionTokens: 2,
@@ -232,6 +256,7 @@ describe('model price revisions', () => {
             });
         },
     );
+
     it('accepts a fractional cached input rate in the price editor', async () => {
         const submit = vi.fn().mockResolvedValue(undefined);
         const textPrice: ModelPrice = {
@@ -243,6 +268,7 @@ describe('model price revisions', () => {
             outputCreditsPerMillionTokens: 2,
             cachedInputCreditsPerMillionTokens: null,
         };
+
         render(
             <ModelPriceDialog
                 price={textPrice}
@@ -255,26 +281,32 @@ describe('model price revisions', () => {
                 onSignIn={vi.fn()}
             />,
         );
+
         const cached = screen.getByRole('spinbutton', {
             name: 'pricing.cachedInputRate',
         });
+
         fireEvent.change(cached, { target: { value: '0.125' } });
         fireEvent.change(screen.getByRole('textbox', { name: 'user.reason' }), {
             target: { value: 'Review cached customer credit tariff' },
         });
+
         fireEvent.click(
             screen.getByRole('button', { name: 'pricing.publish' }),
         );
+
         await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
         expect(submit.mock.calls[0]?.[0]).toMatchObject({
             inputCreditsPerMillionTokens: 1.125,
             cachedInputCreditsPerMillionTokens: 0.125,
         });
     });
+
     it('pins the reviewed revision and requires reload after a conflict', async () => {
         vi.spyOn(adminApi, 'modelPrices').mockResolvedValue({
             prices: [price],
         });
+
         const publish = vi
             .spyOn(adminApi, 'publishModelPrice')
             .mockRejectedValue(new Error('Price revision changed'));
@@ -287,17 +319,21 @@ describe('model price revisions', () => {
             provisional: false,
             reason: 'Verified actual provider cost',
         };
+
         await act(async () => {
             await result.current.publish(values);
         });
+
         expect(publish.mock.calls[0]?.[0]).toMatchObject({
             expectedVersion: 4,
             creditsPer1000Characters: 200,
         });
+
         expect(result.current.blocked).toBe(true);
         await act(async () => {
             await result.current.publish(values);
         });
+
         expect(publish).toHaveBeenCalledTimes(1);
         act(() => result.current.refresh());
         expect(result.current.editing).toBeNull();

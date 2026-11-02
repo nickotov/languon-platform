@@ -20,9 +20,11 @@ function observeBrowser(page: Page) {
         if (
             message.type() === 'error' &&
             !message.text().startsWith('Failed to load resource:')
-        )
+        ) {
             errors.push(message.text());
+        }
     });
+
     page.on('request', (request) => {
         const url = new URL(request.url());
         if (
@@ -30,19 +32,32 @@ function observeBrowser(page: Page) {
             (url.pathname === '/api/dictionaries' ||
                 url.pathname.startsWith('/api/navigation/')) &&
             request.method() === 'GET'
-        )
+        ) {
             privateRequests.push(request.url());
+        }
     });
+
     page.on('response', (response) => {
-        if (response.status() < 400) return;
+        if (response.status() < 400) {
+            return;
+        }
+
         const path = new URL(response.url()).pathname.replace(
             /^\/api(?=\/)/,
             '',
         );
-        if (path === '/auth/refresh' && response.status() === 401) return;
-        if (missingRoutes.includes(path) && response.status() === 404) return;
+
+        if (path === '/auth/refresh' && response.status() === 401) {
+            return;
+        }
+
+        if (missingRoutes.includes(path) && response.status() === 404) {
+            return;
+        }
+
         errors.push(`${response.status()} ${path}`);
     });
+
     return {
         assertNoErrors: () => expect(errors).toEqual([]),
         privateRequests,
@@ -58,6 +73,7 @@ async function signUp(page: Page, testInfo: TestInfo, identity: string) {
     await page.getByLabel('Verification code').fill('0000');
     await page.getByRole('button', { name: 'Verify email' }).click();
     await expect(page).toHaveURL(/\/dictionaries$/);
+
     return email;
 }
 
@@ -66,12 +82,14 @@ async function createDictionary(page: Page, name: string) {
         .locator('#main-content')
         .getByRole('button', { name: 'New dictionary' })
         .click();
+
     await page.getByLabel('Name').fill(name);
     await page.getByLabel('Translate from').selectOption('en');
     await page.getByLabel('Translate to').selectOption('es');
     await page
         .getByRole('button', { name: 'Create dictionary', exact: true })
         .click();
+
     await expect(
         page.getByRole('heading', { name, exact: true }),
     ).toBeVisible();
@@ -87,26 +105,33 @@ test('guest settings persist across pages and reload, including the native mobil
     const sidebar = page.getByRole('complementary', {
         name: 'Application sidebar',
     });
+
     await expect(
         sidebar.getByRole('link', { name: 'Sign in', exact: true }),
     ).toHaveAttribute('href', '/login');
+
     await expect(
         sidebar.getByRole('link', { name: 'Dictionaries', exact: true }),
     ).toHaveCount(0);
+
     await expect(
         sidebar.getByRole('button', { name: /Account menu/ }),
     ).toHaveCount(0);
+
     await expect(
         sidebar.getByRole('button', { name: 'Create new', exact: true }),
     ).toHaveCount(0);
+
     await sidebar
         .getByRole('button', { name: 'Settings', exact: true })
         .click();
+
     await page.getByRole('button', { name: 'Dark', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page
         .getByRole('combobox', { name: 'Interface language' })
         .selectOption('es');
+
     await expect(page.locator('html')).toHaveAttribute('lang', 'es');
     await expect(page).toHaveURL(originalUrl);
     const cookies = await page.context().cookies();
@@ -120,6 +145,7 @@ test('guest settings persist across pages and reload, including the native mobil
             value,
         });
     }
+
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(page.locator('html')).toHaveAttribute('lang', 'es');
@@ -127,22 +153,27 @@ test('guest settings persist across pages and reload, including the native mobil
     await page
         .getByRole('button', { name: 'Configuración', exact: true })
         .click();
+
     await expect(
         page.getByRole('combobox', { name: 'Idioma de la interfaz' }),
     ).toHaveValue('es');
+
     await page
         .getByRole('combobox', { name: 'Idioma de la interfaz' })
         .selectOption('en');
+
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await page.keyboard.press('Escape');
     await expect(
         page.getByRole('button', { name: 'Settings', exact: true }),
     ).toBeFocused();
+
     await page.getByRole('button', { name: 'Collapse sidebar' }).click();
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await expect(
         page.getByRole('combobox', { name: 'Interface language' }),
     ).toBeVisible();
+
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Expand sidebar' }).click();
     await page.setViewportSize({ width: 390, height: 844 });
@@ -153,10 +184,12 @@ test('guest settings persist across pages and reload, including the native mobil
         name: 'Settings',
         exact: true,
     });
+
     await settings.click();
     await expect(
         page.getByRole('dialog', { name: 'Settings', exact: true }),
     ).toHaveCount(1);
+
     await drawer.getByRole('button', { name: 'Light', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
     await page.keyboard.press('Escape');
@@ -169,6 +202,7 @@ test('guest settings persist across pages and reload, including the native mobil
         .locator('header')
         .getByRole('link', { name: 'Languon home' })
         .click();
+
     await expect(
         page.getByRole('heading', {
             level: 1,
@@ -176,6 +210,7 @@ test('guest settings persist across pages and reload, including the native mobil
             exact: true,
         }),
     ).toBeVisible();
+
     await expect(page).toHaveURL(/\/$/);
     for (const route of missingRoutes) {
         await page.goto(route);
@@ -185,18 +220,22 @@ test('guest settings persist across pages and reload, including the native mobil
                 .locator('header')
                 .getByRole('link', { name: 'Languon home', exact: true }),
         ).toBeVisible();
+
         await expect(
             page.getByRole('heading', { name: 'This page could not be found' }),
         ).toBeVisible();
     }
+
     await page.goto(
         '/shared/dictionaries/20000000-0000-4000-8000-000000000099',
     );
+
     await expect(menu).toBeVisible();
     await menu.click();
     await expect(
         drawer.getByRole('button', { name: 'Settings', exact: true }),
     ).toBeVisible();
+
     expect(observed.privateRequests).toEqual([]);
     observed.assertNoErrors();
 });
@@ -212,6 +251,7 @@ test('global navigation follows login, logout and a different authenticated iden
     const sidebar = page.getByRole('complementary', {
         name: 'Application sidebar',
     });
+
     await expect(sidebar.getByRole('link', { name: firstName })).toBeVisible();
     await sidebar.getByRole('link', { name: 'Languon home' }).click();
     await expect(page).toHaveURL(/\/$/);
@@ -222,18 +262,22 @@ test('global navigation follows login, logout and a different authenticated iden
             exact: true,
         }),
     ).toBeVisible();
+
     await expect(sidebar.getByRole('link', { name: firstName })).toBeVisible();
     await expect(sidebar.getByText(firstEmail, { exact: true })).toBeVisible();
     await expect(
         sidebar.getByRole('button', { name: 'Settings', exact: true }),
     ).toHaveCount(0);
+
     await sidebar
         .getByRole('button', { name: 'Account menu, Your account' })
         .click();
+
     await page.getByRole('button', { name: 'Sign out', exact: true }).click();
     await expect(
         sidebar.getByRole('link', { name: 'Sign in', exact: true }),
     ).toBeVisible();
+
     await expect(sidebar.getByRole('link', { name: firstName })).toHaveCount(0);
     const secondEmail = await signUp(page, testInfo, 'second');
     await expect(sidebar.getByRole('link', { name: firstName })).toHaveCount(0);
@@ -249,13 +293,15 @@ test('global navigation follows login, logout and a different authenticated iden
                 exact: true,
             })
             .count()
-    )
+    ) {
         await sidebar
             .getByRole('button', {
                 name: 'Show recent: Dictionaries',
                 exact: true,
             })
             .click();
+    }
+
     await expect(sidebar.getByRole('link', { name: secondName })).toBeVisible();
     await sidebar.getByRole('link', { name: 'Languon home' }).click();
     await expect(page).toHaveURL(/\/$/);

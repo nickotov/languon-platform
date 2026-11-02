@@ -1,7 +1,6 @@
 'use client';
 import { ActionConsentDialog } from '@/fsd/entities/ai-action';
 import styles from './sentence-practice-session.module.css';
-import { Flag, Scale } from 'lucide-react';
 import { restoreSentenceTopLayer } from '../restore-sentence-top-layer';
 import { useSentenceDisplay } from '../use-sentence-display';
 import { useSentenceCopy } from '../sentence-copy';
@@ -14,32 +13,22 @@ import {
     useRef,
     useState,
 } from 'react';
-import {
-    Button,
-    Dialog,
-    InlineAlert,
-    LoadingState,
-    Textarea,
-} from '@/fsd/shared/ui';
+import { Button, Dialog } from '@/fsd/shared/ui';
 import { SENTENCE_LIMITS, type SentenceAttempt } from '@languon/contracts';
 import type { ApiError } from '../../lib/api-error';
 import type {
     SentenceSessionController,
     SentenceAudioRenderer,
 } from '../../types';
-import {
-    AiResultPanel,
-    ReferencePanel,
-    SentenceWithHints,
-    languageDirection,
-} from '../sentence-content/sentence-content';
-import { SentenceErrorNotice } from '../sentence-errors/sentence-errors';
-import { SentenceJobStatus } from '../sentence-job-status/sentence-job-status';
-import { SentenceReferenceComparison } from '../sentence-reference-comparison/sentence-reference-comparison';
 import { SentenceSessionResults } from '../sentence-session-results/sentence-session-results';
 
 import { SentencePracticeHeader } from '../sentence-practice-header/sentence-practice-header';
 import { SentencePracticeFooter } from '../sentence-practice-footer/sentence-practice-footer';
+
+import { SentencePracticeNotices } from './sentence-practice-notices';
+import { SentencePracticeExercise } from './sentence-practice-exercise';
+import { SentenceEarlierAttempts } from './sentence-earlier-attempts';
+import { SentencePracticeReference } from './sentence-practice-reference';
 
 export type SentencePracticeSessionProps = {
     renderAudio?: SentenceAudioRenderer;
@@ -93,28 +82,39 @@ export function SentencePracticeSession({
     function toggleEarlierAttempts(event: SyntheticEvent<HTMLDetailsElement>) {
         setEarlierAttemptsOpen(event.currentTarget.open);
     }
+
     const draftRef = useRef<HTMLTextAreaElement>(null);
     const frameRef = useRef<HTMLDivElement>(null);
     useLayoutEffect(() => {
-        if (open && display.mode === 'fullscreen')
+        if (open && display.mode === 'fullscreen') {
             restoreSentenceTopLayer(
                 frameRef.current?.closest('dialog') ?? null,
             );
+        }
     }, [open, display.mode]);
+
     useEffect(() => {
-        if (!open || !window.visualViewport) return;
+        if (!open || !window.visualViewport) {
+            return;
+        }
+
         const viewport = window.visualViewport;
         const dialog = frameRef.current?.closest('dialog');
-        if (!dialog) return;
+        if (!dialog) {
+            return;
+        }
+
         const previousHeight = dialog.style.height;
         const previousTop = dialog.style.top;
         const update = () => {
             dialog.style.height = `${Math.min(window.innerHeight, viewport.height)}px`;
             dialog.style.top = `${viewport.offsetTop}px`;
         };
+
         update();
         viewport.addEventListener('resize', update);
         viewport.addEventListener('scroll', update);
+
         return () => {
             viewport.removeEventListener('resize', update);
             viewport.removeEventListener('scroll', update);
@@ -122,6 +122,7 @@ export function SentencePracticeSession({
             dialog.style.top = previousTop;
         };
     }, [open]);
+
     const hasUnsentDraft =
         c.phase !== 'completed' &&
         !!c.draft.trim() &&
@@ -135,13 +136,17 @@ export function SentencePracticeSession({
             historyOpen ||
             confirmClose ||
             c.phase === 'completed'
-        )
+        ) {
             return;
-        if (c.exercise) draftRef.current?.focus();
-        else
+        }
+
+        if (c.exercise) {
+            draftRef.current?.focus();
+        } else {
             frameRef.current
                 ?.querySelector<HTMLButtonElement>('button')
                 ?.focus();
+        }
     }, [
         c.exercise?.id,
         c.phase,
@@ -150,50 +155,76 @@ export function SentencePracticeSession({
         historyOpen,
         confirmClose,
     ]);
+
     useEffect(() => {
         if (
             !open ||
             (!hasUnsentDraft && !c.busy && !c.uncertain && !c.referenceLoading)
-        )
+        ) {
             return;
+        }
+
         const beforeUnload = (event: BeforeUnloadEvent) => {
             event.preventDefault();
         };
+
         window.addEventListener('beforeunload', beforeUnload);
+
         return () => window.removeEventListener('beforeunload', beforeUnload);
     }, [open, hasUnsentDraft, c.busy, c.uncertain, c.referenceLoading]);
+
     function leaveFullscreen() {
         display.toDialog();
     }
+
     function togglePresentation() {
-        if (fullscreen) display.toDialog();
-        else display.toFullscreen();
+        if (fullscreen) {
+            display.toDialog();
+        } else {
+            display.toFullscreen();
+        }
     }
+
     function close() {
         if (preferencesOpen) {
             onPreferencesClose?.(closePracticeWithGuard);
+
             return;
         }
+
         closePracticeWithGuard();
     }
+
     function closePracticeWithGuard() {
-        if (hasUnsentDraft || c.busy || c.uncertain || c.referenceLoading)
+        if (hasUnsentDraft || c.busy || c.uncertain || c.referenceLoading) {
             setConfirmClose(true);
-        else finish();
+        } else {
+            finish();
+        }
     }
+
     function backToPractice() {
-        if (historyOpen) onHistoryClose?.();
-        else onPreferencesClose?.();
+        if (historyOpen) {
+            onHistoryClose?.();
+        } else {
+            onPreferencesClose?.();
+        }
     }
+
     function nextSentence() {
-        if (c.attempt || c.reference) void c.next();
-        else void c.skip();
+        if (c.attempt || c.reference) {
+            void c.next();
+        } else {
+            void c.skip();
+        }
     }
+
     function finish() {
         setConfirmClose(false);
         void leaveFullscreen();
         onClose();
     }
+
     const exercise = c.exercise;
     const sessionId = c.sessionId;
     const promptAudio =
@@ -211,30 +242,48 @@ export function SentencePracticeSession({
     const completed = !!(c.attempt || c.reference);
     const hasRoundCoverage = c.roundEligibleCount !== null;
     let emptyTitle = t('No eligible sentences');
-    if (c.roundComplete) emptyTitle = t('Round complete');
-    else if (c.emptyReason === 'review-exhausted')
+    if (c.roundComplete) {
+        emptyTitle = t('Round complete');
+    } else if (c.emptyReason === 'review-exhausted') {
         emptyTitle = t('Saved review complete');
+    }
+
     let nextLabel = t('Skip');
-    if (c.roundComplete) nextLabel = t('Skip and finish');
-    else if (completed) nextLabel = t('Next sentence');
+    if (c.roundComplete) {
+        nextLabel = t('Skip and finish');
+    } else if (completed) {
+        nextLabel = t('Next sentence');
+    }
+
     function compareAnswer() {
         void c.recompare();
     }
+
     function revealReference() {
         void c.revealReference();
     }
+
     function cancelRequest() {
         void c.cancel();
     }
+
     function checkAnswer() {
         void c.check();
     }
+
     const innerView = !!(preferencesOpen || historyOpen);
     let headerTitle = t('Sentence practice');
-    if (preferencesOpen) headerTitle = t('AI settings');
-    else if (historyOpen) headerTitle = t('My practice history');
+    if (preferencesOpen) {
+        headerTitle = t('AI settings');
+    } else if (historyOpen) {
+        headerTitle = t('My practice history');
+    }
+
     const dialogLabel = headerTitle;
-    if (!innerView && dictionaryTitle) headerTitle += ` · ${dictionaryTitle}`;
+    if (!innerView && dictionaryTitle) {
+        headerTitle += ` · ${dictionaryTitle}`;
+    }
+
     let headerSubtitle = t('Your answer and exercise are kept');
     if (!innerView) {
         if (c.phase === 'completed') {
@@ -252,9 +301,11 @@ export function SentencePracticeSession({
                           ? 'Loading progress…'
                           : 'Progress unavailable',
                   );
+
             headerSubtitle = `${direction}${t('Sentence')} ${Math.max(1, c.counts.presented)} · ${coverage}`;
         }
     }
+
     const actionPending = c.busy || c.uncertain || c.referenceLoading;
     const footer = (
         <SentencePracticeFooter
@@ -276,6 +327,35 @@ export function SentencePracticeSession({
             onCheck={checkAnswer}
         />
     );
+
+    function handleDialogClose() {
+        if (confirmClose) {
+            return;
+        }
+
+        if (historyOpen) {
+            onHistoryClose?.();
+
+            return;
+        }
+
+        if (preferencesOpen) {
+            onPreferencesClose?.();
+
+            return;
+        }
+
+        if (fullscreen) {
+            void leaveFullscreen();
+        } else {
+            close();
+        }
+    }
+
+    function keepPractising() {
+        setConfirmClose(false);
+    }
+
     return (
         <Dialog
             open={open}
@@ -284,19 +364,7 @@ export function SentencePracticeSession({
             showHeader={false}
             showCloseButton={false}
             dismissOnOverlayClick={false}
-            onClose={() => {
-                if (confirmClose) return;
-                if (historyOpen) {
-                    onHistoryClose?.();
-                    return;
-                }
-                if (preferencesOpen) {
-                    onPreferencesClose?.();
-                    return;
-                }
-                if (fullscreen) void leaveFullscreen();
-                else close();
-            }}
+            onClose={handleDialogClose}
             className={styles.practiceDialog}
             bodyClassName={styles.practiceBody}
             footerClassName={styles.practiceFooter}
@@ -339,355 +407,56 @@ export function SentencePracticeSession({
                     />
                 ) : (
                     <>
-                        {c.progressError ? (
-                            <InlineAlert
-                                tone='warning'
-                                title={t('Progress unavailable')}
-                                actions={
-                                    <Button
-                                        variant='secondary'
-                                        size='compact'
-                                        onClick={() => void c.retryProgress()}
-                                    >
-                                        {t('Try again')}
-                                    </Button>
-                                }
-                            >
-                                {t(
-                                    c.progress
-                                        ? 'Showing the last loaded progress.'
-                                        : 'Your progress could not be loaded. Your draft is kept.',
-                                )}
-                            </InlineAlert>
-                        ) : null}
-                        {fallback ? (
-                            <InlineAlert tone='info'>
-                                {t(
-                                    'Native fullscreen is unavailable. Practice fills the window; your session is preserved.',
-                                )}
-                            </InlineAlert>
-                        ) : null}
-                        {c.error ? (
-                            <SentenceErrorNotice
-                                error={c.error}
-                                onRetry={
-                                    c.canRetry
-                                        ? () => void c.retry()
-                                        : undefined
-                                }
-                                onOpenPreferences={onOpenPreferences}
-                            />
-                        ) : null}
-                        {c.uncertain ? (
-                            <InlineAlert tone='warning'>
-                                {t(
-                                    'The task may still be running. Recover its result before submitting again.',
-                                )}
-                            </InlineAlert>
-                        ) : null}
-                        {c.phase === 'loading' && !jobPending ? (
-                            <LoadingState>{t('Loading sentence')}</LoadingState>
-                        ) : null}
-                        {c.job?.state === 'cancelled' ? (
-                            <InlineAlert tone='info'>
-                                {t(
-                                    'Task cancelled. Credits depend on work already performed. Your existing answers are kept.',
-                                )}
-                            </InlineAlert>
-                        ) : null}
-                        {c.phase === 'empty' ? (
-                            <div className={styles.emptyState}>
-                                <h3 className={styles.emptyTitle}>
-                                    {emptyTitle}
-                                </h3>
-                                <p className={styles.emptyDescription}>
-                                    {t(
-                                        'You have reached the end of this session. Start another session to change your words or sentence mode.',
-                                    )}
-                                </p>
-                                <div className={styles.emptyActions}>
-                                    {c.emptyReason === 'review-exhausted' ? (
-                                        <Button
-                                            variant='secondary'
-                                            disabled={c.busy || c.uncertain}
-                                            onClick={() =>
-                                                void c.restartReview()
-                                            }
-                                        >
-                                            {t('Restart saved review')}
-                                        </Button>
-                                    ) : null}
-                                    <Button
-                                        disabled={c.busy || c.uncertain}
-                                        onClick={() =>
-                                            void c.changeMode('new-only')
-                                        }
-                                    >
-                                        {t('Generate new sentences')}
-                                    </Button>
-                                </div>
-                            </div>
-                        ) : null}
-                        {jobPending && c.job?.kind === 'sentence-generation' ? (
-                            <>
-                                <div
-                                    aria-hidden
-                                    className={styles.loadingPanel}
-                                >
-                                    <div className={styles.skeletonLine} />
-                                    <div className={styles.skeletonShortLine} />
-                                </div>
-                                <SentenceJobStatus
-                                    job={c.job}
-                                    onCancel={cancelRequest}
-                                />
-                            </>
-                        ) : null}
+                        <SentencePracticeNotices
+                            c={c}
+                            fallback={fallback}
+                            jobPending={jobPending}
+                            emptyTitle={emptyTitle}
+                            onCancel={cancelRequest}
+                            onOpenPreferences={onOpenPreferences}
+                        />
                         {exercise ? (
-                            <>
-                                <p className={styles.entryBadge}>
-                                    {`${languageName(exercise.sourceLanguage)} → ${languageName(exercise.targetLanguage)}${c.configuration ? ` · ${t(c.configuration.mode === 'saved-first' ? 'Saved first' : c.configuration.mode === 'new-only' ? 'New only' : 'Review only')} · ${t('Feedback in {language}').replace('{language}', languageName(c.configuration.explanationLanguage ?? 'en'))}` : ''}`}
-                                </p>
-                                {c.roundComplete ? (
-                                    <div
-                                        role='status'
-                                        className={styles.dictionaryNotice}
-                                    >
-                                        <Flag
-                                            aria-hidden
-                                            className={
-                                                styles.dictionaryNoticeIcon
-                                            }
-                                        />
-                                        <p>
-                                            <strong>
-                                                {t('Last sentence.')}
-                                            </strong>{' '}
-                                            {t(
-                                                'Check, compare or skip this sentence to see your results.',
-                                            )}
-                                        </p>
-                                    </div>
-                                ) : null}
-                                <div className={styles.answerPanel}>
-                                    <SentenceWithHints
-                                        key={exercise.id}
-                                        exercise={exercise}
-                                        revealedHintIds={c.revealedHintIds}
-                                        onReveal={c.toggleHint}
-                                    />
-                                    {!innerView ? promptAudio : null}
-                                </div>
-                                <Textarea
-                                    ref={draftRef}
-                                    label={t(
-                                        'Your translation ({language})',
-                                    ).replace(
-                                        '{language}',
-                                        languageName(exercise.targetLanguage),
-                                    )}
-                                    lang={exercise.targetLanguage}
-                                    dir={languageDirection(
-                                        exercise.targetLanguage,
-                                    )}
-                                    value={c.draft}
-                                    onChange={(event) =>
-                                        c.setDraft(event.target.value)
-                                    }
-                                    rows={3}
-                                    className={styles.answerInput}
-                                    {...(draftOverLimit
-                                        ? {
-                                              error: t(
-                                                  'Your answer is over the 4,000-character limit.',
-                                              ),
-                                          }
-                                        : {})}
-                                    disabled={c.busy || c.uncertain}
-                                    description={t(
-                                        'Use the matching dictionary words. Hints and reference use do not reduce the AI score.',
-                                    )}
-                                />
-                                {draftLength >=
-                                Math.floor(
-                                    SENTENCE_LIMITS.answerCodePoints * 0.85,
-                                ) ? (
-                                    <p
-                                        aria-live='polite'
-                                        className={
-                                            draftOverLimit
-                                                ? styles.answerError
-                                                : styles.answerCount
-                                        }
-                                    >
-                                        {draftLength} /{' '}
-                                        {SENTENCE_LIMITS.answerCodePoints}
-                                    </p>
-                                ) : null}
-                                {jobPending &&
-                                c.job?.kind === 'sentence-check' ? (
-                                    <SentenceJobStatus
-                                        job={c.job}
-                                        onCancel={cancelRequest}
-                                    />
-                                ) : null}
-                                {c.attempt ? (
-                                    <AiResultPanel
-                                        key={c.attempt.id}
-                                        attempt={c.attempt}
-                                        audio={innerView ? null : checkedAudio}
-                                    />
-                                ) : null}
-                            </>
+                            <SentencePracticeExercise
+                                c={c}
+                                exercise={exercise}
+                                draftRef={draftRef}
+                                draftLength={draftLength}
+                                draftOverLimit={draftOverLimit}
+                                innerView={innerView}
+                                promptAudio={promptAudio}
+                                checkedAudio={checkedAudio}
+                                jobPending={jobPending}
+                                onCancel={cancelRequest}
+                            />
                         ) : null}
                         {exercise &&
                         (previousAttempts.length > 0 ||
                             previousAttemptsLoading ||
                             previousAttemptsError) ? (
-                            <details
+                            <SentenceEarlierAttempts
                                 key={exercise.id}
-                                className={styles.referenceDetails}
+                                exerciseId={exercise.id}
+                                previousAttempts={previousAttempts}
+                                previousAttemptsLoading={
+                                    previousAttemptsLoading
+                                }
+                                previousAttemptsError={previousAttemptsError}
+                                onRetryPreviousAttempts={
+                                    onRetryPreviousAttempts
+                                }
                                 onToggle={toggleEarlierAttempts}
-                            >
-                                <summary className={styles.referenceAction}>
-                                    {t('Earlier attempts for this sentence')}
-                                </summary>
-                                <div className={styles.referenceContent}>
-                                    {previousAttemptsLoading ? (
-                                        <LoadingState>
-                                            {t('Loading history')}
-                                        </LoadingState>
-                                    ) : null}
-                                    {previousAttemptsError ? (
-                                        <SentenceErrorNotice
-                                            error={previousAttemptsError}
-                                            onRetry={onRetryPreviousAttempts}
-                                        />
-                                    ) : null}
-                                    {!previousAttemptsLoading &&
-                                    !previousAttemptsError &&
-                                    !previousAttempts.length ? (
-                                        <p className={styles.referenceNote}>
-                                            {t('No earlier attempts yet.')}
-                                        </p>
-                                    ) : null}
-                                    {previousAttempts.map((attempt) => (
-                                        <AiResultPanel
-                                            key={attempt.id}
-                                            attempt={attempt}
-                                            audio={
-                                                innerView ||
-                                                !earlierAttemptsOpen
-                                                    ? null
-                                                    : renderAudio?.({
-                                                          kind: 'checked-answer',
-                                                          id: attempt.id,
-                                                      })
-                                            }
-                                        />
-                                    ))}
-                                </div>
-                            </details>
+                                innerView={innerView}
+                                earlierAttemptsOpen={earlierAttemptsOpen}
+                                renderAudio={renderAudio}
+                            />
                         ) : null}
                         {exercise ? (
-                            <>
-                                {!c.reference ? (
-                                    <section
-                                        className={styles.comparisonNotice}
-                                    >
-                                        <div
-                                            className={styles.comparisonHeader}
-                                        >
-                                            <div
-                                                className={
-                                                    styles.comparisonDescription
-                                                }
-                                            >
-                                                <h3
-                                                    className={
-                                                        styles.comparisonTitle
-                                                    }
-                                                >
-                                                    <Scale
-                                                        aria-hidden
-                                                        className={styles.icon2}
-                                                    />
-                                                    {t('Two ways to check')}
-                                                </h3>
-                                                <p
-                                                    className={
-                                                        styles.comparisonHint
-                                                    }
-                                                >
-                                                    {t(
-                                                        'Check with AI evaluates meaning, grammar and required words — may need credits.',
-                                                    )}{' '}
-                                                    {t(
-                                                        'The free reference action needs no AI.',
-                                                    )}
-                                                </p>
-                                                <p
-                                                    id='practice-compare-note'
-                                                    className={
-                                                        styles.comparisonHint
-                                                    }
-                                                >
-                                                    {t(
-                                                        c.draft.trim()
-                                                            ? 'Comparison ignores case, spacing, punctuation and apostrophe style. Accents and word order matter.'
-                                                            : 'Reveals one saved translation. No comparison is made without an answer.',
-                                                    )}{' '}
-                                                    {t(
-                                                        'Revealing records a manual review — no grade, no credits.',
-                                                    )}
-                                                </p>
-                                            </div>
-                                            {c.referenceLoading ? (
-                                                <p
-                                                    role='status'
-                                                    className={
-                                                        styles.comparisonNote
-                                                    }
-                                                >
-                                                    {t('Revealing…')}
-                                                </p>
-                                            ) : null}
-                                        </div>
-                                    </section>
-                                ) : null}
-                                {c.referenceError ? (
-                                    <SentenceErrorNotice
-                                        error={c.referenceError}
-                                        onRetry={() => void c.revealReference()}
-                                    />
-                                ) : null}
-                                {c.comparison ? (
-                                    <SentenceReferenceComparison
-                                        comparison={c.comparison}
-                                        audio={
-                                            innerView ? null : referenceAudio
-                                        }
-                                        exercise={exercise}
-                                        onRecompare={() => {
-                                            void c.recompare();
-                                        }}
-                                        disabled={
-                                            c.busy ||
-                                            c.uncertain ||
-                                            c.referenceLoading ||
-                                            !c.draft.trim()
-                                        }
-                                    />
-                                ) : c.reference ? (
-                                    <ReferencePanel
-                                        key={c.reference.id}
-                                        review={c.reference}
-                                        audio={
-                                            innerView ? null : referenceAudio
-                                        }
-                                    />
-                                ) : null}
-                            </>
+                            <SentencePracticeReference
+                                c={c}
+                                exercise={exercise}
+                                innerView={innerView}
+                                referenceAudio={referenceAudio}
+                            />
                         ) : null}
                     </>
                 )}
@@ -696,14 +465,11 @@ export function SentencePracticeSession({
             {historyContent}
             <Dialog
                 open={confirmClose}
-                onClose={() => setConfirmClose(false)}
+                onClose={keepPractising}
                 title={t('Leave practice?')}
                 footer={
                     <div className={styles.comparisonActions}>
-                        <Button
-                            variant='secondary'
-                            onClick={() => setConfirmClose(false)}
-                        >
+                        <Button variant='secondary' onClick={keepPractising}>
                             {t('Keep practising')}
                         </Button>
                         <Button onClick={finish}>{t('Leave practice')}</Button>

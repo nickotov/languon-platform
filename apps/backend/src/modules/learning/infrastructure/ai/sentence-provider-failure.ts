@@ -60,10 +60,13 @@ function status(value: unknown): number | undefined {
 }
 
 function envelopeCode(body: unknown): number | undefined {
-    if (typeof body !== 'string' || body.length > 16_384) return undefined;
+    if (typeof body !== 'string' || body.length > 16_384) {
+        return undefined;
+    }
 
     try {
         const envelope = providerErrorEnvelope.safeParse(JSON.parse(body));
+
         return envelope.success
             ? 'code' in envelope.data
                 ? envelope.data.code
@@ -75,7 +78,10 @@ function envelopeCode(body: unknown): number | undefined {
 }
 
 function isSchemaIncompatible(body: unknown): boolean {
-    if (typeof body !== 'string' || body.length > 16_384) return false;
+    if (typeof body !== 'string' || body.length > 16_384) {
+        return false;
+    }
+
     try {
         return z
             .object({
@@ -120,23 +126,28 @@ export function sentenceProviderFailure(
     let schemaIncompatible = false;
 
     for (let depth = 0; depth < 3; depth += 1) {
-        if (!current || typeof current !== 'object') break;
+        if (!current || typeof current !== 'object') {
+            break;
+        }
 
         const name = field(current, 'name');
-        if (typeof name === 'string' && errorNames.has(name))
+        if (typeof name === 'string' && errorNames.has(name)) {
             result.errorName ??= name;
+        }
 
         const httpStatus = status(field(current, 'statusCode'));
         if (
             httpStatus !== undefined &&
             (result.httpStatus === undefined ||
                 (result.httpStatus < 400 && httpStatus >= 400))
-        )
+        ) {
             result.httpStatus = httpStatus;
+        }
 
         const code = field(current, 'code');
-        if (typeof code === 'string' && transportCodes.has(code))
+        if (typeof code === 'string' && transportCodes.has(code)) {
             result.transportCode ??= code;
+        }
 
         if (
             providerId === 'kie' ||
@@ -151,8 +162,10 @@ export function sentenceProviderFailure(
                 (directCode !== undefined && directCode >= 400
                     ? directCode
                     : undefined);
-            if (providerCode !== undefined)
+
+            if (providerCode !== undefined) {
                 result.providerCode ??= providerCode;
+            }
         }
 
         current = field(current, 'cause');
@@ -162,5 +175,6 @@ export function sentenceProviderFailure(
         schemaIncompatible && result.httpStatus === 400
             ? 'schema_incompatible'
             : reason(result.providerCode ?? result.httpStatus);
+
     return result;
 }

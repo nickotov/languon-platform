@@ -62,10 +62,16 @@ export function useTutorLayout(
 
     useEffect(() => {
         const element = areaRef.current;
-        if (!element) return;
+        if (!element) {
+            return;
+        }
+
         const query = window.matchMedia('(max-width: 767px)');
         function measure() {
-            if (!element) return;
+            if (!element) {
+                return;
+            }
+
             const bounds = element.getBoundingClientRect();
             setArea({
                 width: bounds.width,
@@ -73,6 +79,7 @@ export function useTutorLayout(
                 viewportHeight: window.innerHeight,
                 viewportWidth: window.innerWidth,
             });
+
             setMobile(query.matches);
             const viewport = window.visualViewport;
             setKeyboardInset(
@@ -86,12 +93,14 @@ export function useTutorLayout(
                     : 0,
             );
         }
+
         const observer = new ResizeObserver(measure);
         observer.observe(element);
         query.addEventListener('change', measure);
         window.visualViewport?.addEventListener('resize', measure);
         window.visualViewport?.addEventListener('scroll', measure);
         measure();
+
         return () => {
             observer.disconnect();
             query.removeEventListener('change', measure);
@@ -105,11 +114,15 @@ export function useTutorLayout(
         setCustomHeight(next);
         setFull(next >= maxHeight);
     }
+
     function start(
         event: PointerEvent<HTMLElement>,
         kind: 'dock' | 'resize' | 'sheet',
     ) {
-        if (event.button !== 0) return;
+        if (event.button !== 0) {
+            return;
+        }
+
         gesture.current = {
             kind,
             x: event.clientX,
@@ -119,43 +132,68 @@ export function useTutorLayout(
             lastTime: performance.now(),
             velocity: 0,
         };
+
         event.currentTarget.setPointerCapture(event.pointerId);
     }
+
     function onHeaderPointerDown(event: PointerEvent<HTMLElement>) {
-        if (attached) return;
-        if ((event.target as Element).closest('button, a, input, textarea'))
+        if (attached) {
             return;
+        }
+
+        if ((event.target as Element).closest('button, a, input, textarea')) {
+            return;
+        }
+
         event.preventDefault();
         start(event, mobile ? 'sheet' : 'dock');
     }
+
     function onHandlePointerDown(event: PointerEvent<HTMLElement>) {
         start(event, 'sheet');
     }
+
     function onResizePointerDown(event: PointerEvent<HTMLElement>) {
         event.preventDefault();
         start(event, 'resize');
     }
+
     function onPointerMove(event: PointerEvent<HTMLElement>) {
         const current = gesture.current;
-        if (!current) return;
+        if (!current) {
+            return;
+        }
+
         const delta = event.clientY - current.y;
         const now = performance.now();
         current.velocity =
             (event.clientY - current.lastY) /
             Math.max(1, now - current.lastTime);
+
         current.lastY = event.clientY;
         current.lastTime = now;
-        if (current.kind === 'dock') setDragX(event.clientX - current.x);
-        if (current.kind === 'resize') setHeight(current.height + delta);
-        if (current.kind === 'sheet')
+        if (current.kind === 'dock') {
+            setDragX(event.clientX - current.x);
+        }
+
+        if (current.kind === 'resize') {
+            setHeight(current.height + delta);
+        }
+
+        if (current.kind === 'sheet') {
             setSheetHeight(
                 Math.max(120, Math.min(fullHeight, current.height - delta)),
             );
+        }
     }
+
     function onPointerUp(event: PointerEvent<HTMLElement>) {
         const current = gesture.current;
         gesture.current = null;
-        if (!current) return;
+        if (!current) {
+            return;
+        }
+
         if (current.kind === 'dock') {
             const left = dock === 'right' ? area.width - 24 - width : 24;
             setDock(
@@ -164,6 +202,7 @@ export function useTutorLayout(
                     : 'right',
             );
         }
+
         if (
             current.kind === 'sheet' &&
             Math.abs(event.clientY - current.y) > 6
@@ -172,6 +211,7 @@ export function useTutorLayout(
             window.setTimeout(() => {
                 suppressClick.current = false;
             }, 0);
+
             const releasedHeight = Math.max(
                 120,
                 Math.min(
@@ -179,13 +219,16 @@ export function useTutorLayout(
                     current.height - (event.clientY - current.y),
                 ),
             );
+
             if (
                 current.velocity > 0.7 ||
                 releasedHeight < partialHeight * 0.6
             ) {
-                if (sheetFull && releasedHeight > partialHeight * 0.6)
+                if (sheetFull && releasedHeight > partialHeight * 0.6) {
                     setSheetFull(false);
-                else onFold();
+                } else {
+                    onFold();
+                }
             } else {
                 setSheetFull(
                     current.velocity < -0.7 ||
@@ -193,37 +236,53 @@ export function useTutorLayout(
                 );
             }
         }
+
         setSheetHeight(null);
         setDragX(0);
     }
+
     function onPointerCancel() {
         gesture.current = null;
         setDragX(0);
         setSheetHeight(null);
     }
+
     function onResizeKeyDown(event: KeyboardEvent<HTMLElement>) {
         const step = event.shiftKey ? 120 : 40;
-        if (event.key === 'ArrowDown') setHeight(height + step);
-        else if (event.key === 'ArrowUp') setHeight(height - step);
-        else if (event.key === 'End') setFull(true);
-        else if (event.key === 'Home') {
+        if (event.key === 'ArrowDown') {
+            setHeight(height + step);
+        } else if (event.key === 'ArrowUp') {
+            setHeight(height - step);
+        } else if (event.key === 'End') {
+            setFull(true);
+        } else if (event.key === 'Home') {
             setFull(false);
             setCustomHeight(null);
-        } else return;
+        } else {
+            return;
+        }
+
         event.preventDefault();
     }
+
     function toggleSheet() {
-        if (!suppressClick.current) setSheetFull(!sheetFull);
+        if (!suppressClick.current) {
+            setSheetFull(!sheetFull);
+        }
     }
+
     function toggleWide() {
         setWide(!wide);
     }
+
     function toggleFull() {
         setFull(!full);
     }
+
     function switchDock() {
         setDock(dock === 'right' ? 'left' : 'right');
     }
+
     return {
         areaRef,
         attached,

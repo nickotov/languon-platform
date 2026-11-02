@@ -59,15 +59,19 @@ export async function dictionaryLifecycle(
         if (
             current.dictionary.version !==
             input.request.expectedDictionaryVersion
-        )
+        ) {
             throw new DictionaryVersionConflictError();
-        if (current.dictionary.lifecycle === lifecycle)
+        }
+
+        if (current.dictionary.lifecycle === lifecycle) {
             return mapOwned(
                 current.dictionary,
                 current.settings,
                 await activeCardCount(tx, input.dictionaryId),
                 (await cardCount(tx, input.dictionaryId)) > 0,
             );
+        }
+
         await tx
             .update(dictionariesTable)
             .set({
@@ -103,21 +107,29 @@ export async function cardLifecycle(
         if (
             current.dictionary.version !==
             input.request.expectedDictionaryVersion
-        )
+        ) {
             throw new DictionaryVersionConflictError();
+        }
+
         const row = await lockCard(tx, input.dictionaryId, input.cardId);
         abort(input.context);
-        if (row.version !== input.request.expectedCardVersion)
+        if (row.version !== input.request.expectedCardVersion) {
             throw new DictionaryVersionConflictError();
-        if (row.lifecycle === lifecycle)
+        }
+
+        if (row.lifecycle === lifecycle) {
             return {
                 card: mapCard(row, current.settings),
                 dictionaryVersion: current.dictionary.version,
             };
-        if (lifecycle === 'active')
+        }
+
+        if (lifecycle === 'active') {
             assertDictionaryCardCapacity(
                 (await activeCardCount(tx, input.dictionaryId)) + 1,
             );
+        }
+
         let restoredSortKey = row.sortKey;
         if (lifecycle === 'active') {
             restoredSortKey = await nextActiveSortKey(tx, input.dictionaryId);
@@ -141,7 +153,9 @@ export async function cardLifecycle(
             )
             .returning();
 
-        if (!updated) throw new DictionaryVersionConflictError();
+        if (!updated) {
+            throw new DictionaryVersionConflictError();
+        }
 
         return {
             card: mapCard(updated, current.settings),
@@ -164,8 +178,10 @@ export async function reorderCards(
         if (
             current.dictionary.version !==
             input.request.expectedDictionaryVersion
-        )
+        ) {
             throw new DictionaryVersionConflictError();
+        }
+
         const cards = await tx
             .select({
                 id: dictionaryCardsTable.id,
@@ -199,8 +215,10 @@ export async function reorderCards(
                 (index, offset) =>
                     offset > 0 && index !== sortedIndexes[offset - 1]! + 1,
             )
-        )
+        ) {
             throw new InvalidDictionaryRequestError();
+        }
+
         const windowStart = sortedIndexes[0]!;
         const windowKeys = cards
             .slice(

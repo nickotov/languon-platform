@@ -25,7 +25,10 @@ import {
 } from './auth-http-policy';
 
 export function mapAuthenticationHttpError(error: Error): AuthHttpError {
-    if (error instanceof AuthHttpError) return error;
+    if (error instanceof AuthHttpError) {
+        return error;
+    }
+
     if (error instanceof InvalidRequestOriginError) {
         return new AuthHttpError(
             'forbidden',
@@ -33,6 +36,7 @@ export function mapAuthenticationHttpError(error: Error): AuthHttpError {
             403,
         );
     }
+
     if (
         error instanceof InvalidBearerAuthorizationError ||
         error instanceof InvalidAccessTokenError ||
@@ -44,6 +48,7 @@ export function mapAuthenticationHttpError(error: Error): AuthHttpError {
             401,
         );
     }
+
     if (error instanceof InvalidCredentialsError) {
         return new AuthHttpError(
             'invalid_credentials',
@@ -51,6 +56,7 @@ export function mapAuthenticationHttpError(error: Error): AuthHttpError {
             401,
         );
     }
+
     if (error instanceof VerificationFailedError) {
         return new AuthHttpError(
             'verification_failed',
@@ -58,6 +64,7 @@ export function mapAuthenticationHttpError(error: Error): AuthHttpError {
             400,
         );
     }
+
     if (
         error instanceof PasswordPolicyViolationError ||
         error instanceof PasswordUnchangedError
@@ -68,6 +75,7 @@ export function mapAuthenticationHttpError(error: Error): AuthHttpError {
             400,
         );
     }
+
     if (error instanceof RateLimitExceededError) {
         return new AuthHttpError(
             'rate_limited',
@@ -76,6 +84,7 @@ export function mapAuthenticationHttpError(error: Error): AuthHttpError {
             error.retryAfterSeconds,
         );
     }
+
     if (error instanceof RecentAuthenticationRequiredError) {
         return new AuthHttpError(
             'recent_authentication_required',
@@ -83,6 +92,7 @@ export function mapAuthenticationHttpError(error: Error): AuthHttpError {
             403,
         );
     }
+
     if (error instanceof AuthenticationCapabilityUnavailableError) {
         return new AuthHttpError(
             'capability_unavailable',
@@ -90,6 +100,7 @@ export function mapAuthenticationHttpError(error: Error): AuthHttpError {
             503,
         );
     }
+
     if (
         error instanceof RateLimitUnavailableError ||
         error instanceof EmailDeliveryUnavailableError ||
@@ -101,6 +112,7 @@ export function mapAuthenticationHttpError(error: Error): AuthHttpError {
             503,
         );
     }
+
     if (
         error instanceof PasskeyOperationFailedError ||
         error instanceof PasskeyVerificationError ||
@@ -112,6 +124,7 @@ export function mapAuthenticationHttpError(error: Error): AuthHttpError {
             400,
         );
     }
+
     if (error instanceof WebAuthnChallengeAlreadyExistsError) {
         return new AuthHttpError(
             'conflict',
@@ -119,6 +132,7 @@ export function mapAuthenticationHttpError(error: Error): AuthHttpError {
             409,
         );
     }
+
     // Persistence errors stay behind the infrastructure boundary. Match the
     // deliberately stable public error identity instead of importing a concrete
     // infrastructure implementation into the HTTP interface layer.
@@ -129,6 +143,7 @@ export function mapAuthenticationHttpError(error: Error): AuthHttpError {
             409,
         );
     }
+
     return new AuthHttpError(
         'internal_error',
         'The authentication service could not complete the request.',

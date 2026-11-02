@@ -58,9 +58,13 @@ export function useKnowledgeWorkspace(noteId: string) {
     function operationId(kind: string, value: unknown) {
         const key = JSON.stringify({ kind, value });
         const existing = operations.current.get(key);
-        if (existing) return existing;
+        if (existing) {
+            return existing;
+        }
+
         const id = crypto.randomUUID();
         operations.current.set(key, id);
+
         return id;
     }
 
@@ -69,7 +73,10 @@ export function useKnowledgeWorkspace(noteId: string) {
     }
 
     useEffect(() => {
-        if (!query.data || workspace) return;
+        if (!query.data || workspace) {
+            return;
+        }
+
         setWorkspace(query.data);
         const preferred = query.data.branches.find(
             (branch) => branch.id === query.data.preferredBranchId,
@@ -86,9 +93,15 @@ export function useKnowledgeWorkspace(noteId: string) {
         update: (current: KnowledgeWorkingContent) => KnowledgeWorkingContent,
     ) {
         const current = editRef.current;
-        if (!current) return;
+        if (!current) {
+            return;
+        }
+
         const content = update(current.content);
-        if (JSON.stringify(content) === JSON.stringify(current.content)) return;
+        if (JSON.stringify(content) === JSON.stringify(current.content)) {
+            return;
+        }
+
         const next = { ...current, content };
         editRef.current = next;
         setEdit(next);
@@ -99,6 +112,7 @@ export function useKnowledgeWorkspace(noteId: string) {
                   ? 'unsaved'
                   : 'saved',
         );
+
         setError(null);
         failedContent.current = null;
     }
@@ -115,13 +129,22 @@ export function useKnowledgeWorkspace(noteId: string) {
     async function persist(): Promise<boolean> {
         if (pending.current) {
             const previous = await pending.current;
-            if (!previous) return false;
+            if (!previous) {
+                return false;
+            }
         }
+
         const current = editRef.current;
-        if (!current || !contentChanged(current)) return true;
+        if (!current || !contentChanged(current)) {
+            return true;
+        }
+
         const content = current.content;
         const snapshot = JSON.stringify(content);
-        if (failedContent.current === snapshot) return false;
+        if (failedContent.current === snapshot) {
+            return false;
+        }
+
         setStatus('saving');
         const operation = {
             branchId: current.branchId,
@@ -136,6 +159,7 @@ export function useKnowledgeWorkspace(noteId: string) {
                         ...operation,
                     }),
                 );
+
                 completeOperation('working', operation);
                 const latest = editRef.current;
                 if (latest?.branchId === current.branchId) {
@@ -145,6 +169,7 @@ export function useKnowledgeWorkspace(noteId: string) {
                         content: latest.content,
                         synced: content,
                     };
+
                     editRef.current = next;
                     setEdit(next);
                     setStatus(
@@ -155,6 +180,7 @@ export function useKnowledgeWorkspace(noteId: string) {
                               : 'saved',
                     );
                 }
+
                 setWorkspace((previous) =>
                     previous
                         ? {
@@ -164,39 +190,58 @@ export function useKnowledgeWorkspace(noteId: string) {
                           }
                         : previous,
                 );
+
                 await client.invalidateQueries({
                     queryKey: ['knowledge', actorId, 'library'],
                 });
+
                 return true;
             } catch (caught) {
                 failedContent.current = snapshot;
                 setStatus('error');
                 setError(caught);
+
                 return false;
             }
         })();
+
         pending.current = work;
         const result = await work;
-        if (pending.current === work) pending.current = null;
+        if (pending.current === work) {
+            pending.current = null;
+        }
+
         return result;
     }
 
     useEffect(() => {
-        if (!edit || !contentChanged(edit)) return;
+        if (!edit || !contentChanged(edit)) {
+            return;
+        }
+
         const timer = window.setTimeout(() => {
             void persist();
         }, 800);
+
         return () => window.clearTimeout(timer);
         // Persist reads the current editor snapshot; unrelated query updates
         // must not postpone draft recovery.
     }, [edit?.content, edit?.version, edit?.branchId]);
 
     async function flush(): Promise<WorkingEdit> {
-        if (!(await persist()))
+        if (!(await persist())) {
             throw new Error('Working draft was not recovered');
+        }
+
         const latest = editRef.current;
-        if (!latest) throw new Error('Working draft is unavailable');
-        if (contentChanged(latest)) return flush();
+        if (!latest) {
+            throw new Error('Working draft is unavailable');
+        }
+
+        if (contentChanged(latest)) {
+            return flush();
+        }
+
         return latest;
     }
 
@@ -214,13 +259,16 @@ export function useKnowledgeWorkspace(noteId: string) {
                 ...operation,
             }),
         );
+
         completeOperation('save', operation);
         setWorkspace((previous) =>
             previous
                 ? { ...previous, status: 'saved', published: note }
                 : previous,
         );
+
         await client.invalidateQueries({ queryKey: ['knowledge', actorId] });
+
         return note;
     }
 
@@ -236,8 +284,10 @@ export function useKnowledgeWorkspace(noteId: string) {
                 ...operation,
             }),
         );
+
         completeOperation('copy', operation);
         await client.invalidateQueries({ queryKey: ['knowledge', actorId] });
+
         return note;
     }
 
@@ -247,7 +297,11 @@ export function useKnowledgeWorkspace(noteId: string) {
             workspace?.branches.filter(
                 (branch) => branch.id !== current.branchId,
             ) ?? [];
-        if (!alternatives.length) return;
+
+        if (!alternatives.length) {
+            return;
+        }
+
         const operation = {
             keepBranchId: current.branchId,
             keepVersion: current.version,
@@ -262,17 +316,21 @@ export function useKnowledgeWorkspace(noteId: string) {
                 ...operation,
             }),
         );
+
         completeOperation('resolve', operation);
         setWorkspace(resolved);
         const branch = resolved.branches.find(
             (item) => item.id === current.branchId,
         );
-        if (branch && !contentChanged(editRef.current ?? current))
+
+        if (branch && !contentChanged(editRef.current ?? current)) {
             chooseBranch(branch);
+        }
     }
 
     async function retryRecovery() {
         failedContent.current = null;
+
         return persist();
     }
 
@@ -289,6 +347,7 @@ export function useKnowledgeWorkspace(noteId: string) {
             const branch = result.data.branches.find(
                 (item) => item.id === editRef.current?.branchId,
             );
+
             if (branch && editRef.current && !contentChanged(editRef.current)) {
                 chooseBranch(branch);
             }
@@ -297,6 +356,11 @@ export function useKnowledgeWorkspace(noteId: string) {
 
     return {
         query,
+        // Query success precedes the effect that hydrates the local draft. Keep
+        // that render in loading state; a branchless response still fails closed.
+        isInitializing:
+            query.isPending ||
+            (!workspace && query.isSuccess && query.data.branches.length > 0),
         workspace,
         edit,
         status,

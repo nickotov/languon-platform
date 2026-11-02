@@ -53,14 +53,17 @@ export function createSentenceComposition(
             async authenticate(accessToken) {
                 const claims =
                     await dependencies.accessTokens.verify(accessToken);
+
                 await dependencies.authentication.requireActiveSession({
                     sessionId: claims.sessionId,
                     userId: claims.userId,
                 });
+
                 return { sessionId: claims.sessionId, userId: claims.userId };
             },
         },
     });
+
     return {
         service,
         store,
@@ -69,6 +72,7 @@ export function createSentenceComposition(
         routes: createSentenceRoutes({ service, policy: dependencies.policy }),
     };
 }
+
 /** Shared durable preparation admission for HTTP and the existing bounded worker. */
 export function createSentencePreparationWorkerComposition(
     dependencies: Pick<
@@ -99,8 +103,10 @@ export function createSentencePreparationWorkerComposition(
             admitGeneration: (tx, access, input, context) =>
                 store.admitPreparationGeneration(tx, access, input, context),
         });
+
     return { store, preparation };
 }
+
 /** Worker/test seam accepts the same provider port; fixtures count calls without route/store mocks. */
 export function createSentenceWorkerComposition(
     dependencies: Omit<SentenceWorkerServiceDependencies, 'store'> & {
@@ -110,6 +116,7 @@ export function createSentenceWorkerComposition(
 ) {
     const store = new DrizzleSentenceWorkerStore(dependencies.database);
     const worker = new SentenceWorkerService({ ...dependencies, store });
+
     return { worker, store };
 }
 
@@ -129,5 +136,6 @@ export function createSentenceWorkerRuntimeComposition(
 ) {
     const store = new DrizzleSentenceWorkerStore(dependencies.database);
     const worker = createSentenceWorkerRuntime({ ...dependencies, store });
+
     return { worker, store };
 }

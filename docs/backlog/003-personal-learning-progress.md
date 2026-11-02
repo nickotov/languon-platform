@@ -4,10 +4,11 @@ id: BL-003
 title: 'Personal learning progress'
 status: in-progress
 created: 2026-10-01
-updated: 2026-10-05
+updated: 2026-10-30
 original_tasks: '6 and 10'
 summary: Flashcard persistence verified and frontend progress implemented under feature 034; other exercise modes remain outstanding.
 evidence:
+    - .agent/features/059-interactive-workbooks/EVIDENCE.md
     - .agent/features/033-flashcard-training-backend/EVIDENCE.md
     - .agent/features/034-flashcard-training-web/EVIDENCE.md
     - docs/adr/0024-flashcard-learning-state-and-revisions.md
@@ -100,3 +101,27 @@ personal sentence AI/manual histories, directional coverage and session summary.
 See its [evidence](../../.agent/features/037-sentence-practice-web/EVIDENCE.md).
 This does not complete broader grammar/manual-exercise progress; BL-003 remains
 in progress.
+
+## Interactive workbook progress delivery — 2026-10-28
+
+[Feature 059](../../.agent/features/059-interactive-workbooks/FEATURE.md) now owns
+the authorized knowledge-exercise slice: private persisted attempts, hint/reveal
+observations, content-version history, explicit note completion and workbook
+progress. Shared readers keep their own state, authors cannot inspect it, and
+revocation/deletion follows the confirmed source-access policy. See its
+[execution plan](../../.agent/features/059-interactive-workbooks/EXEC_PLAN.md).
+
+Foundational contracts are in progress; no completed workbook-progress behavior
+or runtime evidence is claimed. Existing flashcard/sentence evidence remains
+valid only for its recorded scope. Broader learning statistics and future exercise
+modes remain outside this slice; BL-003 stays in progress.
+
+## v16 partial-delivery checkpoint — 2026-10-30
+
+Private inline exercise attempts, prepared versus AI evaluation, separate hint/reveal observations, material revisions and explicit completion are implemented and verified for the knowledge-workbook slice. Initial progress loading preserves an answer already being edited. Broader cross-mode statistics and future exercise modes remain outstanding.
+
+See [F059 evidence](../../.agent/features/059-interactive-workbooks/EVIDENCE.md)
+and its [fidelity observations](../../.agent/features/059-interactive-workbooks/evidence/v16-migration/FIDELITY.md).
+The full critical gate passes14 flows /812 tests with no skips. Parent F059 and
+this broader backlog task remain **in progress**; this is partial-delivery evidence,
+not a terminal task disposition.

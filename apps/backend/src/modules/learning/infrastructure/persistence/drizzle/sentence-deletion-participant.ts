@@ -34,22 +34,32 @@ function affectedExerciseScope(scope: SentenceDeletionScope): SQL {
             scope.entryIds ||
             scope.learnerId ||
             scope.accountPurge)
-    )
+    ) {
         throw new Error(
             'Explicit exercise deletion cannot combine broader scopes',
         );
+    }
+
     const clauses: SQL[] = [];
-    if (scope.exerciseIds?.length)
+    if (scope.exerciseIds?.length) {
         clauses.push(
             sql`${exercises.id} in (select value::uuid from jsonb_array_elements_text(${JSON.stringify(scope.exerciseIds)}::jsonb))`,
         );
-    if (scope.dictionaryIds?.length)
+    }
+
+    if (scope.dictionaryIds?.length) {
         clauses.push(inArray(exercises.dictionaryId, [...scope.dictionaryIds]));
-    if (scope.learnerId) clauses.push(eq(exercises.creatorId, scope.learnerId));
-    if (scope.entryIds?.length)
+    }
+
+    if (scope.learnerId) {
+        clauses.push(eq(exercises.creatorId, scope.learnerId));
+    }
+
+    if (scope.entryIds?.length) {
         clauses.push(
             sql`exists(select 1 from ${exerciseEntries} e where e.exercise_id=${exercises.id} and e.entry_id in (${copiedEntryList(scope)})) or exists(select 1 from ${jobs} g join ${jobEntries} p on p.job_id=g.id where g.result_exercise_id=${exercises.id} and p.entry_id in (${copiedEntryList(scope)}))`,
         );
+    }
 
     return or(...clauses) ?? sql`false`;
 }
@@ -61,8 +71,9 @@ function jobScope(scope: SentenceDeletionScope): SQL {
             !scope.dictionaryIds ||
             scope.entryIds?.length ||
             scope.exerciseIds?.length
-        )
+        ) {
             throw new Error('Account purge requires complete ownership scope');
+        }
 
         return or(
             eq(jobs.learnerId, scope.learnerId),
@@ -73,13 +84,20 @@ function jobScope(scope: SentenceDeletionScope): SQL {
     }
 
     const clauses: SQL[] = [];
-    if (scope.dictionaryIds?.length)
+    if (scope.dictionaryIds?.length) {
         clauses.push(inArray(jobs.dictionaryId, [...scope.dictionaryIds]));
-    if (scope.learnerId) clauses.push(eq(jobs.learnerId, scope.learnerId));
-    if (scope.entryIds?.length)
+    }
+
+    if (scope.learnerId) {
+        clauses.push(eq(jobs.learnerId, scope.learnerId));
+    }
+
+    if (scope.entryIds?.length) {
         clauses.push(
             sql`exists(select 1 from ${jobEntries} p where p.job_id=${jobs.id} and p.entry_id in (${copiedEntryList(scope)}))`,
         );
+    }
+
     clauses.push(
         sql`exists(select 1 from ${exercises} where (${exercises.id}::text=${jobs.inputPayload}->>'exerciseId' or ${exercises.id}=${jobs.resultExerciseId}) and (${affectedExerciseScope(scope)}))`,
     );
@@ -90,15 +108,19 @@ function jobScope(scope: SentenceDeletionScope): SQL {
 /** Preparation ownership includes captured words and saved manifests, not only a running child. */
 function preparationScope(scope: SentenceDeletionScope): SQL {
     const direct: SQL[] = [];
-    if (scope.learnerId)
+    if (scope.learnerId) {
         direct.push(sql`p.learner_id=${scope.learnerId}::uuid`);
-    if (scope.dictionaryIds?.length)
+    }
+
+    if (scope.dictionaryIds?.length) {
         direct.push(
             sql`p.dictionary_id in (${sql.join(
                 scope.dictionaryIds.map((id) => sql`${id}::uuid`),
                 sql`,`,
             )})`,
         );
+    }
+
     const selected = sql`select id from ${exercises} where ${affectedExerciseScope(scope)}`;
     direct.push(sql`exists(select 1 from sentence_preparation_batches b where b.preparation_id=p.id and (
         exists(select 1 from jsonb_array_elements(b.manifest) item where (item->>'exerciseId')::uuid in (${selected}))
@@ -126,7 +148,10 @@ export async function sentenceDeletionBusy(
         join ai_credit_actions a on a.id=p.current_action_id
         where a.state='active' and (${preparationScope(scope)}) limit 1`);
 
-    if (activeParent) return true;
+    if (activeParent) {
+        return true;
+    }
+
     const selected = sql`select id from ${exercises} where ${affectedExerciseScope(scope)}`;
     const deletedEntries = scope.entryIds?.length
         ? sql`item->>'entryId' in (${sql.join(
@@ -141,7 +166,10 @@ export async function sentenceDeletionBusy(
         sql`select 1 from sentence_preparations p join sentence_ai_jobs j on j.id=p.active_job_id where (j.execution_state in ('queued','running') or j.provider_reservation_state='active') and exists(select 1 from sentence_preparation_batches b where b.preparation_id=p.id and (exists(select 1 from jsonb_array_elements(b.manifest) item where (item->>'exerciseId')::uuid in (${selected})) ${copiedEntryCondition})) limit 1`,
     );
 
-    if (preparationBusy) return true;
+    if (preparationBusy) {
+        return true;
+    }
+
     const [busy] = await tx
         .select({ id: jobs.id })
         .from(jobs)
@@ -190,8 +218,6 @@ export async function requestSentenceCancellation(
         where (${preparationScope(scope)}) and exists(select 1 from ai_credit_actions a where a.id=p.current_action_id and a.state='active')`);
 }
 
-/** Permanent deletion erases WHOLE copied jobs and multi-entry exercises before
- * entry cascades. Coverage has no exercise FK, so deleting B leaves A's count. */
 /** Remove copied preparation content without broadening selected-exercise erasure. */
 async function scrubPreparationContent(
     tx: SentenceTransaction,
@@ -230,10 +256,11 @@ async function scrubPreparationContent(
             sql`delete from sentence_library_snapshots where (${learner}) or (${dictionaryList})${scope.accountPurge ? sql` or actor_id=${scope.learnerId}::uuid` : sql``}`,
         );
 
-        if (scope.accountPurge)
+        if (scope.accountPurge) {
             await tx.execute(
                 sql`delete from sentence_library_receipts where (${learner}) or (${dictionaryList}) or actor_id=${scope.learnerId}::uuid`,
             );
+        }
     }
 
     const selected = sql`select id from ${exercises} where ${affectedExerciseScope(scope)}`;
@@ -270,14 +297,18 @@ async function scrubPreparationContent(
     );
 }
 
+/** Permanent deletion erases WHOLE copied jobs and multi-entry exercises before
+ * entry cascades. Coverage has no exercise FK, so deleting B leaves A's count. */
 export async function eraseSentenceDerivedContent(
     tx: SentenceTransaction,
     scope: SentenceDeletionScope & { now: Date },
 ): Promise<void> {
-    if (await sentenceDeletionBusy(tx, scope))
+    if (await sentenceDeletionBusy(tx, scope)) {
         throw new Error('Sentence work is not quiescent');
+    }
+
     await scrubPreparationContent(tx, scope);
-    if (scope.accountPurge)
+    if (scope.accountPurge) {
         await tx
             .delete(receipts)
             .where(
@@ -290,6 +321,8 @@ export async function eraseSentenceDerivedContent(
                         : undefined,
                 ),
             );
+    }
+
     const selected = await tx
         .select({ id: jobs.id })
         .from(jobs)
@@ -299,19 +332,25 @@ export async function eraseSentenceDerivedContent(
         .from(exercises)
         .where(affectedExerciseScope(scope));
     const manualConditions: SQL[] = [];
-    if (selectedExercises.length)
+    if (selectedExercises.length) {
         manualConditions.push(
             inArray(
                 manualReviews.exerciseId,
                 selectedExercises.map((e) => e.id),
             ),
         );
-    if (scope.learnerId)
+    }
+
+    if (scope.learnerId) {
         manualConditions.push(eq(manualReviews.learnerId, scope.learnerId));
-    if (scope.dictionaryIds?.length)
+    }
+
+    if (scope.dictionaryIds?.length) {
         manualConditions.push(
             inArray(manualReviews.dictionaryId, [...scope.dictionaryIds]),
         );
+    }
+
     const erasedManuals = await tx
         .select({
             id: manualReviews.id,
@@ -323,7 +362,7 @@ export async function eraseSentenceDerivedContent(
         .from(manualReviews)
         .where(or(...manualConditions) ?? sql`false`);
 
-    for (const review of scope.accountPurge ? [] : erasedManuals)
+    for (const review of scope.accountPurge ? [] : erasedManuals) {
         await tx
             .insert(receipts)
             .values({
@@ -336,13 +375,17 @@ export async function eraseSentenceDerivedContent(
                 createdAt: scope.now,
             })
             .onConflictDoNothing();
-    if (erasedManuals.length)
+    }
+
+    if (erasedManuals.length) {
         await tx.delete(manualReviews).where(
             inArray(
                 manualReviews.id,
                 erasedManuals.map((r) => r.id),
             ),
         );
+    }
+
     // Include other learners' check jobs derived from erased creator exercises.
     const derivedJobs =
         !scope.accountPurge && selectedExercises.length
@@ -372,7 +415,11 @@ export async function eraseSentenceDerivedContent(
 
         // Check jobs have no Next receipt. Retain a content-free operation tombstone
         // so deletion cannot turn an old idempotency key into a fresh paid action.
-        for (const job of erasedJobs)
+        for (const job of erasedJobs) {
+            if (!job.dictionaryId) {
+                continue;
+            }
+
             await tx
                 .insert(receipts)
                 .values({
@@ -385,7 +432,9 @@ export async function eraseSentenceDerivedContent(
                     createdAt: scope.now,
                 })
                 .onConflictDoNothing();
-        if (!scope.accountPurge)
+        }
+
+        if (!scope.accountPurge) {
             await tx
                 .update(receipts)
                 .set({
@@ -396,6 +445,8 @@ export async function eraseSentenceDerivedContent(
                     emptyReason: null,
                 })
                 .where(inArray(receipts.jobId, ids));
+        }
+
         const [busy] = await tx
             .select({ id: jobs.id })
             .from(jobs)
@@ -410,12 +461,15 @@ export async function eraseSentenceDerivedContent(
             )
             .limit(1);
 
-        if (busy) throw new Error('Derived sentence work is not quiescent');
+        if (busy) {
+            throw new Error('Derived sentence work is not quiescent');
+        }
+
         await archiveSentenceProviderUsage(tx, { jobIds: ids, now: scope.now });
         await tx.delete(jobs).where(inArray(jobs.id, ids));
     }
 
-    if (selectedExercises.length && !scope.accountPurge)
+    if (selectedExercises.length && !scope.accountPurge) {
         await tx
             .update(receipts)
             .set({
@@ -431,13 +485,17 @@ export async function eraseSentenceDerivedContent(
                     selectedExercises.map((e) => e.id),
                 ),
             );
-    if (selectedExercises.length)
+    }
+
+    if (selectedExercises.length) {
         await tx.delete(exercises).where(
             inArray(
                 exercises.id,
                 selectedExercises.map((e) => e.id),
             ),
         );
+    }
+
     if (scope.learnerId) {
         await tx
             .delete(attempts)
@@ -466,8 +524,9 @@ export async function eraseSentenceDerivedContent(
             .where(inArray(receipts.dictionaryId, [...scope.dictionaryIds]));
     }
 
-    if (scope.entryIds?.length)
+    if (scope.entryIds?.length) {
         await tx
             .delete(coverage)
             .where(inArray(coverage.entryId, [...scope.entryIds]));
+    }
 }

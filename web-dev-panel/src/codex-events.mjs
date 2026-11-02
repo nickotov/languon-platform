@@ -39,6 +39,7 @@ function activityForItem(type, status) {
         ['web_search', 'Web search'],
     ]);
     const name = names.get(type) ?? 'Agent activity';
+
     return status ? `${name} · ${status}` : name;
 }
 
@@ -61,11 +62,16 @@ export function projectCodexEvent(line, previous = initialAgentMetadata()) {
     } catch {
         return { kind: 'ignored', metadata: previous };
     }
+
     if (!event || typeof event !== 'object' || Array.isArray(event)) {
         return { kind: 'ignored', metadata: previous };
     }
+
     const type = safeIdentifier(event.type);
-    if (!type) return { kind: 'ignored', metadata: previous };
+    if (!type) {
+        return { kind: 'ignored', metadata: previous };
+    }
+
     const metadata = { ...previous };
 
     if (type === 'thread.started') {
@@ -92,12 +98,14 @@ export function projectCodexEvent(line, previous = initialAgentMetadata()) {
         const status = safeItemStatuses.has(candidateStatus)
             ? candidateStatus
             : null;
+
         metadata.itemType = itemType;
         metadata.activity = activityForItem(itemType, status);
-        metadata.status = type === 'item.completed' ? 'running' : 'running';
+        metadata.status = 'running';
     } else if (type === 'turn.completed') {
         const usage =
             event.usage && typeof event.usage === 'object' ? event.usage : {};
+
         metadata.activity = 'Turn completed';
         metadata.status = 'completed';
         metadata.tokens = {
@@ -111,6 +119,7 @@ export function projectCodexEvent(line, previous = initialAgentMetadata()) {
     } else {
         return { kind: 'ignored', metadata: previous };
     }
+
     return {
         kind: 'metadata',
         logText: `[codex] ${metadata.activity}`,

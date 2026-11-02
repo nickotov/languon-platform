@@ -23,22 +23,33 @@ function observeErrors(page: Page) {
         if (
             message.type() === 'error' &&
             !message.text().startsWith('Failed to load resource:')
-        )
+        ) {
             browserErrors.push(message.text());
+        }
     });
+
     page.on('response', (response) => {
-        if (response.status() < 400) return;
+        if (response.status() < 400) {
+            return;
+        }
+
         const path = new URL(response.url()).pathname.replace(
             /^\/api(?=\/)/,
             '',
         );
-        if (path === '/auth/refresh' && response.status() === 401) return;
+
+        if (path === '/auth/refresh' && response.status() === 401) {
+            return;
+        }
+
         browserErrors.push(`${response.status()} ${path}`);
     });
+
     page.on('requestfailed', (request) => {
         const error = request.failure()?.errorText ?? 'unknown';
-        if (!error.includes('ERR_ABORTED'))
+        if (!error.includes('ERR_ABORTED')) {
             browserErrors.push(`${error} ${new URL(request.url()).pathname}`);
+        }
     });
 }
 
@@ -53,6 +64,7 @@ async function learner(browser: Browser, role: string) {
     await page
         .getByRole('button', { name: 'Create account', exact: true })
         .click();
+
     await expect(page).toHaveURL(/\/verify-email\?/);
     await page.getByLabel('Verification code').fill('0000');
     const verification = page.waitForResponse(
@@ -60,13 +72,16 @@ async function learner(browser: Browser, role: string) {
             response.url().endsWith('/auth/email-verification/verify') &&
             response.status() === 200,
     );
+
     await page.getByRole('button', { name: 'Verify email' }).click();
     const { AuthenticationSuccessResponseSchema } =
         await import('@languon/contracts');
     const verified = AuthenticationSuccessResponseSchema.parse(
         await (await verification).json(),
     );
+
     await expect(page).toHaveURL(/\/dictionaries$/);
+
     return { context, page, actorId: verified.user.id };
 }
 
@@ -81,24 +96,27 @@ async function savedWord(
         .getByRole('main')
         .getByRole('button', { name: 'New dictionary', exact: true })
         .click();
+
     await page.getByLabel('Name').fill(`Speech ${role} ${runId}`);
     await page.getByLabel('Translate from').selectOption(sourceLanguage);
     await page.getByLabel('Translate to').selectOption('en');
     await page
         .getByRole('button', { name: 'Create dictionary', exact: true })
         .click();
+
     await page.getByRole('button', { name: 'Add card', exact: true }).click();
     const editor = page.getByRole('dialog', { name: 'Add card' });
     await editor.getByLabel(/^Source word or phrase/u).fill(text);
     await editor.getByLabel(/^Translation/u).fill('Saved translation');
     await editor.getByRole('button', { name: 'Create card' }).click();
-    if (sourceLanguage !== 'he')
+    if (sourceLanguage !== 'he') {
         await expect(
             page.getByRole('button', {
                 name: 'Play Source phrase',
                 exact: true,
             }),
         ).toBeVisible();
+    }
 }
 
 async function preparation(page: Page) {
@@ -107,9 +125,11 @@ async function preparation(page: Page) {
             value.url().endsWith('/speech/prepare') &&
             [200, 202].includes(value.status()),
     );
+
     await page
         .getByRole('button', { name: 'Play Source phrase', exact: true })
         .click();
+
     return (await response).json();
 }
 
@@ -121,9 +141,11 @@ test.describe.serial('shared pronunciation playback', () => {
         second = await learner(browser, `second-${info.workerIndex}`);
         await speechCreditFixture(first.actorId, 'setup');
     });
+
     test.afterEach(() =>
         expect(browserErrors, 'unexpected browser errors').toEqual([]),
     );
+
     test.afterAll(async () => {
         await first?.context.close();
         await second?.context.close();
@@ -133,9 +155,11 @@ test.describe.serial('shared pronunciation playback', () => {
     test('reuses normalized saved text across authenticated accounts without another generation', async () => {
         const speechRequests: string[] = [];
         const observe = (request: Request) => {
-            if (new URL(request.url()).pathname.includes('/speech/'))
+            if (new URL(request.url()).pathname.includes('/speech/')) {
                 speechRequests.push(request.url());
+            }
         };
+
         first.page.on('request', observe);
         const text = `palabra ${runId} ${test.info().workerIndex}`;
         await savedWord(first.page, text, 'first');
@@ -161,8 +185,10 @@ test.describe.serial('shared pronunciation playback', () => {
             expect(new URL(request).origin).toBe(
                 new URL(first.page.url()).origin,
             );
+
             expect(new URL(request).pathname).toMatch(/^\/api\/speech\//);
         }
+
         await second.page.setViewportSize({ width: 390, height: 844 });
         expect(
             await second.page.evaluate(
@@ -171,6 +197,7 @@ test.describe.serial('shared pronunciation playback', () => {
                     document.documentElement.clientWidth + 1,
             ),
         ).toBe(true);
+
         // Exercise a provider outage at the browser API boundary without a paid request.
         await second.page.reload();
         const failureRequestId = '00000000-0000-4000-8000-000000000042';
@@ -182,8 +209,10 @@ test.describe.serial('shared pronunciation playback', () => {
                 path !== `/api/speech/requests/${failureRequestId}`
             ) {
                 await route.continue();
+
                 return;
             }
+
             await route.fulfill({
                 json: {
                     state: preparing ? 'queued' : 'failed',
@@ -197,22 +226,27 @@ test.describe.serial('shared pronunciation playback', () => {
                 },
             });
         });
+
         expect((await preparation(second.page)).state).toBe('queued');
         const retry = second.page.getByRole('button', {
             name: 'Play Source phrase',
             exact: true,
         });
+
         await expect(retry).toBeVisible();
         await expect(retry).toHaveText('');
         const outage =
             'The pronunciation service is temporarily unavailable. Try again later.';
+
         await expect(
             second.page.getByRole('status').filter({ hasText: outage }),
         ).toHaveText(outage);
+
         await retry.hover();
         await expect(second.page.getByRole('tooltip')).toHaveText(
             `Play Source phrase. ${outage}`,
         );
+
         await second.page.unroute('**/api/speech/**');
     });
 
@@ -223,8 +257,11 @@ test.describe.serial('shared pronunciation playback', () => {
         await savedWord(first.page, text, 'paid');
         let confirmations = 0;
         const observe = (request: Request) => {
-            if (request.url().endsWith('/speech/confirm')) ++confirmations;
+            if (request.url().endsWith('/speech/confirm')) {
+                ++confirmations;
+            }
         };
+
         first.page.on('request', observe);
         const result = await preparation(first.page);
         expect(result.state).toBe('confirmation_required');
@@ -232,6 +269,7 @@ test.describe.serial('shared pronunciation playback', () => {
         const dialog = first.page.getByRole('dialog', {
             name: 'Generate pronunciation?',
         });
+
         await expect(dialog).toBeVisible();
         await dialog.getByText('Exact values', { exact: true }).click();
         await expect(
@@ -241,12 +279,15 @@ test.describe.serial('shared pronunciation playback', () => {
                     exact: true,
                 }),
         ).toBeVisible();
+
         await expect(
             dialog.getByText(/charged only if audio is saved successfully/),
         ).toBeVisible();
+
         await expect(
             dialog.getByText('Provisional price', { exact: true }),
         ).toBeVisible();
+
         if (
             !result.quote.unlimited &&
             parseCreditMilli(result.quote.availableCredits) <
@@ -255,13 +296,16 @@ test.describe.serial('shared pronunciation playback', () => {
             await expect(
                 dialog.getByText('Not enough credits.', { exact: true }),
             ).toBeVisible();
+
             await expect(
                 dialog.getByRole('button', { name: 'Generate', exact: true }),
             ).toBeDisabled();
         }
+
         await dialog
             .getByRole('button', { name: 'Cancel', exact: true })
             .click();
+
         await expect(dialog).toHaveCount(0);
         expect(confirmations).toBe(0);
         const repeated = await preparation(first.page);
@@ -271,8 +315,10 @@ test.describe.serial('shared pronunciation playback', () => {
             .getByRole('dialog', { name: 'Generate pronunciation?' })
             .getByRole('button', { name: 'Cancel', exact: true })
             .click();
+
         first.page.off('request', observe);
     });
+
     // @user-flow shared-pronunciation-playback/paid-generation-confirmed-success
     test('confirms a finite credit quote, settles saved audio once, and replays for free', async () => {
         const { parseCreditMilli } = await import('@languon/contracts');
@@ -293,9 +339,11 @@ test.describe.serial('shared pronunciation playback', () => {
         const dialog = first.page.getByRole('dialog', {
             name: 'Generate pronunciation?',
         });
+
         await expect(
             dialog.getByText('0.13 credits', { exact: true }),
         ).toBeVisible();
+
         await dialog.getByText('Exact values', { exact: true }).click();
         await expect(
             dialog
@@ -304,9 +352,11 @@ test.describe.serial('shared pronunciation playback', () => {
                     exact: true,
                 }),
         ).toBeVisible();
+
         await expect(
             dialog.getByText('Available credits: 1,000', { exact: true }),
         ).toHaveCount(0);
+
         await first.page.setViewportSize({ width: 390, height: 844 });
         expect(
             await first.page.evaluate(
@@ -315,9 +365,11 @@ test.describe.serial('shared pronunciation playback', () => {
                     document.documentElement.clientWidth + 1,
             ),
         ).toBe(true);
+
         await first.page.screenshot({
             path: test.info().outputPath('decimal-speech-confirmation.png'),
         });
+
         const confirmation = first.page.waitForResponse(
             (value) =>
                 value.url().endsWith('/speech/confirm') &&
@@ -329,9 +381,11 @@ test.describe.serial('shared pronunciation playback', () => {
                 value.url().endsWith('/content') &&
                 value.status() === 200,
         );
+
         await dialog
             .getByRole('button', { name: 'Generate', exact: true })
             .click();
+
         const admitted = await (await confirmation).json();
         expect(admitted.billingState).toBe('reserved');
         expect(admitted.quote).toBeNull();
@@ -342,6 +396,7 @@ test.describe.serial('shared pronunciation playback', () => {
         expect(parseCreditMilli(after.availableCredits)).toBe(
             1_000_000n - amount,
         );
+
         const cached = await preparation(first.page);
         expect(cached.state).toBe('ready');
         expect(cached.billingState).toBe('free');
@@ -350,6 +405,7 @@ test.describe.serial('shared pronunciation playback', () => {
             after,
         );
     });
+
     // @user-flow shared-pronunciation-playback/unsupported-language-controls
     test('hides Hebrew pronunciation while a supported English translation remains playable', async () => {
         await savedWord(first.page, `שלום ${runId}`, 'unsupported', 'he');
@@ -359,12 +415,14 @@ test.describe.serial('shared pronunciation playback', () => {
                 exact: true,
             }),
         ).toBeVisible();
+
         await expect(
             first.page.getByRole('button', {
                 name: 'Play Source phrase',
                 exact: true,
             }),
         ).toHaveCount(0);
+
         await expect(
             first.page.getByText(`שלום ${runId}`, { exact: true }),
         ).toBeVisible();

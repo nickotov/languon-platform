@@ -78,8 +78,10 @@ export async function eraseTextsOwnedContent(
     ownerId: string,
     now: Date,
 ): Promise<void> {
-    if (await textsDeletionBusy(tx, ownerId))
+    if (await textsDeletionBusy(tx, ownerId)) {
         throw new Error('Text work is not quiescent');
+    }
+
     await archiveOwnedUsage(tx, ownerId, now);
     await tx
         .delete(dictionaryTextSelectionJobsTable)

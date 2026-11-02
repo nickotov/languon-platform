@@ -19,8 +19,11 @@ export function WorkspaceBanners({
     }
 
     function cancel() {
-        if (ws.cancelAi) ws.cancelAi();
-        else void ws.translation.cancel().catch(() => undefined);
+        if (ws.cancelAi) {
+            ws.cancelAi();
+        } else {
+            void ws.translation.cancel().catch(() => undefined);
+        }
     }
 
     const code =
@@ -31,12 +34,20 @@ export function WorkspaceBanners({
     const capacity = code.includes('capacity');
     const credits = code.includes('credit');
     let failure = copy('jobFailed');
-    if (capacity) failure = copy('capacity');
-    else if (credits) failure = copy('credits');
-    else if (code.includes('unavailable')) failure = copy('unavailable');
+    if (capacity) {
+        failure = copy('capacity');
+    } else if (credits) {
+        failure = copy('credits');
+    } else if (code.includes('unavailable')) {
+        failure = copy('unavailable');
+    }
+
     let proposalTitle = copy('preview');
-    if (ws.previewExpired) proposalTitle = copy('expired');
-    else if (ws.document?.alignment) proposalTitle = copy('proposal');
+    if (ws.previewExpired) {
+        proposalTitle = copy('expired');
+    } else if (ws.document?.alignment) {
+        proposalTitle = copy('proposal');
+    }
 
     const failed = Boolean(
         ws.translation.error || ws.translation.job?.state === 'failed',
@@ -45,8 +56,11 @@ export function WorkspaceBanners({
         ws.translation.job?.state === 'queued' || ws.translation.pending;
 
     let progressTitle = copy('running');
-    if (ws.autoDetecting) progressTitle = copy('detecting');
-    else if (queued) progressTitle = copy('queued');
+    if (ws.autoDetecting) {
+        progressTitle = copy('detecting');
+    } else if (queued) {
+        progressTitle = copy('queued');
+    }
 
     return (
         <div className={styles.banners}>

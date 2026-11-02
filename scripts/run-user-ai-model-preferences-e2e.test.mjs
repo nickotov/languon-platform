@@ -21,6 +21,7 @@ test('accepts explicit dedicated loopback targets and runs only the mapped journ
     assert.doesNotThrow(() =>
         assertDisposableEnvironment(disposableEnvironment),
     );
+
     const original = { ...process.env };
     Object.assign(process.env, disposableEnvironment);
     try {
@@ -29,10 +30,14 @@ test('accepts explicit dedicated loopback targets and runs only the mapped journ
         });
     } finally {
         for (const name of Object.keys(disposableEnvironment)) {
-            if (original[name] === undefined) delete process.env[name];
-            else process.env[name] = original[name];
+            if (original[name] === undefined) {
+                delete process.env[name];
+            } else {
+                process.env[name] = original[name];
+            }
         }
     }
+
     assert.deepEqual(calls, [
         [
             'pnpm',
@@ -51,6 +56,7 @@ test('rejects missing, default-port, and mismatched targets before any test comm
         () => assertDisposableEnvironment({}),
         /ALLOW_DISPOSABLE_DATABASE_TESTS=true/,
     );
+
     assert.throws(
         () =>
             assertDisposableEnvironment({
@@ -60,6 +66,7 @@ test('rejects missing, default-port, and mismatched targets before any test comm
             }),
         /non-default port/,
     );
+
     assert.throws(
         () =>
             assertDisposableEnvironment({

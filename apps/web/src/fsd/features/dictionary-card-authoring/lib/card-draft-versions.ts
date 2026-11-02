@@ -69,12 +69,13 @@ export function createDraftVersionState(
     proposal: DictionaryCardAuthoringProposal | null,
 ): DraftVersionState {
     const proposalVersion = createDraftVersion(card, proposal);
-    if (!card || !proposal)
+    if (!card || !proposal) {
         return {
             activeIndex: 0,
             awaitingSuccessor: false,
             items: [proposalVersion],
         };
+    }
 
     return {
         activeIndex: 1,
@@ -97,6 +98,7 @@ export function cardDraftChanged(
               >
           ).some((field) => draft.values[field] !== card.values[field])
         : Object.values(draft.values).some((value) => Boolean(value?.trim()));
+
     return (
         valuesChanged ||
         contextChanged ||
@@ -111,7 +113,10 @@ export function cardDraftChanged(
 export function cardAuthoringProposalKey(
     proposal: DictionaryCardAuthoringProposal | null,
 ) {
-    if (!proposal) return null;
+    if (!proposal) {
+        return null;
+    }
+
     return JSON.stringify({
         source: proposal.source,
         sourceResult: proposal.sourceResult ?? null,

@@ -11,6 +11,7 @@ function requiredString(value, name) {
     if (typeof value !== 'string' || value.trim() === '') {
         throw new Error(`${name} is required.`);
     }
+
     return value.trim();
 }
 
@@ -18,6 +19,7 @@ export function validateAdminOperatorRequest(input) {
     if (!input || typeof input !== 'object' || Array.isArray(input)) {
         throw new Error('Admin operator request must be a JSON object.');
     }
+
     const allowedKeys = new Set([
         'action',
         'actorEmail',
@@ -25,36 +27,49 @@ export function validateAdminOperatorRequest(input) {
         'email',
         'reason',
     ]);
+
     for (const key of Object.keys(input)) {
-        if (!allowedKeys.has(key))
+        if (!allowedKeys.has(key)) {
             throw new Error(`Unknown request field ${key}.`);
+        }
     }
+
     const action = requiredString(input.action, 'action');
     if (!['grant', 'list', 'prune', 'revoke'].includes(action)) {
         throw new Error('action must be grant, revoke, list, or prune.');
     }
+
     if (action === 'list') {
         if (Object.keys(input).some((key) => key !== 'action')) {
             throw new Error('The list action does not accept mutation fields.');
         }
+
         return { action };
     }
+
     if (input.confirm !== CONFIRMATION) {
         throw new Error(`confirm must be the literal ${CONFIRMATION}.`);
     }
+
     const actorEmail = input.actorEmail;
     if (actorEmail !== undefined && !EMAIL_PATTERN.test(actorEmail)) {
         throw new Error('actorEmail must be a valid email address.');
     }
+
     const reason = requiredString(input.reason, 'reason');
     if (reason.length < 5 || reason.length > 500) {
         throw new Error('reason must contain between 5 and 500 characters.');
     }
+
     if (action === 'prune') {
-        if (!actorEmail) throw new Error('actorEmail is required for prune.');
+        if (!actorEmail) {
+            throw new Error('actorEmail is required for prune.');
+        }
+
         if (input.email !== undefined) {
             throw new Error('email is not accepted for prune.');
         }
+
         return {
             action,
             actorEmail,
@@ -62,10 +77,12 @@ export function validateAdminOperatorRequest(input) {
             reason,
         };
     }
+
     const email = requiredString(input.email, 'email');
     if (!EMAIL_PATTERN.test(email)) {
         throw new Error('email must be a valid email address.');
     }
+
     return {
         action,
         ...(actorEmail ? { actorEmail } : {}),
@@ -111,14 +128,17 @@ export async function runRemoteAdminOperator({
             },
         );
     }
+
     if (!state.activeSlot || !state.current) {
         throw new Error('No active deployment exists for the environment.');
     }
+
     if (!sameRelease(state.current, manifest)) {
         throw new Error(
             'The supplied manifest is not the active release. Refusing to run an operator command against an unverified image.',
         );
     }
+
     const projectPrefix =
         config.DEPLOY_PROJECT_PREFIX || `languon-${environment}`;
     const appEnvironment = environment === 'stage' ? 'staging' : 'production';
@@ -162,6 +182,7 @@ export async function runRemoteAdminOperator({
             input: `${JSON.stringify(commandRequest(request))}\n`,
         },
     );
+
     return {
         action: request.action,
         environment,
@@ -173,5 +194,6 @@ export async function runRemoteAdminOperator({
 
 function commandRequest(request) {
     const { action, ...parameters } = request;
+
     return { command: action, ...parameters };
 }

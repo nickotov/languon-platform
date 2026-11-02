@@ -22,6 +22,7 @@ export function FlowRoutingFields({
                 ?.supportedFlows.includes(flow),
         );
         const isFreeInterview = flow === 'portrait-interview';
+
         return {
             key: flow,
             forceRender: true,

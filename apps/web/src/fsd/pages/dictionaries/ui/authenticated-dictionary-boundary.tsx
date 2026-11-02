@@ -23,7 +23,9 @@ export function AuthenticatedDictionaryBoundary({
     const status = useSessionStore((state) => state.status);
 
     useEffect(() => {
-        if (status !== 'signed-out') return;
+        if (status !== 'signed-out') {
+            return;
+        }
 
         router.replace(
             href(`/login?${new URLSearchParams({ returnTo }).toString()}`),

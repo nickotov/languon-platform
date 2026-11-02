@@ -43,14 +43,21 @@ async function acquirePlatformLock(lockPath) {
         let settled = false;
         child.once('error', reject);
         child.once('exit', () => {
-            if (!settled) resolve(false);
+            if (!settled) {
+                resolve(false);
+            }
         });
+
         child.stdout.once('data', (value) => {
             settled = true;
             resolve(String(value).includes('acquired'));
         });
     });
-    if (!acquired) return null;
+
+    if (!acquired) {
+        return null;
+    }
+
     return async () => {
         if (!exited) {
             child.stdin.end();
@@ -70,21 +77,28 @@ export async function acquireDeployLock(stateDirectory, identity) {
             `A deployment is already running (${await ownerDescription(ownerPath)}).`,
         );
     }
+
     try {
         await writeFile(ownerPath, ownerValue, { mode: 0o600 });
     } catch (error) {
         await unlockPlatform();
+
         throw error;
     }
 
     let released = false;
+
     return async () => {
-        if (released) return;
+        if (released) {
+            return;
+        }
+
         released = true;
         try {
             const currentOwner = await readFile(ownerPath, 'utf8').catch(
                 () => null,
             );
+
             if (currentOwner === ownerValue) {
                 await rm(ownerPath, { force: true });
             }

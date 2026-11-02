@@ -49,12 +49,14 @@ describe('dictionary translation context', () => {
         expect(
             normalizeTranslationContext('  legal\ncontract language  '),
         ).toBe('legal\ncontract language');
+
         expect(normalizeTranslationContext('   ')).toBeNull();
         expect(normalizeTranslationContext(null)).toBeNull();
 
         const exactLimit = '😀'.repeat(
             dictionaryLimits.translationContextCodePoints,
         );
+
         expect(normalizeTranslationContext(exactLimit)).toBe(exactLimit);
         expect(() =>
             normalizeTranslationContext(`${exactLimit}😀`),
@@ -73,12 +75,14 @@ describe('dictionary translation context', () => {
                 dictionary: 'travel vocabulary',
             }),
         ).toBe('medical sense');
+
         expect(
             resolveTranslationContext({
                 card: null,
                 dictionary: 'travel vocabulary',
             }),
         ).toBe('travel vocabulary');
+
         expect(
             resolveTranslationContext({ card: null, dictionary: null }),
         ).toBeNull();
@@ -88,6 +92,7 @@ describe('dictionary translation context', () => {
         expect(
             DictionaryCardRevisionSnapshotSchema.parse(legacySnapshot),
         ).toEqual(legacySnapshot);
+
         expect(
             DictionaryCardRevisionSnapshotSchema.parse({
                 ...legacySnapshot,
@@ -100,6 +105,7 @@ describe('dictionary translation context', () => {
             rawTranslationContext: null,
             schemaVersion: 2,
         });
+
         expect(() =>
             DictionaryCardRevisionSnapshotSchema.parse({
                 ...legacySnapshot,

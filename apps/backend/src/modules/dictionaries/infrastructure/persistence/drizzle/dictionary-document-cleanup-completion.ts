@@ -25,8 +25,10 @@ export async function completeCleanup(
             upload.tombstoneStorageVersionId !==
                 input.deletedTombstoneVersionId ||
             !upload.dataVersionsDeletedAt
-        )
+        ) {
             return false;
+        }
+
         await tx
             .update(dictionaryDocumentObjectVersionsTable)
             .set({ deletedAt: input.context.now, isCurrent: false })

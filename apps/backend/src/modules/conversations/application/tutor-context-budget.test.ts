@@ -19,12 +19,14 @@ const context = {
         explanationLevel: 'auto' as const,
     },
 };
+
 describe('conversation admitted input budget', () => {
     it('bounds a short new prompt using real framing instead of the model context maximum', () => {
         const bound = tutorAdmissionInputBytes(context, [], []);
         expect(bound).toBeGreaterThan(tutorReservedInputBytes(context) + 4096);
         expect(bound).toBeLessThan(64000);
     });
+
     it('includes retained source, history and memory bytes before dispatch', () => {
         const initial = tutorAdmissionInputBytes(context, [], []);
         const expanded = tutorAdmissionInputBytes(
@@ -38,6 +40,7 @@ describe('conversation admitted input budget', () => {
             [{ text: 'history'.repeat(1000) }],
             [{ observations: 'memory'.repeat(1000) }],
         );
+
         expect(expanded - initial).toBeGreaterThan(15000);
     });
 });

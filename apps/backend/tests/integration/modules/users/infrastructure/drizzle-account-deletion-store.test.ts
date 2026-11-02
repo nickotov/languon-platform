@@ -61,6 +61,7 @@ async function seed() {
         status: 'active',
         updatedAt: createdAt,
     });
+
     await database.insert(authSessionsTable).values({
         absoluteExpiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60_000),
         authenticatedAt: createdAt,
@@ -72,6 +73,7 @@ async function seed() {
         updatedAt: createdAt,
         userId,
     });
+
     await database.insert(dictionariesTable).values({
         createdAt,
         id: dictionaryId,
@@ -86,7 +88,9 @@ async function seed() {
         updatedAt: createdAt,
         visibility: 'unlisted',
     });
+
     await database.insert(dictionarySettingsTable).values({ dictionaryId });
+
     return {
         dictionaryId,
         now,
@@ -106,6 +110,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await resetTestDatabase(client);
             await migrateTestDatabase(client);
         });
+
         beforeEach(async () => {
             await database.delete(accountDeletionRequestsTable);
             await database.delete(adminAuditEventsTable);
@@ -116,6 +121,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await database.delete(authSessionsTable);
             await database.delete(usersTable);
         });
+
         afterAll(async () => {
             await client.end();
         });
@@ -129,42 +135,51 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     versions.push(version);
                 },
             });
+
             expect(versions).toEqual([2]);
             const [user] = await database
                 .select()
                 .from(usersTable)
                 .where(eq(usersTable.id, input.userId));
+
             expect(user).toMatchObject({
                 status: 'deletion_pending',
                 version: 2,
             });
+
             const [session] = await database
                 .select()
                 .from(authSessionsTable)
                 .where(eq(authSessionsTable.id, input.sessionId));
+
             expect(session).toMatchObject({
                 revocationReason: 'account_deletion',
                 revokedAt: expect.any(Date),
             });
+
             const [dictionary] = await database
                 .select()
                 .from(dictionariesTable)
                 .where(eq(dictionariesTable.id, input.dictionaryId));
+
             expect(dictionary).toMatchObject({
                 visibility: 'private',
                 shareLocator: null,
                 shareKeyDigest: null,
                 version: 2,
             });
+
             const [request] = await database
                 .select()
                 .from(accountDeletionRequestsTable)
                 .where(eq(accountDeletionRequestsTable.userId, input.userId));
+
             expect(request?.state).toBe('pending');
             expect(request?.purgeAt.getTime()).toBe(
                 request!.scheduledAt.getTime() + 30 * 24 * 60 * 60_000,
             );
         });
+
         it('keeps old Knowledge links revoked after administrator cancellation and permits a fresh link', async () => {
             const input = await seed();
             const knowledge = new DrizzleKnowledgeStore(
@@ -206,10 +221,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect((await knowledge.readShared(old.locator, old.key)).id).toBe(
                 note.id,
             );
+
             await store.schedule({ ...input, beforeCommit: async () => {} });
             expect(await database.select().from(knowledgeSharesTable)).toEqual(
                 [],
             );
+
             await expect(
                 knowledge.readShared(old.locator, old.key),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
@@ -217,9 +234,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const adminId = randomUUID(),
                 adminSessionId = randomUUID(),
                 now = new Date();
+
             await database
                 .insert(usersTable)
                 .values({ id: adminId, status: 'active' });
+
             await database.insert(userEmailsTable).values([
                 {
                     id: randomUUID(),
@@ -236,12 +255,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     verifiedAt: now,
                 },
             ]);
+
             await database.insert(adminMembershipsTable).values({
                 id: randomUUID(),
                 userId: adminId,
                 grantedByUserId: adminId,
                 grantReason: 'Verified test administrator',
             });
+
             await database.insert(authSessionsTable).values({
                 id: adminSessionId,
                 userId: adminId,
@@ -253,9 +274,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 createdAt: now,
                 updatedAt: now,
             });
+
             const admin = new DrizzleAdministrationStore(database, {
                 recordCancellation: async () => {},
             });
+
             await admin.cancelUserDeletion({
                 actorSessionId: adminSessionId,
                 actorUserId: adminId,
@@ -269,9 +292,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expiresAt: new Date(now.getTime() + 180 * 24 * 3600_000),
                 },
             });
+
             await expect(
                 knowledge.readShared(old.locator, old.key),
             ).rejects.toMatchObject({ code: 'knowledge_not_found' });
+
             const fresh = await knowledge.issueShare(input.userId, note.id);
             expect(fresh.locator).not.toBe(old.locator);
             expect(
@@ -289,20 +314,24 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     },
                 }),
             ).rejects.toThrow('journal unavailable');
+
             const [user] = await database
                 .select()
                 .from(usersTable)
                 .where(eq(usersTable.id, input.userId));
+
             expect(user).toMatchObject({ status: 'active', version: 1 });
             const [session] = await database
                 .select()
                 .from(authSessionsTable)
                 .where(eq(authSessionsTable.id, input.sessionId));
+
             expect(session?.revokedAt).toBeNull();
             const [dictionary] = await database
                 .select()
                 .from(dictionariesTable)
                 .where(eq(dictionariesTable.id, input.dictionaryId));
+
             expect(dictionary?.visibility).toBe('unlisted');
             expect(
                 await database.select().from(accountDeletionRequestsTable),
@@ -314,6 +343,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const dictionaries = new DrizzleDictionaryStore(database, {
                 generate: randomUUID,
             });
+
             await store.schedule({ ...input, beforeCommit: async () => {} });
             for (const expectedDictionaryVersion of [1, 2]) {
                 await expect(
@@ -331,10 +361,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     }),
                 ).rejects.toBeInstanceOf(DictionaryVersionConflictError);
             }
+
             const [dictionary] = await database
                 .select()
                 .from(dictionariesTable)
                 .where(eq(dictionariesTable.id, input.dictionaryId));
+
             expect(dictionary).toMatchObject({
                 visibility: 'private',
                 shareLocator: null,
@@ -348,9 +380,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await client.unsafe(
                 "create function reject_deletion_test() returns trigger language plpgsql as $$ begin if new.status = 'deletion_pending' then raise exception 'injected SQL failure'; end if; return new; end $$",
             );
+
             await client.unsafe(
                 'create trigger reject_deletion_test before update on users for each row execute function reject_deletion_test()',
             );
+
             try {
                 await expect(
                     store.schedule({
@@ -367,12 +401,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await client.unsafe(
                     'drop trigger reject_deletion_test on users',
                 );
+
                 await client.unsafe('drop function reject_deletion_test()');
             }
+
             const [user] = await database
                 .select()
                 .from(usersTable)
                 .where(eq(usersTable.id, input.userId));
+
             expect(user?.status).toBe('active');
             await expect(
                 runAccountDeletionRecoveryGate({
@@ -399,13 +436,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 id: randomUUID(),
                 userId: input.userId,
             });
+
             await expect(
                 store.schedule({ ...input, beforeCommit: async () => {} }),
             ).rejects.toBeInstanceOf(AccountDeletionOwnerTransferRequiredError);
+
             const [user] = await database
                 .select()
                 .from(usersTable)
                 .where(eq(usersTable.id, input.userId));
+
             expect(user?.status).toBe('active');
         });
     },

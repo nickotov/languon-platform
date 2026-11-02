@@ -126,19 +126,24 @@ describe('dictionary card proposal generators', () => {
         const invalidError = await invalid
             .generate(request())
             .catch((caught) => caught);
+
         expect(invalidError).toBeInstanceOf(
             CardProposalGeneratorExecutionError,
         );
+
         expect(invalidError).toMatchObject({
             category: 'invalid_model_output',
         });
+
         expect(String(invalidError)).not.toContain('Too many.');
 
         const controller = new AbortController();
         const delayed = new DeterministicCardProposalGenerator(async () => {
             controller.abort(new DOMException('Stopped', 'AbortError'));
+
             return proposal;
         });
+
         await expect(
             delayed.generate(request(controller.signal)),
         ).rejects.toMatchObject({ name: 'AbortError' });
@@ -171,6 +176,7 @@ describe('dictionary card proposal generators', () => {
             proposal,
             usage: { inputTokens: 120, outputTokens: 48 },
         });
+
         expect(generate).toHaveBeenCalledWith(JSON.stringify(requestInput), {
             abortSignal: generationRequest.signal,
             modelSettings: { maxOutputTokens: 40_960, maxRetries: 0 },
@@ -226,6 +232,7 @@ describe('dictionary card proposal generators', () => {
             category: 'invalid_model_output',
             reason: 'invalid_input',
         });
+
         expect(generate).not.toHaveBeenCalled();
     });
 
@@ -266,6 +273,7 @@ describe('dictionary card proposal generators', () => {
                 },
             }),
         ).resolves.toEqual(proposal);
+
         expect(generate).toHaveBeenCalledOnce();
     });
 
@@ -312,6 +320,7 @@ describe('dictionary card proposal generators', () => {
                 },
             }),
         ).resolves.toEqual(proposal);
+
         expect(generate).toHaveBeenCalledOnce();
     });
 
@@ -330,6 +339,7 @@ describe('dictionary card proposal generators', () => {
                 }),
             },
         });
+
         await expect(generator.generate(request())).rejects.toMatchObject({
             category: 'invalid_model_output',
             usage: { inputTokens: 120, outputTokens: 48, cacheReadTokens: 30 },
@@ -366,6 +376,7 @@ describe('dictionary card proposal generators', () => {
         const error = await generator
             .generate(request())
             .catch((caught) => caught);
+
         expect(error).toBeInstanceOf(CardProposalGeneratorExecutionError);
         expect(error).toMatchObject({ category: 'provider_unavailable' });
         expect(String(error)).not.toContain(sentinel);
@@ -391,9 +402,11 @@ describe('dictionary card proposal generators', () => {
                 generate,
             } satisfies DictionaryCardGenerationStructuredAgent,
         });
+
         await expect(failClosed.readiness!(signal)).rejects.toMatchObject({
             category: 'provider_unavailable',
         });
+
         expect(generate).not.toHaveBeenCalled();
     });
 
@@ -440,6 +453,7 @@ describe('dictionary card proposal generators', () => {
             providerBudget: defaultDictionaryGenerationProviderBudgetPolicy,
             providerProbeFetch,
         });
+
         await expect(rejected.readiness!(signal)).rejects.toMatchObject({
             category: 'provider_unavailable',
         });

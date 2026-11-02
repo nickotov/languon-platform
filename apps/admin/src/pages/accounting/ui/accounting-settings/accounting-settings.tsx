@@ -36,21 +36,25 @@ export function AccountingSettings() {
                     });
                 }
             } catch (caught) {
-                if (!signal?.aborted)
+                if (!signal?.aborted) {
                     setError(
                         caught instanceof Error
                             ? caught.message
                             : 'Unable to load accounting settings.',
                     );
+                }
             }
         },
         [form],
     );
+
     useEffect(() => {
         const controller = new AbortController();
         void load(controller.signal);
+
         return () => controller.abort();
     }, [load]);
+
     const reload = () => void load();
     const submit = async (
         values: OperatorBudgetValues & {
@@ -58,11 +62,16 @@ export function AccountingSettings() {
             reason: string;
         },
     ) => {
-        if (!settings) return;
-        if (!operatorBudgetOrderValid(values)) {
-            setError(t('accounting.operatorBudgetOrder'));
+        if (!settings) {
             return;
         }
+
+        if (!operatorBudgetOrderValid(values)) {
+            setError(t('accounting.operatorBudgetOrder'));
+
+            return;
+        }
+
         setError(null);
         setPending(true);
         try {
@@ -78,6 +87,7 @@ export function AccountingSettings() {
                     values.maxProviderCostUsdPerDay.trim() || null,
                 reason: values.reason,
             });
+
             await load();
         } catch (caught) {
             setError(
@@ -90,6 +100,7 @@ export function AccountingSettings() {
         }
     };
     const unavailable = !settings || pending;
+
     return (
         <Card title={t('accounting.settings')}>
             <Typography.Paragraph>

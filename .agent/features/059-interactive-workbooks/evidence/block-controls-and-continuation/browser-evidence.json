@@ -1,0 +1,56 @@
+{
+  "flow": "interactive-workbooks",
+  "scenario": "author-blocks-publish-practice",
+  "guideRevision": "sha256:7714455deb2c9ee8",
+  "run": "0d838129-7006-4845-a8b7-c406837ddaa8",
+  "result": "2/2 workbook browser journeys passed; all14 required flows now validated via critical-union.json",
+  "sourceManifest": "9459f983819421d9066f3205f8c83fa896ca63d19e304700d25b709c96fcba6c",
+  "observations": [
+    "Explicit typed block preview/apply; no acknowledgement-as-prose suggestion",
+    "No outer proposal border/padding",
+    "Node selection without prose bubble; keyboard selection/menu dismissal",
+    "Native source-first drag; stable unique identities and exact saved/reloaded order",
+    "Heading-aligned settings menus at desktop/mobile",
+    "No runtime(page) pageerror/consoleerror/unexpected HTTP5xx"
+  ],
+  "artifacts": [
+    {
+      "file": "editor-inline-block-settings.png",
+      "source": "test-results/critical-flows/0d838129-7006-4845-a8b7-c406837ddaa8/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/editor-inline-block-settings.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "sha256": "9408c43163a13ac2f1d9065fdd03e87481bbc85d8bc38b3ef534195b8670fa07"
+    },
+    {
+      "file": "editor-block-settings-mobile.png",
+      "source": "test-results/critical-flows/0d838129-7006-4845-a8b7-c406837ddaa8/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/editor-block-settings-mobile.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sha256": "62e6bb12bafba995cd64f279c42cd6982ac9d6161102bce425a3bb1f9b9c1a05"
+    },
+    {
+      "file": "editor-populated-desktop.png",
+      "source": "test-results/critical-flows/0d838129-7006-4845-a8b7-c406837ddaa8/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/editor-populated-desktop.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "sha256": "58475db449b1677471e59d013edde4f89b652fd77286c77fa9baf947ae795f2e"
+    },
+    {
+      "file": "chat-vocabulary-proposal.png",
+      "source": "test-results/critical-flows/0d838129-7006-4845-a8b7-c406837ddaa8/interactive-workbooks-artifacts/interactive-workbooks.jour-cbc6b--and-saves-private-practice/chat-vocabulary-proposal.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "sha256": "b9ecac7af82bcac19144cd22284b6e102d266c90d933a0febfdc8a5c9dcbd38f"
+    }
+  ],
+  "currentManifest": "9712b62705363f0b10f696e30dbe5a794f9f55740c2e64a7afc32bfab6dae42d",
+  "reuseReason": "The later change is a test-local Texts integration watchdog only; browser runtime, fixture, screenshots, assertions and guide revision remain unchanged."
+}

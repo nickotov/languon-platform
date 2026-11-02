@@ -16,6 +16,7 @@ export const creditBalanceApi = {
                 ? AbortSignal.any([signal, AbortSignal.timeout(15_000)])
                 : AbortSignal.timeout(15_000),
         });
+
         if (!response.ok) {
             throw new BrowserApiError(response.status, {
                 code: 'credit_balance_unavailable',
@@ -23,6 +24,7 @@ export const creditBalanceApi = {
                 message: 'Credit balance could not be loaded.',
             });
         }
+
         return LearnerAiCreditBalanceSchema.parse(await response.json());
     },
 };

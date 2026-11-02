@@ -29,8 +29,10 @@ function fixture() {
             refreshTokenTtlSeconds: 3600,
         }),
     });
+
     return { app, consume, resolve, prepare, confirm, authenticate };
 }
+
 const source = () => ({
     kind: 'dictionary-field',
     access: { kind: 'owner', dictionaryId: randomUUID() },
@@ -39,6 +41,7 @@ const source = () => ({
     expectedDictionaryVersion: 1,
     expectedVersion: 1,
 });
+
 describe('speech generation burst admission HTTP boundary', () => {
     it.each(['prepare', 'confirm'] as const)(
         'authenticates %s before consuming or accessing sources',
@@ -57,22 +60,27 @@ describe('speech generation burst admission HTTP boundary', () => {
                         : { quoteId: randomUUID(), operationId: randomUUID() },
                 ),
             });
+
             expect(f.consume).not.toHaveBeenCalled();
             expect(f.resolve).not.toHaveBeenCalled();
             expect(f.prepare).not.toHaveBeenCalled();
             expect(f.confirm).not.toHaveBeenCalled();
         },
     );
+
     it.each(['prepare', 'confirm'] as const)(
         'rejects burst and Redis outage before any %s database work',
         async (operation) => {
             for (const unavailable of [false, true]) {
                 const f = fixture();
-                if (unavailable)
+                if (unavailable) {
                     f.consume.mockRejectedValue(
                         new GenerationBurstUnavailableError(),
                     );
-                else f.consume.mockResolvedValue({ allowed: false });
+                } else {
+                    f.consume.mockResolvedValue({ allowed: false });
+                }
+
                 const response = await f.app.request(`/speech/${operation}`, {
                     method: 'POST',
                     headers: {
@@ -88,6 +96,7 @@ describe('speech generation burst admission HTTP boundary', () => {
                               },
                     ),
                 });
+
                 expect(response.status).toBe(unavailable ? 503 : 429);
                 expect(f.authenticate).toHaveBeenCalledOnce();
                 expect(f.consume).toHaveBeenCalledWith(
@@ -96,6 +105,7 @@ describe('speech generation burst admission HTTP boundary', () => {
                         capability: `speech-${operation}`,
                     }),
                 );
+
                 expect(f.resolve).not.toHaveBeenCalled();
                 expect(f.prepare).not.toHaveBeenCalled();
                 expect(f.confirm).not.toHaveBeenCalled();

@@ -10,6 +10,7 @@ import { render } from './render';
 afterEach(cleanup);
 const providerMessage =
     '<script>Provider credentials or arbitrary raw error</script>';
+
 function error(code: string) {
     return new ConversationApiError(400, {
         code,
@@ -25,15 +26,54 @@ it('offers a safe retry without revealing a model or sending learners to model s
             onRetry={vi.fn()}
         />,
     );
+
     expect(screen.getByRole('alert')).toHaveTextContent(
         'AI is unavailable right now',
     );
+
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(
         screen.getByRole('button', { name: 'Retry response' }),
     ).toBeEnabled();
+
     expect(screen.queryByText(providerMessage)).not.toBeInTheDocument();
 });
+
+it.each([
+    [
+        'en',
+        'AI could not complete this response. Your message is saved. You can retry.',
+    ],
+    [
+        'ru',
+        'ИИ не смог завершить ответ. Ваше сообщение сохранено. Можно повторить попытку.',
+    ],
+    [
+        'es',
+        'La IA no pudo completar esta respuesta. Tu mensaje está guardado. Puedes volver a intentarlo.',
+    ],
+    [
+        'fr',
+        'L’IA n’a pas pu terminer cette réponse. Votre message est conservé. Vous pouvez réessayer.',
+    ],
+] as const)(
+    'explains a generation failure in %s without mislabeling it as a conversation loading error',
+    (locale, message) => {
+        const retry = vi.fn();
+        render(
+            <ConversationErrorNotice
+                error={error('generation_failed')}
+                onRetry={retry}
+            />,
+            { locale },
+        );
+
+        expect(screen.getByRole('alert')).toHaveTextContent(message);
+        expect(screen.queryByText(providerMessage)).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button'));
+        expect(retry).toHaveBeenCalledOnce();
+    },
+);
 
 it('directs exhausted credits to the balance instead of a model change or blind retry', () => {
     render(
@@ -42,10 +82,12 @@ it('directs exhausted credits to the balance instead of a model change or blind 
             onRetry={vi.fn()}
         />,
     );
+
     expect(screen.getByRole('alert')).toHaveTextContent('Check your balance');
     expect(
         screen.getByRole('link', { name: 'View credit balance' }),
     ).toHaveAttribute('href', '/profile?tab=credits');
+
     expect(
         screen.queryByRole('button', { name: 'Retry response' }),
     ).not.toBeInTheDocument();
@@ -59,6 +101,7 @@ it('offers retry for temporary capacity exhaustion and keeps unknown failures ge
             onRetry={retry}
         />,
     );
+
     expect(screen.getByRole('alert')).toHaveTextContent('assistant is busy');
     fireEvent.click(screen.getByRole('button', { name: 'Retry response' }));
     expect(retry).toHaveBeenCalledOnce();
@@ -69,9 +112,11 @@ it('offers retry for temporary capacity exhaustion and keeps unknown failures ge
             onRetry={retry}
         />,
     );
+
     expect(screen.getByRole('alert')).toHaveTextContent(
         'Could not load or update',
     );
+
     expect(screen.queryByText(providerMessage)).not.toBeInTheDocument();
 });
 
@@ -128,7 +173,12 @@ it('associates each failed/cancelled Retry with its original learner question', 
         ],
         turns: [
             { ...turn, id: firstId, status: 'cancelled' },
-            { ...turn, id: secondId, status: 'failed' },
+            {
+                ...turn,
+                id: secondId,
+                status: 'failed',
+                failureCode: 'generation_failed',
+            },
         ],
         drafts: [],
     });
@@ -142,15 +192,27 @@ it('associates each failed/cancelled Retry with its original learner question', 
             onPropose={vi.fn()}
         />,
     );
+
     const failed = screen.getByRole('region', {
         name: 'Incomplete response: Provider failed question',
     });
+
+    expect(within(failed).getByRole('alert')).toHaveTextContent(
+        'AI could not complete this response. Your message is saved.',
+    );
+
+    expect(within(failed).getByRole('alert')).not.toHaveTextContent(
+        'Could not load or update',
+    );
+
     fireEvent.click(
         within(failed).getByRole('button', { name: 'Retry response' }),
     );
+
     expect(retry).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ id: secondId }),
     );
+
     expect(
         within(
             screen.getByRole('region', {
@@ -230,25 +292,30 @@ it.each([
                 onPropose={vi.fn()}
             />,
         );
+
         expect(
             screen.queryByRole('dialog', { name: 'Usage' }),
         ).not.toBeInTheDocument();
+
         expect(
             screen.queryByRole('button', { name: /Charged credits/ }),
         ).not.toBeInTheDocument();
+
         expect(container).toHaveTextContent(
             'A river bank is land beside a river.',
         );
+
         expect(container).not.toHaveTextContent('64000');
         expect(container).not.toHaveTextContent('4096');
-        if (status === 'failed')
+        if (status === 'failed') {
             expect(
                 screen.getByRole('button', { name: 'Retry response' }),
             ).toBeEnabled();
-        else
+        } else {
             expect(
                 screen.getByRole('button', { name: 'Copy', exact: true }),
             ).toBeEnabled();
+        }
     },
 );
 
@@ -259,9 +326,11 @@ it('directs an oversized context to shorten its question or remove attachments b
             onRetry={vi.fn()}
         />,
     );
+
     expect(screen.getByRole('alert')).toHaveTextContent(
         'Shorten the question or remove attachments',
     );
+
     expect(
         screen.queryByRole('button', { name: 'Retry response' }),
     ).not.toBeInTheDocument();

@@ -47,14 +47,20 @@ export function AiCreditPolicyDialog({
     const expires = Form.useWatch('expires', form);
 
     const handleOpenChange = (visible: boolean) => {
-        if (!visible) return;
+        if (!visible) {
+            return;
+        }
+
         const initialValues: PolicyFields = {
             expires: account.unlimitedUntil !== null,
             mode: account.configuredMode,
             reason: '',
         };
         const unlimitedUntil = toLocalDateTime(account.unlimitedUntil);
-        if (unlimitedUntil) initialValues.unlimitedUntil = unlimitedUntil;
+        if (unlimitedUntil) {
+            initialValues.unlimitedUntil = unlimitedUntil;
+        }
+
         form.setFieldsValue(initialValues);
     };
     const handleFinish = async (values: PolicyFields) => {
@@ -145,8 +151,12 @@ export function AiCreditPolicyDialog({
 }
 
 function toLocalDateTime(value: string | null) {
-    if (!value) return undefined;
+    if (!value) {
+        return undefined;
+    }
+
     const date = new Date(value);
     const offset = date.getTimezoneOffset() * 60_000;
+
     return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }

@@ -41,7 +41,9 @@ export function DictionarySharing({
     }
 
     async function copy() {
-        if (!capability) return;
+        if (!capability) {
+            return;
+        }
 
         const url = `${window.location.origin}/shared/dictionaries/${capability.shareId}#${capability.shareKey}`;
 
@@ -66,6 +68,18 @@ export function DictionarySharing({
         }
     }
 
+    function rotateShare() {
+        void rotate();
+    }
+
+    function copyShareLink() {
+        void copy();
+    }
+
+    function revokeShare() {
+        void revoke();
+    }
+
     return (
         <Card className={styles.card}>
             <h2 className={styles.title}>{t('dictionary.share.title')}</h2>
@@ -83,7 +97,7 @@ export function DictionarySharing({
                         {t('dictionary.share.once')}
                     </p>
                     <Button
-                        onClick={() => void copy()}
+                        onClick={copyShareLink}
                         type='button'
                         variant='secondary'
                     >
@@ -98,11 +112,7 @@ export function DictionarySharing({
                 {outcome}
             </p>
             <div className={styles.actions}>
-                <Button
-                    loading={pending}
-                    onClick={() => void rotate()}
-                    type='button'
-                >
+                <Button loading={pending} onClick={rotateShare} type='button'>
                     {dictionary.visibility === 'unlisted'
                         ? t('dictionary.share.rotate')
                         : t('dictionary.share.publish')}
@@ -110,7 +120,7 @@ export function DictionarySharing({
                 {dictionary.visibility === 'unlisted' ? (
                     <Button
                         disabled={pending}
-                        onClick={() => void revoke()}
+                        onClick={revokeShare}
                         type='button'
                         variant='danger'
                     >

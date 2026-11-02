@@ -50,29 +50,40 @@ export class SentenceSetup {
             hasMore: false,
         };
     }
+
     public subscribe = (listener: () => void) => {
         this.listeners.add(listener);
+
         return () => {
             this.listeners.delete(listener);
         };
     };
+
     public getSnapshot = () => this.state;
     private update(patch: Partial<State>) {
         this.state = { ...this.state, ...patch };
-        for (const listener of this.listeners) listener();
+        for (const listener of this.listeners) {
+            listener();
+        }
     }
+
     public enable = () => {
         this.enabled = true;
         this.refresh();
     };
+
     public stop = () => {
         this.enabled = false;
         this.prepareVersion++;
         this.entriesVersion++;
         this.entryRequest = false;
-        if (this.timer) clearTimeout(this.timer);
+        if (this.timer) {
+            clearTimeout(this.timer);
+        }
+
         this.timer = null;
     };
+
     public invalidate = () => {
         this.stop();
         this.cursor = null;
@@ -92,6 +103,7 @@ export class SentenceSetup {
             hasMore: false,
         });
     };
+
     public setConfiguration = (configuration: Configuration) => {
         this.update({
             configuration,
@@ -102,20 +114,27 @@ export class SentenceSetup {
             prepared: null,
             error: null,
         });
-        if (this.enabled) void this.prepare();
+
+        if (this.enabled) {
+            void this.prepare();
+        }
     };
+
     public setSelectedEntryIds = (selectedEntryIds: string[]) => {
         const distinct = [...new Set(selectedEntryIds)].slice(
             0,
             SENTENCE_LIMITS.selectedEntries,
         );
+
         this.update({ selectedEntryIds: distinct });
-        if (this.state.configuration.scope.type === 'manual')
+        if (this.state.configuration.scope.type === 'manual') {
             this.setConfiguration({
                 ...this.state.configuration,
                 scope: { type: 'manual', entryIds: distinct },
             });
+        }
     };
+
     public setSearch = (search: string) => {
         this.entriesVersion++;
         this.entryRequest = false;
@@ -126,26 +145,38 @@ export class SentenceSetup {
             hasMore: false,
             entriesError: null,
         });
-        if (this.timer) clearTimeout(this.timer);
-        if (this.enabled)
+
+        if (this.timer) {
+            clearTimeout(this.timer);
+        }
+
+        if (this.enabled) {
             this.timer = setTimeout(() => {
                 this.timer = null;
                 void this.entries(true);
             }, 250);
+        }
     };
+
     private async prepare() {
         const version = ++this.prepareVersion;
         const parsed = SentencePrepareRequestSchema.safeParse(
             this.state.configuration,
         );
+
         if (!parsed.success) {
             this.update({ loading: false, prepared: null });
+
             return;
         }
+
         this.update({ loading: true, error: null, prepared: null });
         try {
             const prepared = await this.api.prepare(parsed.data);
-            if (!this.enabled || version !== this.prepareVersion) return;
+            if (!this.enabled || version !== this.prepareVersion) {
+                return;
+            }
+
             this.update({
                 prepared,
                 loading: false,
@@ -155,7 +186,10 @@ export class SentenceSetup {
                 },
             });
         } catch (error) {
-            if (!this.enabled || version !== this.prepareVersion) return;
+            if (!this.enabled || version !== this.prepareVersion) {
+                return;
+            }
+
             const converted = toApiError(error);
             this.update({
                 loading: false,
@@ -167,8 +201,12 @@ export class SentenceSetup {
             });
         }
     }
+
     private async entries(reset: boolean) {
-        if (!this.enabled || this.entryRequest) return;
+        if (!this.enabled || this.entryRequest) {
+            return;
+        }
+
         const version = reset ? ++this.entriesVersion : this.entriesVersion;
         this.entryRequest = true;
         this.update({ entriesLoading: true, entriesError: null });
@@ -180,11 +218,16 @@ export class SentenceSetup {
                     : {}),
                 ...(!reset && this.cursor ? { cursor: this.cursor } : {}),
             });
-            if (!this.enabled || version !== this.entriesVersion) return;
+
+            if (!this.enabled || version !== this.entriesVersion) {
+                return;
+            }
+
             this.cursor = page.nextCursor;
             const entries = reset
                 ? page.entries
                 : [...this.state.entries, ...page.entries];
+
             this.update({
                 entries: [
                     ...new Map(
@@ -195,7 +238,10 @@ export class SentenceSetup {
                 hasMore: page.nextCursor !== null,
             });
         } catch (error) {
-            if (!this.enabled || version !== this.entriesVersion) return;
+            if (!this.enabled || version !== this.entriesVersion) {
+                return;
+            }
+
             const converted = toApiError(error);
             this.update({
                 entriesLoading: false,
@@ -210,14 +256,23 @@ export class SentenceSetup {
                     : {}),
             });
         } finally {
-            if (version === this.entriesVersion) this.entryRequest = false;
+            if (version === this.entriesVersion) {
+                this.entryRequest = false;
+            }
         }
     }
+
     public loadMore = async () => {
-        if (this.cursor) await this.entries(false);
+        if (this.cursor) {
+            await this.entries(false);
+        }
     };
+
     public refresh = () => {
-        if (!this.enabled) return;
+        if (!this.enabled) {
+            return;
+        }
+
         void this.prepare();
         void this.entries(true);
     };

@@ -36,12 +36,14 @@ export function useSentenceSession({
         () => new SentenceSession(accountedApi),
         [accountedApi, identity],
     );
+
     useEffect(() => () => store.stop(), [store]);
     const snapshot = useSyncExternalStore(
         store.subscribe,
         store.getSnapshot,
         store.getSnapshot,
     );
+
     return {
         ...snapshot,
         actionConsent,

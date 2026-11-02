@@ -56,12 +56,24 @@ export function ComposerPreferences({
     const resettableFields: Array<
         'replyLanguage' | 'tone' | 'detail' | 'wording' | 'approach'
     > = [];
+
     if (state.data?.useEnabled && value.portrait?.enabled !== false && items) {
-        if (items.explanationLanguages?.length)
+        if (items.explanationLanguages?.length) {
             resettableFields.push('replyLanguage');
-        for (const field of ['tone', 'detail', 'wording', 'approach'] as const)
-            if (items[field]) resettableFields.push(field);
+        }
+
+        for (const field of [
+            'tone',
+            'detail',
+            'wording',
+            'approach',
+        ] as const) {
+            if (items[field]) {
+                resettableFields.push(field);
+            }
+        }
     }
+
     return (
         <Popover>
             <PopoverTrigger asChild>

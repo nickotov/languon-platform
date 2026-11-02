@@ -35,12 +35,14 @@ export function createCapabilityPolicyRoutes(options: {
         defaultHook: (result, c) =>
             result.success ? undefined : c.json(invalid(), 400),
     });
+
     app.use('/admin/ai/capability-policies', async (c, next) => {
         c.header('Cache-Control', 'no-store');
         await next();
     });
+
     app.onError((error, c) => {
-        if (error instanceof CapabilityPolicyConflictError)
+        if (error instanceof CapabilityPolicyConflictError) {
             return c.json(
                 {
                     error: {
@@ -51,9 +53,13 @@ export function createCapabilityPolicyRoutes(options: {
                 },
                 409,
             );
+        }
+
         const mapped = mapAdministrationHttpError(error);
+
         return c.json(mapped.response(randomUUID()), mapped.status);
     });
+
     const json = (schema: z.ZodType) => ({
         content: { 'application/json': { schema } },
         description: 'Capability charging policy.',
@@ -65,6 +71,7 @@ export function createCapabilityPolicyRoutes(options: {
         409: json(AdminErrorResponseSchema),
         500: json(AdminErrorResponseSchema),
     };
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -82,16 +89,20 @@ export function createCapabilityPolicyRoutes(options: {
             const token = options.policy.parseBearerAuthorization(
                 c.req.header('Authorization') ?? null,
             );
+
             await options.administration.authorizeOperation(
                 token,
                 randomUUID(),
             );
+
             const policies = await options.database.transaction((tx) =>
                 new DrizzleCapabilityPolicyParticipant(tx).list(),
             );
+
             return c.json({ policies }, 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -112,7 +123,10 @@ export function createCapabilityPolicyRoutes(options: {
         }),
         async (c) => {
             const origin = c.req.header('Origin');
-            if (!origin) throw new InvalidRequestOriginError();
+            if (!origin) {
+                throw new InvalidRequestOriginError();
+            }
+
             options.policy.assertCookieRequestOrigin(origin);
             const token = options.policy.parseBearerAuthorization(
                 c.req.header('Authorization') ?? null,
@@ -131,13 +145,16 @@ export function createCapabilityPolicyRoutes(options: {
                     correlationId,
                 ),
             );
+
             return c.json(policy, 200);
         },
     );
+
     app.use('/admin/ai/accounting-settings', async (c, next) => {
         c.header('Cache-Control', 'no-store');
         await next();
     });
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -150,16 +167,20 @@ export function createCapabilityPolicyRoutes(options: {
             const token = options.policy.parseBearerAuthorization(
                 c.req.header('Authorization') ?? null,
             );
+
             await options.administration.authorizeOperation(
                 token,
                 randomUUID(),
             );
+
             const settings = await options.database.transaction((tx) =>
                 new DrizzleCapabilityPolicyParticipant(tx).settings(),
             );
+
             return c.json(settings, 200);
         },
     );
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -180,7 +201,10 @@ export function createCapabilityPolicyRoutes(options: {
         }),
         async (c) => {
             const origin = c.req.header('Origin');
-            if (!origin) throw new InvalidRequestOriginError();
+            if (!origin) {
+                throw new InvalidRequestOriginError();
+            }
+
             options.policy.assertCookieRequestOrigin(origin);
             const token = options.policy.parseBearerAuthorization(
                 c.req.header('Authorization') ?? null,
@@ -199,8 +223,10 @@ export function createCapabilityPolicyRoutes(options: {
                     correlationId,
                 ),
             );
+
             return c.json(settings, 200);
         },
     );
+
     return app;
 }

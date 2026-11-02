@@ -20,7 +20,10 @@ export async function importExistingSources(
     const lookupChunkSize = 500;
     for (let offset = 0; offset < sources.length; offset += lookupChunkSize) {
         const chunk = sources.slice(offset, offset + lookupChunkSize);
-        if (chunk.length === 0) continue;
+        if (chunk.length === 0) {
+            continue;
+        }
+
         const found = await database
             .select({
                 cardId: dictionaryCardsTable.id,
@@ -53,8 +56,9 @@ export function importDuplicateWarnings(
 ): DictionaryImportRowWarning[] {
     const firstExisting = new Map<string, string>();
     for (const existing of existingSources) {
-        if (!firstExisting.has(existing.normalizedSource))
+        if (!firstExisting.has(existing.normalizedSource)) {
             firstExisting.set(existing.normalizedSource, existing.cardId);
+        }
     }
 
     const firstImported = new Map<string, number>();
@@ -81,7 +85,9 @@ export function importDuplicateWarnings(
             });
         }
 
-        if (!firstImported.has(key)) firstImported.set(key, row.rowIndex);
+        if (!firstImported.has(key)) {
+            firstImported.set(key, row.rowIndex);
+        }
     }
 
     return warnings;

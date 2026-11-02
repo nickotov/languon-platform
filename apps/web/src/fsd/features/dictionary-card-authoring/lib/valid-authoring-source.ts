@@ -1,10 +1,12 @@
 export function isValidCardAuthoringSource(source: string) {
     const trimmed = source.trim();
+
     return (
         trimmed.length > 0 &&
         [...trimmed].length <= 200 &&
         ![...trimmed].some((character) => {
             const code = character.codePointAt(0)!;
+
             return (
                 code <= 8 ||
                 code === 11 ||

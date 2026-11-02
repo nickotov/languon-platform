@@ -53,9 +53,14 @@ function isPlainObject(value) {
 }
 
 function assertExactKeys(value, keys, path) {
-    if (!isPlainObject(value)) fail(path, 'must be an object');
+    if (!isPlainObject(value)) {
+        fail(path, 'must be an object');
+    }
+
     for (const key of Object.keys(value)) {
-        if (!keys.has(key)) fail(path, `unsupported key '${key}'`);
+        if (!keys.has(key)) {
+            fail(path, `unsupported key '${key}'`);
+        }
     }
 }
 
@@ -64,10 +69,12 @@ function requiredString(value, path, maximum) {
         typeof value === 'string' &&
         [...value].some((character) => {
             const codePoint = character.codePointAt(0);
+
             return (
                 codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f)
             );
         });
+
     if (
         typeof value !== 'string' ||
         value.trim() !== value ||
@@ -77,6 +84,7 @@ function requiredString(value, path, maximum) {
     ) {
         fail(path, `must be a trimmed 1-${maximum} character string`);
     }
+
     return value;
 }
 
@@ -84,20 +92,27 @@ function stringArray(value, path, maximumItems = 64) {
     if (!Array.isArray(value) || value.length > maximumItems) {
         fail(path, `must be an array with at most ${maximumItems} items`);
     }
+
     const result = value.map((item, index) =>
         requiredString(item, `${path}[${index}]`, 512),
     );
+
     if (new Set(result).size !== result.length) {
         fail(path, 'must not contain duplicate values');
     }
+
     return result;
 }
 
 function validateServiceUrls(value, path) {
-    if (value === undefined) return [];
+    if (value === undefined) {
+        return [];
+    }
+
     if (!Array.isArray(value) || value.length > 8) {
         fail(path, 'must be an array with at most 8 items');
     }
+
     const urls = value.map((item, index) => {
         const itemPath = `${path}[${index}]`;
         assertExactKeys(item, serviceUrlKeys, itemPath);
@@ -109,6 +124,7 @@ function validateServiceUrls(value, path) {
         } catch {
             fail(`${itemPath}.url`, 'must be a valid URL');
         }
+
         if (
             !['http:', 'https:'].includes(parsed.protocol) ||
             !['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname) ||
@@ -122,16 +138,22 @@ function validateServiceUrls(value, path) {
                 'must be a credential-free loopback HTTP(S) URL without query or fragment',
             );
         }
+
         return { label, url };
     });
+
     if (new Set(urls.map(({ url }) => url)).size !== urls.length) {
         fail(path, 'must not contain duplicate URLs');
     }
+
     return urls;
 }
 
 function validateSource(value, path) {
-    if (!isPlainObject(value)) fail(path, 'must be an object');
+    if (!isPlainObject(value)) {
+        fail(path, 'must be an object');
+    }
+
     const type = requiredString(value.type, `${path}.type`, 32);
     if (type === 'package-script') {
         assertExactKeys(value, packageSourceKeys, path);
@@ -139,16 +161,19 @@ function validateSource(value, path) {
         if (!commandIdPattern.test(script)) {
             fail(`${path}.script`, 'must be a package-script identifier');
         }
+
         const revision = requiredString(value.revision, `${path}.revision`, 71);
         if (!revisionPattern.test(revision)) {
             fail(`${path}.revision`, 'must be a SHA-256 revision');
         }
+
         return { revision, script, type };
     }
 
     if (type !== 'documented-command') {
         fail(`${path}.type`, 'must be package-script or documented-command');
     }
+
     assertExactKeys(value, documentedSourceKeys, path);
     const source = {
         args: stringArray(value.args, `${path}.args`, 32),
@@ -159,6 +184,7 @@ function validateSource(value, path) {
         revision: requiredString(value.revision, `${path}.revision`, 71),
         type,
     };
+
     if (
         isAbsolute(source.path) ||
         isAbsolute(source.cwd) ||
@@ -167,6 +193,7 @@ function validateSource(value, path) {
     ) {
         fail(path, 'paths must stay repository-relative');
     }
+
     if (
         /^(?:ba|z|fi|c)?sh$/iu.test(source.executable) ||
         /^(?:cmd|powershell|pwsh)(?:\.exe)?$/iu.test(source.executable) ||
@@ -175,9 +202,11 @@ function validateSource(value, path) {
     ) {
         fail(`${path}.executable`, 'shells and executable paths are forbidden');
     }
+
     if (!revisionPattern.test(source.revision)) {
         fail(`${path}.revision`, 'must be a SHA-256 revision');
     }
+
     return source;
 }
 
@@ -219,48 +248,63 @@ function validateCommand(value, index) {
         source: validateSource(value.source, `${path}.source`),
         title: requiredString(value.title, `${path}.title`, 100),
     };
+
     if (!commandIdPattern.test(command.id)) {
         fail(`${path}.id`, 'must be a lowercase command identifier');
     }
+
     if (typeof command.enabled !== 'boolean') {
         fail(`${path}.enabled`, 'must be boolean');
     }
+
     if (typeof command.batchEligible !== 'boolean') {
         fail(`${path}.batchEligible`, 'must be boolean');
     }
+
     if (!['service', 'task'].includes(command.kind)) {
         fail(`${path}.kind`, 'must be service or task');
     }
+
     if (!['codex-jsonl', 'plain'].includes(command.outputProtocol)) {
         fail(`${path}.outputProtocol`, 'must be plain or codex-jsonl');
     }
+
     if (command.enabled === (command.disabledReason !== null)) {
         fail(
             path,
             'enabled commands require null disabledReason and disabled commands require a reason',
         );
     }
+
     if (!command.enabled && command.batchEligible) {
         fail(path, 'disabled commands cannot be batch eligible');
     }
+
     if (command.conflictsWith.includes(command.id)) {
         fail(`${path}.conflictsWith`, 'cannot include the command itself');
     }
+
     return command;
 }
 
 export function validateCatalogDocument(value) {
     assertExactKeys(value, catalogKeys, 'catalog');
-    if (value.version !== 1) fail('catalog.version', 'must equal 1');
+    if (value.version !== 1) {
+        fail('catalog.version', 'must equal 1');
+    }
+
     if (!Array.isArray(value.commands) || value.commands.length === 0) {
         fail('catalog.commands', 'must be a non-empty array');
     }
+
     const commands = value.commands.map(validateCommand);
     const byId = new Map();
     const packageSources = new Map();
     for (const command of commands) {
-        if (byId.has(command.id))
+        if (byId.has(command.id)) {
             fail('catalog.commands', `duplicate ID '${command.id}'`);
+        }
+
         byId.set(command.id, command);
         if (command.source.type === 'package-script') {
             if (packageSources.has(command.source.script)) {
@@ -269,9 +313,11 @@ export function validateCatalogDocument(value) {
                     `package script '${command.source.script}' is classified more than once`,
                 );
             }
+
             packageSources.set(command.source.script, command.id);
         }
     }
+
     for (const command of commands) {
         for (const conflict of command.conflictsWith) {
             const other = byId.get(conflict);
@@ -281,6 +327,7 @@ export function validateCatalogDocument(value) {
                     `unknown conflict '${conflict}'`,
                 );
             }
+
             if (!other.conflictsWith.includes(command.id)) {
                 fail(
                     `catalog command '${command.id}'`,
@@ -289,6 +336,7 @@ export function validateCatalogDocument(value) {
             }
         }
     }
+
     return { commands, version: 1 };
 }
 
@@ -302,6 +350,7 @@ function titleFromId(id) {
 
 function safeRelativePath(repositoryRoot, absolutePath) {
     const relativePath = relative(repositoryRoot, absolutePath);
+
     return (
         relativePath.length > 0 &&
         relativePath !== '..' &&
@@ -319,11 +368,13 @@ async function validateDocumentedSource(source, repositoryRoot) {
     ) {
         return { issue: 'documented command escapes the repository' };
     }
+
     try {
         const [canonicalSourcePath, canonicalCwd] = await Promise.all([
             realpath(sourcePath),
             realpath(cwd),
         ]);
+
         if (
             canonicalSourcePath !== sourcePath ||
             !safeRelativePath(repositoryRoot, canonicalSourcePath)
@@ -332,12 +383,14 @@ async function validateDocumentedSource(source, repositoryRoot) {
                 issue: 'documented command source must be a regular repository file without symbolic links',
             };
         }
+
         const sourceStat = await stat(canonicalSourcePath);
         if (!sourceStat.isFile()) {
             return {
                 issue: 'documented command source must be a regular file',
             };
         }
+
         if (
             canonicalCwd !== cwd ||
             (!safeRelativePath(repositoryRoot, canonicalCwd) &&
@@ -347,16 +400,19 @@ async function validateDocumentedSource(source, repositoryRoot) {
                 issue: 'documented command cwd must stay inside the repository without symbolic links',
             };
         }
+
         const content = await readFile(canonicalSourcePath, 'utf8');
         if (!content.includes(source.command)) {
             return {
                 issue: `documented command is no longer present in ${source.path}`,
             };
         }
+
         const actualRevision = documentedCommandRevision(source);
         if (actualRevision !== source.revision) {
             return { issue: 'documented command source revision changed' };
         }
+
         return {
             execution: {
                 args: [...source.args],
@@ -381,6 +437,7 @@ async function validatePackageManagerEntrypoint(entrypoint) {
             issue: 'pnpm JavaScript entrypoint is unavailable; start the panel through pnpm',
         };
     }
+
     try {
         const canonicalEntrypoint = await realpath(entrypoint);
         const entrypointStat = await stat(canonicalEntrypoint);
@@ -389,6 +446,7 @@ async function validatePackageManagerEntrypoint(entrypoint) {
                 issue: 'pnpm JavaScript entrypoint is not a regular file',
             };
         }
+
         return { entrypoint: canonicalEntrypoint };
     } catch (error) {
         return {
@@ -412,6 +470,7 @@ export async function loadCatalog({
     if (!isPlainObject(packageDocument.scripts)) {
         fail('package.json scripts', 'must be an object');
     }
+
     const packageScripts = new Map(Object.entries(packageDocument.scripts));
     const classifiedScripts = new Set();
     const issues = [];
@@ -435,6 +494,7 @@ export async function loadCatalog({
                     command.source.script,
                     value,
                 );
+
                 if (actualRevision !== command.source.revision) {
                     sourceIssue = `package script '${command.source.script}' changed after review`;
                 } else if (packageManager.issue) {
@@ -456,16 +516,23 @@ export async function loadCatalog({
                 command.source,
                 repositoryRoot,
             );
+
             sourceIssue = result.issue;
             execution = result.execution;
             actualRevision = documentedCommandRevision(command.source);
         }
+
         if (platform === 'win32') {
             platformIssue =
                 'Command execution is unavailable on Windows until reliable Job Object supervision is implemented.';
+
             execution = undefined;
         }
-        if (sourceIssue) issues.push(`${command.id}: ${sourceIssue}`);
+
+        if (sourceIssue) {
+            issues.push(`${command.id}: ${sourceIssue}`);
+        }
+
         commands.push({
             ...command,
             actualRevision: actualRevision ?? null,
@@ -479,7 +546,10 @@ export async function loadCatalog({
     for (const [script] of [...packageScripts.entries()].sort(([a], [b]) =>
         a.localeCompare(b),
     )) {
-        if (classifiedScripts.has(script)) continue;
+        if (classifiedScripts.has(script)) {
+            continue;
+        }
+
         const issue = `package script '${script}' has not been reviewed`;
         issues.push(`${script}: ${issue}`);
         commands.push({
@@ -575,7 +645,10 @@ export class CatalogStore extends EventEmitter {
     }
 
     async refresh() {
-        if (this.#refreshPromise) return this.#refreshPromise;
+        if (this.#refreshPromise) {
+            return this.#refreshPromise;
+        }
+
         this.#refreshPromise = (async () => {
             const loaded = await loadCatalog({
                 catalogPath: this.#catalogPath,
@@ -592,17 +665,24 @@ export class CatalogStore extends EventEmitter {
             this.#snapshot = { ...loaded, comparable };
             if (changed) {
                 this.emit('changed', this.publicSnapshot());
-                if (this.#watchers.length > 0) this.#restartWatchers();
+                if (this.#watchers.length > 0) {
+                    this.#restartWatchers();
+                }
             }
+
             return this.#snapshot;
         })().finally(() => {
             this.#refreshPromise = undefined;
         });
+
         return this.#refreshPromise;
     }
 
     publicSnapshot() {
-        if (!this.#snapshot) throw new Error('catalog has not been loaded');
+        if (!this.#snapshot) {
+            throw new Error('catalog has not been loaded');
+        }
+
         return {
             commands: this.#snapshot.commands.map(publicCommand),
             issues: [...this.#snapshot.issues],
@@ -619,12 +699,18 @@ export class CatalogStore extends EventEmitter {
     }
 
     startWatching() {
-        if (!this.#snapshot) throw new Error('catalog has not been loaded');
+        if (!this.#snapshot) {
+            throw new Error('catalog has not been loaded');
+        }
+
         this.#restartWatchers();
     }
 
     #restartWatchers() {
-        for (const watcher of this.#watchers) watcher.close();
+        for (const watcher of this.#watchers) {
+            watcher.close();
+        }
+
         this.#watchers = [];
         for (const path of new Set(this.#snapshot.sourcePaths)) {
             try {
@@ -638,6 +724,7 @@ export class CatalogStore extends EventEmitter {
                         );
                     }, 75);
                 });
+
                 this.#watchers.push(watcher);
             } catch (error) {
                 this.emit('watch-error', {
@@ -649,7 +736,10 @@ export class CatalogStore extends EventEmitter {
 
     close() {
         clearTimeout(this.#debounce);
-        for (const watcher of this.#watchers) watcher.close();
+        for (const watcher of this.#watchers) {
+            watcher.close();
+        }
+
         this.#watchers = [];
     }
 }

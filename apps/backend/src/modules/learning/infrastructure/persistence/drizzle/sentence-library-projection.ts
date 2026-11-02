@@ -107,36 +107,46 @@ export function filterConditions(
         eq(exercises.dictionaryId, scope.dictionaryId),
         q.relation === 'generated'
             ? eq(exercises.creatorId, scope.learnerId)
-            : q.relation === 'available'
-              ? available
-              : available,
+            : available,
     ];
 
-    if (q.direction) conditions.push(eq(exercises.direction, q.direction));
-    if (scope.admin && q.creatorId)
+    if (q.direction) {
+        conditions.push(eq(exercises.direction, q.direction));
+    }
+
+    if (scope.admin && q.creatorId) {
         conditions.push(eq(exercises.creatorId, q.creatorId));
-    if (q.personalArchive !== 'all')
+    }
+
+    if (q.personalArchive !== 'all') {
         conditions.push(
             q.personalArchive === 'archived'
                 ? isNotNull(personal.archivedAt)
                 : isNull(personal.archivedAt),
         );
-    if (q.globalArchive !== 'all')
+    }
+
+    if (q.globalArchive !== 'all') {
         conditions.push(
             q.globalArchive === 'archived'
                 ? isNotNull(global.archivedAt)
                 : isNull(global.archivedAt),
         );
-    if (scope.admin && q.creatorArchived !== undefined)
+    }
+
+    if (scope.admin && q.creatorArchived !== undefined) {
         conditions.push(
             q.creatorArchived
                 ? isNotNull(creator.archivedAt)
                 : isNull(creator.archivedAt),
         );
-    if (q.contentState !== 'all')
+    }
+
+    if (q.contentState !== 'all') {
         conditions.push(
             q.contentState === 'current' ? current : sql`not (${current})`,
         );
+    }
 
     return and(...conditions)!;
 }

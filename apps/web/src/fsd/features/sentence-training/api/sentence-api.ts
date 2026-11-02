@@ -40,18 +40,25 @@ function pathId(value: string): string {
         !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
             value,
         )
-    )
+    ) {
         throw new ApiError(400, {
             code: 'invalid_request',
             correlationId: 'client-invalid-id',
             message: 'Invalid identifier.',
         });
+    }
+
     return encodeURIComponent(value);
 }
+
 function queryString(query: object): string {
     const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(query))
-        if (value !== undefined) params.set(key, String(value));
+    for (const [key, value] of Object.entries(query)) {
+        if (value !== undefined) {
+            params.set(key, String(value));
+        }
+    }
+
     return params.toString();
 }
 
@@ -86,19 +93,24 @@ export function createSentenceApi(options: Options): SentenceApi {
                       DictionaryShareKeyHeadersSchema.safeParse({
                           'x-languon-share-key': target.shareKey,
                       }).success;
-            if (!valid)
+
+            if (!valid) {
                 throw new ApiError(400, {
                     code: 'invalid_request',
                     correlationId: 'client-invalid-target',
                     message: 'The learning target is invalid.',
                 });
-            if (!signedIn)
+            }
+
+            if (!signedIn) {
                 throw new ApiError(401, {
                     code: 'authentication_required',
                     correlationId: 'client-sign-in',
                     message: 'Sign in to practise sentences.',
                 });
+            }
         }
+
         const execute = async (token?: string): Promise<T> => {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 30_000);
@@ -125,9 +137,11 @@ export function createSentenceApi(options: Options): SentenceApi {
                 const payload: unknown = await response
                     .json()
                     .catch(() => undefined);
+
                 if (!response.ok) {
                     const result =
                         SentenceErrorResponseSchema.safeParse(payload);
+
                     throw new ApiError(
                         response.status,
                         result.success
@@ -140,6 +154,7 @@ export function createSentenceApi(options: Options): SentenceApi {
                               },
                     );
                 }
+
                 try {
                     return schema.parse(payload);
                 } catch {
@@ -150,7 +165,10 @@ export function createSentenceApi(options: Options): SentenceApi {
                     });
                 }
             } catch (error) {
-                if (error instanceof ApiError) throw error;
+                if (error instanceof ApiError) {
+                    throw error;
+                }
+
                 throw new ApiError(0, {
                     code: 'service_unavailable',
                     correlationId: 'client-network',
@@ -161,8 +179,10 @@ export function createSentenceApi(options: Options): SentenceApi {
                 clearTimeout(timeout);
             }
         };
+
         return publicRequest ? execute() : requestWithSession(execute);
     }
+
     return {
         ...createSentencePreparationApi(request, prefix, pathId),
         capabilities: () =>

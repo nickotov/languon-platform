@@ -46,6 +46,7 @@ export function ModelPriceDialog({
             max: 1000000000,
         },
     ];
+
     return (
         <Modal
             title={t('pricing.editTitle')}

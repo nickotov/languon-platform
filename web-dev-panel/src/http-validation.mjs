@@ -22,6 +22,7 @@ export function validateBatchBody(value) {
     ) {
         return false;
     }
+
     return value.selections.every(
         (selection) =>
             selection !== null &&
@@ -66,6 +67,7 @@ export function validateStopSelectedBody(value) {
     ) {
         return false;
     }
+
     return value.runs.every(
         (run) =>
             run !== null &&

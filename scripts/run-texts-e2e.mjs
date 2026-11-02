@@ -34,6 +34,7 @@ export function assertDisposableEnvironment(environment) {
             'AUTH_TEST_DATABASE_URL and AUTH_TEST_DATABASE_CONFIRM are required; this runner has no database default.',
         );
     }
+
     const database = new URL(databaseUrl);
     const databaseName = database.pathname.slice(1);
     if (
@@ -58,6 +59,7 @@ export function assertDisposableEnvironment(environment) {
             'Set ALLOW_DISPOSABLE_REDIS_TESTS=true for the dedicated disposable Redis target.',
         );
     }
+
     const redisUrl = environment.AUTH_TEST_REDIS_URL;
     const redisConfirmation = environment.AUTH_TEST_REDIS_CONFIRM;
     if (!redisUrl || !redisConfirmation) {
@@ -65,6 +67,7 @@ export function assertDisposableEnvironment(environment) {
             'AUTH_TEST_REDIS_URL and AUTH_TEST_REDIS_CONFIRM are required; this runner has no Redis default.',
         );
     }
+
     const redis = new URL(redisUrl);
     const redisDatabase = redis.pathname.slice(1);
     if (
@@ -89,12 +92,15 @@ function execute([command, ...args]) {
             env: process.env,
             stdio: 'inherit',
         });
+
         child.once('error', reject);
         child.once('exit', (code, signal) => {
             if (code === 0) {
                 resolve();
+
                 return;
             }
+
             reject(
                 new Error(
                     `${command} ${args.join(' ')} failed${signal ? ` with signal ${signal}` : ` with exit code ${code ?? 'unknown'}`}.`,

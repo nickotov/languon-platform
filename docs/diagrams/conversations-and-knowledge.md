@@ -4,6 +4,14 @@ title: Conversations and Knowledge workspace
 summary: Source chat and note workspaces share durable tutor turns while working drafts, publication and unlisted sharing have separate boundaries.
 source_paths:
     - docs/adr/0042-knowledge-workspace-document-and-context-boundaries.md
+    - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
+    - packages/contracts/src/knowledge-interactive.ts
+    - packages/contracts/src/learning-blocks.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/workbook-access.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/workbook-copy.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-epochs.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/media-grants.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/contextual-block-tools.ts
     - docs/user-flows/knowledge-workspace.md
     - apps/backend/src/config/environment.ts
     - apps/backend/src/modules/conversations/application/workspace-turn-context.ts
@@ -40,8 +48,21 @@ source_paths:
     - apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts
     - apps/backend/src/modules/conversations/infrastructure/conversation-action-accounting.ts
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source.ts
-source_fingerprint: sha256:02910cd38224bef7b1e25ec2c225bdd94b007fa2dbb4cb8ed1d9eca33b526784
-reviewed: 2026-10-22
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-admission.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts
+    - apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts
+    - apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/routing-admission.ts
+    - docs/adr/0046-admin-owned-text-ai-routing.md
+    - apps/web/src/fsd/features/knowledge-notes/lib/learning-block-form.ts
+    - apps/web/src/fsd/features/knowledge-notes/lib/block-form-definition.ts
+    - apps/web/src/fsd/features/knowledge-notes/lib/block-form-read-context.ts
+    - apps/web/src/fsd/features/knowledge-notes/lib/read-block-form.ts
+    - apps/web/src/fsd/features/knowledge-notes/lib/read-media-block-form.ts
+    - apps/web/src/fsd/features/knowledge-notes/lib/read-text-block-form.ts
+    - apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts
+source_fingerprint: sha256:83e3c96e55e21289e667c4f421ce9b6db322df976c9730441b022ae20ec4a939
+reviewed: 2026-11-01
 ---
 
 # Conversations and Knowledge workspace
@@ -51,7 +72,7 @@ publication and unlisted sharing have separate boundaries.
 
 ```mermaid
 flowchart TB
-    Source["Live primary dictionary or text"] --> Open["Open private source conversation
+    Source["Live primary dictionary, text or saved shared note"] --> Open["Open private source conversation
 current source authority"]
     Open --> Send["Send question + explicit copied cards or draft"]
     New["New Knowledge note"] --> Workspace["Stable private Draft ID
@@ -69,7 +90,7 @@ full request budget after compaction"]
 no silent excerpting"]
     Limit --> Admission
     Send --> Admission["One active durable turn
-Flash Auto / compatible explicit model
+Admin-owned model routing
 model, funding and independent rate snapshots
 bounded credit + operator USD allowance"]
     Admission --> Worker["Existing worker slot claims turn
@@ -83,8 +104,8 @@ application Drizzle storage and lease fences"]
     Tutor --> Reply["Persist batched prose: 100ms or 4KiB
 and durable tool exchanges"] --> Replay["Durable replay to useChat transport
 reconnect without duplicate generation"]
-    Tutor --> Propose["propose_knowledge_note
-validated structured private draft"]
+    Tutor --> Propose["Owner-only prose or typed block proposal
+validated content + target authority"]
     Propose --> Review["Conversation-owned editable proposal"]
     Review --> Publish["Explicit legacy draft publication"]
     Workspace --> Apply["Review reply proposal
@@ -92,15 +113,24 @@ Insert / Append / Replace with target check"] --> Auto
     Auto --> Save["Explicit Save
 title + nonempty body + version checks"]
     Publish --> Note[("Saved Knowledge note
-restricted rich text + revisions")]
+restricted rich text + typed learning blocks + revisions")]
     Save --> Note
     Save -->|"Stale saved version"| Resolve
     Note -->|"Restore with unpublished edits"| Resolve
     Workspace --> Copy["Save a copy of current working branch"] --> Note
     Note --> Share["Unlisted locator + fragment key
 read saved version only"]
-    Share --> Reader["Signed-in reader copies saved version
-independent note; no chat or branches"] --> Note
+    Share --> Reader["Anonymous saved reading
+signed-in private practice and read-only tutor"]
+    Reader --> Independent["Copy before editing
+fresh identities and independent media grants"] --> Note
+    Workbook["Ordered workbook; at most one per note
+independent revocable workbook grant"] --> Share
+    Workbook --> Note
+    Reader --> Learning["Private attempts, hints and reveals
+explicit completion; no author access"]
+    Save --> Epoch["Semantic publication advances learning epoch
+cosmetic edits preserve progress"] --> Learning
     Share -->|"Disable or account deletion"| Revoke["Delete capability
 old link remains invalid"]
     Note --> Workspace
@@ -140,8 +170,21 @@ edits create branches; the learner chooses which to continue and explicitly
 resolves alternatives. Restoring a saved revision while unpublished prose exists
 also creates an alternative, and Save waits for resolution. Only a published
 version is visible through an unlisted
-share; disabling sharing deletes the capability, and a recipient copy is a new
-note with no private chat or draft branches.
+share. Shared-source conversations expose reading/explanation tools and reject
+authoring callbacks. Disabling sharing deletes that capability; workbook membership
+and independent note shares remain separate grants. A recipient copy is a new
+note with fresh block identities and no private chat, progress or draft branches.
+Copied uploaded audio has an independent grant, so source deletion does not break
+playback.
+
+Version-2 blocks use strict bounded schemas and fixed escaped renderers; arbitrary
+HTML and embed code are rejected. Typed AI block proposals capture the owner
+working target and require preview/Apply before a separate explicit Save.
+Private learner state is stored separately from document content. Publication
+maintains monotonic semantic epochs; earlier wording restored later cannot revive
+old mastery. Workbook progress summarizes only the current learner's explicit
+note completions, including updated-since-completion notices. Course generation
+and workbook-wide AI context remain deferred under ADR-0050.
 
 Explicit attachments are personal copies authorized when read, not extra live source
 links. A saved note has no origin dependency and survives conversation deletion.
@@ -155,6 +198,17 @@ The current snapshot takes
 precedence over older compacted snapshots. The note-to-workspace edge means
 reopening a note can resume its latest private conversation, without a stored
 origin back-reference to another source.
+
+## Implementation reconciliation
+
+The source resolver projects only effective learner-visible dictionary fields through
+`projectConversationDictionaryCards`; prepared turn reuse still checks the locked
+chat and source snapshot through `assertPreparedConversationCurrent`. Knowledge
+store methods allocate a fresh persistence context per call. The authoring form
+facade delegates to typed readers and validates the completed candidate once;
+this does not publish a working draft. Model selection follows the admin-owned
+routing revision under ADR-0046, rather than a learner-selected model. These
+internal extractions preserve the graph's ownership, Apply and explicit Save edges.
 
 ## Sources
 
@@ -209,3 +263,17 @@ authority and data-flow relationships remain unchanged.
 - [apps/backend/src/modules/conversations/infrastructure/conversation-action-accounting.ts](../../apps/backend/src/modules/conversations/infrastructure/conversation-action-accounting.ts)
 
 - [apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source.ts](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source.ts)
+
+- [apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-admission.ts](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-admission.ts)
+- [apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-admission-snapshot.ts)
+- [apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-material.ts)
+- [apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts](../../apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts)
+- [apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/routing-admission.ts](../../apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/routing-admission.ts)
+- [docs/adr/0046-admin-owned-text-ai-routing.md](../../docs/adr/0046-admin-owned-text-ai-routing.md)
+- [apps/web/src/fsd/features/knowledge-notes/lib/learning-block-form.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/learning-block-form.ts)
+- [apps/web/src/fsd/features/knowledge-notes/lib/block-form-definition.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/block-form-definition.ts)
+- [apps/web/src/fsd/features/knowledge-notes/lib/block-form-read-context.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/block-form-read-context.ts)
+- [apps/web/src/fsd/features/knowledge-notes/lib/read-block-form.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/read-block-form.ts)
+- [apps/web/src/fsd/features/knowledge-notes/lib/read-media-block-form.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/read-media-block-form.ts)
+- [apps/web/src/fsd/features/knowledge-notes/lib/read-text-block-form.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/read-text-block-form.ts)
+- [apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts)

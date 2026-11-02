@@ -32,6 +32,11 @@ PostgreSQL in a read-only transaction, checks migration history, admin-owned rou
 required worker formats, effective customer/provider prices and operator limits.
 Runtime checks include fresh worker evidence. Explicit capability selection also
 checks its enable flag; disabled optional capabilities are omitted by default.
+Dictionary readiness includes document-file ingestion only when document storage,
+the document runtime, or an explicit API/worker format allowlist configures it.
+Do not add `document-terms` formats merely to satisfy readiness when the document
+pipeline is intentionally unavailable: those formats require private storage and
+the document processing dependencies before a worker can start.
 The optional learner check uses exact balance and saved action budget.
 
 A ready report does not prove Redis connectivity, provider connectivity, available
@@ -133,7 +138,7 @@ the complete sanitized environment reference.
    Enter approved customer input/output credits per million tokens for each paid
    flow. These are independent of provider USD costs. Review operator probe caps
    before running any checks: checks spend operator funds and need explicit
-   authorization when operated by an agent.
+   authorization when operated by an agent. The user-approved [standing local smoke allowance](../../.agent/AI_SMOKE_POLICY.md) supplies that authorization only within its fixed account, route, task and cost bounds.
 4. Use **Quick response** for basic connectivity, then **Test selected flow** for
    every route/flow to be activated. A quick response is insufficient to activate
    structured work. Successful matching checks are required within 24 hours when
@@ -159,6 +164,49 @@ The backend/worker environment must enable the intended capability. In particula
 `text-translation:v3` for folderless work, alongside supported older formats.
 Configure the provider credential in the ignored environment, and advertise it
 only when actually present. Never paste credentials into this guide or evidence.
+
+### Knowledge block AI actions
+
+Field checks/translations and inline exercise AI evaluation reuse the existing
+Texts execution route and configured models. They require `TEXTS_AI_ENABLED=true`.
+In production, both `DICTIONARY_JOB_API_ENQUEUED_FORMATS` and
+`DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS` must include
+`text-translation:v4` for these source-bound actions. This separate admission gate
+does not disable ordinary Texts translation when v4 is absent. Existing knowledge
+jobs can still be read or cancelled while new admissions are disabled.
+
+If API acceptable/readable/cancellable/discardable format lists are explicitly
+configured, include v4 in those lists too: enqueued formats must remain a subset
+of every API capability. Empty lists use the current supported defaults. Restart
+the API and workers after changing format allowlists.
+
+Use `pnpm dev:doctor -- --capability knowledge-actions` to check this capability's
+API/worker format intersection and existing text-translation routing/funding. No
+new API key, provider, model selection or production activation is implied. Review
+[ADR-0052](../adr/0052-source-bound-knowledge-ai-actions.md) for source/credit
+boundaries. The interactive-workbooks critical flow provides deterministic local
+browser coverage; tests must not call paid providers.
+
+## Dedicated live smoke verification
+
+The [standing policy](../../.agent/AI_SMOKE_POLICY.md) defines the current synthetic
+account, route and cost allowance. It is separate from deterministic automated
+verification. Credentials are kept only in ignored `.env.ai-smoke.local` with
+restricted file permissions; the normal application `.env.local` is unchanged.
+
+Run `pnpm ai:smoke` to inspect readiness without generating content. After the
+one-time unused-account journal initialization (`pnpm ai:smoke -- --initialize`),
+`pnpm ai:smoke -- --run --task <work-record-slug>` makes one bounded ordinary
+learner request and verifies persisted output, expected learner billing and settled
+provider expense. Operator-funded conversations legitimately show free learner
+billing; this does not mean the provider call was free. Missing/corrupt quota
+state, changed route, unavailable funding or exhausted limits stop dispatch.
+Do not delete journal/marker/lock files to recover quota or retry an unknown call.
+The runner never replenishes credits, changes routing or invokes activation checks.
+
+A passing conversation smoke does not prove other AI capabilities. Select affected
+deterministic journeys and run only separately covered live actions when needed.
+Keep implementation proof, doctor readiness and live result separate at handoff.
 
 ## Multilingual reference evaluation
 

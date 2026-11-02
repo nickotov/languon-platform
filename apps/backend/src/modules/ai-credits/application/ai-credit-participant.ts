@@ -5,6 +5,7 @@ export type AiCreditJobKind =
     | 'text-detection'
     | 'text-translation'
     | 'text-selection-card'
+    | 'knowledge-transcription'
     | 'speech-generation'
     | 'conversation-turn'
     | 'portrait-interview';

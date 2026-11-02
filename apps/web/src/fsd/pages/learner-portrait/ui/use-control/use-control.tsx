@@ -16,12 +16,19 @@ export function PortraitUseControl({
     const state = management.query.data;
     async function change(enabled: boolean) {
         const result = await management.setUse(enabled);
-        if (result) setJustDisabled(!enabled);
+        if (result) {
+            setJustDisabled(!enabled);
+        }
     }
+
     function dismiss() {
         setJustDisabled(false);
     }
-    if (!state?.approved) return null;
+
+    if (!state?.approved) {
+        return null;
+    }
+
     return (
         <section className={`${styles.panel} ${styles.compactStack}`}>
             <Switch

@@ -55,6 +55,7 @@ const dimensions = [
         ],
     },
 ];
+
 export function InterviewPreferenceFields({
     locale,
     values,
@@ -68,6 +69,7 @@ export function InterviewPreferenceFields({
     function select(event: ChangeEvent<HTMLInputElement>) {
         onChange({ ...values, [event.target.name]: event.target.value });
     }
+
     return (
         <div className={styles.preferenceFields}>
             {dimensions.map((dimension) => (
@@ -93,6 +95,7 @@ export function InterviewPreferenceFields({
         </div>
     );
 }
+
 export function InterviewMixingField({
     locale,
     value,
@@ -106,6 +109,7 @@ export function InterviewMixingField({
     function select(event: ChangeEvent<HTMLInputElement>) {
         onChange(event.target.value);
     }
+
     const choices = [
         {
             value: 'mixed-language: sometimes',
@@ -126,6 +130,7 @@ export function InterviewMixingField({
             ],
         },
     ];
+
     return (
         <fieldset className={styles.fieldset}>
             <legend>

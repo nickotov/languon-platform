@@ -28,14 +28,16 @@ export async function runPinnedFallback<T>(input: {
                 isCompletedInvalidProviderResult(error)
             ) ||
             !input.snapshot.routingAuthority?.candidates[1]
-        )
+        ) {
             throw error;
+        }
 
         input.signal.throwIfAborted();
         const alternative = effectiveTextAiExecutionForAttempt(
             input.snapshot,
             2,
         );
+
         return input.execute(alternative, 2);
     }
 }

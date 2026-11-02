@@ -16,6 +16,7 @@ function Transcript({
     content: string;
 }) {
     const scroll = useMessageScroll(identity, content);
+
     return (
         <>
             <div
@@ -31,14 +32,17 @@ function Transcript({
         </>
     );
 }
+
 function layout() {
     const element = screen.getByTestId('transcript');
     Object.defineProperties(element, {
         scrollHeight: { configurable: true, value: 1000 },
         clientHeight: { configurable: true, value: 300 },
     });
+
     return element;
 }
+
 afterEach(() => {
     window.getSelection()?.removeAllRanges();
     cleanup();
@@ -59,6 +63,7 @@ it('preserves a scrolled-up reading position as chunks arrive and resumes only a
     view.rerender(
         <Transcript content='First paragraph. More explanation. Last chunk.' />,
     );
+
     expect(transcript.scrollTop).toBe(1000);
     expect(screen.queryByRole('button', { name: 'Jump to latest' })).toBeNull();
 });
@@ -75,11 +80,13 @@ it('does not move the transcript while the learner selects an answer, and resets
     view.rerender(
         <Transcript content='Select these words while a new chunk arrives' />,
     );
+
     expect(transcript.scrollTop).toBe(700);
     window.getSelection()?.removeAllRanges();
     view.rerender(
         <Transcript identity='two' content='A different conversation' />,
     );
+
     expect(transcript.scrollTop).toBe(1000);
 });
 
@@ -91,10 +98,12 @@ it('retains the reading position while folded chunks arrive and restores it when
             constructor(callback: () => void) {
                 resize = callback;
             }
+
             observe() {}
             disconnect() {}
         },
     );
+
     const view = render(<Transcript content='An earlier explanation' />);
     const transcript = layout();
     transcript.scrollTop = 120;
@@ -103,15 +112,18 @@ it('retains the reading position while folded chunks arrive and restores it when
         configurable: true,
         value: 0,
     });
+
     transcript.scrollTop = 0;
     fireEvent.scroll(transcript);
     view.rerender(
         <Transcript content='An earlier explanation and a streamed continuation' />,
     );
+
     Object.defineProperty(transcript, 'clientHeight', {
         configurable: true,
         value: 300,
     });
+
     act(() => resize?.());
     expect(transcript.scrollTop).toBe(120);
     expect(

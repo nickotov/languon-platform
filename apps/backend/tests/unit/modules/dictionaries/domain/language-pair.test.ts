@@ -64,6 +64,7 @@ describe('dictionary language pair', () => {
                 supportsLanguageTag: supports,
             }),
         ).toEqual(next);
+
         expect(() =>
             changeDictionaryLanguagePair({
                 cardCount: 1,
@@ -76,6 +77,7 @@ describe('dictionary language pair', () => {
                 Partial<InvalidDictionaryLanguagePairError>
             >({ reason: 'locked' }),
         );
+
         expect(
             changeDictionaryLanguagePair({
                 cardCount: 1,

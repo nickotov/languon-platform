@@ -15,12 +15,17 @@ export function useSavedStatistics<T>(read: () => Promise<T>) {
         setState({ result: null, status: 'loading' });
         void read().then(
             (result) => {
-                if (live) setState({ result, status: 'idle' });
+                if (live) {
+                    setState({ result, status: 'idle' });
+                }
             },
             () => {
-                if (live) setState({ result: null, status: 'error' });
+                if (live) {
+                    setState({ result: null, status: 'error' });
+                }
             },
         );
+
         return () => {
             live = false;
         };

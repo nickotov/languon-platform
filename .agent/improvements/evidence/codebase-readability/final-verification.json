@@ -1,0 +1,599 @@
+{
+  "status": "Passed with documented bounded-worker environment",
+  "inventorySha256": "5269cd383bd08bef0841837f9f9e464f3d09b2b7239abad39e2afc21daf0375f",
+  "auditedFiles": 3220,
+  "changedMaintainedFiles": 193,
+  "currentSourceMismatches": [],
+  "historicalFrozenFiles": 881,
+  "historicalMismatches": [],
+  "nextDeclarationMatchesHead": true,
+  "environment": {
+    "inheritedNames": [
+      "PATH",
+      "HOME",
+      "PNPM_HOME",
+      "TMPDIR",
+      "CI"
+    ],
+    "CI": "1",
+    "VITEST_MAX_WORKERS": "1",
+    "TURBO_ENV_MODE": "loose",
+    "providerCredentialsInherited": false,
+    "optionalDeploymentFlagsInherited": false
+  },
+  "results": [
+    {
+      "label": "serial-tests",
+      "command": [
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "test",
+        "--concurrency=1",
+        "--env-mode=loose"
+      ],
+      "log": "/private/tmp/languon-bl019-final-runtime-serial-tests.log",
+      "start": "2026-11-01T11:30:07.527Z",
+      "end": "2026-11-01T11:35:59.814Z",
+      "code": 0,
+      "logSha256": "85f160ed19742a8d41ccaa4a2b222908a959f33dd199896e182485847ebcd425",
+      "summary": [
+        "@languon/database:test:  Test Files  2 passed (2)",
+        "@languon/database:test:       Tests  5 passed (5)",
+        "@languon/languages:test:  Test Files  1 passed (1)",
+        "@languon/languages:test:       Tests  3 passed (3)",
+        "@languon/prompts:test:  Test Files  1 passed (1)",
+        "@languon/prompts:test:       Tests  6 passed (6)",
+        "@languon/contracts:test:  Test Files  28 passed (28)",
+        "@languon/contracts:test:       Tests  237 passed (237)",
+        "@languon/backend:test:  Test Files  233 passed | 100 skipped (333)",
+        "@languon/backend:test:       Tests  1855 passed | 935 skipped (2790)",
+        "@languon/browser-auth:test:  Test Files  2 passed (2)",
+        "@languon/browser-auth:test:       Tests  7 passed (7)",
+        "@languon/admin:test:  Test Files  20 passed (20)",
+        "@languon/admin:test:       Tests  106 passed (106)",
+        "@languon/web:test:  Test Files  187 passed (187)",
+        "@languon/web:test:       Tests  1303 passed (1303)",
+        " Tasks:    15 successful, 15 total"
+      ]
+    },
+    {
+      "label": "aggregate",
+      "command": [
+        "pnpm",
+        "check"
+      ],
+      "log": "/private/tmp/languon-bl019-final-runtime-aggregate.log",
+      "start": "2026-11-01T11:35:59.816Z",
+      "end": "2026-11-01T11:39:52.228Z",
+      "code": 0,
+      "logSha256": "90ad88133f5918a732df3a7afe37e042c9504f59dce607908771dc8968ed9bef",
+      "summary": [
+        " Tasks:    14 successful, 14 total",
+        " Tasks:    2 successful, 2 total",
+        " Tasks:    2 successful, 2 total",
+        "@languon/languages:test:  Test Files  1 passed (1)",
+        "@languon/languages:test:       Tests  3 passed (3)",
+        "@languon/prompts:test:  Test Files  1 passed (1)",
+        "@languon/prompts:test:       Tests  6 passed (6)",
+        "@languon/database:test:  Test Files  2 passed (2)",
+        "@languon/database:test:       Tests  5 passed (5)",
+        "@languon/contracts:test:  Test Files  28 passed (28)",
+        "@languon/contracts:test:       Tests  237 passed (237)",
+        "@languon/browser-auth:test:  Test Files  2 passed (2)",
+        "@languon/browser-auth:test:       Tests  7 passed (7)",
+        "@languon/admin:test:  Test Files  20 passed (20)",
+        "@languon/admin:test:       Tests  106 passed (106)",
+        "@languon/web:test:  Test Files  187 passed (187)",
+        "@languon/web:test:       Tests  1303 passed (1303)",
+        "@languon/backend:test:  Test Files  233 passed | 100 skipped (333)",
+        "@languon/backend:test:       Tests  1855 passed | 935 skipped (2790)",
+        " Tasks:    15 successful, 15 total",
+        " Tasks:    9 successful, 9 total"
+      ]
+    },
+    {
+      "label": "doctor",
+      "command": [
+        "node",
+        "scripts/dev-doctor.mjs",
+        "--json"
+      ],
+      "log": "/private/tmp/languon-bl019-final-runtime-doctor.log",
+      "start": "2026-11-01T11:39:52.229Z",
+      "end": "2026-11-01T11:39:53.700Z",
+      "code": 0,
+      "logSha256": "047813d41b993febf34e051c531a976728e92ebb6c59052e7bb44ef83cff0b10",
+      "summary": []
+    }
+  ],
+  "doctor": {
+    "ready": true,
+    "checks": [
+      {
+        "id": "migrations",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/single-card/routing",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/single-card/model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/single-card/selected-model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/single-card/credential",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/single-card/flow-check",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/single-card/provider-price",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/single-card/customer-tariff",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/single-card/budgets",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/single-card/dictionary:environment",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/single-card/dictionary:worker",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/card-authoring/routing",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/card-authoring/model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/card-authoring/selected-model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/card-authoring/credential",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/card-authoring/flow-check",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/card-authoring/provider-price",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/card-authoring/customer-tariff",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/card-authoring/budgets",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/card-authoring/dictionary:environment",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/card-authoring/dictionary:worker",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/pasted-terms/routing",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/pasted-terms/model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/pasted-terms/selected-model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/pasted-terms/credential",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/pasted-terms/flow-check",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/pasted-terms/provider-price",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/pasted-terms/customer-tariff",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/pasted-terms/budgets",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/pasted-terms/dictionary:environment",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/pasted-terms/dictionary:worker",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/import-pairs/routing",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/import-pairs/model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/import-pairs/selected-model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/import-pairs/credential",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/import-pairs/flow-check",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/import-pairs/provider-price",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/import-pairs/customer-tariff",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/import-pairs/budgets",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/import-pairs/dictionary:environment",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/import-pairs/dictionary:worker",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-detection/routing",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-detection/model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-detection/selected-model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-detection/credential",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-detection/flow-check",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-detection/provider-price",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-detection/customer-tariff",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-detection/budgets",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-detection/texts:enabled",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-detection/texts:environment",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-detection/texts:worker",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-translation/routing",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-translation/model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-translation/selected-model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-translation/credential",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-translation/flow-check",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-translation/provider-price",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-translation/customer-tariff",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-translation/budgets",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-translation/texts:enabled",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-translation/texts:environment",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-translation/texts:worker",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-translation/knowledge-actions:enabled",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-translation/knowledge-actions:environment",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-translation/knowledge-actions:worker",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-selection-card/routing",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-selection-card/model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-selection-card/selected-model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-selection-card/credential",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-selection-card/flow-check",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-selection-card/provider-price",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-selection-card/customer-tariff",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-selection-card/budgets",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-selection-card/texts:enabled",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-selection-card/texts:environment",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/text-selection-card/texts:worker",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/conversation/routing",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/conversation/model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/conversation/selected-model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/conversation/credential",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/conversation/flow-check",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/conversation/provider-price",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/conversation/customer-tariff",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/conversation/budgets",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/conversation/conversation:environment",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/conversation/conversation:worker",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/portrait-interview/routing",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/portrait-interview/model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/portrait-interview/selected-model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/portrait-interview/credential",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/portrait-interview/flow-check",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/portrait-interview/provider-price",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/portrait-interview/customer-tariff",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/portrait-interview/budgets",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/portrait-interview/interview:environment",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/portrait-interview/interview:worker",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-generation/routing",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-generation/model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-generation/selected-model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-generation/credential",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-generation/flow-check",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-generation/provider-price",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-generation/customer-tariff",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-generation/budgets",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-generation/sentences:enabled",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-generation/sentences:environment",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-generation/sentences:worker",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-check/routing",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-check/model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-check/selected-model",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-check/credential",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-check/flow-check",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-check/provider-price",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-check/customer-tariff",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-check/budgets",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-check/sentences:enabled",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-check/sentences:environment",
+        "status": "pass"
+      },
+      {
+        "id": "openrouter/openai/gpt-6-luna/sentence-check/sentences:worker",
+        "status": "pass"
+      }
+    ]
+  },
+  "runtimeCoverage": "final-runtime-coverage.json",
+  "limitations": [
+    "24 supplemental failures reproduced against baseline,22 assertions blocked by setup.",
+    "Raw comprehensive critical invocation failed790/791;791 unique coverage derives from exact-file replacement with10passing accounting cases, not a fabricated green invocation.",
+    "Default worker attempts failed under host contention; no timeout/assertion changes.",
+    "No paid-provider smoke performed; doctor readiness does not establish live-provider execution."
+  ]
+}

@@ -22,21 +22,27 @@ export function useProviderPrices() {
                 setError(null);
             }
         } catch (caught) {
-            if (!signal?.aborted)
+            if (!signal?.aborted) {
                 setError(
                     caught instanceof Error
                         ? caught.message
                         : 'Unable to load provider prices.',
                 );
+            }
         } finally {
-            if (!signal?.aborted) setLoading(false);
+            if (!signal?.aborted) {
+                setLoading(false);
+            }
         }
     }, []);
+
     useEffect(() => {
         const controller = new AbortController();
         void load(controller.signal);
+
         return () => controller.abort();
     }, [load]);
+
     const open = (price: ProviderPrice) => {
         setEditing(price);
         setSaveError(null);
@@ -67,6 +73,7 @@ export function useProviderPrices() {
             setPending(false);
         }
     };
+
     return {
         prices,
         editing,

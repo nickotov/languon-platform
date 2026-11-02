@@ -13,18 +13,23 @@ export function CommandPalette({ onClose }: { onClose(): void }) {
     const activeId = palette.selected
         ? `palette-${palette.selected.id}`
         : undefined;
+
     function change(event: ChangeEvent<HTMLInputElement>) {
         palette.changeQuery(event.target.value);
     }
+
     function retry() {
         void palette.resources.refetch();
     }
+
     useEffect(() => {
-        if (activeId)
+        if (activeId) {
             document
                 .getElementById(activeId)
                 ?.scrollIntoView?.({ block: 'nearest' });
+        }
     }, [activeId]);
+
     return (
         <Dialog
             bodyClassName={styles.body}

@@ -41,8 +41,9 @@ export async function report(
                 .select({ count: sql<number>`count(*)::int` })
                 .from(snapshots);
 
-            if ((count?.count ?? 0) >= 64)
+            if ((count?.count ?? 0) >= 64) {
                 throw new AccountingReportPendingError('Report queue is full.');
+            }
         }
 
         const [saved] = await tx
@@ -61,8 +62,9 @@ export async function report(
         !row?.report ||
         !row.generatedAt ||
         row.generatedAt.getTime() < now.getTime() - 60000
-    )
+    ) {
         throw new AccountingReportPendingError('Report is being prepared.');
+    }
 
     return row.report;
 }
@@ -76,7 +78,10 @@ export async function refreshNextReport(
         sql`update ai_accounting_report_snapshots set lease_until=${new Date(at.getTime() + 120000).toISOString()} where key=(select key from ai_accounting_report_snapshots where requested_at > ${new Date(at.getTime() - 3600000).toISOString()} and (generated_at is null or generated_at < ${new Date(at.getTime() - 30000).toISOString()}) and (lease_until is null or lease_until < ${at.toISOString()}) order by generated_at asc nulls first, requested_at asc for update skip locked limit 1) returning key, period_from, period_to, change_version, computed_version, report`,
     );
     const row = claimed[0];
-    if (!row) return false;
+    if (!row) {
+        return false;
+    }
+
     const leaseUntil = new Date(at.getTime() + 120000);
     const changeVersion = BigInt(String(row.change_version));
     try {
@@ -164,10 +169,11 @@ export async function computeReport(
             const snapshotAt = new Date();
             const deadline = snapshotAt.getTime() + 30000;
             const checkBudget = () => {
-                if (Date.now() > deadline)
+                if (Date.now() > deadline) {
                     throw new AccountingReportPendingError(
                         'Report refresh exceeded its time budget.',
                     );
+                }
             };
 
             await tx.execute(
@@ -257,7 +263,10 @@ export async function computeReport(
                         new Date(row.data.periodEnd) <= to,
                 )) {
                     checkBudget();
-                    if (row.data.kind !== 'provider_bill') continue;
+                    if (row.data.kind !== 'provider_bill') {
+                        continue;
+                    }
+
                     const [period] = await tx
                         .select({
                             cost: sql<string>`coalesce(sum(${expenses.amountUsdMicros}), 0)::text`,

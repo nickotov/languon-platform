@@ -31,13 +31,17 @@ async function withAbort<T>(
     signal: AbortSignal,
 ): Promise<T> {
     let onAbort: () => void = () => {};
+
     try {
         return await Promise.race([
             operation,
             new Promise<never>((_resolve, reject) => {
                 onAbort = () => reject(new Error('Speech request aborted.'));
-                if (signal.aborted) onAbort();
-                else signal.addEventListener('abort', onAbort, { once: true });
+                if (signal.aborted) {
+                    onAbort();
+                } else {
+                    signal.addEventListener('abort', onAbort, { once: true });
+                }
             }),
         ]);
     } finally {
@@ -56,8 +60,10 @@ export class OpenRouterSpeechProvider implements SpeechSynthesisProvider {
             !Number.isInteger(options.timeoutMs) ||
             options.timeoutMs <= 0 ||
             options.timeoutMs > 45000
-        )
+        ) {
             throw new Error('Invalid speech provider configuration.');
+        }
+
         this.configurationId = options.configurationId;
         this.profiles = Object.freeze(
             Object.fromEntries(
@@ -71,9 +77,13 @@ export class OpenRouterSpeechProvider implements SpeechSynthesisProvider {
 
     supports(language: string): SpeechProfile | null {
         const profile = findConfiguredSpeechProfile(this.profiles, language);
-        if (!profile) return null;
+        if (!profile) {
+            return null;
+        }
+
         try {
             this.assertProfile(profile);
+
             return profile;
         } catch {
             return null;
@@ -93,6 +103,7 @@ export class OpenRouterSpeechProvider implements SpeechSynthesisProvider {
                 candidate.estimatedCostUnitsPerCharacter ===
                     profile.estimatedCostUnitsPerCharacter,
         );
+
         if (
             profile.configurationId !== this.configurationId ||
             profile.provider !== 'openrouter' ||
@@ -102,8 +113,10 @@ export class OpenRouterSpeechProvider implements SpeechSynthesisProvider {
             !Object.values(model.languageCodes).includes(profile.language) ||
             !model.voices?.includes(profile.voice) ||
             !model.settingsVersions?.includes(profile.settingsVersion)
-        )
+        ) {
             throw new Error('Unsupported speech configuration.');
+        }
+
         return model;
     }
 
@@ -119,8 +132,10 @@ export class OpenRouterSpeechProvider implements SpeechSynthesisProvider {
                 /\[[\s\S]*\]/u.test(input.text) ||
                 Array.from(input.text).length >
                     Math.min(2000, model.maxCharacters)
-            )
+            ) {
                 throw new Error('Invalid speech input.');
+            }
+
             input.signal?.throwIfAborted();
         } catch {
             throw new SpeechSubmissionError('not_submitted', false);
@@ -130,6 +145,7 @@ export class OpenRouterSpeechProvider implements SpeechSynthesisProvider {
             AbortSignal.timeout(this.options.timeoutMs),
             ...(input.signal ? [input.signal] : []),
         ]);
+
         try {
             const response = await withAbort(
                 (this.options.fetch ?? fetch)(
@@ -162,14 +178,17 @@ export class OpenRouterSpeechProvider implements SpeechSynthesisProvider {
                 ),
                 signal,
             );
+
             if (
                 [400, 401, 402, 403, 404, 405, 413, 415, 422, 429].includes(
                     response.status,
                 )
             ) {
                 void response.body?.cancel().catch(() => {});
+
                 throw new SpeechSubmissionError('not_submitted', false);
             }
+
             if (
                 response.status !== 200 ||
                 response.headers.get('content-type')?.split(';')[0]?.trim() !==
@@ -178,24 +197,35 @@ export class OpenRouterSpeechProvider implements SpeechSynthesisProvider {
                     maximumAudioBytes
             ) {
                 void response.body?.cancel().catch(() => {});
+
                 throw new SpeechSubmissionError('unknown', false);
             }
+
             const reader = response.body?.getReader();
-            if (!reader) throw new Error('Missing speech audio.');
+            if (!reader) {
+                throw new Error('Missing speech audio.');
+            }
+
             const chunks: Uint8Array[] = [];
             let size = 0;
             try {
                 while (true) {
                     const next = await withAbort(reader.read(), signal);
-                    if (next.done) break;
+                    if (next.done) {
+                        break;
+                    }
+
                     size += next.value.length;
-                    if (size > maximumAudioBytes)
+                    if (size > maximumAudioBytes) {
                         throw new Error('Speech audio exceeds limit.');
+                    }
+
                     chunks.push(next.value);
                 }
             } finally {
                 void reader.cancel().catch(() => {});
             }
+
             signal.throwIfAborted();
             const bytes = Buffer.concat(chunks, size);
             const audio = {
@@ -204,10 +234,15 @@ export class OpenRouterSpeechProvider implements SpeechSynthesisProvider {
                 durationMs: validateMp3(bytes),
                 checksum: audioChecksum(bytes),
             };
+
             assertAudioIntegrity(audio);
+
             return { state: 'ready', audio };
         } catch (error) {
-            if (error instanceof SpeechSubmissionError) throw error;
+            if (error instanceof SpeechSubmissionError) {
+                throw error;
+            }
+
             // Accepted paid work cannot be safely resubmitted after an ambiguous failure.
             throw new SpeechSubmissionError('unknown', false);
         }

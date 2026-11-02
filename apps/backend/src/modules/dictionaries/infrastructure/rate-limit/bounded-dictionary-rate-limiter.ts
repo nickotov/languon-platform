@@ -96,15 +96,20 @@ export class BoundedDictionaryRateLimiter implements DictionaryRateLimiter {
                 signal: input.signal,
                 subject: input.key,
             });
+
             return {
                 allowed: decision.allowed,
                 retryAfterSeconds: decision.retryAfterSeconds,
             };
         } catch (error) {
-            if (input.signal.aborted) throw error;
+            if (input.signal.aborted) {
+                throw error;
+            }
+
             if (error instanceof RateLimitUnavailableError) {
                 throw new DictionaryServiceUnavailableError();
             }
+
             throw error;
         }
     }

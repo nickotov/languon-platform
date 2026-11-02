@@ -42,12 +42,14 @@ describeIfRedis('Redis authentication controls', () => {
         for (const namespace of namespaces) {
             await deleteNamespacedKeys(redis, namespace);
         }
+
         await redis.quit();
     });
 
     function namespace(label: string): string {
         const value = uniqueAuthRedisNamespace(label);
         namespaces.add(value);
+
         return value;
     }
 
@@ -56,6 +58,7 @@ describeIfRedis('Redis authentication controls', () => {
         rateLimiter: RedisRateLimiter;
     } {
         const value = namespace(label);
+
         return {
             namespace: value,
             rateLimiter: new RedisRateLimiter({
@@ -86,6 +89,7 @@ describeIfRedis('Redis authentication controls', () => {
             true,
             false,
         ]);
+
         expect(decisions.at(-1)).toMatchObject({
             limit: 3,
             remaining: 0,
@@ -132,16 +136,19 @@ describeIfRedis('Redis authentication controls', () => {
         await expect(rateLimiter.consume(request)).resolves.toMatchObject({
             allowed: true,
         });
+
         await new Promise((resolve) => setTimeout(resolve, 350));
         await expect(rateLimiter.consume(request)).resolves.toMatchObject({
             allowed: true,
         });
+
         await new Promise((resolve) => setTimeout(resolve, 220));
 
         await expect(rateLimiter.consume(request)).resolves.toMatchObject({
             allowed: true,
             remaining: 0,
         });
+
         await expect(rateLimiter.consume(request)).resolves.toMatchObject({
             allowed: false,
             remaining: 0,
@@ -159,6 +166,7 @@ describeIfRedis('Redis authentication controls', () => {
             subject: account,
             windowMs: 5_000,
         });
+
         await rateLimiter.linkSubject({
             alias: flowId,
             scope,
@@ -175,6 +183,7 @@ describeIfRedis('Redis authentication controls', () => {
                 windowMs: 5_000,
             }),
         ).resolves.toMatchObject({ allowed: true, remaining: 0 });
+
         await expect(
             rateLimiter.consume({
                 limit: 2,
@@ -231,11 +240,13 @@ describeIfRedis('Redis authentication controls', () => {
             purpose: 'authentication',
             userId: null,
         };
+
         await store.issue(challenge);
 
         const results = await Promise.all(
             Array.from({ length: 20 }, () => store.consume(challenge.id)),
         );
+
         expect(results.filter((value) => value !== null)).toEqual([challenge]);
     });
 });
@@ -264,6 +275,7 @@ describe('Redis authentication control outage behavior', () => {
                 windowMs: 60_000,
             }),
         ).rejects.toBeInstanceOf(RateLimitUnavailableError);
+
         expect(performance.now() - startedAt).toBeLessThan(1_000);
         redis.disconnect(false);
     });
@@ -292,9 +304,11 @@ describe('Redis authentication control outage behavior', () => {
         await expect(store.issue(challenge)).rejects.toBeInstanceOf(
             WebAuthnChallengeStoreUnavailableError,
         );
+
         await expect(store.consume(challenge.id)).rejects.toBeInstanceOf(
             WebAuthnChallengeStoreUnavailableError,
         );
+
         expect(performance.now() - startedAt).toBeLessThan(1_000);
         redis.disconnect(false);
     });

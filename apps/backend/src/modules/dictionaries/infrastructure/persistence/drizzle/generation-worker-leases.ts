@@ -48,14 +48,19 @@ export async function markProviderDispatch(
             .where(workerCas(input))
             .for('update');
 
-        if (!job) return false;
+        if (!job) {
+            return false;
+        }
+
         if (usesLegacyAction(job.selectedExecutionSnapshot)) {
-            if (!job.aiCreditProviderDispatchedAt)
+            if (!job.aiCreditProviderDispatchedAt) {
                 await recheckTextAiDispatch(tx, {
                     actionId: job.id,
                     jobId: job.id,
                     now: input.context.now,
                 });
+            }
+
             await tx
                 .update(dictionaryGenerationJobsTable)
                 .set({ aiCreditProviderDispatchedAt: input.context.now })
@@ -64,9 +69,14 @@ export async function markProviderDispatch(
             return true;
         }
 
-        if (!job.aiCreditAccounted) return true;
-        if (!job.aiCreditReservationId)
+        if (!job.aiCreditAccounted) {
+            return true;
+        }
+
+        if (!job.aiCreditReservationId) {
             throw new Error('AI credit reservation is missing');
+        }
+
         const credits = new DrizzleAiCreditTransactionParticipant(tx);
         await credits.markProviderDispatched({
             dispatchedAt: input.context.now,
@@ -183,13 +193,14 @@ export async function releaseWorkerLeases(
                     ),
                 );
 
-            if (job.kind === 'document-terms' && terminal)
+            if (job.kind === 'document-terms' && terminal) {
                 await scheduleDocumentCleanup(
                     tx,
                     job.id,
                     input.context.now,
                     'cancelled',
                 );
+            }
         }
     });
 }

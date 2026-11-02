@@ -25,6 +25,7 @@ const empty: PortraitItems = {
     accommodations: [],
     hobbies: [],
 };
+
 function state(version = 0): PortraitState {
     return {
         version,
@@ -35,6 +36,7 @@ function state(version = 0): PortraitState {
         draft: null,
     };
 }
+
 function management(initial = state()): PortraitManagement {
     return {
         ownerId,
@@ -46,6 +48,7 @@ function management(initial = state()): PortraitManagement {
             operation('fixture-token'),
     } as unknown as PortraitManagement;
 }
+
 function approved(version = 4): PortraitState {
     return {
         ...state(version),
@@ -58,6 +61,7 @@ function approved(version = 4): PortraitState {
         },
     };
 }
+
 beforeEach(() => {
     vi.clearAllMocks();
     useSessionStore.setState({ user: { id: ownerId } as AuthUser });
@@ -69,24 +73,23 @@ describe('portrait manual approval workflow', () => {
         const { result } = renderHook(() =>
             usePortraitEditorSession(management(), false),
         );
+
         await act(() => result.current.save('en'));
         expect(save).not.toHaveBeenCalled();
     });
 
     it('explicit Save writes confirmed items and approves without enabling or AI work', async () => {
-        const save = vi
-            .spyOn(portraitApi, 'saveDraft')
-            .mockResolvedValue({
-                ...state(1),
-                draft: {
-                    items: { ...empty, goals: ['Travel'] },
-                    locale: 'fr',
-                    summary: 'Résumé',
-                    baseApprovedVersion: 0,
-                    updatedAt: '2026-10-21T10:00:00.000Z',
-                    expiresAt: '2026-11-04T10:00:00.000Z',
-                },
-            });
+        const save = vi.spyOn(portraitApi, 'saveDraft').mockResolvedValue({
+            ...state(1),
+            draft: {
+                items: { ...empty, goals: ['Travel'] },
+                locale: 'fr',
+                summary: 'Résumé',
+                baseApprovedVersion: 0,
+                updatedAt: '2026-10-21T10:00:00.000Z',
+                expiresAt: '2026-11-04T10:00:00.000Z',
+            },
+        });
         const approve = vi
             .spyOn(portraitApi, 'approve')
             .mockResolvedValue({ ...approved(2), useEnabled: false });
@@ -96,6 +99,7 @@ describe('portrait manual approval workflow', () => {
         const { result } = renderHook(() =>
             usePortraitEditorSession(context, false),
         );
+
         act(() => result.current.setItems({ ...empty, goals: ['Travel'] }));
         await act(() => result.current.save('fr'));
         expect(save).toHaveBeenCalledWith(
@@ -107,10 +111,12 @@ describe('portrait manual approval workflow', () => {
                 items: expect.objectContaining({ goals: ['Travel'] }),
             }),
         );
+
         expect(approve).toHaveBeenCalledWith('fixture-token', {
             expectedVersion: 1,
             expectedApprovedVersion: 0,
         });
+
         expect(use).not.toHaveBeenCalled();
         expect(interview).not.toHaveBeenCalled();
         expect(push).toHaveBeenCalledWith('/portrait?saved=first');
@@ -124,18 +130,21 @@ describe('portrait manual approval workflow', () => {
                 correlationId: 'fixture',
             }),
         );
+
         const latest = approved();
         vi.spyOn(portraitApi, 'read').mockResolvedValue(latest);
         const context = management();
         const { result } = renderHook(() =>
             usePortraitEditorSession(context, false),
         );
+
         act(() =>
             result.current.setItems({
                 ...empty,
                 accommodations: ['Short steps'],
             }),
         );
+
         await act(() => result.current.save('en'));
         expect(result.current.items.accommodations).toEqual(['Short steps']);
         expect(result.current.conflict?.approvedVersion).toBe(2);
@@ -147,6 +156,7 @@ describe('portrait manual approval workflow', () => {
                 accommodations: ['Short steps'],
             }),
         );
+
         expect(result.current.base.version).toBe(4);
         expect(result.current.conflict).toBeNull();
     });
@@ -159,21 +169,25 @@ describe('portrait manual approval workflow', () => {
                     finish = resolve;
                 }),
         );
+
         const approve = vi.spyOn(portraitApi, 'approve');
         const context = management();
         const { result } = renderHook(() =>
             usePortraitEditorSession(context, false),
         );
+
         act(() => result.current.setItems({ ...empty, goals: ['Work'] }));
         let pending!: Promise<void>;
         act(() => {
             pending = result.current.save('en');
         });
+
         useSessionStore.setState({ user: { id: 'another-owner' } as AuthUser });
         await act(async () => {
             finish(state(1));
             await pending;
         });
+
         expect(approve).not.toHaveBeenCalled();
         expect(push).not.toHaveBeenCalled();
     });
@@ -183,9 +197,11 @@ describe('portrait manual approval workflow', () => {
             ({ context }) => usePortraitEditorSession(context, false),
             { initialProps: { context: management() } },
         );
+
         act(() =>
             result.current.setItems({ ...empty, goals: ['Personal goal'] }),
         );
+
         rerender({ context: management(approved()) });
         expect(result.current.conflict?.version).toBe(4);
         expect(result.current.items.goals).toEqual(['Personal goal']);
@@ -200,12 +216,14 @@ describe('portrait field reconciliation', () => {
         expect(
             reconcilePortraitItems(latest, draft, { goals: 'draft' }),
         ).toBeNull();
+
         expect(
             reconcilePortraitItems(latest, draft, {
                 goals: 'draft',
                 tone: 'saved',
             }),
         ).toEqual({ ...empty, goals: ['Travel'] });
+
         expect(draft.tone).toBe('formal');
     });
 });

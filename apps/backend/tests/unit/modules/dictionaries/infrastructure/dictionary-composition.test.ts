@@ -60,13 +60,16 @@ function compose(accounting?: boolean) {
             linkSubject: async () => undefined,
         },
     };
+
     return { ...createDictionaryComposition(dependencies), database };
 }
+
 const context = () => ({
     clientAddress: '127.0.0.1',
     now: new Date('2026-01-01T00:00:00Z'),
     signal: new AbortController().signal,
 });
+
 describe('dictionary API accounting admission fence', () => {
     afterEach(() => vi.restoreAllMocks());
     it('keeps existing jobs readable and cancellable while new admission is disabled', async () => {
@@ -75,6 +78,7 @@ describe('dictionary API accounting admission fence', () => {
             DrizzleDictionaryGenerationStore.prototype,
             'read',
         ).mockResolvedValue(job as never);
+
         const cancel = vi
             .spyOn(DrizzleDictionaryGenerationStore.prototype, 'cancel')
             .mockResolvedValue(job as never);
@@ -82,9 +86,11 @@ describe('dictionary API accounting admission fence', () => {
         await expect(
             composition.generationService.read('token', 'job', context()),
         ).resolves.toEqual(job);
+
         await expect(
             composition.generationService.cancel('token', 'job', context()),
         ).resolves.toEqual(job);
+
         expect(cancel).toHaveBeenCalledOnce();
     });
 
@@ -97,11 +103,13 @@ describe('dictionary API accounting admission fence', () => {
                     'token',
                     context(),
                 );
+
             expect(
                 Object.values(capabilities).every(
                     (capability) => !capability.available,
                 ),
             ).toBe(true);
+
             await expect(
                 composition.generationService.enqueue(
                     'token',
@@ -112,15 +120,18 @@ describe('dictionary API accounting admission fence', () => {
                     context(),
                 ),
             ).rejects.toBeInstanceOf(DictionaryGenerationNotAvailableError);
+
             expect(composition.database.transaction).not.toHaveBeenCalled();
         },
     );
+
     it('advertises configured new generation when accounting is enabled', async () => {
         const composition = compose(true);
         const capabilities = await composition.generationService.capabilities(
             'token',
             context(),
         );
+
         expect(capabilities.singleCardGeneration.available).toBe(true);
         expect(capabilities.documentTermsGeneration.available).toBe(true);
     });

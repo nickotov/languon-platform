@@ -43,30 +43,45 @@ export function useSentenceLibrary(userId: string, enabled = true) {
                     { limit: 25, cursor: after },
                     signal,
                 );
-                if (signal?.aborted) return;
+
+                if (signal?.aborted) {
+                    return;
+                }
+
                 setDictionaries((previous) =>
                     after ? [...previous, ...response.items] : response.items,
                 );
+
                 setDictionaryCursor(response.nextCursor);
             } catch (caught) {
-                if (!signal?.aborted)
+                if (!signal?.aborted) {
                     setDiscoveryError(normalizeSentenceError(caught));
+                }
             } finally {
-                if (!signal?.aborted) setDiscoveryLoading(false);
+                if (!signal?.aborted) {
+                    setDiscoveryLoading(false);
+                }
             }
         },
         [userId],
     );
 
     useEffect(() => {
-        if (!enabled) return;
+        if (!enabled) {
+            return;
+        }
+
         const controller = new AbortController();
         void discover(controller.signal);
+
         return () => controller.abort();
     }, [discover, enabled]);
 
     useEffect(() => {
-        if (!dictionaryId) return;
+        if (!dictionaryId) {
+            return;
+        }
+
         const controller = new AbortController();
         setLoading(true);
         setError(null);
@@ -81,17 +96,24 @@ export function useSentenceLibrary(userId: string, enabled = true) {
                 controller.signal,
             )
             .then((response) => {
-                if (controller.signal.aborted) return;
+                if (controller.signal.aborted) {
+                    return;
+                }
+
                 setItems(response.items);
                 setNextCursor(response.nextCursor);
             })
             .catch((caught: unknown) => {
-                if (!controller.signal.aborted)
+                if (!controller.signal.aborted) {
                     setError(normalizeSentenceError(caught));
+                }
             })
             .finally(() => {
-                if (!controller.signal.aborted) setLoading(false);
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
             });
+
         return () => controller.abort();
     }, [cursor, dictionaryId, filters, revision, userId]);
 
@@ -110,10 +132,14 @@ export function useSentenceLibrary(userId: string, enabled = true) {
     const reload = () => setRevision((value) => value + 1);
     const firstPage = () => setCursor(undefined);
     const nextPage = () => {
-        if (nextCursor) setCursor(nextCursor);
+        if (nextCursor) {
+            setCursor(nextCursor);
+        }
     };
     const loadMoreDictionaries = () => {
-        if (dictionaryCursor) void discover(undefined, dictionaryCursor);
+        if (dictionaryCursor) {
+            void discover(undefined, dictionaryCursor);
+        }
     };
     const retryDiscovery = () => {
         void discover();

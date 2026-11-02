@@ -28,6 +28,7 @@ export function createTextAiProviderRuntime(
             const receipt = z
                 .object({ callId: z.uuid(), dispatchedAt: z.string() })
                 .parse(result[0]?.receipt);
+
             return {
                 ...receipt,
                 dispatchedAt: new Date(receipt.dispatchedAt).toISOString(),

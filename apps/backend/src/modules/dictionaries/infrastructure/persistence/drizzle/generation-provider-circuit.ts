@@ -21,9 +21,14 @@ export async function jobProviderCircuitKey(
     tx: Transaction,
     job: typeof dictionaryGenerationJobsTable.$inferSelect,
 ): Promise<string> {
-    if (job.selectedExecutionSnapshot)
+    if (job.selectedExecutionSnapshot) {
         return providerCircuitKey(job.format, job.selectedExecutionSnapshot);
-    if (!job.executionRevisionId) return job.format;
+    }
+
+    if (!job.executionRevisionId) {
+        return job.format;
+    }
+
     const [revision] = await tx
         .select({
             snapshot: dictionaryAiConfigurationRevisionsTable.catalogSnapshot,
@@ -37,8 +42,9 @@ export async function jobProviderCircuitKey(
         )
         .limit(1);
 
-    if (!revision)
+    if (!revision) {
         throw new Error('Pinned text AI execution revision is unavailable.');
+    }
 
     return providerCircuitKey(job.format, revision.snapshot);
 }

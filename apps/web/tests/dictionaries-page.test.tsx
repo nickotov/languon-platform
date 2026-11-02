@@ -81,9 +81,11 @@ describe('dictionaries page settings', () => {
         HTMLDialogElement.prototype.showModal = function showModal() {
             this.setAttribute('open', '');
         };
+
         HTMLDialogElement.prototype.close = function close() {
             this.removeAttribute('open');
         };
+
         useSessionStore.setState({
             accessToken: 'token',
             accessTokenExpiresAt: '2026-09-28T11:00:00.000Z',
@@ -91,6 +93,7 @@ describe('dictionaries page settings', () => {
             status: 'authenticated',
             user,
         });
+
         vi.spyOn(dictionaryApi, 'listLanguages').mockResolvedValue({
             catalogVersion: 1,
             languages: [
@@ -116,10 +119,12 @@ describe('dictionaries page settings', () => {
                 },
             ],
         });
+
         vi.spyOn(dictionaryApi, 'listDictionaries').mockResolvedValue({
             data: [summary],
             nextCursor: null,
         });
+
         vi.spyOn(dictionaryApi, 'readDictionary').mockResolvedValue({
             dictionary,
         });
@@ -146,6 +151,7 @@ describe('dictionaries page settings', () => {
                 name: 'Actions for Library settings example',
             }),
         );
+
         await interaction.click(
             screen.getByRole('menuitem', { name: 'Dictionary settings' }),
         );
@@ -153,9 +159,11 @@ describe('dictionaries page settings', () => {
         expect(
             await screen.findByRole('dialog', { name: 'Dictionary settings' }),
         ).toBeVisible();
+
         expect(
             screen.getByRole('heading', { name: 'My dictionaries' }),
         ).toBeVisible();
+
         expect(push).not.toHaveBeenCalled();
     });
 });

@@ -161,6 +161,7 @@ const terms: Record<Locale, Record<string, string>> = {
         'under-18': 'menor de 18 años',
     },
 };
+
 /** Derived only from confirmed fields; never adds model-authored assertions. */
 export function previewPortraitSummary(
     items: PortraitItems,
@@ -178,8 +179,11 @@ export function previewPortraitSummary(
     };
     const sentences: string[] = [];
     const add = (label: string, value: string | undefined) => {
-        if (value) sentences.push(`${label}: ${value}.`);
+        if (value) {
+            sentences.push(`${label}: ${value}.`);
+        }
     };
+
     // Prioritize useful accommodations/goals before optional background. Each
     // candidate is a complete assertion; omitted facts remain in editable items.
     add(text.goals, items.goals[0]);
@@ -189,23 +193,27 @@ export function previewPortraitSummary(
         text.explanations,
         items.explanationLanguages.map(languageName).join(', '),
     );
+
     const addLanguage = (item: PortraitItems['languages'][number]) =>
         add(
             text.languages,
             `${languageName(item.language)}${item.level ? ` (${term(item.level)})` : ''}${item.learning ? ` — ${text.learning}` : ''}${item.clarification ? `: ${item.clarification}` : ''}`,
         );
+
     items.languages.slice(0, 3).forEach(addLanguage);
-    if (items.mixedLanguageFrequency !== undefined)
-        add(
-            text.mixed,
-            items.mixedLanguageFrequency === 'sometimes'
-                ? text.sometimes
-                : items.mixedLanguageFrequency === 'helpful'
-                  ? text.yes
-                  : text.no,
-        );
-    else if (items.mixedLanguage !== undefined)
+    if (items.mixedLanguageFrequency !== undefined) {
+        let frequency: string = text.no;
+        if (items.mixedLanguageFrequency === 'sometimes') {
+            frequency = text.sometimes;
+        } else if (items.mixedLanguageFrequency === 'helpful') {
+            frequency = text.yes;
+        }
+
+        add(text.mixed, frequency);
+    } else if (items.mixedLanguage !== undefined) {
         add(text.mixed, items.mixedLanguage ? text.yes : text.no);
+    }
+
     add(text.mixingNote, items.mixingNote);
     add(text.tone, items.tone && term(items.tone));
     add(text.detail, items.detail && term(items.detail));
@@ -215,11 +223,14 @@ export function previewPortraitSummary(
     items.accommodations
         .slice(1)
         .forEach((value) => add(text.accommodations, value));
+
     items.languages.slice(3).forEach(addLanguage);
     items.notes?.slice(1).forEach((note) => add(text.note, note.text));
     items.hobbies.forEach((value) => add(text.hobbies, value));
-    if (items.ageRange !== 'prefer-not-to-say')
+    if (items.ageRange !== 'prefer-not-to-say') {
         add(text.age, items.ageRange && term(items.ageRange));
+    }
+
     const overflow = {
         en: 'More confirmed details are available in your editable portrait.',
         ru: 'Другие подтверждённые сведения доступны в редактируемом портрете.',
@@ -232,8 +243,10 @@ export function previewPortraitSummary(
     if (
         wordCount(complete) <= 180 &&
         portraitSerializedByteLength(complete) <= PORTRAIT_SUMMARY_MAX_BYTES
-    )
+    ) {
         return complete;
+    }
+
     const selected: string[] = [];
     for (const sentence of sentences) {
         const candidate = [...selected, sentence, overflow].join(' ');
@@ -241,8 +254,10 @@ export function previewPortraitSummary(
             wordCount(candidate) <= 180 &&
             portraitSerializedByteLength(candidate) <=
                 PORTRAIT_SUMMARY_MAX_BYTES
-        )
+        ) {
             selected.push(sentence);
+        }
     }
+
     return [...selected, overflow].join(' ');
 }

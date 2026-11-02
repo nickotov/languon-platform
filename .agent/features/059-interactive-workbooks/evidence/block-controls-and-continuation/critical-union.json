@@ -1,0 +1,122 @@
+{
+  "scope": "E46 requested block UX and affordable chat continuation fixes",
+  "coverage": "Union of complete passed registered flows; failed/interrupted runs remain failed and unmodified.",
+  "sourceManifest": "9712b62705363f0b10f696e30dbe5a794f9f55740c2e64a7afc32bfab6dae42d",
+  "reuseReason": "Seven earlier browser flows do not render Knowledge custom blocks or typed proposals. Four later browser flows tested final runtime; subsequent change is only a Texts integration-test watchdog. Backend code and all relevant browser source/fixtures/assertions are unchanged.",
+  "results": [
+    {
+      "id": "setup-to-generation",
+      "status": "passed",
+      "tests": 1,
+      "run": "3a5b0f2b-c36f-4b3b-937f-b20fa3315865",
+      "report": "test-results/critical-flows/3a5b0f2b-c36f-4b3b-937f-b20fa3315865/setup-to-generation.json",
+      "sha256": "eb665a85210d5c26b965a08c08902c9d66d3751485f8cf3efdb7710eba090432"
+    },
+    {
+      "id": "admin-text-ai-routing",
+      "status": "passed",
+      "tests": 2,
+      "run": "3a5b0f2b-c36f-4b3b-937f-b20fa3315865",
+      "report": "test-results/critical-flows/3a5b0f2b-c36f-4b3b-937f-b20fa3315865/admin-text-ai-routing.json",
+      "sha256": "8fc5f595de7921b51237cc6db89b28321d39e09ff849d62a8de6fb77bd41f622"
+    },
+    {
+      "id": "authentication",
+      "status": "passed",
+      "tests": 3,
+      "run": "3a5b0f2b-c36f-4b3b-937f-b20fa3315865",
+      "report": "test-results/critical-flows/3a5b0f2b-c36f-4b3b-937f-b20fa3315865/authentication.json",
+      "sha256": "7298956d0080135e3337817cd846dd2ca4deaa381b31f14602de88b10b977324"
+    },
+    {
+      "id": "admin-session-refresh",
+      "status": "passed",
+      "tests": 3,
+      "run": "3a5b0f2b-c36f-4b3b-937f-b20fa3315865",
+      "report": "test-results/critical-flows/3a5b0f2b-c36f-4b3b-937f-b20fa3315865/admin-session-refresh.json",
+      "sha256": "41990a28dfe24e4724d2ae3e5c9ed90a03310e003f313d2d001c810ff86b415f"
+    },
+    {
+      "id": "dictionary-generation",
+      "status": "passed",
+      "tests": 1,
+      "run": "3a5b0f2b-c36f-4b3b-937f-b20fa3315865",
+      "report": "test-results/critical-flows/3a5b0f2b-c36f-4b3b-937f-b20fa3315865/dictionary-generation.json",
+      "sha256": "ee00aa6f7fc5b99ceea1032f5467b9934da66e952f044e6d4cb2f0c98f26a5b2"
+    },
+    {
+      "id": "sentence-practice",
+      "status": "passed",
+      "tests": 2,
+      "run": "3a5b0f2b-c36f-4b3b-937f-b20fa3315865",
+      "report": "test-results/critical-flows/3a5b0f2b-c36f-4b3b-937f-b20fa3315865/sentence-practice.json",
+      "sha256": "f373e31a575e20f5aa29e2487afa0ac8d264700b769155bf4757d76e85854f58"
+    },
+    {
+      "id": "text-generation",
+      "status": "passed",
+      "tests": 2,
+      "run": "3a5b0f2b-c36f-4b3b-937f-b20fa3315865",
+      "report": "test-results/critical-flows/3a5b0f2b-c36f-4b3b-937f-b20fa3315865/text-generation.json",
+      "sha256": "d60249292c7c5cb0ce5cea1198e9321b56ce9a644fc08de45d5655e2fac336e9"
+    },
+    {
+      "id": "interactive-workbooks",
+      "status": "passed",
+      "tests": 2,
+      "run": "0d838129-7006-4845-a8b7-c406837ddaa8",
+      "report": "test-results/critical-flows/0d838129-7006-4845-a8b7-c406837ddaa8/interactive-workbooks.json",
+      "sha256": "dc28f85309f45bc603f76c1eaabc19bd48d65880bfb8cb03094253bb5866e1ee"
+    },
+    {
+      "id": "chat-lifecycle",
+      "status": "passed",
+      "tests": 1,
+      "run": "0d838129-7006-4845-a8b7-c406837ddaa8",
+      "report": "test-results/critical-flows/0d838129-7006-4845-a8b7-c406837ddaa8/chat-lifecycle.json",
+      "sha256": "e48c7c1fe3a334cf9393f62a79fa12aad33ae233a0f1f3292e751d85e98381bb"
+    },
+    {
+      "id": "insufficient-credits",
+      "status": "passed",
+      "tests": 1,
+      "run": "0d838129-7006-4845-a8b7-c406837ddaa8",
+      "report": "test-results/critical-flows/0d838129-7006-4845-a8b7-c406837ddaa8/insufficient-credits.json",
+      "sha256": "76d93f0556a2589a95a1c225a6370a3abf737e541b205cfe7a71dc74889b1d6e"
+    },
+    {
+      "id": "free-interview",
+      "status": "passed",
+      "tests": 1,
+      "run": "0d838129-7006-4845-a8b7-c406837ddaa8",
+      "report": "test-results/critical-flows/0d838129-7006-4845-a8b7-c406837ddaa8/free-interview.json",
+      "sha256": "a404204d4d84c989ad3c38569b0e80fc0c3e9cf9be4516511a4f034531e091fc"
+    },
+    {
+      "id": "speech-playback",
+      "status": "passed",
+      "tests": 4,
+      "run": "75c427d8-2c41-477a-8dee-6145ba6dde21",
+      "report": "test-results/critical-flows/75c427d8-2c41-477a-8dee-6145ba6dde21/speech-playback.json",
+      "sha256": "31f6b6e2f7e01387955dec6f5795acbc28182d942f2b3cda4f330ff0133719f3"
+    },
+    {
+      "id": "admin-mcp",
+      "status": "passed",
+      "tests": 3,
+      "run": "75c427d8-2c41-477a-8dee-6145ba6dde21",
+      "report": "test-results/critical-flows/75c427d8-2c41-477a-8dee-6145ba6dde21/admin-mcp.json",
+      "sha256": "c987116d7dce63c6e0181371fa8ba9bc2d0a9859c2df3ef583ccb0bdcc5c812a"
+    },
+    {
+      "id": "ai-execution-contracts",
+      "status": "passed",
+      "tests": 749,
+      "run": "75c427d8-2c41-477a-8dee-6145ba6dde21",
+      "report": "test-results/critical-flows/75c427d8-2c41-477a-8dee-6145ba6dde21/ai-execution-contracts.json",
+      "sha256": "1341b1a0df74f1c94f4ca0088e7eaf781d50a6b514e18bfa52ae9cb9a246887a"
+    }
+  ],
+  "totalFlows": 14,
+  "totalTests": 775
+}

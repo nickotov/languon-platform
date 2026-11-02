@@ -16,6 +16,7 @@ export async function createFeature(repositoryRoot, args) {
             'Usage: pnpm feature:new -- <kebab-case-slug> "Optional title" (omit the numeric prefix)',
         );
     }
+
     const featuresDirectory = join(repositoryRoot, '.agent', 'features');
     const templatesDirectory = join(repositoryRoot, '.agent', 'templates');
     const title = titleParts.length
@@ -31,37 +32,45 @@ export async function createFeature(repositoryRoot, args) {
             readFile(join(templatesDirectory, name), 'utf8'),
         ),
     );
+
     await mkdir(featuresDirectory, { recursive: true });
     const lock = join(featuresDirectory, '.create-feature.lock');
     try {
         await mkdir(lock);
     } catch (error) {
-        if (error.code === 'EEXIST')
+        if (error.code === 'EEXIST') {
             throw new Error(
                 'Another feature creation is in progress. Retry after it finishes; if interrupted, inspect and remove the stale .agent/features/.create-feature.lock directory.',
                 { cause: error },
             );
+        }
+
         throw error;
     }
+
     let targetDirectory;
     let created = false;
     try {
         const entries = (
             await readdir(featuresDirectory, { withFileTypes: true })
         ).filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'));
+
         if (entries.some((entry) => entry.name.replace(/^\d+-/, '') === slug)) {
             throw new Error(
                 `Feature workspace already exists for slug: ${slug}`,
             );
         }
+
         const numbers = entries.map((entry) =>
             Number(entry.name.match(/^(\d+)-/)?.[1] ?? 0),
         );
         const next = Math.max(0, ...numbers) + 1;
-        if (!Number.isSafeInteger(next))
+        if (!Number.isSafeInteger(next)) {
             throw new Error(
                 'Feature counter exceeds the supported integer range.',
             );
+        }
+
         const folder = `${String(next).padStart(3, '0')}-${slug}`;
         targetDirectory = join(featuresDirectory, folder);
         await mkdir(targetDirectory);
@@ -72,14 +81,18 @@ export async function createFeature(repositoryRoot, args) {
                 .replaceAll('{{FEATURE_SLUG}}', slug)
                 .replaceAll('{{FEATURE_FOLDER}}', folder)
                 .replaceAll('{{DATE}}', date);
+
             await writeFile(join(targetDirectory, name), content, {
                 flag: 'wx',
             });
         }
+
         return targetDirectory;
     } catch (error) {
-        if (created)
+        if (created) {
             await rm(targetDirectory, { recursive: true, force: true });
+        }
+
         throw error;
     } finally {
         await rm(lock, { recursive: true, force: true });
@@ -93,6 +106,7 @@ if (process.argv[1] && resolve(process.argv[1]) === scriptPath) {
             resolve(dirname(scriptPath), '..'),
             process.argv.slice(2),
         );
+
         console.log(`Created ${target}`);
     } catch (error) {
         console.error(error.message);

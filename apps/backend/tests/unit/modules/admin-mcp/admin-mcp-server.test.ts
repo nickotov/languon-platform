@@ -15,7 +15,10 @@ function fixture() {
         limits: {},
     };
     const authenticate = vi.fn(async (secret: string) => {
-        if (secret !== 'synthetic') throw Error('invalid');
+        if (secret !== 'synthetic') {
+            throw Error('invalid');
+        }
+
         return actor;
     });
     const app = createAdminMcpServer({
@@ -35,27 +38,34 @@ function fixture() {
             },
             body: JSON.stringify(body),
         });
+
     return { app, request, read, authenticate };
 }
+
 describe('local authenticated admin MCP HTTP', () => {
     it('rejects remote Host, browser Origin, query tokens and missing credentials before tool work', async () => {
         const { app, request, authenticate } = fixture();
         expect((await request({}, { Host: 'evil.example:3002' })).status).toBe(
             403,
         );
+
         expect(
             (await request({}, { Origin: 'http://localhost:3333' })).status,
         ).toBe(403);
+
         expect(
             (await app.request('http://127.0.0.1:3002/mcp?token=never-allow'))
                 .status,
         ).toBe(400);
+
         expect(
             (await app.request('http://127.0.0.1:3002/mcp', { method: 'POST' }))
                 .status,
         ).toBe(401);
+
         expect(authenticate).not.toHaveBeenCalled();
     });
+
     it('initializes the real SDK and exposes only the delegated read tool', async () => {
         const { request } = fixture();
         const initialized = await request({
@@ -68,6 +78,7 @@ describe('local authenticated admin MCP HTTP', () => {
                 clientInfo: { name: 'synthetic-client', version: '1' },
             },
         });
+
         expect(initialized.status).toBe(200);
         const body = await initialized.text();
         expect(body).toContain('languon-admin');
@@ -82,6 +93,7 @@ describe('local authenticated admin MCP HTTP', () => {
         expect(text).not.toContain('admin_apply');
         expect(text).not.toContain('users_lookup');
     });
+
     it('executes read-only check without AI or database mutation', async () => {
         const { request, read } = fixture();
         const response = await request({
@@ -90,15 +102,18 @@ describe('local authenticated admin MCP HTTP', () => {
             method: 'tools/call',
             params: { name: 'admin_connection_test', arguments: {} },
         });
+
         expect(response.status).toBe(200);
         expect(await response.text()).toContain('connected');
         expect(read).not.toHaveBeenCalled();
     });
+
     it('does not disclose database/provider exception content', async () => {
         const { request, read } = fixture();
         read.mockRejectedValueOnce(
             new Error('postgres://sensitive-secret privateprompt'),
         );
+
         const response = await request({
             jsonrpc: '2.0',
             id: 4,
@@ -112,6 +127,7 @@ describe('local authenticated admin MCP HTTP', () => {
         expect(body).not.toContain('privateprompt');
     });
 });
+
 describe('local MCP environment', () => {
     it('rejects deployed environments and reports missing fallback names without values', () => {
         const diagnostics = { warn: vi.fn(), error: vi.fn() };
@@ -124,6 +140,7 @@ describe('local MCP environment', () => {
                 diagnostics,
             ),
         ).toThrow();
+
         const result = loadAdminMcpEnvironment(
             {
                 APP_ENV: 'development',
@@ -131,10 +148,12 @@ describe('local MCP environment', () => {
             },
             diagnostics,
         );
+
         expect(result.ADMIN_MCP_PORT).toBe(3002);
         expect(diagnostics.warn).toHaveBeenCalledWith(
             expect.stringContaining('ADMIN_MCP_PORT'),
         );
+
         expect(diagnostics.warn).not.toHaveBeenCalledWith(
             expect.stringContaining('postgres://'),
         );

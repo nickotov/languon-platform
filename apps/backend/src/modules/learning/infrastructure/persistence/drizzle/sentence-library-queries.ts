@@ -49,8 +49,10 @@ export async function sentenceLibraryListInternal(
             !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
                 cursor,
             )
-        )
+        ) {
             throw new SentenceConflictError('stale_content');
+        }
+
         const rows = await sentenceLibraryRows(
             tx,
             scope,
@@ -99,7 +101,10 @@ export async function sentenceLibraryDetailInternal(
             )!,
         );
 
-        if (!row) throw new SentenceUnavailableError();
+        if (!row) {
+            throw new SentenceUnavailableError();
+        }
+
         const linked = await sentenceExerciseEntries(tx, exerciseId);
 
         return {
@@ -122,7 +127,10 @@ export async function sentenceLibraryAdminDictionaries(
 ) {
     return persistence.database.transaction(async (tx) => {
         context.signal.throwIfAborted();
-        if (!persistence.adminHooks) throw new SentenceUnavailableError();
+        if (!persistence.adminHooks) {
+            throw new SentenceUnavailableError();
+        }
+
         await persistence.adminHooks.authorizeAdmin(
             tx,
             scope,
@@ -140,15 +148,19 @@ export async function sentenceLibraryAdminDictionaries(
             !target ||
             target.status === 'deletion_pending' ||
             target.status === 'purged'
-        )
+        ) {
             throw new SentenceUnavailableError();
+        }
+
         if (
             query.cursor &&
             !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
                 query.cursor,
             )
-        )
+        ) {
             throw new SentenceConflictError('stale_content');
+        }
+
         // Single-table SELECT projections dequalify Drizzle Column chunks;
         // literal outer identifiers keep these scalar subqueries correlated.
         const generated = sql<number>`(select count(*)::int from sentence_exercises e where e.dictionary_id=dictionaries.id and e.creator_id=${scope.targetUserId}::uuid)`;

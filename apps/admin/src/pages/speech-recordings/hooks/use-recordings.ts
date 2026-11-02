@@ -37,16 +37,24 @@ export function useRecordings() {
         adminApi
             .speechRecordings({ ...filters, page, pageSize: 25 }, abort.signal)
             .then((response) => {
-                if (abort.signal.aborted) return;
+                if (abort.signal.aborted) {
+                    return;
+                }
+
                 setRecordings(response.recordings);
                 setTotal(response.total);
             })
             .catch((caught: unknown) => {
-                if (!abort.signal.aborted) setError(asError(caught));
+                if (!abort.signal.aborted) {
+                    setError(asError(caught));
+                }
             })
             .finally(() => {
-                if (!abort.signal.aborted) setLoading(false);
+                if (!abort.signal.aborted) {
+                    setLoading(false);
+                }
             });
+
         return () => abort.abort();
     }, [filters, page, revision]);
 
@@ -61,7 +69,10 @@ export function useRecordings() {
     };
     const openDelete = () => {
         const chosen = recordings.filter((item) => selected.includes(item.id));
-        if (chosen.length === 0 || chosen.length > 100) return;
+        if (chosen.length === 0 || chosen.length > 100) {
+            return;
+        }
+
         setMutationError(null);
         setMutationBlocked(false);
         setConfirmation(chosen);
@@ -73,7 +84,10 @@ export function useRecordings() {
         }
     };
     const submitDelete = async (reason: string) => {
-        if (!confirmation || inFlight.current || mutationBlocked) return;
+        if (!confirmation || inFlight.current || mutationBlocked) {
+            return;
+        }
+
         inFlight.current = true;
         setDeleting(true);
         setMutationError(null);
@@ -87,6 +101,7 @@ export function useRecordings() {
                     expectedBindingCount: item.bindingCount,
                 })),
             });
+
             setConfirmation(null);
             refresh();
         } catch (caught) {
@@ -107,6 +122,7 @@ export function useRecordings() {
         setPage(next);
         setSelected([]);
     };
+
     return {
         recordings,
         filters,

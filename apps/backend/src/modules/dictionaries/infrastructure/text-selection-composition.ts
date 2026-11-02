@@ -19,6 +19,7 @@ export function createTextSelectionModule(
 ) {
     const store = new DrizzleTextSelectionStore(input.database, input);
     const generator = input.generator;
+
     return {
         service: new TextSelectionService(input.authentication, store),
         store,
@@ -38,6 +39,7 @@ export function createTextSelectionApiModule(
     } & TextSelectionStoreOptions,
 ) {
     const store = new DrizzleTextSelectionStore(input.database, input);
+
     return {
         store,
         service: new TextSelectionService(input.authentication, store),
@@ -52,6 +54,7 @@ export function createTextSelectionWorkerComposition(
     } & TextSelectionStoreOptions,
 ) {
     const store = new DrizzleTextSelectionStore(input.database, input);
+
     return {
         store,
         worker: new TextSelectionWorker(

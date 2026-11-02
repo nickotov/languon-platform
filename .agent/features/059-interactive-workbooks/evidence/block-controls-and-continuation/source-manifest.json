@@ -1,0 +1,132 @@
+{
+  "base": "ef53108",
+  "scope": "E46 requested block controls, selection, proposal framing and affordable tool continuation",
+  "aggregate_algorithm": "SHA256 of JSON.stringify(files), sorted by path",
+  "aggregate_sha256": "9712b62705363f0b10f696e30dbe5a794f9f55740c2e64a7afc32bfab6dae42d",
+  "files": [
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts",
+      "sha256": "7e4d44928d98d948da6e3e1e4bc5368351cf4ded0b1ace6dd72b06773ee00e0d"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-persistence-context.ts",
+      "sha256": "a12632c0a1a9b518bc244bbbd86b02ff2612881937fcd3da7ae3115d502729b5"
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-admission.ts",
+      "sha256": "79e3a71766622eb01ec6a55a62c88845aa1908f06a0494dda7e48650a6b5ee90"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/conversation-accounting.test.ts",
+      "sha256": "75e1ab1ee0f42bd926f5d1c40315416664109dca7d2b2a0858accff8773b7f96"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/conversations/conversation-production-execution.test.ts",
+      "sha256": "46653987839ec9ec370b0c6d4abd7ea1209a6c83bcf410bb4bbb1b44395342f3"
+    },
+    {
+      "path": "apps/backend/tests/integration/modules/texts/texts-job-store.test.ts",
+      "sha256": "2177d817bc344e2e5188db0eac853fdb59956593f880fcc6186bc7ab047cec0f"
+    },
+    {
+      "path": "apps/backend/tests/support/contextual-assistant-fixture.ts",
+      "sha256": "a4f03f54b15ad1fce2d75b1a1730ee3521cd47420385b7fca67e84eb08816696"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/types.ts",
+      "sha256": "33f38b048183b252e3881934bc83a08155dbf79d6099faff3e0bfa3b6bf91b8e"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/block-layout.module.css",
+      "sha256": "37e43b69d87a45a908f1e663327369fcf822287898868e64a9a1098b792b449c"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/learning-block-view/learning-block-view.tsx",
+      "sha256": "6c3d940314bdaa0fbf758c44a95ac08779757bf06754ba0d7f9305e85cb9993c"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/lib/learning-block-drop.ts",
+      "sha256": "88a0f11c6a3815278ea9468ff0ff871ffd3ab4779c4a1ffdffe7929ea5332903"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/block-proposal-card.module.css",
+      "sha256": "c243a1da9e097f881a8b49b02b4f127825d3c528e07009fb8f26c2f9dfc1f091"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/knowledge-editor.tsx",
+      "sha256": "2750224f491fbfff80a09d40dc82f790c3408018646ae54a7844746ef73c55d3"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/workspace-editor-chrome.module.css",
+      "sha256": "e1505d90d0ac1f27701a48db61022c86b1d33622d15c90a6d1b91f425992ab98"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/workspace-editor-chrome.tsx",
+      "sha256": "853379ac7615c4083861277b41f2740d1da76bd9fff8438a209105d9e26cf5b8"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-actions.tsx",
+      "sha256": "84b1e6ad8d306f2e5fea5a03f6aca44485c5d875eb4c685a47d00534c0d3be99"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-authoring-context.tsx",
+      "sha256": "56b4a1169fd62498dfe52d26ea89f272414aa8aa8ae435dc091336c0a8b5bf9b"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-locales.ts",
+      "sha256": "df667fc34adfda37656c5ff4593264bb68a4688e08824a6c69e908016fea02cd"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-authoring.module.css",
+      "sha256": "ce8ee8a9f5ddac3f76e657e916c871740a06da36c56903c435f3c2c4ad8eca60"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-authoring.tsx",
+      "sha256": "af029e5bc1327043e5e62e39875a57f29079f8c1810a363a5cc80adc9d27f116"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-node.module.css",
+      "sha256": "7f2557592fb0c6d9e57d3c0da6e25bd03d63cfce9f692fa3cd0735640450465a"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-node.tsx",
+      "sha256": "9c097789cb392cd7ff1d59b1e2248e7e80ae40febcd725c3a371ac5bf70dc7f0"
+    },
+    {
+      "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-message.tsx",
+      "sha256": "0c1a4ef3b11aae53f22c72aa6bbb96669b8e5bec6a2bb6cf9f8535b05efc3b56"
+    },
+    {
+      "path": "apps/web/tests/e2e/interactive-workbooks.journeys.spec.ts",
+      "sha256": "2ceb40f9d7913d76bb30cf94187402992ca4f4cc416790d88c4c4dedd44266ff"
+    },
+    {
+      "path": "apps/web/tests/knowledge-block-controls.test.tsx",
+      "sha256": "a45c9372072a610e0913cfaeb5be3fb09539ff91296cc31926f4eeb648412e4d"
+    },
+    {
+      "path": "apps/web/tests/knowledge-block-copy.test.tsx",
+      "sha256": "724045e52607cc0c08248041e537a0bc274bf375ac058059fbb9703a282407ab"
+    },
+    {
+      "path": "apps/web/tests/knowledge-block-reply.test.tsx",
+      "sha256": "db7f3100a64674c0960588931ca97c935aae3f265a3980785039bbf778607545"
+    },
+    {
+      "path": "apps/web/tests/knowledge-learning-block-editor.test.tsx",
+      "sha256": "174c2629a44b7e6a4f7100577a1e321c42094e449757e4668b9d930a32d09304"
+    },
+    {
+      "path": "apps/web/tests/knowledge-workspace-block-selection.test.tsx",
+      "sha256": "2f65f9f0976850710350adecf05d72b648c070fe38a5ecb249282f11b07b1102"
+    },
+    {
+      "path": "docs/user-flows/interactive-workbooks.md",
+      "sha256": "eef859f6d28d89260f24cc2482ec72db1dd0669b99b43258d923ea2382ee97dd"
+    },
+    {
+      "path": "scripts/critical-flows/registry.mjs",
+      "sha256": "7015d70088adcfa2bec9abcc8534a548cb330a2d508e499a8cb9241aa8f66652"
+    }
+  ]
+}

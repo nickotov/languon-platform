@@ -35,7 +35,6 @@ Pre-execution harness remediation: explicitly clear inherited voice map; load ES
 
 Hashes of final speech/wallet sources are recorded in `browser-final-20261022/followup-source.sha256`. Broad final compilation and independent completion review remain parent-owned.
 
-
 ## Strict accounted dictionary browser follow-up
 
 The guarded startup CLI requires APP_ENV=test, explicit fixture opt-in, equal DATABASE_URL/AUTH_E2E_DATABASE_URL, and a named loopback test/E2E database on a nondefault port. Its synthetic managed snapshot, customer/provider rates and operator funding go through real accounting admission. The API enables enforcement+managed routing; the worker uses deterministic provider mode and a synthetic key. No unaccounted exception or paid model call was introduced. The legacy worker owns these backend fixtures; frontend verification changed only test locators, diagnostics and the separate desktop proof below.
@@ -50,8 +49,8 @@ Owned target remained learner PostgreSQL 55444 / Redis 56444 (API 4006 / web 333
 Final scoped command: `pnpm --filter @languon/web exec playwright test tests/e2e/dictionary-platform.journeys.spec.ts --grep 'accounted batch desktop generation'`, with the same preserved Next declaration wrapper described above. Environment target PostgreSQL 55444 / Redis 56444, backendorigin localhost:4006, weborigin localhost:3336, final run identifier d52f. Original two-scenario run used d52c; only its card scenario passed, and its real batch overflow failure remains recorded.
 
 After actual exit 0, read-only lsof verified no listeners 4006/3336; owned API/Next/worker processes were gone. Pre-existing unrelated dictionary worker PIDs 29851/29967 were preserved. next-env is clean. Parent notified the quiet load window is available. Final test-scoped ESLint, mapping and whitespace checks passed. This is not a passing full dictionary guide or an accessibility-layout waiver.
-- Dictionary guide revision e6a3d2ee25c55c2d marker synchronized; mapping check passed. Earlier full 28 guide checks remain separately recorded; they prove traceability, not execution of every scenario.
 
+- Dictionary guide revision e6a3d2ee25c55c2d marker synchronized; mapping check passed. Earlier full 28 guide checks remain separately recorded; they prove traceability, not execution of every scenario.
 
 ## Free portrait composer browser proof
 

@@ -47,8 +47,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             '/accounting',
             '/admin-mcp',
         ]) {
-            if (location.pathname.startsWith(path)) return path;
+            if (location.pathname.startsWith(path)) {
+                return path;
+            }
         }
+
         return '/';
     }, [location.pathname]);
     const navigationItems = [
@@ -83,19 +86,24 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             label: translate('speech.title'),
         },
     ];
-    if (adminMcpEnabled)
+
+    if (adminMcpEnabled) {
         navigationItems.push({
             icon: <ApiOutlined />,
             key: '/admin-mcp',
             label: translate('mcp.title'),
         });
+    }
+
     const navigation = (closeAfterNavigate = false) => (
         <>
             <Link
                 aria-label={translate('shell.brandLabel')}
                 className={styles.brand}
                 onClick={() => {
-                    if (closeAfterNavigate) setMobileNavigationOpen(false);
+                    if (closeAfterNavigate) {
+                        setMobileNavigationOpen(false);
+                    }
                 }}
                 to='/'
             >
@@ -112,7 +120,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                 mode='inline'
                 onClick={({ key }) => {
                     navigate(key);
-                    if (closeAfterNavigate) setMobileNavigationOpen(false);
+                    if (closeAfterNavigate) {
+                        setMobileNavigationOpen(false);
+                    }
                 }}
                 selectedKeys={[selected]}
             />
@@ -123,6 +133,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             </div>
         </>
     );
+
     return (
         <Layout className={styles.shell}>
             <Layout.Sider className={styles.desktopSider} width={248}>

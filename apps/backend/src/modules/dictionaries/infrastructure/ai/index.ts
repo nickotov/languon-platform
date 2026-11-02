@@ -7,4 +7,3 @@ export * from './dictionary-card-generation-agent';
 export * from './card-authoring-proposal-generators';
 export * from './dictionary-card-authoring-agent';
 export * from './dictionary-text-provider-router';
-export * from './dictionary-text-provider-router';

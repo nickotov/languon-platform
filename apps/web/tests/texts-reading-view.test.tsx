@@ -28,6 +28,7 @@ const document: ReadingDocument = {
         editedPairIds: [pair],
     },
 };
+
 beforeEach(() => {
     Object.defineProperty(window, 'matchMedia', {
         configurable: true,
@@ -38,6 +39,7 @@ beforeEach(() => {
         }),
     });
 });
+
 describe('aligned reading surface', () => {
     it('keeps structural paragraph whitespace out of lexical spans and matches both sides from keyboard focus', () => {
         const { container } = render(
@@ -53,6 +55,7 @@ describe('aligned reading surface', () => {
         const target = container.querySelector<HTMLElement>(
             '[data-side="translation"]',
         )!;
+
         expect(source.textContent).toBe('One sentence.');
         expect(document.sourceText).toBe('  One sentence.\n\n');
         fireEvent.focus(source);
@@ -61,11 +64,13 @@ describe('aligned reading surface', () => {
         expect(
             screen.getByText('Matched Translation: Одно предложение.'),
         ).toBeInTheDocument();
+
         fireEvent.blur(source);
         fireEvent.focus(target);
         expect(source.className).toMatch(/active/);
         expect(target.className).toMatch(/active/);
     });
+
     it('clears matching and keyboard stops when Match is turned off', () => {
         const { container, rerender } = render(
             <TextReading
@@ -74,6 +79,7 @@ describe('aligned reading surface', () => {
                 matchMode
             />,
         );
+
         fireEvent.focus(container.querySelector('[data-side="source"]')!);
         // Preserve the real provider during rerender through the helper wrapper.
         rerender(
@@ -85,12 +91,14 @@ describe('aligned reading surface', () => {
                 />
             </I18nProvider>,
         );
+
         const spans = container.querySelectorAll('[data-reading-pair]');
         spans.forEach((span) => {
             expect(span).not.toHaveAttribute('tabindex');
             expect(span.className).not.toMatch(/active/);
         });
     });
+
     it('hosts selection actions inside their native workspace dialog and keeps selection when opening the picker', async () => {
         const { container } = render(
             <dialog open>
@@ -113,6 +121,7 @@ describe('aligned reading surface', () => {
         range.setEnd(source.firstChild!, 3);
         range.getBoundingClientRect = () =>
             ({ top: 80, left: 100, width: 30, height: 20 }) as DOMRect;
+
         const selection = window.getSelection()!;
         selection.removeAllRanges();
         selection.addRange(range);
@@ -120,22 +129,27 @@ describe('aligned reading surface', () => {
         const trigger = await screen.findByRole('button', {
             name: 'Add to dictionary',
         });
+
         expect(workspace).toContainElement(trigger);
         fireEvent.mouseDown(trigger);
         fireEvent.click(trigger);
         expect(
             await screen.findByRole('button', { name: 'Sign in and continue' }),
         ).toBeInTheDocument();
+
         expect(workspace).toContainElement(
             screen.getByRole('button', { name: 'Sign in and continue' }),
         );
+
         expect(
             screen.getByText(
                 'Save “One” with its contextual meaning to your dictionary.',
             ),
         ).toBeInTheDocument();
+
         selection.removeAllRanges();
     });
+
     it('renders one sentence join and one paragraph gap while keeping edited markers inline with lexical translation', () => {
         const pairs = [
             {
@@ -188,20 +202,24 @@ describe('aligned reading surface', () => {
         const translation = container.querySelector(
             '[data-reading-pair="second"][data-side="translation"]',
         )!;
+
         expect(source.parentElement?.textContent).toBe('One. Two.');
         expect(translation.parentElement?.textContent).toBe('Один. Два.');
         expect(translation.textContent).toBe('Два.');
         expect(translation.nextElementSibling).toContainElement(
             screen.getByLabelText('Edited after translation'),
         );
+
         expect(
             container.querySelector(
                 '[data-reading-pair="third"][data-side="source"]',
             )?.parentElement?.textContent,
         ).toBe('  Three.');
+
         expect(value.sourceText).toBe(original);
         expect(value.alignment?.source[1]?.text).toBe('Two.\n\n');
     });
+
     it('preserves zero-space CJK joins and repeated intra-paragraph spaces without inventing separators', () => {
         const pairs = [
             {
@@ -246,13 +264,16 @@ describe('aligned reading surface', () => {
                 matchMode={false}
             />,
         );
-        for (const side of ['source', 'translation'])
+
+        for (const side of ['source', 'translation']) {
             expect(
                 container.querySelector(
                     `[data-reading-pair="a"][data-side="${side}"]`,
                 )?.parentElement?.textContent,
             ).toBe('第一句。第二句。  第三句。');
+        }
     });
+
     it('shows lexical sentence content in the phone counterpart sheet without paragraph suffixes', () => {
         const value: ReadingDocument = {
             ...document,
@@ -274,6 +295,7 @@ describe('aligned reading surface', () => {
             'One sentence.',
             'Одно предложение.',
         ]);
+
         expect(value.alignment?.translation[0]?.text).toBe(
             'Одно предложение.\n\n',
         );

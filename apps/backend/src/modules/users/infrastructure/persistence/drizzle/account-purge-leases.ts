@@ -57,7 +57,10 @@ export function claimDue(
             .limit(1)
             .for('update', { skipLocked: true });
 
-        if (!request) return null;
+        if (!request) {
+            return null;
+        }
+
         const [user] = await tx
             .select({ status: usersTable.status })
             .from(usersTable)
@@ -97,10 +100,12 @@ export async function inspectOwner(
     persistence: AccountPurgeContext,
     input: ClaimedAccountPurge & { workerId: string },
 ) {
-    if (!input.workerId)
+    if (!input.workerId) {
         throw new Error(
             'Account inspection requires its expected worker identity.',
         );
+    }
+
     const authorization = {
         workerId: input.workerId,
         fencingToken: input.fencingToken,

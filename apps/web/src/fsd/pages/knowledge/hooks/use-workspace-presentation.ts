@@ -1,3 +1,4 @@
+import { knowledgeBlockMentionIds } from '@/fsd/features/knowledge-notes';
 import { useEffect, useState } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { knowledgePlainText } from '../lib/workspace-document';
@@ -9,6 +10,7 @@ type TutorRequest = {
     prompt?: string;
     targetId?: string;
     autoSend?: boolean;
+    blockIds?: string[];
 };
 
 /** Local presentation state; publication and recovery remain in page actions. */
@@ -33,6 +35,18 @@ export function useWorkspacePresentation(
         );
     }
 
+    function mentionBlock(blockId: string) {
+        setRequest({
+            id: crypto.randomUUID(),
+            blockIds: actions.draft
+                ? knowledgeBlockMentionIds(
+                      actions.draft.content.body.document,
+                      blockId,
+                  )
+                : [blockId],
+        });
+    }
+
     function askTutor(passage: string) {
         const snapshot = actions.getSnapshot();
         setRequest({
@@ -41,6 +55,7 @@ export function useWorkspacePresentation(
             ...(snapshot.targetId ? { targetId: snapshot.targetId } : {}),
         });
     }
+
     function tutorAction(
         action:
             | 'explain'
@@ -60,6 +75,7 @@ export function useWorkspacePresentation(
             ...(snapshot.targetId ? { targetId: snapshot.targetId } : {}),
         });
     }
+
     function askOutline() {
         setRequest({
             id: crypto.randomUUID(),
@@ -67,12 +83,17 @@ export function useWorkspacePresentation(
             prompt: t('knowledge.outlinePrompt'),
         });
     }
+
     function preview(targetId?: string) {
         return actions.editor.current?.getProposalPreview(targetId) ?? null;
     }
+
     function showTarget(targetId?: string) {
-        if (targetId) actions.editor.current?.showTarget(targetId);
+        if (targetId) {
+            actions.editor.current?.showTarget(targetId);
+        }
     }
+
     const { canPublish, busy, save } = actions;
     useEffect(() => {
         function shortcut(event: KeyboardEvent) {
@@ -81,12 +102,17 @@ export function useWorkspacePresentation(
                 event.key.toLowerCase() === 's'
             ) {
                 event.preventDefault();
-                if (canPublish && dirty && busy === null) void save();
+                if (canPublish && dirty && busy === null) {
+                    void save();
+                }
             }
         }
+
         window.addEventListener('keydown', shortcut);
+
         return () => window.removeEventListener('keydown', shortcut);
     }, [canPublish, dirty, busy, save]);
+
     return {
         request,
         dirty,
@@ -97,6 +123,7 @@ export function useWorkspacePresentation(
         titleVisible,
         setTitleVisible,
         tutorAction,
+        mentionBlock,
         askTutor,
         askOutline,
         preview,

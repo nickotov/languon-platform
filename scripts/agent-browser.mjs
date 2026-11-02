@@ -61,7 +61,10 @@ function fail(message) {
 
 function normalizedInput(input) {
     const values = [...input];
-    if (values[0] === '--') values.shift();
+    if (values[0] === '--') {
+        values.shift();
+    }
+
     return values;
 }
 
@@ -69,6 +72,7 @@ function markerPath(session, directory = sessionDirectory) {
     if (!ownedSessionPattern.test(session)) {
         fail('session is not a wrapper-owned Languon browser session');
     }
+
     return join(directory, `${session}.json`);
 }
 
@@ -79,8 +83,11 @@ export function createOwnedSession(
     if (!taskPattern.test(task)) {
         fail('task slug must be a 1-48 character lowercase kebab-case name');
     }
-    if (!/^[a-f0-9]{32}$/.test(nonce))
+
+    if (!/^[a-f0-9]{32}$/.test(nonce)) {
         fail('session nonce must contain 32 lowercase hex characters');
+    }
+
     return `languon-${task}-${nonce}`;
 }
 
@@ -98,6 +105,7 @@ export function isOwnedSession(session, directory = sessionDirectory) {
         const marker = JSON.parse(
             readFileSync(markerPath(session, directory), 'utf8'),
         );
+
         return marker.session === session;
     } catch {
         return false;
@@ -108,8 +116,9 @@ export function removeOwnedSession(session, directory = sessionDirectory) {
     try {
         unlinkSync(markerPath(session, directory));
     } catch (error) {
-        if (!error || typeof error !== 'object' || error.code !== 'ENOENT')
+        if (!error || typeof error !== 'object' || error.code !== 'ENOENT') {
             throw error;
+        }
     }
 }
 
@@ -150,20 +159,26 @@ function validateSnapshot(values) {
         if (['-i', '--interactive', '-c', '--compact'].includes(value)) {
             continue;
         }
+
         if (['-d', '--depth'].includes(value)) {
             const depth = values[index + 1];
-            if (!depth || !/^\d+$/.test(depth))
+            if (!depth || !/^\d+$/.test(depth)) {
                 fail('snapshot depth must be a non-negative integer');
+            }
+
             index += 1;
             continue;
         }
+
         if (['-s', '--selector'].includes(value)) {
             if (!values[index + 1] || values[index + 1].startsWith('-')) {
                 fail('snapshot selector requires a non-option value');
             }
+
             index += 1;
             continue;
         }
+
         fail(`unsupported snapshot option: ${value}`);
     }
 }
@@ -181,12 +196,16 @@ function validateViewport(values) {
 }
 
 function validateNetwork(values) {
-    if (values[0] !== 'requests')
+    if (values[0] !== 'requests') {
         fail('only network requests inspection is allowed');
+    }
 
     for (let index = 1; index < values.length; index += 1) {
         const value = values[index];
-        if (value === '--clear') continue;
+        if (value === '--clear') {
+            continue;
+        }
+
         if (
             ['--filter', '--type', '--method', '--status'].includes(value) &&
             values[index + 1] &&
@@ -195,6 +214,7 @@ function validateNetwork(values) {
             index += 1;
             continue;
         }
+
         fail(`unsupported network requests option: ${value}`);
     }
 }
@@ -206,19 +226,28 @@ function rejectOptionInjection(command, values) {
 }
 
 function validateFind(values) {
-    if (values.length < 3)
+    if (values.length < 3) {
         fail('find requires a locator, value, and safe action');
-    if (!findLocators.has(values[0])) fail('unsupported find locator');
+    }
+
+    if (!findLocators.has(values[0])) {
+        fail('unsupported find locator');
+    }
+
     if (values[0].startsWith('-') || values[1].startsWith('-')) {
         fail('find locator and value cannot contain command-line options');
     }
+
     if (!['click', 'fill', 'check', 'hover', 'text'].includes(values[2])) {
         fail('unsupported find action');
     }
 
     for (let index = 3; index < values.length; index += 1) {
         const value = values[index];
-        if (value === '--exact') continue;
+        if (value === '--exact') {
+            continue;
+        }
+
         if (
             value === '--name' &&
             values[index + 1] &&
@@ -227,13 +256,17 @@ function validateFind(values) {
             index += 1;
             continue;
         }
-        if (value.startsWith('-')) fail(`unsupported find option: ${value}`);
+
+        if (value.startsWith('-')) {
+            fail(`unsupported find option: ${value}`);
+        }
     }
 }
 
 function validateCommand(command, values) {
     if (selectorCommands.has(command)) {
         rejectOptionInjection(command, values);
+
         return requireCount(command, values, 1);
     }
 
@@ -245,22 +278,30 @@ function validateCommand(command, values) {
         case 'fill':
         case 'type':
             rejectOptionInjection(command, values);
+
             return requireCount(command, values, 2);
         case 'press':
             rejectOptionInjection(command, values);
+
             return requireCount(command, values, 1);
         case 'select':
             rejectOptionInjection(command, values);
+
             return requireCount(command, values, 2, Number.POSITIVE_INFINITY);
         case 'scroll':
             requireCount(command, values, 1, 2);
-            if (!['up', 'down', 'left', 'right'].includes(values[0]))
+            if (!['up', 'down', 'left', 'right'].includes(values[0])) {
                 fail('unsupported scroll direction');
-            if (values[1] && !/^\d+$/.test(values[1]))
+            }
+
+            if (values[1] && !/^\d+$/.test(values[1])) {
                 fail('scroll distance must be a non-negative integer');
+            }
+
             return;
         case 'wait':
             rejectOptionInjection(command, values);
+
             return requireCount(command, values, 1);
         case 'screenshot':
             if (
@@ -270,6 +311,7 @@ function validateCommand(command, values) {
             ) {
                 fail('screenshots must use the tool-generated temporary path');
             }
+
             return;
         case 'set':
             return validateViewport(values);
@@ -292,6 +334,7 @@ function validateCommand(command, values) {
             ) {
                 fail('unsupported get operation');
             }
+
             return requireCount(
                 command,
                 values,
@@ -304,8 +347,10 @@ function validateCommand(command, values) {
             );
         case 'is':
             rejectOptionInjection(command, values);
-            if (!['visible', 'enabled', 'checked'].includes(values[0]))
+            if (!['visible', 'enabled', 'checked'].includes(values[0])) {
                 fail('unsupported is operation');
+            }
+
             return requireCount(command, values, 2);
         case 'find':
             return validateFind(values);
@@ -328,19 +373,26 @@ export function buildAgentBrowserArgs(
     const values = normalizedInput(input);
     if (values[0] === '--doctor') {
         requireCount('--doctor', values, 1);
+
         return ['--config', configPath, 'doctor', '--offline'];
     }
+
     if (values[0] === '--install') {
         const installValues = values.slice(1);
-        if (installValues[0] === '--') installValues.shift();
+        if (installValues[0] === '--') {
+            installValues.shift();
+        }
+
         if (
             installValues.length > 1 ||
             (installValues.length === 1 && installValues[0] !== '--with-deps')
         ) {
             fail('browser install accepts only the optional --with-deps flag');
         }
+
         return ['--config', configPath, 'install', ...installValues];
     }
+
     if (values[0] !== '--session' || !values[1]) {
         fail(
             'usage: pnpm browser -- start <task-slug> <local-url>, then use the returned --session handle',
@@ -351,8 +403,12 @@ export function buildAgentBrowserArgs(
     if (!ownedSessionPattern.test(session) || !ownsSession(session)) {
         fail('session is not an active wrapper-owned Languon browser session');
     }
+
     const command = values[2];
-    if (!command) fail('a browser command is required');
+    if (!command) {
+        fail('a browser command is required');
+    }
+
     const commandValues = values.slice(3);
     validateCommand(command, commandValues);
 
@@ -371,6 +427,7 @@ export function sanitizedEnvironment(environment) {
     return Object.fromEntries(
         Object.entries(environment).filter(([key]) => {
             const normalizedKey = key.toUpperCase();
+
             return (
                 !normalizedKey.startsWith('AGENT_BROWSER_') &&
                 ![
@@ -389,14 +446,20 @@ export function shouldRemoveOwnedSession(command, status) {
 }
 
 function runAgentBrowser(arguments_) {
-    if (!existsSync(cliPath))
+    if (!existsSync(cliPath)) {
         fail('agent-browser is not installed; run pnpm install first');
+    }
+
     const result = spawnSync(process.execPath, [cliPath, ...arguments_], {
         cwd: repositoryRoot,
         env: sanitizedEnvironment(process.env),
         stdio: 'inherit',
     });
-    if (result.error) throw result.error;
+
+    if (result.error) {
+        throw result.error;
+    }
+
     return result.status ?? 1;
 }
 
@@ -420,14 +483,18 @@ function startSession(values) {
         ]);
     } catch (error) {
         removeOwnedSession(session);
+
         throw error;
     }
+
     if (status !== 0) {
         removeOwnedSession(session);
+
         return status;
     }
 
     console.log(`Languon browser session: ${session}`);
+
     return 0;
 }
 
@@ -435,6 +502,7 @@ function main() {
     const values = normalizedInput(process.argv.slice(2));
     if (values[0] === 'start') {
         process.exitCode = startSession(values);
+
         return;
     }
 
@@ -444,6 +512,7 @@ function main() {
     if (session && shouldRemoveOwnedSession(command, status)) {
         removeOwnedSession(session);
     }
+
     process.exitCode = status;
 }
 

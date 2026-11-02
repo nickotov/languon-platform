@@ -2,7 +2,7 @@
 feature: knowledge-workspace
 title: Knowledge workspace
 status: current
-last_verified: 2026-10-20
+last_verified: 2026-10-31
 surfaces:
     - browser
     - api
@@ -92,9 +92,9 @@ pnpm test:e2e:contextual-assistant
    **Properties** reveals inline language, category and summary chips; each
    opens its own editor popover. Optional fields remain available without
    taking space away from writing. **Response settings** in the tutor composer
-   groups Mode, reply language, tone, explanation level, model and saved
-   defaults. Its context hint confirms that each question includes the complete
-   current editor snapshot. Empty documents offer **Start writing**,
+   groups Mode, explanation language, tone, explanation length and saved
+   defaults. Model selection is not exposed to learners here. Empty documents
+   offer **Start writing**,
    **AI outline**, **Lesson notes** and **Language notes** starters.
    Ask a question without writing in the editor. The first three words name
    the default note and chat. Start another chat; its history is separate and
@@ -124,8 +124,9 @@ pnpm test:e2e:contextual-assistant
    Moving the cursor after **Ask tutor** preserves the selected proposal target;
    sending still includes the latest editor content. The focus passage is part
    of editor context and does not count again as a copied Text reference.
-   Type `/`, select multiple owned Texts, and explicitly include a translation
-   when desired. Previews show the copied content. Editing or deleting an
+   Type `/` to open the current note's block picker, then choose **Your Texts**
+   to select multiple owned Texts and explicitly include a translation when
+   desired. Previews show the copied content. Editing or deleting an
    original Text later does not change its copied message content. An addition
    above the configured aggregate reference limit is rejected whole with the
    limit toast. An editor above its separate tutor limit remains editable but
@@ -140,12 +141,18 @@ pnpm test:e2e:contextual-assistant
    during generation: the original target stays identified. If target wording
    changed, compare or select a new target before replacing it. Accepting a
    proposal changes the working draft as one undoable edit and does not publish.
-   Markdown replies appear as formatted editable document content in preview and
-   on acceptance: paragraphs, bold/italic/strike, inline code, safe links, lists,
-   quotes and tables. Headings map H1 to H2 and H4–H6 to H3 with a notice; H2/H3
-   remain unchanged. Explicit table alignment and link tooltips normalize to the
-   document defaults with a notice. Code blocks, images, task lists, horizontal
-   rules, embedded HTML, unsafe links or malformed tables block formatted
+   Markdown replies appear as formatted editable document content in the compact
+   proposal, the read-only **Preview content** dialog and on acceptance:
+   paragraphs, bold/italic/strike, inline code, safe links, lists, quotes,
+   tables and horizontal rules. H1, H2 and H3 remain their authored levels;
+   H4–H6 map to H3 with a notice. The authoring toolbar offers Heading 1,
+   Heading 2, Heading 3 and **Horizontal rule**. **Preview content** is a
+   read-only document view: its eye action does not open review or change the
+   draft/target; **Close** (with a tooltip) or Escape returns focus to the eye.
+   At 1440px it is 720px wide; at 390px it fills the viewport and long content
+   scrolls within the preview. Explicit table alignment and link tooltips
+   normalize to document defaults with a notice. Code blocks, images, task
+   lists, embedded HTML, unsafe links or malformed tables block formatted
    insertion without changing the draft. Select **Insert as plain text** to
    explicitly retain the original source. Oversized input or a result exceeding
    document limits stays unaccepted and requires shortening. A single formatted
@@ -199,19 +206,24 @@ pnpm test:e2e:contextual-assistant
 - `workspace-text-reference-limit` proves the Text picker admits exactly
   40,000 copied characters and rejects the next reference as a whole with the
   actionable limit toast. An editor focus passage remains separate and does not
-  reduce the copied-reference allowance. Removing the focus passage produces an
-  ordinary turn with no selected text, replacement target or persisted passage
-  wrapper.
+  reduce the copied-reference allowance. The full references persist unchanged;
+  when instructions and tool framing exceed the configured model's separate
+  input budget, the turn fails specifically with `context_too_large`, without
+  silently truncating them. Removing the focus passage then permits a successful
+  ordinary turn in the same conversation with no stale references, selected
+  text, replacement target or persisted passage wrapper.
 - `workspace-proposal-target-review` proves a persisted reply proposal can
   keep its original selected target when the cursor moves before Send, replace
   that target while retaining neighboring paragraphs and unrelated edits made
   during review, be undone, and require comparison when the target itself
   changes before acceptance. A native pointer/keyboard selection and scrolling
   keep the selection toolbar within the visible document area before sending.
-- `workspace-markdown-insertion` proves formatted preview, heading mapping,
-  rich insertion, one-step undo/redo, private recovery, explicit Save/reload and
-  shared rich rendering across the real app. On mobile it proves unsupported
-  Markdown cannot be inserted as rich text and requires explicit plain-text
+- `workspace-markdown-insertion` proves compact and full read-only formatted
+  proposal previews, authored H1/H2/H3 and horizontal-rule preservation, preview
+  geometry/scrolling/focus and non-mutation, rich insertion, one-step undo/redo,
+  private recovery, explicit Save/reload and shared rich rendering across the
+  real app. On mobile it proves the preview fills the viewport and unsupported
+  Markdown cannot be inserted as rich text, requiring explicit plain-text
   fallback without changing prior formatted content.
 - `workspace-share-copy-revoke` proves saved-only shared reading, independent
   recipient copy and immediate link revocation.
@@ -235,6 +247,8 @@ model budget/compaction have focused contract, integration and editor tests.
 - A changed proposal target requires comparison or a new target before Replace.
 - Unsupported Markdown or unsafe links require explicit plain-text insertion;
   document limits are checked before acceptance and never truncate content.
+  Previewing is read-only and never changes a draft, tracked target or proposal
+  acceptance state.
 - Invalid or revoked share credentials reveal no note or workspace content.
 - Oversized copied references, editor context or complete model input fail with
   an actionable limit message; no paragraph is silently omitted.

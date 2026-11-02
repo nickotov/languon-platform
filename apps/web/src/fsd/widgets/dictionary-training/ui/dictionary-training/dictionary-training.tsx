@@ -1,6 +1,6 @@
 'use client';
-import type { SpeechSource, FlashcardItem } from '@languon/contracts';
-import { SpeechControl } from '@/fsd/features/speech-playback';
+import { trainingCopy } from './copy';
+import { createTrainingAudio } from './training-audio';
 
 import { MessageSquareText, RefreshCw } from 'lucide-react';
 import componentStyles from './dictionary-training.module.css';
@@ -36,79 +36,13 @@ import { Button, ButtonLink, Dialog, type MenuItem } from '@/fsd/shared/ui';
 import { PracticeHistory } from '../practice-history/practice-history';
 import { SharedPracticeActions } from '../shared-practice-actions/shared-practice-actions';
 
-const labels = {
-    en: {
-        sentence: 'Sentence practice',
-        history: 'My practice history',
-        preferences: 'AI preferences',
-        unavailable: 'Unavailable',
-        signin: 'Sign in to practise sentences',
-        signinHelp:
-            'Your answers, reviews and progress are personal. Sign in to continue.',
-        signIn: 'Sign in',
-        back: 'Back to dictionary',
-        dirty: 'Discard your unsaved AI preferences?',
-        keep: 'Keep editing',
-        discard: 'Discard changes',
-        close: 'Close',
-        library: 'Saved sentences',
-    },
-    ru: {
-        sentence: 'Практика предложений',
-        history: 'Моя история практики',
-        preferences: 'Настройки ИИ',
-        unavailable: 'Недоступно',
-        signin: 'Войдите для практики предложений',
-        signinHelp:
-            'Ваши ответы, отзывы и прогресс личные. Войдите, чтобы продолжить.',
-        signIn: 'Войти',
-        back: 'Вернуться к словарю',
-        dirty: 'Отменить несохранённые настройки ИИ?',
-        keep: 'Продолжить редактирование',
-        discard: 'Отменить изменения',
-        close: 'Закрыть',
-        library: 'Сохранённые предложения',
-    },
-    fr: {
-        sentence: 'Pratique des phrases',
-        history: 'Mon historique',
-        preferences: 'Préférences IA',
-        unavailable: 'Indisponible',
-        signin: 'Connectez-vous pour pratiquer',
-        signinHelp:
-            'Vos réponses, révisions et progrès sont personnels. Connectez-vous pour continuer.',
-        signIn: 'Se connecter',
-        back: 'Retour au dictionnaire',
-        dirty: 'Abandonner vos préférences IA non enregistrées ?',
-        keep: 'Continuer à modifier',
-        discard: 'Abandonner',
-        close: 'Fermer',
-        library: 'Phrases enregistrées',
-    },
-    es: {
-        sentence: 'Práctica de frases',
-        history: 'Mi historial',
-        preferences: 'Preferencias de IA',
-        unavailable: 'No disponible',
-        signin: 'Inicia sesión para practicar',
-        signinHelp:
-            'Tus respuestas, revisiones y progreso son personales. Inicia sesión para continuar.',
-        signIn: 'Iniciar sesión',
-        back: 'Volver al diccionario',
-        dirty: '¿Descartar la selección de modelo sin guardar?',
-        keep: 'Seguir editando',
-        discard: 'Descartar',
-        close: 'Cerrar',
-        library: 'Frases guardadas',
-    },
-};
-
 /** Pages/widgets compose sibling feature capabilities without private imports. */
 export function DictionaryTraining(props: TrainingLauncherProps) {
     const targetKey =
         props.target.kind === 'owner'
             ? `owner:${props.target.dictionaryId}`
             : `shared:${props.target.shareId}:${props.target.shareKey}`;
+
     return (
         <TrainingComposition
             key={`${props.identity}:${props.signedIn}:${targetKey}`}
@@ -118,65 +52,11 @@ export function DictionaryTraining(props: TrainingLauncherProps) {
 }
 
 function TrainingComposition(props: TrainingLauncherProps) {
-    function renderFlashcardAudio(
-        item: FlashcardItem,
-        presentation: FlashcardItem['front'][number],
-    ) {
-        if (
-            !props.signedIn ||
-            presentation.field === 'definition' ||
-            presentation.field === 'transcription'
-        )
-            return null;
-        const source: SpeechSource = {
-            kind: 'flashcard-field',
-            access: props.target,
-            cardId: item.entryId,
-            field: presentation.field,
-            expectedLearningVersion: item.learningVersion,
-        };
-        return (
-            <SpeechControl
-                source={source}
-                requestWithSession={props.requestWithSession}
-            />
-        );
-    }
-    function renderAnswerAudio(attemptId: string) {
-        return renderSentenceAudio({ kind: 'checked-answer', id: attemptId });
-    }
-    function renderSentenceAudio(content: {
-        kind: 'prompt' | 'reference' | 'checked-answer';
-        id: string;
-        sessionId?: string;
-    }) {
-        if (!props.signedIn) return null;
-        let source: SpeechSource;
-        if (content.kind === 'checked-answer')
-            source = {
-                kind: 'checked-answer',
-                access: props.target,
-                attemptId: content.id,
-            };
-        else {
-            if (!content.sessionId) return null;
-            source = {
-                kind: 'sentence-practice',
-                access: props.target,
-                exerciseId: content.id,
-                sessionId: content.sessionId,
-                field: content.kind,
-            };
-        }
-        return (
-            <SpeechControl
-                source={source}
-                requestWithSession={props.requestWithSession}
-            />
-        );
-    }
+    const { renderFlashcardAudio, renderSentenceAudio, renderAnswerAudio } =
+        createTrainingAudio(props);
+
     const { locale, href, t } = useI18n();
-    const copy = labels[locale];
+    const copy = trainingCopy[locale];
     const pathname = usePathname();
     const router = useRouter();
     const search = useSearchParams();
@@ -278,14 +158,23 @@ function TrainingComposition(props: TrainingLauncherProps) {
         const launch = search.get('practice');
         if (!launch) {
             consumedLaunch.current = null;
+
             return;
         }
+
         const intent = `${launch}:${search.get('prep') ?? ''}:${search.get('batch') ?? ''}`;
         if (launch === 'history') {
-            if (consumedLaunch.current === intent) return;
+            if (consumedLaunch.current === intent) {
+                return;
+            }
+
             consumedLaunch.current = intent;
-            if (!props.signedIn) setSigninOpen(true);
-            else setHistoryOpen(true);
+            if (!props.signedIn) {
+                setSigninOpen(true);
+            } else {
+                setHistoryOpen(true);
+            }
+
             const remainingSearch = new URLSearchParams(search.toString());
             remainingSearch.delete('practice');
             const nextSearch = remainingSearch.toString();
@@ -296,19 +185,26 @@ function TrainingComposition(props: TrainingLauncherProps) {
                 ),
                 { scroll: false },
             );
+
             return;
         }
+
         if (
             consumedLaunch.current === intent ||
             capability !== 'enabled' ||
             blocked
-        )
+        ) {
             return;
+        }
+
         consumedLaunch.current = intent;
-        if (!props.signedIn) setSigninOpen(true);
-        else if (launch === 'setup') setSetupOpen(true);
-        else if (launch === 'progress') setPreparationOpen(true);
-        else if (launch === 'prepared' && api.preparedBatch) {
+        if (!props.signedIn) {
+            setSigninOpen(true);
+        } else if (launch === 'setup') {
+            setSetupOpen(true);
+        } else if (launch === 'progress') {
+            setPreparationOpen(true);
+        } else if (launch === 'prepared' && api.preparedBatch) {
             const batchId = SentencePreparationBatchSchema.shape.id.safeParse(
                 search.get('batch'),
             );
@@ -318,16 +214,23 @@ function TrainingComposition(props: TrainingLauncherProps) {
             const mode = SentenceModeSchema.safeParse(search.get('mode'));
             if (!batchId.success || !direction.success || !mode.success) {
                 setPreparedLaunchError(true);
+
                 return;
             }
+
             setPreparedLaunchError(false);
             let cancelled = false;
             void api
                 .preparedBatch(batchId.data)
                 .then((batch) => {
-                    if (cancelled) return;
-                    if (!batch.preparedEntryIds.length)
+                    if (cancelled) {
+                        return;
+                    }
+
+                    if (!batch.preparedEntryIds.length) {
                         throw new Error('Prepared batch unavailable');
+                    }
+
                     start({
                         direction: direction.data,
                         mode: mode.data,
@@ -345,15 +248,22 @@ function TrainingComposition(props: TrainingLauncherProps) {
                     });
                 })
                 .catch(() => {
-                    if (!cancelled) setPreparedLaunchError(true);
+                    if (!cancelled) {
+                        setPreparedLaunchError(true);
+                    }
                 });
+
             return () => {
                 cancelled = true;
             };
         }
     }, [search, capability, blocked, props.signedIn]);
+
     useEffect(() => {
-        if (!accessError) return;
+        if (!accessError) {
+            return;
+        }
+
         setAccessLost(true);
         setSetupOpen(false);
         setHistoryOpen(false);
@@ -369,8 +279,11 @@ function TrainingComposition(props: TrainingLauncherProps) {
         setup.invalidate,
         exerciseHistory.invalidate,
     ]);
+
     useEffect(() => {
-        if (session.attempt?.id) refreshExerciseHistory();
+        if (session.attempt?.id) {
+            refreshExerciseHistory();
+        }
     }, [session.attempt?.id, refreshExerciseHistory]);
 
     useEffect(() => {
@@ -378,15 +291,19 @@ function TrainingComposition(props: TrainingLauncherProps) {
         setCapability('loading');
         void api.capabilities().then(
             (result) => {
-                if (live)
+                if (live) {
                     setCapability(
                         result.sentencesEnabled ? 'enabled' : 'disabled',
                     );
+                }
             },
             () => {
-                if (live) setCapability('error');
+                if (live) {
+                    setCapability('error');
+                }
             },
         );
+
         return () => {
             live = false;
         };
@@ -402,56 +319,70 @@ function TrainingComposition(props: TrainingLauncherProps) {
         setup.invalidate();
         exerciseHistory.invalidate();
     }
+
     function restoreFocus() {
         requestAnimationFrame(() =>
             root.current?.querySelector<HTMLButtonElement>('button')?.focus(),
         );
     }
+
     function openSetup() {
         if (!props.signedIn) {
             setSigninOpen(true);
+
             return;
         }
+
         setRestartPreparation(false);
         setSetupOpen(true);
     }
+
     function openHistory() {
         setHistoryOpen(true);
     }
+
     function openLibrary() {
         const capabilityFragment =
             props.target.kind === 'shared' ? `#${props.target.shareKey}` : '';
+
         router.push(
             href(
                 `${pathname.replace(/\/$/, '')}/sentences${capabilityFragment}`,
             ),
         );
     }
+
     function closePractice() {
         setRunning(false);
         setPreferencesOpen(false);
         session.reset();
         restoreFocus();
     }
+
     function start(configuration: Configuration, request?: Promise<boolean>) {
         setSetupOpen(false);
         setFullscreen(request);
         setRunning(true);
         void session.start(configuration);
     }
+
     function closePreferences(afterClose?: () => void) {
         if (preferenceDirty) {
             afterPreferenceClose.current = afterClose ?? null;
             setConfirmPreferenceClose(true);
+
             return;
         }
+
         setPreferencesOpen(false);
         afterClose?.();
     }
+
     function keepPreferenceChoice() {
         afterPreferenceClose.current = null;
         setConfirmPreferenceClose(false);
     }
+
     function discardPreferenceChoice() {
         setConfirmPreferenceClose(false);
         setPreferencesOpen(false);
@@ -460,6 +391,7 @@ function TrainingComposition(props: TrainingLauncherProps) {
         afterPreferenceClose.current = null;
         afterClose?.();
     }
+
     const items: MenuItem[] = [
         {
             label:
@@ -530,7 +462,8 @@ function TrainingComposition(props: TrainingLauncherProps) {
     const signInHref =
         href(`/login?returnTo=${encodeURIComponent(returnTo)}`) +
         (props.target.kind === 'shared' ? `#${props.target.shareKey}` : '');
-    if (blocked)
+
+    if (blocked) {
         return (
             <div ref={root}>
                 {preparedLaunchError ? (
@@ -549,6 +482,8 @@ function TrainingComposition(props: TrainingLauncherProps) {
                 </ButtonLink>
             </div>
         );
+    }
+
     return (
         <div ref={root}>
             {preparedLaunchError ? (

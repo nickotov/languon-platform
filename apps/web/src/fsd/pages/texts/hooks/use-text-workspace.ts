@@ -63,7 +63,10 @@ export function useTextWorkspace(
     );
 
     function adopt(next: TextDocument) {
-        if (!isCurrent()) return;
+        if (!isCurrent()) {
+            return;
+        }
+
         setDocument(next);
         setInput(workspaceInput(next));
         setBaseline(workspaceInput(next));
@@ -79,14 +82,21 @@ export function useTextWorkspace(
     }
 
     useEffect(() => {
-        if (remote.data && !document) adopt(remote.data.text);
+        if (remote.data && !document) {
+            adopt(remote.data.text);
+        }
     }, [remote.data, document]);
 
     const recovered = useRef(new Set<string>());
     useEffect(() => {
         const pending = pendingJob.data?.job;
-        if (!document || !pending || recovered.current.has(pending.id)) return;
-        if (translation.restore(pending)) recovered.current.add(pending.id);
+        if (!document || !pending || recovered.current.has(pending.id)) {
+            return;
+        }
+
+        if (translation.restore(pending)) {
+            recovered.current.add(pending.id);
+        }
     }, [document, pendingJob.data, translation.job?.state]);
 
     const result = translation.job?.result;
@@ -110,8 +120,10 @@ export function useTextWorkspace(
     async function translate() {
         if (!workspaceValid(input)) {
             setShowErrors(true);
+
             return;
         }
+
         setShowErrors(false);
         clearSaveError();
         setExpired(false);
@@ -151,7 +163,10 @@ export function useTextWorkspace(
     });
 
     function startEdit() {
-        if (!document) return;
+        if (!document) {
+            return;
+        }
+
         setPairs(workspacePairs(document));
         setTouched(new Set());
         setShowErrors(false);
@@ -160,7 +175,10 @@ export function useTextWorkspace(
 
     function shortenSource() {
         translation.clear();
-        if (document?.alignment) startEdit();
+        if (document?.alignment) {
+            startEdit();
+        }
+
         window.requestAnimationFrame(() =>
             globalThis.document
                 .querySelector<HTMLTextAreaElement>('[data-workspace-source]')
@@ -178,6 +196,7 @@ export function useTextWorkspace(
                 pair.pairId === pairId ? { ...pair, [side]: value } : pair,
             ),
         );
+
         setTouched((previous) => new Set(previous).add(pairId));
     }
 
@@ -188,16 +207,24 @@ export function useTextWorkspace(
     }
 
     async function discardProposal() {
-        if (translation.job?.state === 'completed') await translation.cancel();
+        if (translation.job?.state === 'completed') {
+            await translation.cancel();
+        }
+
         translation.clear();
         setExpired(false);
         await pendingJob.refetch();
     }
 
     async function cancelAi() {
-        if (translation.job) recovered.current.delete(translation.job.id);
+        if (translation.job) {
+            recovered.current.delete(translation.job.id);
+        }
+
         await auto.cancel();
-        if (textId) await pendingJob.refetch();
+        if (textId) {
+            await pendingJob.refetch();
+        }
     }
 
     function updateMetadata(next: TextDocument) {
@@ -208,7 +235,10 @@ export function useTextWorkspace(
     }
 
     async function refreshMetadata() {
-        if (!document) return;
+        if (!document) {
+            return;
+        }
+
         try {
             updateMetadata(
                 (await request((token) => textsApi.getText(token, document.id)))
@@ -276,4 +306,5 @@ export function useTextWorkspace(
         refreshMetadata,
     };
 }
+
 export type TextWorkspace = ReturnType<typeof useTextWorkspace>;

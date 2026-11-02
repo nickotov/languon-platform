@@ -1,287 +1,278 @@
 # Shared delivery procedure
 
-Read this once when implementing a correction, improvement, or feature. Root
-`AGENTS.md` owns classification, authorization, safety, review triggers, and Git
-policy. Flow skills select the record and scope; this file owns the common
-execution sequence. Read specialist skills only for affected surfaces.
+Read once per correction, improvement, or feature. Root `AGENTS.md` owns
+classification, authorization, safety, review triggers, and Git policy; flow
+skills select records and scope. This file owns execution. Read specialist
+skills only for affected surfaces.
 
 ## Small-fix fast path
 
-Use this execution default for bounded corrections and focused improvements
-with established behavior and no root feature boundary. It is not a new flow,
-a time limit, or permission to omit required evidence.
+Default for bounded corrections and focused improvements with established
+behavior and no root feature boundary; it adds no flow, deadline, or evidence waiver.
 
-1. **Bound discovery.** Read applicable instructions and selected requirements
-   in full, but discover candidate documents through metadata/indexes first.
-   Start with the active record, affected source, and nearby tests. Follow a
-   historical feature/design record only when it supplies a relevant active
-   requirement or unresolved decision. Do not replay completed milestones.
-   Read required skills once per uninterrupted context; follow only applicable
-   references. Keep tool output bounded and retain running-command handles.
-2. **Keep one short plan.** Reuse the same outcome's record; state the observable
-   fix, exclusions, risks, and smallest adequate checks. Do not create separate
-   milestones or artifacts for a one-pass repair.
-3. **Verify narrowly while iterating.** Reproduce the defect and run its focused
-   regression checks first. After the patch stabilizes, run required affected
-   static checks and broader tests only for identified regression risks or an
-   applicable workflow requirement. Apply `$testing` evidence-validity rules;
-   do not repeat unchanged checks just to produce fresh green output.
-4. **Minimize runtime setup.** Reuse a reviewed, safe local application when it
-   can prove the behavior with fake data. Prefer established fixture helpers to
-   ad hoc account/API setup. No database implementation change means no automatic
-   database verification; a required integration/E2E journey may still need
-   disposable infrastructure. Do not replace that journey with a mock. For
-   isolated presentation behavior, an existing rendered story/fixture can
-   suffice only when it exercises the real affected component and interactions.
-5. **Use one adequate browser proof.** Select the smallest applicable states and
-   viewports. `$browser-verification` owns when a durable real-browser test
-   satisfies runtime evidence without a second exploratory session. A simple
-   label fix need not become a full journey or browser matrix.
-6. **Review by risk, not task size.** Apply root independent-review and specialist
-   triggers. Async transitions, cancellation, and save races may warrant review
-   even for a visually small fix; a copy or isolated style correction normally
-   does not. Bound assignments to the scoped diff and relevant invariants.
+1. **Bound discovery.** Discover documents through indexes/metadata, then read
+   applicable instructions and selected requirements fully. Start with the active
+   record, affected source and nearby tests; consult historical feature/design
+   records only for active requirements or unresolved decisions. Do not replay
+   completed milestones. Read skills once per uninterrupted context, follow
+   applicable references, bound tool output, and retain running-command handles.
+2. **Keep one short plan.** Reuse the outcome's record: observable fix, exclusions,
+   risks and smallest adequate checks. A one-pass repair needs no extra milestones
+   or artifacts.
+3. **Verify narrowly.** Reproduce the defect and run focused regressions first.
+   Once stable, run required affected static checks; broaden only for identified
+   regression risks or workflow requirements. Apply `$testing` validity rules;
+   do not repeat unchanged checks merely for fresh results.
+4. **Minimize setup.** Reuse reviewed safe local apps with fake data and established
+   fixture helpers instead of ad hoc account/API setup. Unchanged database code
+   does not automatically need database verification, but required integration/E2E
+   journeys may need disposable infrastructure and cannot become mocks. A rendered
+   story/fixture suffices for isolated presentation only if it exercises the real
+   affected component and interactions.
+5. **Use one adequate browser proof.** Minimize states/viewports.
+   `$browser-verification` decides when a durable real-browser test satisfies
+   runtime evidence without exploration. A label fix needs no full journey/matrix.
+6. **Review by risk.** Apply root independent/specialist triggers to the scoped diff
+   and invariants. Async transitions, cancellation or save races may warrant review
+   for small visual fixes; copy/isolated style corrections normally do not.
 
-If a small fix grows into substantial setup, repeated failed attempts, or roughly
-10–15 minutes of unresolved investigation, reassess the cause and verification
-plan before broadening work. Tell the user what made it larger and the revised
-scope when material. This is a complexity checkpoint, not a deadline or blocker:
-continue safe authorized work, and request authority only at a root boundary.
+Substantial setup, repeated failures, or roughly 10–15 unresolved investigation
+minutes trigger reassessment before broadening. Explain material growth and revised
+scope to the user. This checkpoint is neither deadline nor blocker: continue safe
+authorized work; request authority only at a root boundary.
 
-Exit: the final scoped patch has valid evidence for its acceptance criteria;
-extra setup, checks, or review have an explicit risk or requirement justification.
+Exit: acceptance has valid final-patch evidence; extra setup/checks/review have an
+explicit risk or requirement justification.
 
 ## 1. Establish the outcome and risk
 
-Inspect applicable instructions, current Git state, the active record, relevant
-guides/ADRs, and analogous source. Reuse an existing active record for the same
-outcome; do not create a new record for each repair. Assess scope and risk
-separately: a small authentication fix can require specialist verification.
+Inspect applicable instructions, Git state, active record, relevant guides/ADRs
+and analogous source. Reuse the same outcome's record across repairs. Assess scope
+and risk separately: even a small authentication fix may need specialist checks.
 
-Write observable acceptance criteria before implementation. For a feature,
-`FEATURE.md` owns their text and stable IDs. For a correction or improvement,
-use its one record. Identify supported behavior, explicit exclusions, affected
-invariants, and what evidence will establish completion. Resolve only material
-product/safety ambiguity with the user; continue independent authorized work.
+Before coding, record observable acceptance criteria, supported behavior,
+exclusions, invariants and completion evidence. Feature text/stable IDs belong in
+`FEATURE.md`; corrections/improvements use their single record. Ask about material
+product/safety ambiguity while continuing independent authorized work.
 
-For consequential uncertainty, deepen discovery before parallel implementation:
+Resolve consequential uncertainty before dependent parallel implementation:
 
-- Trace affected behavior through entrypoints, shared contracts, every reader/writer,
-  persistence and external adapters. Include unchanged consumers that can regress.
-  For shared contracts or privileged writes, identify who may read, preview,
-  apply, publish or edit at each entrypoint and which permission/credential scope
-  authorizes it. Prove that widening a schema cannot silently widen an existing
-  writer's authority; do not infer this from matching field types.
-- Identify relevant invariants: compatibility, units/ranges, permission authority,
-  failure/cancellation, deadlines, resource bounds and recovery, as applicable.
-- Name unresolved assumptions and the smallest proof that can settle each. A new
-  SDK/financial/worker seam may need one real production-composition integration
-  path before its implementation is copied across consumers; replace only external
-  transport. Use a bounded specialist question when independent expertise helps.
-- Record development selections and final required gates, with reasons and setup
-  prerequisites. Resolve consequential unknowns before dependent work fans out.
+- Trace entrypoints, shared contracts, every reader/writer, persistence, external
+  adapters and unchanged consumers that could regress. For shared contracts or
+  privileged writes, identify each entrypoint's read/preview/apply/publish/edit
+  permissions and credential scope. Prove schema widening cannot silently expand
+  existing writer authority; matching field types are insufficient.
+- Identify compatibility, units/ranges, permission, failure/cancellation, deadline,
+  resource-bound and recovery invariants where relevant.
+- Name assumptions and their smallest proofs. New SDK/financial/worker seams may
+  need a real production-composition integration path before reuse across consumers;
+  replace only external transport. Ask bounded specialist questions when helpful.
+- Record exact development/final commands and test selections, covered risks, setup
+  prerequisites and elapsed-time estimates including cold setup. Prefer recent
+  comparable timings; label estimates/unknowns. Tell the user early and revise
+  changed selections. Settle consequential unknowns before dependent work fans out.
 
-Keep this in the existing record/ExecPlan, not a separate research artifact. For a
-bounded established fix, a short source/neighboring-test check suffices. Broader
-research must answer a named uncertainty; do not survey the whole app by default.
+Use the existing record/ExecPlan, not a research artifact. Established bounded
+fixes need only a short source/neighboring-test check; broader research must answer
+a named uncertainty, not default to surveying the app.
 
-For saved design prompts and returned designs, apply [versioned handoff
-rules](DESIGN_HANDOFF.md); DESIGN.md owns provenance and revision pointers only.
+Before substantive UI coding, choose the [design direction](DESIGN_HANDOFF.md#choose-the-ui-direction-before-implementation).
+Approved-pattern extensions and small corrections remain autonomous; new agent
+directions need concrete previews and user approval. Apply versioned handoff rules
+to saved prompts/returned designs; `DESIGN.md` owns only provenance/revision pointers.
+For supplied designs, use `$ui-ux-composition` fidelity mode and its source coverage
+inventory before coding. Missing backend support authorizes neither silent UI
+removal nor invented capabilities.
 
-When implementing a supplied design, use `$ui-ux-composition` fidelity mode and
-its source-derived coverage inventory before coding. Missing backend support is
-not permission to silently remove designed UI or invent working capabilities.
+Before AI execution changes, run the affected capability doctor to distinguish
+existing readiness gaps from regressions. Follow [AI smoke policy](AI_SMOKE_POLICY.md)
+for live authorization, bounds and reporting; deterministic tests never call paid providers.
 
-Exit: scope, affected consumers and risk triggers are accounted for; consequential
-unknowns have an early proof or explicit unresolved decision; every acceptance
-criterion has a development/final verification plan.
+Exit: scope, consumers and risks are accounted for; consequential unknowns have
+proof or explicit unresolved decisions; every criterion has development/final checks.
 
 ## 2. Implement and verify in coherent slices
 
-Use `$testing` to choose the cheapest reliable checks, including browser/device,
-database, security, and mapped E2E evidence where required. Run focused checks
-while iterating, selecting unit/contract/integration cases and static checks for the
-changed behavior and affected consumers. Whole-workspace suites, full builds and
-critical stages are not per-edit defaults. Investigate failures and fix their cause
-before broadening. An early critical smoke is appropriate only for a named startup,
-wiring or other risk that a smaller check cannot establish; record why it is needed
-now and its exact selection. Required real database/browser proof remains available
-early when it resolves a consequential assumption.
-Do not request independent review after each task by default. An early review
-is useful only for a specific consequential uncertainty; state its question.
+Use `$testing` for the cheapest reliable checks, including required browser/device,
+database, security and mapped E2E evidence. Iterate with affected unit/contract/
+integration cases and static checks; whole-workspace suites, full builds and
+critical stages are not per-edit defaults. Fix failure causes before broadening.
+Early critical smoke needs a named startup/wiring/other risk beyond smaller checks;
+record its timing rationale and exact selection. Required real database/browser
+proof may resolve consequential assumptions early. Early independent review needs
+a specific consequential question, not a request after every task.
 
-Keep changed user-flow behavior and mapped tests synchronized. Resolve exact
-mapped test files and reviewed commands before starting E2E; do not accidentally
-select the whole suite through ambiguous argument forwarding.
+Synchronize changed user flows and mapped tests. Before E2E, resolve exact mapped
+files and reviewed commands; ambiguous argument forwarding must not select all tests.
+Record material decisions and next actions, not routine calls. Delegate useful,
+bounded, non-overlapping tasks with source/spec paths, diff boundaries and required
+evidence; prefer fresh context over long transcripts. Do not coach review verdicts.
 
-Record material decisions and the next action, not a transcript of routine
-tool calls. Delegate bounded, non-overlapping work only when useful. Give an
-agent the task, relevant source/spec paths, diff boundary, and evidence needed;
-prefer a fresh context to copying a long conversation. Do not coach a reviewer
-toward the author's desired conclusion.
-
-Exit: the scoped implementation works with focused evidence; remaining broad final
-checks are explicitly planned. A milestone with outstanding required proof remains
-unfinished even when its source is ready for review.
+Exit: scoped implementation has focused evidence and explicit remaining checks.
+Source ready for review does not complete a milestone with outstanding proof.
 
 ## 3. Focused author preflight
 
-Before independent source review (or final verification for work without review):
+Before source review (or final verification when review is not required):
 
-- Map every acceptance ID to implementation and valid evidence; make gaps
-  explicit. For fidelity work, reconcile every source inventory row, including
-  hidden/empty/populated states and material deviations.
-- Check relevant failure, cancellation, permission, responsive, localization,
-  and accessibility behavior. Select combinations by distinct risks.
-- Confirm public exports/callers and contracts where changed; inspect the final
-  diff for accidental scope, secrets, generated output, and temporary artifacts.
-- Complete affected documentation and guide checks. Verify commands exist.
+- Map every acceptance ID to implementation/evidence; expose gaps. For fidelity,
+  reconcile every inventory row, hidden/empty/populated states and material deviations.
+- Check relevant failure, cancellation, permissions, responsive behavior,
+  localization and accessibility; select combinations by distinct risks.
+- Apply the [readability author checks](../docs/code-readability.md#author-and-reviewer-checks)
+  to handwritten changes: main flow, named decisions, cohesive extractions and
+  preserved lifecycle/React semantics. Formatting alone is not a clarity check.
+- Verify changed exports/callers/contracts; inspect the final diff for accidental
+  scope, secrets, generated output and temporary artifacts.
+- Complete affected documentation/guide checks; verify commands exist.
 - Prepare the [critical workflow gate](../docs/operations/critical-workflows.md):
-  register new important journeys, exact selections and prerequisites. Keep the
-  full critical suite required for shared auth/accounting/model/worker changes.
-  Identify pending final execution explicitly; do not start it merely to enter
-  review. Focused tests must already cover consequential implementation seams.
-- For backlog work, reconcile the task and index using the synchronization rule
-  below; a partial delivery must not imply the whole backlog task is Done.
-- Apply `$testing` evidence validity rules to the final patch. Reuse valid
-  results; rerun checks invalidated by source, configuration, test, or environment
-  changes. Do not skip required layers to reduce cost.
+  register new important journeys, exact selections and prerequisites; select
+  affected core smoke/shared consumers by risk. Full regression needs evidenced
+  shared impact, a release/scheduled run or explicit request, not feature completion.
+  Mark final execution pending without running it merely to enter review; focused
+  tests must already cover consequential implementation seams.
+- Reconcile backlog tasks/index under the rule below; partial delivery is not Done.
+- Apply `$testing` validity rules to the final patch: reuse valid evidence, rerun
+  checks invalidated by source/configuration/test/environment changes, and retain
+  required layers regardless of cost.
 
-Exit: implementation and focused coverage are ready for review, fixtures are valid,
-known implementation gaps are resolved, and pending final gates are visible.
-Source readiness is not completion; a passing count cannot hide missing evidence.
+Exit: implementation gaps are resolved, fixtures valid, focused coverage ready
+for review and pending gates visible. Source readiness/passing counts cannot hide
+missing completion evidence.
 
 ## 4. Review and remediate stabilized source
 
-Apply root review triggers and `$code-review`. Initial independent review covers
-the complete scoped diff and its relevant context. The reviewer also assesses
-test coverage and the planned final gates. Broad execution may be explicitly
-pending at this stage; report source findings separately from final approval.
-This is one completion review with source/remediation and final-evidence phases,
-not a second full review after unchanged source passes its gates. When a root tester trigger applies, give the tester a concrete
-bounded question, such as new-harness adequacy or unresolved concurrency, and
-valid evidence to assess rather than repeat. A green new harness does not waive
-the root trigger. Security review remains independently
-required by root risk triggers. Complementary reviews may run concurrently.
+Apply root triggers and `$code-review`. Initial independent review covers the whole
+scoped diff/context, coverage and planned gates; explicitly pending broad execution
+means source findings remain separate from final approval. This is one completion
+review with source/remediation and evidence phases. Root tester triggers still apply
+to green new harnesses: give testers bounded questions (e.g. harness adequacy or
+unresolved concurrency) and valid evidence to assess without repetition. Root-triggered
+security review remains independently required; complementary reviews may run concurrently.
 
-Batch findings, triage their validity, and fix material defects together. Keep
-stable finding IDs and reasons for accepted/deferred/rejected findings. Verify
-repairs with affected checks and request a **remediation review** of the fixes,
-affected callers/invariants, and evidence. Expand to a full review only for a
-new or substantially changed risk surface; record why. A new material defect
-found during focused review must still be addressed.
+Batch and triage findings; fix material defects together. Preserve finding IDs and
+accepted/deferred/rejected reasons. Run affected repair checks, then request
+**remediation review** of fixes, affected callers/invariants and evidence. A new or
+substantially changed risk surface alone warrants full review; record why. Address
+new material defects found during focused review too.
 
-After two remediation cycles with material findings still appearing, diagnose
-the recurring cause (incomplete specification, oversized scope, missing test
-seam, or architectural uncertainty) and change the approach before another
-cycle. This is not a review cap or permission to leave defects unresolved.
+If material findings persist after two remediation cycles, diagnose the recurring
+cause (specification, scope, test seam or architecture) and change approach before
+another cycle. This neither caps review nor permits unresolved defects.
 
-Exit: material source findings are resolved (or justified under root policy),
-focused repairs pass, and no known implementation defect is being handed to an
-expensive gate for rediscovery. Work without a required review enters the same
-final readiness check directly after author preflight.
+Exit: material findings are resolved or justified under root policy, repairs pass,
+and no known defect awaits expensive rediscovery. When review is not required,
+proceed from preflight directly to the same final readiness check.
 
 ## 5. Run final gates and approve evidence
 
-Before broad workspace/critical execution:
+Before remaining selected checks:
 
-- Stabilize the implementation and review repairs; validate changed fixtures and
-  run affected fast checks. Select all required risk-triggered layers, not just
-  edited files. Use the root full-critical triggers unchanged.
+- Stabilize implementation/repairs, validate changed fixtures and run affected fast
+  checks. Select every required risk layer, beyond edited files; reuse valid results.
+  Explain regression scope before full-suite selection; breadth is not automatic.
 - Verify reviewed setup/profile commands, infrastructure ownership and readiness.
-  For new or changed test infrastructure, measure cold setup separately from test
-  bodies and use justified bounded setup watchdogs. Keep product deadlines and
-  cancellation assertions intact; a timeout needs diagnosis, not an automatic
-  timeout increase. Avoid contending builds or resets on the same test resources.
-- Capture the relevant tracked/untracked patch state and planned selections.
-  Run required critical, browser/device, database, static and build checks, plus
-  the documented setup path where required. A narrow early smoke never replaces
-  final required coverage.
+  For AI changes, compare final affected capability doctor results from the intended
+  running environment with baseline. Separately record deterministic implementation,
+  local readiness and live proof under [AI smoke policy](AI_SMOKE_POLICY.md).
+  Invalidated matching flow evidence requires only authorized bounded live smoke,
+  then another doctor run. Reuse standing authorization; ask only for out-of-policy
+  expense/action. Missing credentials/readiness or exhausted limits remain explicit
+  local/live gaps: never bypass admission or claim deterministic proof is live.
+  See [local testing setup](../docs/operations/local-testing-setup.md#admin-activation).
+  For new/changed test infrastructure, measure cold setup separately from test bodies
+  and justify bounded setup watchdogs. Preserve product deadlines/cancellation
+  assertions; diagnose timeouts instead of automatically increasing them. Avoid
+  competing builds/resets on shared test resources.
+- Capture relevant tracked/untracked patch state and selections. Run required
+  critical, browser/device, database, static/build checks and documented setup paths.
+  Still-valid early checks count if they cover every selected requirement.
 
-If a gate fails, classify the cause as implementation, fixture, environment or
-assumption; batch related fixes and run the smallest reproducer and affected
-checks first. Before another broad run, state what invalidates its prior evidence
-and why that selection is necessary. Repeated failures of the same kind require
-revisiting discovery/setup/coverage before another launch. Use supported selections
-and `$testing` validity rules to reuse unaffected results. Never edit failed raw
-reports into passes or count skipped or retried tests as complete critical evidence.
+Classify failures as implementation, fixture, environment or assumption; batch fixes
+and start with the smallest reproducer/affected checks. Before another broad run,
+explain invalidated evidence and selection necessity. Repeated failure types require
+revisiting discovery/setup/coverage before relaunch. Reuse unaffected results through
+supported selections and `$testing` rules. Never rewrite failed raw reports as passes
+or count skipped/retried tests as complete critical evidence.
 
-Have the reviewer assess final reports and any changed surface in remediation
-mode. Unchanged source needs evidence confirmation, not another full source review.
-Final approval, milestone completion and handoff wait for all required final
-coverage with valid evidence. Missing configuration, failed or skipped required
-checks remain gaps. Preserve ADR-0016 real browser/device proof and risk-triggered
-security/database review.
+Have the reviewer assess final reports/changed surfaces in remediation mode;
+unchanged source needs evidence confirmation, not full review. Approval, milestone
+completion and handoff require all final coverage with valid evidence. Missing
+configuration and failed/skipped required checks remain gaps. Preserve ADR-0016 real
+browser/device proof and risk-triggered security/database review.
 
-Finish when acceptance and required verification are complete and no unresolved
-critical/high or material security findings remain; resolve relevant medium
-findings or explicitly justify their disposition. Update the active record and
-follow root Git policy. Report actual verification gaps, not invented success.
+Finish only with acceptance/verification complete, no unresolved critical/high or
+material security findings, and relevant medium findings resolved or explicitly
+justified. Update the active record, follow root Git policy, and report actual gaps.
+
+## After user acceptance
+
+Only after user acceptance, append a few-line retrospective to the existing
+correction/improvement record or feature ExecPlan. Tests/review do not imply
+acceptance; technical handoff may precede this pending entry. Add no artifact,
+approval gate or recurring checklist.
+
+Separate investigation, implementation, environment/setup, test execution and rework
+time; label estimates/unavailable measurements. Note the largest avoidable delay or
+escaped defect and one concrete prevention (or state none was evidenced). Record
+follow-ups only for separate work without expanding the accepted task. The optional
+[metrics template](templates/WORKFLOW_METRICS.md) supports controlled comparisons,
+not mandatory instrumentation.
 
 ## Backlog synchronization
 
-Apply this automatically when delivery is tied to a task in `docs/backlog/`,
-including a request identified by its BL ID, filename or matching task scope.
-Select it through the [compact index](../docs/backlog/INDEX.md), inspect its
-frontmatter, then read the task file and relevant
-[shared context](../docs/backlog/README.md) in full during scope discovery;
-record the BL ID and task path in the active correction/improvement/feature record.
-Backlog descriptions do not waive root classification or feature authorization.
+Apply automatically to delivery tied to `docs/backlog/` by BL ID, filename or matching
+scope. During discovery, use the [compact index](../docs/backlog/INDEX.md), inspect
+frontmatter, then fully read the task and relevant [shared context](../docs/backlog/README.md).
+Record BL ID/path in the active delivery record. Backlog text waives neither root
+classification nor feature authorization.
 
-1. During delivery, keep frontmatter `status` and delivery-record link current.
-   If only part is delivered, describe completed and remaining scope and retain
-   a non-terminal filename/status. Planning, a passing partial check, a blocker,
-   or a completed delivery milestone alone does not complete the whole task.
-2. After the entire agreed task is implemented, verified and meets the applicable
+1. Keep frontmatter `status` and delivery-record link current. Partial delivery
+   retains non-terminal filename/status and records completed/remaining scope.
+   Planning, partial passes, blockers or completed milestones do not complete a task.
+2. Only after the entire agreed task is implemented, verified and meets its
    Definition of Done, rename `NNN-slug.md` to `NNN-slug-done.md`, append “— Done”
-   to its heading, set frontmatter `status: done`, and update `updated`.
-   Keep the frontmatter `title` as the stable task name without the suffix.
-   Add existing evidence paths to frontmatter `evidence` and explain them in the
-   body. Link existing documents
-   substantiating implementation: the completed delivery/evidence record, current
-   verified guide, or an implementation ADR when it actually supplies evidence.
-   A proposed design/plan or architectural constraint alone is not proof. If no
-   separate evidence document exists, state that explicitly rather than inventing
-   one; preserve all evidence required by the delivery workflow.
-3. For an explicit user skip request or previously recorded approved scope
-   decision, rename to `NNN-slug-skipped.md`, append “— Skipped” to its heading,
-   set frontmatter `status: skipped`, update `updated`, and record `skip_reason`
-   and `skip_decision` with detail/history in the body (a decision reference or the
-   explicit user instruction when no document exists). Do not infer permission to
-   skip from difficulty, unavailable services, failure, deferral or partial delivery.
-4. Update the index status/link and all affected repository links in the same
-   change. Keep the numeric ID, slug, original task references and requirements;
-   do not create duplicate terminal files or renumber unrelated tasks. On agreed
-   reactivation, remove the terminal suffix/status and preserve previous evidence
-   and skip/completion decisions in the task's history.
-5. Before handoff, check filename/heading/frontmatter/index agreement, evidence/decision
-   links and inbound references. Report the backlog disposition in the final
-   handoff. A Done update follows final verification/review, not anticipated success.
+   to the heading, set `status: done` and update `updated`. Preserve the stable
+   frontmatter `title` without suffix. Add existing paths to `evidence`, explaining
+   them in the body: completed delivery/evidence records, verified current guides,
+   or implementation ADRs supplying actual proof. Proposed designs/plans or
+   architectural constraints alone are insufficient. Explicitly state when no
+   separate evidence document exists; invent none and preserve required workflow proof.
+3. Skip only on explicit user request or a recorded approved scope decision:
+   rename to `NNN-slug-skipped.md`, append “— Skipped” to the heading, set
+   `status: skipped`, update `updated`, and record `skip_reason`/`skip_decision`
+   with body detail/history (decision reference, or explicit user instruction if
+   undocumented). Difficulty, unavailable services, failure, deferral and partial
+   delivery do not authorize skipping.
+4. Update index status/link and affected repository links together. Preserve numeric
+   ID, slug, original references/requirements; create no duplicate terminal files or
+   unrelated renumbering. Agreed reactivation removes terminal suffix/status while
+   retaining evidence and skip/completion decisions in task history.
+5. Before handoff, check filename/heading/frontmatter/index agreement, evidence/
+   decision links and inbound references. Report disposition. Done follows final
+   verification/review, never anticipated success.
 
-Completion condition: every affected backlog task has one canonical numbered
-file, accurate disposition, required evidence/decision references, and resolving
-index/inbound links. No separate reminder or commit/push authorization is implied.
-
-Frontmatter is authoritative; the compact index mirrors it. Non-terminal statuses
-are `pending`, `in-progress` and `blocked`; use the
-[metadata contract](../docs/document-metadata.md#specialized-schemas).
+Exit: each affected task has one canonical numbered file, accurate disposition,
+required evidence/decision references and resolving index/inbound links. No reminder
+or commit/push authorization is implied. Frontmatter is authoritative; the index
+mirrors it. Non-terminal statuses are `pending`, `in-progress`, `blocked`; follow
+the [metadata contract](../docs/document-metadata.md#specialized-schemas).
 
 ## Durable state ownership
 
-| Record                        | Owns                                                                           | References instead of copying                 |
-| ----------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------- |
-| Correction/improvement record | Scope, plan, decisions, evidence, review, remaining risks                      | Relevant guide/ADR/source paths               |
-| Feature `FEATURE.md`          | Scope, acceptance text/IDs, source design inventory and approved deviations    | Execution and evidence links                  |
-| Feature `EXEC_PLAN.md`        | Current progress, milestones, decisions, next action                           | Acceptance IDs, evidence IDs, review findings |
-| Feature `EVIDENCE.md`         | Check commands/results, tested state, acceptance-to-proof mapping, limitations | Review verdict in `REVIEW.md`                 |
-| Feature `REVIEW.md`           | Review boundary/mode, findings/dispositions, final verdict                     | Evidence IDs and acceptance IDs               |
+| Record                        | Owns                                                                           | References instead of copying            |
+| ----------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------- |
+| Correction/improvement record | Scope, plan, decisions, evidence, review, remaining risks                      | Guide/ADR/source paths                   |
+| Feature `FEATURE.md`          | Scope, acceptance text/IDs, source design inventory, approved deviations       | Execution/evidence links                 |
+| Feature `EXEC_PLAN.md`        | Progress, milestones, decisions, next action                                   | Acceptance/evidence IDs, review findings |
+| Feature `EVIDENCE.md`         | Check commands/results, tested state, acceptance-to-proof mapping, limitations | `REVIEW.md` verdict                      |
+| Feature `REVIEW.md`           | Review boundary/mode, findings/dispositions, final verdict                     | Evidence/acceptance IDs                  |
 
-On continuation, read the feature specification and current plan, then the
-evidence/review entries they reference or that the new diff invalidates. Do not
-replay completed work or load unrelated historical artifacts. Keep active state
-concise; Git retains superseded detail.
+On continuation, read the feature specification/current plan, then referenced or
+diff-invalidated evidence/review entries. Do not replay completed work or load
+unrelated history; keep active state concise and superseded detail in Git.
 
-For an efficiency pilot or user-requested measurement, use
-`templates/WORKFLOW_METRICS.md` and `docs/agentic-workflow-evaluation.md` (from the
-repository root). Measurement is optional outside a pilot; no automatic paid
-evaluation, session-log collection, or fabricated token accounting is required.
+For efficiency pilots or requested measurement, use `templates/WORKFLOW_METRICS.md`
+and repository-root `docs/agentic-workflow-evaluation.md`. Otherwise measurement is
+optional; no automatic paid evaluation, session-log collection or fabricated token
+accounting is required.

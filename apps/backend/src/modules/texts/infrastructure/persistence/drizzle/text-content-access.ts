@@ -28,7 +28,9 @@ export async function activeOwner(
         .where(eq(usersTable.id, ownerId))
         .for('share');
 
-    if (owner?.status !== 'active') throw textNotFound();
+    if (owner?.status !== 'active') {
+        throw textNotFound();
+    }
 }
 
 export async function folder(
@@ -50,7 +52,9 @@ export async function folder(
         )
         .for('update');
 
-    if (!row || (active && row.lifecycle !== 'active')) throw textNotFound();
+    if (!row || (active && row.lifecycle !== 'active')) {
+        throw textNotFound();
+    }
 
     return row;
 }
@@ -67,22 +71,31 @@ export async function text(
         .from(textsTable)
         .where(and(eq(textsTable.id, id), eq(textsTable.ownerId, ownerId)));
 
-    if (!candidate) throw textNotFound();
+    if (!candidate) {
+        throw textNotFound();
+    }
+
     await activeOwner(persistence, tx, ownerId);
-    if (candidate.folderId)
+    if (candidate.folderId) {
         await folder(persistence, tx, ownerId, candidate.folderId);
+    }
+
     const [row] = await tx
         .select()
         .from(textsTable)
         .where(eq(textsTable.id, id))
         .for('update');
 
-    if (!row || (active && row.lifecycle !== 'active')) throw textNotFound();
-    if (row.folderId !== candidate.folderId)
+    if (!row || (active && row.lifecycle !== 'active')) {
+        throw textNotFound();
+    }
+
+    if (row.folderId !== candidate.folderId) {
         throw new TextDomainError(
             'version_conflict',
             'The text moved. Reload it and try again.',
         );
+    }
 
     return row;
 }
@@ -152,7 +165,10 @@ export async function listTexts(
 ) {
     return persistence.db.transaction(async (tx) => {
         await activeOwner(persistence, tx, ownerId);
-        if (folderId) await folder(persistence, tx, ownerId, folderId);
+        if (folderId) {
+            await folder(persistence, tx, ownerId, folderId);
+        }
+
         const rows = await tx
             .select({
                 ...getTableColumns(textsTable),
@@ -223,11 +239,12 @@ export async function resource(
             : await text(persistence, tx, ownerId, id);
 
     assertTextVersion(row.version, version);
-    if (kind === 'text' && 'status' in row && row.status === 'draft')
+    if (kind === 'text' && 'status' in row && row.status === 'draft') {
         throw new TextDomainError(
             'invalid_request',
             'Save a translation before sharing.',
         );
+    }
 
     return row;
 }

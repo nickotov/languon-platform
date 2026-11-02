@@ -14,6 +14,7 @@ describe('safe provider rejection evidence', () => {
             );
         },
     );
+
     it.each([400, 403, 408, 500, 502, 503, undefined])(
         'does not authorize rerouting for ambiguous or policy status %s',
         (statusCode) => {
@@ -22,15 +23,18 @@ describe('safe provider rejection evidence', () => {
             );
         },
     );
+
     it('preserves safe metadata on trusted application errors without copying provider payload', () => {
         const error = withProviderExecutionOutcome(
             new Error('Safe application failure.'),
             { statusCode: 429, message: 'private' },
             'evolink',
         );
+
         expect(error.executionOutcome).toBe('rejected');
         expect(JSON.stringify(error)).not.toContain('private');
     });
+
     it('retains original SDK cause internally and leaves disconnects ambiguous', () => {
         const cause = Object.freeze({ code: 'ECONNRESET' });
         const error = new ProviderExecutionError(cause, 'openrouter');

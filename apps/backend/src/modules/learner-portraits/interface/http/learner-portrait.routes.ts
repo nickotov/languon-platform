@@ -79,6 +79,7 @@ const security = [{ bearerAuth: [] as string[] }];
 const envelope = (code: string, message: string) => ({
     error: { code, message, correlationId: randomUUID() },
 });
+
 export function createLearnerPortraitRoutes(deps: {
     portraits: PortraitService;
     interviews: InterviewService;
@@ -89,17 +90,20 @@ export function createLearnerPortraitRoutes(deps: {
 }) {
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
-            if (!result.success)
+            if (!result.success) {
                 return c.json(
                     envelope('invalid_request', 'The request is invalid.'),
                     400,
                 );
+            }
         },
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         type: 'http',
         scheme: 'bearer',
     });
+
     for (const path of ['/learner-portrait', '/learner-portrait/*']) {
         app.use(path, async (c, next) => {
             c.header('Cache-Control', 'private, no-store');
@@ -112,8 +116,10 @@ export function createLearnerPortraitRoutes(deps: {
                 c.header('Access-Control-Allow-Credentials', 'true');
                 c.header('Vary', 'Origin');
             }
+
             await next();
         });
+
         app.use(
             path,
             bodyLimit({
@@ -128,6 +134,7 @@ export function createLearnerPortraitRoutes(deps: {
                     ),
             }),
         );
+
         app.options(path, (c) => {
             const origin = c.req.header('Origin') ?? null;
             deps.policy.assertCookieRequestOrigin(origin);
@@ -137,18 +144,24 @@ export function createLearnerPortraitRoutes(deps: {
                 'Access-Control-Allow-Methods',
                 'GET,POST,PATCH,DELETE,OPTIONS',
             );
+
             c.header(
                 'Access-Control-Allow-Headers',
                 'Authorization,Content-Type',
             );
+
             return c.body(null, 204);
         });
     }
+
     app.use('*', actionAllowanceRequestMiddleware);
     app.onError((cause, c) => {
         const allowanceError = actionAllowanceErrorResponse(cause, c);
-        if (allowanceError) return allowanceError;
-        if (cause instanceof PortraitInterviewDailyQuotaError)
+        if (allowanceError) {
+            return allowanceError;
+        }
+
+        if (cause instanceof PortraitInterviewDailyQuotaError) {
             return c.json(
                 envelope(
                     'resource_limit',
@@ -156,7 +169,9 @@ export function createLearnerPortraitRoutes(deps: {
                 ),
                 429,
             );
-        if (cause instanceof PortraitInterviewResourceLimitError)
+        }
+
+        if (cause instanceof PortraitInterviewResourceLimitError) {
             return c.json(
                 envelope(
                     'resource_limit',
@@ -164,15 +179,19 @@ export function createLearnerPortraitRoutes(deps: {
                 ),
                 422,
             );
+        }
+
         if (
             cause instanceof InvalidBearerAuthorizationError ||
             cause instanceof PortraitUserUnavailableError
-        )
+        ) {
             return c.json(
                 envelope('authentication_required', 'Sign in to continue.'),
                 401,
             );
-        if (cause instanceof InvalidRequestOriginError)
+        }
+
+        if (cause instanceof InvalidRequestOriginError) {
             return c.json(
                 envelope(
                     'invalid_origin',
@@ -180,7 +199,9 @@ export function createLearnerPortraitRoutes(deps: {
                 ),
                 403,
             );
-        if (cause instanceof PortraitConflictError)
+        }
+
+        if (cause instanceof PortraitConflictError) {
             return c.json(
                 envelope(
                     'version_conflict',
@@ -188,7 +209,9 @@ export function createLearnerPortraitRoutes(deps: {
                 ),
                 409,
             );
-        if (cause instanceof PortraitDraftUnavailableError)
+        }
+
+        if (cause instanceof PortraitDraftUnavailableError) {
             return c.json(
                 envelope(
                     'draft_unavailable',
@@ -196,7 +219,9 @@ export function createLearnerPortraitRoutes(deps: {
                 ),
                 404,
             );
-        if (cause instanceof PortraitSensitiveContentError)
+        }
+
+        if (cause instanceof PortraitSensitiveContentError) {
             return c.json(
                 envelope(
                     'invalid_request',
@@ -204,15 +229,19 @@ export function createLearnerPortraitRoutes(deps: {
                 ),
                 400,
             );
+        }
+
         if (
             cause instanceof PortraitNotMeaningfulError ||
             cause instanceof z.ZodError
-        )
+        ) {
             return c.json(
                 envelope('invalid_request', 'Review your portrait answers.'),
                 400,
             );
-        if (cause instanceof InterviewAccountingError)
+        }
+
+        if (cause instanceof InterviewAccountingError) {
             return c.json(
                 envelope(cause.code, cause.message),
                 cause.code === 'model_unavailable' ||
@@ -222,13 +251,17 @@ export function createLearnerPortraitRoutes(deps: {
                       ? 409
                       : 400,
             );
+        }
+
         const mapped = mapDictionaryHttpError(cause);
-        if (mapped.status === 401)
+        if (mapped.status === 401) {
             return c.json(
                 envelope('authentication_required', 'Sign in to continue.'),
                 401,
             );
-        if (mapped.status === 503)
+        }
+
+        if (mapped.status === 503) {
             return c.json(
                 envelope(
                     'service_unavailable',
@@ -236,7 +269,12 @@ export function createLearnerPortraitRoutes(deps: {
                 ),
                 503,
             );
-        if (cause instanceof Error && cause.message === 'portrait_rate_limited')
+        }
+
+        if (
+            cause instanceof Error &&
+            cause.message === 'portrait_rate_limited'
+        ) {
             return c.json(
                 envelope(
                     'rate_limited',
@@ -244,16 +282,20 @@ export function createLearnerPortraitRoutes(deps: {
                 ),
                 429,
             );
+        }
+
         return c.json(
             envelope('internal_error', 'The request could not be completed.'),
             500,
         );
     });
+
     const owner = async (c: Context) => {
         const { signal, clientAddress } = authenticationRequestMetadata(
             c,
             deps.policy,
         );
+
         signal.throwIfAborted();
         const addressDecision = await deps.rateLimiter.consume({
             scope: 'learner-portrait-address',
@@ -262,7 +304,11 @@ export function createLearnerPortraitRoutes(deps: {
             windowMs: 60_000,
             signal,
         });
-        if (!addressDecision.allowed) throw new Error('portrait_rate_limited');
+
+        if (!addressDecision.allowed) {
+            throw new Error('portrait_rate_limited');
+        }
+
         const token = deps.policy.parseBearerAuthorization(
             c.req.header('Authorization') ?? null,
         );
@@ -274,9 +320,14 @@ export function createLearnerPortraitRoutes(deps: {
             windowMs: 60_000,
             signal,
         });
-        if (!decision.allowed) throw new Error('portrait_rate_limited');
+
+        if (!decision.allowed) {
+            throw new Error('portrait_rate_limited');
+        }
+
         return principal.userId;
     };
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -286,6 +337,7 @@ export function createLearnerPortraitRoutes(deps: {
         }),
         async (c) => c.json(await deps.portraits.get(await owner(c)), 200),
     );
+
     app.openapi(
         createRoute({
             method: 'get',
@@ -307,6 +359,7 @@ export function createLearnerPortraitRoutes(deps: {
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -324,6 +377,7 @@ export function createLearnerPortraitRoutes(deps: {
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -341,6 +395,7 @@ export function createLearnerPortraitRoutes(deps: {
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -358,6 +413,7 @@ export function createLearnerPortraitRoutes(deps: {
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'delete',
@@ -375,6 +431,7 @@ export function createLearnerPortraitRoutes(deps: {
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -412,6 +469,7 @@ export function createLearnerPortraitRoutes(deps: {
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -431,6 +489,7 @@ export function createLearnerPortraitRoutes(deps: {
                 200,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'post',
@@ -451,6 +510,7 @@ export function createLearnerPortraitRoutes(deps: {
                 202,
             ),
     );
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -477,6 +537,7 @@ export function createLearnerPortraitRoutes(deps: {
                 200,
             ),
     );
+
     for (const action of ['read', 'stop'] as const) {
         app.openapi(
             createRoute({
@@ -495,6 +556,7 @@ export function createLearnerPortraitRoutes(deps: {
                     action === 'read'
                         ? await deps.interviews.read(await owner(c), id)
                         : await deps.interviews.stop(await owner(c), id);
+
                 return result
                     ? c.json(result, 200)
                     : c.json(
@@ -504,5 +566,6 @@ export function createLearnerPortraitRoutes(deps: {
             },
         );
     }
+
     return app;
 }

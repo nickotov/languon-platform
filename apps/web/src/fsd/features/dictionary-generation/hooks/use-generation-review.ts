@@ -75,7 +75,10 @@ export function useGenerationReview(props: GenerationReviewProps) {
     }
 
     function handleAccept() {
-        if (!candidate || acceptDisabled) return;
+        if (!candidate || acceptDisabled) {
+            return;
+        }
+
         void run(() => props.onAccept(candidate));
     }
 

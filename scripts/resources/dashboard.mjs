@@ -9,6 +9,7 @@ const repositoryRoot = resolve(
     dirname(fileURLToPath(import.meta.url)),
     '../..',
 );
+
 export const defaultHistoryPath = resolve(
     repositoryRoot,
     'docs/operations/resource-profile/history.jsonl',
@@ -39,6 +40,7 @@ const jsonForHtml = (value) =>
 
 export function renderDashboard(observations) {
     const data = jsonForHtml(observations);
+
     return `<!doctype html>
 <html lang="en">
 <head>
@@ -61,23 +63,155 @@ export function renderDashboard(observations) {
   <p>Sanitized, comparable production build and runtime measurements. Raw run artifacts stay local.</p>
   <main id="app"></main>
   <script>
-    const observations=${data};
-    const esc=(v)=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const bytes=(v)=>v==null?'—':(v/1024/1024).toFixed(1)+' MiB';
-    const latest=observations.at(-1);
-    const value=(phase,key)=>latest?.runtime?.[phase]?.resources?.[key];
-    const series=(getter)=>observations.map(getter).filter(Number.isFinite);
-    const spark=(values,color='#60a5fa')=>{ if(!values.length)return '—'; const max=Math.max(...values,1), w=300,h=70; return '<svg viewBox="0 0 '+w+' '+h+'" aria-hidden="true"><polyline fill="none" stroke="'+color+'" stroke-width="3" points="'+values.map((v,i)=>(i*(w/Math.max(1,values.length-1)))+','+(h-v/max*h)).join(' ')+'"/></svg>' };
-    if(!latest){ document.querySelector('#app').innerHTML='<div class="card empty">No recorded profiles yet. Run <code>pnpm resources:profile -- --record</code>.</div>'; }
-    else {
-      const flags=latest.flags||[], comparable=latest.comparability?.comparable;
-      const cards=[
-        ['Build time', ((latest.builds||[]).reduce((s,b)=>s+(b.durationMs||0),0)/1000).toFixed(1)+'s', series(o=>(o.builds||[]).reduce((s,b)=>s+(b.durationMs||0),0))],
-        ['Image total', bytes((latest.builds||[]).reduce((s,b)=>s+(b.imageSizeBytes||0),0)), series(o=>(o.builds||[]).reduce((s,b)=>s+(b.imageSizeBytes||0),0))],
-        ['Load CPU peak', (value('load','cpuPeakPercent')??'—')+'%', series(o=>o.runtime?.load?.resources?.cpuPeakPercent)],
-        ['Overlap memory', bytes(value('overlap','memoryPeakBytes')), series(o=>o.runtime?.overlap?.resources?.memoryPeakBytes)],
-      ];
-      document.querySelector('#app').innerHTML='<div class="cards">'+cards.map(c=>'<section class="card"><div>'+esc(c[0])+'</div><div class="value">'+esc(c[1])+'</div>'+spark(c[2])+'</section>').join('')+'</div><p class="'+(flags.length?'bad':'ok')+'">'+(flags.length?'Threshold flags: '+esc(flags.join(', ')):'All configured thresholds passed')+' · '+(comparable?'Comparable with previous run':'Not comparable: '+esc(latest.comparability?.reason))+'</p><div class="scroll"><table><thead><tr><th>Recorded</th><th>Revision</th><th>Host</th><th>Build</th><th>Load p95</th><th>Error rate</th><th>Overlap CPU</th><th>Flags</th></tr></thead><tbody>'+observations.slice().reverse().map(o=>'<tr><td>'+esc(o.recordedAt)+'</td><td><code>'+esc(o.revision.slice(0,12))+'</code></td><td><code>'+esc(o.host.id)+'</code></td><td>'+esc(((o.builds||[]).reduce((s,b)=>s+(b.durationMs||0),0)/1000).toFixed(1))+'s</td><td>'+esc(o.runtime?.load?.load?.latencyMs?.p95)+'ms</td><td>'+esc(o.runtime?.load?.load?.errorRatePercent)+'%</td><td>'+esc(o.runtime?.overlap?.resources?.cpuPeakPercent)+'%</td><td class="'+((o.flags||[]).length?'bad':'ok')+'">'+esc((o.flags||[]).join(', ')||'pass')+'</td></tr>').join('')+'</tbody></table></div>';
+    const observations = ${data};
+    const esc = (v) =>
+        String(v ?? '—').replace(
+            /[&<>"']/g,
+            (c) =>
+                ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                })[c],
+        );
+    const bytes = (v) => (v == null ? '—' : (v / 1024 / 1024).toFixed(1) + ' MiB');
+    const latest = observations.at(-1);
+    const value = (phase, key) => latest?.runtime?.[phase]?.resources?.[key];
+    const series = (getter) => observations.map(getter).filter(Number.isFinite);
+    const spark = (values, color = '#60a5fa') => {
+        if (!values.length) {
+            return '—';
+        }
+
+        const max = Math.max(...values, 1),
+            w = 300,
+            h = 70;
+
+        return (
+            '<svg viewBox="0 0 ' +
+            w +
+            ' ' +
+            h +
+            '" aria-hidden="true"><polyline fill="none" stroke="' +
+            color +
+            '" stroke-width="3" points="' +
+            values
+                .map(
+                    (v, i) =>
+                        i * (w / Math.max(1, values.length - 1)) +
+                        ',' +
+                        (h - (v / max) * h),
+                )
+                .join(' ') +
+            '"/></svg>'
+        );
+    };
+    if (!latest) {
+        document.querySelector('#app').innerHTML =
+            '<div class="card empty">No recorded profiles yet. Run <code>pnpm resources:profile -- --record</code>.</div>';
+    } else {
+        const flags = latest.flags || [],
+            comparable = latest.comparability?.comparable;
+        const cards = [
+            [
+                'Build time',
+                (
+                    (latest.builds || []).reduce(
+                        (s, b) => s + (b.durationMs || 0),
+                        0,
+                    ) / 1000
+                ).toFixed(1) + 's',
+                series((o) =>
+                    (o.builds || []).reduce((s, b) => s + (b.durationMs || 0), 0),
+                ),
+            ],
+            [
+                'Image total',
+                bytes(
+                    (latest.builds || []).reduce(
+                        (s, b) => s + (b.imageSizeBytes || 0),
+                        0,
+                    ),
+                ),
+                series((o) =>
+                    (o.builds || []).reduce(
+                        (s, b) => s + (b.imageSizeBytes || 0),
+                        0,
+                    ),
+                ),
+            ],
+            [
+                'Load CPU peak',
+                (value('load', 'cpuPeakPercent') ?? '—') + '%',
+                series((o) => o.runtime?.load?.resources?.cpuPeakPercent),
+            ],
+            [
+                'Overlap memory',
+                bytes(value('overlap', 'memoryPeakBytes')),
+                series((o) => o.runtime?.overlap?.resources?.memoryPeakBytes),
+            ],
+        ];
+        document.querySelector('#app').innerHTML =
+            '<div class="cards">' +
+            cards
+                .map(
+                    (c) =>
+                        '<section class="card"><div>' +
+                        esc(c[0]) +
+                        '</div><div class="value">' +
+                        esc(c[1]) +
+                        '</div>' +
+                        spark(c[2]) +
+                        '</section>',
+                )
+                .join('') +
+            '</div><p class="' +
+            (flags.length ? 'bad' : 'ok') +
+            '">' +
+            (flags.length
+                ? 'Threshold flags: ' + esc(flags.join(', '))
+                : 'All configured thresholds passed') +
+            ' · ' +
+            (comparable
+                ? 'Comparable with previous run'
+                : 'Not comparable: ' + esc(latest.comparability?.reason)) +
+            '</p><div class="scroll"><table><thead><tr><th>Recorded</th><th>Revision</th><th>Host</th><th>Build</th><th>Load p95</th><th>Error rate</th><th>Overlap CPU</th><th>Flags</th></tr></thead><tbody>' +
+            observations
+                .slice()
+                .reverse()
+                .map(
+                    (o) =>
+                        '<tr><td>' +
+                        esc(o.recordedAt) +
+                        '</td><td><code>' +
+                        esc(o.revision.slice(0, 12)) +
+                        '</code></td><td><code>' +
+                        esc(o.host.id) +
+                        '</code></td><td>' +
+                        esc(
+                            (
+                                (o.builds || []).reduce(
+                                    (s, b) => s + (b.durationMs || 0),
+                                    0,
+                                ) / 1000
+                            ).toFixed(1),
+                        ) +
+                        's</td><td>' +
+                        esc(o.runtime?.load?.load?.latencyMs?.p95) +
+                        'ms</td><td>' +
+                        esc(o.runtime?.load?.load?.errorRatePercent) +
+                        '%</td><td>' +
+                        esc(o.runtime?.overlap?.resources?.cpuPeakPercent) +
+                        '%</td><td class="' +
+                        ((o.flags || []).length ? 'bad' : 'ok') +
+                        '">' +
+                        esc((o.flags || []).join(', ') || 'pass') +
+                        '</td></tr>',
+                )
+                .join('') +
+            '</tbody></table></div>';
     }
   </script>
 </body>
@@ -92,11 +226,15 @@ export async function generateDashboard({
     try {
         text = await readFile(historyPath, 'utf8');
     } catch (error) {
-        if (error.code !== 'ENOENT') throw error;
+        if (error.code !== 'ENOENT') {
+            throw error;
+        }
     }
+
     const observations = parseHistory(text);
     await mkdir(dirname(outputPath), { recursive: true });
     await writeFile(outputPath, renderDashboard(observations), 'utf8');
+
     return { observations: observations.length, outputPath };
 }
 
@@ -113,6 +251,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
                 ? resolve(process.argv[outputIndex + 1])
                 : undefined,
     });
+
     console.log(
         `Resource dashboard: ${result.outputPath} (${result.observations} observations)`,
     );

@@ -29,11 +29,12 @@ export const TextAiRoutePolicySchema = z
     .strict()
     .superRefine((value, context) => {
         const ids = [value.primaryRouteId, ...value.fallbackRouteIds];
-        if (new Set(ids).size !== ids.length)
+        if (new Set(ids).size !== ids.length) {
             context.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: 'Routes must be unique.',
             });
+        }
     });
 export const TextAiFlowTariffSchema = z
     .object({

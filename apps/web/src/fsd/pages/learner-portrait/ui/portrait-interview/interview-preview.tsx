@@ -26,6 +26,7 @@ function PreviewContent({
     const expiry = new Intl.DateTimeFormat(locale, {
         dateStyle: 'medium',
     }).format(new Date(expiresAt));
+
     return (
         <div className={styles.previewContent}>
             <div className={styles.previewTitle}>
@@ -71,6 +72,7 @@ function PreviewContent({
         </div>
     );
 }
+
 export function InterviewPreview(props: {
     items: PortraitItems;
     locale: InterviewLocale;
@@ -85,30 +87,42 @@ export function InterviewPreview(props: {
     const swipe = useRef<{ y: number; time: number } | null>(null);
     function touchStart(event: TouchEvent<HTMLDivElement>) {
         const touch = event.touches[0];
-        if (touch) swipe.current = { y: touch.clientY, time: Date.now() };
+        if (touch) {
+            swipe.current = { y: touch.clientY, time: Date.now() };
+        }
     }
+
     function touchEnd(event: TouchEvent<HTMLDivElement>) {
         const touch = event.changedTouches[0];
         const start = swipe.current;
         swipe.current = null;
-        if (!touch || !start) return;
+        if (!touch || !start) {
+            return;
+        }
+
         const distance = touch.clientY - start.y;
         const elapsed = Math.max(1, Date.now() - start.time);
-        if (distance > 100 || (distance > 20 && distance / elapsed > 0.5))
+        if (distance > 100 || (distance > 20 && distance / elapsed > 0.5)) {
             props.onClose();
+        }
     }
+
     const sheetClass = props.open
         ? styles.previewSheet
         : [styles.previewSheet, styles.previewSheetClosing].join(' ');
+
     useEffect(() => {
         const query = window.matchMedia('(max-width: 1023px)');
         function update() {
             setNarrow(query.matches);
         }
+
         update();
         query.addEventListener('change', update);
+
         return () => query.removeEventListener('change', update);
     }, []);
+
     return (
         <>
             {present ? (

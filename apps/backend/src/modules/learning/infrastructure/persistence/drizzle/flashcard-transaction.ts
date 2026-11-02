@@ -27,8 +27,9 @@ export function flashcardRun<T>(
     return persistence.database.transaction(async (tx) => {
         const owned = await authorizeLearningDictionary(tx, access).catch(
             (error) => {
-                if (error instanceof DictionaryNotFoundError)
+                if (error instanceof DictionaryNotFoundError) {
                     throw new LearningUnavailableError();
+                }
 
                 throw error;
             },

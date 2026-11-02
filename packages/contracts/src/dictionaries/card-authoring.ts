@@ -79,12 +79,13 @@ export const DictionaryCardAuthoringSuggestionSchema = z
         if (
             ['translation', 'transcription'].includes(suggestion.field) &&
             [...suggestion.value].length > 200
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['value'],
                 message: 'Suggestion exceeds the 200 code point limit',
             });
+        }
     });
 
 export const DictionaryCardAuthoringV2SuggestionSchema = z
@@ -99,12 +100,13 @@ export const DictionaryCardAuthoringV2SuggestionSchema = z
         if (
             ['translation', 'transcription'].includes(suggestion.field) &&
             [...suggestion.value].length > 200
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['value'],
                 message: 'Suggestion exceeds 200 code point limit',
             });
+        }
     });
 
 export const DictionaryCardAuthoringSourceResultSchema = z.discriminatedUnion(
@@ -152,41 +154,49 @@ export const DictionaryCardAuthoringV2ProposalSchema = z
             ...proposal.sourceSuggestions.map((item) => item.id),
             ...proposal.suggestions.map((item) => item.id),
         ];
-        if (new Set(allIds).size !== allIds.length)
+
+        if (new Set(allIds).size !== allIds.length) {
             context.addIssue({
                 code: 'custom',
                 message: 'Suggestion IDs must be unique',
             });
+        }
+
         if (
             new Set(proposal.sourceSuggestions.map((item) => item.value))
                 .size !== proposal.sourceSuggestions.length
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 message: 'Source suggestions must be distinct',
             });
+        }
+
         if (
             latestSourceSuggestionId !== null &&
             !proposal.sourceSuggestions.some(
                 (item) => item.id === latestSourceSuggestionId,
             )
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['sourceResult', 'suggestionId'],
                 message:
                     'Latest Source suggestion must reference retained history',
             });
+        }
+
         DictionaryCardAuthoringFieldSchema.options.forEach((field) => {
             if (
                 proposal.suggestions.filter((item) => item.field === field)
                     .length >
                 DICTIONARY_CARD_AUTHORING_SUGGESTION_LIMIT_PER_FIELD
-            )
+            ) {
                 context.addIssue({
                     code: 'custom',
                     message: `Suggestions for ${field} exceed the visible bound`,
                 });
+            }
         });
     });
 
@@ -206,22 +216,25 @@ export const DictionaryCardAuthoringProposalSchema = z
             )
             .superRefine((suggestions, context) => {
                 const ids = suggestions.map((suggestion) => suggestion.id);
-                if (new Set(ids).size !== ids.length)
+                if (new Set(ids).size !== ids.length) {
                     context.addIssue({
                         code: 'custom',
                         message: 'Authoring suggestion IDs must be unique',
                     });
+                }
+
                 DictionaryCardAuthoringFieldSchema.options.forEach((field) => {
                     if (
                         suggestions.filter(
                             (suggestion) => suggestion.field === field,
                         ).length >
                         DICTIONARY_CARD_AUTHORING_SUGGESTION_LIMIT_PER_FIELD
-                    )
+                    ) {
                         context.addIssue({
                             code: 'custom',
                             message: `Authoring suggestions for ${field} exceed the visible bound`,
                         });
+                    }
                 });
             }),
     })
@@ -242,6 +255,65 @@ export const DictionaryCardAuthoringAcceptedOutcomeSchema = z
         duplicateSource: z.boolean(),
     })
     .strict();
+
+function validateAuthoringActiveStage(
+    job: { state: string; progress: { stage: string } },
+    context: z.RefinementCtx,
+) {
+    if (job.state === 'queued' && job.progress.stage !== 'queued') {
+        context.addIssue({
+            code: 'custom',
+            path: ['progress', 'stage'],
+            message: 'Queued jobs must report the queued stage',
+        });
+    }
+
+    if (
+        job.state === 'running' &&
+        !['generating', 'validating'].includes(job.progress.stage)
+    ) {
+        context.addIssue({
+            code: 'custom',
+            path: ['progress', 'stage'],
+            message: 'Running jobs must report a running stage',
+        });
+    }
+}
+
+function validateAuthoringTerminalOutcome(
+    job: {
+        state: string;
+        failure: { code: string; retryable: boolean } | null;
+        outcome: z.infer<
+            typeof DictionaryCardAuthoringAcceptedOutcomeSchema
+        > | null;
+    },
+    context: z.RefinementCtx,
+) {
+    if ((job.state === 'failed') !== (job.failure !== null)) {
+        context.addIssue({
+            code: 'custom',
+            path: ['failure'],
+            message: 'Only failed jobs expose a sanitized failure',
+        });
+    }
+
+    if ((job.state === 'accepted') !== (job.outcome !== null)) {
+        context.addIssue({
+            code: 'custom',
+            path: ['outcome'],
+            message: 'Only accepted jobs expose an accepted outcome',
+        });
+    }
+
+    if (job.failure?.code === 'generation_conflict' && job.failure.retryable) {
+        context.addIssue({
+            code: 'custom',
+            path: ['failure', 'retryable'],
+            message: 'Generation conflicts are not retryable',
+        });
+    }
+}
 
 const authoringJobBase = {
     billing: ActionBillingSchema.optional(),
@@ -276,23 +348,7 @@ export const DictionaryCardAuthoringGenerationJobSchema = z.discriminatedUnion(
                 expiresAt: z.null(),
             })
             .strict()
-            .superRefine((job, context) => {
-                if (job.state === 'queued' && job.progress.stage !== 'queued')
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['progress', 'stage'],
-                        message: 'Queued jobs must report the queued stage',
-                    });
-                if (
-                    job.state === 'running' &&
-                    !['generating', 'validating'].includes(job.progress.stage)
-                )
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['progress', 'stage'],
-                        message: 'Running jobs must report a running stage',
-                    });
-            }),
+            .superRefine(validateAuthoringActiveStage),
         z
             .object({
                 ...authoringJobBase,
@@ -346,30 +402,7 @@ export const DictionaryCardAuthoringGenerationJobSchema = z.discriminatedUnion(
                 expiresAt: z.null(),
             })
             .strict()
-            .superRefine((job, context) => {
-                if ((job.state === 'failed') !== (job.failure !== null))
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['failure'],
-                        message: 'Only failed jobs expose a sanitized failure',
-                    });
-                if ((job.state === 'accepted') !== (job.outcome !== null))
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['outcome'],
-                        message:
-                            'Only accepted jobs expose an accepted outcome',
-                    });
-                if (
-                    job.failure?.code === 'generation_conflict' &&
-                    job.failure.retryable
-                )
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['failure', 'retryable'],
-                        message: 'Generation conflicts are not retryable',
-                    });
-            }),
+            .superRefine(validateAuthoringTerminalOutcome),
     ],
 );
 
@@ -405,23 +438,7 @@ export const DictionaryCardAuthoringV2GenerationJobSchema =
                 expiresAt: z.null(),
             })
             .strict()
-            .superRefine((job, context) => {
-                if (job.state === 'queued' && job.progress.stage !== 'queued')
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['progress', 'stage'],
-                        message: 'Queued jobs must report the queued stage',
-                    });
-                if (
-                    job.state === 'running' &&
-                    !['generating', 'validating'].includes(job.progress.stage)
-                )
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['progress', 'stage'],
-                        message: 'Running jobs must report a running stage',
-                    });
-            }),
+            .superRefine(validateAuthoringActiveStage),
         z
             .object({
                 ...authoringV2JobBase,
@@ -475,30 +492,7 @@ export const DictionaryCardAuthoringV2GenerationJobSchema =
                 expiresAt: z.null(),
             })
             .strict()
-            .superRefine((job, context) => {
-                if ((job.state === 'failed') !== (job.failure !== null))
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['failure'],
-                        message: 'Only failed jobs expose a sanitized failure',
-                    });
-                if ((job.state === 'accepted') !== (job.outcome !== null))
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['outcome'],
-                        message:
-                            'Only accepted jobs expose an accepted outcome',
-                    });
-                if (
-                    job.failure?.code === 'generation_conflict' &&
-                    job.failure.retryable
-                )
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['failure', 'retryable'],
-                        message: 'Generation conflicts are not retryable',
-                    });
-            }),
+            .superRefine(validateAuthoringTerminalOutcome),
     ]);
 
 const authoringV3JobBase = {
@@ -523,23 +517,7 @@ export const DictionaryCardAuthoringV3GenerationJobSchema =
                 expiresAt: z.null(),
             })
             .strict()
-            .superRefine((job, context) => {
-                if (job.state === 'queued' && job.progress.stage !== 'queued')
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['progress', 'stage'],
-                        message: 'Queued jobs must report the queued stage',
-                    });
-                if (
-                    job.state === 'running' &&
-                    !['generating', 'validating'].includes(job.progress.stage)
-                )
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['progress', 'stage'],
-                        message: 'Running jobs must report a running stage',
-                    });
-            }),
+            .superRefine(validateAuthoringActiveStage),
         z
             .object({
                 ...authoringV3JobBase,
@@ -593,30 +571,7 @@ export const DictionaryCardAuthoringV3GenerationJobSchema =
                 expiresAt: z.null(),
             })
             .strict()
-            .superRefine((job, context) => {
-                if ((job.state === 'failed') !== (job.failure !== null))
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['failure'],
-                        message: 'Only failed jobs expose a sanitized failure',
-                    });
-                if ((job.state === 'accepted') !== (job.outcome !== null))
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['outcome'],
-                        message:
-                            'Only accepted jobs expose an accepted outcome',
-                    });
-                if (
-                    job.failure?.code === 'generation_conflict' &&
-                    job.failure.retryable
-                )
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['failure', 'retryable'],
-                        message: 'Generation conflicts are not retryable',
-                    });
-            }),
+            .superRefine(validateAuthoringTerminalOutcome),
     ]);
 
 export const DictionaryCardAuthoringAnyGenerationJobSchema = z.union([
@@ -669,12 +624,13 @@ const requireExampleForFieldOnlyTranslation = (
         request.scope.kind === 'field' &&
         request.scope.field === 'exampleTranslation' &&
         request.draft.values.example === null
-    )
+    ) {
         context.addIssue({
             code: 'custom',
             path: ['draft', 'values', 'example'],
             message: 'Example translation generation requires an Example',
         });
+    }
 };
 
 export const EnqueueDictionaryCardAuthoringGenerationRequestSchema = z.union([
@@ -719,13 +675,15 @@ const regenerationBase = {
                 DictionaryCardAuthoringFieldSchema.options.length,
         )
         .superRefine((ids, context) => {
-            if (new Set(ids).size !== ids.length)
+            if (new Set(ids).size !== ids.length) {
                 context.addIssue({
                     code: 'custom',
                     message: 'Discarded suggestion IDs must be unique',
                 });
+            }
         }),
 };
+
 export const RegenerateDictionaryCardAuthoringGenerationRequestSchema = z.union(
     [
         z
@@ -752,12 +710,13 @@ export const RegenerateDictionaryCardAuthoringGenerationRequestSchema = z.union(
                             DictionaryCardAuthoringV2FieldSchema.options.length,
                     )
                     .superRefine((ids, context) => {
-                        if (new Set(ids).size !== ids.length)
+                        if (new Set(ids).size !== ids.length) {
                             context.addIssue({
                                 code: 'custom',
                                 message:
                                     'Discarded suggestion IDs must be unique',
                             });
+                        }
                     }),
                 scope: z.discriminatedUnion('kind', [
                     z.object({ kind: z.literal('all') }).strict(),
@@ -783,12 +742,13 @@ export const RegenerateDictionaryCardAuthoringGenerationRequestSchema = z.union(
                             DictionaryCardAuthoringV2FieldSchema.options.length,
                     )
                     .superRefine((ids, context) => {
-                        if (new Set(ids).size !== ids.length)
+                        if (new Set(ids).size !== ids.length) {
                             context.addIssue({
                                 code: 'custom',
                                 message:
                                     'Discarded suggestion IDs must be unique',
                             });
+                        }
                     }),
                 scope: z.discriminatedUnion('kind', [
                     z.object({ kind: z.literal('all') }).strict(),
@@ -810,20 +770,23 @@ const uniqueSelectedSuggestions = (
     context: z.RefinementCtx,
 ) => {
     const entries = selected;
-    if (new Set(entries.map((entry) => entry.field)).size !== entries.length)
+    if (new Set(entries.map((entry) => entry.field)).size !== entries.length) {
         context.addIssue({
             code: 'custom',
             message:
                 'Selected suggestions must be unique by contributing field',
         });
+    }
+
     if (
         new Set(entries.map((entry) => entry.suggestionId)).size !==
         entries.length
-    )
+    ) {
         context.addIssue({
             code: 'custom',
             message: 'Selected suggestion IDs must be unique',
         });
+    }
 };
 const selectedV1Suggestions = z
     .array(DictionaryCardAuthoringSelectedSuggestionSchema)
@@ -895,21 +858,24 @@ export const AcceptDictionaryCardAuthoringGenerationJobResponseSchema = z
     })
     .strict()
     .superRefine((response, context) => {
-        if (response.job.state !== 'accepted')
+        if (response.job.state !== 'accepted') {
             context.addIssue({
                 code: 'custom',
                 path: ['job', 'state'],
                 message: 'An accepted response requires an accepted job',
             });
+        }
+
         if (
             JSON.stringify(response.job.outcome) !==
             JSON.stringify(response.outcome)
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['job', 'outcome'],
                 message: 'Accepted job and response outcomes must match',
             });
+        }
     });
 
 export type DictionaryCardAuthoringField = z.infer<

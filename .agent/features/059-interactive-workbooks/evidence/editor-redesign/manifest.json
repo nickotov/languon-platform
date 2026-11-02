@@ -1,0 +1,23 @@
+{
+  "reference": "User-provided Screenshot 2026-10-29 at 12.33.34.png",
+  "browser_run": "c15aa822-b532-496f-99a1-879fd66faaa9",
+  "guide_revision": "9b82f864dfa04019",
+  "viewports": {
+    "desktop": [
+      1440,
+      1000
+    ],
+    "mobile": [
+      390,
+      844
+    ]
+  },
+  "screenshots": {
+    "editor-block-menu.png": "d1df23c9343db31401b473a1aefac9e0896303ab7bd2065f697cf293a0f630ba",
+    "editor-empty-desktop.png": "34847488e84b521c49154e21a108f58d70e33517f71db2bde3464e6cc5ea76b5",
+    "editor-empty-mobile.png": "3dfe6a338f24d057d0c8b585c36ef7a656041717edd0b5c4e31075f64264866b",
+    "editor-populated-desktop.png": "3b80c5baac2045b057714c95cb7f8b1511f960021ee7380162e026766cb094e2"
+  },
+  "browser_result": "2 passed, no skips, 1.3m",
+  "verification_date": "2026-10-29"
+}

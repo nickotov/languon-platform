@@ -21,14 +21,17 @@ export function createLearnerAiCreditBalanceModule(
                     await transaction.execute(
                         sql`set local statement_timeout = '2s'`,
                     );
+
                     await transaction.execute(
                         sql`set local lock_timeout = '250ms'`,
                     );
+
                     return readSummary({ transaction }, ownerId, at);
                 },
                 { isolationLevel: 'repeatable read', accessMode: 'read only' },
             ),
     });
+
     return {
         balances,
         routes: createLearnerAiCreditBalanceRoutes({ ...input, balances }),

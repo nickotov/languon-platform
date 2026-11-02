@@ -13,6 +13,7 @@ describe('operator probe environment boundaries', () => {
         expect(warn).toHaveBeenCalled();
         expect(JSON.stringify(warn.mock.calls)).not.toContain('secret');
     });
+
     it('rejects invalid required bounded values without echoing credentials', () => {
         expect(() =>
             loadTextAiProbeEnvironment(
@@ -24,9 +25,11 @@ describe('operator probe environment boundaries', () => {
             ),
         ).toThrow();
     });
+
     it('keeps the synthetic fixture disabled by default', () => {
         expect(adminProbeFixtureEnabled({})).toBe(false);
     });
+
     it('requires a disposable loopback database and synthetic credentials', () => {
         const base = {
             ADMIN_E2E_SYNTHETIC_PROBES: 'true',
@@ -35,6 +38,7 @@ describe('operator probe environment boundaries', () => {
                 'postgres://fixture:fixture@127.0.0.1:55432/languon_admin_e2e_test',
             DEEPSEEK_API_KEY: 'synthetic-test-key',
         };
+
         expect(adminProbeFixtureEnabled(base)).toBe(true);
         for (const change of [
             { NODE_ENV: 'production' },

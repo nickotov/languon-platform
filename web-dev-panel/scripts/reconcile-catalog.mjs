@@ -146,17 +146,42 @@ function title(id) {
 }
 
 function category(id) {
-    if (id.startsWith('admin:')) return 'Administration';
-    if (id.startsWith('browser')) return 'Browser tooling';
-    if (id.startsWith('db:')) return 'Database';
-    if (id.startsWith('deploy:')) return 'Deployment';
-    if (id.startsWith('dev') || id === 'infra:down') return 'Development';
-    if (id.startsWith('docs:') || id.startsWith('user-flow:'))
+    if (id.startsWith('admin:')) {
+        return 'Administration';
+    }
+
+    if (id.startsWith('browser')) {
+        return 'Browser tooling';
+    }
+
+    if (id.startsWith('db:')) {
+        return 'Database';
+    }
+
+    if (id.startsWith('deploy:')) {
+        return 'Deployment';
+    }
+
+    if (id.startsWith('dev') || id === 'infra:down') {
+        return 'Development';
+    }
+
+    if (id.startsWith('docs:') || id.startsWith('user-flow:')) {
         return 'Documentation';
-    if (id.startsWith('agent') || id.startsWith('feature:'))
+    }
+
+    if (id.startsWith('agent') || id.startsWith('feature:')) {
         return 'Agent workflow';
-    if (id.startsWith('resources:')) return 'Resources';
-    if (id.startsWith('test')) return 'Tests';
+    }
+
+    if (id.startsWith('resources:')) {
+        return 'Resources';
+    }
+
+    if (id.startsWith('test')) {
+        return 'Tests';
+    }
+
     if (
         [
             'build',
@@ -167,8 +192,10 @@ function category(id) {
             'typecheck',
             'web-dev-panel:check',
         ].includes(id)
-    )
+    ) {
         return 'Quality';
+    }
+
     return 'Other';
 }
 
@@ -199,8 +226,11 @@ let existing = { commands: [], version: 1 };
 try {
     existing = JSON.parse(await readFile(catalogPath, 'utf8'));
 } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
+    if (error.code !== 'ENOENT') {
+        throw error;
+    }
 }
+
 const existingPackageCommands = new Map(
     existing.commands
         .filter(({ source }) => source.type === 'package-script')
@@ -215,17 +245,20 @@ const packageCommands = Object.entries(packageDocument.scripts)
         const previous = existingPackageCommands.get(id);
         if (!previous) {
             const created = initialCommand(id, script);
+
             return {
                 ...created,
                 disabledReason:
                     'New package script requires an explicit safety review.',
             };
         }
+
         const reconciled = reconcileExistingPackageCommand(
             previous,
             id,
             script,
         );
+
         if (
             previous.description ===
                 `Runs the reviewed root package script “${id}”.` &&
@@ -233,6 +266,7 @@ const packageCommands = Object.entries(packageDocument.scripts)
         ) {
             reconciled.description = descriptions[id];
         }
+
         return reconciled;
     });
 const currentPackageScripts = new Set(Object.keys(packageDocument.scripts));
@@ -244,6 +278,7 @@ await writeFile(
     catalogPath,
     `${JSON.stringify({ commands: [...packageCommands, ...missingPackageCommands, ...documentedCommands], version: 1 }, null, 2)}\n`,
 );
+
 console.log(
     `Reconciled ${packageCommands.length} package scripts, ${missingPackageCommands.length} missing sources, and ${documentedCommands.length} documented commands.`,
 );

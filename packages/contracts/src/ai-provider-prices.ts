@@ -10,7 +10,12 @@ const identifier = z.string().trim().min(1).max(200);
 const fields = {
     providerId: identifier,
     modelId: identifier,
-    meter: z.enum(['text-tokens', 'speech-characters', 'speech-tokens']),
+    meter: z.enum([
+        'text-tokens',
+        'speech-characters',
+        'speech-tokens',
+        'audio-duration',
+    ]),
     nativeRules: ProviderNativePricingRulesSchema.optional(),
     inputUsdPerMillionTokens: AccountingUsdSchema.nullable(),
     outputUsdPerMillionTokens: AccountingUsdSchema.nullable(),
@@ -27,6 +32,7 @@ const fields = {
         .refine((url) => {
             try {
                 const parsed = new URL(url);
+
                 return (
                     parsed.protocol === 'https:' &&
                     !parsed.username &&
@@ -39,6 +45,7 @@ const fields = {
         .nullable(),
     reason: z.string().trim().min(5).max(500),
 };
+
 function validMeters(value: {
     meter: string;
     inputUsdPerMillionTokens: string | null;
@@ -49,7 +56,7 @@ function validMeters(value: {
     minimumUsdPerRequest?: string | null | undefined;
     nativeRules?: ProviderNativePricingRules | undefined;
 }): boolean {
-    if (value.nativeRules)
+    if (value.nativeRules) {
         return (
             nativeProviderPricingMatchesMeter(value.meter, value.nativeRules) &&
             [
@@ -61,7 +68,12 @@ function validMeters(value: {
                 value.minimumUsdPerRequest ?? null,
             ].every((amount) => amount === null)
         );
-    if (value.meter === 'speech-tokens') return false;
+    }
+
+    if (value.meter === 'speech-tokens' || value.meter === 'audio-duration') {
+        return false;
+    }
+
     return value.meter === 'text-tokens'
         ? value.inputUsdPerMillionTokens !== null &&
               value.outputUsdPerMillionTokens !== null &&
@@ -72,6 +84,7 @@ function validMeters(value: {
               value.cacheReadUsdPerMillionTokens === null &&
               value.cacheWriteUsdPerMillionTokens === null;
 }
+
 export const ProviderPricePublishRequestSchema = z
     .object({
         ...fields,

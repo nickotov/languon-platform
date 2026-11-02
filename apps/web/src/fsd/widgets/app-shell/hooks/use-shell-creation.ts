@@ -22,9 +22,13 @@ export function useShellCreation(
         setTextOpen(false);
         operation.current = crypto.randomUUID();
     }, [ownerId]);
+
     async function createKnowledge() {
         const owner = useSessionStore.getState().user?.id;
-        if (!owner || creating) return;
+        if (!owner || creating) {
+            return;
+        }
+
         setCreating(true);
         try {
             const workspace = await requestWithSession((token) => {
@@ -32,34 +36,55 @@ export function useShellCreation(
                 if (
                     state.status !== 'authenticated' ||
                     state.user?.id !== owner
-                )
+                ) {
                     throw new Error('Navigation session changed');
+                }
+
                 return knowledgeApi.createDraft(token, operation.current);
             });
-            if (useSessionStore.getState().user?.id !== owner) return;
+
+            if (useSessionStore.getState().user?.id !== owner) {
+                return;
+            }
+
             operation.current = crypto.randomUUID();
             router.push(href(`/knowledge/${workspace.noteId}`));
         } catch {
-            if (useSessionStore.getState().user?.id === owner)
+            if (useSessionStore.getState().user?.id === owner) {
                 showToast({
                     content: t('shell.createFailed'),
                     dismissLabel: t('profile.dismiss'),
                     tone: 'danger',
                 });
+            }
         } finally {
             setCreating(false);
         }
     }
+
     function create(kind: NavigationResourceKind) {
         requestGuardedNavigation(() => {
-            if (useSessionStore.getState().status !== 'authenticated') return;
-            if (kind === 'dictionary') openDictionary();
-            if (kind === 'text') setTextOpen(true);
-            if (kind === 'knowledge') void createKnowledge();
+            if (useSessionStore.getState().status !== 'authenticated') {
+                return;
+            }
+
+            if (kind === 'dictionary') {
+                openDictionary();
+            }
+
+            if (kind === 'text') {
+                setTextOpen(true);
+            }
+
+            if (kind === 'knowledge') {
+                void createKnowledge();
+            }
         });
     }
+
     function closeText() {
         setTextOpen(false);
     }
+
     return { create, creating, textOpen, closeText };
 }

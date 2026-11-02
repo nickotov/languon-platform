@@ -19,6 +19,7 @@ describe('PasswordCredential', () => {
             hash: '$argon2id$hash',
             parametersVersion: 1,
         });
+
         expect('password' in credential).toBe(false);
     });
 

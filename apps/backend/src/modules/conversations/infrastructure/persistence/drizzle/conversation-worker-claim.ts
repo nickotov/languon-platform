@@ -41,13 +41,15 @@ export async function conversationClaim(
             .orderBy(asc(events.id))
             .limit(1000);
 
-        if (expiredEvents.length)
+        if (expiredEvents.length) {
             await tx.delete(events).where(
                 inArray(
                     events.id,
                     expiredEvents.map((event) => event.id),
                 ),
             );
+        }
+
         const expired = await tx
             .select()
             .from(turns)
@@ -84,8 +86,14 @@ export async function conversationClaim(
                         .budget ?? defaultTextAiProviderBudgetPolicy,
             });
 
-            if (candidateCapacity.globalRunning >= 10) return null;
-            if (candidateCapacity.actorRunning >= 1) continue;
+            if (candidateCapacity.globalRunning >= 10) {
+                return null;
+            }
+
+            if (candidateCapacity.actorRunning >= 1) {
+                continue;
+            }
+
             let authorized: Awaited<ReturnType<typeof conversationAuthorize>>;
             try {
                 // Match Stop's actor -> source/chat -> turn order. Candidate
@@ -104,14 +112,17 @@ export async function conversationClaim(
                     candidate.authority,
                 );
             } catch (error) {
-                if (!(error instanceof ConversationError)) throw error;
+                if (!(error instanceof ConversationError)) {
+                    throw error;
+                }
+
                 const [unavailable] = await tx
                     .select()
                     .from(turns)
                     .where(eq(turns.id, candidate.id))
                     .for('update', { skipLocked: true });
 
-                if (unavailable?.status === 'queued')
+                if (unavailable?.status === 'queued') {
                     await conversationTerminal(
                         persistence,
                         tx,
@@ -119,6 +130,7 @@ export async function conversationClaim(
                         'failed',
                         'source_unavailable',
                     );
+                }
 
                 // Do not carry locks from a failed source authorization
                 // into another learner's candidate.
@@ -131,8 +143,10 @@ export async function conversationClaim(
                 .where(eq(turns.id, candidate.id))
                 .for('update', { skipLocked: true });
 
-            if (!lockedCandidate || lockedCandidate.status !== 'queued')
+            if (!lockedCandidate || lockedCandidate.status !== 'queued') {
                 return null;
+            }
+
             if (lockedCandidate.cancelRequested) {
                 await conversationTerminal(
                     persistence,
@@ -154,14 +168,23 @@ export async function conversationClaim(
                     ).budget ?? defaultTextAiProviderBudgetPolicy,
             });
 
-            if (capacity.globalRunning >= 10) return null;
-            if (capacity.actorRunning >= 1) return null;
+            if (capacity.globalRunning >= 10) {
+                return null;
+            }
+
+            if (capacity.actorRunning >= 1) {
+                return null;
+            }
+
             row = lockedCandidate;
             chat = authorized.chat;
             break;
         }
 
-        if (!row) return null;
+        if (!row) {
+            return null;
+        }
+
         if (row.cancelRequested) {
             await conversationTerminal(
                 persistence,
@@ -174,17 +197,22 @@ export async function conversationClaim(
             return null;
         }
 
-        if (!chat) return null;
+        if (!chat) {
+            return null;
+        }
+
         const [message] = await tx
             .select()
             .from(messages)
             .where(and(eq(messages.turnId, row.id), eq(messages.role, 'user')));
 
-        if (!message)
+        if (!message) {
             throw new ConversationError(
                 'invalid_turn',
                 'The learner message is missing.',
             );
+        }
+
         const leaseToken = randomUUID();
         const [claimed] = await tx
             .update(turns)

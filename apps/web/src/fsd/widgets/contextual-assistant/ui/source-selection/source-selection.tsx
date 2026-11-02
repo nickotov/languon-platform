@@ -54,17 +54,22 @@ export function SourceSelection({
     const selection = useSourceSelection(rootId);
     const [copied, setCopied] = useState<string | null>(null);
     const [failed, setFailed] = useState(false);
-    if (!selection) return null;
+    if (!selection) {
+        return null;
+    }
+
     const current = selection;
     const isCopied = copied === current.text;
     const attachLabel = selecting ? copy.attach : copy.ask;
     function keepSelection(event: MouseEvent) {
         event.preventDefault();
     }
+
     function attach() {
         onAttach(current.text);
         window.getSelection()?.removeAllRanges();
     }
+
     async function copySelection() {
         try {
             await navigator.clipboard.writeText(current.text);
@@ -74,7 +79,9 @@ export function SourceSelection({
             setFailed(true);
         }
     }
+
     const position = { top: current.top, left: current.left };
+
     return createPortal(
         <div
             className={styles.toolbar}

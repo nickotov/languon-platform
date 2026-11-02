@@ -14,6 +14,7 @@ export function changedPortraitFields(
         ...Object.keys(latest),
         ...Object.keys(draft),
     ]) as Set<PortraitField>;
+
     return [...keys].filter(
         (key) => JSON.stringify(latest[key]) !== JSON.stringify(draft[key]),
     );
@@ -25,13 +26,23 @@ export function reconcilePortraitItems(
     choices: PortraitConflictChoices,
 ): PortraitItems | null {
     const changed = changedPortraitFields(latest, draft);
-    if (changed.some((field) => !choices[field])) return null;
+    if (changed.some((field) => !choices[field])) {
+        return null;
+    }
+
     const result = { ...draft };
     for (const field of changed) {
-        if (choices[field] !== 'saved') continue;
-        if (latest[field] === undefined) delete result[field];
-        else Object.assign(result, { [field]: latest[field] });
+        if (choices[field] !== 'saved') {
+            continue;
+        }
+
+        if (latest[field] === undefined) {
+            delete result[field];
+        } else {
+            Object.assign(result, { [field]: latest[field] });
+        }
     }
+
     return result;
 }
 
@@ -101,6 +112,7 @@ const fields = {
         ageRange: 'Rango de edad',
     },
 };
+
 export function portraitFieldLabel(
     locale: keyof typeof fields,
     field: PortraitField,

@@ -24,6 +24,10 @@ export class DrizzleOwnerDeletionPreparation implements OwnerDeletionPreparation
             await lockTextAiCapacity(tx);
             await cancelSpeechActorForScheduledDeletion(tx, userId);
             await tx.execute(
+                sql`select languon_cancel_owner_transcriptions(${userId}::uuid)`,
+            );
+
+            await tx.execute(
                 sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 76021941))`,
             );
 

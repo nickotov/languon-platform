@@ -21,14 +21,20 @@ export async function lockTextSource(
         .from(textsTable)
         .where(eq(textsTable.id, textId));
 
-    if (!candidate) throw textNotFound();
+    if (!candidate) {
+        throw textNotFound();
+    }
+
     const [owner] = await tx
         .select({ status: usersTable.status })
         .from(usersTable)
         .where(eq(usersTable.id, candidate.ownerId))
         .for('share');
 
-    if (owner?.status !== 'active') throw textNotFound();
+    if (owner?.status !== 'active') {
+        throw textNotFound();
+    }
+
     const [folder] = candidate.folderId
         ? await tx
               .select()
@@ -49,13 +55,16 @@ export async function lockTextSource(
                 text.ownerId !== folder.ownerId ||
                 folder.lifecycle !== 'active')) ||
         text.lifecycle !== 'active'
-    )
+    ) {
         throw textNotFound();
-    if (text.folderId !== candidate.folderId)
+    }
+
+    if (text.folderId !== candidate.folderId) {
         throw new TextDomainError(
             'version_conflict',
             'The text moved. Reload it and try again.',
         );
+    }
 
     return { folder, text };
 }
@@ -78,7 +87,10 @@ export async function resolveTextSource(
     };
 
     if (text.ownerId !== input.actorId) {
-        if (!input.share || text.status === 'draft') throw textNotFound();
+        if (!input.share || text.status === 'draft') {
+            throw textNotFound();
+        }
+
         const [share] = await tx
             .select()
             .from(textSharesTable)
@@ -96,8 +108,10 @@ export async function resolveTextSource(
             share.resourceId !==
                 (share.kind === 'text' ? text.id : text.folderId) ||
             !(await verifyShare(input.share.key, share.keyDigest))
-        )
+        ) {
             throw textNotFound();
+        }
+
         authority.share = {
             id: share.id,
             keyDigest: share.keyDigest,
@@ -105,11 +119,12 @@ export async function resolveTextSource(
         };
     }
 
-    if (text.version !== input.version)
+    if (text.version !== input.version) {
         throw new TextDomainError(
             'version_conflict',
             'The text changed. Reload it and try again.',
         );
+    }
 
     return {
         document: textDocument(text),
@@ -138,14 +153,19 @@ export async function assertTextSourceAuthority(
                 (share.kind === 'text' ? text.id : text.folderId) ||
             share.keyDigest !== authority.share.keyDigest ||
             share.version !== authority.share.version
-        )
+        ) {
             throw textNotFound();
-    } else if (text.ownerId !== authority.actorId) throw textNotFound();
-    if (text.version !== authority.version)
+        }
+    } else if (text.ownerId !== authority.actorId) {
+        throw textNotFound();
+    }
+
+    if (text.version !== authority.version) {
         throw new TextDomainError(
             'version_conflict',
             'The text changed. Select the phrase again.',
         );
+    }
 
     return textDocument(text);
 }

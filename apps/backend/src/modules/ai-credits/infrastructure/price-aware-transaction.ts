@@ -16,6 +16,7 @@ export function modelPricingTransaction<T>(
             await transaction.execute(
                 sql`select set_config('languon.model_pricing_revision', '1', true)`,
             );
+
             return operation(transaction);
         }),
     );

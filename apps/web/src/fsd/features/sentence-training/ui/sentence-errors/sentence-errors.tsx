@@ -28,6 +28,7 @@ const messages: Record<string, string> = {
     job_not_found:
         'The task result could not be confirmed. Try to recover the task.',
 };
+
 export function SentenceErrorNotice({
     error,
     onRetry,
@@ -39,10 +40,15 @@ export function SentenceErrorNotice({
     const { t } = useSentenceCopy();
     const [now, setNow] = useState(Date.now());
     useEffect(() => {
-        if (!error.retryAt) return;
+        if (!error.retryAt) {
+            return;
+        }
+
         const id = setInterval(() => setNow(Date.now()), 1000);
+
         return () => clearInterval(id);
     }, [error.retryAt]);
+
     const remaining = error.retryAt
         ? Math.max(0, Math.ceil((error.retryAt - now) / 1000))
         : 0;
@@ -52,6 +58,7 @@ export function SentenceErrorNotice({
         'shared_dictionary_not_found',
         'feature_disabled',
     ].includes(error.code);
+
     return (
         <InlineAlert
             tone='error'

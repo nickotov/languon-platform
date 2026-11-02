@@ -85,6 +85,7 @@ export class RedisWebAuthnChallengeStore implements WebAuthnChallengeStore {
             ) {
                 throw error;
             }
+
             throw new WebAuthnChallengeStoreUnavailableError();
         }
     }
@@ -101,9 +102,11 @@ export class RedisWebAuthnChallengeStore implements WebAuthnChallengeStore {
                 () => this.redis.eval(CONSUME_CHALLENGE_SCRIPT, 1, key),
                 this.operationOptions(options),
             );
+
             if (value === null) {
                 return null;
             }
+
             if (typeof value !== 'string') {
                 throw new Error(
                     'Redis returned an invalid WebAuthn challenge.',
@@ -115,6 +118,7 @@ export class RedisWebAuthnChallengeStore implements WebAuthnChallengeStore {
             if (options.signal?.aborted === true || isAbortError(error)) {
                 throw error;
             }
+
             throw new WebAuthnChallengeStoreUnavailableError();
         }
     }

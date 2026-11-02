@@ -10,7 +10,10 @@ export function ownerScopedPortraitRequest(
     getCurrentOwner: () => string | null,
 ): PortraitSessionRequest {
     function assertOwner() {
-        if (ownerId !== null && getCurrentOwner() === ownerId) return;
+        if (ownerId !== null && getCurrentOwner() === ownerId) {
+            return;
+        }
+
         throw new PortraitApiError(401, {
             code: 'authentication_required',
             message: 'Your account changed. Reopen your portrait to continue.',
@@ -24,9 +27,12 @@ export function ownerScopedPortraitRequest(
             assertOwner();
             const value = await operation(token);
             assertOwner();
+
             return value;
         });
+
         assertOwner();
+
         return result;
     };
 }

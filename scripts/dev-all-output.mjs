@@ -19,19 +19,26 @@ export function createDevelopmentOutput({
             stream,
             new LineDecoder((line) => {
                 tail.append({ stream, text: line });
-                if (verbose) return;
+                if (verbose) {
+                    return;
+                }
+
                 const plain = stripVTControlCharacters(line);
                 if (
                     /Environment settings absent; using configured fallbacks:/.test(
                         plain,
                     )
-                )
+                ) {
                     return;
+                }
+
                 if (
                     isStopping() &&
                     /ELIFECYCLE|ERR_PNPM_RECURSIVE|^Exit status\b/.test(plain)
-                )
+                ) {
                     return;
+                }
+
                 if (
                     (service && stream === 'stderr' && plain.trim()) ||
                     /\b(?:\w*error|warn(?:ing)?|fatal|failed|panic|exception|unhandled)\b|^BLOCKED\b/i.test(
@@ -50,18 +57,28 @@ export function createDevelopmentOutput({
             }),
         ]),
     );
+
     return {
         write(stream, text) {
-            if (verbose) (stream === 'stderr' ? stderr : stdout).write(text);
+            if (verbose) {
+                (stream === 'stderr' ? stderr : stdout).write(text);
+            }
+
             decoders[stream].writeText(text);
         },
         end() {
-            for (const decoder of Object.values(decoders)) decoder.end();
+            for (const decoder of Object.values(decoders)) {
+                decoder.end();
+            }
         },
         failure({ onlyIfSilent = false } = {}) {
-            if (verbose || (onlyIfSilent && reportedDiagnostic)) return;
-            for (const entry of tail.snapshot().entries)
+            if (verbose || (onlyIfSilent && reportedDiagnostic)) {
+                return;
+            }
+
+            for (const entry of tail.snapshot().entries) {
                 stderr.write(`${entry.text}\n`);
+            }
         },
     };
 }

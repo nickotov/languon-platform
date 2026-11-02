@@ -32,11 +32,13 @@ beforeEach(() => {
             removeEventListener: vi.fn(),
         })),
     );
+
     Object.defineProperty(document, 'hidden', {
         configurable: true,
         value: false,
     });
 });
+
 afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
@@ -46,10 +48,12 @@ it('keeps an empty assistant visibly working, shows text activity and returns to
     const view = renderBase(<TutorActivity active queued={false} text='' />, {
         wrapper: Provider,
     });
+
     expect(screen.getByRole('status')).toHaveAttribute(
         'data-tutor-activity',
         'working',
     );
+
     view.rerender(<TutorActivity active queued={false} text='Hello' />);
     expect(screen.getByRole('status')).toHaveTextContent('Writing…');
     act(() => vi.advanceTimersByTime(600));
@@ -57,14 +61,17 @@ it('keeps an empty assistant visibly working, shows text activity and returns to
     view.rerender(
         <TutorActivity active queued={false} text='Hello' tool='reading' />,
     );
+
     expect(screen.getByRole('status')).toHaveTextContent('Reading context…');
     view.rerender(<TutorActivity active={false} queued={false} text='Hello' />);
     expect(screen.queryByRole('status')).toBeNull();
 });
+
 it('labels queued work and localizes the indicator', () => {
     render(<TutorActivity active queued text='' />, { locale: 'fr' });
     expect(screen.getByRole('status')).toHaveTextContent('Préparation…');
 });
+
 it('progressively drains a burst, never starves on fast chunks, and flushes final/stop content immediately', () => {
     const view = renderHook(
         ({ content, streaming }) => useStreamingText(content, streaming),
@@ -89,10 +96,12 @@ it('progressively drains a burst, never starves on fast chunks, and flushes fina
     view.rerender({ content: 'Replacement final', streaming: false });
     expect(view.result.current).toBe('Replacement final');
 });
+
 it('does not split combining marks or emoji graphemes', () => {
     expect(nextStreamingPrefix('👩🏽‍💻e\u0301続き', '', 100)).toBe('👩🏽‍💻');
     expect(nextStreamingPrefix('👩🏽‍💻e\u0301続き', '👩🏽‍💻', 100)).toBe('👩🏽‍💻e\u0301');
 });
+
 it('renders history immediately and disables reveal for reduced motion', () => {
     vi.stubGlobal(
         'matchMedia',
@@ -102,9 +111,11 @@ it('renders history immediately and disables reveal for reduced motion', () => {
             removeEventListener: vi.fn(),
         })),
     );
+
     const view = renderHook(({ content }) => useStreamingText(content, true), {
         initialProps: { content: 'History' },
     });
+
     expect(view.result.current).toBe('History');
     view.rerender({ content: 'History grows' });
     expect(view.result.current).toBe('History grows');

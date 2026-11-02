@@ -1,0 +1,120 @@
+.action,
+.accept {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    min-height: var(--size-28);
+    padding: 0 var(--space-6);
+    border: 0;
+    border-radius: var(--radius-6);
+    background: transparent;
+    color: var(--primary-default);
+    font-size: var(--size-12);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.action:hover:not(:disabled) {
+    background: var(--primary-subtle);
+}
+
+.action:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.action:focus-visible,
+.accept:focus-visible {
+    outline: 2px solid var(--border-focus);
+}
+
+.accept {
+    background: var(--primary-default);
+    color: var(--text-on-primary);
+}
+
+.status,
+.failed,
+.correct {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-6);
+    margin: var(--space-4) 0 0;
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+    line-height: var(--size-20);
+}
+
+.failed {
+    color: var(--danger-default);
+}
+
+.correct {
+    color: var(--success-default);
+}
+
+.stale,
+.suggestion {
+    margin-top: var(--space-4);
+    padding: var(--space-8) var(--space-10);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-8);
+    color: var(--text-primary);
+    font-size: var(--size-12);
+    line-height: var(--size-20);
+    overflow-wrap: anywhere;
+}
+
+.stale {
+    border: 0;
+    background: var(--warning-subtle);
+}
+
+.stale :where(p),
+.suggestion :where(p) {
+    margin: 0;
+}
+
+.caption {
+    color: var(--text-tertiary);
+}
+
+.proposed {
+    display: block;
+    padding-inline: var(--space-4);
+    border-radius: var(--radius-4);
+    background: var(--success-subtle);
+    text-decoration: none;
+    white-space: pre-wrap;
+}
+
+.actions {
+    display: flex;
+    gap: var(--space-4);
+    margin-top: var(--space-6);
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 767px) {
+    .action,
+    .accept {
+        min-height: var(--size-44);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spinner {
+        animation: none;
+    }
+}

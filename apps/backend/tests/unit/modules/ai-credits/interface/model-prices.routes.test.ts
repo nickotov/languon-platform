@@ -5,12 +5,10 @@ import { AuthHttpPolicy } from '../../../../../src/modules/authentication/interf
 describe('model tariff publication rollout gate', () => {
     it('rejects publication before any database mutation when the deployment gate is disabled', async () => {
         const transaction = vi.fn();
-        const authorizeSensitiveOperation = vi
-            .fn()
-            .mockResolvedValue({
-                actor: { id: '11111111-1111-4111-8111-111111111111' },
-                sessionId: '22222222-2222-4222-8222-222222222222',
-            });
+        const authorizeSensitiveOperation = vi.fn().mockResolvedValue({
+            actor: { id: '11111111-1111-4111-8111-111111111111' },
+            sessionId: '22222222-2222-4222-8222-222222222222',
+        });
         const app = createModelPriceRoutes({
             database: { transaction } as unknown as Parameters<
                 typeof createModelPriceRoutes
@@ -47,10 +45,12 @@ describe('model tariff publication rollout gate', () => {
                 reason: 'Verify safe deployment gate',
             }),
         });
+
         expect(response.status).toBe(403);
         expect(await response.json()).toMatchObject({
             error: { code: 'access_denied' },
         });
+
         expect(authorizeSensitiveOperation).toHaveBeenCalledOnce();
         expect(transaction).not.toHaveBeenCalled();
     });

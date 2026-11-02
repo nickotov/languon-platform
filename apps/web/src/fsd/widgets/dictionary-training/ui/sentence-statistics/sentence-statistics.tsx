@@ -20,6 +20,7 @@ export function SentenceStatistics({
 }) {
     const { locale } = useI18n();
     const copy = historyCopy[locale];
+
     return (
         <section className={componentStyles.root} aria-label={copy.statistics}>
             <div>

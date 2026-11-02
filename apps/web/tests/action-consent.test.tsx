@@ -36,6 +36,7 @@ function quoteError(quote: ActionAllowanceQuote) {
         details: { quote },
     });
 }
+
 afterEach(cleanup);
 
 describe('paid action consent', () => {
@@ -52,20 +53,29 @@ describe('paid action consent', () => {
                 ...body,
                 ...(confirmedQuoteId ? { confirmedQuoteId } : {}),
             });
-            if (!confirmedQuoteId) throw quoteError(first);
-            if (confirmedQuoteId === first.id) throw quoteError(second);
+
+            if (!confirmedQuoteId) {
+                throw quoteError(first);
+            }
+
+            if (confirmedQuoteId === first.id) {
+                throw quoteError(second);
+            }
+
             return { accepted: true };
         });
         let outcome!: Promise<{ accepted: boolean }>;
         act(() => {
             outcome = result.current.run(request);
         });
+
         await waitFor(() => expect(result.current.quote?.id).toBe(first.id));
         expect(request).toHaveBeenCalledTimes(1);
         act(() => {
             result.current.confirm();
             result.current.confirm();
         });
+
         await waitFor(() => expect(result.current.quote?.id).toBe(second.id));
         expect(request).toHaveBeenCalledTimes(2);
         act(() => result.current.confirm());
@@ -76,6 +86,7 @@ describe('paid action consent', () => {
             { ...body, confirmedQuoteId: second.id },
         ]);
     });
+
     it('keeps cancelled confirmation out of automatic sentence network retries', async () => {
         const { result } = renderHook(useActionConsent);
         const request = vi.fn(async () => {
@@ -87,6 +98,7 @@ describe('paid action consent', () => {
                 .run(request)
                 .catch((error: unknown) => error);
         });
+
         await waitFor(() => expect(result.current.quote).not.toBeNull());
         act(() => result.current.cancel());
         const cancelled = await outcome;
@@ -94,6 +106,7 @@ describe('paid action consent', () => {
         expect(isUncertain(toApiError(cancelled))).toBe(false);
         expect(request).toHaveBeenCalledTimes(1);
     });
+
     it('shows tiny nonzero maxima, exact details, Send and a Top up option preserving this page', () => {
         render(
             <ActionConsentDialog
@@ -102,6 +115,7 @@ describe('paid action consent', () => {
                 onClose={vi.fn()}
             />,
         );
+
         expect(screen.getByText('Maximum credits: <0.01')).toBeVisible();
         fireEvent.click(screen.getByText('Exact value'));
         expect(screen.getByText('0.001')).toBeVisible();
@@ -109,10 +123,12 @@ describe('paid action consent', () => {
             'target',
             '_blank',
         );
+
         expect(
             screen.getByRole('button', { name: 'Send', exact: true }),
         ).toBeEnabled();
     });
+
     it('does not send an expired offer automatically', () => {
         render(
             <ActionConsentDialog
@@ -124,6 +140,7 @@ describe('paid action consent', () => {
                 onClose={vi.fn()}
             />,
         );
+
         expect(
             screen.getByRole('button', { name: 'Send', exact: true }),
         ).toBeDisabled();

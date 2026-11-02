@@ -1,7 +1,7 @@
 'use client';
 
 import type { AccountDeletionScheduleResponse } from '@languon/contracts';
-import { useState, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 
 import { AuthApiError, authApi } from '@/fsd/shared/api/auth-api';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -39,6 +39,18 @@ export function AccountDeletionAction({
 
     const [error, setError] = useState<string | null>(null);
 
+    function openConfirmation() {
+        setOpen(true);
+    }
+
+    function changeConfirmation(event: ChangeEvent<HTMLInputElement>) {
+        setConfirmation(event.target.value);
+    }
+
+    function changeAcknowledgement(event: ChangeEvent<HTMLInputElement>) {
+        setAcknowledged(event.target.checked);
+    }
+
     function close() {
         if (!pending) {
             setOpen(false);
@@ -54,7 +66,9 @@ export function AccountDeletionAction({
     async function schedule(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (confirmation !== 'DELETE' || !acknowledged || pending) return;
+        if (confirmation !== 'DELETE' || !acknowledged || pending) {
+            return;
+        }
 
         setPending(true);
 
@@ -70,14 +84,18 @@ export function AccountDeletionAction({
             setOpen(false);
         } catch (caught) {
             if (caught instanceof AuthApiError) {
-                if (caught.status === 401 || caught.status === 403)
+                if (caught.status === 401 || caught.status === 403) {
                     setError(t('profile.deleteRecentAuth'));
-                else if (caught.detail.code === 'owner_transfer_required')
+                } else if (caught.detail.code === 'owner_transfer_required') {
                     setError(t('profile.deleteOwnerTransfer'));
-                else if (caught.status === 409)
+                } else if (caught.status === 409) {
                     setError(t('profile.deleteConflict'));
-                else setError(t('profile.deleteFailed'));
-            } else setError(t('profile.deleteFailed'));
+                } else {
+                    setError(t('profile.deleteFailed'));
+                }
+            } else {
+                setError(t('profile.deleteFailed'));
+            }
         } finally {
             setPending(false);
         }
@@ -87,7 +105,7 @@ export function AccountDeletionAction({
         <>
             <Button
                 className={className}
-                onClick={() => setOpen(true)}
+                onClick={openConfirmation}
                 size='compact'
                 variant='danger'
             >
@@ -161,9 +179,7 @@ export function AccountDeletionAction({
                         disabled={pending}
                         label={t('profile.deleteConfirmLabel')}
                         hint={t('profile.deleteConfirmHint')}
-                        onChange={(event) =>
-                            setConfirmation(event.target.value)
-                        }
+                        onChange={changeConfirmation}
                         spellCheck={false}
                         value={confirmation}
                     />
@@ -172,9 +188,7 @@ export function AccountDeletionAction({
                         checked={acknowledged}
                         disabled={pending}
                         label={t('profile.deleteAcknowledge')}
-                        onChange={(event) =>
-                            setAcknowledged(event.target.checked)
-                        }
+                        onChange={changeAcknowledgement}
                     />
                     {error ? (
                         <InlineAlert

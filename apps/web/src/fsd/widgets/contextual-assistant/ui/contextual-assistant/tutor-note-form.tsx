@@ -1,5 +1,7 @@
 'use client';
 
+import { KnowledgeDocumentView } from '@/fsd/features/knowledge-notes';
+
 import { useEffect, useId, useMemo, useState, type ChangeEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -13,7 +15,6 @@ import { knowledgeCategoryKeys } from '@/fsd/entities/knowledge';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Input, Select, Textarea, type SelectOption } from '@/fsd/shared/ui';
 import { KnowledgeEditor } from '@/fsd/features/knowledge-notes';
-import { KnowledgeBody } from '@/fsd/entities/knowledge';
 import { Eye, Pencil } from 'lucide-react';
 import { messagesCopy } from '../../lib/messages-copy';
 import styles from './tutor-note-form.module.css';
@@ -37,6 +38,7 @@ export function TutorNoteForm({
     function togglePreview() {
         setPreview((value) => !value);
     }
+
     const id = useId();
     const [editorValid, setEditorValid] = useState(true);
     const languages = useQuery({
@@ -50,16 +52,19 @@ export function TutorNoteForm({
                 value: language.tag,
                 label: language.displayNames[locale],
             })) ?? [];
+
         for (const language of [
             value.studiedLanguage,
             value.explanationLanguage,
         ]) {
-            if (language && !choices.some((item) => item.value === language))
+            if (language && !choices.some((item) => item.value === language)) {
                 choices.push({
                     value: language,
                     label: language,
                 });
+            }
         }
+
         return choices;
     }, [
         languages.data,
@@ -69,33 +74,42 @@ export function TutorNoteForm({
     ]);
     const valid =
         editorValid && KnowledgeNoteContentSchema.safeParse(value).success;
+
     useEffect(() => {
         onValidityChange?.(valid);
     }, [onValidityChange, valid]);
+
     function field<Key extends keyof KnowledgeNoteContent>(
         key: Key,
         next: KnowledgeNoteContent[Key],
     ) {
         onChange({ ...value, [key]: next });
     }
+
     function changeTitle(event: ChangeEvent<HTMLInputElement>) {
         field('title', event.target.value);
     }
+
     function changeSummary(event: ChangeEvent<HTMLTextAreaElement>) {
         field('summary', event.target.value);
     }
+
     function changeStudied(event: ChangeEvent<HTMLSelectElement>) {
         field('studiedLanguage', event.target.value);
     }
+
     function changeExplanation(event: ChangeEvent<HTMLSelectElement>) {
         field('explanationLanguage', event.target.value);
     }
+
     function changeBody(body: KnowledgeNoteContent['body']) {
         field('body', body);
     }
+
     function changeCategories(categories: KnowledgeCategory[]) {
         field('categories', categories);
     }
+
     return (
         <div className={styles.form}>
             <Input
@@ -136,7 +150,7 @@ export function TutorNoteForm({
                         {preview ? labels.edit : labels.preview}
                     </button>
                 </div>
-                {preview && <KnowledgeBody body={value.body} />}
+                {preview && <KnowledgeDocumentView body={value.body} />}
                 <div hidden={preview} className={styles.richEditor}>
                     <KnowledgeEditor
                         toolbarVariant='tutor'
@@ -203,6 +217,7 @@ function NoteCategory({
                 : [...categories, category],
         );
     }
+
     return (
         <button
             type='button'

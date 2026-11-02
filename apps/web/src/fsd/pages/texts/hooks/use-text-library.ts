@@ -20,6 +20,7 @@ export async function loadLibraryFolders(
                     signal,
                 ),
             );
+
             folders.push(...page.data);
             cursor = page.nextCursor ?? undefined;
         } while (cursor);

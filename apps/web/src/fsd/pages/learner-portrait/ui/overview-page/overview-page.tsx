@@ -23,6 +23,7 @@ import styles from '../common.module.css';
 
 export function PortraitOverviewPage() {
     const management = usePortraitManagement();
+
     return (
         <PortraitPageState management={management}>
             <PortraitOverview
@@ -44,26 +45,36 @@ function PortraitOverview({ management }: { management: PortraitManagement }) {
     const unfinished = interview ?? state.draft;
     const saved = params.get('saved');
     let statusKey: 'draft' | 'on' | 'off' = 'draft';
-    if (portrait) statusKey = state.useEnabled ? 'on' : 'off';
+    if (portrait) {
+        statusKey = state.useEnabled ? 'on' : 'off';
+    }
+
     const showSaved = Boolean(saved && portrait);
     const isFirst = saved === 'first';
     const showEnable = isFirst && !state.useEnabled;
     function clearSaved() {
         router.replace('/portrait');
     }
+
     async function enable() {
         const result = await management.setUse(true);
-        if (result) clearSaved();
+        if (result) {
+            clearSaved();
+        }
     }
+
     async function discard() {
         await management.discard();
     }
+
     function openDelete() {
         setDeleteOpen(true);
     }
+
     function closeDelete() {
         setDeleteOpen(false);
     }
+
     return (
         <main className={`${styles.page} ${styles.stack}`}>
             <header className={styles.header}>

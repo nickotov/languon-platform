@@ -49,8 +49,9 @@ export async function enqueueSelectionJob(
         );
 
     if (existing) {
-        if (existing.requestHash !== hash)
+        if (existing.requestHash !== hash) {
             throw new TextSelectionError('idempotency_conflict');
+        }
 
         return withActionBilling(
             tx,
@@ -60,8 +61,10 @@ export async function enqueueSelectionJob(
         );
     }
 
-    if (options.admissionsEnabled === false)
+    if (options.admissionsEnabled === false) {
         throw new TextSelectionError('provider_unavailable');
+    }
+
     const now = clock(),
         source = await resolveSelectionSource(
             tx,
@@ -109,8 +112,10 @@ export async function enqueueSelectionJob(
         legacyBudget: defaultTextAiProviderBudgetPolicy,
     });
 
-    if (!selected.snapshot)
+    if (!selected.snapshot) {
         throw new TextSelectionError('provider_unavailable');
+    }
+
     try {
         selected.snapshot = await prepareLegacyAction(
             tx,
@@ -123,8 +128,9 @@ export async function enqueueSelectionJob(
         if (
             error instanceof OperatorBudgetUnavailableError ||
             error instanceof ProviderCostAdmissionUnavailableError
-        )
+        ) {
             throw new TextSelectionError('provider_unavailable');
+        }
 
         throw error;
     }
@@ -137,8 +143,10 @@ export async function enqueueSelectionJob(
             selected.budget.maxInputTokensPerAttempt,
             selected.snapshot.perCallMaxInputTokens,
         )
-    )
+    ) {
         throw new TextSelectionError('model_input_too_large');
+    }
+
     const capacity = await readTextAiCapacity(tx, {
         actorId: ownerId,
         now,
@@ -152,10 +160,15 @@ export async function enqueueSelectionJob(
             true,
             selected.budget,
         )
-    )
+    ) {
         throw new TextSelectionError('capacity_exceeded');
+    }
+
     const credit = selected.snapshot.creditPricing;
-    if (!credit) throw new TextSelectionError('provider_unavailable');
+    if (!credit) {
+        throw new TextSelectionError('provider_unavailable');
+    }
+
     const creditSummary = await new DrizzleAiCreditTransactionParticipant(
         tx,
     ).accountSummary(ownerId, now);

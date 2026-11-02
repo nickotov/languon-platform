@@ -38,6 +38,7 @@ export function SentencePreparationOption({
         sizes.push(Math.min(100, remaining));
         remaining -= 100;
     }
+
     const noteKeys = {
         'saved-first': 'modeSavedFirst',
         'new-only': 'modeNew',
@@ -59,9 +60,11 @@ export function SentencePreparationOption({
     function handleStop() {
         void controller.stop();
     }
+
     function handleResume() {
         void controller.resume();
     }
+
     const actions = (
         <div className={styles.actions}>
             <Button size='compact' onClick={onView}>
@@ -95,7 +98,8 @@ export function SentencePreparationOption({
             ) : null}
         </div>
     );
-    if (existing)
+
+    if (existing) {
         return (
             <InlineAlert
                 tone='info'
@@ -105,6 +109,8 @@ export function SentencePreparationOption({
                 {P('existingBody')} {coverage}
             </InlineAlert>
         );
+    }
+
     return (
         <div className={styles.option}>
             <Switch

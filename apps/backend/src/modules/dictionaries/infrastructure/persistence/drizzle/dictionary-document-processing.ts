@@ -20,27 +20,37 @@ export async function terminalizeExtraction(
         if (
             !validScanAttestation(input.scanAttestation) ||
             input.scanAttestation.completedAt > input.context.now
-        )
+        ) {
             return false;
+        }
+
         const [job] = await tx
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(workerCas(input))
             .for('update');
 
-        if (!job || job.kind !== 'document-terms') return false;
+        if (!job || job.kind !== 'document-terms') {
+            return false;
+        }
+
         const [upload] = await tx
             .select()
             .from(dictionaryDocumentUploadsTable)
             .where(eq(dictionaryDocumentUploadsTable.jobId, job.id))
             .for('update');
 
-        if (!upload) return false;
+        if (!upload) {
+            return false;
+        }
+
         if (
             upload.uploadCompletedAt &&
             input.scanAttestation.completedAt < upload.uploadCompletedAt
-        )
+        ) {
             return false;
+        }
+
         await tx.insert(dictionaryDocumentExtractionsTable).values({
             createdAt: input.context.now,
             failureUnitCount: 0,
@@ -119,27 +129,37 @@ export async function recordDocumentProcessingFailure(
         if (
             !validScanAttestation(input.scanAttestation) ||
             input.scanAttestation.completedAt > input.context.now
-        )
+        ) {
             return false;
+        }
+
         const [job] = await tx
             .select()
             .from(dictionaryGenerationJobsTable)
             .where(workerCas(input))
             .for('update');
 
-        if (!job || job.kind !== 'document-terms') return false;
+        if (!job || job.kind !== 'document-terms') {
+            return false;
+        }
+
         const [upload] = await tx
             .select()
             .from(dictionaryDocumentUploadsTable)
             .where(eq(dictionaryDocumentUploadsTable.jobId, job.id))
             .for('update');
 
-        if (!upload) return false;
+        if (!upload) {
+            return false;
+        }
+
         if (
             upload.uploadCompletedAt &&
             input.scanAttestation.completedAt < upload.uploadCompletedAt
-        )
+        ) {
             return false;
+        }
+
         const retry = Boolean(
             input.retryAt && job.attemptCount < job.maxAttempts,
         );

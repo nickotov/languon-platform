@@ -11,6 +11,7 @@ export function SavedConfiguration({
     updatedText: string;
 }) {
     const translate = useTranslate();
+
     return (
         <Card title={translate('aiSettings.savedConfiguration')}>
             <Typography.Paragraph type='secondary'>
@@ -38,6 +39,7 @@ export function ProviderField({
     response: AiSettingsResponse;
 }) {
     const translate = useTranslate();
+
     return (
         <Form.Item
             extra={translate('aiSettings.providerHelp')}

@@ -5,12 +5,14 @@ function sentenceBoundary(text: string) {
     const leading = text.match(/^\s*/u)?.[0] ?? '';
     const content = text.slice(leading.length);
     const trailing = content.match(/\s*$/u)?.[0] ?? '';
+
     return {
         leading,
         content: content.slice(0, content.length - trailing.length),
         trailing,
     };
 }
+
 export function sentenceContent(text: string) {
     return sentenceBoundary(text).content;
 }
@@ -33,6 +35,7 @@ export function workspaceEdits(
             sentenceBoundary(segment.text),
         ]),
     );
+
     return pairs.map((pair) => ({
         pairId: pair.pairId,
         source:

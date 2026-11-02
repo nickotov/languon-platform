@@ -46,7 +46,10 @@ export async function forkSharedDictionary(
         await lockOwnerCapacity(tx, input.ownerId);
         abort(input.context);
         const replay = await reserveIdempotency(context, tx, input, 'fork');
-        if (replay) return readOwned(tx, input.ownerId, replay);
+        if (replay) {
+            return readOwned(tx, input.ownerId, replay);
+        }
+
         const [source] = await tx
             .select({
                 dictionary: dictionariesTable,
@@ -71,7 +74,10 @@ export async function forkSharedDictionary(
             .limit(1)
             .for('update', { of: dictionariesTable });
 
-        if (!source) throw new SharedDictionaryNotFoundError();
+        if (!source) {
+            throw new SharedDictionaryNotFoundError();
+        }
+
         abort(input.context);
         const [sourceCountRow] = await tx
             .select({ value: count() })
@@ -130,7 +136,10 @@ export async function forkSharedDictionary(
             })
             .returning();
 
-        if (!settings) throw new DictionaryVersionConflictError();
+        if (!settings) {
+            throw new DictionaryVersionConflictError();
+        }
+
         const forkChunkSize = 100;
         let sourceCursor: { id: string; sortKey: bigint } | null = null;
         while (true) {
@@ -174,7 +183,10 @@ export async function forkSharedDictionary(
                 .limit(forkChunkSize)
                 .for('share');
 
-            if (chunk.length === 0) break;
+            if (chunk.length === 0) {
+                break;
+            }
+
             const cards = await tx
                 .insert(dictionaryCardsTable)
                 .values(
@@ -196,8 +208,10 @@ export async function forkSharedDictionary(
                 )
                 .returning();
 
-            if (cards.length !== chunk.length)
+            if (cards.length !== chunk.length) {
                 throw new DictionaryVersionConflictError();
+            }
+
             await tx.insert(dictionaryCardRevisionsTable).values(
                 cards.map((card) => ({
                     actorUserId: input.ownerId,
@@ -260,7 +274,10 @@ export async function replayForkDictionary(
             )
             .limit(1);
 
-        if (!existing) return null;
+        if (!existing) {
+            return null;
+        }
+
         if (
             existing.requestFingerprint !== input.fingerprint ||
             existing.state !== 'completed' ||

@@ -1,0 +1,90 @@
+{
+  "selected": [
+    "setup-to-generation",
+    "admin-text-ai-routing",
+    "authentication",
+    "admin-session-refresh",
+    "dictionary-generation",
+    "sentence-practice",
+    "text-generation",
+    "interactive-workbooks",
+    "chat-lifecycle",
+    "insufficient-credits",
+    "free-interview",
+    "ai-execution-contracts",
+    "speech-playback",
+    "admin-mcp"
+  ],
+  "results": [
+    {
+      "id": "setup-to-generation",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "id": "admin-text-ai-routing",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "id": "authentication",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "id": "admin-session-refresh",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "id": "dictionary-generation",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "id": "sentence-practice",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "id": "text-generation",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "id": "interactive-workbooks",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "id": "chat-lifecycle",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "id": "insufficient-credits",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "id": "free-interview",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "id": "ai-execution-contracts",
+      "status": "passed",
+      "tests": 785
+    },
+    {
+      "id": "speech-playback",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "id": "admin-mcp",
+      "status": "passed",
+      "tests": 3
+    }
+  ]
+}

@@ -9,12 +9,14 @@ describe('provider token meter normalization', () => {
                 limits,
             ),
         ).toEqual({ inputTokens: 80, outputTokens: 10 });
+
         expect(
             readProviderTokenUsage(
                 { inputTokens: 80, outputTokens: 10, cachedInputTokens: 30 },
                 limits,
             ),
         ).toEqual({ inputTokens: 80, outputTokens: 10, cacheReadTokens: 30 });
+
         expect(
             readProviderTokenUsage(
                 {
@@ -29,6 +31,7 @@ describe('provider token meter normalization', () => {
             cacheReadTokens: 30,
             cacheWriteTokens: 5,
         });
+
         expect(
             readProviderTokenUsage(
                 {
@@ -48,6 +51,7 @@ describe('provider token meter normalization', () => {
             cacheWriteTokens: 5,
         });
     });
+
     it('rejects conflicting, impossible and out-of-allowance categories', () => {
         for (const value of [
             {
@@ -66,7 +70,8 @@ describe('provider token meter normalization', () => {
             { inputTokens: 80, outputTokens: 21 },
             { inputTokens: 80, outputTokens: 10, cacheReadTokens: -1 },
             { inputTokens: 80, outputTokens: 10, cacheWriteTokens: 0.5 },
-        ])
+        ]) {
             expect(() => readProviderTokenUsage(value, limits)).toThrow();
+        }
     });
 });

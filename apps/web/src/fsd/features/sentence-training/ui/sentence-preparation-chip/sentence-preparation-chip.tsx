@@ -19,7 +19,10 @@ export function SentencePreparationChip({
 }) {
     const { P } = usePreparationCopy();
     const run = controller.preparation;
-    if (!run && !controller.uncertain && !controller.busy) return null;
+    if (!run && !controller.uncertain && !controller.busy) {
+        return null;
+    }
+
     const vars = {
         done: run?.preparedCount ?? 0,
         total: run?.eligibleCount ?? 0,
@@ -48,7 +51,9 @@ export function SentencePreparationChip({
         label = P('chipPaused', vars);
         icon = <PauseIcon aria-hidden className={styles.icon} />;
     }
+
     const className = `${styles.chip} ${tone}`;
+
     return (
         <button
             type='button'

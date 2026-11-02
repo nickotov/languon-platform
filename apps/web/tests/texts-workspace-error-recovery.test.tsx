@@ -51,6 +51,7 @@ describe('workspace error recovery', () => {
         rerender({
             current: { ...input, sourceText: 'A corrected sentence.' },
         });
+
         expect(result.current.saveError).toBeNull();
     });
 

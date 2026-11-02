@@ -76,10 +76,12 @@ export function createSentenceAiProvider(options: {
         if (
             findTextAiModel(call.execution.providerId, call.execution.modelId)
                 ?.retired
-        )
+        ) {
             throw new SentenceModelUnavailableError(
                 'Selected model is unavailable.',
             );
+        }
+
         const resolved = resolveTextAiProviderOptions({
             ...options.runtime,
             snapshot: call.execution,
@@ -97,11 +99,13 @@ export function createSentenceAiProvider(options: {
         if (
             sentenceProviderInputTokens(kind, schema, providerInput) >
             limits.maxInputTokens
-        )
+        ) {
             throw new SentenceInvalidModelOutputError(
                 'Input exceeds pinned token bound',
                 'input_token_bound',
             );
+        }
+
         const agents = createSentenceAgents({ model: resolved.model });
         const agent =
             kind === 'generate'
@@ -147,15 +151,18 @@ export function createSentenceAiProvider(options: {
                         'usage' in error ? error.usage : undefined,
                         limits,
                     );
+
                     throw new SentenceProviderInvalidModelOutputError(
                         'schema_invalid',
                         usage,
                     );
                 }
+
                 const failure = sentenceProviderFailure(
                     error,
                     call.execution.providerId,
                 );
+
                 try {
                     void Promise.resolve(
                         options.onProviderFailure?.({
@@ -168,10 +175,11 @@ export function createSentenceAiProvider(options: {
                 } catch {
                     // Diagnostic observers cannot interrupt fenced failure settlement.
                 }
+
                 if (
                     failure.reason === 'model_retired' ||
                     failure.reason === 'model_unavailable'
-                )
+                ) {
                     throw withProviderExecutionOutcome(
                         new SentenceModelUnavailableError(
                             'Selected model is unavailable.',
@@ -179,29 +187,38 @@ export function createSentenceAiProvider(options: {
                         error,
                         call.execution.providerId,
                     );
+                }
+
                 if (
                     failure.httpStatus === undefined &&
                     failure.providerCode === undefined
-                )
+                ) {
                     throw error;
+                }
+
                 throw new ProviderExecutionError(
                     error,
                     call.execution.providerId,
                 );
             }
         })();
+
         call.signal.throwIfAborted();
         const usage = validateUsage(result.usage, limits, result);
         // A strict SDK schema tripwire is invalid model output, not a transport retry.
-        if (result.tripwire?.processorId === 'structured-output')
+        if (result.tripwire?.processorId === 'structured-output') {
             throw new SentenceProviderInvalidModelOutputError(
                 'schema_invalid',
                 usage,
             );
-        if (result.error || result.tripwire)
+        }
+
+        if (result.error || result.tripwire) {
             throw new Error('Sentence provider unavailable');
+        }
+
         const parsed = schema.safeParse(result.object);
-        if (!parsed.success)
+        if (!parsed.success) {
             throw new SentenceProviderInvalidModelOutputError(
                 kind === 'check' &&
                     parsed.error.issues.some(
@@ -211,8 +228,11 @@ export function createSentenceAiProvider(options: {
                     : 'schema_invalid',
                 usage,
             );
+        }
+
         return { draft: parsed.data, ...(usage ? { usage } : {}) };
     }
+
     return {
         async generate(call) {
             const ids = call.input.candidates.map((entry) => entry.entryId);
@@ -222,10 +242,12 @@ export function createSentenceAiProvider(options: {
                 ids.length > SENTENCE_LIMITS.candidateEntries ||
                 new Set(ids).size !== ids.length ||
                 !ids.includes(call.input.priorityEntryId)
-            )
+            ) {
                 throw new SentenceInvalidModelOutputError(
                     'Invalid generation candidates',
                 );
+            }
+
             const schema = sentenceGenerationProviderSchema(
                 aliases,
                 call.input.generationPolicyVersion,
@@ -258,6 +280,7 @@ export function createSentenceAiProvider(options: {
                     entryId: restoreEntryId(target.entryId, aliases, ids),
                 })),
             });
+
             return { ...result, draft: mapped };
         },
         async check(call) {
@@ -267,11 +290,13 @@ export function createSentenceAiProvider(options: {
                 ids.length === 0 ||
                 ids.length > SENTENCE_LIMITS.requiredTargets ||
                 new Set(ids).size !== ids.length
-            )
+            ) {
                 throw new SentenceInvalidModelOutputError(
                     'Invalid check targets',
                     'input_invalid',
                 );
+            }
+
             const schema = sentenceCheckProviderSchema(aliases);
             const input = {
                 sourceText: call.input.sourceText,
@@ -299,10 +324,12 @@ export function createSentenceAiProvider(options: {
                     span: resolveSentenceIssueSpan(call.input.answer, quote),
                 })),
             });
+
             return { ...result, draft: mapped };
         },
     };
 }
+
 /** Synthetic-only fixture adapter; every draft still passes production worker validation. */
 export class DeterministicSentenceAiProvider implements SentenceAiProvider {
     constructor(
@@ -315,12 +342,16 @@ export class DeterministicSentenceAiProvider implements SentenceAiProvider {
             ) => SentenceCheckDraft | Promise<SentenceCheckDraft>;
         },
     ) {}
+
     async generate(call: SentenceProviderCall<SentenceGenerationInput>) {
         call.signal.throwIfAborted();
+
         return { draft: await this.fixture.generate(call.input) };
     }
+
     async check(call: SentenceProviderCall<SentenceCheckInput>) {
         call.signal.throwIfAborted();
+
         return { draft: await this.fixture.check(call.input) };
     }
 }
@@ -331,10 +362,12 @@ function restoreEntryId(
     ids: readonly string[],
 ): string {
     const index = aliases.indexOf(alias);
-    if (index < 0 || ids[index] === undefined)
+    if (index < 0 || ids[index] === undefined) {
         throw new SentenceInvalidModelOutputError(
             'Unknown provider target alias',
         );
+    }
+
     return ids[index]!;
 }
 
@@ -343,7 +376,10 @@ function validateUsage(
     limits: { maxInputTokens: number; maxOutputTokens: number },
     transportResult?: unknown,
 ): SentenceTokenUsage | undefined {
-    if (reported === undefined || reported === null) return undefined;
+    if (reported === undefined || reported === null) {
+        return undefined;
+    }
+
     try {
         return readProviderTokenUsage(reported, limits, transportResult);
     } catch {

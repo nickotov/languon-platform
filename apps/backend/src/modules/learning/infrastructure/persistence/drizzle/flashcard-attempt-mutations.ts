@@ -1,3 +1,4 @@
+import { canUndoFlashcardAttempt } from '../../../domain/flashcard-attempt-policy';
 import type {
     FlashcardAttemptRequest,
     FlashcardUndoRequest,
@@ -52,7 +53,10 @@ export async function flashcardRecordAttempt(
                     ),
                 );
 
-            if (!card) throw new LearningEntryUnavailableError();
+            if (!card) {
+                throw new LearningEntryUnavailableError();
+            }
+
             const [replay] = await tx
                 .select()
                 .from(attempts)
@@ -71,16 +75,21 @@ export async function flashcardRecordAttempt(
                     replay.dictionaryId !== owned.dictionary.id ||
                     replay.operationId !== input.operationId ||
                     !sameAttempt(replay, input)
-                )
+                ) {
                     throw new LearningConflictError('operation_conflict');
+                }
 
                 return attemptResult(replay);
             }
 
-            if (card.learningVersion !== input.expectedLearningVersion)
+            if (card.learningVersion !== input.expectedLearningVersion) {
                 throw new LearningConflictError('stale_content');
-            if (!present(card, owned, input.configuration))
+            }
+
+            if (!present(card, owned, input.configuration)) {
                 throw new LearningInvalidRequestError();
+            }
+
             const [row] = await tx
                 .insert(attempts)
                 .values({
@@ -97,7 +106,10 @@ export async function flashcardRecordAttempt(
                 })
                 .returning();
 
-            if (!row) throw new Error('Attempt insertion failed');
+            if (!row) {
+                throw new Error('Attempt insertion failed');
+            }
+
             await tx
                 .insert(progress)
                 .values({
@@ -148,7 +160,10 @@ export async function flashcardUndo(
                     ),
                 );
 
-            if (!target) throw new LearningEntryUnavailableError();
+            if (!target) {
+                throw new LearningEntryUnavailableError();
+            }
+
             const [card] = await tx
                 .select()
                 .from(cards)
@@ -160,9 +175,14 @@ export async function flashcardUndo(
                     ),
                 );
 
-            if (!card) throw new LearningEntryUnavailableError();
-            if (card.learningVersion !== target.learningVersion)
+            if (!card) {
+                throw new LearningEntryUnavailableError();
+            }
+
+            if (card.learningVersion !== target.learningVersion) {
                 throw new LearningConflictError('stale_content');
+            }
+
             const [reuse] = await tx
                 .select()
                 .from(attempts)
@@ -180,8 +200,9 @@ export async function flashcardUndo(
                 if (
                     reuse.id !== target.id ||
                     reuse.undoOperationId !== input.operationId
-                )
+                ) {
                     throw new LearningConflictError('operation_conflict');
+                }
 
                 return undoResult(reuse);
             }
@@ -208,11 +229,16 @@ export async function flashcardUndo(
                 );
 
             if (
-                target.voidedAt ||
-                latestSession?.id !== target.id ||
-                current?.latestAttemptId !== target.id
-            )
+                !canUndoFlashcardAttempt({
+                    targetId: target.id,
+                    voided: !!target.voidedAt,
+                    latestSessionId: latestSession?.id,
+                    latestEntryId: current?.latestAttemptId,
+                })
+            ) {
                 throw new LearningConflictError('undo_conflict');
+            }
+
             const [prior] = await tx
                 .select()
                 .from(attempts)
@@ -237,13 +263,16 @@ export async function flashcardUndo(
                 .where(eq(attempts.id, target.id))
                 .returning();
 
-            if (!voided) throw new Error('Undo mutation failed');
+            if (!voided) {
+                throw new Error('Undo mutation failed');
+            }
+
             const condition = and(
                 eq(progress.learnerId, learnerId),
                 eq(progress.entryId, card.id),
             );
 
-            if (prior)
+            if (prior) {
                 await tx
                     .update(progress)
                     .set({
@@ -252,7 +281,9 @@ export async function flashcardUndo(
                         learningVersion: card.learningVersion,
                     })
                     .where(condition);
-            else await tx.delete(progress).where(condition);
+            } else {
+                await tx.delete(progress).where(condition);
+            }
 
             return undoResult(voided);
         },

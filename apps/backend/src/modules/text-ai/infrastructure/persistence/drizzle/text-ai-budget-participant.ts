@@ -40,10 +40,12 @@ export async function updateUserActionBudget(
         .where(eq(preferences.userId, input.userId))
         .for('update');
 
-    if ((existing?.version ?? 0) !== input.expectedVersion)
+    if ((existing?.version ?? 0) !== input.expectedVersion) {
         throw new TextAiPreferenceConflictError(
             'Learner action budget version changed.',
         );
+    }
+
     if (existing) {
         await tx
             .update(preferences)

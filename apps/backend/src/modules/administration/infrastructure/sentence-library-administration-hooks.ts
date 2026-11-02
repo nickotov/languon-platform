@@ -22,6 +22,7 @@ export function createSentenceLibraryAdministrationHooks(): SentenceLibraryAdmin
             await transaction.execute(
                 sql`select pg_advisory_xact_lock(${activeOwnerMutationLock})`,
             );
+
             // Match learning's stable user-lock order, including the actor before any actor row lock.
             const dictionary = scope.dictionaryId
                 ? (
@@ -38,18 +39,23 @@ export function createSentenceLibraryAdministrationHooks(): SentenceLibraryAdmin
                     ...(dictionary ? [dictionary.ownerId] : []),
                 ]),
             ].sort();
+
             await transaction
                 .select({ id: usersTable.id })
                 .from(usersTable)
                 .where(inArray(usersTable.id, userIds))
                 .orderBy(asc(usersTable.id))
                 .for('update');
+
             const clock = await transaction.execute<{ value: string }>(
                 sql`select clock_timestamp()::text as value`,
             );
+
             now = new Date(clock[0]?.value ?? Number.NaN);
-            if (!Number.isFinite(now.getTime()))
+            if (!Number.isFinite(now.getTime())) {
                 throw new AdminAccessDeniedError();
+            }
+
             const [actor] = await transaction
                 .select({
                     userId: usersTable.id,
@@ -90,13 +96,18 @@ export function createSentenceLibraryAdministrationHooks(): SentenceLibraryAdmin
                 .for('update', {
                     of: [usersTable, adminMembershipsTable, sessionsTable],
                 });
-            if (!actor || actor.role !== 'owner')
+
+            if (!actor || actor.role !== 'owner') {
                 throw new AdminAccessDeniedError();
+            }
+
             const age = actor.authenticatedAt
                 ? now.getTime() - actor.authenticatedAt.getTime()
                 : Number.POSITIVE_INFINITY;
-            if (write && (age < 0 || age >= 5 * 60 * 1000))
+
+            if (write && (age < 0 || age >= 5 * 60 * 1000)) {
                 throw new RecentAuthenticationRequiredError();
+            }
         },
         async onAdminMutation(transaction, scope, input, result, now) {
             await transaction.insert(adminAuditEventsTable).values({
@@ -119,6 +130,7 @@ export function createSentenceLibraryAdministrationHooks(): SentenceLibraryAdmin
                 occurredAt: now,
                 expiresAt: scope.audit.expiresAt,
             });
+
             await transaction
                 .delete(adminAuditEventsTable)
                 .where(lte(adminAuditEventsTable.expiresAt, now));

@@ -19,6 +19,7 @@ const defaults: SentenceLibraryFilters = {
     globalArchive: 'active',
     contentState: 'all',
 };
+
 export function useSentenceLibrary({
     target,
     identity,
@@ -42,6 +43,7 @@ export function useSentenceLibrary({
             ),
         );
         const parsed = SentenceLibraryFiltersSchema.safeParse(value);
+
         return parsed.success ? { ...defaults, ...parsed.data } : defaults;
     });
     const [selected, setSelected] = useState<string[]>([]);
@@ -87,13 +89,18 @@ export function useSentenceLibrary({
                 value instanceof LibraryApiError &&
                 [401, 403, 404].includes(value.status),
         );
+
     useEffect(() => {
-        if (!accessDenied || blocked) return;
+        if (!accessDenied || blocked) {
+            return;
+        }
+
         setBlocked(true);
         setSelected([]);
         setConfirmation(null);
         queryClient.removeQueries({ queryKey: ['sentence-library', identity] });
     }, [accessDenied, blocked, identity, queryClient]);
+
     const items = (query.data?.pages.flatMap((page) => page.items) ?? []).map(
         displayItem,
     );
@@ -105,14 +112,18 @@ export function useSentenceLibrary({
         setError(null);
         setFilters(value);
         const url = new URL(window.location.href);
-        for (const [key, val] of Object.entries(value))
+        for (const [key, val] of Object.entries(value)) {
             url.searchParams.set(key, String(val));
+        }
+
         window.history.replaceState(null, '', url);
         setAnnouncement('selectionCleared');
     }
+
     function resetFilters() {
         updateFilters(defaults);
     }
+
     function toggle(id: string) {
         setAllMatching(false);
         setSelected((previous) =>
@@ -121,25 +132,32 @@ export function useSentenceLibrary({
                 : [...previous, id].slice(0, 100),
         );
     }
+
     const pageAllSelected =
         items.length > 0 &&
         items.slice(0, 100).every((item) => selected.includes(item.id));
+
     function togglePage() {
         setAllMatching(false);
         setSelected(
             pageAllSelected ? [] : items.slice(0, 100).map((item) => item.id),
         );
     }
+
     function clearSelection() {
         setSelected([]);
         setAllMatching(false);
     }
+
     async function openConfirmation(
         operation: SentenceLibraryOperation,
         all = false,
         single?: SavedSentence,
     ) {
-        if (pending) return;
+        if (pending) {
+            return;
+        }
+
         setError(null);
         setPending(true);
         try {
@@ -184,8 +202,12 @@ export function useSentenceLibrary({
             setPending(false);
         }
     }
+
     async function confirm() {
-        if (!confirmation || pending) return;
+        if (!confirmation || pending) {
+            return;
+        }
+
         setPending(true);
         setError(null);
         try {
@@ -194,9 +216,11 @@ export function useSentenceLibrary({
                 operation: confirmation.operation,
                 selection: confirmation.selection,
             });
+
             setAnnouncement(
                 `${confirmation.operation}:${result.affectedCount}`,
             );
+
             setConfirmation(null);
             clearSelection();
             await queryClient.invalidateQueries({
@@ -212,25 +236,31 @@ export function useSentenceLibrary({
             setPending(false);
         }
     }
+
     function closeConfirmation() {
         if (!pending) {
             setConfirmation(null);
             setError(null);
         }
     }
+
     function chooseAllMatching() {
         setAllMatching(true);
     }
+
     function onlyThisPage() {
         setAllMatching(false);
     }
+
     function retry() {
         void query.refetch();
         void presence.refetch();
     }
+
     function loadMore() {
         void query.fetchNextPage();
     }
+
     return {
         presence,
         accessDenied,
@@ -260,4 +290,5 @@ export function useSentenceLibrary({
         loadMore,
     };
 }
+
 export type LibraryController = ReturnType<typeof useSentenceLibrary>;

@@ -27,6 +27,7 @@ export function loadTextAiProviderCredentials(
         values,
         diagnostics,
     );
+
     return Object.fromEntries(
         Object.entries(parsed).filter(
             (entry): entry is [string, string] => entry[1] !== undefined,

@@ -69,18 +69,18 @@ Make Profile the functional home for identity/security settings and deliver safe
 
 ## Validation
 
-| Check              | Status         | Evidence |
-| ------------------ | -------------- | -------- |
-| Unit                | Passed | Final backend 499 (ordinary DB-gated tests separate), web 153, admin 10 |
-| Integration/contract | Passed | Contracts 53; disposable SQL 29 incl. migrations 0019/0020 |
-| E2E                 | Passed | Profile 2/2 after remediation; auth 3/3 and admin 6/6 earlier |
-| Browser/device      | Passed | Pinned browser 9/9 mobile, desktop, dark, dialog, network/console |
-| Typecheck/lint/build | Passed | Affected backend/web/admin checks; web typecheck rerun after build |
-| Database migration  | Passed | Disposable PostgreSQL forward migrations and SQL invariants |
-| Deployment/restore  | Passed | Release 97/97 active; fake S3 gate/replay tests 6/6; real bucket drill operator-owned |
-| User-flow guide/E2E | Passed | 10 guides and exact markers checked |
-| Independent review  | Passed | Five critical/high/medium defects fixed; remediation re-review clear |
-| Security review     | Passed | Three false-deletion paths fixed; role grants narrowed |
+| Check                | Status | Evidence                                                                              |
+| -------------------- | ------ | ------------------------------------------------------------------------------------- |
+| Unit                 | Passed | Final backend 499 (ordinary DB-gated tests separate), web 153, admin 10               |
+| Integration/contract | Passed | Contracts 53; disposable SQL 29 incl. migrations 0019/0020                            |
+| E2E                  | Passed | Profile 2/2 after remediation; auth 3/3 and admin 6/6 earlier                         |
+| Browser/device       | Passed | Pinned browser 9/9 mobile, desktop, dark, dialog, network/console                     |
+| Typecheck/lint/build | Passed | Affected backend/web/admin checks; web typecheck rerun after build                    |
+| Database migration   | Passed | Disposable PostgreSQL forward migrations and SQL invariants                           |
+| Deployment/restore   | Passed | Release 97/97 active; fake S3 gate/replay tests 6/6; real bucket drill operator-owned |
+| User-flow guide/E2E  | Passed | 10 guides and exact markers checked                                                   |
+| Independent review   | Passed | Five critical/high/medium defects fixed; remediation re-review clear                  |
+| Security review      | Passed | Three false-deletion paths fixed; role grants narrowed                                |
 
 ## Remaining work
 

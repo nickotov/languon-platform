@@ -14,6 +14,7 @@ const directories: string[] = [];
 async function directory() {
     const value = await mkdtemp(join(tmpdir(), 'languon-ocr-output-test-'));
     directories.push(value);
+
     return value;
 }
 
@@ -44,6 +45,7 @@ describe('bubblewrap OCR output validation', () => {
             pageCount: 100,
             totalPixels: 0,
         });
+
         expect(() =>
             parseSandboxParserManifest(
                 manifest(
@@ -53,9 +55,11 @@ describe('bubblewrap OCR output validation', () => {
                 ),
             ),
         ).toThrow();
+
         expect(() =>
             parseSandboxParserManifest(manifest([entry(1), entry(1)])),
         ).toThrow('OCR output paths must be unique');
+
         expect(() =>
             parseSandboxParserManifest(
                 manifest([
@@ -98,6 +102,7 @@ describe('bubblewrap OCR output validation', () => {
                 new AbortController().signal,
             ),
         ).rejects.toThrow('regular file');
+
         await expect(
             readSandboxOcrOutputs(
                 output,
@@ -120,6 +125,7 @@ describe('bubblewrap OCR output validation', () => {
         const entries = Array.from({ length: 17 }, (_, index) =>
             entry(index + 1),
         );
+
         await Promise.all(
             entries.map((value) =>
                 writeFile(

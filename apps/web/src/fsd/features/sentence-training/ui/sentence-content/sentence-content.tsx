@@ -1,5 +1,11 @@
 'use client';
 import styles from './sentence-content.module.css';
+import {
+    segmentAnswer,
+    dictionaryTargetText,
+} from '../../lib/sentence-feedback';
+export { segmentAnswer } from '../../lib/sentence-feedback';
+import { AiFeedbackCorrections } from './ai-feedback-corrections';
 import { useSentenceCopy } from '../sentence-copy';
 
 import { useState, type ReactNode } from 'react';
@@ -13,38 +19,11 @@ export function languageDirection(language: string) {
 
 export { SentenceWithHints } from '../sentence-hints/sentence-hints';
 
-export function segmentAnswer(
-    answer: string,
-    issues: SentenceAttempt['feedback']['issues'],
-) {
-    const valid = issues
-        .map((issue, index) => ({ index, span: issue.span }))
-        .filter(
-            (item) =>
-                item.span &&
-                answer.slice(item.span.start, item.span.end) ===
-                    item.span.quote,
-        );
-    const chunks: { text: string; issue: number | null }[] = [];
-    answer.split('').forEach((point, index) => {
-        const issue =
-            valid.find(
-                (item) =>
-                    item.span &&
-                    index >= item.span.start &&
-                    index < item.span.end,
-            )?.index ?? null;
-        const last = chunks.at(-1);
-        if (last && last.issue === issue) last.text += point;
-        else chunks.push({ text: point, issue });
-    });
-    return chunks;
-}
-
 /** Backend spans are grapheme-aligned UTF-16 offsets and must match their quote. */
 export function HighlightedAnswer({ attempt }: { attempt: SentenceAttempt }) {
     const { t } = useSentenceCopy();
     const chunks = segmentAnswer(attempt.answer, attempt.feedback.issues);
+
     return (
         <p
             lang={attempt.exercise.targetLanguage}
@@ -96,7 +75,13 @@ export function AiResultPanel({
         scoreTone = styles.scoreWarning;
         ScoreIcon = CircleDashed;
     }
+
     const scoreClassName = `${styles.score} ${scoreTone}`;
+
+    function toggleTranslation() {
+        setExpanded(!expanded);
+    }
+
     return (
         <section aria-label={t('AI feedback')} className={styles.feedbackPanel}>
             <div className={styles.feedbackHeader}>
@@ -131,56 +116,11 @@ export function AiResultPanel({
             <h4 className={styles.feedbackLabel}>{t('Your answer')}</h4>
             <HighlightedAnswer attempt={attempt} />
             {audio}
-            {result.issues.length ? (
-                <>
-                    <h4 className={styles.feedbackLabel}>{t('Corrections')}</h4>
-                    <ol className={styles.mistakes}>
-                        {result.issues.map((issue, index) => (
-                            <li key={issue.id} className={styles.mistake}>
-                                <span className={styles.mistakeNumber}>
-                                    {index + 1}
-                                </span>
-                                <div className={styles.mistakeBody}>
-                                    <Badge size='sm'>{t(issue.kind)}</Badge>
-                                    {issue.span ? (
-                                        <p
-                                            className={styles.mistakeExcerpt}
-                                            lang={
-                                                attempt.exercise.targetLanguage
-                                            }
-                                        >
-                                            <s>{issue.span.quote}</s>
-                                            {issue.correction !== null ? (
-                                                <>
-                                                    {' '}
-                                                    →{' '}
-                                                    <strong>
-                                                        {issue.correction}
-                                                    </strong>
-                                                </>
-                                            ) : null}
-                                        </p>
-                                    ) : (
-                                        <p className={styles.mistakeReason}>
-                                            {t('Applies to the whole answer')}
-                                        </p>
-                                    )}
-                                    <p
-                                        className={styles.mistakeExplanation}
-                                        lang={attempt.explanationLanguage}
-                                    >
-                                        {issue.explanation}
-                                    </p>
-                                </div>
-                            </li>
-                        ))}
-                    </ol>
-                </>
-            ) : (
-                <p className={styles.noMistakes}>
-                    {t('No corrections needed.')}
-                </p>
-            )}
+            <AiFeedbackCorrections
+                issues={result.issues}
+                targetLanguage={attempt.exercise.targetLanguage}
+                explanationLanguage={attempt.explanationLanguage}
+            />
             <h4 className={styles.feedbackLabel}>{t('Dictionary words')}</h4>
             <ul className={styles.dictionaryWords}>
                 {result.targets.map((target) => (
@@ -189,17 +129,7 @@ export function AiResultPanel({
                             className={styles.wordSource}
                             lang={attempt.exercise.targetLanguage}
                         >
-                            {
-                                attempt.exercise.hints.find(
-                                    (hint) =>
-                                        hint.id ===
-                                        attempt.exercise.segments.find(
-                                            (segment) =>
-                                                segment.target?.entryId ===
-                                                target.entryId,
-                                        )?.target?.hintId,
-                                )?.text
-                            }
+                            {dictionaryTargetText(attempt, target.entryId)}
                         </strong>
                         <Badge
                             size='sm'
@@ -225,7 +155,7 @@ export function AiResultPanel({
                 variant='secondary'
                 size='compact'
                 aria-expanded={expanded}
-                onClick={() => setExpanded(!expanded)}
+                onClick={toggleTranslation}
             >
                 {t('Suggested translation')} {expanded ? '↑' : '↓'}
             </Button>
@@ -254,6 +184,11 @@ export function ReferencePanel({
 }) {
     const { t } = useSentenceCopy();
     const [open, setOpen] = useState(true);
+
+    function toggleReference() {
+        setOpen(!open);
+    }
+
     return (
         <section
             aria-label={t('Reference translation')}
@@ -270,7 +205,7 @@ export function ReferencePanel({
                     variant='secondary'
                     size='compact'
                     aria-expanded={open}
-                    onClick={() => setOpen(!open)}
+                    onClick={toggleReference}
                 >
                     {open ? t('Hide') : t('Show again')}
                 </Button>

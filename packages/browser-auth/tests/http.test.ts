@@ -30,6 +30,7 @@ describe('browser API client', () => {
                 }),
             ),
         ).toBe(true);
+
         expect(
             isAuthenticationRequiredError(
                 new BrowserApiError(403, {
@@ -39,6 +40,7 @@ describe('browser API client', () => {
                 }),
             ),
         ).toBe(true);
+
         expect(
             isAuthenticationRequiredError(
                 new BrowserApiError(403, {
@@ -48,6 +50,7 @@ describe('browser API client', () => {
                 }),
             ),
         ).toBe(false);
+
         expect(
             isAuthenticationRequiredError(
                 new BrowserApiError(403, {
@@ -82,6 +85,7 @@ describe('browser API client', () => {
                 { headers: { 'Content-Type': 'application/json' } },
             ),
         );
+
         vi.stubGlobal('fetch', fetchMock);
 
         await client.request('/users/me', {
@@ -153,6 +157,7 @@ describe('browser API client', () => {
                 { headers: { 'Content-Type': 'application/json' } },
             ),
         );
+
         vi.stubGlobal('fetch', fetchMock);
         const edgeClient = createBrowserApiClient({
             accessTokenHeader: 'X-Languon-Admin-Authorization',

@@ -13,14 +13,17 @@ export function textAiProbeIdentity(
     const key = route
         ? credentials[route.credentialEnvironmentVariable]
         : undefined;
+
     if (
         !route ||
         !key ||
         request.routeId === 'kie/gemini-2.5-pro' ||
         (request.kind === 'flow' &&
             !TextAiFlowIdSchema.safeParse(request.flowId).success)
-    )
+    ) {
         throw new TextAiProbeUnavailableError('probe_route_unavailable');
+    }
+
     // Only the opaque hash is persisted. Neither credential material nor a reversible identifier leaves the server.
     const credentialRevision = createHash('sha256')
         .update('languon-probe-credential-v1\0')
@@ -42,6 +45,7 @@ export function textAiProbeIdentity(
             }),
         )
         .digest('hex');
+
     return {
         routeId: route.id,
         providerId: route.providerId,

@@ -22,12 +22,14 @@ describe('admin API boundary', () => {
             'valid-token',
             new Date(Date.now() + 60_000).toISOString(),
         );
+
         expect(accessTokenStore.getUsable()).toBe('valid-token');
 
         accessTokenStore.set(
             'near-expiry',
             new Date(Date.now() + 10_000).toISOString(),
         );
+
         expect(accessTokenStore.getUsable()).toBeNull();
         expect(accessTokenStore.get()).toBe('near-expiry');
 
@@ -43,11 +45,13 @@ describe('admin API boundary', () => {
                 if (String(input).endsWith('/admin/auth/refresh')) {
                     return jsonResponse(authenticationResponse());
                 }
+
                 if (String(input).endsWith('/content')) {
                     return new Response(new Uint8Array([1, 2]), {
                         headers: { 'Content-Type': 'audio/mpeg' },
                     });
                 }
+
                 return jsonResponse({
                     data: [],
                     page: 1,
@@ -56,6 +60,7 @@ describe('admin API boundary', () => {
                 });
             },
         );
+
         vi.stubGlobal('fetch', fetchMock);
         accessTokenStore.set(
             'expired-token',
@@ -68,6 +73,7 @@ describe('admin API boundary', () => {
                 '00000000-0000-4000-8000-000000000042',
             ),
         ]);
+
         expect(users.data).toEqual([]);
         expect(audio.type).toBe('audio/mpeg');
         expect(
@@ -75,6 +81,7 @@ describe('admin API boundary', () => {
                 String(url).endsWith('/admin/auth/refresh'),
             ),
         ).toHaveLength(1);
+
         for (const [, init] of fetchMock.mock.calls.slice(1)) {
             expect(init).toMatchObject({
                 headers: { Authorization: 'Bearer aaa.bbb.ccc' },
@@ -95,6 +102,7 @@ describe('admin API boundary', () => {
                 403,
             ),
         );
+
         vi.stubGlobal('fetch', fetchMock);
         accessTokenStore.set(
             'valid-token',
@@ -113,6 +121,7 @@ describe('admin API boundary', () => {
         ).rejects.toMatchObject({
             detail: { code: 'recent_authentication_required' },
         });
+
         expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(accessTokenStore.get()).toBe('valid-token');
     });
@@ -130,6 +139,7 @@ describe('admin API boundary', () => {
                 if (String(input).endsWith('/admin/auth/refresh')) {
                     return jsonResponse(authenticationResponse());
                 }
+
                 const headers = init?.headers as Record<string, string>;
                 if (headers.Authorization === 'Bearer expired-token') {
                     return jsonResponse(
@@ -143,9 +153,11 @@ describe('admin API boundary', () => {
                         401,
                     );
                 }
+
                 return jsonResponse(settings);
             },
         );
+
         vi.stubGlobal('fetch', fetchMock);
         accessTokenStore.set(
             'expired-token',
@@ -159,6 +171,7 @@ describe('admin API boundary', () => {
                 reason: 'Configure local testing budget limits',
             }),
         ).resolves.toEqual(settings);
+
         expect(
             fetchMock.mock.calls.map(([url]) => String(url).split('/').pop()),
         ).toEqual(['refresh', 'accounting-settings']);
@@ -169,6 +182,7 @@ describe('admin API boundary', () => {
         expect(
             adminI18nProvider.translate('users.matching', { count: 3 }),
         ).toBe('3 matching users');
+
         expect(adminI18nProvider.translate('user.confirmDisable')).toBe(
             'Confirm disable',
         );
@@ -180,6 +194,7 @@ describe('admin API boundary', () => {
         expect(resolveAdminApiUrl(false, 'http://localhost:4000/')).toBe(
             'http://localhost:4000',
         );
+
         expect(resolveAdminAccessTokenHeader(false)).toBe('Authorization');
         expect(resolveAdminAccessTokenHeader(true)).toBe(
             'X-Languon-Admin-Authorization',
@@ -205,6 +220,7 @@ describe('admin API boundary', () => {
                 ),
             ),
         );
+
         await expect(
             adminApi.users({ page: 1, pageSize: 25 }),
         ).rejects.toBeInstanceOf(AdminApiError);
@@ -218,6 +234,7 @@ describe('admin API boundary', () => {
                 if (url.endsWith('/admin/auth/refresh')) {
                     return jsonResponse(authenticationResponse());
                 }
+
                 if (headers.Authorization === 'Bearer expired-token') {
                     return jsonResponse(
                         {
@@ -230,6 +247,7 @@ describe('admin API boundary', () => {
                         401,
                     );
                 }
+
                 return jsonResponse({
                     data: [],
                     page: 1,
@@ -238,6 +256,7 @@ describe('admin API boundary', () => {
                 });
             },
         );
+
         vi.stubGlobal('fetch', fetchMock);
         accessTokenStore.set('expired-token');
 
@@ -251,6 +270,7 @@ describe('admin API boundary', () => {
                 String(input).endsWith('/admin/auth/refresh'),
             ),
         ).toHaveLength(1);
+
         expect(accessTokenStore.get()).toBe('aaa.bbb.ccc');
     });
 
@@ -262,6 +282,7 @@ describe('admin API boundary', () => {
                 if (url.endsWith('/admin/auth/refresh')) {
                     return jsonResponse(authenticationResponse());
                 }
+
                 if (headers.Authorization === 'Bearer expired-token') {
                     return jsonResponse(
                         {
@@ -274,6 +295,7 @@ describe('admin API boundary', () => {
                         403,
                     );
                 }
+
                 return jsonResponse({
                     data: [],
                     page: 1,
@@ -282,6 +304,7 @@ describe('admin API boundary', () => {
                 });
             },
         );
+
         vi.stubGlobal('fetch', fetchMock);
         accessTokenStore.set('expired-token');
 
@@ -294,6 +317,7 @@ describe('admin API boundary', () => {
                 String(input).endsWith('/admin/auth/refresh'),
             ),
         ).toHaveLength(1);
+
         expect(accessTokenStore.get()).toBe('aaa.bbb.ccc');
     });
 
@@ -310,6 +334,7 @@ describe('admin API boundary', () => {
                 403,
             ),
         );
+
         vi.stubGlobal('fetch', fetchMock);
         accessTokenStore.set('admin-access-token');
 
@@ -319,6 +344,7 @@ describe('admin API boundary', () => {
             detail: { code: 'admin_access_denied' },
             status: 403,
         });
+
         expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
@@ -331,6 +357,7 @@ describe('admin API boundary', () => {
                 if (url.endsWith('/admin/auth/refresh')) {
                     return jsonResponse(authenticationResponse());
                 }
+
                 if (headers.Authorization === 'Bearer expired-token') {
                     return jsonResponse(
                         {
@@ -343,6 +370,7 @@ describe('admin API boundary', () => {
                         403,
                     );
                 }
+
                 return jsonResponse({
                     user: {
                         activeSessionCount: 0,
@@ -359,6 +387,7 @@ describe('admin API boundary', () => {
                 });
             },
         );
+
         vi.stubGlobal('fetch', fetchMock);
         accessTokenStore.set('expired-token');
 
@@ -370,6 +399,7 @@ describe('admin API boundary', () => {
         ).resolves.toMatchObject({
             user: { status: 'disabled', version: 4 },
         });
+
         expect(
             fetchMock.mock.calls.filter(([input]) =>
                 String(input).endsWith('/admin/auth/refresh'),
@@ -391,6 +421,7 @@ describe('admin API boundary', () => {
                 { headers: { 'Content-Type': 'application/json' } },
             ),
         );
+
         vi.stubGlobal('fetch', fetchMock);
         accessTokenStore.set('admin-access-token');
 
@@ -428,6 +459,7 @@ describe('admin API boundary', () => {
                 ),
             ),
         );
+
         accessTokenStore.set('admin-access-token');
 
         await expect(
@@ -462,6 +494,7 @@ describe('admin API boundary', () => {
                 },
             }),
         );
+
         vi.stubGlobal('fetch', fetchMock);
         accessTokenStore.set('admin-access-token');
 
@@ -475,6 +508,7 @@ describe('admin API boundary', () => {
                 },
             ),
         ).resolves.toMatchObject({ user: { status: 'active', version: 4 } });
+
         expect(fetchMock).toHaveBeenCalledWith(
             expect.stringMatching(/\/admin\/users\/[^/]+\/deletion\/cancel$/),
             expect.objectContaining({
@@ -527,6 +561,7 @@ describe('admin API boundary', () => {
         const fetchMock = vi
             .fn()
             .mockImplementation(async () => jsonResponse(settings));
+
         vi.stubGlobal('fetch', fetchMock);
         accessTokenStore.set('admin-access-token');
 
@@ -548,6 +583,7 @@ describe('admin API boundary', () => {
                 method: 'PATCH',
             }),
         );
+
         const request = fetchMock.mock.lastCall?.[1] as RequestInit;
         expect(JSON.parse(String(request.body))).toEqual({
             activeProvider: 'deepseek',
@@ -563,6 +599,7 @@ describe('admin API boundary', () => {
         const fetchMock = vi
             .fn()
             .mockImplementation(async () => jsonResponse(response));
+
         vi.stubGlobal('fetch', fetchMock);
         accessTokenStore.set('admin-access-token');
         const userId = '0198c600-52bb-7e53-8ac3-3102668e32ab';
@@ -570,12 +607,14 @@ describe('admin API boundary', () => {
         await expect(
             adminApi.aiCredits(userId, { page: 2, pageSize: 10 }),
         ).resolves.toEqual(response);
+
         await adminApi.updateAiCreditPolicy(userId, {
             expectedVersion: 3,
             mode: 'unlimited',
             reason: 'Approved support exception',
             unlimitedUntil: null,
         });
+
         await adminApi.adjustAiCredits(userId, {
             amountCredits: -250,
             expectedVersion: 3,
@@ -586,9 +625,11 @@ describe('admin API boundary', () => {
         expect(String(fetchMock.mock.calls[0]?.[0])).toMatch(
             /\/admin\/users\/[^/]+\/ai-credits\?page=2&pageSize=10$/,
         );
+
         expect(fetchMock.mock.calls[1]?.[1]).toEqual(
             expect.objectContaining({ method: 'PATCH' }),
         );
+
         const adjustmentRequest = fetchMock.mock.calls[2]?.[1] as RequestInit;
         expect(adjustmentRequest.method).toBe('POST');
         expect(JSON.parse(String(adjustmentRequest.body))).toEqual({
@@ -607,6 +648,7 @@ describe('admin API boundary', () => {
             authenticated: true,
             error: expect.objectContaining({ status: 0 }),
         });
+
         expect(accessTokenStore.get()).toBe('aaa.bbb.ccc');
     });
 });

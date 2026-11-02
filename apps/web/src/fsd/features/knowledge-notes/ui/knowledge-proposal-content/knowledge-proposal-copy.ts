@@ -4,7 +4,7 @@ export const knowledgeProposalLabels = {
             'Table alignment and link tooltips are adapted to the document’s supported formatting.',
         plainText: 'Insert as plain text',
         headingMapped:
-            'Heading levels are adapted to this document: H1 → H2 and H4–H6 → H3.',
+            'Heading levels are adapted to this document: H4–H6 → H3. H1–H3 are preserved.',
         formatUnavailable:
             'Formatted insertion is unavailable for this reply. Choose plain text to keep its original content.',
         unsafeLink:
@@ -19,7 +19,7 @@ export const knowledgeProposalLabels = {
             'Выравнивание таблиц и подсказки ссылок адаптированы к форматированию документа.',
         plainText: 'Вставить как обычный текст',
         headingMapped:
-            'Уровни заголовков адаптированы к документу: H1 → H2 и H4–H6 → H3.',
+            'Уровни заголовков адаптированы к документу: H4–H6 → H3. H1–H3 сохраняются.',
         formatUnavailable:
             'Этот ответ нельзя вставить с форматированием. Выберите обычный текст, чтобы сохранить исходное содержимое.',
         unsafeLink:
@@ -34,7 +34,7 @@ export const knowledgeProposalLabels = {
             'La alineación de tablas y los títulos de enlaces se adaptan al formato del documento.',
         plainText: 'Insertar como texto sin formato',
         headingMapped:
-            'Los títulos se adaptan al documento: H1 → H2 y H4–H6 → H3.',
+            'Los títulos se adaptan al documento: H4–H6 → H3. Se conservan H1–H3.',
         formatUnavailable:
             'No se puede insertar esta respuesta con formato. Elige texto sin formato para conservar el contenido original.',
         unsafeLink:
@@ -49,7 +49,7 @@ export const knowledgeProposalLabels = {
             'L’alignement des tableaux et les titres des liens sont adaptés au format du document.',
         plainText: 'Insérer en texte brut',
         headingMapped:
-            'Les titres sont adaptés au document : H1 → H2 et H4–H6 → H3.',
+            'Les titres sont adaptés au document : H4–H6 → H3. H1–H3 sont conservés.',
         formatUnavailable:
             'Cette réponse ne peut pas être insérée avec sa mise en forme. Choisissez le texte brut pour conserver le contenu original.',
         unsafeLink:

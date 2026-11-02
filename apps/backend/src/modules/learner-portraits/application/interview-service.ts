@@ -21,11 +21,13 @@ export function publicInterviewOperation(operation: InterviewOperation) {
         errorCode: operation.errorCode,
     };
 }
+
 export class InterviewService {
     constructor(private readonly store: InterviewStore) {}
     status(ownerId: string, now = new Date()) {
         return this.store.status(ownerId, now);
     }
+
     async start(
         ownerId: string,
         request: z.infer<typeof StartPortraitInterviewSchema>,
@@ -36,12 +38,14 @@ export class InterviewService {
             ...StartPortraitInterviewSchema.parse(request),
             now,
         });
+
         return {
             ...session,
             initialQuestion:
                 currentQuestion ?? initialInterviewQuestion(session.context),
         };
     }
+
     setLocale(
         ownerId: string,
         request: z.infer<typeof SetPortraitInterviewLocaleSchema>,
@@ -53,12 +57,14 @@ export class InterviewService {
             now,
         });
     }
+
     async submit(
         ownerId: string,
         request: z.input<typeof SubmitPortraitInterviewSchema>,
         now = new Date(),
     ) {
         const input = SubmitPortraitInterviewSchema.parse(request);
+
         return publicInterviewOperation(
             await this.store.enqueue({
                 ...input,
@@ -68,12 +74,16 @@ export class InterviewService {
             }),
         );
     }
+
     async read(ownerId: string, operationId: string) {
         const operation = await this.store.read(ownerId, operationId);
+
         return operation ? publicInterviewOperation(operation) : null;
     }
+
     async stop(ownerId: string, operationId: string, now = new Date()) {
         await this.store.stop(ownerId, operationId, now);
+
         return this.read(ownerId, operationId);
     }
 }

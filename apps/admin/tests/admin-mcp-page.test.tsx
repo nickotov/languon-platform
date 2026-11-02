@@ -13,6 +13,7 @@ import { accessTokenStore } from '../src/shared/auth/access-token-store';
 vi.mock('@refinedev/core', () => ({
     useTranslate: () => adminI18nProvider.translate,
 }));
+
 const id = '00000000-0000-4000-8000-000000000042';
 const token = {
     id,
@@ -30,6 +31,7 @@ const response = (body: unknown) =>
     new Response(JSON.stringify(body), {
         headers: { 'Content-Type': 'application/json' },
     });
+
 beforeEach(() => {
     accessTokenStore.set('admin-session');
     vi.stubGlobal(
@@ -41,6 +43,7 @@ beforeEach(() => {
         }),
     );
 });
+
 afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
@@ -52,26 +55,33 @@ describe('MCP token management screen', () => {
         const fetcher = vi
             .fn<typeof fetch>()
             .mockImplementation(async (url, init) => {
-                if (String(url).includes('/audit?'))
+                if (String(url).includes('/audit?')) {
                     return response({
                         events: [],
                         total: 0,
                         page: 1,
                         pageSize: 25,
                     });
-                if (init?.method === 'POST')
+                }
+
+                if (init?.method === 'POST') {
                     return response({ token, secret: 'synthetic-once-secret' });
+                }
+
                 return response({ tokens: [] });
             });
+
         vi.stubGlobal('fetch', fetcher);
         render(<AdminMcpPage />);
         await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
         fireEvent.change(screen.getByLabelText('Client name'), {
             target: { value: 'Local Codex' },
         });
+
         fireEvent.change(screen.getByLabelText('Reason'), {
             target: { value: 'Inspect configuration locally' },
         });
+
         fireEvent.click(screen.getByRole('button', { name: 'Create token' }));
         await screen.findByText('synthetic-once-secret');
         const issueCall = fetcher.mock.calls.find(
@@ -84,9 +94,11 @@ describe('MCP token management screen', () => {
         fireEvent.click(
             screen.getByRole('button', { name: 'I have saved the secret' }),
         );
+
         expect(
             screen.queryByText('synthetic-once-secret'),
         ).not.toBeInTheDocument();
+
         expect(localStorage.getItem('LANGUON_ADMIN_MCP_TOKEN')).toBeNull();
     }, 20_000);
 
@@ -104,17 +116,21 @@ describe('MCP token management screen', () => {
                     : response({ tokens: [] }),
             ),
         );
+
         render(<AdminMcpPage />);
         expect(
             screen.queryByLabelText('Maximum USD per check'),
         ).not.toBeInTheDocument();
+
         fireEvent.click(screen.getByLabelText('Paid model checks'));
         expect(screen.getByLabelText('Maximum USD per check')).toHaveValue(
             '0.05',
         );
+
         expect(screen.getByLabelText('Maximum USD per UTC day')).toHaveValue(
             '0.5',
         );
+
         expect(screen.getByLabelText('Concurrent checks')).toHaveValue('1');
         expect(
             screen.getByLabelText('Credit grants (not revenue)'),

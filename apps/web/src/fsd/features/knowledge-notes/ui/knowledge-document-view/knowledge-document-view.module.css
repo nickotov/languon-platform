@@ -1,0 +1,24 @@
+.menuTrigger {
+    width: var(--size-32);
+    height: var(--size-32);
+    min-height: var(--size-32);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-8);
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-tertiary);
+}
+
+.menuTrigger:hover {
+    background: var(--background-subtle);
+    color: var(--text-primary);
+}
+
+@media (pointer: coarse) {
+    .menuTrigger {
+        width: var(--size-44);
+        height: var(--size-44);
+        min-height: var(--size-44);
+    }
+}

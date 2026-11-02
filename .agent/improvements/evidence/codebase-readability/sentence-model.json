@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "owner": "sentence-model",
+  "baseCommit": "252de64",
+  "files": [
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/api/sentence-api.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createSentenceApi validates nonpublic owner/share target and sign-in before transport, distinguishes public capabilities and delegates preparation endpoints; longer explicit adapter preserves30s timeout/schema/error normalization and no reference prefetch.",
+      "beforeSha256": "cddc9b8c0a120031a6f2d26109edfbed54b876650c1184a5712848f2207e57c6",
+      "afterSha256": "cddc9b8c0a120031a6f2d26109edfbed54b876650c1184a5712848f2207e57c6"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/api/sentence-preparation-api.ts",
+      "status": "reviewed-acceptable",
+      "reason": "createSentencePreparationApi maps typed validated start/read/command/batches requests using injected transport/path validator; no independent auth/client policy.",
+      "beforeSha256": "972db57bd458e48f71cbdb70b8bb58f7563404c08b7cd5435fc8626cfcecb5ed",
+      "afterSha256": "972db57bd458e48f71cbdb70b8bb58f7563404c08b7cd5435fc8626cfcecb5ed"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/hooks/use-preparation-retry-cooldown.ts",
+      "status": "reviewed-acceptable",
+      "reason": "usePreparationRetryCooldown schedules only local control reenable at server deadline, cancels timer on dependency cleanup and never retries server work automatically.",
+      "beforeSha256": "b7384984542f5d77fe9037acf65086357f23a5eca4698ed2a645b9d1e25cac4c",
+      "afterSha256": "b7384984542f5d77fe9037acf65086357f23a5eca4698ed2a645b9d1e25cac4c"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/hooks/use-sentence-history.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useSentenceHistory memoizes identity/direction/exercise-scoped store, enables/stops in effect and exposes stable external-store methods without duplicating model state.",
+      "beforeSha256": "c6f514aa4bca3cb1e3503f384aed5f71263ecf55322022a9f3c12ea3c6f87e14",
+      "afterSha256": "c6f514aa4bca3cb1e3503f384aed5f71263ecf55322022a9f3c12ea3c6f87e14"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/hooks/use-sentence-preparation.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useSentencePreparation wraps only start/command in action consent, preserves accounted API/store memo dependencies and enables/disables mounted actor scope.",
+      "beforeSha256": "00a4642e5a9250b195d4f1dd08b8bebc8d587c9473fafebc9fd6c974b18965c9",
+      "afterSha256": "00a4642e5a9250b195d4f1dd08b8bebc8d587c9473fafebc9fd6c974b18965c9"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/hooks/use-sentence-session.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useSentenceSession wraps next/check consent, scopes model instance by identity/API and stops on unmount; external-store snapshot/actions remain direct.",
+      "beforeSha256": "4f729dc73d85d4565e92c96c38522c2846c7c59218467b1ddfb1989fad0d166b",
+      "afterSha256": "4f729dc73d85d4565e92c96c38522c2846c7c59218467b1ddfb1989fad0d166b"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/hooks/use-sentence-setup.ts",
+      "status": "reviewed-acceptable",
+      "reason": "useSentenceSetup scopes setup model by API/identity/explanation language and controls enable/stop through effect without changing actions.",
+      "beforeSha256": "6dc1affb01908c4b0d1854fb530c7128e2fa56157bb7272371204045501d0eae",
+      "afterSha256": "6dc1affb01908c4b0d1854fb530c7128e2fa56157bb7272371204045501d0eae"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/index.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Sentence feature barrel exposes API/hooks/UI/contracts and error aliases directly with preparation exports; public paths remain explicit.",
+      "beforeSha256": "061ac19ee7f07d57ad98ee183d990589b8c2e9780fc9dceebf3e4e84c2fd3cd4",
+      "afterSha256": "061ac19ee7f07d57ad98ee183d990589b8c2e9780fc9dceebf3e4e84c2fd3cd4"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/lib/api-error.ts",
+      "status": "reviewed-acceptable",
+      "reason": "ApiError converts cancellation/session/network errors distinctly, retains server retry deadline and enumerates access-loss versus uncertain outcomes for model decisions.",
+      "beforeSha256": "b37beb049bde1ce8cad870de477b67ccf6316279bf9b54e090b92768102b7638",
+      "afterSha256": "b37beb049bde1ce8cad870de477b67ccf6316279bf9b54e090b92768102b7638"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/lib/reference-comparison.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Reference comparison normalizes NFC/apostrophes/case/punctuation/spaces while preserving meaningful symbols/numeric punctuation; omit-based ignored differences describe textual match without semantic grading.",
+      "beforeSha256": "00a09cdb9488b3aec2c372036867f3b6ffde4aff5ca79df6581f1e0deefd0020",
+      "afterSha256": "00a09cdb9488b3aec2c372036867f3b6ffde4aff5ca79df6581f1e0deefd0020"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/model/sentence-history.ts",
+      "status": "reviewed-acceptable",
+      "reason": "SentenceHistory separates attempt/manual-review cursors, prevents overlapping loads and fences stale epochs; merge-by-ID preserves pagination uniqueness and access-loss clears private lists.",
+      "beforeSha256": "de14701ca28116e8e5c2e358cdedb043a7ab24948add92aa86ca13f7d2a93f7c",
+      "afterSha256": "de14701ca28116e8e5c2e358cdedb043a7ab24948add92aa86ca13f7d2a93f7c"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/model/sentence-preparation.ts",
+      "status": "refactored",
+      "reason": "SentencePreparationStore retains operation IDs across uncertain admission, validates recovered storage and fences async work by enabled/epoch; longer workflow owns durable start/command/read recovery, polling and eligible-count bounds. Stored decoding is an independent synchronous boundary suitable for extraction. Extracted independent synchronous recovery decoder or session snapshot projection; all asynchronous methods/locks/epochs/timer/listener ordering retained.",
+      "beforeSha256": "b597637f3a9ecb3e8a4b36eb41ad95b1a79a576f03c475b40f8a12444b9596af",
+      "afterSha256": "ab59fb8152d573cf79bbe6feb9e1ff54c4e8daf3739c027d8bf33c5f1ff9cd40"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/model/sentence-session.ts",
+      "status": "refactored",
+      "reason": "SentenceSession serializes paid admission/polling/reference/cancellation under shared epochs, pending payloads and locks; longer class deliberately retains that authority to preserve uncertain recovery, fresh completed-round restoration and reset timer cleanup. Initial state and synchronous current-round projection are independent local seams. Extracted independent synchronous recovery decoder or session snapshot projection; all asynchronous methods/locks/epochs/timer/listener ordering retained.",
+      "beforeSha256": "0850a67258783cb87fa66b94f35c90d57efde7d90ef81b6bae30030db5f3a3ef",
+      "afterSha256": "408e843ae4764c2fd098894f5d695ea292ca12a53c5f785f237d68329657e28d"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/model/sentence-setup.ts",
+      "status": "reviewed-acceptable",
+      "reason": "SentenceSetup independently versions prepare and entry requests, debounces search, deduplicates/caps selection and clears private entries on access loss; shared state remains one setup lifetime with direct prepare/pagination methods.",
+      "beforeSha256": "a348255bbca5d7ba6cd2aeda11ad9c516efdc8758322857cfaac1dab52f3f442",
+      "afterSha256": "a348255bbca5d7ba6cd2aeda11ad9c516efdc8758322857cfaac1dab52f3f442"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/types.ts",
+      "status": "reviewed-acceptable",
+      "reason": "Sentence types declare preparation/API/controller/reference/round/setup/history/audio contracts derived from schemas; longer file contains public type shapes and no intertwined executable flow.",
+      "beforeSha256": "4aec4f3ad72e8cb3309a6869c8e40b45518efe140deba1bc6d73738e02ddece5",
+      "afterSha256": "4aec4f3ad72e8cb3309a6869c8e40b45518efe140deba1bc6d73738e02ddece5"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/model/sentence-preparation-recovery.ts",
+      "status": "refactored",
+      "reason": "parseStoredPreparation validates exactly the existing durable record fields independently of asynchronous preparation recovery; operation IDs/start/command precedence unchanged.",
+      "beforeSha256": null,
+      "afterSha256": "c7a8abd3fd1cfe3e5b71641489ab3d443ae8b99d78791d4ac08dd0a2716d6536"
+    },
+    {
+      "path": "apps/web/src/fsd/features/sentence-training/model/sentence-session-state.ts",
+      "status": "refactored",
+      "reason": "Initial state and synchronizeRoundItems expose exact synchronous defaults/projection, preserve unmatched item and absent-exercise array references, and retain attempt-over-reference outcome precedence.",
+      "beforeSha256": null,
+      "afterSha256": "94493c74bd8845c054d07f7cf96688e743f4f9209de5600bee07bcae3916b85c"
+    }
+  ],
+  "batches": [
+    {
+      "id": "sentence-state-recovery-seams",
+      "status": "implemented; root-scheduled tests pending",
+      "problem": "Preparation storage decoding and session initial/current-round projection are mixed into long asynchronous store protocols; readers must distinguish synchronous snapshot rules from admission/recovery ownership.",
+      "seam": "Move exact stored-record decoder/type to sentence-preparation-recovery.ts; initial session state/type and pure current-round projection to sentence-session-state.ts. Retain all async methods, locks, epochs, pending objects, timers and listener order in existing stores.",
+      "alternative": "Splitting admission/reference/replay into multiple controllers risks state authority and reset ordering; rejected for behavior-preserving refactor.",
+      "preservedInvariants": [
+        "Existing initialSentenceState export path and returned defaults",
+        "Exact parser validations and recovery precedence",
+        "Same snapshot copying and round-item reference preservation",
+        "Unchanged all async methods, timing, retry/poll/cancel order and React hooks"
+      ],
+      "verification": [
+        {
+          "command": "pnpm --filter @languon/web exec vitest run tests/sentence-training-state.test.ts tests/sentence-preparation-state.test.ts",
+          "setup": "Existing deterministic fake APIs/timers; root schedules; no services",
+          "estimate": "~1minute"
+        },
+        {
+          "command": "pnpm --filter @languon/web exec eslint src/fsd/features/sentence-training/model/",
+          "setup": "Installed dependencies; scoped static only locally",
+          "estimate": "<30seconds"
+        }
+      ],
+      "authorVerification": [
+        "Scoped model ESLint passed after required blank-line correction",
+        "Prettier formatted all four files",
+        "AST token comparison: all59 unchanged session class members and28 unchanged preparation class members (stored symbol rename normalized)",
+        "Current-round projection callback tokens identical after this.state parameter substitution",
+        "Read helper bodies against originals; defaults/storage validations unchanged"
+      ]
+    }
+  ],
+  "auditCursor": 15,
+  "remaining": 0
+}

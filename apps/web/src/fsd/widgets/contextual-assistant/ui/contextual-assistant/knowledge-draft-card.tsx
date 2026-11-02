@@ -66,10 +66,13 @@ export function KnowledgeDraftCard({
         discardRevision,
         onPublished,
     });
+
     function open() {
         onOpen?.(draft.id);
     }
+
     const statusLabel = dirty ? labels.editing : labels.kept;
+
     return (
         <section className={expanded ? styles.editor : styles.draft}>
             {expanded ? (

@@ -11,13 +11,22 @@ const dictionaryCacheFamilies = new Set([
 ]);
 
 function dictionaryIdFromData(data: unknown): string | null {
-    if (!data || typeof data !== 'object') return null;
+    if (!data || typeof data !== 'object') {
+        return null;
+    }
+
     const record = data as Record<string, unknown>;
-    if (typeof record.dictionaryId === 'string') return record.dictionaryId;
+    if (typeof record.dictionaryId === 'string') {
+        return record.dictionaryId;
+    }
+
     if (record.job && typeof record.job === 'object') {
         const job = record.job as Record<string, unknown>;
-        if (typeof job.dictionaryId === 'string') return job.dictionaryId;
+        if (typeof job.dictionaryId === 'string') {
+            return job.dictionaryId;
+        }
     }
+
     return null;
 }
 
@@ -31,8 +40,13 @@ export function removeDeletedDictionaryCaches(
 ) {
     queryClient.removeQueries({
         predicate(query) {
-            if (!isDictionaryCache(query)) return false;
-            if (dictionaryIds === 'all') return true;
+            if (!isDictionaryCache(query)) {
+                return false;
+            }
+
+            if (dictionaryIds === 'all') {
+                return true;
+            }
 
             const family = String(query.queryKey[0] ?? '');
             if (
@@ -45,6 +59,7 @@ export function removeDeletedDictionaryCaches(
             }
 
             const dictionaryId = dictionaryIdFromData(query.state.data);
+
             return dictionaryId ? dictionaryIds.has(dictionaryId) : false;
         },
     });

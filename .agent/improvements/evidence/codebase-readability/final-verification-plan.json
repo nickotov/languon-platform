@@ -1,0 +1,123 @@
+{
+  "owner": "readability-final-verification",
+  "mode": "read-only final verification planning",
+  "base": "252de64cc8fecfb9a213e5ec1fdac3b8e72f4caf",
+  "plannedAt": "2026-11-01",
+  "patchState": "source-freeze.json declares source frozen; this plan is not execution evidence and must be rechecked if a source, test, config, or runner change lands.",
+  "existingEvidenceValidity": {
+    "earlyFocusedRuns": "invalid for final approval because later affected source edits are recorded in the active improvement document.",
+    "baselineCriticalRun": "not reusable for changed seams; the final full critical run is required by the active record.",
+    "sourceReviews": "useful for source findings only; review-platform, review-composition, review-conversations, and review-foundation explicitly leave final runtime evidence pending."
+  },
+  "alreadyRequiredFinalGates": [
+    "pnpm format:check",
+    "pnpm lint",
+    "pnpm typecheck",
+    "pnpm exec turbo run test --concurrency=1",
+    "pnpm build",
+    "pnpm test:e2e:critical",
+    "pnpm check"
+  ],
+  "criticalRegistryCoverageNotToDuplicate": [
+    "authentication (all auth.journeys scenarios, including passkey lifecycle)",
+    "admin-session-refresh includes the owner user-inspection test",
+    "dictionary-generation batch review",
+    "sentence-practice provider-unavailable and owner/reader paths",
+    "text-generation owner and independent-membership paths",
+    "interactive-workbooks all three journeys",
+    "knowledge-document-formatting Markdown proposal journey",
+    "speech-playback all shared-pronunciation journeys"
+  ],
+  "additionalBrowserSelections": [
+    {
+      "file": "apps/web/tests/e2e/profile.journeys.spec.ts",
+      "grep": "saves a unique handle, keeps Security real and email mock honest, then schedules removal",
+      "reason": "Only mapped real-browser journey that enters the refactored Profile Security tab/panels and account-control mutation path; auth critical flow alone does not render this composed screen."
+    },
+    {
+      "file": "apps/admin/tests/e2e/admin-user-management.journeys.spec.ts",
+      "grep": "owner publishes routing tariffs and queued jobs retain their selected revisions",
+      "reason": "Covers the refactored provider-price dialog/field composition against the admin/backend boundary. The user-detail journey is already included by critical admin-session-refresh, so it is intentionally not repeated."
+    },
+    {
+      "file": "apps/web/tests/e2e/dictionary-platform.journeys.spec.ts",
+      "grep": "document generation cleans the upload before one final editable review|previews a Quizlet import and exports formula-safe ordered CSV|automatically saves full inline forms while history remains preview-only and advanced rewrite remains available",
+      "reason": "Complements critical batch generation with document candidate, import-preview, and extracted card-authoring form/review branches. The document case requires the guarded MinIO prerequisite."
+    },
+    {
+      "file": "apps/web/tests/e2e/flashcard-training.journeys.spec.ts",
+      "grep": "owner configures a session, rates a card, undoes it, and preserves preferences",
+      "reason": "Exercises the extracted practice-card phase/result tree; speech critical evidence covers playback only, not setup/rate/undo/persistence."
+    },
+    {
+      "file": "apps/web/tests/e2e/sentence-practice.journeys.spec.ts",
+      "grep": "previews saved hints and archives or restores an example without a review|reconnects to background preparation and practises the saved batch without regeneration",
+      "reason": "Covers the refactored sentence-library selection/detail states and preparation/reconnect state helpers omitted by the two critical sentence greps."
+    },
+    {
+      "file": "apps/web/tests/e2e/texts.journeys.spec.ts",
+      "grep": "anonymous reader views and authenticated visitor copies before owner revokes|phone reader selects and collects without horizontal overflow",
+      "reason": "Adds TextShare capability/revocation and the changed selection behavior; the critical text flow already owns translation and independent folder membership."
+    },
+    {
+      "file": "apps/web/tests/e2e/knowledge-workspace.journeys.spec.ts",
+      "grep": "an empty workspace recovers edits, names itself from the first tutor question, and saves one note|the workspace switches between mobile document and tutor tabs and uses a tablet overlay",
+      "reason": "The first case covers Knowledge properties/form state and desktop resize controls; the second covers responsive/focus/fullscreen layout state. Markdown-only critical coverage does not enter these branches."
+    }
+  ],
+  "browserExecutionContract": {
+    "webConfig": "apps/web/playwright.config.ts",
+    "adminConfig": "apps/admin/playwright.config.ts",
+    "webCommandTemplate": "pnpm --filter @languon/web exec playwright test <file> --grep '<grep>' --retries=0 --reporter=list",
+    "adminCommandTemplate": "pnpm --filter @languon/admin exec playwright test <file> --grep '<grep>' --retries=0 --reporter=list",
+    "requiredWebTarget": "Runner-owned loopback AUTH_E2E_DATABASE_URL (database name includes test/e2e), AUTH_E2E_REDIS_URL, AUTH_E2E_WEB_ORIGIN, and AUTH_E2E_BACKEND_ORIGIN. Never reuse a default/developer DB or Redis.",
+    "requiredAdminTarget": "Runner-owned loopback ADMIN_E2E_DATABASE_URL on a non-default port with the admin-e2e test-name pattern, plus ADMIN_E2E_REDIS_URL and loopback admin/web/backend origins.",
+    "featureFlags": [
+      "AUTH_E2E_SENTENCE_SERVICES=true for the sentence selection",
+      "AUTH_E2E_DOCUMENT_SERVICES=true and a runner-owned guarded MinIO endpoint/credentials for the dictionary document selection"
+    ],
+    "notes": "The built-in configs start only app processes; the orchestration layer must own and clean disposable PostgreSQL/Redis (and MinIO for document generation). These are Playwright runtime selections, not evidence of visual fidelity beyond their asserted states."
+  },
+  "supplementalDisposableBackendSelections": [
+    {
+      "file": "apps/backend/tests/integration/modules/conversations/conversation-lifecycle-capacity.test.ts",
+      "reason": "Changed conversation admission/source SQL needs the real combined-capacity, erase/cancellation, and lock behavior not represented by the critical conversation-store selection."
+    },
+    {
+      "file": "apps/backend/tests/integration/modules/texts/infrastructure/text-content-store.test.ts",
+      "reason": "Direct real-store proof for the split text-content mutation/folder lifecycle facade; critical text job-store is a different job seam."
+    },
+    {
+      "file": "apps/backend/tests/integration/modules/learning/sentence-library-safety.integration.test.ts",
+      "reason": "Library permissions and archive/delete safety after projection/helper extraction."
+    },
+    {
+      "file": "apps/backend/tests/integration/modules/learning/sentence-library-preparation.integration.test.ts",
+      "reason": "Prepared-batch reuse, stale handling, and preparation coordination absent from critical sentence worker/store files."
+    },
+    {
+      "file": "apps/backend/tests/integration/modules/authentication/infrastructure/redis-authentication-controls.test.ts",
+      "reason": "Direct disposable-Redis proof for the modified RedisRateLimiter key/threshold/TTL behavior; authentication browser flow is insufficient for cache atomicity."
+    },
+    {
+      "file": "apps/backend/tests/integration/database/administration-store.test.ts",
+      "reason": "Modified administration AI settings and accounting persistence need transaction/audit/readback coverage; admin browser tariff flow is not a store contract test."
+    },
+    {
+      "file": "apps/backend/tests/integration/modules/text-ai/text-ai-provider-circuit.test.ts",
+      "reason": "The final patch changes this suite's environment cleanup; run it itself to prove model-scoped circuit isolation and prevent cross-test flag leakage."
+    },
+    {
+      "file": "apps/backend/tests/integration/modules/speech/shared-speech-sources.test.ts",
+      "reason": "Direct source-resolver/shared-access HTTP and persistence proof for the refactored speech source seam omitted by the critical speech group."
+    }
+  ],
+  "backendCommandTemplate": "ALLOW_DISPOSABLE_DATABASE_TESTS=true ALLOW_DISPOSABLE_REDIS_TESTS=true AUTH_TEST_DATABASE_URL=<runner-owned-loopback-test-db> AUTH_TEST_DATABASE_CONFIRM=<exact-db-name> AUTH_TEST_REDIS_URL=<runner-owned-loopback-redis-db> AUTH_TEST_REDIS_CONFIRM=<exact-redis-url> pnpm --filter @languon/backend exec vitest run <supplemental files> --no-file-parallelism --hookTimeout=30000 --retry=0",
+  "deliberateOmissions": [
+    "No new tests: behavior-preserving refactor and existing integration/E2E suites already exercise the risk seams.",
+    "No ad hoc browser session: selected maintained Playwright journeys are the repeatable real-app evidence; source review cannot make a visual claim.",
+    "No standalone user-detail browser rerun: critical admin-session-refresh's selected test explicitly inspects a user.",
+    "No duplicate critical files in the supplemental backend batch unless a final critical failure points to a specific missing reproduction."
+  ],
+  "approval": "pending execution on the final patch; no tests, builds, services, browser sessions, or remote actions were run by this reviewer."
+}

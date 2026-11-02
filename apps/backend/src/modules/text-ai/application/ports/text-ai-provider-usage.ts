@@ -20,12 +20,17 @@ export function sumTextAiProviderUsage(
     previous: TextAiProviderUsage | undefined,
     next: TextAiProviderUsage,
 ): TextAiProviderUsage {
-    if (!previous) return next;
+    if (!previous) {
+        return next;
+    }
+
     const calls = [...(previous.calls ?? []), ...(next.calls ?? [])];
-    if (calls.length > 5)
+    if (calls.length > 5) {
         throw new Error(
             'Provider call observations exceed the admitted batch.',
         );
+    }
+
     return {
         inputTokens: previous.inputTokens + next.inputTokens,
         outputTokens: previous.outputTokens + next.outputTokens,

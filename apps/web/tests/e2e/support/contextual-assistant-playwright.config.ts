@@ -1,17 +1,20 @@
 import { defineConfig, devices } from '@playwright/test';
-if (process.env.CONTEXTUAL_ASSISTANT_RUNNER !== 'true')
+if (process.env.CONTEXTUAL_ASSISTANT_RUNNER !== 'true') {
     throw new Error(
         'Run contextual assistant Playwright through pnpm test:e2e:contextual-assistant so tracked Next type generation is restored on exit.',
     );
+}
+
 const env = Object.fromEntries(
     Object.entries(process.env).filter(
         (entry): entry is [string, string] => entry[1] !== undefined,
     ),
 );
+
 export default defineConfig({
     testDir: '..',
     testMatch:
-        /(?:contextual-assistant|knowledge-workspace|ai-accounting)\.journeys\.spec\.ts/,
+        /(?:contextual-assistant|knowledge-workspace|interactive-workbooks|ai-accounting)\.journeys\.spec\.ts/,
     workers: 1,
     fullyParallel: false,
     timeout: 120_000,

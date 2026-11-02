@@ -59,6 +59,7 @@ export function WorkspaceProposalReview({
     const copy = workspaceProposalLabels[locale];
     const formatCopy = knowledgeProposalLabels[locale];
     const disabled = pending || restoring;
+
     return (
         <section
             ref={reviewRef}

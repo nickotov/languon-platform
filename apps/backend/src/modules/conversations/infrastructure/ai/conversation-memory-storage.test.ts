@@ -24,6 +24,7 @@ function fixture() {
         createdAt: '2026-10-19T00:00:00.000Z',
         port: memory.port,
     });
+
     return { memory, storage };
 }
 
@@ -42,6 +43,7 @@ describe('conversation-bound Mastra memory storage', () => {
                 },
             ],
         };
+
         await storage.saveMessages({
             messages: [
                 toTutorModelMessage(
@@ -51,9 +53,11 @@ describe('conversation-bound Mastra memory storage', () => {
                 ),
             ],
         });
+
         expect(saving).toHaveBeenCalledExactlyOnceWith([
             { ...original, modelContent },
         ]);
+
         expect(memory.messages.get('admitted-user')?.content).toBe(
             'Explain casa.',
         );
@@ -66,6 +70,7 @@ describe('conversation-bound Mastra memory storage', () => {
             content: first.content,
             editorContext: { content: 'Older unsaved paragraph.' },
         });
+
         const second = {
             ...first,
             id: 'second-user',
@@ -75,15 +80,18 @@ describe('conversation-bound Mastra memory storage', () => {
                 editorContext: { content: 'Newer unsaved paragraph.' },
             }),
         };
+
         memory.messages.set(second.id, second);
         const result = await storage.listMessages({
             threadId: 'conversation-1',
             orderBy: { direction: 'ASC' },
             perPage: 10,
         });
+
         expect(JSON.stringify(result.messages[0]?.content)).toContain(
             'Older unsaved paragraph.',
         );
+
         expect(JSON.stringify(result.messages[1]?.content)).toContain(
             'Newer unsaved paragraph.',
         );
@@ -96,6 +104,7 @@ describe('conversation-bound Mastra memory storage', () => {
         await expect(
             storage.listMessages({ threadId: 'other-conversation' }),
         ).rejects.toThrow('not authorized');
+
         await expect(
             storage.saveMessages({
                 messages: [
@@ -107,6 +116,7 @@ describe('conversation-bound Mastra memory storage', () => {
                 ],
             }),
         ).rejects.toThrow('not authorized');
+
         expect(reading).not.toHaveBeenCalled();
         expect(saving).not.toHaveBeenCalled();
     });
@@ -129,6 +139,7 @@ describe('conversation-bound Mastra memory storage', () => {
                 ],
             }),
         ).rejects.toThrow('not authorized');
+
         expect(memory.messages.has('invented-user')).toBe(false);
     });
 });

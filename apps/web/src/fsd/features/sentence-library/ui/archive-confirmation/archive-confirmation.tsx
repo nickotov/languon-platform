@@ -6,6 +6,7 @@ import {
     InlineAlert,
 } from '@/fsd/shared/ui';
 import componentStyles from './archive-confirmation.module.css';
+import type { LibraryKey } from '../../lib/copy';
 import { useInterfaceText } from '../../hooks/use-interface-text';
 import { LibraryApiError } from '../../api/library-api';
 import type { LibraryController } from '../../hooks/use-sentence-library';
@@ -26,20 +27,29 @@ export function ArchiveConfirmation({
         c.error.code === 'capacity_unavailable';
     const rateLimited =
         c.error instanceof LibraryApiError && c.error.code === 'rate_limited';
-    if (!value && !c.error) return null;
+
+    if (!value && !c.error) {
+        return null;
+    }
+
     const operation = value?.operation ?? 'archive';
     const count = value?.count ?? 0;
     let title = L('failTitle');
-    if (tooMany) title = L('tooManyTitle');
-    else if (rateLimited) title = L('limitTitle');
-    else if (conflict) title = L('staleTitle');
-    else if (value)
+    if (tooMany) {
+        title = L('tooManyTitle');
+    } else if (rateLimited) {
+        title = L('limitTitle');
+    } else if (conflict) {
+        title = L('staleTitle');
+    } else if (value) {
         title = L(
             operation === 'archive'
                 ? 'confirmRemoveTitle'
                 : 'confirmRestoreTitle',
             { n: count },
         );
+    }
+
     const filters = value?.filters ?? c.filters;
     const mine = {
         active: L('mineAvailable'),
@@ -60,9 +70,28 @@ export function ArchiveConfirmation({
     const label = reversed
         ? direction(dictionary.targetLanguage, dictionary.sourceLanguage)
         : direction(dictionary.sourceLanguage, dictionary.targetLanguage);
+
     function confirm() {
         void c.confirm();
     }
+
+    let primaryAction;
+    if (value) {
+        primaryAction = (
+            <Button
+                disabled={count === 0}
+                loading={c.pending}
+                onClick={confirm}
+            >
+                {L(operation === 'archive' ? 'removeMine' : 'restore')}
+            </Button>
+        );
+    } else if (conflict) {
+        primaryAction = (
+            <Button onClick={c.closeConfirmation}>{L('reconfirm')}</Button>
+        );
+    }
+
     const footer = (
         <DialogActions>
             <Button
@@ -72,19 +101,37 @@ export function ArchiveConfirmation({
             >
                 {L('cancel')}
             </Button>
-            {value ? (
-                <Button
-                    disabled={count === 0}
-                    loading={c.pending}
-                    onClick={confirm}
-                >
-                    {L(operation === 'archive' ? 'removeMine' : 'restore')}
-                </Button>
-            ) : conflict ? (
-                <Button onClick={c.closeConfirmation}>{L('reconfirm')}</Button>
-            ) : null}
+            {primaryAction}
         </DialogActions>
     );
+
+    function renderErrorNotice() {
+        if (!c.error) {
+            return null;
+        }
+
+        let tone: 'warning' | 'info' | 'error' = 'error';
+        let bodyKey: LibraryKey = 'failBody';
+        if (conflict) {
+            tone = 'warning';
+            bodyKey = 'staleBody';
+        } else if (tooMany) {
+            tone = 'info';
+            bodyKey = 'tooManyBody';
+        } else if (rateLimited) {
+            tone = 'info';
+            bodyKey = 'limitBody';
+        }
+
+        return (
+            <InlineAlert tone={tone} title={title}>
+                {L(bodyKey)}
+            </InlineAlert>
+        );
+    }
+
+    const errorNotice = renderErrorNotice();
+
     return (
         <Dialog
             open
@@ -134,28 +181,7 @@ export function ArchiveConfirmation({
                     </p>
                 </div>
             ) : null}
-            {c.error ? (
-                <InlineAlert
-                    tone={
-                        conflict
-                            ? 'warning'
-                            : tooMany || rateLimited
-                              ? 'info'
-                              : 'error'
-                    }
-                    title={title}
-                >
-                    {L(
-                        conflict
-                            ? 'staleBody'
-                            : tooMany
-                              ? 'tooManyBody'
-                              : rateLimited
-                                ? 'limitBody'
-                                : 'failBody',
-                    )}
-                </InlineAlert>
-            ) : null}
+            {errorNotice}
         </Dialog>
     );
 }

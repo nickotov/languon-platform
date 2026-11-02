@@ -76,7 +76,10 @@ export async function reserveIdempotency(
         })
         .returning({ id: dictionaryIdempotencyKeysTable.id });
 
-    if (inserted) return null;
+    if (inserted) {
+        return null;
+    }
+
     const [existing] = await tx
         .select()
         .from(dictionaryIdempotencyKeysTable)
@@ -98,8 +101,9 @@ export async function reserveIdempotency(
         existing.requestFingerprint !== input.fingerprint ||
         existing.state !== 'completed' ||
         !existing.resultDictionaryId
-    )
+    ) {
         throw new DictionaryIdempotencyConflictError();
+    }
 
     return existing.resultDictionaryId;
 }
@@ -190,7 +194,10 @@ export async function reserveBulkIdempotency(
         })
         .returning({ id: dictionaryIdempotencyKeysTable.id });
 
-    if (inserted) return null;
+    if (inserted) {
+        return null;
+    }
+
     const [existing] = await tx
         .select()
         .from(dictionaryIdempotencyKeysTable)
@@ -212,13 +219,17 @@ export async function reserveBulkIdempotency(
         existing.requestFingerprint !== input.fingerprint ||
         existing.state !== 'completed' ||
         !existing.resultPayload
-    )
+    ) {
         throw new DictionaryIdempotencyConflictError();
+    }
+
     const parsed = DictionaryDeterministicImportResponseSchema.safeParse(
         existing.resultPayload,
     );
 
-    if (!parsed.success) throw new DictionaryIdempotencyConflictError();
+    if (!parsed.success) {
+        throw new DictionaryIdempotencyConflictError();
+    }
 
     return parsed.data;
 }
@@ -253,5 +264,7 @@ export async function completeBulkIdempotency(
         )
         .returning({ id: dictionaryIdempotencyKeysTable.id });
 
-    if (updated.length !== 1) throw new DictionaryIdempotencyConflictError();
+    if (updated.length !== 1) {
+        throw new DictionaryIdempotencyConflictError();
+    }
 }

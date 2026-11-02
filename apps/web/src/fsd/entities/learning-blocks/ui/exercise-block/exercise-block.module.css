@@ -1,0 +1,233 @@
+.root {
+    padding-block: var(--space-4);
+}
+
+.summary {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: var(--space-8);
+    border: 0;
+    border-radius: var(--radius-8);
+    background: transparent;
+    padding: 0 var(--space-4);
+    min-height: var(--size-36);
+    text-align: start;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.summary:hover {
+    background: var(--background-subtle);
+}
+
+.summary:focus-visible {
+    outline: var(--size-2) solid var(--border-focus);
+}
+
+.summaryQuestion,
+.summaryFolded {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--size-14);
+}
+
+.summaryFolded {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.index,
+.status {
+    color: var(--text-tertiary);
+    font-size: var(--size-12);
+    flex-shrink: 0;
+}
+
+.form {
+    display: grid;
+    gap: var(--space-8);
+    padding: var(--space-4) var(--space-4) var(--space-8) var(--space-32);
+}
+
+.question {
+    font-size: var(--size-16);
+    line-height: 1.75;
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.answer {
+    display: grid;
+}
+
+.field {
+    width: 100%;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-8);
+    background: var(--background-surface);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: var(--size-14);
+    padding: var(--space-8) var(--space-12);
+    min-height: var(--size-32);
+}
+
+.field:focus-visible {
+    outline: var(--size-2) solid var(--border-focus);
+}
+
+.choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.choice {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-8);
+    padding: var(--space-6) var(--space-12);
+    font-size: var(--size-14);
+    min-height: var(--size-32);
+    background: var(--background-surface);
+}
+
+.choice:where([data-selected]) {
+    border-color: var(--primary-default);
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+    font-weight: 500;
+}
+
+.choice:focus-within {
+    outline: var(--size-2) solid var(--border-focus);
+}
+
+.choice input,
+.srOnly {
+    position: absolute;
+    width: var(--size-1);
+    height: var(--size-1);
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.gaps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-6);
+}
+
+.gaps input {
+    width: var(--size-160);
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.results {
+    display: grid;
+    gap: var(--space-8);
+}
+
+.feedback,
+.referencePanel {
+    border-radius: var(--radius-8);
+    padding: var(--space-8) var(--space-12);
+    background: var(--background-subtle);
+    font-size: var(--size-14);
+    line-height: 1.7;
+}
+
+.feedback:where([data-correct='true']) {
+    background: var(--success-subtle);
+}
+
+.feedback:where([data-correct='false']) {
+    background: var(--warning-subtle);
+}
+
+.feedback p,
+.referencePanel p,
+.hint p {
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.feedbackTitle {
+    font-size: var(--size-12);
+    font-weight: 600;
+}
+
+.hint {
+    display: grid;
+    gap: var(--space-4);
+    border-inline-start: var(--size-2) solid var(--warning-default);
+    padding-inline-start: var(--space-12);
+    font-size: var(--size-14);
+}
+
+.hint audio {
+    max-width: 100%;
+}
+
+.secondary {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.error {
+    color: var(--danger-default);
+    margin: 0;
+}
+
+.preview {
+    display: grid;
+    gap: var(--space-4);
+    font-size: var(--size-14);
+}
+
+.reference {
+    margin: 0;
+    color: var(--success-default);
+}
+
+.chevron,
+.chevronOpen {
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+    transition: transform 150ms;
+}
+
+.chevronOpen {
+    transform: rotate(180deg);
+}
+
+@media (pointer: coarse) {
+    .summary,
+    .field,
+    .choice {
+        min-height: var(--size-44);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chevron,
+    .chevronOpen {
+        transition: none;
+    }
+}

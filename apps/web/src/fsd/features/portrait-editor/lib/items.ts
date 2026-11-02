@@ -9,6 +9,7 @@ export function emptyPortraitItems(): PortraitItems {
         hobbies: [],
     };
 }
+
 export function hasMeaningfulPortraitItems(items: PortraitItems): boolean {
     return (
         items.languages.length > 0 ||
@@ -29,6 +30,7 @@ export function hasMeaningfulPortraitItems(items: PortraitItems): boolean {
         )
     );
 }
+
 export function languageLabel(code: string, locale: Locale) {
     try {
         return (
@@ -39,6 +41,7 @@ export function languageLabel(code: string, locale: Locale) {
         return code;
     }
 }
+
 export function toggleItem(values: string[], value: string) {
     return values.includes(value)
         ? values.filter((item) => item !== value)
@@ -51,16 +54,21 @@ export function resolvePortraitLanguage(
     locale: Locale,
 ): string | undefined {
     const value = input.trim();
-    if (!value) return undefined;
+    if (!value) {
+        return undefined;
+    }
+
     if (
         /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/.test(value) &&
         value.length <= 35
-    )
+    ) {
         return value.toLowerCase();
+    }
+
     const normalized = value.toLocaleLowerCase(locale);
     const names = new Intl.DisplayNames([locale], { type: 'language' });
     const english = new Intl.DisplayNames(['en'], { type: 'language' });
-    for (let first = 97; first <= 122; first += 1)
+    for (let first = 97; first <= 122; first += 1) {
         for (let second = 97; second <= 122; second += 1) {
             const code = String.fromCharCode(first, second);
             const localized = names.of(code);
@@ -68,8 +76,11 @@ export function resolvePortraitLanguage(
             if (
                 localized?.toLocaleLowerCase(locale) === normalized ||
                 fallback?.toLowerCase() === normalized
-            )
+            ) {
                 return code;
+            }
         }
+    }
+
     return undefined;
 }

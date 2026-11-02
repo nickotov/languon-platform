@@ -25,6 +25,7 @@ function pcmWav(samples = 24000, channels = 1): Buffer {
     bytes.writeUInt16LE(16, 34);
     bytes.write('data', 36);
     bytes.writeUInt32LE(bytes.length - 44, 40);
+
     return bytes;
 }
 
@@ -40,6 +41,7 @@ function serve(
             Object.assign(body, { statusCode, headers });
             callback(body);
         };
+
         return req;
     });
 }
@@ -49,17 +51,20 @@ describe('bounded HTTPS audio transport', () => {
         vi.resetAllMocks();
         mocks.lookup.mockResolvedValue([{ address: '8.8.8.8', family: 4 }]);
     });
+
     it('pins the validated DNS address at connection time', async () => {
         mocks.lookup.mockResolvedValue([
             { address: '8.8.8.8', family: 4 },
             { address: '1.1.1.1', family: 4 },
         ]);
+
         const frame = Buffer.alloc(417);
         frame.set([255, 251, 144, 0]);
         serve(200, [frame]);
         const result = await downloadAudioResult('https://cdn.example.com/a', [
             'cdn.example.com',
         ]);
+
         expect(result.bytes).toEqual(frame);
         const pinnedLookup = mocks.request.mock.calls[0]![1].lookup;
         const callback = vi.fn();
@@ -71,6 +76,7 @@ describe('bounded HTTPS audio transport', () => {
             { address: '8.8.8.8', family: 4 },
         ]);
     });
+
     it.each(['audio/wav', 'audio/x-wav', 'application/octet-stream'])(
         'validates and preserves PCM WAV from %s transport',
         async (contentType) => {
@@ -78,10 +84,12 @@ describe('bounded HTTPS audio transport', () => {
             serve(200, [bytes.subarray(0, 20), bytes.subarray(20)], {
                 'content-type': contentType,
             });
+
             const result = await downloadAudioResult(
                 'https://cdn.example.com/a',
                 ['cdn.example.com'],
             );
+
             expect(result).toEqual({
                 bytes,
                 mimeType: 'audio/wav',
@@ -90,28 +98,34 @@ describe('bounded HTTPS audio transport', () => {
             });
         },
     );
+
     it('rejects a non-audio response despite an audio MIME', async () => {
         serve(200, [Buffer.from('<html>bad upstream</html>')], {
             'content-type': 'audio/wav',
         });
+
         await expect(
             downloadAudioResult('https://cdn.example.com/a', [
                 'cdn.example.com',
             ]),
         ).rejects.toThrow('Invalid MP3');
     });
+
     it('rejects a mixed public/private DNS answer before connecting', async () => {
         mocks.lookup.mockResolvedValue([
             { address: '8.8.8.8', family: 4 },
             { address: '127.0.0.1', family: 4 },
         ]);
+
         await expect(
             downloadAudioResult('https://cdn.example.com/a', [
                 'cdn.example.com',
             ]),
         ).rejects.toThrow('address');
+
         expect(mocks.request).not.toHaveBeenCalled();
     });
+
     it('rejects redirects without following Location', async () => {
         serve(302, [], { location: 'http://169.254.169.254/' });
         await expect(
@@ -119,8 +133,10 @@ describe('bounded HTTPS audio transport', () => {
                 'cdn.example.com',
             ]),
         ).rejects.toThrow('response');
+
         expect(mocks.request).toHaveBeenCalledTimes(1);
     });
+
     it('bounds a streaming response even without Content-Length', async () => {
         serve(200, [Buffer.alloc(5 * 1024 * 1024), Buffer.alloc(1)]);
         await expect(
@@ -129,11 +145,13 @@ describe('bounded HTTPS audio transport', () => {
             ]),
         ).rejects.toThrow('limit');
     });
+
     it('rejects oversized metadata before consuming body', async () => {
         serve(200, [], {
             'content-type': 'audio/mpeg',
             'content-length': String(6 * 1024 * 1024),
         });
+
         await expect(
             downloadAudioResult('https://cdn.example.com/a', [
                 'cdn.example.com',
@@ -147,6 +165,7 @@ describe('complete PCM WAV validation', () => {
         expect(validateWav(pcmWav())).toBe(1000);
         expect(validateWav(pcmWav(12000, 2))).toBe(500);
     });
+
     it.each([
         ['RIFF size', (b: Buffer) => b.writeUInt32LE(b.length, 4)],
         ['container type', (b: Buffer) => b.write('AVI ', 8)],
@@ -166,6 +185,7 @@ describe('complete PCM WAV validation', () => {
         mutate(bytes);
         expect(() => validateWav(bytes)).toThrow();
     });
+
     it('rejects truncation and appended data even with a repaired RIFF size', () => {
         const truncated = pcmWav().subarray(0, 50);
         truncated.writeUInt32LE(truncated.length - 8, 4);
@@ -174,6 +194,7 @@ describe('complete PCM WAV validation', () => {
         appended.writeUInt32LE(appended.length - 8, 4);
         expect(() => validateWav(appended)).toThrow();
     });
+
     it('rejects duplicate data and format chunks', () => {
         for (const extra of [
             pcmWav().subarray(12, 36),
@@ -184,6 +205,7 @@ describe('complete PCM WAV validation', () => {
             expect(() => validateWav(bytes)).toThrow();
         }
     });
+
     it('accepts bounded padded ancillary chunks and rejects missing padding', () => {
         const junk = Buffer.alloc(10);
         junk.write('JUNK');
@@ -194,6 +216,7 @@ describe('complete PCM WAV validation', () => {
             junk,
             wav.subarray(36),
         ]);
+
         bytes.writeUInt32LE(bytes.length - 8, 4);
         expect(validateWav(bytes)).toBe(1000);
         const unpadded = Buffer.concat([
@@ -201,9 +224,11 @@ describe('complete PCM WAV validation', () => {
             junk.subarray(0, 9),
             wav.subarray(36),
         ]);
+
         unpadded.writeUInt32LE(unpadded.length - 8, 4);
         expect(() => validateWav(unpadded)).toThrow();
     });
+
     it('requires a format before the audio samples', () => {
         const wav = pcmWav();
         const bytes = Buffer.concat([
@@ -211,8 +236,10 @@ describe('complete PCM WAV validation', () => {
             wav.subarray(36),
             wav.subarray(12, 36),
         ]);
+
         expect(() => validateWav(bytes)).toThrow('data');
     });
+
     it('rejects excessive duration even within the byte limit', () => {
         const bytes = pcmWav(24000 * 41);
         bytes.writeUInt32LE(8000, 24);

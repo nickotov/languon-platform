@@ -43,14 +43,17 @@ export function resolveConversationPortrait(
         !policy.enabled ||
         preferences.portrait?.enabled === false ||
         !parsed.success
-    )
+    ) {
         return { preferences, origins };
+    }
+
     const items = parsed.data.items;
     const inherited = new Set(preferences.portrait?.inheritedFields ?? []);
     if (inherited.has('replyLanguage') && items.explanationLanguages[0]) {
         preferences.replyLanguage = items.explanationLanguages[0];
         origins.replyLanguage = 'portrait';
     }
+
     if (inherited.has('tone') && items.tone) {
         preferences.tone =
             items.tone === 'friendly'
@@ -58,8 +61,10 @@ export function resolveConversationPortrait(
                 : items.tone === 'formal'
                   ? 'academic'
                   : 'neutral';
+
         origins.tone = 'portrait';
     }
+
     if (inherited.has('explanationLevel') && (items.wording || items.detail)) {
         preferences.explanationLevel =
             items.wording === 'simple'
@@ -67,14 +72,17 @@ export function resolveConversationPortrait(
                 : items.detail === 'detailed'
                   ? 'detailed'
                   : 'auto';
+
         origins.explanationLevel = 'portrait';
     }
+
     for (const field of ['detail', 'wording', 'approach'] as const) {
         if (inherited.has(field) && items[field]) {
             Object.assign(preferences, { [field]: items[field] });
             origins[field] = 'portrait';
         }
     }
+
     // Summary is derived presentation, not additional model authority. Only structured confirmed data is supplied.
     return { preferences, origins, context: items };
 }

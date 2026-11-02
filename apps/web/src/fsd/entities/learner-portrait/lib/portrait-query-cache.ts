@@ -25,7 +25,10 @@ export function setPortraitStateCache(
     client.setQueryData<PortraitState>(
         portraitQueryKey(ownerId),
         (previous) => {
-            if (previous && previous.version > state.version) return previous;
+            if (previous && previous.version > state.version) {
+                return previous;
+            }
+
             return state;
         },
     );

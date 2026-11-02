@@ -1,0 +1,18 @@
+.play {
+    width: var(--size-28);
+    height: var(--size-28);
+    min-width: var(--size-28);
+    min-height: var(--size-28);
+    border-radius: var(--radius-6);
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+}
+
+@media (pointer: coarse) {
+    .play {
+        width: var(--size-44);
+        height: var(--size-44);
+        min-width: var(--size-44);
+        min-height: var(--size-44);
+    }
+}

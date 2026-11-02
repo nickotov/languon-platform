@@ -54,6 +54,7 @@ export function ContextPicker({
     useEffect(() => {
         input.current?.focus();
     }, []);
+
     const results = useQuery({
         queryKey: ['conversation-context', actorId, conversationId, query],
         queryFn: ({ signal }) =>
@@ -69,34 +70,46 @@ export function ContextPicker({
         retry: false,
         gcTime: 0,
     });
+
     function search(event: ChangeEvent<HTMLInputElement>) {
         setQuery(event.target.value);
     }
+
     function changeCopy(event: ChangeEvent<HTMLTextAreaElement>) {
         setCopied(event.target.value);
     }
+
     function togglePaste() {
         setPasteOpen(!pasteOpen);
     }
+
     function attachCopy() {
-        if (cannotAttach) return;
+        if (cannotAttach) {
+            return;
+        }
+
         onAttach({
             id: crypto.randomUUID(),
             label: copy.copied,
             content: copied,
         });
+
         setCopied('');
         setPasteOpen(false);
     }
+
     function key(event: KeyboardEvent<HTMLElement>) {
         if (event.key === 'Escape') {
             event.stopPropagation();
             event.preventDefault();
             onClose?.();
         }
-        if (event.key === 'Enter' && event.target === input.current)
+
+        if (event.key === 'Enter' && event.target === input.current) {
             event.preventDefault();
+        }
     }
+
     return (
         <section
             className={styles.picker}
@@ -195,6 +208,7 @@ export function ContextPicker({
         </section>
     );
 }
+
 function ContextResult({
     material,
     onAttach,
@@ -216,9 +230,13 @@ function ContextResult({
         material.kind === 'dictionary-card'
             ? material.card.translation
             : material.content;
+
     function attach() {
-        if (!disabled) onAttach({ ...material, id: crypto.randomUUID() });
+        if (!disabled) {
+            onAttach({ ...material, id: crypto.randomUUID() });
+        }
     }
+
     return (
         <button
             type='button'

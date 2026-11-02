@@ -41,14 +41,18 @@ export async function deleteDictionaryContent(
             sourceIds: dictionaryIds,
         };
 
-        if (await conversationDeletionBusy(tx, scope, input.context.now))
+        if (await conversationDeletionBusy(tx, scope, input.context.now)) {
             throw new DictionaryDeletionBusyError();
+        }
+
         await eraseConversationContent(tx, scope, input.context.now);
     }
 
     const sentenceScope = cardIds ? { entryIds: cardIds } : { dictionaryIds };
-    if (await sentenceDeletionBusy(tx, sentenceScope))
+    if (await sentenceDeletionBusy(tx, sentenceScope)) {
         throw new DictionaryDeletionBusyError();
+    }
+
     await eraseSentenceDerivedContent(tx, {
         ...sentenceScope,
         now: input.context.now,
@@ -81,8 +85,11 @@ export async function deleteDictionaryContent(
                 ]),
             );
 
-        for (const row of [...revisionJobs, ...proposalJobs])
-            if (row.id) relatedJobIds.add(row.id);
+        for (const row of [...revisionJobs, ...proposalJobs]) {
+            if (row.id) {
+                relatedJobIds.add(row.id);
+            }
+        }
     }
 
     const jobs =
@@ -105,8 +112,10 @@ export async function deleteDictionaryContent(
                 job.executionState === 'running' ||
                 job.providerReservationState === 'active',
         )
-    )
+    ) {
         throw new DictionaryDeletionBusyError();
+    }
+
     const jobIds = directJobs.map((job) => job.id);
     const contentJobIds = [...relatedJobIds];
     if (contentJobIds.length > 0) {
@@ -123,8 +132,9 @@ export async function deleteDictionaryContent(
                     upload.dataVersionsDeletedAt === null ||
                     upload.quotaReleasedAt === null,
             )
-        )
+        ) {
             throw new DictionaryDeletionBusyError();
+        }
     }
 
     const settledJobs = directJobs.filter(
@@ -136,7 +146,7 @@ export async function deleteDictionaryContent(
             job.providerActualOutputTokens !== null,
     );
 
-    if (settledJobs.length > 0)
+    if (settledJobs.length > 0) {
         await tx
             .insert(dictionaryGenerationProviderUsageArchiveTable)
             .values(
@@ -161,6 +171,7 @@ export async function deleteDictionaryContent(
                 })),
             )
             .onConflictDoNothing();
+    }
 
     if (contentJobIds.length > 0) {
         const uploadIds = await tx
@@ -194,25 +205,31 @@ export async function deleteDictionaryContent(
     }
 
     const proposalConditions: SQL[] = [];
-    if (contentJobIds.length > 0)
+    if (contentJobIds.length > 0) {
         proposalConditions.push(
             inArray(dictionaryGenerationProposalsTable.jobId, contentJobIds),
         );
-    if (cardIds && cardIds.length > 0)
+    }
+
+    if (cardIds && cardIds.length > 0) {
         proposalConditions.push(
             inArray(dictionaryGenerationProposalsTable.acceptedCardId, [
                 ...cardIds,
             ]),
         );
-    if (proposalConditions.length > 0)
+    }
+
+    if (proposalConditions.length > 0) {
         await tx
             .delete(dictionaryGenerationProposalsTable)
             .where(or(...proposalConditions));
-    if (cardIds)
+    }
+
+    if (cardIds) {
         await tx
             .delete(dictionaryCardRevisionsTable)
             .where(inArray(dictionaryCardRevisionsTable.cardId, [...cardIds]));
-    else
+    } else {
         await tx
             .delete(dictionaryCardRevisionsTable)
             .where(
@@ -220,15 +237,19 @@ export async function deleteDictionaryContent(
                     ...dictionaryIds,
                 ]),
             );
-    if (jobIds.length > 0)
+    }
+
+    if (jobIds.length > 0) {
         await tx
             .delete(dictionaryGenerationJobsTable)
             .where(inArray(dictionaryGenerationJobsTable.id, jobIds));
+    }
+
     const retainedRelatedJobIds = [...relatedJobIds].filter(
         (id) => !jobIds.includes(id),
     );
 
-    if (retainedRelatedJobIds.length > 0)
+    if (retainedRelatedJobIds.length > 0) {
         await tx
             .update(dictionaryGenerationJobsTable)
             .set({
@@ -241,4 +262,5 @@ export async function deleteDictionaryContent(
                     retainedRelatedJobIds,
                 ),
             );
+    }
 }

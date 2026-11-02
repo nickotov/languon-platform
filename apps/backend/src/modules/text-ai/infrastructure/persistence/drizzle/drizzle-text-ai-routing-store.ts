@@ -129,17 +129,21 @@ export class DrizzleTextAiRoutingStore implements TextAiRoutingStore {
 
             await assertRoutingOwner(tx, actorId);
             const current = await currentTextAiRouting(tx);
-            if (!current || current.version !== input.expectedVersion)
+            if (!current || current.version !== input.expectedVersion) {
                 throw new TextAiRoutingConflictError(
                     'Routing revision changed.',
                 );
+            }
+
             if (
                 !textAiModelCatalog.some(
                     (model) =>
                         `${model.providerId}/${model.id}` === input.routeId,
                 )
-            )
+            ) {
                 throw new TextAiRoutingInvalidError('Unknown route.');
+            }
+
             const [saved] = await tx
                 .insert(revisions)
                 .values({
@@ -158,7 +162,10 @@ export class DrizzleTextAiRoutingStore implements TextAiRoutingStore {
                 })
                 .returning();
 
-            if (!saved) throw new Error('Routing disable failed.');
+            if (!saved) {
+                throw new Error('Routing disable failed.');
+            }
+
             await insertLegacyBridge(tx, saved, actorId, at);
             // This revision authorizes no new model identity; admissions still
             // pin their actual executable snapshot to a legacy FK bridge.
@@ -218,16 +225,20 @@ export class DrizzleTextAiRoutingStore implements TextAiRoutingStore {
 
         await assertRoutingOwner(tx, actorId);
         const current = await currentTextAiRouting(tx);
-        if ((current?.version ?? 0) !== input.expectedVersion)
+        if ((current?.version ?? 0) !== input.expectedVersion) {
             throw new TextAiRoutingConflictError('Routing revision changed.');
+        }
+
         if (
             input.configuration.enabledRouteIds.some((routeId) =>
                 routeId.startsWith('evolink/'),
             )
-        )
+        ) {
             throw new TextAiRoutingInvalidError(
                 'EvoLink processing controls require review before activation.',
             );
+        }
+
         validateTextAiRouting(
             input.configuration,
             textAiModelCatalog.map((model) => ({
@@ -243,10 +254,12 @@ export class DrizzleTextAiRoutingStore implements TextAiRoutingStore {
                 tx,
             ).current(textAiCapabilityForFlow(flowId));
 
-            if (policy.funding === 'customer' && !tariff)
+            if (policy.funding === 'customer' && !tariff) {
                 throw new TextAiRoutingInvalidError(
                     `A reviewed flow tariff is required for ${flowId}.`,
                 );
+            }
+
             const nextRoutes = effectiveTextAiRouteIds(
                 input.configuration,
                 flowId,
@@ -261,12 +274,13 @@ export class DrizzleTextAiRoutingStore implements TextAiRoutingStore {
                 if (
                     routePolicyChanged ||
                     !current?.configuration.enabledRouteIds.includes(routeId)
-                )
+                ) {
                     await this.requireReady(tx, {
                         routeId,
                         flowId,
                         now: at,
                     });
+                }
             }
         }
 
@@ -282,7 +296,10 @@ export class DrizzleTextAiRoutingStore implements TextAiRoutingStore {
             })
             .returning();
 
-        if (!saved) throw new Error('Routing publication failed.');
+        if (!saved) {
+            throw new Error('Routing publication failed.');
+        }
+
         await insertLegacyBridge(tx, saved, actorId, at);
         await tx
             .insert(state)
@@ -332,8 +349,10 @@ async function insertLegacyBridge(
             revision.configuration.default.primaryRouteId,
     );
 
-    if (!defaultRoute)
+    if (!defaultRoute) {
         throw new TextAiRoutingInvalidError('Default route is unavailable.');
+    }
+
     await tx.execute(
         sql`lock table dictionary_ai_configuration_revisions in share row exclusive mode`,
     );
@@ -382,5 +401,7 @@ async function assertRoutingOwner(
         )
         .for('share');
 
-    if (membership?.role !== 'owner') throw new AdminAccessDeniedError();
+    if (membership?.role !== 'owner') {
+        throw new AdminAccessDeniedError();
+    }
 }

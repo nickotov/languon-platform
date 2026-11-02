@@ -26,6 +26,7 @@ const en = {
     fromSource: 'From this source',
     limit: 'Limit of 10 attachments reached. Remove one to add another.',
 };
+
 type Copy = typeof en;
 const ru: Copy = {
     autoReply: 'Следует языку вопроса, а не цитаты',
@@ -109,6 +110,7 @@ const fr: Copy = {
     fromSource: 'De cette source',
     limit: 'Limite de 10 pièces jointes. Retirez-en une pour en ajouter.',
 };
+
 export function composerCopy(locale: Locale): Copy {
     return { en, ru, es, fr }[locale];
 }

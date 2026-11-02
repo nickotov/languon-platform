@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { createInteractiveKnowledgeBodySchema } from './knowledge-interactive';
+import type { LearningBlock } from './learning-blocks';
 
 const validAssistantText = (value: string) =>
     !/[\uD800-\uDFFF]/u.test(value) && !value.includes('\u0000');
@@ -34,6 +36,7 @@ export const KnowledgeLinkSchema = z
     .refine((value) => {
         try {
             const url = new URL(value);
+
             return (
                 /^https?:\/\//iu.test(value) &&
                 !Array.from(value).some(
@@ -71,9 +74,11 @@ export const KnowledgeMarkSchema = z.discriminatedUnion('type', [
 export type KnowledgeMark = z.infer<typeof KnowledgeMarkSchema>;
 export interface KnowledgeNode {
     type:
+        | 'learningBlock'
         | 'doc'
         | 'paragraph'
         | 'heading'
+        | 'horizontalRule'
         | 'bulletList'
         | 'orderedList'
         | 'listItem'
@@ -87,7 +92,8 @@ export interface KnowledgeNode {
     text?: string | undefined;
     attrs?:
         | {
-              level?: 2 | 3 | undefined;
+              block?: LearningBlock | undefined;
+              level?: 1 | 2 | 3 | undefined;
               start?: number | undefined;
               colspan?: 1 | undefined;
               rowspan?: 1 | undefined;
@@ -104,6 +110,7 @@ const RawKnowledgeNodeSchema: z.ZodType<KnowledgeNode> = z.lazy(() =>
                 'doc',
                 'paragraph',
                 'heading',
+                'horizontalRule',
                 'bulletList',
                 'orderedList',
                 'listItem',
@@ -128,7 +135,9 @@ const RawKnowledgeNodeSchema: z.ZodType<KnowledgeNode> = z.lazy(() =>
                 .optional(),
             attrs: z
                 .object({
-                    level: z.union([z.literal(2), z.literal(3)]).optional(),
+                    level: z
+                        .union([z.literal(1), z.literal(2), z.literal(3)])
+                        .optional(),
                     start: z.number().int().min(1).max(10_000).optional(),
                     colspan: z.literal(1).optional(),
                     rowspan: z.literal(1).optional(),
@@ -158,28 +167,41 @@ const BoundedDocumentSchema = z
                     code: 'custom',
                     message: 'The document exceeds its node or depth limit.',
                 });
+
                 return;
             }
-            if (!current.value || typeof current.value !== 'object') continue;
+
+            if (!current.value || typeof current.value !== 'object') {
+                continue;
+            }
+
             const node = current.value as Record<string, unknown>;
-            if (typeof node.text === 'string') textLength += node.text.length;
+            if (typeof node.text === 'string') {
+                textLength += node.text.length;
+            }
+
             if (textLength > 80_000) {
                 ctx.addIssue({
                     code: 'custom',
                     message: 'The document exceeds 80000 characters.',
                 });
+
                 return;
             }
+
             if (Array.isArray(node.content)) {
                 if (node.content.length > 5_000) {
                     ctx.addIssue({
                         code: 'custom',
                         message: 'The document exceeds its node limit.',
                     });
+
                     return;
                 }
-                for (const child of node.content)
+
+                for (const child of node.content) {
                     pending.push({ value: child, depth: current.depth + 1 });
+                }
             }
         }
     })
@@ -187,18 +209,25 @@ const BoundedDocumentSchema = z
     .superRefine((document, ctx) => {
         const issue = (message: string) =>
             ctx.addIssue({ code: 'custom', message });
-        if (document.type !== 'doc') issue('The document root must be doc.');
+
+        if (document.type !== 'doc') {
+            issue('The document root must be doc.');
+        }
+
         const blocks = new Set([
             'paragraph',
             'heading',
+            'horizontalRule',
             'bulletList',
             'orderedList',
             'blockquote',
             'table',
         ]);
         const visit = (node: KnowledgeNode, inTable = false) => {
-            if (node.type === 'table' && inTable)
+            if (node.type === 'table' && inTable) {
                 issue('Nested tables are not supported.');
+            }
+
             const children = node.content ?? [];
             const attrs = Object.keys(node.attrs ?? {});
             const allowedAttrs =
@@ -209,39 +238,69 @@ const BoundedDocumentSchema = z
                       : ['tableCell', 'tableHeader'].includes(node.type)
                         ? ['colspan', 'rowspan', 'colwidth']
                         : [];
-            if (attrs.some((key) => !allowedAttrs.includes(key)))
+
+            if (attrs.some((key) => !allowedAttrs.includes(key))) {
                 issue('Attributes do not match the node type.');
-            if (node.type !== 'text' && node.text !== undefined)
+            }
+
+            if (node.type !== 'text' && node.text !== undefined) {
                 issue('Only text nodes contain text.');
-            if (node.type !== 'text' && node.marks?.length)
+            }
+
+            if (node.type !== 'text' && node.marks?.length) {
                 issue('Only text nodes contain marks.');
+            }
+
             if (
                 node.marks?.some((mark) => mark.type === 'code') &&
                 node.marks.length !== 1
-            )
+            ) {
                 issue('Code marks cannot be combined with other marks.');
+            }
+
             if (
                 node.marks &&
                 new Set(node.marks.map((mark) => mark.type)).size !==
                     node.marks.length
-            )
+            ) {
                 issue('Marks must not be repeated.');
+            }
+
             if (
                 node.type === 'text' &&
                 (!node.text || node.content !== undefined)
-            )
+            ) {
                 issue('Text nodes require text and no child nodes.');
-            if (node.type === 'hardBreak' && node.content !== undefined)
+            }
+
+            if (node.type === 'hardBreak' && node.content !== undefined) {
                 issue('Line breaks cannot contain child nodes.');
-            if (node.type === 'heading' && node.attrs?.level === undefined)
-                issue('A heading requires level 2 or 3.');
+            }
+
+            if (
+                node.type === 'horizontalRule' &&
+                (node.content !== undefined ||
+                    node.attrs !== undefined ||
+                    node.marks !== undefined)
+            ) {
+                issue(
+                    'Horizontal rules are leaf blocks without attributes or marks.',
+                );
+            }
+
+            if (node.type === 'heading' && node.attrs?.level === undefined) {
+                issue('A heading requires level 1, 2 or 3.');
+            }
+
             if (
                 ['paragraph', 'heading'].includes(node.type) &&
                 children.some(
                     (child) => !['text', 'hardBreak'].includes(child.type),
                 )
-            )
+            ) {
                 issue('Paragraphs and headings contain only inline text.');
+            }
+
             if (
                 [
                     'doc',
@@ -254,27 +313,35 @@ const BoundedDocumentSchema = z
                 if (
                     !children.length ||
                     children.some((child) => !blocks.has(child.type))
-                )
+                ) {
                     issue('A block container requires block children.');
+                }
+
                 if (
                     ['listItem', 'tableCell', 'tableHeader'].includes(
                         node.type,
                     ) &&
                     children[0]?.type !== 'paragraph'
-                )
+                ) {
                     issue('Lists and cells start with a paragraph.');
+                }
+
                 if (
                     ['tableCell', 'tableHeader'].includes(node.type) &&
                     children.some((child) => child.type === 'table')
-                )
+                ) {
                     issue('Nested tables are not supported.');
+                }
             }
+
             if (
                 ['bulletList', 'orderedList'].includes(node.type) &&
                 (!children.length ||
                     children.some((child) => child.type !== 'listItem'))
-            )
+            ) {
                 issue('Lists require list items.');
+            }
+
             if (node.type === 'table') {
                 const width = children[0]?.content?.length ?? 0;
                 if (
@@ -287,11 +354,13 @@ const BoundedDocumentSchema = z
                             row.type !== 'tableRow' ||
                             row.content?.length !== width,
                     )
-                )
+                ) {
                     issue(
                         'Tables must be rectangular and at most 20 rows by 8 columns.',
                     );
+                }
             }
+
             if (
                 node.type === 'tableRow' &&
                 (!children.length ||
@@ -299,17 +368,28 @@ const BoundedDocumentSchema = z
                         (child) =>
                             !['tableCell', 'tableHeader'].includes(child.type),
                     ))
-            )
+            ) {
                 issue('Table rows require cells.');
+            }
+
             children.forEach((child) =>
                 visit(child, inTable || node.type === 'table'),
             );
         };
+
         visit(document);
     });
-export const KnowledgeBodySchema = z
+
+/** Frozen prose-only boundary for the legacy note-proposal tool. */
+export const LegacyKnowledgeBodySchema = z
     .object({ schemaVersion: z.literal(1), document: BoundedDocumentSchema })
     .strict();
+export const InteractiveKnowledgeBodySchema =
+    createInteractiveKnowledgeBodySchema(BoundedDocumentSchema);
+export const KnowledgeBodySchema = z.union([
+    LegacyKnowledgeBodySchema,
+    InteractiveKnowledgeBodySchema,
+]);
 export type KnowledgeBody = z.infer<typeof KnowledgeBodySchema>;
 export const KnowledgeNoteContentSchema = z
     .object({
@@ -342,6 +422,11 @@ export const KnowledgeNoteContentSchema = z
         explanationLanguage: AssistantLanguageSchema.nullable(),
     })
     .strict();
+/** New document readers must not implicitly widen legacy agent write authority. */
+export const LegacyKnowledgeNoteContentSchema =
+    KnowledgeNoteContentSchema.extend({
+        body: LegacyKnowledgeBodySchema,
+    });
 /** Incomplete private edits are recoverable; publication applies the stricter note rules. */
 export const KnowledgeWorkingContentSchema = KnowledgeNoteContentSchema.extend({
     title: z.string().max(200).refine(validAssistantText),
@@ -601,6 +686,7 @@ export const ChatPreferencesResponseSchema = z.object({
 export const ConversationSourceSchema = z
     .object({
         kind: z.enum(['dictionary', 'text', 'knowledge']),
+        view: z.literal('saved').optional(),
         id: z.uuid(),
         shareLocator: z
             .string()
@@ -608,7 +694,9 @@ export const ConversationSourceSchema = z
             .max(200)
             .regex(/^[A-Za-z0-9_-]+$/u)
             .optional(),
-        shareKind: z.enum(['text', 'folder']).optional(),
+        shareKind: z
+            .enum(['text', 'folder', 'knowledge', 'workbook'])
+            .optional(),
     })
     .strict();
 const CopiedCardTextSchema = z.string().max(8_000).refine(validAssistantText);
@@ -643,22 +731,25 @@ export const CopiedDictionaryCardSchema = z
             ['example', 'exampleLanguage'],
             ['exampleTranslation', 'exampleTranslationLanguage'],
         ] as const) {
-            if (card[field] !== undefined && card[language] === undefined)
+            if (card[field] !== undefined && card[language] === undefined) {
                 context.addIssue({
                     code: 'custom',
                     path: [language],
                     message: 'A visible copied field requires its language.',
                 });
+            }
         }
+
         if (
             card.transcription !== undefined &&
             card.transcriptionNotation === undefined
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['transcriptionNotation'],
                 message: 'A visible transcription requires its notation.',
             });
+        }
     });
 export type CopiedDictionaryCard = z.infer<typeof CopiedDictionaryCardSchema>;
 const CopiedAttachmentBaseSchema = z.object({
@@ -666,6 +757,7 @@ const CopiedAttachmentBaseSchema = z.object({
     label: z.string().trim().min(1).max(200).refine(validAssistantText),
     content: longAssistantText(1),
 });
+
 /** Missing kind is a legacy/plain-text copy and remains an inert text attachment. */
 export const CopiedAttachmentSchema = z
     .discriminatedUnion('kind', [
@@ -684,24 +776,29 @@ export const CopiedAttachmentSchema = z
         }).strict(),
     ])
     .superRefine((attachment, context) => {
-        if (attachment.kind !== 'dictionary-card') return;
+        if (attachment.kind !== 'dictionary-card') {
+            return;
+        }
+
         let content: unknown;
         try {
             content = JSON.parse(attachment.content);
         } catch {
             /* Report a safe contract error below. */
         }
+
         const parsed = CopiedDictionaryCardSchema.safeParse(content);
         if (
             !parsed.success ||
             JSON.stringify(parsed.data) !== JSON.stringify(attachment.card)
-        )
+        ) {
             context.addIssue({
                 code: 'custom',
                 path: ['content'],
                 message:
                     'Copied card content must match its visible structured fields.',
             });
+        }
     });
 export const ConversationStreamUnavailableSchema = z
     .object({
@@ -769,7 +866,11 @@ export const ConversationSchema = z
 export const ConversationToolCallSchema = z
     .object({
         id: z.string().min(1).max(200).refine(validAssistantText),
-        name: z.enum(['read_source_context', 'propose_knowledge_note']),
+        name: z.enum([
+            'read_source_context',
+            'propose_knowledge_note',
+            'propose_learning_blocks',
+        ]),
         state: z.enum(['running', 'succeeded', 'failed']),
     })
     .strict();
@@ -790,6 +891,8 @@ export const ConversationEditorTargetSchema =
 export type ConversationEditorTarget = z.infer<
     typeof ConversationEditorTargetSchema
 >;
+/** Eight selected-target proposals, four bounded reads and legacy tool headroom. */
+export const conversationToolCallLimit = 16;
 export const ConversationMessageSchema = z
     .object({
         id: z.uuid(),
@@ -797,7 +900,11 @@ export const ConversationMessageSchema = z
         role: z.enum(['user', 'assistant']),
         content: z.string().max(160_000),
         attachments: z.array(CopiedAttachmentSchema),
-        toolCalls: z.array(ConversationToolCallSchema).max(10).default([]),
+        blockReferences: z.array(z.uuid()).max(8).optional(),
+        toolCalls: z
+            .array(ConversationToolCallSchema)
+            .max(conversationToolCallLimit)
+            .default([]),
         status: z.enum(['complete', 'streaming', 'incomplete']),
         sourceVersion: z.string().max(100).nullable(),
         sourceProvenance: z.enum(['saved', 'draft']),
@@ -908,10 +1015,25 @@ export const SubmitConversationTurnRequestSchema = z
             .max(20_000)
             .refine(validAssistantText),
         attachments: z.array(CopiedAttachmentSchema).default([]),
+        blockReferences: z
+            .array(z.uuid())
+            .max(8)
+            .refine(
+                (ids) => new Set(ids).size === ids.length,
+                'Mention each learning block only once.',
+            )
+            .optional(),
         editorContext: z
             .object({
                 content: longAssistantText(),
                 selectedText: longAssistantText().optional(),
+                workingBranch: z
+                    .object({
+                        id: z.uuid(),
+                        version: z.number().int().positive(),
+                    })
+                    .strict()
+                    .optional(),
                 editorTarget: ConversationEditorAnchorSchema,
                 proposalTarget: ConversationEditorAnchorSchema.extend({
                     mode: z.enum(['insert', 'append', 'replace']),

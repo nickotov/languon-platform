@@ -116,7 +116,10 @@ describe('DictionaryDocumentService', () => {
             url: 'https://uploads.example.test/exact',
         }));
         const inspectVersions = vi.fn(async () => {
-            if (!putCompleted) throw new Error('PUT has not completed.');
+            if (!putCompleted) {
+                throw new Error('PUT has not completed.');
+            }
+
             return {
                 detectedFormat: 'txt' as const,
                 observedVersionId: 'version-after-put',
@@ -139,6 +142,7 @@ describe('DictionaryDocumentService', () => {
                 url: 'https://uploads.example.test/exact',
             },
         });
+
         putCompleted = true;
 
         const stopEnqueueService = createService({
@@ -157,6 +161,7 @@ describe('DictionaryDocumentService', () => {
                 context,
             ),
         ).rejects.toBeInstanceOf(DictionaryGenerationNotAvailableError);
+
         await expect(
             stopEnqueueService.completeUpload(
                 'token',
@@ -172,6 +177,7 @@ describe('DictionaryDocumentService', () => {
                 requestedVersionId: 'version-after-put',
             }),
         );
+
         expect(completeUpload).toHaveBeenCalledOnce();
     });
 
@@ -198,6 +204,7 @@ describe('DictionaryDocumentService', () => {
                 method: 'PUT',
             },
         });
+
         expect(authorizeCreate).toHaveBeenCalledWith(
             expect.objectContaining({
                 checksumSha256: request.sha256,
@@ -229,6 +236,7 @@ describe('DictionaryDocumentService', () => {
                 context,
             ),
         ).rejects.toBeInstanceOf(DictionaryDocumentUploadConflictError);
+
         expect(authorizeCreate).not.toHaveBeenCalled();
     });
 
@@ -245,6 +253,7 @@ describe('DictionaryDocumentService', () => {
                 context,
             ),
         ).rejects.toBeInstanceOf(DictionaryGenerationNotAvailableError);
+
         expect(authorizeCreate).not.toHaveBeenCalled();
     });
 
@@ -282,6 +291,7 @@ describe('DictionaryDocumentService', () => {
             requestedVersionId: 'version-1',
             signal: context.signal,
         });
+
         expect(completeUpload).toHaveBeenCalledWith(
             expect.objectContaining({
                 detectedFormat: 'txt',
@@ -317,6 +327,7 @@ describe('DictionaryDocumentService', () => {
                 context,
             ),
         ).resolves.toMatchObject({ job: { state: 'queued' } });
+
         expect(inspectVersions).not.toHaveBeenCalled();
         expect(completeUpload).not.toHaveBeenCalled();
     });
@@ -350,6 +361,7 @@ describe('DictionaryDocumentService', () => {
                     context,
                 ),
             ).rejects.toBeInstanceOf(DictionaryDocumentUploadConflictError);
+
             expect(inspectVersions).not.toHaveBeenCalled();
         },
     );

@@ -38,7 +38,10 @@ function location(blockIndex: number, pageNumber = 1) {
 function strictText(bytes: Uint8Array): string {
     try {
         const value = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-        if (value.includes('\0')) throw new Error('NUL');
+        if (value.includes('\0')) {
+            throw new Error('NUL');
+        }
+
         return value;
     } catch {
         throw new InvalidNativeDocumentError('invalid_text');
@@ -67,7 +70,10 @@ interface MarkdownAstNode {
 
 function markdownTableCells(line: string): string[] | null {
     const trimmed = line.trim();
-    if (!trimmed.includes('|')) return null;
+    if (!trimmed.includes('|')) {
+        return null;
+    }
+
     const inner = trimmed.replace(/^\|/u, '').replace(/\|$/u, '');
     const cells: string[] = [];
     let cell = '';
@@ -80,17 +86,25 @@ function markdownTableCells(line: string): string[] | null {
             escaped = true;
         } else if (character === '|') {
             cells.push(cell.trim());
-            if (cells.length > maximumMarkdownTableCells)
+            if (cells.length > maximumMarkdownTableCells) {
                 throw new InvalidNativeDocumentError('unsupported_structure');
+            }
+
             cell = '';
         } else {
             cell += character;
         }
     }
-    if (escaped) cell += '\\';
+
+    if (escaped) {
+        cell += '\\';
+    }
+
     cells.push(cell.trim());
-    if (cells.length > maximumMarkdownTableCells)
+    if (cells.length > maximumMarkdownTableCells) {
         throw new InvalidNativeDocumentError('unsupported_structure');
+    }
+
     return cells;
 }
 
@@ -108,14 +122,18 @@ function parseMarkdownAst(text: string): MarkdownAstNode[] {
                 /^\s*>/u.test(line) ||
                 /<\/?[A-Za-z!][^>]*>/u.test(line),
         )
-    )
+    ) {
         throw new InvalidNativeDocumentError('active_content');
+    }
+
     const nodes: MarkdownAstNode[] = [];
     const push = (node: MarkdownAstNode) => {
         nodes.push(node);
-        if (nodes.length > maximumMarkdownAstNodes)
+        if (nodes.length > maximumMarkdownAstNodes) {
             throw new InvalidNativeDocumentError('unsupported_structure');
+        }
     };
+
     for (let index = 0; index < lines.length;) {
         const line = lines[index]!;
         if (line.trim().length === 0) {
@@ -123,15 +141,18 @@ function parseMarkdownAst(text: string): MarkdownAstNode[] {
             index += 1;
             continue;
         }
+
         if (/^\s{0,3}#{1,6}(?:\s+|$)/u.test(line)) {
             push({ kind: 'heading' });
             index += 1;
             continue;
         }
+
         if (/^\s*(?:[-+*]|\d{1,9}[.)])\s+/u.test(line)) {
             const itemLines = [
                 line.replace(/^\s*(?:[-+*]|\d{1,9}[.)])\s+/u, '').trim(),
             ];
+
             index += 1;
             while (
                 index < lines.length &&
@@ -141,9 +162,11 @@ function parseMarkdownAst(text: string): MarkdownAstNode[] {
                 itemLines.push(lines[index]!.trim());
                 index += 1;
             }
+
             push({ kind: 'list-item', lines: itemLines });
             continue;
         }
+
         if (
             index + 1 < lines.length &&
             /^\s*(?:=+|-+)\s*$/u.test(lines[index + 1]!)
@@ -152,28 +175,37 @@ function parseMarkdownAst(text: string): MarkdownAstNode[] {
             index += 2;
             continue;
         }
+
         const headerCells = markdownTableCells(line);
         const delimiterCells =
             index + 1 < lines.length
                 ? markdownTableCells(lines[index + 1]!)
                 : null;
+
         if (
             headerCells &&
             delimiterCells &&
             isMarkdownTableDelimiter(delimiterCells)
         ) {
-            if (headerCells.length !== delimiterCells.length)
+            if (headerCells.length !== delimiterCells.length) {
                 throw new InvalidNativeDocumentError('unsupported_structure');
+            }
+
             push({ kind: 'heading' });
             index += 2;
             while (index < lines.length) {
                 const cells = markdownTableCells(lines[index]!);
-                if (!cells) break;
+                if (!cells) {
+                    break;
+                }
+
                 push({ cells, kind: 'table-row' });
                 index += 1;
             }
+
             continue;
         }
+
         const paragraphLines = [line.trim()];
         index += 1;
         while (index < lines.length) {
@@ -182,33 +214,48 @@ function parseMarkdownAst(text: string): MarkdownAstNode[] {
                 continuation.trim().length === 0 ||
                 /^\s{0,3}#{1,6}(?:\s+|$)/u.test(continuation) ||
                 /^\s*(?:[-+*]|\d{1,9}[.)])\s+/u.test(continuation)
-            )
+            ) {
                 break;
+            }
+
             const nextCells = markdownTableCells(continuation);
             const afterCells =
                 index + 1 < lines.length
                     ? markdownTableCells(lines[index + 1]!)
                     : null;
-            if (nextCells && afterCells && isMarkdownTableDelimiter(afterCells))
+
+            if (
+                nextCells &&
+                afterCells &&
+                isMarkdownTableDelimiter(afterCells)
+            ) {
                 break;
+            }
+
             paragraphLines.push(continuation.trim());
             index += 1;
         }
+
         push({ kind: 'paragraph', lines: paragraphLines });
     }
+
     return nodes;
 }
 
 function markdownBlocks(text: string): DictionaryDocumentBlock[] {
     return parseMarkdownAst(text).map((node, blockIndex) => {
-        if (node.kind === 'blank' || node.kind === 'heading')
+        if (node.kind === 'blank' || node.kind === 'heading') {
             return { kind: node.kind, location: location(blockIndex) };
-        if (node.kind === 'table-row')
+        }
+
+        if (node.kind === 'table-row') {
             return {
                 cells: node.cells ?? [],
                 kind: 'table-row' as const,
                 location: location(blockIndex),
             };
+        }
+
         return {
             kind: node.kind,
             location: location(blockIndex),
@@ -223,7 +270,10 @@ function validateZipDirectory(bytes: Uint8Array): void {
     let expandedBytes = 0;
     const names = new Set<string>();
     for (let offset = 0; offset + 46 <= bytes.byteLength; offset += 1) {
-        if (view.getUint32(offset, true) !== 0x02014b50) continue;
+        if (view.getUint32(offset, true) !== 0x02014b50) {
+            continue;
+        }
+
         const flags = view.getUint16(offset + 8, true);
         const compression = view.getUint16(offset + 10, true);
         const compressedSize = view.getUint32(offset + 20, true);
@@ -233,11 +283,14 @@ function validateZipDirectory(bytes: Uint8Array): void {
         const commentLength = view.getUint16(offset + 32, true);
         const externalAttributes = view.getUint32(offset + 38, true);
         const end = offset + 46 + nameLength + extraLength + commentLength;
-        if (end > bytes.byteLength)
+        if (end > bytes.byteLength) {
             throw new InvalidNativeDocumentError('invalid_format');
+        }
+
         const name = strictText(
             bytes.subarray(offset + 46, offset + 46 + nameLength),
         );
+
         entries += 1;
         expandedBytes += expandedSize;
         const unixMode = externalAttributes >>> 16;
@@ -258,12 +311,17 @@ function validateZipDirectory(bytes: Uint8Array): void {
             names.has(name) ||
             (unixMode & 0o170000) === 0o120000 ||
             /\.(?:7z|gz|rar|tar|zip)$/iu.test(name)
-        )
+        ) {
             throw new InvalidNativeDocumentError('archive_limit');
+        }
+
         names.add(name);
         offset = end - 1;
     }
-    if (entries === 0) throw new InvalidNativeDocumentError('invalid_format');
+
+    if (entries === 0) {
+        throw new InvalidNativeDocumentError('invalid_format');
+    }
 }
 
 function isNode(value: unknown): value is XmlNode {
@@ -271,17 +329,30 @@ function isNode(value: unknown): value is XmlNode {
 }
 
 function children(value: unknown, key: string): unknown[][] {
-    if (!Array.isArray(value)) return [];
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
     return value.flatMap((entry) => {
-        if (!isNode(entry)) return [];
+        if (!isNode(entry)) {
+            return [];
+        }
+
         const child = entry[key];
+
         return Array.isArray(child) ? [child] : [];
     });
 }
 
 function hasKey(value: unknown, key: string): boolean {
-    if (Array.isArray(value)) return value.some((entry) => hasKey(entry, key));
-    if (!isNode(value)) return false;
+    if (Array.isArray(value)) {
+        return value.some((entry) => hasKey(entry, key));
+    }
+
+    if (!isNode(value)) {
+        return false;
+    }
+
     return (
         key in value || Object.values(value).some((entry) => hasKey(entry, key))
     );
@@ -291,23 +362,44 @@ function xmlText(value: unknown): string {
     const values: string[] = [];
     const visit = (entry: unknown) => {
         if (Array.isArray(entry)) {
-            for (const child of entry) visit(child);
+            for (const child of entry) {
+                visit(child);
+            }
+
             return;
         }
-        if (!isNode(entry)) return;
-        if (typeof entry['#text'] === 'string') values.push(entry['#text']);
-        if ('w:tab' in entry || 'w:br' in entry || 'w:cr' in entry)
+
+        if (!isNode(entry)) {
+            return;
+        }
+
+        if (typeof entry['#text'] === 'string') {
+            values.push(entry['#text']);
+        }
+
+        if ('w:tab' in entry || 'w:br' in entry || 'w:cr' in entry) {
             values.push(' ');
-        for (const [key, child] of Object.entries(entry))
-            if (key !== '#text' && key !== ':@') visit(child);
+        }
+
+        for (const [key, child] of Object.entries(entry)) {
+            if (key !== '#text' && key !== ':@') {
+                visit(child);
+            }
+        }
     };
+
     visit(value);
+
     return values.join('').replace(/\s+/gu, ' ').trim();
 }
 
 function paragraphKind(value: unknown): 'heading' | 'list-item' | 'paragraph' {
-    if (hasKey(value, 'w:numPr')) return 'list-item';
+    if (hasKey(value, 'w:numPr')) {
+        return 'list-item';
+    }
+
     const serialized = JSON.stringify(value);
+
     return /@_w:val":"Heading(?:[1-9]|Title)/u.test(serialized)
         ? 'heading'
         : 'paragraph';
@@ -321,6 +413,7 @@ function parseDocx(bytes: Uint8Array): DictionaryDocumentBlock[] {
     } catch {
         throw new InvalidNativeDocumentError('invalid_format');
     }
+
     const names = Object.keys(archive);
     if (
         names.some((name) =>
@@ -328,15 +421,20 @@ function parseDocx(bytes: Uint8Array): DictionaryDocumentBlock[] {
                 name,
             ),
         )
-    )
+    ) {
         throw new InvalidNativeDocumentError('active_content');
+    }
+
     const required = archive['word/document.xml'];
     const contentTypes = archive['[Content_Types].xml'];
-    if (!required || !contentTypes)
+    if (!required || !contentTypes) {
         throw new InvalidNativeDocumentError('invalid_format');
+    }
+
     const xmlDocuments = names
         .filter((name) => name.endsWith('.xml') || name.endsWith('.rels'))
         .map((name) => strictText(archive[name]!));
+
     if (
         xmlDocuments.some(
             (xml) =>
@@ -344,8 +442,9 @@ function parseDocx(bytes: Uint8Array): DictionaryDocumentBlock[] {
                 /TargetMode\s*=\s*["']External["']/iu.test(xml) ||
                 /macroEnabled|vbaProject|ActiveX|oleObject/iu.test(xml),
         )
-    )
+    ) {
         throw new InvalidNativeDocumentError('active_content');
+    }
 
     let parsed: unknown;
     try {
@@ -357,23 +456,33 @@ function parseDocx(bytes: Uint8Array): DictionaryDocumentBlock[] {
     } catch {
         throw new InvalidNativeDocumentError('invalid_format');
     }
+
     const document = children(parsed, 'w:document')[0];
     const body = children(document, 'w:body')[0];
-    if (!body) throw new InvalidNativeDocumentError('invalid_format');
+    if (!body) {
+        throw new InvalidNativeDocumentError('invalid_format');
+    }
+
     const blocks: DictionaryDocumentBlock[] = [];
     for (const entry of body) {
-        if (!isNode(entry)) continue;
+        if (!isNode(entry)) {
+            continue;
+        }
+
         if (Array.isArray(entry['w:p'])) {
             const text = xmlText(entry['w:p']);
             const kind =
                 text.length === 0 ? 'blank' : paragraphKind(entry['w:p']);
+
             blocks.push({
                 kind,
                 location: location(blocks.length),
                 ...(kind === 'blank' || kind === 'heading' ? {} : { text }),
             } as DictionaryDocumentBlock);
+
             continue;
         }
+
         if (Array.isArray(entry['w:tbl'])) {
             for (const row of children(entry['w:tbl'], 'w:tr')) {
                 const cells = children(row, 'w:tc').map(xmlText);
@@ -385,6 +494,7 @@ function parseDocx(bytes: Uint8Array): DictionaryDocumentBlock[] {
             }
         }
     }
+
     return blocks;
 }
 
@@ -402,6 +512,7 @@ async function parseImage(
     } catch {
         throw new InvalidNativeDocumentError('invalid_format');
     }
+
     const expected = (
         {
             'image/jpeg': 'jpeg',
@@ -409,6 +520,7 @@ async function parseImage(
             'image/webp': 'webp',
         } as Partial<Record<DictionaryDocumentMediaType, string>>
     )[mediaType];
+
     if (
         metadata.format !== expected ||
         !metadata.width ||
@@ -419,15 +531,20 @@ async function parseImage(
             documentIngestionLimitsV1.document.maximumImageDimensionPixels ||
         metadata.width * metadata.height >
             documentIngestionLimitsV1.document.maximumPagePixels
-    )
+    ) {
         throw new InvalidNativeDocumentError('pixel_limit');
+    }
+
     const content = await sharp(bytes, { sequentialRead: true })
         .png()
         .toBuffer();
+
     if (
         content.byteLength > documentIngestionLimitsV1.ocr.maximumPageInputBytes
-    )
+    ) {
         throw new InvalidNativeDocumentError('pixel_limit');
+    }
+
     return {
         entries: [
             {
@@ -446,10 +563,22 @@ async function parseImage(
 }
 
 function hasContainerEntries(value: unknown): boolean {
-    if (value === null || value === undefined) return false;
-    if (value instanceof Map || value instanceof Set) return value.size > 0;
-    if (Array.isArray(value)) return value.length > 0;
-    if (typeof value === 'object') return Object.keys(value).length > 0;
+    if (value === null || value === undefined) {
+        return false;
+    }
+
+    if (value instanceof Map || value instanceof Set) {
+        return value.size > 0;
+    }
+
+    if (Array.isArray(value)) {
+        return value.length > 0;
+    }
+
+    if (typeof value === 'object') {
+        return Object.keys(value).length > 0;
+    }
+
     return true;
 }
 
@@ -485,18 +614,33 @@ export function hasPdfPageActiveContent(input: {
     annotations: unknown;
     pageActions: unknown;
 }): boolean {
-    if (hasContainerEntries(input.pageActions)) return true;
-    if (!Array.isArray(input.annotations)) return true;
-    if (input.annotations.length > maximumPdfAnnotationsPerPage) return true;
+    if (hasContainerEntries(input.pageActions)) {
+        return true;
+    }
+
+    if (!Array.isArray(input.annotations)) {
+        return true;
+    }
+
+    if (input.annotations.length > maximumPdfAnnotationsPerPage) {
+        return true;
+    }
+
     return input.annotations.some((annotation) => {
-        if (!isNode(annotation)) return true;
+        if (!isNode(annotation)) {
+            return true;
+        }
+
         if (
             typeof annotation.annotationType === 'number' &&
             input.activeAnnotationTypes.has(annotation.annotationType)
-        )
+        ) {
             return true;
+        }
+
         return pdfActiveAnnotationKeys.some((key) => {
             const value = annotation[key];
+
             return typeof value === 'boolean'
                 ? value
                 : hasContainerEntries(value);
@@ -528,8 +672,10 @@ export async function preflightPdfActiveContent<
         document.getJSActions(),
         document.getOpenAction(),
     ]);
-    if (hasPdfActiveContent({ attachments, documentActions, openAction }))
+
+    if (hasPdfActiveContent({ attachments, documentActions, openAction })) {
         throw new InvalidNativeDocumentError('active_content');
+    }
 
     const pages: TPage[] = [];
     for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
@@ -538,16 +684,20 @@ export async function preflightPdfActiveContent<
             page.getJSActions(),
             page.getAnnotations({ intent: 'display' }),
         ]);
+
         if (
             hasPdfPageActiveContent({
                 activeAnnotationTypes,
                 annotations,
                 pageActions,
             })
-        )
+        ) {
             throw new InvalidNativeDocumentError('active_content');
+        }
+
         pages.push(page);
     }
+
     return pages;
 }
 
@@ -565,13 +715,19 @@ async function parsePdf(
             disableStream: true,
             useSystemFonts: false,
         });
+
         document = await loadingTask.promise;
     } catch {
         throw new InvalidNativeDocumentError('invalid_format');
     }
+
     try {
-        if (document.numPages > documentIngestionLimitsV1.document.maximumPages)
+        if (
+            document.numPages > documentIngestionLimitsV1.document.maximumPages
+        ) {
             throw new InvalidNativeDocumentError('page_limit');
+        }
+
         const pages = await preflightPdfActiveContent(
             document,
             new Set([
@@ -597,16 +753,26 @@ async function parsePdf(
             const lines: string[] = [];
             let line = '';
             for (const item of textContent.items) {
-                if (!('str' in item)) continue;
+                if (!('str' in item)) {
+                    continue;
+                }
+
                 line += `${line ? ' ' : ''}${item.str}`;
                 if (item.hasEOL) {
-                    if (line.trim()) lines.push(line.trim());
+                    if (line.trim()) {
+                        lines.push(line.trim());
+                    }
+
                     line = '';
                 }
             }
-            if (line.trim()) lines.push(line.trim());
+
+            if (line.trim()) {
+                lines.push(line.trim());
+            }
+
             if (lines.length > 0) {
-                for (const text of lines)
+                for (const text of lines) {
                     entries.push({
                         block: {
                             kind: 'line',
@@ -615,9 +781,12 @@ async function parsePdf(
                         },
                         kind: 'block',
                     });
+                }
+
                 page.cleanup();
                 continue;
             }
+
             const baseViewport = page.getViewport({ scale: 1 });
             const scale = Math.min(
                 2,
@@ -640,14 +809,17 @@ async function parsePdf(
                 pixels > documentIngestionLimitsV1.document.maximumPagePixels ||
                 totalPixels >
                     documentIngestionLimitsV1.document.maximumTotalPixels
-            )
+            ) {
                 throw new InvalidNativeDocumentError('pixel_limit');
+            }
+
             const canvas = createCanvas(width, height);
             await page.render({
                 canvas,
                 canvasContext: canvas.getContext('2d'),
                 viewport,
             } as never).promise;
+
             const content = canvas.toBuffer('image/png');
             totalOcrBytes += content.byteLength;
             if (
@@ -655,8 +827,10 @@ async function parsePdf(
                     documentIngestionLimitsV1.ocr.maximumPageInputBytes ||
                 totalOcrBytes >
                     documentIngestionLimitsV1.parser.maximumTemporaryBytes
-            )
+            ) {
                 throw new InvalidNativeDocumentError('pixel_limit');
+            }
+
             entries.push({
                 kind: 'ocr-page',
                 page: {
@@ -666,8 +840,10 @@ async function parsePdf(
                     widthPixels: width,
                 },
             });
+
             page.cleanup();
         }
+
         return { entries, pageCount: document.numPages, totalPixels };
     } finally {
         await loadingTask.destroy();
@@ -695,10 +871,14 @@ async function validateMagic(
         (detected?.mime === 'application/zip' ||
             detected?.mime ===
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    if (expected && detected?.mime !== expected && !docxDetected)
+
+    if (expected && detected?.mime !== expected && !docxDetected) {
         throw new InvalidNativeDocumentError('invalid_format');
-    if (!expected && detected)
+    }
+
+    if (!expected && detected) {
         throw new InvalidNativeDocumentError('invalid_format');
+    }
 }
 
 export async function parseNativeDictionaryDocument(input: {
@@ -706,7 +886,7 @@ export async function parseNativeDictionaryDocument(input: {
     mediaType: DictionaryDocumentMediaType;
 }): Promise<DictionaryDocumentExtraction> {
     await validateMagic(input.bytes, input.mediaType);
-    if (input.mediaType === 'text/plain')
+    if (input.mediaType === 'text/plain') {
         return {
             entries: textLines(strictText(input.bytes)).map((block) => ({
                 block,
@@ -715,7 +895,9 @@ export async function parseNativeDictionaryDocument(input: {
             pageCount: 1,
             totalPixels: 0,
         };
-    if (input.mediaType === 'text/markdown')
+    }
+
+    if (input.mediaType === 'text/markdown') {
         return {
             entries: markdownBlocks(strictText(input.bytes)).map((block) => ({
                 block,
@@ -724,10 +906,12 @@ export async function parseNativeDictionaryDocument(input: {
             pageCount: 1,
             totalPixels: 0,
         };
+    }
+
     if (
         input.mediaType ===
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    )
+    ) {
         return {
             entries: parseDocx(input.bytes).map((block) => ({
                 block,
@@ -736,6 +920,11 @@ export async function parseNativeDictionaryDocument(input: {
             pageCount: 1,
             totalPixels: 0,
         };
-    if (input.mediaType === 'application/pdf') return parsePdf(input.bytes);
+    }
+
+    if (input.mediaType === 'application/pdf') {
+        return parsePdf(input.bytes);
+    }
+
     return parseImage(input.bytes, input.mediaType);
 }

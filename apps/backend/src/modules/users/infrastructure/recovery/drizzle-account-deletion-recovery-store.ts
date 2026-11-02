@@ -35,6 +35,7 @@ export class DrizzleAccountDeletionRecoveryStore implements RecoveryStore {
             )
             .where(eq(usersTable.id, userId))
             .limit(1);
+
         return user ?? null;
     }
 
@@ -60,20 +61,27 @@ export class DrizzleAccountDeletionRecoveryStore implements RecoveryStore {
                 .where(eq(usersTable.id, input.userId))
                 .for('update')
                 .limit(1);
-            if (!user || user.status === 'purged') return;
+
+            if (!user || user.status === 'purged') {
+                return;
+            }
+
             if (
                 request?.state === 'cancelled' &&
                 user.version > input.userVersion
-            )
+            ) {
                 return;
+            }
+
             if (
                 user.status === 'deletion_pending' &&
                 user.version >= input.userVersion &&
                 (request?.state === 'pending' ||
                     request?.state === 'running' ||
                     request?.state === 'complete')
-            )
+            ) {
                 return;
+            }
 
             const now = this.now();
             const updatedAt = new Date(
@@ -82,6 +90,7 @@ export class DrizzleAccountDeletionRecoveryStore implements RecoveryStore {
             const purgeAt = new Date(
                 input.scheduledAt.getTime() + thirtyDaysMs,
             );
+
             if (
                 user.status !== 'deletion_pending' ||
                 user.version < input.userVersion
@@ -119,6 +128,7 @@ export class DrizzleAccountDeletionRecoveryStore implements RecoveryStore {
                         completedAt: null,
                     },
                 });
+
             await transaction
                 .update(authSessionsTable)
                 .set({

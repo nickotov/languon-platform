@@ -30,6 +30,7 @@ export function fieldLabel(
         transcription: 'dictionary.field.transcription',
         translation: 'dictionary.field.translation',
     } as const;
+
     return t(keys[field]);
 }
 
@@ -42,6 +43,7 @@ export function terminalStateMessageKey(
         discarded: 'dictionary.generation.state.discarded',
         expired: 'dictionary.generation.state.expired',
     } as const;
+
     return keys[state as keyof typeof keys];
 }
 
@@ -50,9 +52,14 @@ export function fieldLanguage(
     overrides: DictionaryCardOverrides,
     job: DictionarySingleCardGenerationJob,
 ) {
-    if (field === 'source' || field === 'transcription')
+    if (field === 'source' || field === 'transcription') {
         return job.sourceLanguage;
-    if (field === 'translation') return job.targetLanguage;
+    }
+
+    if (field === 'translation') {
+        return job.targetLanguage;
+    }
+
     const original = job.originalSnapshot!;
     if (field === 'definition') {
         return languageForRole(
@@ -62,17 +69,14 @@ export function fieldLanguage(
             job.targetLanguage,
         );
     }
+
     const exampleRole =
         overrides.exampleLanguage ?? original.effectiveSettings.exampleLanguage;
-    return languageForRole(
-        field === 'example'
-            ? exampleRole
-            : exampleRole === 'source'
-              ? 'target'
-              : 'source',
-        job.sourceLanguage,
-        job.targetLanguage,
-    );
+
+    const translationRole = exampleRole === 'source' ? 'target' : 'source';
+    const role = field === 'example' ? exampleRole : translationRole;
+
+    return languageForRole(role, job.sourceLanguage, job.targetLanguage);
 }
 
 export function originalFieldLanguage(
@@ -82,9 +86,14 @@ export function originalFieldLanguage(
         DictionarySingleCardGenerationJob['originalSnapshot']
     >['effectiveSettings'],
 ) {
-    if (field === 'source' || field === 'transcription')
+    if (field === 'source' || field === 'transcription') {
         return dictionary.sourceLanguage;
-    if (field === 'translation') return dictionary.targetLanguage;
+    }
+
+    if (field === 'translation') {
+        return dictionary.targetLanguage;
+    }
+
     if (field === 'definition') {
         return languageForRole(
             effectiveSettings.definitionLanguage,
@@ -92,6 +101,7 @@ export function originalFieldLanguage(
             dictionary.targetLanguage,
         );
     }
+
     return languageForRole(
         field === 'example'
             ? effectiveSettings.exampleLanguage

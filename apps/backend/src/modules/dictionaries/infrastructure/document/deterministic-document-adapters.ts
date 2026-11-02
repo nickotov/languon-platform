@@ -29,16 +29,20 @@ async function collect(
     for await (const chunk of content) {
         signal.throwIfAborted();
         length += chunk.byteLength;
-        if (length > maximumBytes)
+        if (length > maximumBytes) {
             throw new Error('Deterministic document input exceeds its limit.');
+        }
+
         chunks.push(chunk);
     }
+
     const output = new Uint8Array(length);
     let offset = 0;
     for (const chunk of chunks) {
         output.set(chunk, offset);
         offset += chunk.byteLength;
     }
+
     return output;
 }
 
@@ -55,11 +59,14 @@ export class DeterministicPrivateDocumentStorage implements PrivateDocumentStora
     >();
 
     public constructor(objects: readonly DeterministicStoredObject[] = []) {
-        for (const object of objects) this.putForTest(object);
+        for (const object of objects) {
+            this.putForTest(object);
+        }
     }
 
     public readiness(signal: AbortSignal) {
         signal.throwIfAborted();
+
         return Promise.resolve();
     }
 
@@ -68,6 +75,7 @@ export class DeterministicPrivateDocumentStorage implements PrivateDocumentStora
             `${object.reference.objectKey}:${object.reference.storageVersionId}`,
             { bytes: object.bytes.slice(), reference: { ...object.reference } },
         );
+
         this.versions.set(object.reference.objectKey, [
             {
                 checksumSha256: object.reference.checksumSha256,
@@ -83,7 +91,11 @@ export class DeterministicPrivateDocumentStorage implements PrivateDocumentStora
         const object = this.objects.get(
             `${reference.objectKey}:${reference.storageVersionId}`,
         );
-        if (!object) throw new Error('Exact deterministic object not found.');
+
+        if (!object) {
+            throw new Error('Exact deterministic object not found.');
+        }
+
         return {
             content: {
                 async *[Symbol.asyncIterator]() {
@@ -107,12 +119,15 @@ export class DeterministicPrivateDocumentStorage implements PrivateDocumentStora
         const existing = (this.versions.get(input.objectKey) ?? []).map(
             (item) => ({ ...item, isCurrent: false }),
         );
+
         this.versions.set(input.objectKey, [...existing, version]);
+
         return Promise.resolve(version);
     }
 
     public listVersions(input: { objectKey: string; signal: AbortSignal }) {
         input.signal.throwIfAborted();
+
         return Promise.resolve(
             (this.versions.get(input.objectKey) ?? []).map((item) => ({
                 ...item,
@@ -132,7 +147,9 @@ export class DeterministicPrivateDocumentStorage implements PrivateDocumentStora
                 (item) => item.versionId !== input.versionId,
             ),
         );
+
         this.objects.delete(`${input.objectKey}:${input.versionId}`);
+
         return Promise.resolve();
     }
 
@@ -156,6 +173,7 @@ export class DeterministicDocumentMalwareScanner implements DocumentMalwareScann
                 signal,
                 documentIngestionLimitsV1.scanner.maximumStreamBytes,
             );
+
             return {
                 attestation: {
                     engineVersion: 'deterministic-1',
@@ -174,6 +192,7 @@ export class DeterministicDocumentMalwareScanner implements DocumentMalwareScann
 
     public readiness(signal: AbortSignal) {
         signal.throwIfAborted();
+
         return Promise.resolve();
     }
 }
@@ -191,6 +210,7 @@ function lineBlocks(text: string) {
                       location: { blockIndex, pageNumber: 1 },
                       text: line,
                   };
+
         return { block, kind: 'block' as const };
     });
 }
@@ -209,7 +229,10 @@ export class DeterministicSandboxedDocumentExtractor implements SandboxedDocumen
         input: Parameters<SandboxedDocumentExtractor['extract']>[0],
     ) {
         const bytes = await collect(input.content, input.signal);
-        if (this.resolve) return this.resolve(input, bytes);
+        if (this.resolve) {
+            return this.resolve(input, bytes);
+        }
+
         if (
             input.mediaType === 'image/jpeg' ||
             input.mediaType === 'image/png' ||
@@ -231,6 +254,7 @@ export class DeterministicSandboxedDocumentExtractor implements SandboxedDocumen
                 totalPixels: 1,
             };
         }
+
         return {
             entries: lineBlocks(new TextDecoder().decode(bytes)),
             pageCount: 1,
@@ -240,6 +264,7 @@ export class DeterministicSandboxedDocumentExtractor implements SandboxedDocumen
 
     public readiness(signal: AbortSignal) {
         signal.throwIfAborted();
+
         return Promise.resolve();
     }
 }
@@ -249,6 +274,7 @@ export class DeterministicDocumentOcrProvider implements DocumentOcrProvider {
         input: Parameters<DocumentOcrProvider['recognize']>[0],
     ) {
         input.signal.throwIfAborted();
+
         return {
             lines: new TextDecoder()
                 .decode(input.page.content)
@@ -267,6 +293,7 @@ export class DeterministicDocumentOcrProvider implements DocumentOcrProvider {
 
     public readiness(signal: AbortSignal) {
         signal.throwIfAborted();
+
         return Promise.resolve();
     }
 }
@@ -278,6 +305,7 @@ export class UnavailableDocumentOcrProvider implements DocumentOcrProvider {
 
     public readiness(signal: AbortSignal): Promise<void> {
         signal.throwIfAborted();
+
         return Promise.reject(new Error('Document OCR is unavailable.'));
     }
 }

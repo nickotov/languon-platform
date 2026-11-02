@@ -21,6 +21,7 @@ async function reply(call: () => Promise<unknown>) {
             error instanceof TextAiProbeUnavailableError
                 ? error.code
                 : 'check_failed';
+
         return {
             isError: true,
             content: [
@@ -39,6 +40,7 @@ async function reply(call: () => Promise<unknown>) {
         };
     }
 }
+
 export function registerAdminMcpCheckTools(
     server: McpServer,
     checks: AdminMcpCheckService,
@@ -48,8 +50,10 @@ export function registerAdminMcpCheckTools(
     if (
         !actor.permissions.includes('model-checks.run') ||
         !actor.allowedActions.includes('model-checks.run')
-    )
+    ) {
         return;
+    }
+
     server.registerTool(
         'admin_model_check_status',
         {
@@ -63,6 +67,7 @@ export function registerAdminMcpCheckTools(
         async ({ operationKey }) =>
             reply(() => checks.status(actor, operationKey)),
     );
+
     server.registerTool(
         'admin_model_check',
         {

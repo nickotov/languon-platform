@@ -22,6 +22,7 @@ function application() {
         rateLimiter: { consume: async () => ({ allowed: true }) },
         store: { findSharedCandidate: async () => null } as never,
     });
+
     return createDictionaryRoutes({
         policy: new AuthHttpPolicy({
             allowedOrigins: ['http://localhost:3333'],
@@ -40,8 +41,10 @@ describe('dictionary HTTP routes', () => {
                 'Access-Control-Allow-Methods',
                 'GET, POST, PUT, OPTIONS',
             );
+
             return context.body(null, 204);
         });
+
         const response = await app.request(
             '/learning/dictionaries/test/flashcards/preferences',
             {
@@ -52,15 +55,18 @@ describe('dictionary HTTP routes', () => {
                 },
             },
         );
+
         expect(response.status).toBe(204);
         expect(response.headers.get('access-control-allow-methods')).toContain(
             'PUT',
         );
     });
+
     it('maps recent-auth deletion failures to the established transport error', () => {
         const mapped = mapDictionaryHttpError(
             new RecentAuthenticationRequiredError(),
         );
+
         expect(mapped.status).toBe(403);
         expect(mapped.response('correlation')).toEqual({
             error: {
@@ -70,11 +76,13 @@ describe('dictionary HTTP routes', () => {
             },
         });
     });
+
     it('publishes credit exhaustion in the OpenAPI contract', () => {
         const document = application().getOpenAPIDocument({
             info: { title: 'Dictionary routes', version: '1' },
             openapi: '3.1.0',
         });
+
         expect(
             document.paths?.['/dictionary-imports']?.post?.responses?.['402'],
         ).toBeDefined();
@@ -100,6 +108,7 @@ describe('dictionary HTTP routes', () => {
                 'X-Correlation-ID': correlationId,
             },
         });
+
         expect(response.status).toBe(401);
         await expect(response.json()).resolves.toEqual({
             error: {
@@ -115,10 +124,12 @@ describe('dictionary HTTP routes', () => {
             method: 'OPTIONS',
             headers: { Origin: 'http://localhost:3333' },
         });
+
         expect(allowed.status).toBe(204);
         expect(allowed.headers.get('access-control-allow-origin')).toBe(
             'http://localhost:3333',
         );
+
         expect(allowed.headers.get('access-control-allow-headers')).toContain(
             'X-Languon-Share-Key',
         );
@@ -127,6 +138,7 @@ describe('dictionary HTTP routes', () => {
             method: 'OPTIONS',
             headers: { Origin: 'https://attacker.invalid' },
         });
+
         expect(denied.status).toBe(400);
         expect(denied.headers.get('access-control-allow-origin')).toBeNull();
     });
@@ -135,6 +147,7 @@ describe('dictionary HTTP routes', () => {
         const response = await application().request(
             '/shared/dictionaries/abcdefghijklmnop',
         );
+
         expect(response.status).toBe(404);
         await expect(response.json()).resolves.toMatchObject({
             error: { code: 'shared_dictionary_not_found' },
@@ -197,6 +210,7 @@ describe('dictionary HTTP routes', () => {
             },
             method: 'POST',
         });
+
         expect(response.status, await response.clone().text()).toBe(201);
     });
 
@@ -331,17 +345,21 @@ describe('dictionary HTTP routes', () => {
         expect(response.headers.get('content-type')).toBe(
             'text/plain; charset=utf-8',
         );
+
         expect(response.headers.get('content-disposition')).toBe(
             'attachment; filename="dictionary-7ceab60b-7416-4296-91e4-0e4a1cd35dd2.txt"',
         );
+
         expect(response.headers.get('x-content-type-options')).toBe('nosniff');
         expect(response.headers.get('access-control-expose-headers')).toBe(
             'Cache-Control, Content-Disposition, Content-Type, Referrer-Policy, X-Content-Type-Options',
         );
+
         const document = routes.getOpenAPIDocument({
             info: { title: 'Dictionary routes', version: '1' },
             openapi: '3.1.0',
         });
+
         expect(
             document.paths?.['/dictionaries/{dictionaryId}/export']?.get
                 ?.responses?.['200'],
@@ -356,6 +374,7 @@ describe('dictionary HTTP routes', () => {
             },
             headers: expect.any(Object),
         });
+
         await expect(response.text()).resolves.toBe('bank\tbanco');
     });
 });

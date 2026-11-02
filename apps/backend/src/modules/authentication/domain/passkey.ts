@@ -61,6 +61,7 @@ export class Passkey implements PasskeyProperties {
         this.credentialPublicKey = new Uint8Array(
             properties.credentialPublicKey,
         );
+
         this.deviceType = properties.deviceType;
         this.id = properties.id;
         this.lastUsedAt = properties.lastUsedAt;
@@ -81,6 +82,7 @@ export class Passkey implements PasskeyProperties {
         >,
     ): Passkey {
         const normalized = normalizeName(properties.name);
+
         return new Passkey({
             ...properties,
             ...normalized,

@@ -1,0 +1,23 @@
+.root {
+    display: grid;
+    gap: var(--space-12);
+    padding: var(--space-16);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-16);
+    color: var(--text-primary);
+    background: var(--background-surface);
+}
+
+.sourceSelect {
+    min-width: 0;
+    padding: var(--space-8);
+    font: inherit;
+    color: inherit;
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-8);
+    background: var(--background-surface);
+}
+
+.audio {
+    width: 100%;
+}

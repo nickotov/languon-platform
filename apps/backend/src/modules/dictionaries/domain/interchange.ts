@@ -62,18 +62,26 @@ const delimiterCharacter = (delimiter: DictionaryImportDelimiter) =>
     delimiter === 'comma' ? ',' : '\t';
 
 function decodeImportBytes(bytes: Uint8Array): string {
-    if (bytes.byteLength > dictionaryInterchangeLimitsV1.maximumInputUtf8Bytes)
+    if (
+        bytes.byteLength > dictionaryInterchangeLimitsV1.maximumInputUtf8Bytes
+    ) {
         throw new InvalidDictionaryInterchangeError('input_too_large');
+    }
+
     try {
         const decoded = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-        if (decoded.includes('\0'))
+        if (decoded.includes('\0')) {
             throw new InvalidDictionaryInterchangeError('invalid_utf8');
+        }
+
         const withoutBom = decoded.startsWith('\uFEFF')
             ? decoded.slice(1)
             : decoded;
+
         if (
             [...withoutBom].some((character) => {
                 const code = character.codePointAt(0)!;
+
                 return (
                     ((code >= 0 && code <= 31) ||
                         (code >= 127 && code <= 159)) &&
@@ -82,11 +90,16 @@ function decodeImportBytes(bytes: Uint8Array): string {
                     code !== 13
                 );
             })
-        )
+        ) {
             throw new InvalidDictionaryInterchangeError('invalid_utf8');
+        }
+
         return withoutBom;
     } catch (error) {
-        if (error instanceof InvalidDictionaryInterchangeError) throw error;
+        if (error instanceof InvalidDictionaryInterchangeError) {
+            throw error;
+        }
+
         throw new InvalidDictionaryInterchangeError('invalid_utf8');
     }
 }
@@ -116,17 +129,22 @@ function parseDelimitedRecords(
             previousUnit <= 0xdbff
                 ? 0
                 : [...value].length;
+
         if (
             !rowFailure &&
             fieldCodePoints >
                 dictionaryInterchangeLimitsV1.maximumCellCodePoints
-        )
+        ) {
             rowFailure = 'cell_too_long';
+        }
     };
     const finishField = () => {
-        if (cells.length < dictionaryInterchangeLimitsV1.maximumColumns)
+        if (cells.length < dictionaryInterchangeLimitsV1.maximumColumns) {
             cells.push(rowFailure === 'cell_too_long' ? '' : field);
-        else rowFailure ??= 'too_many_columns';
+        } else {
+            rowFailure ??= 'too_many_columns';
+        }
+
         field = '';
         fieldCodePoints = 0;
         quoteClosed = false;
@@ -136,14 +154,21 @@ function parseDelimitedRecords(
         const structurallyBlank = cells.every(
             (cell) => cell.trim().length === 0,
         );
+
         if (rowFailure || !structurallyBlank) {
             records.push({
                 cells,
                 ...(rowFailure ? { failureCode: rowFailure } : {}),
             });
-            if (records.length > dictionaryInterchangeLimitsV1.maximumRows + 1)
+
+            if (
+                records.length >
+                dictionaryInterchangeLimitsV1.maximumRows + 1
+            ) {
                 throw new InvalidDictionaryInterchangeError('too_many_rows');
+            }
         }
+
         cells = [];
         rowFailure = undefined;
         sawRowContent = false;
@@ -163,37 +188,60 @@ function parseDelimitedRecords(
             } else if (character === '\r' && text[index + 1] === '\n') {
                 append('\r\n');
                 index += 1;
-            } else append(character);
+            } else {
+                append(character);
+            }
+
             sawRowContent = true;
             continue;
         }
 
         const isNewline = character === '\r' || character === '\n';
         if (quoteClosed) {
-            if (character === separator) finishField();
-            else if (isNewline) {
+            if (character === separator) {
+                finishField();
+            } else if (isNewline) {
                 finishRecord();
-                if (character === '\r' && text[index + 1] === '\n') index += 1;
-            } else rowFailure ??= 'malformed_row';
+                if (character === '\r' && text[index + 1] === '\n') {
+                    index += 1;
+                }
+            } else {
+                rowFailure ??= 'malformed_row';
+            }
+
             continue;
         }
+
         if (character === '"') {
-            if (field.length === 0) inQuotes = true;
-            else rowFailure ??= 'malformed_row';
+            if (field.length === 0) {
+                inQuotes = true;
+            } else {
+                rowFailure ??= 'malformed_row';
+            }
+
             sawRowContent = true;
         } else if (character === separator) {
             finishField();
             sawRowContent = true;
         } else if (isNewline) {
             finishRecord();
-            if (character === '\r' && text[index + 1] === '\n') index += 1;
+            if (character === '\r' && text[index + 1] === '\n') {
+                index += 1;
+            }
         } else {
             append(character);
             sawRowContent = true;
         }
     }
-    if (inQuotes) rowFailure ??= 'malformed_row';
-    if (sawRowContent || field.length > 0 || cells.length > 0) finishRecord();
+
+    if (inQuotes) {
+        rowFailure ??= 'malformed_row';
+    }
+
+    if (sawRowContent || field.length > 0 || cells.length > 0) {
+        finishRecord();
+    }
+
     return records;
 }
 
@@ -209,6 +257,7 @@ function failure(
         missing_column: 'The selected source or target column is missing.',
         too_many_columns: 'The row exceeds the column limit.',
     };
+
     return { code, message: messages[code], rowIndex };
 }
 
@@ -220,16 +269,22 @@ export function parseDictionaryInterchange(input: {
         decodeImportBytes(input.bytes),
         input.options.delimiter,
     );
+
     if (
         records[0]?.cells[0] === 'record_type' &&
         records[0]?.cells[1] === 'languon_format_version'
-    )
+    ) {
         throw new InvalidDictionaryInterchangeError('invalid_header');
+    }
+
     const header = input.options.hasHeader ? records.shift() : undefined;
-    if (header?.failureCode)
+    if (header?.failureCode) {
         throw new InvalidDictionaryInterchangeError('invalid_header');
-    if (records.length > dictionaryInterchangeLimitsV1.maximumRows)
+    }
+
+    if (records.length > dictionaryInterchangeLimitsV1.maximumRows) {
         throw new InvalidDictionaryInterchangeError('too_many_rows');
+    }
 
     const rows: DictionaryInterchangePair[] = [];
     const failures: DictionaryImportRowFailure[] = [];
@@ -257,12 +312,14 @@ export function parseDictionaryInterchange(input: {
             failures.push(failure(rowIndex, record.failureCode));
             continue;
         }
+
         const sourceInput = record.cells[input.options.sourceColumnIndex];
         const translationInput = record.cells[input.options.targetColumnIndex];
         if (sourceInput === undefined || translationInput === undefined) {
             failures.push(failure(rowIndex, 'missing_column'));
             continue;
         }
+
         let source: string;
         let translation: string;
         try {
@@ -271,23 +328,31 @@ export function parseDictionaryInterchange(input: {
                 maximumCodePoints: dictionaryLimits.requiredCardValueCodePoints,
             });
         } catch (error) {
-            if (!(error instanceof InvalidDictionaryTextError)) throw error;
+            if (!(error instanceof InvalidDictionaryTextError)) {
+                throw error;
+            }
+
             failures.push(failure(rowIndex, 'invalid_source'));
             continue;
         }
+
         try {
             translation = normalizeRequiredText(translationInput, {
                 field: 'translation',
                 maximumCodePoints: dictionaryLimits.requiredCardValueCodePoints,
             });
         } catch (error) {
-            if (!(error instanceof InvalidDictionaryTextError)) throw error;
+            if (!(error instanceof InvalidDictionaryTextError)) {
+                throw error;
+            }
+
             failures.push(failure(rowIndex, 'invalid_translation'));
             continue;
         }
+
         const sourceKey = normalizeDictionaryCardSourceForSearch(source);
         const duplicateRowIndex = firstSourceRows.get(sourceKey);
-        if (duplicateRowIndex !== undefined)
+        if (duplicateRowIndex !== undefined) {
             warnings.push({
                 code: 'duplicate_source',
                 duplicateCardId: null,
@@ -295,9 +360,13 @@ export function parseDictionaryInterchange(input: {
                 message: 'This source duplicates an earlier import row.',
                 rowIndex,
             });
-        else firstSourceRows.set(sourceKey, rowIndex);
+        } else {
+            firstSourceRows.set(sourceKey, rowIndex);
+        }
+
         rows.push({ rowIndex, source, translation });
     }
+
     return { columns, failures, rows, totalRows: records.length, warnings };
 }
 
@@ -311,6 +380,7 @@ function formulaEscape(value: string, reversible: boolean) {
         (firstNonWhitespace !== undefined &&
             '=+-@'.includes(firstNonWhitespace)) ||
         (reversible && value.startsWith("'"));
+
     return { escaped, value: escaped ? `'${value}` : value };
 }
 
@@ -327,9 +397,14 @@ export function decodeLanguonCsvEscapedCell(
     value: string,
     escaped: boolean,
 ): string {
-    if (!escaped) return value;
-    if (!value.startsWith("'"))
+    if (!escaped) {
+        return value;
+    }
+
+    if (!value.startsWith("'")) {
         throw new InvalidDictionaryInterchangeError('invalid_header');
+    }
+
     return value.slice(1);
 }
 
@@ -339,10 +414,13 @@ export function decodeLanguonCsvNullableOverride(input: {
     value: string;
 }): string | null {
     if (input.inherited) {
-        if (input.value !== 'inherit' || input.formulaEscaped)
+        if (input.value !== 'inherit' || input.formulaEscaped) {
             throw new InvalidDictionaryInterchangeError('invalid_header');
+        }
+
         return null;
     }
+
     return decodeLanguonCsvEscapedCell(input.value, input.formulaEscaped);
 }
 
@@ -393,16 +471,28 @@ export function createDictionaryInterchangeSerializer(
     const encode = (value: string): Uint8Array => {
         const chunk = encoder.encode(value);
         bytesWritten += chunk.byteLength;
-        if (bytesWritten > dictionaryInterchangeLimitsV1.maximumExportUtf8Bytes)
+        if (
+            bytesWritten > dictionaryInterchangeLimitsV1.maximumExportUtf8Bytes
+        ) {
             throw new InvalidDictionaryInterchangeError('output_too_large');
+        }
+
         return chunk;
     };
     const header = (): Uint8Array[] => {
-        if (started) return [];
+        if (started) {
+            return [];
+        }
+
         started = true;
-        if (input.format === 'quizlet-text') return [];
-        if (input.format === 'quizlet-csv')
+        if (input.format === 'quizlet-text') {
+            return [];
+        }
+
+        if (input.format === 'quizlet-csv') {
             return [encode('source,translation\r\n')];
+        }
+
         const name = formulaEscape(input.dictionary.name, true);
         const description = formulaEscape(
             input.dictionary.description ?? '',
@@ -461,14 +551,16 @@ export function createDictionaryInterchangeSerializer(
         const row = dictionaryLanguonCsvV1Headers
             .map((column) => encodeRfc4180Cell(metadata.get(column) ?? '', ','))
             .join(',');
+
         return [
             encode(`${dictionaryLanguonCsvV1Headers.join(',')}\r\n`),
             encode(`${row}\r\n`),
         ];
     };
     const assertOpen = () => {
-        if (finished)
+        if (finished) {
             throw new Error('Dictionary interchange serializer is closed.');
+        }
     };
 
     return {
@@ -477,8 +569,10 @@ export function createDictionaryInterchangeSerializer(
             if (
                 cardsWritten + cards.length >
                 dictionaryInterchangeLimitsV1.maximumRows
-            )
+            ) {
                 throw new InvalidDictionaryInterchangeError('too_many_rows');
+            }
+
             const chunks = header();
             const warnings: DictionaryInterchangeExportWarning[] = [];
             for (const card of cards) {
@@ -488,24 +582,32 @@ export function createDictionaryInterchangeSerializer(
                         (field) => {
                             const raw = card.values[field];
                             const normalized = raw.replace(/[\t\r\n]+/gu, ' ');
-                            if (normalized !== raw) fields.push(field);
+                            if (normalized !== raw) {
+                                fields.push(field);
+                            }
+
                             return normalized;
                         },
                     );
-                    if (fields.length > 0)
+
+                    if (fields.length > 0) {
                         warnings.push({
                             cardId: card.id,
                             code: 'quizlet_text_normalized',
                             fields,
                         });
+                    }
+
                     chunks.push(
                         encode(
                             `${cardsWritten === 0 ? '' : '\n'}${values.join('\t')}`,
                         ),
                     );
+
                     cardsWritten += 1;
                     continue;
                 }
+
                 if (input.format === 'quizlet-csv') {
                     chunks.push(
                         encode(
@@ -520,6 +622,7 @@ export function createDictionaryInterchangeSerializer(
                                 .join(',')}\r\n`,
                         ),
                     );
+
                     cardsWritten += 1;
                     continue;
                 }
@@ -659,6 +762,7 @@ export function createDictionaryInterchangeSerializer(
                     ],
                     ['authorship', card.authorship],
                 ]);
+
                 chunks.push(
                     encode(
                         `${dictionaryLanguonCsvV1Headers
@@ -671,13 +775,16 @@ export function createDictionaryInterchangeSerializer(
                             .join(',')}\r\n`,
                     ),
                 );
+
                 cardsWritten += 1;
             }
+
             return { chunks, warnings };
         },
         finish() {
             assertOpen();
             finished = true;
+
             return { chunks: header(), warnings: [] };
         },
     };

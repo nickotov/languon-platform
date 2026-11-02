@@ -39,10 +39,12 @@ export function ResourceSection({
     function toggle() {
         shell.toggleSection(section.kind);
     }
+
     function createResource() {
         onNavigate?.();
         create(section.kind);
     }
+
     return (
         <li>
             <div className={rowClass}>

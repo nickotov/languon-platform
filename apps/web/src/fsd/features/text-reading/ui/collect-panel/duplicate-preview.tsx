@@ -27,7 +27,10 @@ export function DuplicatePreview({
         setCard(null);
         const load = async () => {
             try {
-                if (!requestWithSession) return;
+                if (!requestWithSession) {
+                    return;
+                }
+
                 let cursor: string | undefined;
                 do {
                     const response = await requestWithSession((token) =>
@@ -43,25 +46,36 @@ export function DuplicatePreview({
                             control.signal,
                         ),
                     );
-                    if (control.signal.aborted) return;
+
+                    if (control.signal.aborted) {
+                        return;
+                    }
+
                     const found = response.data.find(
                         (candidate) =>
                             normalize(candidate.values.source) ===
                             normalize(term),
                     );
+
                     if (found) {
                         setCard(found);
+
                         return;
                     }
+
                     cursor = response.nextCursor ?? undefined;
                 } while (cursor);
             } catch {
                 /* Keep confirmation available; preview has an explicit retry. */
             } finally {
-                if (!control.signal.aborted) setLoading(false);
+                if (!control.signal.aborted) {
+                    setLoading(false);
+                }
             }
         };
+
         void load();
+
         return () => control.abort();
     }, [dictionaryId, term, requestWithSession, attempt]);
 
@@ -69,8 +83,11 @@ export function DuplicatePreview({
         setAttempt((value) => value + 1);
     }
 
-    if (loading) return <Skeleton height={44} />;
-    if (card)
+    if (loading) {
+        return <Skeleton height={44} />;
+    }
+
+    if (card) {
         return (
             <p>
                 {t('texts.collect.preview', {
@@ -79,6 +96,7 @@ export function DuplicatePreview({
                 })}
             </p>
         );
+    }
 
     return (
         <div role='status'>

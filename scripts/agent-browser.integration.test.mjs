@@ -20,8 +20,12 @@ function listen(server, host) {
 }
 
 function closeServer(server) {
-    if (!server.listening) return Promise.resolve();
+    if (!server.listening) {
+        return Promise.resolve();
+    }
+
     server.close();
+
     return once(server, 'close');
 }
 
@@ -40,9 +44,11 @@ function runWrapper(arguments_) {
         child.stdout.on('data', (chunk) => {
             stdout += chunk;
         });
+
         child.stderr.on('data', (chunk) => {
             stderr += chunk;
         });
+
         child.once('error', reject);
         child.once('close', (code) => {
             resolveRun({ code: code ?? 1, stderr, stdout });
@@ -87,10 +93,12 @@ test(
                 'containment-test',
                 localUrl,
             ]);
+
             assert.equal(started.code, 0, started.stderr || started.stdout);
             session = started.stdout.match(
                 /Languon browser session: (languon-[a-z0-9-]+-[a-f0-9]{32})/,
             )?.[1];
+
             assert.ok(
                 session,
                 `missing wrapper-owned session handle: ${started.stdout}`,
@@ -105,6 +113,7 @@ test(
                 'click',
                 '--exact',
             ]);
+
             assert.equal(beacon.code, 0, beacon.stderr || beacon.stdout);
             await new Promise((resolveWait) => setTimeout(resolveWait, 300));
             assert.deepEqual(
@@ -122,11 +131,13 @@ test(
                 'click',
                 '--exact',
             ]);
+
             assert.equal(
                 externalNavigation.code,
                 0,
                 externalNavigation.stderr || externalNavigation.stdout,
             );
+
             await new Promise((resolveWait) => setTimeout(resolveWait, 300));
             assert.deepEqual(
                 escapedRequests,
@@ -134,7 +145,10 @@ test(
                 'top-level navigation escaped the host allowlist',
             );
         } finally {
-            if (session) await runWrapper(['--session', session, 'close']);
+            if (session) {
+                await runWrapper(['--session', session, 'close']);
+            }
+
             await Promise.all([closeServer(app), closeServer(sink)]);
         }
     },

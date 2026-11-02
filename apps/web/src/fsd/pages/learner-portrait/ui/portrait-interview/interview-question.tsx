@@ -58,18 +58,29 @@ export function InterviewQuestion({
     function changeCustom(event: ChangeEvent<HTMLInputElement>) {
         setCustom(event.target.value);
     }
+
     function changeOption(event: ChangeEvent<HTMLInputElement>) {
         const value = event.target.value;
         setSelected((previous) => {
-            if (!question.multiSelect) return [value];
-            if (previous.includes(value))
+            if (!question.multiSelect) {
+                return [value];
+            }
+
+            if (previous.includes(value)) {
                 return previous.filter((item) => item !== value);
+            }
+
             const maximum =
                 question.topic === 'explanation-languages' ? 11 : 12;
-            if (previous.length >= maximum) return previous;
+
+            if (previous.length >= maximum) {
+                return previous;
+            }
+
             return [...previous, value];
         });
     }
+
     function changeLanguage(
         event: ChangeEvent<HTMLSelectElement | HTMLInputElement>,
     ) {
@@ -89,6 +100,7 @@ export function InterviewQuestion({
             },
         }));
     }
+
     function submit(event: FormEvent) {
         event.preventDefault();
         setTried(true);
@@ -98,18 +110,26 @@ export function InterviewQuestion({
                 !custom.trim() &&
                 !Object.keys(preferences).length &&
                 !mixing)
-        )
+        ) {
             return;
+        }
+
         const answers = selected.map((id) => {
             const label =
                 options.find((option) => option.id === id)?.label ?? id;
-            if (question.topic !== 'languages') return label;
+
+            if (question.topic !== 'languages') {
+                return label;
+            }
+
             const details = languages[id];
             const levelLabel = interviewLevelOptions(locale).find(
                 (option) => option.value === details?.level,
             )?.label;
+
             return `${label}${levelLabel ? ` · ${levelLabel}` : ''}${details?.learning ? ` · ${interviewText(locale, 'learning')}` : ''}`;
         });
+
         onAnswer({
             selected: [
                 ...answers,
@@ -119,6 +139,7 @@ export function InterviewQuestion({
             ...(custom.trim() ? { text: custom.trim() } : {}),
         });
     }
+
     const invalid =
         tried &&
         !selected.length &&
@@ -133,6 +154,7 @@ export function InterviewQuestion({
         locale,
         optional ? 'optional' : 'canSkip',
     );
+
     return (
         <form
             className={styles.question}

@@ -24,8 +24,10 @@ const projectPrefix = 'languon-local-stage';
 const releaseShaFallback = '0000000000000000000000000000000000000000';
 
 async function assertLocalDocker() {
-    if (process.env.DOCKER_HOST)
+    if (process.env.DOCKER_HOST) {
         throw new Error('Unset DOCKER_HOST before a local rehearsal.');
+    }
+
     const { stdout } = await runCommand(
         'docker',
         [
@@ -36,6 +38,7 @@ async function assertLocalDocker() {
         ],
         { capture: true },
     );
+
     if (!stdout.trim().startsWith('unix://')) {
         throw new Error(`Refusing non-local Docker endpoint: ${stdout.trim()}`);
     }
@@ -62,6 +65,7 @@ async function startRegistry() {
         () => true,
         () => false,
     );
+
     if (!exists) {
         await runCommand('docker', [
             'run',
@@ -95,14 +99,17 @@ async function buildManifest(sha) {
             tag,
             root,
         ]);
+
         await runCommand('docker', ['push', tag]);
         const { stdout } = await runCommand(
             'docker',
             ['image', 'inspect', '--format', '{{index .RepoDigests 0}}', tag],
             { capture: true },
         );
+
         images[service] = stdout.trim();
     }
+
     await writeFile(
         manifestPath,
         `${JSON.stringify(
@@ -161,6 +168,7 @@ async function generateLocalTlsCertificate() {
         '-out',
         tlsCertificatePath,
     ]);
+
     await chmod(tlsPrivateKeyPath, 0o600);
     await chmod(tlsCertificatePath, 0o600);
 }
@@ -171,9 +179,11 @@ async function writeConfig() {
     const passwordDigest = createHash('sha1')
         .update('local-admin-only')
         .digest('base64');
+
     await writeFile(adminHtpasswdPath, `admin:{SHA}${passwordDigest}\n`, {
         mode: 0o600,
     });
+
     await writeFile(
         configPath,
         [
@@ -219,6 +229,7 @@ async function startData() {
         POSTGRES_PASSWORD: 'languon_local',
         REDIS_PASSWORD: 'languon_local',
     };
+
     for (const network of [`${projectPrefix}-edge`, `${projectPrefix}-data`]) {
         const exists = await runCommand(
             'docker',
@@ -228,14 +239,18 @@ async function startData() {
             () => true,
             () => false,
         );
+
         if (!exists) {
             const args = ['network', 'create'];
-            if (network.endsWith('-edge'))
+            if (network.endsWith('-edge')) {
                 args.push('--subnet', '172.30.250.0/24');
+            }
+
             args.push(network);
             await runCommand('docker', args);
         }
     }
+
     await runCommand(
         'docker',
         [
@@ -283,6 +298,7 @@ async function proveFailedMigrationPreservesActive() {
         ),
         { mode: 0o600 },
     );
+
     let failed = false;
     try {
         await invoke('deploy');
@@ -291,7 +307,11 @@ async function proveFailedMigrationPreservesActive() {
     } finally {
         await writeFile(configPath, original, { mode: 0o600 });
     }
-    if (!failed) throw new Error('Expected disposable migration failure.');
+
+    if (!failed) {
+        throw new Error('Expected disposable migration failure.');
+    }
+
     await invoke('verify');
 }
 
@@ -354,6 +374,7 @@ async function down() {
         WEB_IMAGE:
             'local-cleanup.invalid/web@sha256:0000000000000000000000000000000000000000000000000000000000000000',
     };
+
     for (const slot of ['blue', 'green']) {
         await runCommand(
             'docker',
@@ -369,6 +390,7 @@ async function down() {
             { env },
         ).catch(() => {});
     }
+
     for (const [project, file, extra] of [
         [`${projectPrefix}-edge`, 'edge.compose.yaml', []],
         [`${projectPrefix}-data`, 'stage-data.compose.yaml', ['--volumes']],
@@ -388,17 +410,20 @@ async function down() {
             { env },
         ).catch(() => {});
     }
+
     await runCommand('docker', [
         'container',
         'rm',
         '--force',
         'languon-local-registry',
     ]).catch(() => {});
+
     for (const network of [`${projectPrefix}-edge`, `${projectPrefix}-data`]) {
         await runCommand('docker', ['network', 'rm', network], {
             capture: true,
         }).catch(() => {});
     }
+
     await rm(localDirectory, { recursive: true, force: true });
 }
 
@@ -411,9 +436,16 @@ async function main() {
             'Usage: local-rehearsal.mjs <deploy|verify|rollback|journey|down>',
         );
     }
+
     await assertLocalDocker();
-    if (command === 'down') return await down();
-    if (command === 'deploy' || command === 'journey') await prepare();
+    if (command === 'down') {
+        return await down();
+    }
+
+    if (command === 'deploy' || command === 'journey') {
+        await prepare();
+    }
+
     await invoke(command === 'journey' ? 'deploy' : command);
     if (command === 'journey') {
         await invoke('verify');
@@ -429,5 +461,6 @@ main().catch((error) => {
     process.stderr.write(
         `Local deployment rehearsal failed: ${error.message}\n`,
     );
+
     process.exitCode = 1;
 });

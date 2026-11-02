@@ -45,7 +45,10 @@ export function useConversationStream(
         state.mounted = true;
         resetPublication(true);
         session.updateFlags({ unavailable: false, reconnecting: false });
-        if (id) void chat.resumeStream();
+        if (id) {
+            void chat.resumeStream();
+        }
+
         return () => {
             state.mounted = false;
             resetPublication(false);
@@ -55,8 +58,12 @@ export function useConversationStream(
             state.admission = null;
         };
     }, [session, state, resetPublication, transport, chat, id]);
+
     useLayoutEffect(() => {
-        if (!state.active || detail?.conversation.id !== id) return;
+        if (!state.active || detail?.conversation.id !== id) {
+            return;
+        }
+
         state.detail = detail;
         if (!state.bootstrapped && detail) {
             state.bootstrapped = true;
@@ -67,17 +74,22 @@ export function useConversationStream(
     async function submit(
         input: SubmitConversationTurnRequest,
     ): Promise<{ turn: ConversationTurn }> {
-        if (!id || !state.mounted)
+        if (!id || !state.mounted) {
             throw new Error('Conversation is unavailable.');
+        }
+
         const epoch = state.epoch;
         await chat.stop();
-        if (!state.mounted || state.epoch !== epoch)
+        if (!state.mounted || state.epoch !== epoch) {
             throw new Error('Conversation is unavailable.');
+        }
+
         resetPublication(true);
         chat.clearError();
         const accepted = new Promise<ConversationTurn>((resolve, reject) => {
             state.admission = { resolve, reject };
         });
+
         void chat
             .sendMessage(
                 {
@@ -93,17 +105,24 @@ export function useConversationStream(
                         ? error
                         : new Error('Admission failed.'),
                 );
+
                 state.admission = null;
             });
+
         return { turn: await accepted };
     }
+
     async function reconnect() {
         await chat.stop();
-        if (!state.mounted) return;
+        if (!state.mounted) {
+            return;
+        }
+
         resetPublication(true);
         session.updateFlags({ unavailable: false, reconnecting: false });
         chat.clearError();
         void chat.resumeStream();
     }
+
     return { ...flags, submit, reconnect, messages: sdk.messages };
 }

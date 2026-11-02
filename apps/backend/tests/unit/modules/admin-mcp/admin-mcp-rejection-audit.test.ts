@@ -9,6 +9,7 @@ vi.mock(
     '../../../../src/modules/admin-mcp/infrastructure/persistence/drizzle/admin-mcp-persistence',
     async (importOriginal) => {
         const actual = await importOriginal<typeof Persistence>();
+
         return { ...actual, audit: doubles.audit };
     },
 );
@@ -122,11 +123,13 @@ describe('post-rollback MCP rejection auditing', () => {
             string,
             unknown
         >;
+
         expect(vi.mocked(doubles.audit).mock.calls[0]?.slice(2, 5)).toEqual([
             'model-check.rejected',
             'openrouter/openai/gpt-6-luna',
             'Synthetic checked model route',
         ]);
+
         expect(metadata).toMatchObject({
             operation: 'model-check.rejected',
             code: 'quota_exceeded',
@@ -134,6 +137,7 @@ describe('post-rollback MCP rejection auditing', () => {
             flowId: 'sentence-check',
             operationKeyHash: payloadHash(operationKey),
         });
+
         expect(JSON.stringify(metadata)).not.toContain(operationKey);
         expect(JSON.stringify(metadata)).not.toContain('private user text');
         expect(JSON.stringify(metadata)).not.toContain('hidden-value');
@@ -159,11 +163,13 @@ describe('post-rollback MCP rejection auditing', () => {
         expect(call[4]).toBe(
             'Delegated operation rejected; no safe caller reason supplied',
         );
+
         expect(call[6]).toEqual({
             operation: 'routing.write',
             code: 'operation_rejected',
             proposed: { amountCredits: '1.000' },
         });
+
         expect(JSON.stringify(call)).not.toContain('lmcp_');
         expect(JSON.stringify(call)).not.toContain('private learning material');
         expect(JSON.stringify(call)).not.toContain(

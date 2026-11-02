@@ -105,16 +105,20 @@ export async function sentencePracticePool(
               )
         : [];
 
-    if (replayExercises.length !== replayExerciseIds.length)
+    if (replayExercises.length !== replayExerciseIds.length) {
         throw new SentenceConflictError('stale_content');
+    }
+
     if (
         replayExercises.some(
             (exercise) =>
                 !SentenceExerciseSchema.safeParse(exercise.publicContent)
                     .success,
         )
-    )
+    ) {
         throw new SentenceConflictError('stale_content');
+    }
+
     const replayTargetIds = new Set(
         replayExercises.flatMap((exercise) =>
             exercise.publicContent.segments.flatMap((segment) =>
@@ -123,8 +127,9 @@ export async function sentencePracticePool(
         ),
     );
 
-    if (replayTargetIds.size > SENTENCE_LIMITS.selectedEntries)
+    if (replayTargetIds.size > SENTENCE_LIMITS.selectedEntries) {
         throw new LearningInvalidRequestError();
+    }
 
     const covered = selection?.visitedExerciseIds.length
         ? await tx
@@ -198,9 +203,14 @@ export async function sentencePracticePreparedSelection(
     input: SentencePrepareRequest,
     context: SentenceContext,
 ) {
-    if (!input.preparedBatchId) return undefined;
-    if (!persistence.policy.resolvePreparedBatch)
+    if (!input.preparedBatchId) {
+        return undefined;
+    }
+
+    if (!persistence.policy.resolvePreparedBatch) {
         throw new SentenceUnavailableError();
+    }
+
     const batch = await persistence.policy.resolvePreparedBatch(
         tx,
         access,
@@ -212,8 +222,10 @@ export async function sentencePracticePreparedSelection(
         batch.direction !== input.direction ||
         (input.scope.type === 'manual' &&
             input.scope.entryIds.some((id) => !batch.entryIds.includes(id)))
-    )
+    ) {
         throw new SentenceConflictError('stale_content');
+    }
+
     const requested =
         input.scope.type === 'manual'
             ? new Set(input.scope.entryIds)

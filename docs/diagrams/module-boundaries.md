@@ -24,8 +24,15 @@ source_paths:
     - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-provider-expense-guards.sql
     - infra/deploy/sql/dictionary-worker-role.sql
     - infra/deploy/sql/account-purge-worker-role.sql
-source_fingerprint: sha256:e584bc9c34366bf54cfedbb70344c4d808607e8179cc83d2f01c77d81dd0b0c9
-reviewed: 2026-10-22
+    - apps/backend/src/modules/knowledge/infrastructure/knowledge-sentence-composition.ts
+    - apps/backend/src/modules/knowledge/application/private-translation-service.ts
+    - apps/backend/src/modules/knowledge/application/transcription-job-service.ts
+    - apps/web/src/fsd/pages/knowledge/hooks/use-knowledge-learning-integrations.ts
+    - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
+    - infra/deploy/lib/deployment.mjs
+    - infra/deploy/lib/worker-database-privileges.mjs
+source_fingerprint: sha256:b4886cfdec4516adde7fff3c241bbfff1b3e2e1ead39e1fd39b7412efd9614ff
+reviewed: 2026-11-01
 ---
 
 # Module and layer boundaries
@@ -51,7 +58,7 @@ Zod wire schemas"]
         Infra --> DB["Drizzle / PostgreSQL, Redis, providers"]
         Modules["Authentication • Users • Administration
 Dictionaries • Learning • Texts
-Conversations • Knowledge • Speech
+Conversations • Knowledge/workbooks/private learning • Speech
 Text AI • AI credits and accounting"] --- App
     end
     Contracts --- HTTP
@@ -65,8 +72,12 @@ coordinate cross-module invariants while application/domain code stays free of S
 and vendor SDKs. `app.ts` mounts the modules actually supplied by `index.ts`.
 The Knowledge and Conversations compositions share a typed note transaction
 participant for source reads, first-message draft naming and explicit proposal
-publication. Knowledge owns working branches and share capabilities; Conversations
-owns private turns and Mastra history.
+publication. Knowledge owns working branches, workbooks, share capabilities,
+media grants and private learner state; Conversations owns private turns and
+Mastra history. Knowledge sentence practice and private translations use source
+adapters to existing Learning/Texts execution instead of giving shared readers a
+document-writing path. Transcription is a Knowledge job service in the existing
+worker/runtime boundary, with a separate admin configuration surface.
 
 Web and admin share public framework-neutral packages rather than application source.
 Admin intentionally uses its own four-layer structure under ADR-0010. This diagram
@@ -82,6 +93,13 @@ worker/fence; mutable session settings alone do not authorize erasure. Anonymous
 attribution is preserved before personal wallet links are removed. This describes the new
 financial boundary, not a redesign of all pre-existing domain purge permissions. Admin adds an accounting page through the existing
 app/pages/shared boundaries; public contract exports remain framework-neutral.
+
+Deployment tooling keeps worker privilege queries and assertions in a focused
+local module, called by the deployment controller; those checks do not grant
+application services SQL or deployment authority. The accounting participant
+keeps observation construction private to its existing transaction boundary.
+Frontend panel, field-policy and presentation extractions remain inside their
+owning slices; they introduce no new app, layer or cross-slice relationship.
 
 ## Sources
 
@@ -114,3 +132,12 @@ app/pages/shared boundaries; public contract exports remain framework-neutral.
 - [infra/deploy/sql/dictionary-worker-role.sql](../../infra/deploy/sql/dictionary-worker-role.sql)
 
 - [infra/deploy/sql/account-purge-worker-role.sql](../../infra/deploy/sql/account-purge-worker-role.sql)
+- [apps/backend/src/modules/knowledge/infrastructure/knowledge-sentence-composition.ts](../../apps/backend/src/modules/knowledge/infrastructure/knowledge-sentence-composition.ts)
+- [apps/backend/src/modules/knowledge/application/private-translation-service.ts](../../apps/backend/src/modules/knowledge/application/private-translation-service.ts)
+- [apps/backend/src/modules/knowledge/application/transcription-job-service.ts](../../apps/backend/src/modules/knowledge/application/transcription-job-service.ts)
+- [apps/web/src/fsd/pages/knowledge/hooks/use-knowledge-learning-integrations.ts](../../apps/web/src/fsd/pages/knowledge/hooks/use-knowledge-learning-integrations.ts)
+- [docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md](../adr/0050-interactive-workbook-content-and-learning-boundaries.md)
+
+- [infra/deploy/lib/deployment.mjs](../../infra/deploy/lib/deployment.mjs)
+
+- [infra/deploy/lib/worker-database-privileges.mjs](../../infra/deploy/lib/worker-database-privileges.mjs)

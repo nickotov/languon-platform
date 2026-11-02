@@ -51,17 +51,20 @@ export function createUserProfileRoutes(
             }
         },
     });
+
     app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
         bearerFormat: 'JWT',
         scheme: 'bearer',
         type: 'http',
     });
+
     app.use('/users/*', async (context, next) => {
         for (const [name, value] of Object.entries(
             dependencies.policy.securityHeaders(),
         )) {
             context.header(name, value);
         }
+
         const origin = context.req.header('Origin');
         if (origin) {
             dependencies.policy.assertCookieRequestOrigin(origin);
@@ -69,8 +72,10 @@ export function createUserProfileRoutes(
             context.header('Access-Control-Allow-Credentials', 'true');
             context.header('Vary', 'Origin');
         }
+
         await next();
     });
+
     app.use(
         '/users/*',
         bodyLimit({
@@ -86,61 +91,30 @@ export function createUserProfileRoutes(
                 ),
         }),
     );
+
     app.options('/users/*', (context) => {
         dependencies.policy.assertCookieRequestOrigin(
             context.req.header('Origin') ?? null,
         );
+
         context.header('Access-Control-Allow-Methods', 'PATCH, POST, OPTIONS');
         context.header(
             'Access-Control-Allow-Headers',
             'Authorization, Content-Type, X-Correlation-ID',
         );
+
         return context.body(null, 204);
     });
+
     app.onError((error, context) => {
-        const mapped =
-            error instanceof UserHandleAlreadyExistsError
-                ? new AuthHttpError(
-                      'conflict',
-                      'This handle is already taken.',
-                      409,
-                  )
-                : error instanceof UserProfileConflictError
-                  ? new AuthHttpError(
-                        'conflict',
-                        'The account changed concurrently. Try again.',
-                        409,
-                    )
-                  : error instanceof UserProfileUnavailableError
-                    ? new AuthHttpError(
-                          'authentication_required',
-                          'Authentication is required.',
-                          401,
-                      )
-                    : error instanceof AccountDeletionOwnerTransferRequiredError
-                      ? new AuthHttpError(
-                            'owner_transfer_required',
-                            'Transfer and revoke administrator ownership before removing this account.',
-                            409,
-                        )
-                      : error instanceof AccountDeletionConflictError
-                        ? new AuthHttpError(
-                              'conflict',
-                              'The account changed or removal is already pending.',
-                              409,
-                          )
-                        : error instanceof AccountDeletionJournalUnavailableError
-                          ? new AuthHttpError(
-                                'service_unavailable',
-                                'Account removal is temporarily unavailable.',
-                                503,
-                            )
-                    : mapAuthenticationHttpError(error);
+        const mapped = mapUserProfileHttpError(error);
+
         return context.json(
             mapped.response(context.req.header('X-Correlation-ID')),
             mapped.status,
         );
     });
+
     app.openapi(
         createRoute({
             method: 'patch',
@@ -214,14 +188,17 @@ export function createUserProfileRoutes(
                 sessionId: claims.sessionId,
                 userId: claims.userId,
             });
+
             const handle = await dependencies.profiles.updateHandle({
                 handle: context.req.valid('json').handle,
                 now: new Date(),
                 userId: claims.userId,
             });
+
             return context.json({ handle }, 200);
         },
     );
+
     if (dependencies.deletions) {
         const deletions = dependencies.deletions;
         app.openapi(
@@ -245,13 +222,50 @@ export function createUserProfileRoutes(
                                 schema: AccountDeletionScheduleResponseSchema,
                             },
                         },
-                        description: 'Account removal scheduled; sessions revoked.',
+                        description:
+                            'Account removal scheduled; sessions revoked.',
                     },
-                    400: { content: { 'application/json': { schema: AuthErrorResponseSchema } }, description: 'Invalid request.' },
-                    401: { content: { 'application/json': { schema: AuthErrorResponseSchema } }, description: 'Authentication required.' },
-                    403: { content: { 'application/json': { schema: AuthErrorResponseSchema } }, description: 'Recent authentication required.' },
-                    409: { content: { 'application/json': { schema: AuthErrorResponseSchema } }, description: 'Owner transfer required or account state conflict.' },
-                    503: { content: { 'application/json': { schema: AuthErrorResponseSchema } }, description: 'Recovery journal unavailable.' },
+                    400: {
+                        content: {
+                            'application/json': {
+                                schema: AuthErrorResponseSchema,
+                            },
+                        },
+                        description: 'Invalid request.',
+                    },
+                    401: {
+                        content: {
+                            'application/json': {
+                                schema: AuthErrorResponseSchema,
+                            },
+                        },
+                        description: 'Authentication required.',
+                    },
+                    403: {
+                        content: {
+                            'application/json': {
+                                schema: AuthErrorResponseSchema,
+                            },
+                        },
+                        description: 'Recent authentication required.',
+                    },
+                    409: {
+                        content: {
+                            'application/json': {
+                                schema: AuthErrorResponseSchema,
+                            },
+                        },
+                        description:
+                            'Owner transfer required or account state conflict.',
+                    },
+                    503: {
+                        content: {
+                            'application/json': {
+                                schema: AuthErrorResponseSchema,
+                            },
+                        },
+                        description: 'Recovery journal unavailable.',
+                    },
                 },
                 security: [{ bearerAuth: [] }],
                 tags: ['Users'],
@@ -265,10 +279,12 @@ export function createUserProfileRoutes(
                     sessionId: claims.sessionId,
                     userId: claims.userId,
                 });
+
                 context.header(
                     'Set-Cookie',
                     dependencies.policy.clearRefreshCookie(),
                 );
+
                 return context.json(
                     {
                         purgeAt: scheduled.purgeAt.toISOString(),
@@ -280,5 +296,58 @@ export function createUserProfileRoutes(
             },
         );
     }
+
     return app;
+}
+
+function mapUserProfileHttpError(error: Error): AuthHttpError {
+    if (error instanceof UserHandleAlreadyExistsError) {
+        return new AuthHttpError(
+            'conflict',
+            'This handle is already taken.',
+            409,
+        );
+    }
+
+    if (error instanceof UserProfileConflictError) {
+        return new AuthHttpError(
+            'conflict',
+            'The account changed concurrently. Try again.',
+            409,
+        );
+    }
+
+    if (error instanceof UserProfileUnavailableError) {
+        return new AuthHttpError(
+            'authentication_required',
+            'Authentication is required.',
+            401,
+        );
+    }
+
+    if (error instanceof AccountDeletionOwnerTransferRequiredError) {
+        return new AuthHttpError(
+            'owner_transfer_required',
+            'Transfer and revoke administrator ownership before removing this account.',
+            409,
+        );
+    }
+
+    if (error instanceof AccountDeletionConflictError) {
+        return new AuthHttpError(
+            'conflict',
+            'The account changed or removal is already pending.',
+            409,
+        );
+    }
+
+    if (error instanceof AccountDeletionJournalUnavailableError) {
+        return new AuthHttpError(
+            'service_unavailable',
+            'Account removal is temporarily unavailable.',
+            503,
+        );
+    }
+
+    return mapAuthenticationHttpError(error);
 }

@@ -6,18 +6,18 @@ check.
 
 ## Acceptance map
 
-| ID | Implementation | Valid supporting evidence |
-| --- | --- | --- |
-| AC1 | contracts credit amount parser; ai-credits domain rates/action arithmetic; immutable price/policy schema and SQL | Pricing/parser tests; action15; records9; backend/web/admin types and builds |
-| AC2 | generic action participant; quote admission; preference budget; accounted model gate and all legacy adapters | action15, legacy66, strict admission28unit+5PG, composed fixture browser |
-| AC3 | per-attempt expenses/outcome settlement; durable Stop marker; authority SQL | action15 measured partial Stop; wallet31; restricted dictionary role3 and speechrole2 |
-| AC4 | capability policies + interview action accounting; UTC counter; operator budgets | policy/interview unit/PG; final operator and authority cases |
-| AC5 | wallet/grant/capacity projections; lock-free published prices; private maintenance/report pools | capacity14; wallet31; unchanged million history/no history SELECT capture; final calibrated latency passed (AC9 artifact recorded) |
-| AC6 | durable conversations; turn buffer100ms/4KiB; private progress transaction; UI usage/Continue | conversation-store37 including Stop under unrelated capacity lock; action15; learner accounting2 E2E, frontend26; browser screenshots |
-| AC7 | accounting records/routes/report worker; provider rates; admin accounting screen | records/speech58 PG; admin accounting E2E1; <=60s freshness; actual restrictedpurge |
-| AC8 | Redis before heavy admission; action budgets; source/lease/authority/worker role guards | capability/authority/capacity tests; restrictedrole denied mutations; strict default fence; finalsecurity review pending |
-| AC9 | opt-in real Hono+Redis+PG+SSE fixture and independent tester review | Final source-stable fixture300/300, p95 93.280ms under100ms; see accounting-load-staged-final.json |
-| AC10 | ADR0045, operations/architecture,28 mapped guides,9 diagrams | doc/mapping checks, diagram render2 and hashes; independent review, fresh development cutover and merge pending |
+| ID   | Implementation                                                                                                   | Valid supporting evidence                                                                                                             |
+| ---- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| AC1  | contracts credit amount parser; ai-credits domain rates/action arithmetic; immutable price/policy schema and SQL | Pricing/parser tests; action15; records9; backend/web/admin types and builds                                                          |
+| AC2  | generic action participant; quote admission; preference budget; accounted model gate and all legacy adapters     | action15, legacy66, strict admission28unit+5PG, composed fixture browser                                                              |
+| AC3  | per-attempt expenses/outcome settlement; durable Stop marker; authority SQL                                      | action15 measured partial Stop; wallet31; restricted dictionary role3 and speechrole2                                                 |
+| AC4  | capability policies + interview action accounting; UTC counter; operator budgets                                 | policy/interview unit/PG; final operator and authority cases                                                                          |
+| AC5  | wallet/grant/capacity projections; lock-free published prices; private maintenance/report pools                  | capacity14; wallet31; unchanged million history/no history SELECT capture; final calibrated latency passed (AC9 artifact recorded)    |
+| AC6  | durable conversations; turn buffer100ms/4KiB; private progress transaction; UI usage/Continue                    | conversation-store37 including Stop under unrelated capacity lock; action15; learner accounting2 E2E, frontend26; browser screenshots |
+| AC7  | accounting records/routes/report worker; provider rates; admin accounting screen                                 | records/speech58 PG; admin accounting E2E1; <=60s freshness; actual restrictedpurge                                                   |
+| AC8  | Redis before heavy admission; action budgets; source/lease/authority/worker role guards                          | capability/authority/capacity tests; restrictedrole denied mutations; strict default fence; finalsecurity review pending              |
+| AC9  | opt-in real Hono+Redis+PG+SSE fixture and independent tester review                                              | Final source-stable fixture300/300, p95 93.280ms under100ms; see accounting-load-staged-final.json                                    |
+| AC10 | ADR0045, operations/architecture,28 mapped guides,9 diagrams                                                     | doc/mapping checks, diagram render2 and hashes; independent review, fresh development cutover and merge pending                       |
 
 ## Scope and evidence validity
 

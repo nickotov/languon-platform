@@ -117,9 +117,11 @@ describe('inline card auto-save persistence', () => {
         accept.mockResolvedValue({ outcome: { cardVersion: 2 } } as Awaited<
             ReturnType<typeof dictionaryApi.acceptGenerationJob>
         >);
+
         read.mockResolvedValue(response);
         update.mockResolvedValue(response);
     });
+
     const saver = () =>
         createCardAutoSaver(card.dictionaryId, requestWithSession);
 
@@ -134,11 +136,13 @@ describe('inline card auto-save persistence', () => {
                 selectedSuggestions: input.selectedSuggestions,
             },
         );
+
         expect(read).toHaveBeenCalledWith(
             'test-token',
             card.dictionaryId,
             card.id,
         );
+
         expect(update).not.toHaveBeenCalled();
     });
 
@@ -163,6 +167,7 @@ describe('inline card auto-save persistence', () => {
             saved: true,
             reloadRequired: false,
         });
+
         await expect(save(input)).resolves.toEqual(response);
         expect(accept).toHaveBeenCalledTimes(1);
         expect(read).toHaveBeenCalledTimes(2);
@@ -175,6 +180,7 @@ describe('inline card auto-save persistence', () => {
             saved: true,
             freezeDraft: true,
         });
+
         read.mockResolvedValueOnce({
             ...response,
             card: {
@@ -186,12 +192,14 @@ describe('inline card auto-save persistence', () => {
                 },
             },
         });
+
         await expect(save(input)).rejects.toMatchObject({
             saved: true,
             freezeDraft: true,
             reloadRequired: true,
             cause: { detail: { code: 'version_conflict' } },
         });
+
         expect(accept).toHaveBeenCalledTimes(1);
     });
 
@@ -200,6 +208,7 @@ describe('inline card auto-save persistence', () => {
             ...response,
             card: { ...response.card, version: 3 },
         });
+
         await expect(saver()(input)).rejects.toMatchObject({
             saved: true,
             freezeDraft: true,
@@ -218,6 +227,7 @@ describe('inline card auto-save persistence', () => {
                 },
             },
         });
+
         await expect(saver()(input)).rejects.toMatchObject({
             saved: true,
             freezeDraft: true,
@@ -234,6 +244,7 @@ describe('inline card auto-save persistence', () => {
                 values: { ...input.draft.values, translation: ' buenas ' },
             },
         };
+
         await expect(saver()(padded)).resolves.toEqual(response);
         expect(accept.mock.calls[0]?.[2]).toMatchObject({
             candidate: padded.draft,
@@ -246,10 +257,12 @@ describe('inline card auto-save persistence', () => {
         readJob.mockResolvedValueOnce({
             job: { state: 'accepted', outcome: { cardVersion: 2 } },
         } as Awaited<ReturnType<typeof dictionaryApi.readGenerationJob>>);
+
         await expect(save(input)).rejects.toMatchObject({
             freezeDraft: true,
             saved: false,
         });
+
         await expect(save(input)).resolves.toEqual(response);
         expect(accept).toHaveBeenCalledTimes(1);
     });
@@ -260,6 +273,7 @@ describe('inline card auto-save persistence', () => {
         readJob.mockResolvedValueOnce({ job: { state: 'review' } } as Awaited<
             ReturnType<typeof dictionaryApi.readGenerationJob>
         >);
+
         await expect(save(input)).rejects.toMatchObject({ freezeDraft: true });
         await save({ ...input, dictionaryVersion: 5 });
         expect(accept.mock.calls[0]).toEqual(accept.mock.calls[1]);
@@ -275,6 +289,7 @@ describe('inline card auto-save persistence', () => {
                 draft: { ...input.draft, translationContext: 'Changed' },
             }),
         ).rejects.toMatchObject({ freezeDraft: true });
+
         expect(accept).toHaveBeenCalledTimes(1);
     });
 
@@ -315,6 +330,7 @@ describe('inline card auto-save persistence', () => {
                 },
             }),
         ).resolves.toMatchObject({ unchanged: true });
+
         expect(accept).not.toHaveBeenCalled();
         expect(update).not.toHaveBeenCalled();
     });
@@ -343,10 +359,12 @@ describe('inline card auto-save persistence', () => {
                 },
             },
         });
+
         await expect(save(manual)).rejects.toMatchObject({
             freezeDraft: false,
             cause: { status: 409 },
         });
+
         expect(update).toHaveBeenCalledTimes(1);
     });
 
@@ -359,14 +377,17 @@ describe('inline card auto-save persistence', () => {
             ...input.generation,
             format: 'card-authoring:v1',
         });
+
         expect(legacy.candidate).not.toHaveProperty('translationContext');
         expect(
             'selectedSuggestions' in legacy && legacy.selectedSuggestions,
         ).toEqual(input.selectedSuggestions);
+
         const v2 = cardAuthoringAcceptance(input.draft, selections, {
             ...input.generation,
             format: 'card-authoring:v2',
         });
+
         expect(v2.candidate).not.toHaveProperty('translationContext');
         expect('selectedSuggestions' in v2 && v2.selectedSuggestions).toEqual(
             selections,

@@ -3,7 +3,12 @@ name: languon-recovery-gate
 services:
     recovery-gate:
         image: ${BACKEND_IMAGE:?required}
-        command: ['node', 'dist/modules/users/infrastructure/recovery/account-recovery-gate-command.js', 'run']
+        command:
+            [
+                'node',
+                'dist/modules/users/infrastructure/recovery/account-recovery-gate-command.js',
+                'run',
+            ]
         restart: 'no'
         init: true
         environment:
@@ -21,7 +26,7 @@ services:
         networks: [data]
         security_opt: [no-new-privileges:true]
         read_only: true
-        tmpfs: [/tmp:size=32m,mode=1777]
+        tmpfs: [/tmp:size=32m, mode=1777]
 
 networks:
     data:

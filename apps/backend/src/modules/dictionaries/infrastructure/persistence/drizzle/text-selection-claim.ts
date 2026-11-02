@@ -65,14 +65,18 @@ export async function claimSelectionJob(
             .where(eq(jobs.id, candidate.id))
             .for('update');
 
-        if (!job || !['queued', 'running'].includes(job.executionState))
+        if (!job || !['queued', 'running'].includes(job.executionState)) {
             continue;
+        }
+
         if (
             job.executionState === 'running' &&
             job.leaseDeadline &&
             job.leaseDeadline > now
-        )
+        ) {
             continue;
+        }
+
         if (
             usesLegacyAction(job.selectedExecutionSnapshot) &&
             job.executionState === 'running'
@@ -145,14 +149,18 @@ export async function claimSelectionJob(
         if (
             capacity.globalRunning >= options.globalConcurrency ||
             capacity.actorRunning >= options.ownerConcurrency
-        )
+        ) {
             continue;
+        }
+
         const retry = job.providerReservationState !== 'active';
         if (
             retry &&
             !textAiProviderBudgetAllows(capacity.providerUsage, true, budget)
-        )
+        ) {
             continue;
+        }
+
         const attempt = retry
             ? job.attemptCount + 1
             : Math.max(1, job.attemptCount);
@@ -218,8 +226,10 @@ export async function claimSelectionJob(
                   inputOverheadTokens: cardAuthoringInputOverhead,
                   at: now,
               }).catch((error: unknown) => {
-                  if (!(error instanceof TextAiSelectionUnavailableError))
+                  if (!(error instanceof TextAiSelectionUnavailableError)) {
                       throw error;
+                  }
+
                   routeUnavailable = true;
 
                   return null;
@@ -238,7 +248,9 @@ export async function claimSelectionJob(
             continue;
         }
 
-        if (retry) await reserveSelectionAttempt(tx, job, attempt, now);
+        if (retry) {
+            await reserveSelectionAttempt(tx, job, attempt, now);
+        }
 
         return {
             id: job.id,

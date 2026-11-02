@@ -35,9 +35,11 @@ export function LibraryFilters(props: LibraryFiltersProps) {
     function openSheet() {
         setSheetOpen(true);
     }
+
     function closeSheet() {
         setSheetOpen(false);
     }
+
     if (compact) {
         return (
             <div className={componentStyles.actions}>
@@ -114,24 +116,29 @@ function FilterControls({
     function changeDirection(event: ChangeEvent<HTMLSelectElement>) {
         onChange('direction', event.target.value as Filters['direction']);
     }
+
     function changeMine(event: ChangeEvent<HTMLSelectElement>) {
         onChange(
             'personalArchive',
             event.target.value as Filters['personalArchive'],
         );
     }
+
     function changeCurrent(event: ChangeEvent<HTMLSelectElement>) {
         onChange('contentState', event.target.value as Filters['contentState']);
     }
+
     function changeGlobal(event: ChangeEvent<HTMLSelectElement>) {
         onChange(
             'globalArchive',
             event.target.value as Filters['globalArchive'],
         );
     }
+
     function toggleAdvanced() {
         setAdvanced((value) => !value);
     }
+
     const reverseLabel = direction(
         dictionary.targetLanguage,
         dictionary.sourceLanguage,

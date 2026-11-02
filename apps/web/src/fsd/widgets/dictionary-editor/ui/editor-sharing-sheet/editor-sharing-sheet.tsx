@@ -27,7 +27,9 @@ export function EditorSharingSheet({
     >['onRotate'] = async () => {
         const response = await share.mutateAsync('rotate');
 
-        if (!response.capability) throw new Error('Capability unavailable');
+        if (!response.capability) {
+            throw new Error('Capability unavailable');
+        }
 
         return response.capability;
     };
