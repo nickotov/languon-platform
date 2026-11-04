@@ -14,8 +14,10 @@ export type ConversationWorkerStore = Pick<
     | 'heartbeat'
     | 'append'
     | 'recordTool'
+    | 'recordResponseMetadata'
     | 'propose'
     | 'proposeBlocks'
+    | 'readBlockProposal'
     | 'recordMaterial'
     | 'finish'
     | 'memory'
@@ -102,6 +104,19 @@ export class ConversationWorkerService {
                         proposal,
                     );
                 },
+                ...(this.dependencies.store.readBlockProposal
+                    ? {
+                          readBlockProposal: async (id: string) => {
+                              combined.throwIfAborted();
+                              const result = await this.dependencies.store
+                                  .readBlockProposal!(turn, id);
+
+                              combined.throwIfAborted();
+
+                              return result;
+                          },
+                      }
+                    : {}),
                 preferences: turn.preferences,
                 sourceContext: source.initialContext,
                 ...(turn.portraitContext
@@ -112,6 +127,14 @@ export class ConversationWorkerService {
                 onDelta: async ({ text }) => {
                     combined.throwIfAborted();
                     await buffer.append(text);
+                },
+                onResponseMetadata: async (metadata) => {
+                    combined.throwIfAborted();
+                    await buffer.flush();
+                    await this.dependencies.store.recordResponseMetadata?.(
+                        turn,
+                        metadata,
+                    );
                 },
                 onTool: async (call) => {
                     await buffer.flush();

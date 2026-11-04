@@ -1,8 +1,10 @@
 import type { TextAiProviderUsage } from '../../../text-ai/application/ports/text-ai-provider-usage';
 import type {
     ChatPreferences,
+    ConversationResponseMetadata,
     KnowledgeNoteContent,
     LearningBlockProposalInput,
+    LearningBlock,
     ConversationToolCall,
     ConversationEditorTarget,
 } from '@languon/contracts';
@@ -35,7 +37,8 @@ export interface TutorMemoryPort {
     writeState(entries: Record<string, Record<string, unknown>>): Promise<void>;
 }
 
-export type TutorCallPurpose = 'answer' | 'observation' | 'reflection';
+export type TutorCallPurpose =
+    'answer' | 'planning' | 'authoring' | 'observation' | 'reflection';
 
 export interface TutorCallAdmission {
     callId: string;
@@ -80,6 +83,9 @@ export interface TutorRunInput {
     onBlockProposal?(
         input: LearningBlockProposalInput,
     ): Promise<{ id: string }>;
+    readBlockProposal?(
+        id: string,
+    ): Promise<{ id: string; blocks: LearningBlock[] }>;
     ownerId: string;
     operationId: string;
     conversationCreatedAt: string;
@@ -93,6 +99,7 @@ export interface TutorRunInput {
     signal: AbortSignal;
     onDelta(input: { messageId: string; text: string }): Promise<void>;
     onTool?(call: ConversationToolCall): Promise<void>;
+    onResponseMetadata?(metadata: ConversationResponseMetadata): Promise<void>;
     onDraft(content: KnowledgeNoteContent): Promise<{ id: string }>;
     readContext(input: {
         query: string;

@@ -621,6 +621,8 @@ export function createConversationAccounting(input: {
     const policy = input.execution.budget;
     const purpose = {
         answer: 'actor',
+        planning: 'actor',
+        authoring: 'actor',
         observation: 'observer',
         reflection: 'reflector',
     } as const;
@@ -667,7 +669,8 @@ export function createConversationAccounting(input: {
 
                 if (
                     previous.length >= 5 ||
-                    (call.purpose !== 'answer' &&
+                    ((call.purpose === 'observation' ||
+                        call.purpose === 'reflection') &&
                         (memoryCalls >= 2 || previous.length >= 4))
                 ) {
                     throw new Error(
@@ -678,7 +681,11 @@ export function createConversationAccounting(input: {
                 const inputTokens = selected.perCallMaxInputTokens;
                 const outputCap = Math.min(
                     selected.perCallMaxOutputTokens,
-                    call.purpose === 'answer' ? 4096 : 2048,
+                    call.purpose === 'observation' ||
+                        call.purpose === 'reflection' ||
+                        call.purpose === 'planning'
+                        ? 2048
+                        : 4096,
                 );
                 const outputTokens = Math.min(outputCap, call.maxOutputTokens);
                 if (

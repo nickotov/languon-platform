@@ -1,3 +1,5 @@
+import { learningContentAuthoringPrompt } from './local/learning-content-authoring';
+import { tutorRequestResolutionPrompt } from './local/tutor-request-resolution';
 import { knowledgeExerciseEvaluationPrompt } from './local/knowledge-exercise-evaluation';
 import { knowledgeBlockFieldPrompt } from './local/knowledge-block-field';
 import { learnerInterviewerPrompt } from './local/learner-interviewer';
@@ -15,6 +17,9 @@ import { dictionaryCardAuthoringPrompt } from './local/dictionary-card-authoring
 import { contextualLanguageTutorPrompt } from './local/contextual-language-tutor';
 
 const localPrompts = {
+    [learningContentAuthoringPrompt.name]:
+        learningContentAuthoringPrompt.system,
+    [tutorRequestResolutionPrompt.name]: tutorRequestResolutionPrompt.system,
     [knowledgeExerciseEvaluationPrompt.name]:
         knowledgeExerciseEvaluationPrompt.system,
     [knowledgeBlockFieldPrompt.name]: knowledgeBlockFieldPrompt.system,

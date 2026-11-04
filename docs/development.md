@@ -171,6 +171,59 @@ cannot establish a note grant, private learner attempt or billing authority. The
 registry unit test and production worker/SDK integration tests exercise this same
 composition with synthetic data; no additional Studio execution route is enabled.
 
+#### Learning-content tools and independent invocation
+
+The Conversations module exposes `createLearningContentTools` from
+`apps/backend/src/modules/conversations/infrastructure/ai/learning-content-tools.ts`.
+It creates the independently callable `generate_vocabulary`, `generate_grammar`,
+`generate_bilingual_text` and `generate_exercises` Mastra tools. Tool inputs are
+bounded generation briefs: an instruction, optional source text or word list,
+languages, count, difficulty and exercise formats. Inputs contain no learner
+identity or document-write authority. Missing material requirements return
+`needs-clarification` before dispatch; unsupported formats return `unsupported`.
+A valid result is `ready` with validated `proposal.blocks` and a summary. Invalid
+completed candidates receive at most one bounded repair; exhausted validation
+returns `failed`. Provider failures and cancellation propagate without blind retry.
+
+The factory accepts a cancellation signal and an injected `generate` callback
+receiving the prompt, output schema and signal. Production supplies a model
+callback bound to the existing admitted tutor action; deterministic tests supply
+synthetic candidates. Optional `authorizedSources` must be resolved by the trusted
+host before invocation. They are data snapshots, never a grant inferred from
+model arguments. Call the tool through its Mastra execution method, or use
+`createLearningContentAuthoring(...).generate({ tasks }, signal)` to exercise the
+same validation and batch-authoring implementation directly. Each task has a
+stable request ID and kind. A coordinated Knowledge request submits all required
+components in one batch and persists one proposal only after all components pass.
+Standalone tools return content only and do not create conversations, apply
+proposals, publish notes or save vocabulary into dictionaries.
+
+Run the deterministic standalone authoring/tool contract tests from the root:
+
+```sh
+pnpm --filter @languon/backend exec vitest run src/modules/conversations/infrastructure/ai/learning-content-authoring.test.ts
+```
+
+These tests use synthetic candidates and make no paid provider calls. They prove
+factory/validation behavior, not natural-language intent quality or Studio access.
+
+`learningContentCapabilities` and the brief schemas live in
+`application/learning-content-contract.ts`; output and semantic validation live in
+the corresponding authoring/validation modules. Adding an exercise format requires
+its bounded contract, rendering support and validation/coverage updates before
+advertising it as available. The registry supplies supported requirements,
+defaults and prompt fragments; it does not replace server authorization.
+
+Canonical composition accepts operation-bound request-resolution/authoring agents
+and the same tool factory results. These primitives remain excluded from the
+default Studio server in this delivery. BL-014 will provide synthetic identity,
+source snapshots, bounded accounting, isolated proposal storage and exact
+allowlisted routes so Studio can execute them independently. Do not enable a
+production learner context or relax the harness policy as a shortcut. See
+[feature 060](../.agent/features/060-intent-aware-learning-content/FEATURE.md) and
+[BL-014](./backlog/014-tutor-playground.md) for the delivery boundary. This
+exclusion is deliberate; factory tests are not evidence of a runnable Studio flow.
+
 #### Registering Mastra primitives
 
 Mastra Studio does not scan the repository for new files. A new agent, tool,

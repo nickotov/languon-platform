@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision knowledge-workspace sha256:ebfb1ea752a93a99
+// @user-flow-revision knowledge-workspace sha256:c47c1c7201fc2d22
 
 type Share = { locator: string; key: string };
 
@@ -1991,4 +1991,113 @@ test('Markdown proposals preserve rich document structure, preview read-only con
     );
 
     assertClean();
+});
+
+// @user-flow knowledge-workspace/workspace-intent-content-generation
+test('capability replies stay in chat and mixed content generates one reviewed interactive proposal', async ({
+    page,
+}, info) => {
+    const assertRuntime = runtimeErrors(page);
+    await signup(page, info);
+    await createDraft(page);
+    const tutor = page.getByRole('region', {
+        name: 'Language tutor',
+        exact: true,
+    });
+
+    await tutor.getByLabel('Your question').fill('What can you do?');
+    await tutor.getByRole('button', { name: 'Send', exact: true }).click();
+    await expect(
+        tutor
+            .locator('[data-assistant-content]')
+            .getByText(
+                'I can explain language, build vocabulary and prepare interactive exercises.',
+                {
+                    exact: false,
+                },
+            ),
+    ).toBeVisible();
+
+    await expect(
+        tutor.getByRole('button', { name: 'Copy', exact: true }),
+    ).toBeVisible();
+
+    await expect(
+        tutor.getByRole('button', { name: 'Use in document', exact: true }),
+    ).toHaveCount(0);
+
+    await expect(
+        tutor.getByRole('article', {
+            name: 'Proposed learning blocks',
+            exact: true,
+        }),
+    ).toHaveCount(0);
+
+    await page.reload();
+    await expect(
+        tutor
+            .locator('[data-assistant-content]')
+            .getByText(
+                'I can explain language, build vocabulary and prepare interactive exercises.',
+                {
+                    exact: false,
+                },
+            ),
+    ).toBeVisible();
+
+    await expect(
+        tutor.getByRole('button', { name: 'Use in document', exact: true }),
+    ).toHaveCount(0);
+
+    await tutor
+        .getByLabel('Your question')
+        .fill(
+            'Intent content fixture vocabulary grammar exercises: travail and joie, French to English, three exercises.',
+        );
+
+    await tutor.getByRole('button', { name: 'Send', exact: true }).click();
+    const proposal = tutor.getByRole('article', {
+        name: 'Proposed learning blocks',
+        exact: true,
+    });
+
+    await expect(proposal).toHaveCount(1);
+    await expect(
+        proposal.getByRole('heading', {
+            name: 'French vocabulary',
+            exact: true,
+        }),
+    ).toBeVisible();
+
+    await expect(
+        proposal.getByRole('heading', {
+            name: 'French noun grammar',
+            exact: true,
+        }),
+    ).toBeVisible();
+
+    await expect(
+        proposal.getByText('travail', { exact: true }).first(),
+    ).toBeVisible();
+
+    await expect(page.locator('[data-learning-block-id]')).toHaveCount(0);
+    await capture(page, info, 'intent-mixed-proposal-desktop');
+    await proposal
+        .getByRole('button', { name: 'Apply to working draft', exact: true })
+        .click();
+
+    await expect(page.locator('[data-learning-block-id]')).toHaveCount(5);
+    await page
+        .getByRole('textbox', { name: 'Title', exact: true })
+        .fill('French learning material');
+
+    await waitForRecovery(page);
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(
+        page.locator('[data-workspace-topbar] [data-state="saved"]'),
+    ).toBeVisible();
+
+    await page.reload();
+    await expect(page.locator('[data-learning-block-id]')).toHaveCount(5);
+    assertRuntime();
 });

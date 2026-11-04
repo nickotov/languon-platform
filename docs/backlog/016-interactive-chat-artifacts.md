@@ -2,9 +2,9 @@
 type: backlog-task
 id: BL-016
 title: Interactive chat artifacts and exact follow-up references
-status: pending
+status: in-progress
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-04
 original_tasks: '2026-10-31 extensible custom-block and follow-up discussion'
 evidence: []
 depends_on:
@@ -15,6 +15,10 @@ depends_on:
 # BL-016 — Interactive chat artifacts and exact follow-up references
 
 [Backlog index](INDEX.md) · [Shared constraints](README.md).
+
+## Current delivery
+
+The user authorized the exact same-chat Knowledge-proposal follow-up slice in [feature 060](../../.agent/features/060-intent-aware-learning-content/FEATURE.md) on 2026-11-04, including unapplied proposals. This partial allocation does not implement the broader artifact lifecycle: dictionary/text/shared-source standalone generation, independent artifact practice and cross-context access remain future work. Verification is in progress.
 
 ## Problem and outcome
 
@@ -49,8 +53,8 @@ so learners can generate and practise content without editing the source.
 
 ## Verification and delivery preparation
 
-Requires explicit feature authorization for the new artifact lifecycle,
-persistence and access semantics. Prepare architecture against ADR-0037,
+The broader artifact lifecycle, persistence and access semantics still require
+explicit feature authorization beyond feature 060’s bounded same-chat slice. Prepare architecture against ADR-0037,
 ADR-0042 and ADR-0050 and propose any necessary supersession; existing constraints
 remain binding until the appropriate decision is authorized.
 

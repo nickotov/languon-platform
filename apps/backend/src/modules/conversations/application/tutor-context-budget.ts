@@ -1,3 +1,11 @@
+import {
+    deserializeLearningContentBrief,
+    serializeLearningContentBrief,
+} from './learning-content-transport';
+import { frozenTutorTextSources } from './tutor-request-sources';
+import { TutorRequestResolutionSchema } from './tutor-request-contract';
+import { learningContentOutputSchema } from './learning-content-output-contract';
+import { learningContentCapabilities } from './learning-content-contract';
 import { z } from 'zod';
 import {
     learningBlockToolDescription,
@@ -51,6 +59,35 @@ const blockProposalSchemaBytes =
         'utf8',
     ) + 512;
 
+// Planning, authoring and legacy actor schemas belong to different dispatches.
+// Reserve the largest framing, never their sum; the gate still validates each actual call.
+const requestAuthoringFramingBytes =
+    Math.max(
+        Buffer.byteLength(
+            JSON.stringify({
+                prompt: getLocalPrompt('tutor-request-resolution'),
+                schema: z.toJSONSchema(TutorRequestResolutionSchema, {
+                    io: 'input',
+                    target: 'draft-7',
+                }),
+                capabilities: learningContentCapabilities,
+            }),
+            'utf8',
+        ),
+        Buffer.byteLength(
+            JSON.stringify({
+                prompt: getLocalPrompt('learning-content-authoring'),
+                systemPrompt: getLocalPrompt('learning-content-authoring'),
+                schema: z.toJSONSchema(learningContentOutputSchema, {
+                    io: 'input',
+                    target: 'draft-7',
+                }),
+                capabilities: learningContentCapabilities,
+            }),
+            'utf8',
+        ),
+    ) + 2048;
+
 export function tutorReservedInputBytes(input: ContextInput): number {
     const contextInstructions = tutorContextInstructions(input);
     const sourceBound = input.sourceContext.retrievedContextByteBound;
@@ -77,7 +114,13 @@ export function tutorReservedInputBytes(input: ContextInput): number {
             : retrievalBound) +
         10_000 +
         (input.sourceContext.blockProposalsAvailable === true
-            ? blockProposalSchemaBytes
+            ? Math.max(
+                  blockProposalSchemaBytes,
+                  input.sourceContext.sourceKind === 'knowledge' &&
+                      input.sourceContext.snapshotScope === 'workspace'
+                      ? requestAuthoringFramingBytes
+                      : 0,
+              )
             : 0) +
         tutorCurrentMessageBytes(tutorMessageModelContent(input.message))
     );
@@ -89,9 +132,50 @@ export function tutorAdmissionInputBytes(
     history: unknown,
     memory: unknown,
 ): number {
+    const externalSources = frozenTutorTextSources(input);
+    const framedMemory = Array.isArray(memory)
+        ? memory.map((row: unknown) => {
+              if (
+                  !row ||
+                  typeof row !== 'object' ||
+                  !('value' in row) ||
+                  !row.value ||
+                  typeof row.value !== 'object' ||
+                  !('pending' in row.value) ||
+                  !row.value.pending
+              ) {
+                  return row;
+              }
+
+              try {
+                  const pending = deserializeLearningContentBrief(
+                      row.value.pending,
+                  );
+
+                  return {
+                      ...row,
+                      value: {
+                          ...row.value,
+                          pending: JSON.parse(
+                              serializeLearningContentBrief(
+                                  pending,
+                                  externalSources,
+                              ),
+                          ),
+                      },
+                  };
+              } catch {
+                  return row;
+              }
+          })
+        : memory;
+
     return (
         tutorReservedInputBytes(input) +
-        Buffer.byteLength(JSON.stringify({ history, memory }), 'utf8') +
+        Buffer.byteLength(
+            JSON.stringify({ history, memory: framedMemory }),
+            'utf8',
+        ) +
         8192
     );
 }

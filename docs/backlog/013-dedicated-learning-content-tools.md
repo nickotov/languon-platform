@@ -2,9 +2,9 @@
 type: backlog-task
 id: BL-013
 title: Dedicated learning-content generation tools
-status: pending
+status: in-progress
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-04
 original_tasks: '2026-10-31 tutor diagnosis and generation-tool discussion'
 evidence: []
 ---
@@ -12,6 +12,10 @@ evidence: []
 # BL-013 — Dedicated learning-content generation tools
 
 [Backlog index](INDEX.md) · [Shared constraints](README.md).
+
+## Current delivery
+
+The user authorized [feature 060](../../.agent/features/060-intent-aware-learning-content/FEATURE.md) on 2026-11-04. It implements dedicated tools and intent-aware generation in owned Knowledge workspaces. Verification is in progress; this entry is not complete. Runnable Studio execution remains BL-014.
 
 ## Problem and outcome
 
@@ -47,7 +51,7 @@ interfaces backed by typed authoring, with shared validation and proposal logic.
 
 ## Verification and delivery preparation
 
-Requires explicit feature authorization before implementation. Reconcile with
+Feature 060 has explicit authorization for the bounded delivery above. Reconcile with
 [ADR-0050](../adr/0050-interactive-workbook-content-and-learning-boundaries.md)
 and current AI execution/accounting ADRs. Bound all nested model calls within
 one admitted action: provider limits, aggregate allowance, deadlines,

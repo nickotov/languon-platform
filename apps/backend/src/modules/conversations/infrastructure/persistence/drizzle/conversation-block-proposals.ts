@@ -1,6 +1,7 @@
+import { conversationTurnsTable as turns } from './schema';
 import { isReadOnlyKnowledgeSource } from '../../../domain/conversation';
 import { assertReferencedProposalTarget } from '../../../application/conversation-block-references';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import {
     KnowledgeBlockProposalSchema,
     KnowledgeBodySchema,
@@ -192,7 +193,18 @@ export async function conversationListBlockProposals(
             const rows = await tx
                 .select()
                 .from(proposals)
-                .where(eq(proposals.conversationId, id))
+                .where(
+                    and(
+                        eq(proposals.conversationId, id),
+                        inArray(
+                            proposals.turnId,
+                            tx
+                                .select({ id: turns.id })
+                                .from(turns)
+                                .where(eq(turns.status, 'succeeded')),
+                        ),
+                    ),
+                )
                 .orderBy(desc(proposals.createdAt))
                 .limit(100);
 
@@ -238,6 +250,13 @@ export async function conversationApplyBlockProposal(
                     eq(proposals.id, proposalId),
                     eq(proposals.conversationId, id),
                     eq(proposals.noteId, chat.sourceId),
+                    inArray(
+                        proposals.turnId,
+                        tx
+                            .select({ id: turns.id })
+                            .from(turns)
+                            .where(eq(turns.status, 'succeeded')),
+                    ),
                 ),
             )
             .for('update');

@@ -6,6 +6,12 @@ export const backendExecutionGroups = Object.freeze({
         'tests/integration/modules/conversations/conversation-accounting.test.ts',
         'tests/integration/modules/conversations/conversation-production-execution.test.ts',
         'src/modules/conversations/infrastructure/ai/contextual-tutor-runner.test.ts',
+        'src/modules/conversations/infrastructure/ai/tutor-request-execution.test.ts',
+        'src/modules/conversations/infrastructure/ai/learning-content-authoring.test.ts',
+        'src/modules/conversations/application/learning-content-presentation.test.ts',
+        'src/modules/conversations/application/learning-content-transport.test.ts',
+        'src/modules/conversations/application/learning-content-output-capacity.test.ts',
+        'src/modules/conversations/application/tutor-request-sources.test.ts',
         'src/modules/conversations/infrastructure/ai/accounted-tutor-model.test.ts',
         'src/modules/learner-portraits/infrastructure/ai/learner-interviewer.test.ts',
         'src/modules/learner-portraits/infrastructure/ai/validated-interview-accounting.test.ts',
@@ -109,6 +115,15 @@ export const requiredBackendScenarios = Object.freeze([
         file: 'tests/integration/modules/conversations/conversation-accounting.test.ts',
         titles: [
             'preserves reduced quotes and minimum output admission when reserving block continuation',
+        ],
+    },
+    {
+        file: 'src/modules/conversations/infrastructure/ai/tutor-request-execution.test.ts',
+        titles: [
+            'patches a multi-component pending brief without dropping unchanged tasks',
+            'matches the complete multimedia copy set one-to-one: missing',
+            'matches the complete multimedia copy set one-to-one: duplicate',
+            'stores and sends one near-limit frozen source for a mixed pending continuation',
         ],
     },
     {
@@ -421,6 +436,14 @@ export const flows = [
         app: 'assistant',
         file: 'interactive-workbooks.journeys.spec.ts',
         grep: '.',
+        prerequisite: 'deterministic-assistant',
+    },
+    {
+        id: 'knowledge-intent-content-generation',
+        minimumTests: 1,
+        app: 'assistant',
+        file: 'knowledge-workspace.journeys.spec.ts',
+        grep: 'capability replies stay in chat and mixed content generates one reviewed interactive proposal',
         prerequisite: 'deterministic-assistant',
     },
     {

@@ -110,14 +110,20 @@ export function createTutorModelGate(options: {
                 !Number.isSafeInteger(inputTokenEstimate) ||
                 inputTokenEstimate < 0 ||
                 allocatedOutputTokens >= 10_000 ||
-                (purpose !== 'answer' &&
+                ((purpose === 'observation' || purpose === 'reflection') &&
                     (memoryCalls >= maxMemoryCalls || calls >= maxCalls - 1))
             ) {
                 controller.abort(new TutorOperationLimitError());
                 signal.throwIfAborted();
             }
 
-            const outputCap = purpose === 'answer' ? 4096 : 2048;
+            const memoryPurpose =
+                purpose === 'observation' || purpose === 'reflection';
+            const outputCap = memoryPurpose
+                ? 2048
+                : purpose === 'planning'
+                  ? 2048
+                  : 4096;
             const maxOutputTokens = Math.min(
                 input.maxOutputTokens ?? outputCap,
                 outputCap,
@@ -140,7 +146,7 @@ export function createTutorModelGate(options: {
             };
 
             calls += 1;
-            if (purpose !== 'answer') {
+            if (memoryPurpose) {
                 memoryCalls += 1;
             }
 

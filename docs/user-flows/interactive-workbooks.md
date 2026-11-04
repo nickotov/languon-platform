@@ -1,13 +1,14 @@
 ---
 feature: interactive-workbooks
 title: Interactive workbooks
-status: draft
-last_verified: 2026-10-30
+status: current
+last_verified: 2026-11-04
 surfaces:
     - browser
     - api
 source_paths:
     - .agent/features/059-interactive-workbooks/**
+    - .agent/features/060-intent-aware-learning-content/**
     - apps/web/src/app/workbooks/**
     - apps/web/src/app/shared/workbooks/**
     - apps/web/src/fsd/features/workbooks/**
@@ -48,6 +49,7 @@ e2e_scenarios:
     - workbook-share-private-copy-revoke
     - block-review-atomic-edit-inline-feedback
 related_features:
+    - intent-aware-learning-content
     - knowledge-workspace
     - contextual-language-assistant-and-knowledge
 ---
@@ -104,7 +106,13 @@ synthetic accounts. API health must succeed before browser interaction.
    in a right-side panel on desktop or bottom sheet on mobile. It completes its
    follow-up response and changes the draft only after
    **Apply to working draft**. Its acknowledgement is not offered as a separate
-   plain-text document edit.
+   plain-text document edit. The owned Knowledge chat distinguishes learning
+   material generation from conversation and explanations. Requests for several
+   new components produce one complete ordered proposal after material gaps are
+   clarified; a Markdown list does not count as an interactive exercise result.
+   Exact follow-ups may use an unapplied proposal in that same chat. The
+   [Knowledge workspace guide](./knowledge-workspace.md#intent-aware-content-generation)
+   owns that routing/clarification journey and its evidence.
    An empty note keeps audio prerequisites and unavailable copying out of the
    writing area. Library insertion stays a compact secondary action. Existing
    blocks have a drag handle for whole-block selection/reordering and a heading-right

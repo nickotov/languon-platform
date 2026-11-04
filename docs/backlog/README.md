@@ -2,7 +2,7 @@
 type: reference
 title: Product backlog context and lifecycle
 created: 2026-10-01
-updated: 2026-11-01
+updated: 2026-11-04
 ---
 
 # Product backlog
@@ -176,8 +176,11 @@ completed behaviour.
 
 The 2026-10-31 discussion adds BL-012–BL-017; see the index for the recommended
 sequence. Initial authorization covered backlog preparation only. The user subsequently
-authorized BL-012 and its staged codebase cleanup follow-ups BL-018/019. This
-does not authorize implementing the unrelated generation/playground/Langfuse tasks.
+authorized BL-012 and its staged codebase cleanup follow-ups BL-018/019. On 2026-11-04 the user also authorized
+[feature 060](../../.agent/features/060-intent-aware-learning-content/FEATURE.md)
+for BL-013/015 and exact same-chat Knowledge-proposal follow-ups from BL-016.
+Runnable BL-014, broader cross-context artifacts and BL-017 remain outside that
+bounded implementation. Allocation and authorization are not completion evidence.
 
 These tasks distinguish a generation brief (validated authoring parameters),
 a generated artifact (typed learning content), a proposal (reviewable intended

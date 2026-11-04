@@ -191,6 +191,7 @@ GRANT UPDATE (updated_at) ON TABLE knowledge_working_branches TO :"dictionary_wo
 REVOKE SELECT, INSERT ON TABLE knowledge_speech_recordings FROM :"dictionary_worker_role";
 REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLE conversation_block_proposals FROM :"dictionary_worker_role";
 GRANT EXECUTE ON FUNCTION public.languon_propose_learning_blocks(uuid,uuid,jsonb) TO :"dictionary_worker_role";
+GRANT EXECUTE ON FUNCTION public.languon_read_learning_block_proposal(uuid,uuid,uuid) TO :"dictionary_worker_role";
 GRANT EXECUTE ON FUNCTION public.languon_propose_learning_block_change(uuid,uuid,jsonb,uuid) TO :"dictionary_worker_role";
 -- Transcription reads immutable admitted jobs and changes lifecycle only. Audio
 -- bytes require the exact live job lease; financial receipts use typed authority.

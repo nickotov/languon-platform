@@ -1,3 +1,7 @@
+import {
+    fixtureRequestResolution,
+    fixtureAuthoringOutput,
+} from './contextual-learning-content-fixture';
 import { contextualFixtureBlock } from './contextual-fixture-block';
 import {
     markdownGrammarProposal,
@@ -256,9 +260,7 @@ function preparedAudioProposal(prompt: unknown) {
     }
 
     return {
-        blocks: [
-            { ...original, id: randomUUID(), title: 'Prepared audio proposal' },
-        ],
+        blocks: [{ ...original, id: randomUUID() }],
     };
 }
 
@@ -290,7 +292,28 @@ function deterministicModel(
         provider: 'deterministic-local',
         modelId: 'deepseek-flash',
         supportedUrls: {},
-        doGenerate: async () => {
+        doGenerate: async (options) => {
+            const callPurpose = purpose.getStore();
+            if (callPurpose === 'planning' || callPurpose === 'authoring') {
+                const value =
+                    callPurpose === 'planning'
+                        ? fixtureRequestResolution(question, options.prompt)
+                        : fixtureAuthoringOutput(options.prompt);
+
+                return {
+                    content: [
+                        { type: 'text' as const, text: JSON.stringify(value) },
+                    ],
+                    finishReason: 'stop' as const,
+                    usage: {
+                        inputTokens: 50,
+                        outputTokens: 30,
+                        totalTokens: 80,
+                    },
+                    warnings: [],
+                };
+            }
+
             if (purpose.getStore() !== 'answer') {
                 return {
                     content: [
@@ -372,6 +395,9 @@ function deterministicModel(
             }
 
             const ordinal = dispatched++;
+            const hostPrefetched = !options.tools?.some(
+                (tool) => tool.name === 'read_source_context',
+            );
             const updating = question.startsWith(
                 'Update French vocabulary block fixture',
             );
@@ -384,18 +410,27 @@ function deterministicModel(
             const mentionedBlocks = question.startsWith(
                 'Mentioned blocks update fixture',
             );
-            const readUpdate = (updating || audioProposal) && ordinal === 0;
-            const readMentioned = mentionedBlocks && ordinal === 0;
-            const mentionedProposals = mentionedBlocks && ordinal === 1;
+            const readUpdate =
+                !hostPrefetched && (updating || audioProposal) && ordinal === 0;
+            const readMentioned =
+                !hostPrefetched && mentionedBlocks && ordinal === 0;
+            const mentionedProposals =
+                mentionedBlocks && ordinal === (hostPrefetched ? 0 : 1);
             const draft = /draft|save|revise/iu.test(question) && ordinal === 0;
             const blockProposal =
                 (question.includes('French vocabulary block fixture') ||
                     audioProposal ||
                     markdownGrammarRequested) &&
-                ordinal === (updating || audioProposal ? 1 : 0);
+                ordinal ===
+                    (!hostPrefetched && (updating || audioProposal) ? 1 : 0);
             const progressive = /progressively/iu.test(question);
             let text =
                 'A river bank is the land beside a river. This explanation uses your saved learning context.';
+
+            if (question.includes('What can you do?')) {
+                text =
+                    'I can explain language, build vocabulary and prepare interactive exercises.';
+            }
 
             if (question.includes('French vocabulary block fixture')) {
                 text =
@@ -1074,6 +1109,15 @@ export async function createContextualAssistantFixture(
             .onConflictDoUpdate({
                 target: dictionaryAiWorkerObservationsTable.id,
                 set: {
+                    adapterRevision: model.adapterRevision,
+                    status: 'available',
+                    textAiSelectionRevision: 1,
+                    textAiCapacityRevision: 1,
+                    textsCapacityRevision: 1,
+                    conversationCapacityRevision: 1,
+                    conversationExecutionRevision: 1,
+                    creditSettlementRevision: 1,
+                    textAiSupportedFormats: [...model.supportedFormats],
                     checkedAt: now,
                     expiresAt: new Date(now.getTime() + 3_600_000),
                 },

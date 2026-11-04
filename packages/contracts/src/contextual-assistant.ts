@@ -891,6 +891,31 @@ export const ConversationEditorTargetSchema =
 export type ConversationEditorTarget = z.infer<
     typeof ConversationEditorTargetSchema
 >;
+/** Safe presentation metadata; private request plans and model output remain server-only. */
+export const ConversationResponseMetadataSchema = z
+    .object({
+        kind: z.enum([
+            'conversation',
+            'learning-explanation',
+            'clarification',
+            'generation',
+            'revision',
+            'limitation',
+        ]),
+        documentUse: z.boolean(),
+    })
+    .strict()
+    .refine(
+        (value) =>
+            !value.documentUse ||
+            value.kind === 'learning-explanation' ||
+            value.kind === 'revision',
+        'Only learning explanations and prose revisions can be used as document prose.',
+    );
+export type ConversationResponseMetadata = z.infer<
+    typeof ConversationResponseMetadataSchema
+>;
+
 /** Eight selected-target proposals, four bounded reads and legacy tool headroom. */
 export const conversationToolCallLimit = 16;
 export const ConversationMessageSchema = z
@@ -911,6 +936,7 @@ export const ConversationMessageSchema = z
         createdAt: z.iso.datetime(),
         turnId: z.uuid().nullable(),
         editorTarget: ConversationEditorTargetSchema.optional(),
+        responseMetadata: ConversationResponseMetadataSchema.optional(),
     })
     .strict();
 export const ConversationUsageSchema = z

@@ -192,7 +192,14 @@ export function projectConversationSource(
             .map((index) => material[index]!);
     }
 
+    const availableBlocks = blockReferenceCatalog(snapshot);
     const metadata = {
+        ...(snapshot.scope === 'workspace' && snapshot.blockTarget
+            ? {
+                  availableBlocks: availableBlocks.slice(0, 100),
+                  blockCatalogComplete: availableBlocks.length <= 100,
+              }
+            : {}),
         ...(snapshot.blockReferences?.length
             ? {
                   referencedBlocks: blockReferenceCatalog(snapshot).filter(

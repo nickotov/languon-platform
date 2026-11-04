@@ -225,6 +225,8 @@ test('production preflight fails closed on route fallback, limits, user identity
 function journeyFixture() {
     const noteId = randomUUID();
     const conversationId = randomUUID();
+    const branchId = randomUUID();
+    let workingContent;
     const turnId = randomUUID();
     const timestamp = '2026-10-31T10:00:00.000Z';
     const conversation = c.ConversationSchema.parse({
@@ -262,6 +264,7 @@ function journeyFixture() {
         conversationId,
         role: 'assistant',
         content: 'Hello, friend.',
+        responseMetadata: { kind: 'learning-explanation', documentUse: true },
         attachments: [],
         status: 'complete',
         sourceVersion: null,
@@ -292,6 +295,7 @@ function journeyFixture() {
                 result = { mode: 'limited', availableCredits: '200' };
             } else if (path === '/knowledge') {
                 c.CreateKnowledgeNoteRequestSchema.parse(body);
+                workingContent = body.content;
                 result = {
                     note: {
                         ...body.content,
@@ -299,6 +303,27 @@ function journeyFixture() {
                         version: 1,
                         createdAt: timestamp,
                         updatedAt: timestamp,
+                    },
+                };
+            } else if (path === `/knowledge/${noteId}/workspace`) {
+                result = {
+                    workspace: {
+                        noteId,
+                        status: 'saved',
+                        published: null,
+                        branches: [
+                            {
+                                id: branchId,
+                                noteId,
+                                version: 1,
+                                basePublishedVersion: 1,
+                                content: workingContent,
+                                updatedAt: timestamp,
+                            },
+                        ],
+                        preferredBranchId: branchId,
+                        shareEnabled: false,
+                        limits: { referenceChars: 20000, editorChars: 40000 },
                     },
                 };
             } else if (path === '/conversations') {
@@ -311,6 +336,17 @@ function journeyFixture() {
                 assert.equal(
                     body.editorContext?.content,
                     'Hello means a greeting in English.',
+                );
+
+                assert.deepEqual(body.editorContext.workingBranch, {
+                    id: branchId,
+                    version: 1,
+                });
+
+                assert.ok(
+                    calls.findIndex((call) =>
+                        call.path.endsWith('/workspace'),
+                    ) < calls.findIndex((call) => call.path.endsWith('/turns')),
                 );
 
                 assert.match(
@@ -484,4 +520,14 @@ test('HTTP transport pins local origin, disallows redirects and never retries am
     );
 
     assert.equal(calls, 1);
+});
+
+test('workspace smoke rejects legacy output that bypassed intent resolution', async () => {
+    const fixture = journeyFixture();
+    delete fixture.detail.messages[0].responseMetadata;
+    await assert.rejects(runJourney(fixture), /workspace-routing-unverified/);
+    assert.equal(
+        fixture.calls.filter((call) => call.path.endsWith('/turns')).length,
+        1,
+    );
 });

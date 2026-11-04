@@ -12,7 +12,7 @@ import type {
     WorkbookLearningState,
 } from '@languon/contracts';
 
-// @user-flow-revision interactive-workbooks sha256:a8cfdde30a544410
+// @user-flow-revision interactive-workbooks sha256:e5af57d58fff2f5f
 const origin = 'http://localhost:3336';
 const tokens = new WeakMap<Page, string>();
 async function signup(page: Page, info: TestInfo, suffix: string) {
@@ -468,7 +468,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await expect(
         tutor
             .locator('[data-assistant-content]')
-            .getByText('I prepared the six French words.', { exact: false }),
+            .getByText('Учебный материал готов к проверке.', { exact: false }),
     ).toBeVisible();
 
     await expect(
@@ -2611,7 +2611,7 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
         .getByRole('article', { name: 'Proposed learning blocks', exact: true })
         .filter({
             has: page.getByRole('heading', {
-                name: 'Prepared audio proposal',
+                name: 'Prepare recording later',
                 exact: true,
             }),
         });

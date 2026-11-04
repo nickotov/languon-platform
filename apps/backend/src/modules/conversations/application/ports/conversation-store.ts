@@ -1,5 +1,6 @@
 import type {
     ChatPreferences,
+    ConversationResponseMetadata,
     Conversation,
     ConversationDetail,
     ConversationEvent,
@@ -11,6 +12,7 @@ import type {
     KnowledgeNoteContent,
     LearningBlockProposalInput,
     KnowledgeBlockProposal,
+    LearningBlock,
     KnowledgeWorkingBranch,
     PublishKnowledgeDraftRequest,
     KnowledgeNote,
@@ -39,6 +41,10 @@ export type ClaimedConversationTurn = {
     source: ConversationSource;
 };
 export interface ConversationStore {
+    readBlockProposal?(
+        turn: ClaimedConversationTurn,
+        proposalId: string,
+    ): Promise<{ id: string; blocks: LearningBlock[] }>;
     listBlockProposals?(
         access: ConversationAccess,
         conversationId: string,
@@ -147,6 +153,10 @@ export interface ConversationStore {
     claim(): Promise<ClaimedConversationTurn | null>;
     heartbeat(turn: ClaimedConversationTurn): Promise<void>;
     append(turn: ClaimedConversationTurn, delta: string): Promise<void>;
+    recordResponseMetadata?(
+        turn: ClaimedConversationTurn,
+        metadata: ConversationResponseMetadata,
+    ): Promise<void>;
     recordTool(
         turn: ClaimedConversationTurn,
         call: ConversationToolCall,

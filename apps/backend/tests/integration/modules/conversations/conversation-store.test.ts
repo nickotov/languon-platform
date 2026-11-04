@@ -417,6 +417,54 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await store.finish(turn, 'succeeded');
         });
 
+        it('persists validated response metadata through canonical detail and replay without changing historical replies', async () => {
+            const chat = await create();
+            await store.submit(access(), chat.id, submit());
+            const turn = (await store.claim())!;
+            const before = await store.detail(access(), chat.id);
+            expect(
+                before.messages.find((message) => message.role === 'assistant')
+                    ?.responseMetadata,
+            ).toBeUndefined();
+
+            await expect(
+                store.recordResponseMetadata(turn, {
+                    kind: 'conversation',
+                    documentUse: true,
+                }),
+            ).rejects.toThrow();
+
+            await store.recordResponseMetadata(turn, {
+                kind: 'learning-explanation',
+                documentUse: true,
+            });
+
+            await store.append(turn, 'Ser describes identity.');
+            await store.finish(turn, 'succeeded');
+
+            const reopened = ConversationDetailSchema.parse(
+                await store.detail(access(), chat.id),
+            );
+
+            expect(
+                reopened.messages.find(
+                    (message) => message.role === 'assistant',
+                )?.responseMetadata,
+            ).toEqual({ kind: 'learning-explanation', documentUse: true });
+
+            const replay = (await store.events(access(), chat.id, 0)).map(
+                (event) => ConversationEventSchema.parse(event),
+            );
+
+            expect(JSON.stringify(replay)).toContain('learning-explanation');
+            await expect(
+                store.recordResponseMetadata(turn, {
+                    kind: 'conversation',
+                    documentUse: false,
+                }),
+            ).rejects.toMatchObject({ code: 'operation_interrupted' });
+        });
+
         it('fences selected update identities in the repository and privileged SQL boundary', async () => {
             const knowledge = new DrizzleKnowledgeStore(
                 db,
@@ -493,6 +541,145 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
             await store.finish(turn, 'succeeded');
         });
+
+        it.each(['succeeded', 'failed', 'cancelled'] as const)(
+            'exposes proposals only after successful completion, retaining the %s outcome boundary',
+            async (outcome) => {
+                const knowledge = new DrizzleKnowledgeStore(
+                    db,
+                    { beforeNoteDeletion: async () => undefined },
+                    new KnowledgeShareCrypto(
+                        'conversation-knowledge-test-secret-47',
+                    ),
+                );
+                const note = await knowledge.create(owner, {
+                    operationId: randomUUID(),
+                    content,
+                });
+                const workspace = await knowledge.getWorkspace(owner, note.id);
+                const branch = workspace.branches.find(
+                    (candidate) => candidate.id === workspace.preferredBranchId,
+                )!;
+                const chat = await store.create(access(), {
+                    source: { kind: 'knowledge', id: note.id },
+                });
+
+                await store.submit(access(), chat.id, {
+                    ...submit('Create grammar'),
+                    editorContext: {
+                        ...workspaceContext('Ser describes identity.'),
+                        workingBranch: {
+                            id: branch.id,
+                            version: branch.version,
+                        },
+                    },
+                });
+
+                const turn = (await store.claim())!;
+                const proposal = await store.proposeBlocks(turn, {
+                    blocks: [
+                        {
+                            id: randomUUID(),
+                            type: 'grammar',
+                            language: 'es',
+                            rule: 'Use ser for identity.',
+                        },
+                    ],
+                });
+
+                expect(
+                    (await store.listBlockProposals(access(), chat.id))
+                        .proposals,
+                ).toEqual([]);
+
+                await expect(
+                    store.applyBlockProposal(
+                        access(),
+                        chat.id,
+                        proposal.id,
+                        branch.version,
+                    ),
+                ).rejects.toMatchObject({ code: 'conversation_not_found' });
+
+                expect(
+                    (await store.readBlockProposal(turn, proposal.id)).blocks,
+                ).toHaveLength(1);
+
+                await store.finish(turn, outcome);
+                const visible = (
+                    await store.listBlockProposals(access(), chat.id)
+                ).proposals;
+
+                if (outcome === 'succeeded') {
+                    expect(visible.map((item) => item.id)).toEqual([
+                        proposal.id,
+                    ]);
+
+                    const applied = await store.applyBlockProposal(
+                        access(),
+                        chat.id,
+                        proposal.id,
+                        branch.version,
+                    );
+
+                    expect(
+                        applied.branch.content.body.document.content,
+                    ).toHaveLength(2);
+                } else {
+                    expect(visible).toEqual([]);
+                    await expect(
+                        store.applyBlockProposal(
+                            access(),
+                            chat.id,
+                            proposal.id,
+                            branch.version,
+                        ),
+                    ).rejects.toMatchObject({ code: 'conversation_not_found' });
+
+                    expect(
+                        (
+                            await knowledge.getWorkspace(owner, note.id)
+                        ).branches.find(
+                            (candidate) => candidate.id === branch.id,
+                        )?.version,
+                    ).toBe(branch.version);
+                }
+
+                expect(
+                    (await knowledge.get(owner, note.id)).body.schemaVersion,
+                ).toBe(1);
+
+                const latest = await knowledge.getWorkspace(owner, note.id);
+                const currentBranch = latest.branches.find(
+                    (candidate) => candidate.id === branch.id,
+                )!;
+
+                await store.submit(access(), chat.id, {
+                    ...submit('Use the earlier proposal'),
+                    editorContext: {
+                        ...workspaceContext('Ser describes identity.'),
+                        workingBranch: {
+                            id: branch.id,
+                            version: currentBranch.version,
+                        },
+                    },
+                });
+
+                const followup = (await store.claim())!;
+                if (outcome === 'succeeded') {
+                    expect(
+                        (await store.readBlockProposal(followup, proposal.id))
+                            .id,
+                    ).toBe(proposal.id);
+                } else {
+                    await expect(
+                        store.readBlockProposal(followup, proposal.id),
+                    ).rejects.toThrow();
+                }
+
+                await store.finish(followup, 'succeeded');
+            },
+        );
 
         it('retains typed proposals separately and applies only to the frozen owner working branch without publishing', async () => {
             const knowledge = new DrizzleKnowledgeStore(
@@ -605,6 +792,29 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         },
                     ],
                 });
+
+                const captured = await workerStore.readBlockProposal(
+                    turn,
+                    proposal.id,
+                );
+
+                expect(captured.id).toBe(proposal.id);
+                expect(captured.blocks[0]).toMatchObject({
+                    type: 'grammar',
+                    rule: 'Use ser for identity.',
+                });
+
+                expect(captured.blocks[0]?.id).not.toBe(originalId);
+                await expect(
+                    workerStore.readBlockProposal(
+                        { ...turn, leaseToken: randomUUID() },
+                        proposal.id,
+                    ),
+                ).rejects.toMatchObject({ code: 'operation_interrupted' });
+
+                await expect(
+                    workerStore.readBlockProposal(turn, randomUUID()),
+                ).rejects.toMatchObject({ code: 'conversation_not_found' });
             } finally {
                 await workerClient.end();
                 await client.unsafe(`drop owned by ${role}`);
@@ -674,6 +884,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
 
             const next = (await store.claim())!;
+            const retainedProposal = await store.readBlockProposal(
+                next,
+                proposal.id,
+            );
+
+            expect(retainedProposal.blocks[0]).toMatchObject({
+                type: 'grammar',
+                rule: 'Use ser for identity.',
+            });
+
+            await expect(
+                store.readBlockProposal(
+                    { ...next, ownerId: learner },
+                    proposal.id,
+                ),
+            ).rejects.toMatchObject({ code: 'conversation_not_found' });
+
             expect(
                 JSON.stringify(next.sourceSnapshot.blockTarget?.material),
             ).toContain('Use ser for identity.');

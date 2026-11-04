@@ -2,9 +2,9 @@
 type: backlog-task
 id: BL-015
 title: Reliable tutor intent, clarification and generation outcomes
-status: pending
+status: in-progress
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-04
 original_tasks: '2026-10-31 Russian vocabulary and exercise response diagnosis'
 evidence: []
 depends_on:
@@ -14,6 +14,10 @@ depends_on:
 # BL-015 — Reliable tutor intent, clarification and generation outcomes
 
 [Backlog index](INDEX.md) · [Shared constraints](README.md).
+
+## Current delivery
+
+The user authorized [feature 060](../../.agent/features/060-intent-aware-learning-content/FEATURE.md) on 2026-11-04. It delivers Knowledge request resolution, clarification continuation and complete typed generation outcomes. Verification is in progress; this entry is not complete.
 
 ## Problem and outcome
 
@@ -52,7 +56,7 @@ established implementation gaps, not a verified trace of that incident.
 
 ## Verification and delivery preparation
 
-Requires explicit feature authorization for generation/failure semantics.
+Feature 060 has explicit authorization for the bounded generation/failure semantics above.
 Choose the smallest viable planning mechanism; a separate model call per message
 is not mandatory. Define evaluation sample sizes and acceptance thresholds before
 running comparative evaluations. Automated CI stays deterministic; optional live

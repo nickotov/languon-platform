@@ -1135,6 +1135,27 @@
       "when": 1793352853255,
       "tag": "0161_conversation-message-block-references",
       "breakpoints": true
+    },
+    {
+      "idx": 162,
+      "version": "7",
+      "when": 1793805416875,
+      "tag": "0162_conversation-response-metadata",
+      "breakpoints": true
+    },
+    {
+      "idx": 163,
+      "version": "7",
+      "when": 1793805567063,
+      "tag": "0163_conversation-proposal-readback",
+      "breakpoints": true
+    },
+    {
+      "idx": 164,
+      "version": "7",
+      "when": 1793806677355,
+      "tag": "0164_completed-proposal-source-authority",
+      "breakpoints": true
     }
   ]
 }

@@ -145,6 +145,16 @@ export async function runJourney({
     );
 
     await journal.record(reservation.id, { noteId: note.id });
+    // Match the owned editor startup: an explicit branch enables workspace tools.
+    const { workspace } = await api.request(
+        `/knowledge/${note.id}/workspace`,
+        c.KnowledgeWorkspaceResponseSchema,
+    );
+    const branch = workspace.branches.find(
+        (candidate) => candidate.id === workspace.preferredBranchId,
+    );
+
+    requireSafe(Boolean(branch), 'workspace-branch-missing-no-dispatch');
     const { conversation } = await api.request(
         '/conversations',
         z.object({ conversation: c.ConversationSchema }).strict(),
@@ -179,6 +189,7 @@ export async function runJourney({
                 'Give one very short example sentence using hello. Plain text only; do not create notes or use tools.',
             attachments: [],
             editorContext: {
+                workingBranch: { id: branch.id, version: branch.version },
                 content: 'Hello means a greeting in English.',
                 editorTarget: {
                     from: 0,
@@ -224,6 +235,18 @@ export async function runJourney({
                             message.content.trim().length > 0,
                     ),
                 'persisted-output-or-billing-missing',
+            );
+
+            requireSafe(
+                detail.messages.some(
+                    (message) =>
+                        message.turnId === turn.id &&
+                        message.role === 'assistant' &&
+                        message.status === 'complete' &&
+                        message.responseMetadata?.kind ===
+                            'learning-explanation',
+                ),
+                'workspace-routing-unverified',
             );
 
             const providerExpenseMicros = await verifyExpense(

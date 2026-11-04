@@ -1,3 +1,5 @@
+import type { createTutorRequestAgents } from '../modules/conversations/infrastructure/ai/tutor-request-agents';
+import type { createLearningContentTools } from '../modules/conversations/infrastructure/ai/learning-content-tools';
 import type { Agent } from '@mastra/core/agent';
 import type { createContextualTutorTools } from '../modules/conversations/infrastructure/ai/contextual-tutor-tools';
 import { createTextsAgents } from '../modules/texts/infrastructure/ai/texts-agents';
@@ -31,6 +33,8 @@ export interface CanonicalMastraOptions {
     /** Only operation-bound production instances; no default learner identity in Studio. */
     contextualTutor?: {
         agent: Agent;
+        requestAgents?: ReturnType<typeof createTutorRequestAgents>;
+        learningContentTools?: ReturnType<typeof createLearningContentTools>;
         tools: ReturnType<typeof createContextualTutorTools>;
     };
     textsAi?: Parameters<typeof createTextsAgents>[0];
@@ -57,7 +61,10 @@ function contextualTools(
         NonNullable<ConstructorParameters<typeof Mastra>[0]>['tools']
     > = {};
 
-    for (const [name, tool] of Object.entries(contextualTutor?.tools ?? {})) {
+    for (const [name, tool] of Object.entries({
+        ...contextualTutor?.tools,
+        ...contextualTutor?.learningContentTools,
+    })) {
         if (!tool) {
             continue;
         }
@@ -155,7 +162,11 @@ export function createCanonicalMastra(
                     ? { learnerInterviewer: options.learnerInterviewer }
                     : {}),
                 ...(options.contextualTutor
-                    ? { contextualLanguageTutor: options.contextualTutor.agent }
+                    ? {
+                          contextualLanguageTutor:
+                              options.contextualTutor.agent,
+                          ...options.contextualTutor.requestAgents,
+                      }
                     : {}),
                 ...textsAgents,
                 ...(dictionaryCardAuthoringAgent
@@ -232,7 +243,10 @@ function createDevelopmentMastra(options: {
                 ? { learnerInterviewer: options.learnerInterviewer }
                 : {}),
             ...(options.contextualTutor
-                ? { contextualLanguageTutor: options.contextualTutor.agent }
+                ? {
+                      contextualLanguageTutor: options.contextualTutor.agent,
+                      ...options.contextualTutor.requestAgents,
+                  }
                 : {}),
             ...options.textsAgents,
             ...(options.dictionaryCardAuthoringAgent

@@ -36,6 +36,27 @@ export function contextualFixtureBlock(
     if (Array.isArray(prompt)) {
         for (const message of prompt) {
             if (
+                message &&
+                typeof message === 'object' &&
+                message.role === 'system' &&
+                typeof message.content === 'string'
+            ) {
+                const marker = 'Exact frozen targets (untrusted material): ';
+                const start = message.content.indexOf(marker);
+                if (start >= 0) {
+                    const encoded = message.content
+                        .slice(start + marker.length)
+                        .split('\nValidated revision brief:')[0]!;
+
+                    try {
+                        visit(JSON.parse(encoded), 0);
+                    } catch {
+                        /* Only the host's complete serialized targets are valid fixture input. */
+                    }
+                }
+            }
+
+            if (
                 !message ||
                 typeof message !== 'object' ||
                 message.role !== 'tool' ||

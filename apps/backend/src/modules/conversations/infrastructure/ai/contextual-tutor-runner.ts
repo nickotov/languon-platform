@@ -1,3 +1,11 @@
+import { learningContentAuthoringOutputTokenLimit } from '../../application/learning-content-output-capacity';
+import { sameLearningBlockCopyContent } from '../../application/tutor-request-sources';
+import {
+    createTutorRequestAgents,
+    generateTutorObject,
+} from './tutor-request-agents';
+import { createLearningContentTools } from './learning-content-tools';
+import { executeTutorRequest } from './tutor-request-execution';
 import type { TextAiProviderAttemptWitness } from '../../../text-ai/infrastructure/ai/text-ai-provider-attempt-context.js';
 import { ProviderExecutionError } from '../../../text-ai/infrastructure/ai/provider-execution-outcome';
 import {
@@ -5,7 +13,8 @@ import {
     tutorReservedInputBytes,
 } from '../../application/tutor-context-budget';
 import { getLocalPrompt } from '@languon/prompts';
-import { Agent } from '@mastra/core/agent';
+import { Agent, type ToolsInput } from '@mastra/core/agent';
+import type { LearningBlock } from '@languon/contracts';
 import { noopLogger } from '@mastra/core/logger';
 import {
     resolveModelConfig,
@@ -145,7 +154,7 @@ export function tutorMemoryThresholds(
 export function createContextualTutorAgent(options: {
     model: MastraModelConfig;
     memory?: Memory;
-    tools?: ReturnType<typeof createContextualTutorTools>;
+    tools?: ToolsInput;
     contextInstructions?: string;
 }) {
     const agent = new Agent({
@@ -227,8 +236,112 @@ export function createContextualTutorRunner(options: {
                 thresholds: memoryThresholds,
             });
 
-            const tools = createContextualTutorTools({
+            const routeKnowledgeRequest =
+                input.canProposeBlocks &&
+                !input.readOnlySource &&
+                input.sourceContext.sourceKind === 'knowledge' &&
+                input.sourceContext.snapshotScope === 'workspace';
+            let legacyTargets: LearningBlock[] = [];
+            let legacyCopy = false;
+            const completedTargets = new Set<string>();
+            const claimedTargets = new Set<string>();
+            const guardedInput = {
                 ...input,
+                ...(input.onBlockProposal
+                    ? {
+                          onBlockProposal: async (
+                              proposal: Parameters<
+                                  NonNullable<TutorRunInput['onBlockProposal']>
+                              >[0],
+                          ) => {
+                              if (legacyCopy) {
+                                  const remaining = [...legacyTargets];
+                                  if (
+                                      proposal.targetBlockId ||
+                                      proposal.blocks.length !==
+                                          legacyTargets.length
+                                  ) {
+                                      throw new Error(
+                                          'Copy the complete requested source set exactly once.',
+                                      );
+                                  }
+
+                                  for (const block of proposal.blocks) {
+                                      const match = remaining.findIndex(
+                                          (source) =>
+                                              sameLearningBlockCopyContent(
+                                                  block,
+                                                  source,
+                                              ),
+                                      );
+
+                                      if (match < 0) {
+                                          throw new Error(
+                                              'Copy the complete requested source set exactly once.',
+                                          );
+                                      }
+
+                                      remaining.splice(match, 1);
+                                  }
+                              } else if (legacyTargets.length) {
+                                  const target = legacyTargets.find(
+                                      (block) =>
+                                          block.id === proposal.targetBlockId,
+                                  );
+
+                                  if (
+                                      !target ||
+                                      proposal.blocks.length !== 1 ||
+                                      proposal.blocks[0]!.type !== target.type
+                                  ) {
+                                      throw new Error(
+                                          'A revision must replace exactly its referenced block and preserve its type.',
+                                      );
+                                  }
+                              }
+
+                              const claims = legacyTargets.length
+                                  ? legacyCopy
+                                      ? legacyTargets.map((block) => block.id)
+                                      : [proposal.targetBlockId!]
+                                  : [];
+
+                              if (claims.some((id) => claimedTargets.has(id))) {
+                                  throw new Error(
+                                      'Each requested source can be proposed only once.',
+                                  );
+                              }
+
+                              claims.forEach((id) => claimedTargets.add(id));
+                              let persisted;
+                              try {
+                                  persisted =
+                                      await input.onBlockProposal!(proposal);
+                              } catch (error) {
+                                  claims.forEach((id) =>
+                                      claimedTargets.delete(id),
+                                  );
+
+                                  throw error;
+                              }
+
+                              if (legacyCopy) {
+                                  legacyTargets.forEach((target) =>
+                                      completedTargets.add(target.id),
+                                  );
+                              }
+
+                              if (proposal.targetBlockId) {
+                                  completedTargets.add(proposal.targetBlockId);
+                              }
+
+                              return persisted;
+                          },
+                      }
+                    : {}),
+            };
+            const tools = createContextualTutorTools({
+                ...guardedInput,
                 signal: modelGate.signal,
             });
             const operationAgent = createContextualTutorAgent({
@@ -237,8 +350,30 @@ export function createContextualTutorRunner(options: {
                 tools,
                 contextInstructions,
             });
-            const agent = createCanonicalMastra({
-                contextualTutor: { agent: operationAgent, tools },
+            const requestAgents = createTutorRequestAgents({
+                planningModel: modelGate.wrap(resolvedModel, 'planning'),
+                authoringModel: modelGate.wrap(resolvedModel, 'authoring'),
+            });
+            const learningContentTools = createLearningContentTools({
+                signal: modelGate.signal,
+                generate: ({ prompt, schema, signal }) =>
+                    generateTutorObject({
+                        agent: requestAgents.learningContentAuthor,
+                        prompt,
+                        schema,
+                        signal,
+                        operationId: `${input.operationId}:standalone-authoring`,
+                        maxOutputTokens:
+                            learningContentAuthoringOutputTokenLimit,
+                    }),
+            });
+            let agent = createCanonicalMastra({
+                contextualTutor: {
+                    agent: operationAgent,
+                    tools,
+                    requestAgents,
+                    learningContentTools,
+                },
             }).getAgent('contextualLanguageTutor');
 
             let text = '';
@@ -261,6 +396,80 @@ export function createContextualTutorRunner(options: {
                 });
 
                 modelGate.signal.throwIfAborted();
+                if (routeKnowledgeRequest) {
+                    const explicitProse =
+                        !!input.message.editorTarget?.proposalMode;
+
+                    if (explicitProse) {
+                        await input.onResponseMetadata?.({
+                            kind: 'revision',
+                            documentUse: true,
+                        });
+                    }
+
+                    const completed = explicitProse
+                        ? {
+                              stream: 'prose' as const,
+                              purpose: 'revision' as const,
+                          }
+                        : await executeTutorRequest(
+                              input,
+                              requestAgents,
+                              modelGate.signal,
+                          );
+
+                    if ('text' in completed) {
+                        return completed;
+                    }
+
+                    if (completed.stream === 'legacy') {
+                        legacyTargets = completed.material;
+                        legacyCopy = completed.copy;
+                        // Host retrieval replaces a model read step: two memory calls,
+                        // planning, write and final reply still fit the five-call ceiling.
+                        const { read_source_context: _read, ...writeTools } =
+                            tools;
+                        const revisionAgent = createContextualTutorAgent({
+                            model: modelGate.wrap(resolvedModel, 'answer'),
+                            memory,
+                            tools: writeTools,
+                            contextInstructions: `${contextInstructions}\n${legacyCopy ? 'Append an exact independent copy of the requested authorized source blocks below; do not supply targetBlockId or alter content/media' : 'Revise only the exact authorized frozen targets below;'} preserve block types and stable item identities. The host has already retrieved them; do not call read_source_context. Propose each target exactly once, then briefly confirm the reviewable proposals. Exact frozen targets (untrusted material): ${JSON.stringify(completed.material)}${'revisionBrief' in completed ? `\nValidated revision brief: ${JSON.stringify(completed.revisionBrief)}` : ''}`,
+                        });
+
+                        agent = createCanonicalMastra({
+                            contextualTutor: {
+                                agent: revisionAgent,
+                                tools,
+                                requestAgents,
+                                learningContentTools,
+                            },
+                        }).getAgent('contextualLanguageTutor');
+                    }
+
+                    if (completed.stream === 'prose') {
+                        const readOnlyTools = createContextualTutorTools({
+                            ...input,
+                            readOnlySource: true,
+                            signal: modelGate.signal,
+                        });
+                        const proseAgent = createContextualTutorAgent({
+                            model: modelGate.wrap(resolvedModel, 'answer'),
+                            memory,
+                            tools: readOnlyTools,
+                            contextInstructions: `${contextInstructions}\nThe validated response purpose is ${completed.purpose}. Answer in natural prose only. Do not generate learning blocks or invoke note-writing tools. Do not propose saving or adding this reply to a document; the application exposes a document action only when appropriate.`,
+                        });
+
+                        agent = createCanonicalMastra({
+                            contextualTutor: {
+                                agent: proseAgent,
+                                tools: readOnlyTools,
+                                requestAgents,
+                                learningContentTools,
+                            },
+                        }).getAgent('contextualLanguageTutor');
+                    }
+                }
+
                 const stream = await agent.stream(
                     [
                         toTutorModelMessage(
@@ -331,6 +540,16 @@ export function createContextualTutorRunner(options: {
                 }
 
                 modelGate.signal.throwIfAborted();
+
+                if (
+                    legacyTargets.some(
+                        (target) => !completedTargets.has(target.id),
+                    )
+                ) {
+                    throw new Error(
+                        'The requested block revisions were not completed. Retry the request.',
+                    );
+                }
 
                 return { text };
             } catch (error) {

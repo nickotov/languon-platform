@@ -14,6 +14,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import type {
     ChatPreferences,
+    ConversationResponseMetadata,
     ConversationBilling,
     ConversationSource,
     CopiedAttachment,
@@ -145,6 +146,8 @@ export const conversationMessagesTable = pgTable(
             .default([])
             .$type<ConversationToolCall[]>(),
         modelContent: jsonb('model_content').$type<TutorMemoryMessage[]>(),
+        responseMetadata:
+            jsonb('response_metadata').$type<ConversationResponseMetadata>(),
         blockReferences: jsonb('block_references')
             .$type<string[]>()
             .notNull()

@@ -1,3 +1,4 @@
+import { canUseResponseInDocument } from '../../lib/response-document-use';
 import { MessageBlockReferences } from './block-reference-controls';
 import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
 import { Check } from 'lucide-react';
@@ -116,6 +117,7 @@ export function TutorMessage({
             tool.name === 'propose_learning_blocks' &&
             tool.state === 'succeeded',
     );
+    const canUseInDocument = canUseResponseInDocument(canonical);
     const workspaceMaterials = isUser && Boolean(onAcceptWorkspaceProposal);
     const copiedAttachments = materials.map((material) => material.data);
     const selectedPassage = workspaceMaterials
@@ -243,21 +245,24 @@ export function TutorMessage({
                         disabled={active}
                     />
                 )}
-                {complete && onAcceptWorkspaceProposal && !hasBlockProposal && (
-                    <WorkspaceProposal
-                        content={text}
-                        targetId={workspaceTargetId}
-                        anchor={workspaceAnchor}
-                        turnId={canonical.turnId}
-                        onAccept={onAcceptWorkspaceProposal}
-                        rootId={proposalRootId}
-                        onReview={onReviewProposal}
-                        workspace={workspace}
-                        proposalId={message.id}
-                        reviewingProposalId={reviewingProposalId}
-                        onReviewingProposal={onReviewingProposal}
-                    />
-                )}
+                {complete &&
+                    onAcceptWorkspaceProposal &&
+                    !hasBlockProposal &&
+                    canUseInDocument && (
+                        <WorkspaceProposal
+                            content={text}
+                            targetId={workspaceTargetId}
+                            anchor={workspaceAnchor}
+                            turnId={canonical.turnId}
+                            onAccept={onAcceptWorkspaceProposal}
+                            rootId={proposalRootId}
+                            onReview={onReviewProposal}
+                            workspace={workspace}
+                            proposalId={message.id}
+                            reviewingProposalId={reviewingProposalId}
+                            onReviewingProposal={onReviewingProposal}
+                        />
+                    )}
                 {complete && (
                     <div className={styles.actions}>
                         <ResponseActions

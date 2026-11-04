@@ -89,6 +89,9 @@ Use `--list` for current entries. The initial registry covers:
   shared readers.
 - Text generation, saving, reload and independent/folder organization.
 - Chat reconnection, Stop and explicit retry after failure.
+- Knowledge tutor capability replies without document actions, followed by coordinated
+  vocabulary/grammar/exercise generation, review, Apply, Save and reload
+  (`knowledge-intent-content-generation`).
 - Interactive workbook block authoring and uploaded audio, saved private practice,
   ordered shared reading, independent copies, revocation and inert hostile text.
 - Knowledge H1/H2/H3 and thematic-break authoring, formatted proposal cards and

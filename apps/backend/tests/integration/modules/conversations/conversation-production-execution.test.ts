@@ -507,6 +507,59 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             );
                         }
 
+                        if (body.stream !== true) {
+                            const planning = JSON.stringify(
+                                body.messages,
+                            ).includes('Resolve the learner');
+                            const value = planning
+                                ? operation !== 'append'
+                                    ? { kind: 'legacy-revision' }
+                                    : {
+                                          kind: 'generate',
+                                          replyLanguage: 'ru',
+                                          brief: {
+                                              tasks: [
+                                                  {
+                                                      id: 'vocabulary',
+                                                      kind: 'vocabulary',
+                                                      language: 'fr',
+                                                      translationLanguage: 'ru',
+                                                      instruction:
+                                                          'Create the six requested words',
+                                                      words: blocks[0]!.entries.map(
+                                                          (entry) => entry.term,
+                                                      ),
+                                                  },
+                                              ],
+                                          },
+                                      }
+                                : { tasks: [{ taskId: 'vocabulary', blocks }] };
+
+                            return Response.json({
+                                id: `synthetic-object-${outgoing.length}`,
+                                object: 'chat.completion',
+                                created: 1,
+                                model: model.id,
+                                provider: 'OpenAI',
+                                choices: [
+                                    {
+                                        index: 0,
+                                        message: {
+                                            role: 'assistant',
+                                            content: JSON.stringify(value),
+                                        },
+                                        finish_reason: 'stop',
+                                    },
+                                ],
+                                usage: {
+                                    prompt_tokens: 50,
+                                    completion_tokens: 8,
+                                    total_tokens: 58,
+                                    cost: 0.00001025,
+                                },
+                            });
+                        }
+
                         ordinal++;
                         const tool = ordinal === 1;
                         const delta = tool
@@ -636,7 +689,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             Buffer.byteLength(JSON.stringify(request), 'utf8'),
                         ),
                     }),
-                ).toBe(outcome === 'success' ? 2 : 1);
+                ).toBe(
+                    outcome === 'success'
+                        ? operation === 'append'
+                            ? 2
+                            : 3
+                        : 1,
+                );
 
                 expect(result.status).toBe(
                     outcome === 'success' ? 'succeeded' : 'failed',
@@ -647,9 +706,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         detail.messages.some(
                             (item) =>
                                 item.role === 'assistant' &&
-                                item.content.includes(
-                                    'Review the vocabulary proposal',
-                                ),
+                                (operation === 'append'
+                                    ? item.responseMetadata?.kind ===
+                                          'generation' &&
+                                      item.content.length > 0
+                                    : item.content.includes(
+                                          'Review the vocabulary proposal',
+                                      )),
                         ),
                     ).toBe(true);
 
@@ -768,7 +831,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sql`select input_limit,output_limit,budget from ai_credit_action_attempts where action_id=${submitted.id}::uuid order by ordinal`,
                 );
 
-                expect(attempts).toHaveLength(outcome === 'success' ? 2 : 1);
+                expect(attempts).toHaveLength(
+                    outcome === 'success'
+                        ? operation === 'append'
+                            ? 2
+                            : 3
+                        : 1,
+                );
+
                 for (const attempt of attempts) {
                     expect(Number(attempt.input_limit)).toBeLessThanOrEqual(
                         execution.admittedMaxInputTokens,
@@ -781,7 +851,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     expect(attempt.budget).toEqual(execution.budget);
                 }
 
-                expect(expenses).toHaveLength(outcome === 'success' ? 2 : 1);
+                expect(expenses).toHaveLength(
+                    outcome === 'success'
+                        ? operation === 'append'
+                            ? 2
+                            : 3
+                        : 1,
+                );
+
                 for (const expense of expenses) {
                     expect(expense.provider_id).toBe(model.providerId);
                     expect(expense.model_id).toBe(model.id);

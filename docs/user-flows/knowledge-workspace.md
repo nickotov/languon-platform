@@ -2,13 +2,14 @@
 feature: knowledge-workspace
 title: Knowledge workspace
 status: current
-last_verified: 2026-10-31
+last_verified: 2026-11-04
 surfaces:
     - browser
     - api
 source_paths:
     - .agent/features/047-knowledge-workspace/**
     - .agent/features/049-knowledge-markdown-insertion/**
+    - .agent/features/060-intent-aware-learning-content/**
     - apps/backend/src/modules/knowledge/**
     - apps/backend/src/modules/conversations/**
     - apps/backend/drizzle/**
@@ -22,6 +23,7 @@ source_paths:
     - apps/web/src/fsd/entities/conversation/**
     - packages/contracts/src/contextual-assistant.ts
     - packages/prompts/src/local/contextual-language-tutor.ts
+    - packages/prompts/src/local/tutor-request-resolution.ts
     - scripts/run-contextual-assistant-e2e.mjs
 e2e_command: contextual-assistant
 e2e_tests:
@@ -35,7 +37,9 @@ e2e_scenarios:
     - workspace-markdown-insertion
     - workspace-share-copy-revoke
     - workspace-mobile-tutor-sheet
+    - workspace-intent-content-generation
 related_features:
+    - intent-aware-learning-content
     - knowledge-markdown-insertion
     - persistent-tutor-modes
     - contextual-language-assistant-and-knowledge
@@ -50,6 +54,10 @@ with the existing language tutor, recover private working changes, and explicitl
 Save a document. The tutor receives the complete current editor snapshot and
 copied Text references within the configured limits. An unlisted reader sees
 only the saved version and can make an independent copy after signing in.
+
+Feature 060 adds intent-aware content generation to owned workspaces. This guide
+is temporarily draft while its revised mapped journeys are verified; retained
+`last_verified` dates describe prior evidence, not the new behavior.
 
 The first version uses model knowledge and supplied learning material. It does
 not fetch web pages or interpret linked media. Knowledge conversation history,
@@ -134,8 +142,11 @@ pnpm test:e2e:contextual-assistant
 4. Request an editor proposal. A reply with a remembered selection offers
    **Show in text**, opening a compact proposal beneath that target with
    **Accept**, **Compare** and **Reject**. **Compare** opens the full review.
-   Other replies offer **Use in document** to open that review above the
-   document canvas. Choose **Insert at cursor**, **Append to end**
+   Completed learning explanations also offer **Use in document** to open that
+   review above the document canvas. Capability/help answers, clarifications,
+   limitations and generated-block acknowledgements do not offer a prose
+   document action. Historical replies without response classification require
+   an explicit editor request before exposing that action. Choose **Insert at cursor**, **Append to end**
    or **Replace selection** and accept through the matching **Insert**, **Append**
    or **Replace** action. Move the cursor and edit surrounding content
    during generation: the original target stays identified. If target wording
@@ -171,6 +182,35 @@ pnpm test:e2e:contextual-assistant
    link fails immediately, while the recipient copy remains available. Enable
    sharing again and confirm the previous link stays invalid.
 
+### Intent-aware content generation
+
+1. In an owned note, ask **What can you do?**. The answer stays in chat without
+   **Use in document** or a block proposal. Ask for a grammar explanation: it
+   remains prose and can offer document insertion when useful as learning material.
+2. Request vocabulary for a supplied word list, plus grammar notes and exercises.
+   Provide studied and translation languages, or let the tutor use established
+   authorized document/learner context. Missing material requirements produce one
+   concise clarification before generation. A short answer to that clarification
+   continues the retained brief, including after reopening the chat. Interface
+   language alone never selects the studied language.
+3. With requirements resolved, verify one ordered proposal contains every
+   requested component. Explicit word lists and counts are preserved. Unspecified
+   exercise count defaults to five, with a balanced selection of supported
+   multiple-choice, fill-in-the-blank and free-text formats. Review the stated
+   assumptions and prepared content. No part is applied or saved automatically.
+4. Before applying vocabulary, ask **Now make exercises for those words**. The
+   tutor reads the exact prior proposal in this conversation. When several
+   proposals are plausible, identify the intended one when asked. Reloading or
+   memory compaction does not authorize silently substituting newer document
+   wording. Exact conversational reference resolution covers the eight most recent
+   generated proposals. For older or ambiguous material, restate the words or
+   select the relevant content in the document when asked. Prior proposals from
+   another chat or note are outside this flow.
+5. Review and explicitly apply the complete proposal. Verify the working draft
+   changes, then select **Save** separately to publish. A failed or incomplete
+   generation offers retry or a request adjustment; it does not report success
+   with a Markdown exercise list or a partial proposal.
+
 ## API verification
 
 1. Under owner authentication, create a Knowledge draft and read its workspace.
@@ -188,6 +228,12 @@ pnpm test:e2e:contextual-assistant
    request above either configured character limit fails before generation;
    exactly the limit is admitted if the complete model budget fits. Previous
    turn snapshots and copied references remain unchanged after later edits.
+5. For owned workspace replies, inspect canonical message `responseMetadata`
+   through conversation detail and replayed message events. Its kind and
+   `documentUse` eligibility survive reconnect/reload. Private generation briefs,
+   raw model exchanges and source authority are not public metadata. A completed
+   generation has its typed block proposal; a clarification has no generated
+   proposal to apply.
 
 ## E2E coverage
 
@@ -235,11 +281,22 @@ pnpm test:e2e:contextual-assistant
   document tab and a 380px tablet overlay. Neither layout exposes an unusable
   desktop divider or causes horizontal page overflow.
 
+- `workspace-intent-content-generation` covers conversational replies without
+  document actions and coordinated interactive generation in the owned workspace.
+  Exact scope and current execution results are recorded in
+  [feature 060 evidence](../../.agent/features/060-intent-aware-learning-content/EVIDENCE.md).
+
 Character boundaries, concurrent branch races, proposal target mapping and
 model budget/compaction have focused contract, integration and editor tests.
 
 ## Expected failure and edge cases
 
+- Unsupported exercise formats, missing material requirements or oversized
+  requests require clarification or a smaller request; requested words/counts
+  are not silently dropped. Validation repair is bounded by the admitted action.
+- Follow-up proposal reads require current access to this owned note and
+  conversation. Deleted or unavailable proposal content requires clarification;
+  the tutor cannot recover it by claiming authority from chat text.
 - Saving requires a title and nonempty body. An empty research draft remains
   private and recoverable.
 - If working recovery fails, show an error and retry without discarding local

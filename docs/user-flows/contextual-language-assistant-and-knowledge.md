@@ -12,6 +12,7 @@ source_paths:
     - packages/contracts/src/learner-portrait.ts
     - packages/contracts/src/portrait-interview.ts
     - .agent/features/044-contextual-language-assistant-and-knowledge/**
+    - .agent/features/060-intent-aware-learning-content/**
     - apps/backend/src/modules/conversations/**
     - apps/backend/src/modules/authentication/application/ports/rate-limiter.ts
     - apps/backend/src/modules/authentication/infrastructure/rate-limit/redis-rate-limiter.ts
@@ -63,6 +64,7 @@ e2e_scenarios:
     - durable-close-reopen-stop-retry
     - dictionary-card-copies-preserve-visible-fields
 related_features:
+    - intent-aware-learning-content
     - ai-accounting
     - learner-portrait
     - persistent-tutor-modes
@@ -185,6 +187,12 @@ configuration startup requires its guard and does not own this cleanup.
    earlier content. Restoring an earlier revision creates a new current version.
    The workspace's separate draft recovery, copied Text references and sharing
    journeys are covered in [Knowledge workspace](./knowledge-workspace.md).
+   That guide also owns the intent-aware generation journey: conversational help
+   stays in chat; learning explanations may offer document insertion; explicit
+   vocabulary/grammar/text/exercise requests produce typed reviewable proposals
+   after material requirements are resolved. Exact prior-proposal follow-ups are
+   limited to that owned Knowledge chat. This does not enable standalone
+   interactive generation in dictionary/text or shared-source conversations.
 5. Ask about a saved note and request a revision. Change the saved note elsewhere
    before applying the draft. Its update is rejected; the draft remains for
    comparison or **Save as a new note**. No silent overwrite occurs.

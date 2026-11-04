@@ -2,6 +2,7 @@ import { knowledgeBlockMentionIds } from '@/fsd/features/knowledge-notes';
 import { useEffect, useState } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { knowledgePlainText } from '../lib/workspace-document';
+import { hasUnpublishedKnowledgeChanges } from '../lib/unpublished-knowledge-changes';
 import type { useKnowledgePageActions } from './use-knowledge-page-actions';
 
 type TutorRequest = {
@@ -26,14 +27,7 @@ export function useWorkspacePresentation(
     const text = content ? knowledgePlainText(content.body.document) : '';
     const characters = Array.from(text).length;
     const words = text.trim() ? text.trim().split(/\s+/u).length : 0;
-    let dirty = !published;
-    if (published && content) {
-        const keys = Object.keys(content) as (keyof typeof content)[];
-        dirty = keys.some(
-            (key) =>
-                JSON.stringify(content[key]) !== JSON.stringify(published[key]),
-        );
-    }
+    const dirty = hasUnpublishedKnowledgeChanges(content, published);
 
     function mentionBlock(blockId: string) {
         setRequest({

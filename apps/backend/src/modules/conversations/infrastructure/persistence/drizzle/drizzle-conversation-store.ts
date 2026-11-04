@@ -1,3 +1,5 @@
+import { conversationReadBlockProposal } from './conversation-proposal-readback';
+import { conversationRecordResponseMetadata } from './conversation-response-metadata';
 import {
     conversationProposeBlocks,
     conversationListBlockProposals,
@@ -5,6 +7,7 @@ import {
 } from './conversation-block-proposals';
 import {
     type ChatPreferences,
+    type ConversationResponseMetadata,
     type ConversationEvent,
     type ConversationSource,
     type ConversationToolCall,
@@ -83,6 +86,14 @@ export class DrizzleConversationStore implements ConversationStore {
         input: LearningBlockProposalInput,
     ) {
         return conversationProposeBlocks(this.persistence, turn, input);
+    }
+
+    readBlockProposal(turn: ClaimedConversationTurn, proposalId: string) {
+        return conversationReadBlockProposal(
+            this.persistence,
+            turn,
+            proposalId,
+        );
     }
 
     listBlockProposals(access: ConversationAccess, conversationId: string) {
@@ -254,6 +265,17 @@ export class DrizzleConversationStore implements ConversationStore {
         material: SourceMaterial[],
     ) {
         return conversationRecordMaterial(this.persistence, turn, material);
+    }
+
+    async recordResponseMetadata(
+        turn: ClaimedConversationTurn,
+        metadata: ConversationResponseMetadata,
+    ) {
+        return conversationRecordResponseMetadata(
+            this.persistence,
+            turn,
+            metadata,
+        );
     }
 
     async recordTool(

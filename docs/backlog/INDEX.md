@@ -33,10 +33,10 @@ BL-004 and BL-005 are Done. BL-003 retains its broader unfinished scope.
 | BL-010 | [Saved sentence management and full-dictionary preparation](010-sentence-library-management-done.md)     | done        |
 | BL-011 | [Dictionary batch call accounting](011-dictionary-batch-call-accounting.md)                              | pending     |
 | BL-012 | [Enforceable code readability standards](012-code-readability-standards-done.md)                         | done        |
-| BL-013 | [Dedicated learning-content generation tools](013-dedicated-learning-content-tools.md)                   | pending     |
+| BL-013 | [Dedicated learning-content generation tools](013-dedicated-learning-content-tools.md)                   | in-progress |
 | BL-014 | [Tutor and learning-tool playground](014-tutor-playground.md)                                            | pending     |
-| BL-015 | [Reliable tutor intent, clarification and generation outcomes](015-reliable-tutor-generation-routing.md) | pending     |
-| BL-016 | [Interactive chat artifacts and exact follow-up references](016-interactive-chat-artifacts.md)           | pending     |
+| BL-015 | [Reliable tutor intent, clarification and generation outcomes](015-reliable-tutor-generation-routing.md) | in-progress |
+| BL-016 | [Interactive chat artifacts and exact follow-up references](016-interactive-chat-artifacts.md)           | in-progress |
 | BL-017 | [Versioned Langfuse prompt resolution](017-versioned-langfuse-prompts.md)                                | pending     |
 | BL-018 | [Codebase-wide mechanical formatting and lint normalization](018-codebase-mechanical-formatting-done.md) | done        |
 | BL-019 | [Codebase-wide readability review and refactoring](019-codebase-readability-refactoring-done.md)         | done        |
@@ -47,7 +47,11 @@ dependencies are recorded in task frontmatter; this suggested order is not a
 schedule. BL-012 is independently deliverable, BL-015 does not require the
 playground, and BL-017 can be prepared independently. The user subsequently
 authorized starting BL-012 and the staged readability cleanup: **012 → 018 → 019**.
-BL-013–017 remain pending feature work without implementation authorization.
+On 2026-11-04, the user authorized [feature 060](../../.agent/features/060-intent-aware-learning-content/FEATURE.md)
+for BL-013, BL-015 and the exact same-chat Knowledge-proposal follow-up slice of
+BL-016. These entries are in progress; this allocation is not completion evidence.
+The runnable BL-014 Playground, broader BL-016 artifact lifecycle and BL-017 remain
+outside this delivery.
 
 [Feature 059](../../.agent/features/059-interactive-workbooks/FEATURE.md) is in
 progress for interactive knowledge workbooks, the associated BL-003 progress

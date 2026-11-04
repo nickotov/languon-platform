@@ -182,7 +182,13 @@ export function createConversationActionAccounting(input: {
                     },
                     ownerId: input.ownerId,
                     callId: call.callId,
-                    purpose: call.purpose,
+                    // Planning and authoring are bounded actor work. Financial authority
+                    // retains its established answer/support categories and aggregate limits.
+                    purpose:
+                        call.purpose === 'planning' ||
+                        call.purpose === 'authoring'
+                            ? 'answer'
+                            : call.purpose,
                     inputTokens: call.inputTokenEstimate,
                     maxOutputTokens: call.maxOutputTokens,
                     budget: input.execution.budget,
