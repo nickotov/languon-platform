@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision knowledge-workspace sha256:c47c1c7201fc2d22
+// @user-flow-revision knowledge-workspace sha256:84bb6cf8d19bf2dd
 
 type Share = { locator: string; key: string };
 
@@ -2099,5 +2099,91 @@ test('capability replies stay in chat and mixed content generates one reviewed i
 
     await page.reload();
     await expect(page.locator('[data-learning-block-id]')).toHaveCount(5);
+    assertRuntime();
+});
+
+// @user-flow knowledge-workspace/workspace-large-vocabulary-generation
+test('fifty shopping words become one complete vocabulary proposal and survive explicit publication', async ({
+    page,
+}, info) => {
+    const assertRuntime = runtimeErrors(page);
+    await signup(page, info);
+    await createDraft(page);
+    const tutor = page.getByRole('region', {
+        name: 'Language tutor',
+        exact: true,
+    });
+
+    await tutor
+        .getByLabel('Your question')
+        .fill(
+            'Generate vocabulary with top 50 words that are used in context of shopping, English to Russian.',
+        );
+
+    await tutor.getByRole('button', { name: 'Send', exact: true }).click();
+    const proposal = tutor.getByRole('article', {
+        name: 'Proposed learning blocks',
+        exact: true,
+    });
+
+    await expect(proposal).toHaveCount(1);
+    await expect(
+        proposal.getByRole('heading', {
+            name: 'Shopping vocabulary',
+            exact: true,
+        }),
+    ).toBeVisible();
+
+    await expect(page.locator('[data-learning-block-id]')).toHaveCount(0);
+    await proposal.getByRole('button', { name: 'Review', exact: true }).click();
+    const review = page.getByRole('dialog', {
+        name: 'Review proposed content',
+        exact: true,
+    });
+    const terms = review.locator('li span[lang="en"]');
+
+    await expect(terms).toHaveCount(50);
+    const reviewedTerms = await terms.allTextContents();
+    expect(new Set(reviewedTerms).size).toBe(50);
+    expect(reviewedTerms[0]).toBe('shop');
+    expect(reviewedTerms.at(-1)).toBe('warranty');
+    await review
+        .getByText('warranty', { exact: true })
+        .scrollIntoViewIfNeeded();
+
+    await expect(
+        review.getByText('warranty', { exact: true }),
+    ).toBeInViewport();
+
+    await capture(page, info, 'shopping-fifty-vocabulary-review');
+    await review
+        .getByRole('button', { name: 'Apply to working draft', exact: true })
+        .click();
+
+    await review.getByRole('button', { name: 'Close', exact: true }).click();
+    const block = page.locator('[data-learning-block-id]');
+
+    await expect(block).toHaveCount(1);
+    await expect(block.locator('li span[lang="en"]')).toHaveCount(50);
+    await page
+        .getByRole('textbox', { name: 'Title', exact: true })
+        .fill('Shopping vocabulary');
+
+    await waitForRecovery(page);
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(
+        page.locator('[data-workspace-topbar] [data-state="saved"]'),
+    ).toBeVisible();
+
+    await page.reload();
+    await expect(block).toHaveCount(1);
+    await expect(block.locator('li span[lang="en"]')).toHaveText(reviewedTerms);
+    await expect(
+        tutor.getByRole('article', {
+            name: 'Proposed learning blocks',
+            exact: true,
+        }),
+    ).toHaveCount(1);
+
     assertRuntime();
 });

@@ -17,6 +17,7 @@ import { parseOptions } from '../ai-smoke.mjs';
 import { withJournal, privateRead } from './journal.mjs';
 import { assertSnapshot, EMAIL, ROUTE, micros } from './policy.mjs';
 import { createApi, runJourney } from './journey.mjs';
+import { journeyFixture } from './journey.fixture.mjs';
 
 const userId = randomUUID();
 const day = '2026-10-31';
@@ -41,6 +42,22 @@ test('paid actions require explicit run and stable task, with no target/prompt o
 
     assert.throws(() => parseOptions(['--url', 'https://example.com']));
     assert.throws(() => parseOptions(['--prompt', 'anything']));
+    assert.throws(() => parseOptions(['--scenario', 'shopping-vocabulary']));
+    assert.throws(() =>
+        parseOptions(['--run', '--task', 'safe', '--scenario', 'anything']),
+    );
+
+    assert.equal(
+        parseOptions([
+            '--run',
+            '--task',
+            'durable-record',
+            '--scenario',
+            'shopping-vocabulary',
+        ]).scenario,
+        'shopping-vocabulary',
+    );
+
     assert.equal(
         parseOptions(['--run', '--task', 'durable-record']).task,
         'durable-record',
@@ -221,180 +238,6 @@ test('production preflight fails closed on route fallback, limits, user identity
 
     assert.throws(() => assertSnapshot(safeSnapshot(), account, randomUUID()));
 });
-
-function journeyFixture() {
-    const noteId = randomUUID();
-    const conversationId = randomUUID();
-    const branchId = randomUUID();
-    let workingContent;
-    const turnId = randomUUID();
-    const timestamp = '2026-10-31T10:00:00.000Z';
-    const conversation = c.ConversationSchema.parse({
-        id: conversationId,
-        source: { kind: 'knowledge', id: noteId },
-        title: null,
-        preferences: {},
-        version: 1,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-    });
-    const turn = c.ConversationTurnSchema.parse({
-        id: turnId,
-        conversationId,
-        modelId: null,
-        status: 'succeeded',
-        failureCode: null,
-        usage: {
-            inputTokens: 50,
-            outputTokens: 8,
-            chargedCredits: '0.1',
-            estimated: false,
-        },
-        billing: {
-            state: 'charged',
-            heldCredits: '50',
-            chargedCredits: '0.1',
-            measurement: 'measured',
-        },
-        createdAt: timestamp,
-        updatedAt: timestamp,
-    });
-    const message = c.ConversationMessageSchema.parse({
-        id: randomUUID(),
-        conversationId,
-        role: 'assistant',
-        content: 'Hello, friend.',
-        responseMetadata: { kind: 'learning-explanation', documentUse: true },
-        attachments: [],
-        status: 'complete',
-        sourceVersion: null,
-        sourceProvenance: 'saved',
-        createdAt: timestamp,
-        turnId,
-    });
-    const detail = c.ConversationDetailSchema.parse({
-        conversation,
-        turns: [turn],
-        messages: [message],
-        drafts: [],
-    });
-    const calls = [];
-    const api = {
-        request: async (path, schema, body) => {
-            calls.push({ path, body });
-            let result;
-            if (path === '/users/me/ai-model-preference') {
-                result = {
-                    mode: 'auto',
-                    modelId: null,
-                    version: 1,
-                    selectedModel: null,
-                    maxCreditsPerAction: '50',
-                };
-            } else if (path === '/users/me/ai-credits') {
-                result = { mode: 'limited', availableCredits: '200' };
-            } else if (path === '/knowledge') {
-                c.CreateKnowledgeNoteRequestSchema.parse(body);
-                workingContent = body.content;
-                result = {
-                    note: {
-                        ...body.content,
-                        id: noteId,
-                        version: 1,
-                        createdAt: timestamp,
-                        updatedAt: timestamp,
-                    },
-                };
-            } else if (path === `/knowledge/${noteId}/workspace`) {
-                result = {
-                    workspace: {
-                        noteId,
-                        status: 'saved',
-                        published: null,
-                        branches: [
-                            {
-                                id: branchId,
-                                noteId,
-                                version: 1,
-                                basePublishedVersion: 1,
-                                content: workingContent,
-                                updatedAt: timestamp,
-                            },
-                        ],
-                        preferredBranchId: branchId,
-                        shareEnabled: false,
-                        limits: { referenceChars: 20000, editorChars: 40000 },
-                    },
-                };
-            } else if (path === '/conversations') {
-                c.CreateConversationRequestSchema.parse(body);
-                result = { conversation };
-            } else if (path.endsWith('/turns')) {
-                c.SubmitConversationTurnRequestSchema.parse(body);
-                // Owner knowledge admission requires an editor snapshot beyond
-                // the general turn schema's optional field.
-                assert.equal(
-                    body.editorContext?.content,
-                    'Hello means a greeting in English.',
-                );
-
-                assert.deepEqual(body.editorContext.workingBranch, {
-                    id: branchId,
-                    version: 1,
-                });
-
-                assert.ok(
-                    calls.findIndex((call) =>
-                        call.path.endsWith('/workspace'),
-                    ) < calls.findIndex((call) => call.path.endsWith('/turns')),
-                );
-
-                assert.match(
-                    body.editorContext.editorTarget.documentHash,
-                    /^[a-f0-9]{64}$/,
-                );
-
-                result = {
-                    turn: {
-                        ...turn,
-                        status: 'queued',
-                        billing: {
-                            state: 'held',
-                            heldCredits: '50',
-                            chargedCredits: null,
-                            measurement: null,
-                        },
-                    },
-                };
-            } else {
-                result = detail;
-            }
-
-            return schema.parse(result);
-        },
-    };
-    const initial = {
-        day,
-        globalExposureMicros: 0,
-        actionCredits: '50',
-        routingRevision: randomUUID(),
-        funding: 'customer',
-    };
-    const evidence = [];
-
-    return {
-        api,
-        contracts: c,
-        reservation: { id: randomUUID(), day },
-        journal: { record: async (...args) => evidence.push(args) },
-        inspect: async () => initial,
-        initial,
-        verifyExpense: async () => 1000,
-        calls,
-        detail,
-        evidence,
-    };
-}
 
 test('synthetic journey validates real contracts, persists output and charged terminal billing', async () => {
     const fixture = journeyFixture();

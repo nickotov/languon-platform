@@ -11,45 +11,24 @@ import {
     type UpdateActiveObservationsInput,
     type UpdateObservationalMemoryConfigInput,
 } from '@mastra/core/storage';
-import type {
-    TutorMemoryMessage,
-    TutorMemoryPort,
-} from '../../application/ports/tutor-runner.js';
-import { tutorMessageModelContent } from '../../application/tutor-message-context.js';
+import type { TutorMemoryPort } from '../../application/ports/tutor-runner.js';
+import { ConversationMemoryMessages } from './conversation-memory-messages.js';
+import { ConversationMemoryRecords } from './conversation-memory-records.js';
+
+export { toTutorModelMessage } from './conversation-memory-messages.js';
 
 const unsupported = (): never => {
     throw new Error('This conversation memory operation is not authorized.');
 };
 const serialize = (value: object): Record<string, unknown> =>
     JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
-const recordKey = (id: string) => `observations:${id}`;
-
-export function toTutorModelMessage(
-    message: TutorMemoryMessage,
-    threadId: string,
-    resourceId: string,
-): MastraDBMessage {
-    return {
-        id: message.id,
-        role: message.role,
-        threadId,
-        resourceId,
-        createdAt: new Date(message.createdAt),
-        content: tutorMessageModelContent(
-            message,
-        ) as MastraDBMessage['content'],
-    };
-}
-
-function visibleText(message: MastraDBMessage): string {
-    return message.content.parts
-        .flatMap((part) => (part.type === 'text' ? [part.text] : []))
-        .join('');
-}
 
 /** Thread-bound SDK adapter. Persistence owns authorization, transactions and canonical message merging. */
 export class ConversationMemoryStorage extends MemoryStorage {
     override readonly supportsObservationalMemory = true;
+    private readonly messages: ConversationMemoryMessages;
+    private readonly records: ConversationMemoryRecords;
+
     constructor(
         private readonly options: {
             conversationId: string;
@@ -59,6 +38,14 @@ export class ConversationMemoryStorage extends MemoryStorage {
         },
     ) {
         super();
+
+        const assertScope = (
+            threadId: string | null | undefined,
+            resourceId?: string,
+        ) => this.assertScope(threadId, resourceId);
+
+        this.messages = new ConversationMemoryMessages(options, assertScope);
+        this.records = new ConversationMemoryRecords(options.port, assertScope);
     }
 
     private assertScope(
@@ -181,196 +168,15 @@ export class ConversationMemoryStorage extends MemoryStorage {
     }
 
     async listMessagesById({ messageIds }: { messageIds: string[] }) {
-        const { messages } = await this.options.port.listMessages({
-            ids: messageIds,
-            offset: 0,
-            limit: 500,
-            order: 'asc',
-        });
-
-        return {
-            messages: messages.map((message) =>
-                toTutorModelMessage(
-                    message,
-                    this.options.conversationId,
-                    this.options.ownerId,
-                ),
-            ),
-        };
+        return this.messages.listMessagesById({ messageIds });
     }
 
     async listMessages(input: StorageListMessagesInput) {
-        for (const id of Array.isArray(input.threadId)
-            ? input.threadId
-            : [input.threadId]) {
-            this.assertScope(id, input.resourceId);
-        }
-
-        if (
-            input.filter?.metadata &&
-            Object.keys(input.filter.metadata).length > 0
-        ) {
-            unsupported();
-        }
-
-        const page = input.page ?? 0;
-        const limit =
-            input.perPage === false ? 500 : Math.min(input.perPage ?? 100, 500);
-        const dateRange = input.filter?.dateRange;
-        const { messages: rows, total } = await this.options.port.listMessages({
-            offset: page * limit,
-            limit,
-            order: input.orderBy?.direction === 'ASC' ? 'asc' : 'desc',
-            ...(dateRange?.start
-                ? {
-                      after: new Date(
-                          dateRange.start.getTime() +
-                              (dateRange.startExclusive ? 1 : 0),
-                      ).toISOString(),
-                  }
-                : {}),
-            ...(dateRange?.end
-                ? {
-                      before: new Date(
-                          dateRange.end.getTime() -
-                              (dateRange.endExclusive ? 1 : 0),
-                      ).toISOString(),
-                  }
-                : {}),
-        });
-
-        if (input.perPage === false && total > limit) {
-            throw new Error(
-                'Conversation context requires a narrower history window.',
-            );
-        }
-
-        const messages = rows.map((message) =>
-            toTutorModelMessage(
-                message,
-                this.options.conversationId,
-                this.options.ownerId,
-            ),
-        );
-
-        for (const include of input.include ?? []) {
-            if (include.threadId) {
-                this.assertScope(include.threadId);
-            }
-
-            const found = await this.listMessagesById({
-                messageIds: [include.id],
-            });
-
-            for (const message of found.messages) {
-                if (!messages.some((existing) => existing.id === message.id)) {
-                    messages.push(message);
-                }
-
-                const [before, after] = await Promise.all([
-                    this.options.port.listMessages({
-                        before: message.createdAt.toISOString(),
-                        offset: 0,
-                        limit: Math.min(
-                            (include.withPreviousMessages ?? 0) + 1,
-                            100,
-                        ),
-                        order: 'desc',
-                    }),
-                    this.options.port.listMessages({
-                        after: message.createdAt.toISOString(),
-                        offset: 0,
-                        limit: Math.min(
-                            (include.withNextMessages ?? 0) + 1,
-                            100,
-                        ),
-                        order: 'asc',
-                    }),
-                ]);
-
-                for (const neighbor of [
-                    ...before.messages,
-                    ...after.messages,
-                ]) {
-                    if (
-                        !messages.some(
-                            (existing) => existing.id === neighbor.id,
-                        )
-                    ) {
-                        messages.push(
-                            toTutorModelMessage(
-                                neighbor,
-                                this.options.conversationId,
-                                this.options.ownerId,
-                            ),
-                        );
-                    }
-                }
-            }
-        }
-
-        const direction = input.orderBy?.direction === 'ASC' ? 1 : -1;
-        messages.sort(
-            (a, b) =>
-                direction *
-                (a.createdAt.getTime() - b.createdAt.getTime() ||
-                    a.id.localeCompare(b.id)),
-        );
-
-        return {
-            messages,
-            total,
-            page,
-            perPage: input.perPage === false ? (false as const) : limit,
-            hasMore: (page + 1) * limit < total,
-        };
+        return this.messages.listMessages(input);
     }
 
     async saveMessages({ messages }: { messages: MastraDBMessage[] }) {
-        const saved: TutorMemoryMessage[] = [];
-        for (const message of messages) {
-            this.assertScope(message.threadId, message.resourceId);
-            if (message.role !== 'user' && message.role !== 'assistant') {
-                return unsupported();
-            }
-
-            if (message.id === 'om-continuation') {
-                continue;
-            }
-
-            // User text/copies are admitted by the application. SDK-only source
-            // provenance and memory markers must never replace that visible text.
-            const canonical =
-                message.role === 'user'
-                    ? (
-                          await this.options.port.listMessages({
-                              ids: [message.id],
-                              offset: 0,
-                              limit: 1,
-                              order: 'asc',
-                          })
-                      ).messages[0]
-                    : undefined;
-
-            if (message.role === 'user' && canonical?.role !== 'user') {
-                unsupported();
-            }
-
-            saved.push({
-                id: message.id,
-                role: message.role,
-                content: canonical?.content ?? visibleText(message),
-                ...(canonical?.attachments
-                    ? { attachments: canonical.attachments }
-                    : {}),
-                createdAt: message.createdAt.toISOString(),
-                modelContent: serialize(message.content),
-            });
-        }
-
-        await this.options.port.saveMessages(saved);
-
-        return { messages };
+        return this.messages.saveMessages({ messages });
     }
 
     async updateMessages({
@@ -400,74 +206,14 @@ export class ConversationMemoryStorage extends MemoryStorage {
         return updated;
     }
 
-    private async index(): Promise<string[]> {
-        const state = await this.options.port.readState('observations:index');
-
-        return Array.isArray(state?.ids)
-            ? state.ids.filter((id): id is string => typeof id === 'string')
-            : [];
-    }
-
-    private async readRecord(id: string): Promise<ObservationalMemoryRecord> {
-        if (!(await this.index()).includes(id)) {
-            return unsupported();
-        }
-
-        const raw = await this.options.port.readState(recordKey(id));
-        if (!raw) {
-            throw new Error('Conversation memory record is unavailable.');
-        }
-
-        const record = {
-            ...raw,
-            createdAt: new Date(String(raw.createdAt)),
-            updatedAt: new Date(String(raw.updatedAt)),
-            lastObservedAt: raw.lastObservedAt
-                ? new Date(String(raw.lastObservedAt))
-                : undefined,
-            lastBufferedAtTime: raw.lastBufferedAtTime
-                ? new Date(String(raw.lastBufferedAtTime))
-                : null,
-        } as ObservationalMemoryRecord;
-
-        this.assertScope(record.threadId, record.resourceId);
-
-        return record;
-    }
-
-    private async writeRecord(
-        record: ObservationalMemoryRecord,
-        append = false,
-    ) {
-        this.assertScope(record.threadId, record.resourceId);
-        const ids = await this.index();
-        if (!append && !ids.includes(record.id)) {
-            unsupported();
-        }
-
-        await this.options.port.writeState({
-            [recordKey(record.id)]: serialize({
-                ...record,
-                updatedAt: new Date(),
-            }),
-            ...(append
-                ? {
-                      'observations:index': {
-                          ids: [...new Set([...ids, record.id])],
-                      },
-                  }
-                : {}),
-        });
-    }
-
     override async getObservationalMemory(
         threadId: string | null,
         resourceId: string,
     ) {
         this.assertScope(threadId, resourceId);
-        const id = (await this.index()).at(-1);
+        const id = (await this.records.index()).at(-1);
 
-        return id ? this.readRecord(id) : null;
+        return id ? this.records.readRecord(id) : null;
     }
 
     override async getObservationalMemoryHistory(
@@ -477,8 +223,10 @@ export class ConversationMemoryStorage extends MemoryStorage {
         options?: ObservationalMemoryHistoryOptions,
     ) {
         this.assertScope(threadId, resourceId);
-        const ids = (await this.index()).reverse();
-        const records = await Promise.all(ids.map((id) => this.readRecord(id)));
+        const ids = (await this.records.index()).reverse();
+        const records = await Promise.all(
+            ids.map((id) => this.records.readRecord(id)),
+        );
 
         return records
             .filter(
@@ -534,7 +282,7 @@ export class ConversationMemoryStorage extends MemoryStorage {
                 : {}),
         };
 
-        await this.writeRecord(record, true);
+        await this.records.writeRecord(record, true);
 
         return record;
     }
@@ -542,8 +290,8 @@ export class ConversationMemoryStorage extends MemoryStorage {
     override async updateActiveObservations(
         input: UpdateActiveObservationsInput,
     ) {
-        const record = await this.readRecord(input.id);
-        await this.writeRecord({
+        const record = await this.records.readRecord(input.id);
+        await this.records.writeRecord({
             ...record,
             activeObservations: input.observations,
             observationTokenCount: input.tokenCount,
@@ -566,7 +314,7 @@ export class ConversationMemoryStorage extends MemoryStorage {
     override async createReflectionGeneration(
         input: CreateReflectionGenerationInput,
     ) {
-        const current = await this.readRecord(input.currentRecord.id);
+        const current = await this.records.readRecord(input.currentRecord.id);
         const record: ObservationalMemoryRecord = {
             ...current,
             id: randomUUID(),
@@ -581,7 +329,7 @@ export class ConversationMemoryStorage extends MemoryStorage {
             observedMessageIds: [],
         };
 
-        await this.writeRecord(record, true);
+        await this.records.writeRecord(record, true);
 
         return record;
     }
@@ -589,20 +337,23 @@ export class ConversationMemoryStorage extends MemoryStorage {
     override async updateObservationalMemoryConfig(
         input: UpdateObservationalMemoryConfigInput,
     ) {
-        const record = await this.readRecord(input.id);
-        await this.writeRecord({
+        const record = await this.records.readRecord(input.id);
+        await this.records.writeRecord({
             ...record,
             config: { ...record.config, ...input.config },
         });
     }
 
     override async setObservingFlag(id: string, isObserving: boolean) {
-        await this.writeRecord({ ...(await this.readRecord(id)), isObserving });
+        await this.records.writeRecord({
+            ...(await this.records.readRecord(id)),
+            isObserving,
+        });
     }
 
     override async setReflectingFlag(id: string, isReflecting: boolean) {
-        await this.writeRecord({
-            ...(await this.readRecord(id)),
+        await this.records.writeRecord({
+            ...(await this.records.readRecord(id)),
             isReflecting,
         });
     }
@@ -611,8 +362,8 @@ export class ConversationMemoryStorage extends MemoryStorage {
         id: string,
         pendingMessageTokens: number,
     ) {
-        await this.writeRecord({
-            ...(await this.readRecord(id)),
+        await this.records.writeRecord({
+            ...(await this.records.readRecord(id)),
             pendingMessageTokens,
         });
     }
@@ -622,8 +373,8 @@ export class ConversationMemoryStorage extends MemoryStorage {
             unsupported();
         }
 
-        await this.writeRecord({
-            ...(await this.readRecord(id)),
+        await this.records.writeRecord({
+            ...(await this.records.readRecord(id)),
             isBufferingObservation: false,
         });
     }
@@ -633,8 +384,8 @@ export class ConversationMemoryStorage extends MemoryStorage {
             unsupported();
         }
 
-        await this.writeRecord({
-            ...(await this.readRecord(id)),
+        await this.records.writeRecord({
+            ...(await this.records.readRecord(id)),
             isBufferingReflection: false,
         });
     }

@@ -489,5 +489,15 @@ export function createTutorModelGate(options: {
         get calls() {
             return calls;
         },
+        get remainingBudget() {
+            // Consumers may plan work from this snapshot; admission still owns the limits.
+            return Object.freeze({
+                remainingCalls: Math.max(0, maxCalls - calls),
+                remainingOutputTokens: Math.max(
+                    0,
+                    10_000 - allocatedOutputTokens,
+                ),
+            });
+        },
     };
 }

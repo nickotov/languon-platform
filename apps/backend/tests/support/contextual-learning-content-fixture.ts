@@ -2,6 +2,7 @@ import { getLocalPrompt } from '@languon/prompts';
 import { deserializeLearningContentBrief } from '../../src/modules/conversations/application/learning-content-transport';
 import { markdownGrammarProposal } from './contextual-block-proposal-fixture';
 import { randomUUID } from 'node:crypto';
+import { shoppingVocabularyBatch } from './contextual-shopping-vocabulary-fixture';
 
 function planningSourceCatalog(
     prompt: unknown,
@@ -52,6 +53,25 @@ function planningSourceCatalog(
 
 /** Scripted provider outputs prove wiring only, never natural-language intent quality. */
 export function fixtureRequestResolution(question: string, prompt: unknown) {
+    if (question.startsWith('Generate vocabulary with top 50 words')) {
+        return {
+            kind: 'generate',
+            replyLanguage: 'en',
+            brief: {
+                tasks: [
+                    {
+                        id: 'shopping-vocabulary',
+                        kind: 'vocabulary',
+                        instruction: 'Teach common words used when shopping.',
+                        language: 'en',
+                        translationLanguage: 'ru',
+                        count: 50,
+                    },
+                ],
+            },
+        };
+    }
+
     if (question.startsWith('Copy prepared audio')) {
         const catalog = planningSourceCatalog(prompt);
         const audio = catalog.filter(
@@ -255,6 +275,28 @@ export function fixtureAuthoringOutput(prompt: unknown) {
     return {
         tasks: brief.tasks.map((task) => {
             if (task.kind === 'vocabulary') {
+                if (task.id === 'shopping-vocabulary') {
+                    return {
+                        taskId: task.id,
+                        blocks: [
+                            {
+                                id: randomUUID(),
+                                type: 'vocabulary',
+                                title: 'Shopping vocabulary',
+                                language: task.language,
+                                translationLanguage: task.translationLanguage,
+                                entries: shoppingVocabularyBatch(
+                                    task,
+                                    hostPrompt,
+                                ).map((entry) => ({
+                                    id: randomUUID(),
+                                    ...entry,
+                                })),
+                            },
+                        ],
+                    };
+                }
+
                 return {
                     taskId: task.id,
                     blocks: [

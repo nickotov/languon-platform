@@ -311,6 +311,17 @@ you intentionally want to destroy local database and Redis data.
 
 ## Validation
 
+Use `pnpm audit:backend-readability` to inventory handwritten backend runtime
+TypeScript files above 500 physical lines or functions above 100 body lines.
+The advisory report shows the first 20 candidates; add `--json` for the complete
+queue. For machine-readable redirection, use
+`pnpm --silent audit:backend-readability --json > /tmp/backend-readability.json`
+to omit pnpm's log prefix. Physical and nonblank counts include comments;
+function body spans include braces and blank lines. Schema, catalog and configuration
+filenames receive a separate review hint, not an exemption. Review cohesive
+responsibilities using [the readability guide](./code-readability.md) before choosing
+an extraction; these signals are not CI limits or automatic refactoring decisions.
+
 During implementation, run the narrowest relevant workspace command. Before
 handoff, run:
 
@@ -421,3 +432,16 @@ the intended public base path. A Kie terminal 500 is a supplier generation failu
 changing an API URL cannot repair it. Safe failed-job errors and billing outcomes
 remain available after failed recording cleanup. Never retry a potentially accepted
 paid submission merely because its status is unavailable.
+
+### Fixed shopping vocabulary smoke
+
+After the existing local dictionary worker has reloaded the checked-out code,
+`pnpm ai:smoke -- --run --task learning-content-batching --scenario shopping-vocabulary`
+checks one fixed synthetic 50-word English-shopping request translated into Russian.
+It uses the same dedicated account, origin, route, permanent journal, per-task/day
+allowance, settled-expense checks and no-retry rule as the default explanation
+scenario. It verifies one canonical pending proposal containing one vocabulary
+block with 50 distinct entries; it does not Apply or Save. Default `pnpm ai:smoke`
+remains read-only. Do not spend this check against an older non-watching worker,
+reset the journal, change task keys to evade limits, or claim provider proof from
+a preflight result. See [.agent/AI_SMOKE_POLICY.md](../.agent/AI_SMOKE_POLICY.md).

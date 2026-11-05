@@ -1,10 +1,7 @@
 import { z } from 'zod';
 import type { LearningBlockProposalInput } from '@languon/contracts';
 import { serializeLearningContentBrief } from './learning-content-transport';
-import {
-    estimateLearningContentOutput,
-    learningContentOutputEstimateLimit,
-} from './learning-content-output-capacity';
+import { planLearningContentBatches } from './learning-content-batches';
 
 const language = z.string().regex(/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/u);
 
@@ -228,15 +225,11 @@ export function learningContentRequirements(
         };
     }
 
-    if (
-        !missing.length &&
-        estimateLearningContentOutput(brief) >
-            learningContentOutputEstimateLimit
-    ) {
+    if (!missing.length && !planLearningContentBatches(brief)) {
         return {
             status: 'unsupported',
             code: 'output-capacity',
-            reason: 'The complete requested content exceeds the bounded authoring output allowance. Split the request or use shorter source material.',
+            reason: 'The complete requested content exceeds the bounded request allowance. Split the request or use shorter source material.',
         };
     }
 

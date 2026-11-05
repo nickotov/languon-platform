@@ -55,6 +55,23 @@ export const tutorRequestEvaluationCases = [
         kinds: ['vocabulary', 'grammar', 'exercises'],
     },
     {
+        id: 'large-vocabulary-after-capacity-refusal',
+        message:
+            'Generate all 50 French shopping terms with Russian translations.',
+        pending:
+            'One vocabulary task: 50 shopping terms, French, Russian translations.',
+        history: [
+            {
+                role: 'assistant',
+                content:
+                    'The 50-entry vocabulary block exceeded the generation limit. Would you prefer fewer entries?',
+            },
+        ],
+        expected: 'generate',
+        kinds: ['vocabulary'],
+        count: 50,
+    },
+    {
         id: 'missing-language',
         message: 'Make vocabulary for gift and pain.',
         expected: 'clarify',

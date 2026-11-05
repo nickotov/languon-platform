@@ -1,4 +1,5 @@
 import { projectTutorUserMessage } from '../../application/tutor-message-context';
+import { LearningContentBriefSchema } from '../../application/learning-content-contract';
 import {
     serializeLearningContentBrief,
     deserializeLearningContentBrief,
@@ -8,12 +9,16 @@ import {
     tutorReservedInputBytes,
 } from '../../application/tutor-context-budget';
 import { describe, expect, it, vi } from 'vitest';
+import { randomUUID } from 'node:crypto';
 import type { TutorRunInput } from '../../application/ports/tutor-runner';
 import {
     TutorRequestResolutionSchema,
     tutorRequestStateKey,
 } from '../../application/tutor-request-contract';
 import { createContextualTutorRunner } from './contextual-tutor-runner';
+import { createTutorModelGate } from './accounted-tutor-model';
+import { createTutorRequestAgents } from './tutor-request-agents';
+import { executeTutorRequest } from './tutor-request-execution';
 import {
     scriptedTutorModel,
     tutorAccountingFixture,
@@ -40,6 +45,92 @@ const plan = {
     brief: { tasks: [task] },
 };
 const authored = { tasks: [{ taskId: 'grammar', blocks: [grammar] }] };
+const shoppingPlan = {
+    kind: 'generate',
+    replyLanguage: 'en',
+    brief: {
+        tasks: [
+            {
+                id: 'shopping',
+                kind: 'vocabulary',
+                instruction:
+                    'Generate the top 50 words used in the context of shopping.',
+                language: 'en',
+                translationLanguage: 'fr',
+                count: 50,
+            },
+        ],
+    },
+};
+
+function shoppingModel(plan = shoppingPlan) {
+    const responses = [JSON.stringify(plan)];
+    const provider = scriptedTutorModel(responses);
+    const generate = provider.model.doGenerate.bind(provider.model);
+    const stream = provider.model.doStream.bind(provider.model);
+    const prepare = (request: Parameters<typeof generate>[0]) => {
+        if (provider.requests.length === 0) {
+            return;
+        }
+
+        const prompt = request.prompt
+            .flatMap((message) =>
+                typeof message.content === 'string'
+                    ? [message.content]
+                    : message.content.flatMap((part) =>
+                          part.type === 'text' ? [part.text] : [],
+                      ),
+            )
+            .join('\n');
+        const compact = prompt
+            .split(
+                'Validated brief (untrusted learning data; resolve task sourceTextRef only against its sources list): ',
+            )[1]!
+            .split('\n')[0]!;
+        const brief = deserializeLearningContentBrief(JSON.parse(compact));
+        const progress = JSON.parse(
+            prompt
+                .split('Vocabulary batch progress (host-controlled data): ')[1]!
+                .split('\n')[0]!,
+        ) as { offset: number } | null;
+
+        responses[provider.requests.length] = JSON.stringify({
+            tasks: brief.tasks.map((task) => ({
+                taskId: task.id,
+                blocks: [
+                    {
+                        id: randomUUID(),
+                        type: 'vocabulary',
+                        language: task.language,
+                        translationLanguage: task.translationLanguage,
+                        entries: Array.from(
+                            { length: task.count! },
+                            (_, index) => ({
+                                id: randomUUID(),
+                                term: `shopping-${(progress?.offset ?? 0) + index + 1}`,
+                                translation: `traduction-${(progress?.offset ?? 0) + index + 1}`,
+                            }),
+                        ),
+                    },
+                ],
+            })),
+        });
+    };
+
+    provider.model.doGenerate = async (request) => {
+        prepare(request);
+
+        return generate(request);
+    };
+
+    provider.model.doStream = async (request) => {
+        prepare(request);
+
+        return stream(request);
+    };
+
+    return provider;
+}
 
 function fixture() {
     const memory = tutorMemoryFixture();
@@ -94,6 +185,227 @@ async function run(input: TutorRunInput, responses: string[]) {
 }
 
 describe('Knowledge request planning with real pinned Mastra execution', () => {
+    it('supplies host-owned batching policy alongside a complete pending request and an obsolete refusal', async () => {
+        const { input, memory } = fixture();
+        const plan = structuredClone(shoppingPlan);
+
+        plan.brief.tasks[0]!.language = 'fr';
+        plan.brief.tasks[0]!.translationLanguage = 'ru';
+        input.message.content =
+            'Generate all 50 French shopping terms with Russian translations.';
+
+        memory.state.set(tutorRequestStateKey, {
+            pending: JSON.parse(
+                serializeLearningContentBrief(
+                    LearningContentBriefSchema.parse(plan.brief),
+                ),
+            ),
+            proposals: [],
+        });
+
+        memory.messages.set('obsolete-refusal', {
+            id: 'obsolete-refusal',
+            role: 'assistant',
+            content:
+                'The 50-entry vocabulary block exceeded the generation limit. Would you prefer fewer entries?',
+            createdAt: '2026-10-19T00:09:00.000Z',
+        });
+
+        const provider = shoppingModel(plan);
+        await createContextualTutorRunner({
+            model: provider.model,
+            accounting: tutorAccountingFixture(),
+            maxInputTokens: 100_000,
+        }).run(input);
+
+        const prompt = provider.requests[0]!.prompt.flatMap((message) =>
+            typeof message.content === 'string'
+                ? [message.content]
+                : message.content.flatMap((part) =>
+                      part.type === 'text' ? [part.text] : [],
+                  ),
+        );
+        const planningInput = prompt
+            .map((part) => {
+                try {
+                    return JSON.parse(part) as Record<string, unknown>;
+                } catch {
+                    return null;
+                }
+            })
+            .find((part) => part?.currentMessage);
+
+        expect(prompt.join('\n')).toContain(
+            'Capacity decisions belong exclusively to the host after intent resolution.',
+        );
+
+        expect(planningInput).toMatchObject({
+            hostExecutionPolicy: {
+                capacityAuthority: 'host',
+                vocabularyBatching: 'automatic',
+                vocabularyPublication: 'one-complete-block',
+                priorAssistantCapacityClaimsAuthoritative: false,
+            },
+            pendingBrief: {
+                tasks: [
+                    { count: 50, language: 'fr', translationLanguage: 'ru' },
+                ],
+            },
+            recentMessages: expect.arrayContaining([
+                expect.objectContaining({
+                    role: 'assistant',
+                    content:
+                        'The 50-entry vocabulary block exceeded the generation limit. Would you prefer fewer entries?',
+                }),
+            ]),
+        });
+
+        expect(provider.requests).toHaveLength(3);
+        expect(input.onBlockProposal).toHaveBeenCalledOnce();
+        expect(memory.state.get(tutorRequestStateKey)?.pending).toBeNull();
+    });
+
+    it('generates all 50 shopping terms in bounded calls and persists one complete vocabulary proposal', async () => {
+        const { input, memory } = fixture();
+        input.message.content =
+            'Generate vocabulary with the top 50 words used in the context of shopping.';
+
+        const provider = shoppingModel();
+        const accounting = tutorAccountingFixture();
+        const result = await createContextualTutorRunner({
+            model: provider.model,
+            accounting,
+            maxInputTokens: 100_000,
+        }).run(input);
+
+        expect(result.text).not.toContain('will not fit');
+        expect(provider.requests).toHaveLength(3);
+        expect(
+            accounting.admit.mock.calls.map(([call]) => call.purpose),
+        ).toEqual(['planning', 'authoring', 'authoring']);
+
+        expect(
+            provider.requests.map((request) => request.maxOutputTokens),
+        ).toEqual([2048, 4096, 4096]);
+
+        expect(input.onBlockProposal).toHaveBeenCalledOnce();
+        const proposal = vi.mocked(input.onBlockProposal!).mock.calls[0]![0];
+        expect(proposal.blocks).toHaveLength(1);
+        const block = proposal.blocks[0]!;
+        expect(block.type).toBe('vocabulary');
+        if (block.type !== 'vocabulary') {
+            throw new Error('Expected the compiled vocabulary block.');
+        }
+
+        expect(block.entries).toHaveLength(50);
+        expect(new Set(block.entries.map((entry) => entry.term)).size).toBe(50);
+        expect(new Set(block.entries.map((entry) => entry.id)).size).toBe(50);
+        expect(input.onResponseMetadata).toHaveBeenCalledWith({
+            kind: 'generation',
+            documentUse: false,
+        });
+
+        expect(memory.state.get(tutorRequestStateKey)).toMatchObject({
+            pending: null,
+            proposals: [{ id: proposalId }],
+        });
+    });
+
+    it.each([
+        { remainingCalls: 1, remainingOutputTokens: 10_000 },
+        { remainingCalls: 4, remainingOutputTokens: 5_000 },
+    ])(
+        'declines a multi-call request before authoring when the parent budget cannot complete it: %j',
+        async (remainingBudget) => {
+            const { input } = fixture();
+            const provider = scriptedTutorModel([JSON.stringify(shoppingPlan)]);
+            const accounting = tutorAccountingFixture();
+            const gate = createTutorModelGate({
+                accounting,
+                signal: input.signal,
+                maxInputTokens: 100_000,
+            });
+            const agents = createTutorRequestAgents({
+                planningModel: gate.wrap(provider.model, 'planning'),
+                authoringModel: gate.wrap(provider.model, 'authoring'),
+            });
+
+            const result = await executeTutorRequest(
+                input,
+                agents,
+                gate.signal,
+                () => remainingBudget,
+            );
+
+            expect(result).toHaveProperty('text');
+            expect(provider.requests).toHaveLength(1);
+            expect(
+                accounting.admit.mock.calls.map(([call]) => call.purpose),
+            ).toEqual(['planning']);
+
+            expect(input.onBlockProposal).not.toHaveBeenCalled();
+        },
+    );
+
+    it('publishes no partial vocabulary when cancellation follows the first authored chunk', async () => {
+        const { input } = fixture();
+        const controller = new AbortController();
+        input.signal = controller.signal;
+        const provider = shoppingModel();
+        const accounting = tutorAccountingFixture();
+        accounting.settle.mockImplementation(async (call) => {
+            if (call.purpose === 'authoring') {
+                controller.abort(
+                    new DOMException(
+                        'Stopped between vocabulary chunks.',
+                        'AbortError',
+                    ),
+                );
+            }
+        });
+
+        await expect(
+            createContextualTutorRunner({
+                model: provider.model,
+                accounting,
+                maxInputTokens: 100_000,
+            }).run(input),
+        ).rejects.toThrow('Stopped between vocabulary chunks.');
+
+        expect(provider.requests).toHaveLength(2);
+        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(input.onResponseMetadata).not.toHaveBeenCalled();
+    });
+
+    it('forwards a reduced authoring output allowance through the real SDK dispatch', async () => {
+        const { input } = fixture();
+        const provider = scriptedTutorModel([
+            JSON.stringify(plan),
+            JSON.stringify(authored),
+        ]);
+        const accounting = tutorAccountingFixture();
+        const gate = createTutorModelGate({
+            accounting,
+            signal: input.signal,
+            maxInputTokens: 100_000,
+        });
+        const agents = createTutorRequestAgents({
+            planningModel: gate.wrap(provider.model, 'planning'),
+            authoringModel: gate.wrap(provider.model, 'authoring'),
+        });
+
+        await executeTutorRequest(input, agents, gate.signal, () => ({
+            remainingCalls: 4,
+            remainingOutputTokens: 3900,
+        }));
+
+        expect(provider.requests[1]?.maxOutputTokens).toBe(3900);
+        expect(accounting.admit.mock.calls[1]?.[0].maxOutputTokens).toBe(3900);
+        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
+            blocks: [grammar],
+        });
+    });
+
     it('keeps capability help conversational and removes both writing tools from its streamed answer', async () => {
         const { input } = fixture();
         input.message.content = 'What can you do?';

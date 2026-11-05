@@ -24,7 +24,7 @@ const bilingual = (sourceText: string): LearningContentBrief => ({
     ],
 });
 
-it('allows the default vocabulary, grammar and five-exercise combination', () => {
+it('allows the default mixed request and additional components through bounded batches', () => {
     const brief: LearningContentBrief = {
         tasks: [
             {
@@ -58,11 +58,7 @@ it('allows the default vocabulary, grammar and five-exercise combination', () =>
         language: 'en',
     });
 
-    expect(learningContentRequirements(brief)).toMatchObject({
-        status: 'unsupported',
-        code: 'output-capacity',
-    });
-
+    expect(learningContentRequirements(brief)).toBeNull();
     expect(brief.tasks).toHaveLength(4);
 });
 

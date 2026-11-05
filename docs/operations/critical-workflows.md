@@ -92,6 +92,9 @@ Use `--list` for current entries. The initial registry covers:
 - Knowledge tutor capability replies without document actions, followed by coordinated
   vocabulary/grammar/exercise generation, review, Apply, Save and reload
   (`knowledge-intent-content-generation`).
+- Large vocabulary requests: bounded internal calls produce one complete 50-entry
+  vocabulary proposal, explicit Apply/Save and reload
+  (`knowledge-large-vocabulary-generation`).
 - Interactive workbook block authoring and uploaded audio, saved private practice,
   ordered shared reading, independent copies, revocation and inert hostile text.
 - Knowledge H1/H2/H3 and thematic-break authoring, formatted proposal cards and

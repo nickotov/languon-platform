@@ -11,6 +11,9 @@ export const backendExecutionGroups = Object.freeze({
         'src/modules/conversations/application/learning-content-presentation.test.ts',
         'src/modules/conversations/application/learning-content-transport.test.ts',
         'src/modules/conversations/application/learning-content-output-capacity.test.ts',
+        'src/modules/conversations/application/learning-content-batches.test.ts',
+        'src/modules/conversations/application/learning-content-batch-results.test.ts',
+        'src/modules/conversations/infrastructure/ai/learning-content-batching.test.ts',
         'src/modules/conversations/application/tutor-request-sources.test.ts',
         'src/modules/conversations/infrastructure/ai/accounted-tutor-model.test.ts',
         'src/modules/learner-portraits/infrastructure/ai/learner-interviewer.test.ts',
@@ -121,6 +124,7 @@ export const requiredBackendScenarios = Object.freeze([
         file: 'src/modules/conversations/infrastructure/ai/tutor-request-execution.test.ts',
         titles: [
             'patches a multi-component pending brief without dropping unchanged tasks',
+            'generates all 50 shopping terms in bounded calls and persists one complete vocabulary proposal',
             'matches the complete multimedia copy set one-to-one: missing',
             'matches the complete multimedia copy set one-to-one: duplicate',
             'stores and sends one near-limit frozen source for a mixed pending continuation',
@@ -436,6 +440,14 @@ export const flows = [
         app: 'assistant',
         file: 'interactive-workbooks.journeys.spec.ts',
         grep: '.',
+        prerequisite: 'deterministic-assistant',
+    },
+    {
+        id: 'knowledge-large-vocabulary-generation',
+        minimumTests: 1,
+        app: 'assistant',
+        file: 'knowledge-workspace.journeys.spec.ts',
+        grep: 'fifty shopping words become one complete vocabulary proposal and survive explicit publication',
         prerequisite: 'deterministic-assistant',
     },
     {

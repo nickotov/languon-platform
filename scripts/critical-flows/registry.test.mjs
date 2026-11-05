@@ -515,7 +515,7 @@ test('AI seams partition all retained suites and stay narrow with reviewed exact
     }
 
     assert.deepEqual([...seen], backendExecutionFiles);
-    assert.equal(seen.size, 74);
+    assert.equal(seen.size, 77);
     assert.equal(
         selectFlows([]).filter((flow) => flow.app === 'backend').length,
         1,

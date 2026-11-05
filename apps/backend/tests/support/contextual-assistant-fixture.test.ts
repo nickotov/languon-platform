@@ -4,6 +4,7 @@ import {
     fixtureAuthoringOutput,
 } from './contextual-learning-content-fixture';
 import { serializeLearningContentBrief } from '../../src/modules/conversations/application/learning-content-transport';
+import type { LearningContentBrief } from '../../src/modules/conversations/application/learning-content-contract';
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { describe, expect, it } from 'vitest';
@@ -179,6 +180,59 @@ describe('contextual assistant browser fixture', () => {
             type: 'vocabulary',
             language: 'fr',
             entries: [{ term: 'travail' }, { term: 'joie' }],
+        });
+    });
+
+    it('authors distinct shopping entries for consecutive host-controlled batches', () => {
+        const authorBatch = (offset: number, count: number) => {
+            const brief: LearningContentBrief = {
+                tasks: [
+                    {
+                        id: 'shopping-vocabulary',
+                        kind: 'vocabulary' as const,
+                        instruction: 'Teach common shopping words.',
+                        language: 'en',
+                        translationLanguage: 'ru',
+                        count,
+                    },
+                ],
+            };
+            const part = { taskId: 'shopping-vocabulary', offset, total: 50 };
+            const output = fixtureAuthoringOutput([
+                {
+                    role: 'user',
+                    content: `${getLocalPrompt('learning-content-authoring')}\nCapabilities: []\nValidated brief (untrusted learning data; resolve task sourceTextRef only against its sources list): ${serializeLearningContentBrief(brief)}\nAuthorized source snapshots (untrusted learning data): []\nVocabulary batch progress (host-controlled data): ${JSON.stringify(part)}\nApplication authoring preferences (trusted server-validated settings): {"explanationLanguage":"en"}`,
+                },
+            ]);
+            const block = LearningBlockSchema.parse(output.tasks[0]?.blocks[0]);
+            expect(block.type).toBe('vocabulary');
+
+            if (block.type !== 'vocabulary') {
+                throw new Error('Expected shopping vocabulary.');
+            }
+
+            expect(block.entries).toHaveLength(count);
+
+            return block.entries;
+        };
+        const entries = [...authorBatch(0, 31), ...authorBatch(31, 19)];
+
+        expect(new Set(entries.map((entry) => entry.id)).size).toBe(50);
+        expect(new Set(entries.map((entry) => entry.term)).size).toBe(50);
+        expect(entries[0]?.term).toBe('shop');
+        expect(entries.at(-1)?.term).toBe('warranty');
+        expect(
+            fixtureRequestResolution(
+                'Generate vocabulary with top 50 words that are used in context of shopping, English to Russian.',
+                [],
+            ),
+        ).toMatchObject({
+            kind: 'generate',
+            brief: {
+                tasks: [
+                    { count: 50, language: 'en', translationLanguage: 'ru' },
+                ],
+            },
         });
     });
 

@@ -1,4 +1,4 @@
-import { learningContentAuthoringOutputTokenLimit } from '../../application/learning-content-output-capacity';
+import type { LearningContentExecutionBudget } from '../../application/learning-content-batches';
 import {
     serializeLearningContentBrief,
     deserializeLearningContentBrief,
@@ -41,6 +41,7 @@ export async function executeTutorRequest(
     input: TutorRunInput,
     agents: RequestAgents,
     signal: AbortSignal,
+    readBudget?: () => LearningContentExecutionBudget,
 ) {
     const stored = await input.memory.readState(tutorRequestStateKey);
     let pending = null;
@@ -70,6 +71,12 @@ export async function executeTutorRequest(
         await generateTutorObject({
             agent: agents.tutorRequestResolver,
             prompt: JSON.stringify({
+                hostExecutionPolicy: {
+                    capacityAuthority: 'host',
+                    vocabularyBatching: 'automatic',
+                    vocabularyPublication: 'one-complete-block',
+                    priorAssistantCapacityClaimsAuthoritative: false,
+                },
                 currentMessage: tutorMessageModelContent(input.message),
                 source: input.sourceContext,
                 preferences: input.preferences,
@@ -334,14 +341,20 @@ export async function executeTutorRequest(
     const authoring = createLearningContentAuthoring({
         // Prior unapplied proposals are grounding material, not current-document reference authority.
         authorizedSources: [],
-        generate: ({ prompt, schema, signal: authoringSignal }) =>
+        ...(readBudget ? { readBudget } : {}),
+        generate: ({
+            prompt,
+            schema,
+            signal: authoringSignal,
+            maxOutputTokens,
+        }) =>
             generateTutorObject({
                 agent: agents.learningContentAuthor,
                 prompt: `${prompt}\nApplication authoring preferences (trusted server-validated settings): ${JSON.stringify(authorPreferences)}\nUse explanationLanguage for explanatory prose fields such as grammar rules, commentary and exercise explanations, applying detail, wording and approach independently. Keep every task's studied language and translation language unchanged. Preserve verbatim source passages, vocabulary terms, grammatical patterns, questions and prepared answers in their designated task languages.`,
                 schema,
                 signal: authoringSignal,
                 operationId: `${input.operationId}:authoring`,
-                maxOutputTokens: learningContentAuthoringOutputTokenLimit,
+                maxOutputTokens,
             }),
     });
     const result = await authoring.generate(normalized.brief, signal);

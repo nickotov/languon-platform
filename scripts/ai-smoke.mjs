@@ -12,6 +12,7 @@ import {
 } from './ai-smoke/policy.mjs';
 import { privateRead, withJournal } from './ai-smoke/journal.mjs';
 import { createApi, runJourney } from './ai-smoke/journey.mjs';
+import { smokeScenario } from './ai-smoke/scenarios.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -22,6 +23,7 @@ export function parseOptions(args) {
             run: { type: 'boolean', default: false },
             initialize: { type: 'boolean', default: false },
             task: { type: 'string' },
+            scenario: { type: 'string' },
             help: { type: 'boolean', default: false },
         },
     });
@@ -32,6 +34,8 @@ export function parseOptions(args) {
     }
 
     requireSafe(!values.task || values.run, 'task-requires-run');
+    requireSafe(!values.scenario || values.run, 'scenario-requires-run');
+    smokeScenario(values.scenario);
 
     return values;
 }
@@ -40,7 +44,7 @@ export async function main(args = process.argv.slice(2)) {
     const options = parseOptions(args);
     if (options.help) {
         console.log(
-            'pnpm ai:smoke [--initialize | --run --task stable-task-slug]\nDefault: read-only preflight. Uses only .env.local and dedicated .env.ai-smoke.local (or AI_SMOKE_* environment). One synthetic learner conversation per --run; no retry/top-up. Local journal holds $0.10 per attempt permanently; max 2 per task and conservative $0.50 per UTC day including all application operator expenses. Keep evidence and never remove/reset journal or stale locks without reconciliation.',
+            'pnpm ai:smoke [--initialize | --run --task stable-task-slug [--scenario shopping-vocabulary]]\nDefault: read-only preflight; run defaults to the fixed explanation scenario. Uses only .env.local and dedicated .env.ai-smoke.local (or AI_SMOKE_* environment). One synthetic learner conversation per --run; no retry/top-up. Local journal holds $0.10 per attempt permanently; max 2 per task and conservative $0.50 per UTC day including all application operator expenses. Keep evidence and never remove/reset journal or stale locks without reconciliation.',
         );
 
         return;
@@ -139,6 +143,7 @@ export async function main(args = process.argv.slice(2)) {
                         inspect: inspection.inspect,
                         initial: current,
                         verifyExpense: inspection.verifyExpense,
+                        scenario: options.scenario,
                     });
 
                     console.log(

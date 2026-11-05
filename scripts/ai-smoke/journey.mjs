@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
 import { z } from 'zod';
 import { API, ORIGIN, EMAIL, requireSafe, SmokeError } from './policy.mjs';
+import { smokeScenario, verifyScenarioOutput } from './scenarios.mjs';
 
 export function createApi(contracts, fetchImpl = fetch) {
     let token;
@@ -90,9 +91,11 @@ export async function runJourney({
     inspect,
     initial,
     verifyExpense,
+    scenario = 'explanation',
     sleep = setTimeout,
     now = Date.now,
 }) {
+    const config = smokeScenario(scenario);
     const preference = await api.request(
         '/users/me/ai-model-preference',
         c.TextAiPreferenceResponseSchema,
@@ -118,7 +121,7 @@ export async function runJourney({
         c.CreateKnowledgeNoteRequestSchema.parse({
             operationId: reservation.id,
             content: {
-                title: 'Synthetic AI smoke: English greeting',
+                title: config.title,
                 summary: 'Disposable synthetic language-learning context.',
                 body: {
                     schemaVersion: 1,
@@ -130,7 +133,7 @@ export async function runJourney({
                                 content: [
                                     {
                                         type: 'text',
-                                        text: 'Hello means a greeting in English.',
+                                        text: config.context,
                                     },
                                 ],
                             },
@@ -139,7 +142,7 @@ export async function runJourney({
                 },
                 categories: ['vocabulary'],
                 studiedLanguage: 'en',
-                explanationLanguage: 'en',
+                explanationLanguage: config.explanationLanguage,
             },
         }),
     );
@@ -185,18 +188,17 @@ export async function runJourney({
         z.object({ turn: c.ConversationTurnSchema }).strict(),
         c.SubmitConversationTurnRequestSchema.parse({
             requestId: randomUUID(),
-            content:
-                'Give one very short example sentence using hello. Plain text only; do not create notes or use tools.',
+            content: config.prompt,
             attachments: [],
             editorContext: {
                 workingBranch: { id: branch.id, version: branch.version },
-                content: 'Hello means a greeting in English.',
+                content: config.context,
                 editorTarget: {
                     from: 0,
                     to: 0,
                     originalText: '',
                     documentHash: createHash('sha256')
-                        .update('Hello means a greeting in English.')
+                        .update(config.context)
                         .digest('hex'),
                 },
             },
@@ -237,17 +239,16 @@ export async function runJourney({
                 'persisted-output-or-billing-missing',
             );
 
-            requireSafe(
-                detail.messages.some(
-                    (message) =>
-                        message.turnId === turn.id &&
-                        message.role === 'assistant' &&
-                        message.status === 'complete' &&
-                        message.responseMetadata?.kind ===
-                            'learning-explanation',
-                ),
-                'workspace-routing-unverified',
-            );
+            const scenarioEvidence = await verifyScenarioOutput({
+                scenario,
+                api,
+                contracts: c,
+                detail,
+                conversationId: conversation.id,
+                turnId: turn.id,
+                noteId: note.id,
+                branch,
+            });
 
             const providerExpenseMicros = await verifyExpense(
                 turn.id,
@@ -268,6 +269,7 @@ export async function runJourney({
                 responsePersisted: true,
                 billing: current.billing.state,
                 providerExpenseMicros,
+                ...scenarioEvidence,
             };
         }
 

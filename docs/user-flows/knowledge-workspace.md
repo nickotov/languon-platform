@@ -38,6 +38,7 @@ e2e_scenarios:
     - workspace-share-copy-revoke
     - workspace-mobile-tutor-sheet
     - workspace-intent-content-generation
+    - workspace-large-vocabulary-generation
 related_features:
     - intent-aware-learning-content
     - knowledge-markdown-insertion
@@ -55,9 +56,7 @@ Save a document. The tutor receives the complete current editor snapshot and
 copied Text references within the configured limits. An unlisted reader sees
 only the saved version and can make an independent copy after signing in.
 
-Feature 060 adds intent-aware content generation to owned workspaces. This guide
-is temporarily draft while its revised mapped journeys are verified; retained
-`last_verified` dates describe prior evidence, not the new behavior.
+Owned workspaces support intent-aware generation of interactive learning content.
 
 The first version uses model knowledge and supplied learning material. It does
 not fetch web pages or interpret linked media. Knowledge conversation history,
@@ -198,6 +197,11 @@ pnpm test:e2e:contextual-assistant
    exercise count defaults to five, with a balanced selection of supported
    multiple-choice, fill-in-the-blank and free-text formats. Review the stated
    assumptions and prepared content. No part is applied or saved automatically.
+   For example, request **Generate vocabulary with top 50 words that are used in
+   context of shopping, English to Russian**. Review one vocabulary block with
+   all 50 distinct entries. Larger vocabulary requests can use several bounded
+   authoring calls internally; the tutor offers one complete proposal after all
+   parts validate. A failed part never leaves an applicable partial proposal.
 4. Before applying vocabulary, ask **Now make exercises for those words**. The
    tutor reads the exact prior proposal in this conversation. When several
    proposals are plausible, identify the intended one when asked. Reloading or
@@ -285,15 +289,21 @@ pnpm test:e2e:contextual-assistant
   document actions and coordinated interactive generation in the owned workspace.
   Exact scope and current execution results are recorded in
   [feature 060 evidence](../../.agent/features/060-intent-aware-learning-content/EVIDENCE.md).
+- `workspace-large-vocabulary-generation` proves a request for 50 shopping words
+  produces one complete vocabulary proposal, with 50 distinct entries in review,
+  and one interactive block after explicit Apply, Save and reload. External model
+  responses are deterministic; authoring, validation, compilation and persistence
+  use the real application path.
 
 Character boundaries, concurrent branch races, proposal target mapping and
 model budget/compaction have focused contract, integration and editor tests.
 
 ## Expected failure and edge cases
 
-- Unsupported exercise formats, missing material requirements or oversized
-  requests require clarification or a smaller request; requested words/counts
-  are not silently dropped. Validation repair is bounded by the admitted action.
+- Unsupported exercise formats and missing material requirements require
+  clarification. A request exceeding the admitted total call/output budget
+  requires a smaller request; requested words/counts are not silently dropped.
+  Validation repair is bounded by the admitted action.
 - Follow-up proposal reads require current access to this owned note and
   conversation. Deleted or unavailable proposal content requires clarification;
   the tutor cannot recover it by claiming authority from chat text.

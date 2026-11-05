@@ -1,0 +1,4997 @@
+{
+  "thresholds": {
+    "fileLines": 500,
+    "functionBodyLines": 100
+  },
+  "scannedFiles": 823,
+  "candidateCount": 220,
+  "candidates": [
+    {
+      "path": "apps/backend/src/modules/conversations/interface/http/conversation.routes.ts",
+      "category": "implementation",
+      "physicalLines": 892,
+      "nonblankLines": 832,
+      "functionCount": 32,
+      "longestFunctionBodyLines": 813,
+      "longFunctions": [
+        {
+          "name": "createConversationRoutes",
+          "startLine": 80,
+          "endLine": 892,
+          "bodyLines": 813
+        },
+        {
+          "name": "app.openapi callback",
+          "startLine": 674,
+          "endLine": 886,
+          "bodyLines": 213
+        },
+        {
+          "name": "streamSSE callback",
+          "startLine": 717,
+          "endLine": 869,
+          "bodyLines": 153
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/interface/http/dictionary.routes.ts",
+      "category": "implementation",
+      "physicalLines": 903,
+      "nonblankLines": 852,
+      "functionCount": 33,
+      "longestFunctionBodyLines": 807,
+      "longFunctions": [
+        {
+          "name": "createDictionaryRoutes",
+          "startLine": 97,
+          "endLine": 903,
+          "bodyLines": 807
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/interface/http/sentence.routes.ts",
+      "category": "implementation",
+      "physicalLines": 887,
+      "nonblankLines": 835,
+      "functionCount": 32,
+      "longestFunctionBodyLines": 759,
+      "longFunctions": [
+        {
+          "name": "createSentenceRoutes",
+          "startLine": 129,
+          "endLine": 887,
+          "bodyLines": 759
+        },
+        {
+          "name": "register",
+          "startLine": 348,
+          "endLine": 872,
+          "bodyLines": 525
+        },
+        {
+          "name": "app.onError callback",
+          "startLine": 177,
+          "endLine": 315,
+          "bodyLines": 139
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/interface/http/text-content.routes.ts",
+      "category": "implementation",
+      "physicalLines": 727,
+      "nonblankLines": 684,
+      "functionCount": 32,
+      "longestFunctionBodyLines": 661,
+      "longFunctions": [
+        {
+          "name": "createTextContentRoutes",
+          "startLine": 67,
+          "endLine": 727,
+          "bodyLines": 661
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/dictionary-generation-worker-service.ts",
+      "category": "implementation",
+      "physicalLines": 1126,
+      "nonblankLines": 1030,
+      "functionCount": 40,
+      "longestFunctionBodyLines": 596,
+      "longFunctions": [
+        {
+          "name": "DictionaryGenerationWorkerService.processNext",
+          "startLine": 517,
+          "endLine": 1112,
+          "bodyLines": 596
+        },
+        {
+          "name": "startGeneration",
+          "startLine": 682,
+          "endLine": 835,
+          "bodyLines": 154
+        },
+        {
+          "name": "generateImportPairsProposal",
+          "startLine": 263,
+          "endLine": 384,
+          "bodyLines": 122
+        },
+        {
+          "name": "generatePastedTermsProposal",
+          "startLine": 153,
+          "endLine": 256,
+          "bodyLines": 104
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/knowledge.routes.ts",
+      "category": "implementation",
+      "physicalLines": 634,
+      "nonblankLines": 598,
+      "functionCount": 31,
+      "longestFunctionBodyLines": 561,
+      "longFunctions": [
+        {
+          "name": "createKnowledgeRoutes",
+          "startLine": 74,
+          "endLine": 634,
+          "bodyLines": 561
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/interface/http/dictionary-generation.routes.ts",
+      "category": "implementation",
+      "physicalLines": 632,
+      "nonblankLines": 599,
+      "functionCount": 23,
+      "longestFunctionBodyLines": 554,
+      "longFunctions": [
+        {
+          "name": "createDictionaryGenerationRoutes",
+          "startLine": 79,
+          "endLine": 632,
+          "bodyLines": 554
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/conversation-accounting.ts",
+      "category": "implementation",
+      "physicalLines": 939,
+      "nonblankLines": 862,
+      "functionCount": 21,
+      "longestFunctionBodyLines": 527,
+      "longFunctions": [
+        {
+          "name": "conversationAdmission",
+          "startLine": 66,
+          "endLine": 592,
+          "bodyLines": 527
+        },
+        {
+          "name": "admit",
+          "startLine": 80,
+          "endLine": 571,
+          "bodyLines": 492
+        },
+        {
+          "name": "createConversationAccounting",
+          "startLine": 602,
+          "endLine": 822,
+          "bodyLines": 221
+        },
+        {
+          "name": "admit",
+          "startLine": 654,
+          "endLine": 818,
+          "bodyLines": 165
+        },
+        {
+          "name": "input.withOperation callback",
+          "startLine": 655,
+          "endLine": 817,
+          "bodyLines": 163
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/administration/interface/http/administration.routes.ts",
+      "category": "implementation",
+      "physicalLines": 950,
+      "nonblankLines": 878,
+      "functionCount": 36,
+      "longestFunctionBodyLines": 512,
+      "longFunctions": [
+        {
+          "name": "registerResourceRoutes",
+          "startLine": 398,
+          "endLine": 909,
+          "bodyLines": 512
+        },
+        {
+          "name": "createAdministrationRoutes",
+          "startLine": 84,
+          "endLine": 392,
+          "bodyLines": 309
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/interface/http/learner-portrait.routes.ts",
+      "category": "implementation",
+      "physicalLines": 571,
+      "nonblankLines": 529,
+      "functionCount": 21,
+      "longestFunctionBodyLines": 482,
+      "longFunctions": [
+        {
+          "name": "createLearnerPortraitRoutes",
+          "startLine": 90,
+          "endLine": 571,
+          "bodyLines": 482
+        },
+        {
+          "name": "app.onError callback",
+          "startLine": 158,
+          "endLine": 291,
+          "bodyLines": 134
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-turn-admission.ts",
+      "category": "implementation",
+      "physicalLines": 527,
+      "nonblankLines": 496,
+      "functionCount": 6,
+      "longestFunctionBodyLines": 467,
+      "longFunctions": [
+        {
+          "name": "conversationSubmit",
+          "startLine": 61,
+          "endLine": 527,
+          "bodyLines": 467
+        },
+        {
+          "name": "conversationTransaction callback",
+          "startLine": 83,
+          "endLine": 517,
+          "bodyLines": 435
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-preparation-coordinator.ts",
+      "category": "implementation",
+      "physicalLines": 518,
+      "nonblankLines": 461,
+      "functionCount": 15,
+      "longestFunctionBodyLines": 462,
+      "longFunctions": [
+        {
+          "name": "sentencePreparationTick",
+          "startLine": 57,
+          "endLine": 518,
+          "bodyLines": 462
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 69,
+          "endLine": 517,
+          "bodyLines": 449
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/infrastructure/worker/dictionary-worker-command.ts",
+      "category": "implementation",
+      "physicalLines": 705,
+      "nonblankLines": 670,
+      "functionCount": 30,
+      "longestFunctionBodyLines": 450,
+      "longFunctions": [
+        {
+          "name": "main",
+          "startLine": 244,
+          "endLine": 693,
+          "bodyLines": 450
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/tutor-request-execution.ts",
+      "category": "implementation",
+      "physicalLines": 487,
+      "nonblankLines": 447,
+      "functionCount": 13,
+      "longestFunctionBodyLines": 444,
+      "longFunctions": [
+        {
+          "name": "executeTutorRequest",
+          "startLine": 44,
+          "endLine": 487,
+          "bodyLines": 444
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-accept-card-authoring.ts",
+      "category": "implementation",
+      "physicalLines": 502,
+      "nonblankLines": 465,
+      "functionCount": 2,
+      "longestFunctionBodyLines": 438,
+      "longFunctions": [
+        {
+          "name": "acceptCardAuthoring",
+          "startLine": 65,
+          "endLine": 502,
+          "bodyLines": 438
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 68,
+          "endLine": 494,
+          "bodyLines": 427
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/accounted-tutor-model.ts",
+      "category": "implementation",
+      "physicalLines": 493,
+      "nonblankLines": 433,
+      "functionCount": 29,
+      "longestFunctionBodyLines": 430,
+      "longFunctions": [
+        {
+          "name": "createTutorModelGate",
+          "startLine": 64,
+          "endLine": 493,
+          "bodyLines": 430
+        },
+        {
+          "name": "wrap",
+          "startLine": 85,
+          "endLine": 477,
+          "bodyLines": 393
+        },
+        {
+          "name": "trackStream",
+          "startLine": 350,
+          "endLine": 476,
+          "bodyLines": 127
+        },
+        {
+          "name": "prepare",
+          "startLine": 86,
+          "endLine": 204,
+          "bodyLines": 119
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/interface/http/learning.routes.ts",
+      "category": "implementation",
+      "physicalLines": 519,
+      "nonblankLines": 484,
+      "functionCount": 22,
+      "longestFunctionBodyLines": 419,
+      "longFunctions": [
+        {
+          "name": "createLearningRoutes",
+          "startLine": 101,
+          "endLine": 519,
+          "bodyLines": 419
+        },
+        {
+          "name": "register",
+          "startLine": 255,
+          "endLine": 504,
+          "bodyLines": 250
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-accept-batch.ts",
+      "category": "implementation",
+      "physicalLines": 469,
+      "nonblankLines": 432,
+      "functionCount": 12,
+      "longestFunctionBodyLines": 410,
+      "longFunctions": [
+        {
+          "name": "acceptBatch",
+          "startLine": 60,
+          "endLine": 469,
+          "bodyLines": 410
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 66,
+          "endLine": 461,
+          "bodyLines": 396
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/dictionary-document-generation-processor.ts",
+      "category": "implementation",
+      "physicalLines": 622,
+      "nonblankLines": 567,
+      "functionCount": 17,
+      "longestFunctionBodyLines": 405,
+      "longFunctions": [
+        {
+          "name": "DictionaryDocumentGenerationProcessor.process",
+          "startLine": 216,
+          "endLine": 620,
+          "bodyLines": 405
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-claim.ts",
+      "category": "implementation",
+      "physicalLines": 460,
+      "nonblankLines": 429,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 403,
+      "longFunctions": [
+        {
+          "name": "claim",
+          "startLine": 58,
+          "endLine": 460,
+          "bodyLines": 403
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 59,
+          "endLine": 459,
+          "bodyLines": 401
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-worker-claim.ts",
+      "category": "implementation",
+      "physicalLines": 457,
+      "nonblankLines": 414,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 399,
+      "longFunctions": [
+        {
+          "name": "sentenceWorkerClaimNext",
+          "startLine": 59,
+          "endLine": 457,
+          "bodyLines": 399
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 69,
+          "endLine": 456,
+          "bodyLines": 388
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/workbook.routes.ts",
+      "category": "implementation",
+      "physicalLines": 455,
+      "nonblankLines": 427,
+      "functionCount": 22,
+      "longestFunctionBodyLines": 394,
+      "longFunctions": [
+        {
+          "name": "createWorkbookRoutes",
+          "startLine": 62,
+          "endLine": 455,
+          "bodyLines": 394
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-complete.ts",
+      "category": "implementation",
+      "physicalLines": 450,
+      "nonblankLines": 413,
+      "functionCount": 15,
+      "longestFunctionBodyLines": 394,
+      "longFunctions": [
+        {
+          "name": "complete",
+          "startLine": 57,
+          "endLine": 450,
+          "bodyLines": 394
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 58,
+          "endLine": 449,
+          "bodyLines": 392
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-enqueue-import-pairs.ts",
+      "category": "implementation",
+      "physicalLines": 438,
+      "nonblankLines": 410,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 394,
+      "longFunctions": [
+        {
+          "name": "enqueueImportPairs",
+          "startLine": 45,
+          "endLine": 438,
+          "bodyLines": 394
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 46,
+          "endLine": 437,
+          "bodyLines": 392
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-enqueue-card-authoring.ts",
+      "category": "implementation",
+      "physicalLines": 436,
+      "nonblankLines": 404,
+      "functionCount": 12,
+      "longestFunctionBodyLines": 383,
+      "longFunctions": [
+        {
+          "name": "enqueueCardAuthoring",
+          "startLine": 54,
+          "endLine": 436,
+          "bodyLines": 383
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 55,
+          "endLine": 435,
+          "bodyLines": 381
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-maintenance.ts",
+      "category": "implementation",
+      "physicalLines": 452,
+      "nonblankLines": 435,
+      "functionCount": 8,
+      "longestFunctionBodyLines": 357,
+      "longFunctions": [
+        {
+          "name": "observeOperationalState",
+          "startLine": 96,
+          "endLine": 452,
+          "bodyLines": 357
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/knowledge-sentence-free-routes.ts",
+      "category": "implementation",
+      "physicalLines": 439,
+      "nonblankLines": 401,
+      "functionCount": 21,
+      "longestFunctionBodyLines": 353,
+      "longFunctions": [
+        {
+          "name": "createKnowledgeSentenceRoutes",
+          "startLine": 87,
+          "endLine": 439,
+          "bodyLines": 353
+        },
+        {
+          "name": "app.onError callback",
+          "startLine": 143,
+          "endLine": 275,
+          "bodyLines": 133
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-probe-executor.ts",
+      "category": "implementation",
+      "physicalLines": 409,
+      "nonblankLines": 386,
+      "functionCount": 7,
+      "longestFunctionBodyLines": 353,
+      "longFunctions": [
+        {
+          "name": "createTextAiProbeExecutor",
+          "startLine": 40,
+          "endLine": 392,
+          "bodyLines": 353
+        },
+        {
+          "name": "execute",
+          "startLine": 67,
+          "endLine": 390,
+          "bodyLines": 324
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/interview-accounting.ts",
+      "category": "implementation",
+      "physicalLines": 813,
+      "nonblankLines": 756,
+      "functionCount": 21,
+      "longestFunctionBodyLines": 351,
+      "longFunctions": [
+        {
+          "name": "createInterviewAdmission",
+          "startLine": 80,
+          "endLine": 430,
+          "bodyLines": 351
+        },
+        {
+          "name": "<anonymous>",
+          "startLine": 87,
+          "endLine": 429,
+          "bodyLines": 343
+        },
+        {
+          "name": "createInterviewAccounting",
+          "startLine": 440,
+          "endLine": 676,
+          "bodyLines": 237
+        },
+        {
+          "name": "admit",
+          "startLine": 501,
+          "endLine": 672,
+          "bodyLines": 172
+        },
+        {
+          "name": "input.withOperation callback",
+          "startLine": 509,
+          "endLine": 671,
+          "bodyLines": 163
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-source.ts",
+      "category": "implementation",
+      "physicalLines": 441,
+      "nonblankLines": 411,
+      "functionCount": 7,
+      "longestFunctionBodyLines": 337,
+      "longFunctions": [
+        {
+          "name": "ConversationSourceResolver.resolve",
+          "startLine": 89,
+          "endLine": 425,
+          "bodyLines": 337
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/domain/interchange.ts",
+      "category": "implementation",
+      "physicalLines": 791,
+      "nonblankLines": 710,
+      "functionCount": 33,
+      "longestFunctionBodyLines": 328,
+      "longFunctions": [
+        {
+          "name": "createDictionaryInterchangeSerializer",
+          "startLine": 464,
+          "endLine": 791,
+          "bodyLines": 328
+        },
+        {
+          "name": "serializeCards",
+          "startLine": 567,
+          "endLine": 783,
+          "bodyLines": 217
+        },
+        {
+          "name": "parseDelimitedRecords",
+          "startLine": 110,
+          "endLine": 246,
+          "bodyLines": 137
+        },
+        {
+          "name": "parseDictionaryInterchange",
+          "startLine": 267,
+          "endLine": 371,
+          "bodyLines": 105
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-accept-single-card.ts",
+      "category": "implementation",
+      "physicalLines": 376,
+      "nonblankLines": 346,
+      "functionCount": 2,
+      "longestFunctionBodyLines": 323,
+      "longFunctions": [
+        {
+          "name": "acceptSingleCard",
+          "startLine": 54,
+          "endLine": 376,
+          "bodyLines": 323
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 57,
+          "endLine": 368,
+          "bodyLines": 312
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/interface/http/texts-job.routes.ts",
+      "category": "implementation",
+      "physicalLines": 371,
+      "nonblankLines": 349,
+      "functionCount": 15,
+      "longestFunctionBodyLines": 323,
+      "longFunctions": [
+        {
+          "name": "createTextsJobRoutes",
+          "startLine": 49,
+          "endLine": 371,
+          "bodyLines": 323
+        },
+        {
+          "name": "app.onError callback",
+          "startLine": 127,
+          "endLine": 241,
+          "bodyLines": 115
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/interface/http/text-selection.routes.ts",
+      "category": "implementation",
+      "physicalLines": 362,
+      "nonblankLines": 331,
+      "functionCount": 14,
+      "longestFunctionBodyLines": 319,
+      "longFunctions": [
+        {
+          "name": "createTextSelectionRoutes",
+          "startLine": 44,
+          "endLine": 362,
+          "bodyLines": 319
+        },
+        {
+          "name": "app.onError callback",
+          "startLine": 160,
+          "endLine": 273,
+          "bodyLines": 114
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-document-authorization.ts",
+      "category": "implementation",
+      "physicalLines": 360,
+      "nonblankLines": 336,
+      "functionCount": 2,
+      "longestFunctionBodyLines": 318,
+      "longFunctions": [
+        {
+          "name": "authorize",
+          "startLine": 43,
+          "endLine": 360,
+          "bodyLines": 318
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 46,
+          "endLine": 342,
+          "bodyLines": 297
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/account-purge-completion.ts",
+      "category": "implementation",
+      "physicalLines": 352,
+      "nonblankLines": 307,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 289,
+      "longFunctions": [
+        {
+          "name": "finish",
+          "startLine": 64,
+          "endLine": 352,
+          "bodyLines": 289
+        },
+        {
+          "name": "persistence.database.transaction callback",
+          "startLine": 65,
+          "endLine": 351,
+          "bodyLines": 287
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/private-translation-routes.ts",
+      "category": "implementation",
+      "physicalLines": 347,
+      "nonblankLines": 325,
+      "functionCount": 14,
+      "longestFunctionBodyLines": 286,
+      "longFunctions": [
+        {
+          "name": "createKnowledgePrivateTranslationRoutes",
+          "startLine": 62,
+          "endLine": 347,
+          "bodyLines": 286
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-claim.ts",
+      "category": "implementation",
+      "physicalLines": 318,
+      "nonblankLines": 289,
+      "functionCount": 5,
+      "longestFunctionBodyLines": 282,
+      "longFunctions": [
+        {
+          "name": "claimNext",
+          "startLine": 37,
+          "endLine": 318,
+          "bodyLines": 282
+        },
+        {
+          "name": "transaction callback",
+          "startLine": 81,
+          "endLine": 317,
+          "bodyLines": 237
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/infrastructure/text-ai/probe-flow-registry.ts",
+      "category": "implementation",
+      "physicalLines": 380,
+      "nonblankLines": 372,
+      "functionCount": 11,
+      "longestFunctionBodyLines": 280,
+      "longFunctions": [
+        {
+          "name": "createTextAiSyntheticFlows",
+          "startLine": 101,
+          "endLine": 380,
+          "bodyLines": 280
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-worker-observations.ts",
+      "category": "implementation",
+      "physicalLines": 321,
+      "nonblankLines": 301,
+      "functionCount": 13,
+      "longestFunctionBodyLines": 275,
+      "longFunctions": [
+        {
+          "name": "publishTextAiWorkerObservations",
+          "startLine": 47,
+          "endLine": 321,
+          "bodyLines": 275
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/media.routes.ts",
+      "category": "implementation",
+      "physicalLines": 318,
+      "nonblankLines": 293,
+      "functionCount": 10,
+      "longestFunctionBodyLines": 274,
+      "longFunctions": [
+        {
+          "name": "createKnowledgeMediaRoutes",
+          "startLine": 45,
+          "endLine": 318,
+          "bodyLines": 274
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/interface/http/accounting.routes.ts",
+      "category": "implementation",
+      "physicalLines": 305,
+      "nonblankLines": 285,
+      "functionCount": 9,
+      "longestFunctionBodyLines": 272,
+      "longFunctions": [
+        {
+          "name": "createAccountingRoutes",
+          "startLine": 34,
+          "endLine": 305,
+          "bodyLines": 272
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/exercise-evaluation-routes.ts",
+      "category": "implementation",
+      "physicalLines": 329,
+      "nonblankLines": 302,
+      "functionCount": 13,
+      "longestFunctionBodyLines": 271,
+      "longFunctions": [
+        {
+          "name": "createKnowledgeExerciseEvaluationRoutes",
+          "startLine": 59,
+          "endLine": 329,
+          "bodyLines": 271
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-practice-next.ts",
+      "category": "implementation",
+      "physicalLines": 310,
+      "nonblankLines": 284,
+      "functionCount": 4,
+      "longestFunctionBodyLines": 271,
+      "longFunctions": [
+        {
+          "name": "sentencePracticeNext",
+          "startLine": 40,
+          "endLine": 310,
+          "bodyLines": 271
+        },
+        {
+          "name": "sentencePracticeRun callback",
+          "startLine": 45,
+          "endLine": 307,
+          "bodyLines": 263
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/ai/sentence-ai-provider.ts",
+      "category": "implementation",
+      "physicalLines": 388,
+      "nonblankLines": 362,
+      "functionCount": 23,
+      "longestFunctionBodyLines": 269,
+      "longFunctions": [
+        {
+          "name": "createSentenceAiProvider",
+          "startLine": 63,
+          "endLine": 331,
+          "bodyLines": 269
+        },
+        {
+          "name": "run",
+          "startLine": 74,
+          "endLine": 234,
+          "bodyLines": 161
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/interface/http/password-auth.routes.ts",
+      "category": "implementation",
+      "physicalLines": 565,
+      "nonblankLines": 508,
+      "functionCount": 25,
+      "longestFunctionBodyLines": 265,
+      "longFunctions": [
+        {
+          "name": "createPasswordAuthRoutes",
+          "startLine": 77,
+          "endLine": 341,
+          "bodyLines": 265
+        },
+        {
+          "name": "registerPasswordManagementRoutes",
+          "startLine": 453,
+          "endLine": 565,
+          "bodyLines": 113
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/vocabulary-practice-routes.ts",
+      "category": "implementation",
+      "physicalLines": 340,
+      "nonblankLines": 311,
+      "functionCount": 20,
+      "longestFunctionBodyLines": 265,
+      "longFunctions": [
+        {
+          "name": "createVocabularyPracticeRoutes",
+          "startLine": 76,
+          "endLine": 340,
+          "bodyLines": 265
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/library-copy-routes.ts",
+      "category": "implementation",
+      "physicalLines": 330,
+      "nonblankLines": 308,
+      "functionCount": 14,
+      "longestFunctionBodyLines": 264,
+      "longFunctions": [
+        {
+          "name": "createKnowledgeLibraryCopyRoutes",
+          "startLine": 67,
+          "endLine": 330,
+          "bodyLines": 264
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/users/interface/http/user-profile.routes.ts",
+      "category": "implementation",
+      "physicalLines": 353,
+      "nonblankLines": 326,
+      "functionCount": 9,
+      "longestFunctionBodyLines": 263,
+      "longFunctions": [
+        {
+          "name": "createUserProfileRoutes",
+          "startLine": 39,
+          "endLine": 301,
+          "bodyLines": 263
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/interface/http/text-ai.routes.ts",
+      "category": "implementation",
+      "physicalLines": 289,
+      "nonblankLines": 271,
+      "functionCount": 10,
+      "longestFunctionBodyLines": 261,
+      "longFunctions": [
+        {
+          "name": "createTextAiRoutes",
+          "startLine": 29,
+          "endLine": 289,
+          "bodyLines": 261
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-job-mapping.ts",
+      "category": "implementation",
+      "physicalLines": 388,
+      "nonblankLines": 366,
+      "functionCount": 4,
+      "longestFunctionBodyLines": 260,
+      "longFunctions": [
+        {
+          "name": "mapJob",
+          "startLine": 129,
+          "endLine": 388,
+          "bodyLines": 260
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/speech/interface/http/speech.routes.ts",
+      "category": "implementation",
+      "physicalLines": 518,
+      "nonblankLines": 473,
+      "functionCount": 22,
+      "longestFunctionBodyLines": 257,
+      "longFunctions": [
+        {
+          "name": "createSpeechRoutes",
+          "startLine": 63,
+          "endLine": 319,
+          "bodyLines": 257
+        },
+        {
+          "name": "createAdminSpeechRoutes",
+          "startLine": 327,
+          "endLine": 518,
+          "bodyLines": 192
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-document-upload.ts",
+      "category": "implementation",
+      "physicalLines": 284,
+      "nonblankLines": 256,
+      "functionCount": 7,
+      "longestFunctionBodyLines": 255,
+      "longFunctions": [
+        {
+          "name": "completeUpload",
+          "startLine": 30,
+          "endLine": 284,
+          "bodyLines": 255
+        },
+        {
+          "name": "context.database.transaction callback",
+          "startLine": 31,
+          "endLine": 267,
+          "bodyLines": 237
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/block-field-routes.ts",
+      "category": "implementation",
+      "physicalLines": 307,
+      "nonblankLines": 281,
+      "functionCount": 12,
+      "longestFunctionBodyLines": 253,
+      "longFunctions": [
+        {
+          "name": "createKnowledgeBlockFieldRoutes",
+          "startLine": 55,
+          "endLine": 307,
+          "bodyLines": 253
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-content-sharing.ts",
+      "category": "implementation",
+      "physicalLines": 480,
+      "nonblankLines": 440,
+      "functionCount": 13,
+      "longestFunctionBodyLines": 252,
+      "longFunctions": [
+        {
+          "name": "copyShared",
+          "startLine": 229,
+          "endLine": 480,
+          "bodyLines": 252
+        },
+        {
+          "name": "persistence.db.transaction callback",
+          "startLine": 230,
+          "endLine": 479,
+          "bodyLines": 250
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-import.ts",
+      "category": "implementation",
+      "physicalLines": 448,
+      "nonblankLines": 408,
+      "functionCount": 11,
+      "longestFunctionBodyLines": 250,
+      "longFunctions": [
+        {
+          "name": "importDictionary",
+          "startLine": 199,
+          "endLine": 448,
+          "bodyLines": 250
+        },
+        {
+          "name": "context.database.transaction callback",
+          "startLine": 204,
+          "endLine": 447,
+          "bodyLines": 244
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-report-operations.ts",
+      "category": "implementation",
+      "physicalLines": 413,
+      "nonblankLines": 384,
+      "functionCount": 24,
+      "longestFunctionBodyLines": 249,
+      "longFunctions": [
+        {
+          "name": "computeReport",
+          "startLine": 165,
+          "endLine": 413,
+          "bodyLines": 249
+        },
+        {
+          "name": "persistence.database.transaction callback",
+          "startLine": 168,
+          "endLine": 410,
+          "bodyLines": 243
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/speech/infrastructure/source-resolver.ts",
+      "category": "implementation",
+      "physicalLines": 307,
+      "nonblankLines": 280,
+      "functionCount": 4,
+      "longestFunctionBodyLines": 249,
+      "longFunctions": [
+        {
+          "name": "DrizzleSpeechSourceResolver.resolveInTransaction",
+          "startLine": 58,
+          "endLine": 306,
+          "bodyLines": 249
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-admission.ts",
+      "category": "implementation",
+      "physicalLines": 307,
+      "nonblankLines": 287,
+      "functionCount": 6,
+      "longestFunctionBodyLines": 249,
+      "longFunctions": [
+        {
+          "name": "enqueue",
+          "startLine": 59,
+          "endLine": 307,
+          "bodyLines": 249
+        },
+        {
+          "name": "transaction callback",
+          "startLine": 136,
+          "endLine": 306,
+          "bodyLines": 171
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/learner-routes.ts",
+      "category": "implementation",
+      "physicalLines": 315,
+      "nonblankLines": 298,
+      "functionCount": 15,
+      "longestFunctionBodyLines": 246,
+      "longFunctions": [
+        {
+          "name": "createLearnerRoutes",
+          "startLine": 70,
+          "endLine": 315,
+          "bodyLines": 246
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/text-selection-claim.ts",
+      "category": "implementation",
+      "physicalLines": 278,
+      "nonblankLines": 249,
+      "functionCount": 2,
+      "longestFunctionBodyLines": 243,
+      "longFunctions": [
+        {
+          "name": "claimSelectionJob",
+          "startLine": 36,
+          "endLine": 278,
+          "bodyLines": 243
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-worker-claim.ts",
+      "category": "implementation",
+      "physicalLines": 265,
+      "nonblankLines": 237,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 239,
+      "longFunctions": [
+        {
+          "name": "conversationClaim",
+          "startLine": 27,
+          "endLine": 265,
+          "bodyLines": 239
+        },
+        {
+          "name": "conversationTransaction callback",
+          "startLine": 28,
+          "endLine": 264,
+          "bodyLines": 237
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/pricing/kie-price-source.ts",
+      "category": "implementation",
+      "physicalLines": 466,
+      "nonblankLines": 414,
+      "functionCount": 22,
+      "longestFunctionBodyLines": 234,
+      "longFunctions": [
+        {
+          "name": "KiePriceSource.fetchPrices",
+          "startLine": 232,
+          "endLine": 465,
+          "bodyLines": 234
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-enqueue-pasted-terms.ts",
+      "category": "implementation",
+      "physicalLines": 293,
+      "nonblankLines": 267,
+      "functionCount": 8,
+      "longestFunctionBodyLines": 231,
+      "longFunctions": [
+        {
+          "name": "enqueuePastedTerms",
+          "startLine": 42,
+          "endLine": 272,
+          "bodyLines": 231
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 43,
+          "endLine": 271,
+          "bodyLines": 229
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/navigation/interface/http/navigation.routes.ts",
+      "category": "implementation",
+      "physicalLines": 280,
+      "nonblankLines": 255,
+      "functionCount": 13,
+      "longestFunctionBodyLines": 231,
+      "longFunctions": [
+        {
+          "name": "createNavigationRoutes",
+          "startLine": 50,
+          "endLine": 280,
+          "bodyLines": 231
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/dictionary-document-cleanup-processor.ts",
+      "category": "implementation",
+      "physicalLines": 274,
+      "nonblankLines": 241,
+      "functionCount": 9,
+      "longestFunctionBodyLines": 231,
+      "longFunctions": [
+        {
+          "name": "DictionaryDocumentCleanupProcessor.processNext",
+          "startLine": 43,
+          "endLine": 273,
+          "bodyLines": 231
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-deletion-content.ts",
+      "category": "implementation",
+      "physicalLines": 266,
+      "nonblankLines": 242,
+      "functionCount": 9,
+      "longestFunctionBodyLines": 231,
+      "longFunctions": [
+        {
+          "name": "deleteDictionaryContent",
+          "startLine": 36,
+          "endLine": 266,
+          "bodyLines": 231
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/persistence/drizzle/drizzle-account-deletion-store.ts",
+      "category": "implementation",
+      "physicalLines": 271,
+      "nonblankLines": 244,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 229,
+      "longFunctions": [
+        {
+          "name": "DrizzleAccountDeletionStore.schedule",
+          "startLine": 42,
+          "endLine": 270,
+          "bodyLines": 229
+        },
+        {
+          "name": "this.database.transaction callback",
+          "startLine": 43,
+          "endLine": 269,
+          "bodyLines": 227
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-deletion-participant.ts",
+      "category": "implementation",
+      "physicalLines": 532,
+      "nonblankLines": 472,
+      "functionCount": 20,
+      "longestFunctionBodyLines": 228,
+      "longFunctions": [
+        {
+          "name": "eraseSentenceDerivedContent",
+          "startLine": 305,
+          "endLine": 532,
+          "bodyLines": 228
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-updates.ts",
+      "category": "implementation",
+      "physicalLines": 421,
+      "nonblankLines": 393,
+      "functionCount": 6,
+      "longestFunctionBodyLines": 228,
+      "longFunctions": [
+        {
+          "name": "updateDictionary",
+          "startLine": 59,
+          "endLine": 286,
+          "bodyLines": 228
+        },
+        {
+          "name": "context.database.transaction callback",
+          "startLine": 60,
+          "endLine": 285,
+          "bodyLines": 226
+        },
+        {
+          "name": "updateCard",
+          "startLine": 291,
+          "endLine": 421,
+          "bodyLines": 131
+        },
+        {
+          "name": "context.database.transaction callback",
+          "startLine": 292,
+          "endLine": 420,
+          "bodyLines": 129
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/application/admin-mcp-price-actualization-service.ts",
+      "category": "implementation",
+      "physicalLines": 484,
+      "nonblankLines": 441,
+      "functionCount": 27,
+      "longestFunctionBodyLines": 227,
+      "longFunctions": [
+        {
+          "name": "AdminMcpPriceActualizationService.run",
+          "startLine": 187,
+          "endLine": 413,
+          "bodyLines": 227
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/dictionary-worker-composition.ts",
+      "category": "implementation",
+      "physicalLines": 288,
+      "nonblankLines": 266,
+      "functionCount": 4,
+      "longestFunctionBodyLines": 225,
+      "longFunctions": [
+        {
+          "name": "createDictionaryWorkerComposition",
+          "startLine": 64,
+          "endLine": 288,
+          "bodyLines": 225
+        },
+        {
+          "name": "providerReadiness",
+          "startLine": 165,
+          "endLine": 282,
+          "bodyLines": 118
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/domain/sentence-content.ts",
+      "category": "implementation",
+      "physicalLines": 318,
+      "nonblankLines": 293,
+      "functionCount": 22,
+      "longestFunctionBodyLines": 223,
+      "longFunctions": [
+        {
+          "name": "validateSentenceGeneration",
+          "startLine": 96,
+          "endLine": 318,
+          "bodyLines": 223
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/interface/http/admin-mcp-token.routes.ts",
+      "category": "implementation",
+      "physicalLines": 246,
+      "nonblankLines": 225,
+      "functionCount": 12,
+      "longestFunctionBodyLines": 222,
+      "longFunctions": [
+        {
+          "name": "createAdminMcpTokenRoutes",
+          "startLine": 25,
+          "endLine": 246,
+          "bodyLines": 222
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/transcription-job-routes.ts",
+      "category": "implementation",
+      "physicalLines": 276,
+      "nonblankLines": 260,
+      "functionCount": 12,
+      "longestFunctionBodyLines": 221,
+      "longFunctions": [
+        {
+          "name": "createKnowledgeTranscriptionJobRoutes",
+          "startLine": 56,
+          "endLine": 276,
+          "bodyLines": 221
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-runner.ts",
+      "category": "implementation",
+      "physicalLines": 269,
+      "nonblankLines": 243,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 221,
+      "longFunctions": [
+        {
+          "name": "createContextualTutorRunner",
+          "startLine": 49,
+          "endLine": 269,
+          "bodyLines": 221
+        },
+        {
+          "name": "run",
+          "startLine": 51,
+          "endLine": 267,
+          "bodyLines": 217
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/application/sentence-worker-service.ts",
+      "category": "implementation",
+      "physicalLines": 288,
+      "nonblankLines": 266,
+      "functionCount": 15,
+      "longestFunctionBodyLines": 220,
+      "longFunctions": [
+        {
+          "name": "SentenceWorkerService.processNext",
+          "startLine": 42,
+          "endLine": 261,
+          "bodyLines": 220
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-enqueue-import-pairs-retry.ts",
+      "category": "implementation",
+      "physicalLines": 256,
+      "nonblankLines": 237,
+      "functionCount": 7,
+      "longestFunctionBodyLines": 218,
+      "longFunctions": [
+        {
+          "name": "enqueueImportPairsRetry",
+          "startLine": 39,
+          "endLine": 256,
+          "bodyLines": 218
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 40,
+          "endLine": 255,
+          "bodyLines": 216
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/ai/import-pairs-proposal-generators.ts",
+      "category": "implementation",
+      "physicalLines": 507,
+      "nonblankLines": 457,
+      "functionCount": 22,
+      "longestFunctionBodyLines": 215,
+      "longFunctions": [
+        {
+          "name": "createMastraImportPairsProposalGenerator",
+          "startLine": 135,
+          "endLine": 349,
+          "bodyLines": 215
+        },
+        {
+          "name": "generate",
+          "startLine": 137,
+          "endLine": 333,
+          "bodyLines": 197
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/interface/http/dictionary-http-error-mapping.ts",
+      "category": "implementation",
+      "physicalLines": 255,
+      "nonblankLines": 230,
+      "functionCount": 1,
+      "longestFunctionBodyLines": 214,
+      "longFunctions": [
+        {
+          "name": "mapDictionaryHttpError",
+          "startLine": 42,
+          "endLine": 255,
+          "bodyLines": 214
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/speech/application/speech-worker.ts",
+      "category": "implementation",
+      "physicalLines": 241,
+      "nonblankLines": 220,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 214,
+      "longFunctions": [
+        {
+          "name": "SpeechWorker.runOnce",
+          "startLine": 27,
+          "endLine": 240,
+          "bodyLines": 214
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-forks.ts",
+      "category": "implementation",
+      "physicalLines": 291,
+      "nonblankLines": 271,
+      "functionCount": 6,
+      "longestFunctionBodyLines": 209,
+      "longFunctions": [
+        {
+          "name": "forkSharedDictionary",
+          "startLine": 42,
+          "endLine": 250,
+          "bodyLines": 209
+        },
+        {
+          "name": "context.database.transaction callback",
+          "startLine": 43,
+          "endLine": 249,
+          "bodyLines": 207
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/interface/http/capability-policies.routes.ts",
+      "category": "implementation",
+      "physicalLines": 232,
+      "nonblankLines": 210,
+      "functionCount": 15,
+      "longestFunctionBodyLines": 207,
+      "longFunctions": [
+        {
+          "name": "createCapabilityPolicyRoutes",
+          "startLine": 26,
+          "endLine": 232,
+          "bodyLines": 207
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-library-mutations.ts",
+      "category": "implementation",
+      "physicalLines": 245,
+      "nonblankLines": 224,
+      "functionCount": 9,
+      "longestFunctionBodyLines": 204,
+      "longFunctions": [
+        {
+          "name": "sentenceLibraryMutateInternal",
+          "startLine": 42,
+          "endLine": 245,
+          "bodyLines": 204
+        },
+        {
+          "name": "persistence.database.transaction callback",
+          "startLine": 43,
+          "endLine": 244,
+          "bodyLines": 202
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-worker-recovery.ts",
+      "category": "implementation",
+      "physicalLines": 215,
+      "nonblankLines": 205,
+      "functionCount": 1,
+      "longestFunctionBodyLines": 202,
+      "longFunctions": [
+        {
+          "name": "recoverGenerationJobs",
+          "startLine": 14,
+          "endLine": 215,
+          "bodyLines": 202
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/interface/http/admin-mcp-server.ts",
+      "category": "implementation",
+      "physicalLines": 394,
+      "nonblankLines": 359,
+      "functionCount": 21,
+      "longestFunctionBodyLines": 201,
+      "longFunctions": [
+        {
+          "name": "createTools",
+          "startLine": 97,
+          "endLine": 297,
+          "bodyLines": 201
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/administration-ai-settings.ts",
+      "category": "implementation",
+      "physicalLines": 416,
+      "nonblankLines": 386,
+      "functionCount": 17,
+      "longestFunctionBodyLines": 200,
+      "longFunctions": [
+        {
+          "name": "updateAiSettings",
+          "startLine": 74,
+          "endLine": 273,
+          "bodyLines": 200
+        },
+        {
+          "name": "persistence.database.transaction callback",
+          "startLine": 164,
+          "endLine": 270,
+          "bodyLines": 107
+        },
+        {
+          "name": "aiSettingsResponse",
+          "startLine": 287,
+          "endLine": 391,
+          "bodyLines": 105
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/ai/card-authoring-proposal-generators.ts",
+      "category": "implementation",
+      "physicalLines": 610,
+      "nonblankLines": 546,
+      "functionCount": 26,
+      "longestFunctionBodyLines": 197,
+      "longFunctions": [
+        {
+          "name": "createMastraCardAuthoringProposalGenerator",
+          "startLine": 99,
+          "endLine": 295,
+          "bodyLines": 197
+        },
+        {
+          "name": "generate",
+          "startLine": 101,
+          "endLine": 279,
+          "bodyLines": 179
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-practice-admission.ts",
+      "category": "implementation",
+      "physicalLines": 315,
+      "nonblankLines": 297,
+      "functionCount": 7,
+      "longestFunctionBodyLines": 197,
+      "longFunctions": [
+        {
+          "name": "sentencePracticeAdmit",
+          "startLine": 119,
+          "endLine": 315,
+          "bodyLines": 197
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/interface/http/text-ai-routing.routes.ts",
+      "category": "implementation",
+      "physicalLines": 222,
+      "nonblankLines": 206,
+      "functionCount": 8,
+      "longestFunctionBodyLines": 197,
+      "longFunctions": [
+        {
+          "name": "createTextAiRoutingRoutes",
+          "startLine": 26,
+          "endLine": 222,
+          "bodyLines": 197
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-preparation-command.ts",
+      "category": "implementation",
+      "physicalLines": 286,
+      "nonblankLines": 258,
+      "functionCount": 6,
+      "longestFunctionBodyLines": 195,
+      "longFunctions": [
+        {
+          "name": "sentencePreparationCommand",
+          "startLine": 92,
+          "endLine": 286,
+          "bodyLines": 195
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 95,
+          "endLine": 285,
+          "bodyLines": 191
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/administration/interface/http/administration-http-error-mapping.ts",
+      "category": "implementation",
+      "physicalLines": 223,
+      "nonblankLines": 201,
+      "functionCount": 1,
+      "longestFunctionBodyLines": 195,
+      "longFunctions": [
+        {
+          "name": "mapAdministrationHttpError",
+          "startLine": 29,
+          "endLine": 223,
+          "bodyLines": 195
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-admission.ts",
+      "category": "implementation",
+      "physicalLines": 225,
+      "nonblankLines": 209,
+      "functionCount": 2,
+      "longestFunctionBodyLines": 194,
+      "longFunctions": [
+        {
+          "name": "submitTranscription",
+          "startLine": 32,
+          "endLine": 225,
+          "bodyLines": 194
+        },
+        {
+          "name": "context.database.transaction callback",
+          "startLine": 39,
+          "endLine": 224,
+          "bodyLines": 186
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/speech/infrastructure/drizzle-speech-store.ts",
+      "category": "implementation",
+      "physicalLines": 2150,
+      "nonblankLines": 1940,
+      "functionCount": 59,
+      "longestFunctionBodyLines": 189,
+      "longFunctions": [
+        {
+          "name": "DrizzleSpeechStore.releaseDeadlines",
+          "startLine": 1629,
+          "endLine": 1817,
+          "bodyLines": 189
+        },
+        {
+          "name": "DrizzleSpeechStore.prepare",
+          "startLine": 352,
+          "endLine": 521,
+          "bodyLines": 170
+        },
+        {
+          "name": "DrizzleSpeechStore.confirm",
+          "startLine": 528,
+          "endLine": 694,
+          "bodyLines": 167
+        },
+        {
+          "name": "this.options.database.transaction callback",
+          "startLine": 357,
+          "endLine": 520,
+          "bodyLines": 164
+        },
+        {
+          "name": "this.options.database.transaction callback",
+          "startLine": 533,
+          "endLine": 693,
+          "bodyLines": 161
+        },
+        {
+          "name": "DrizzleSpeechStore.admit",
+          "startLine": 812,
+          "endLine": 963,
+          "bodyLines": 152
+        },
+        {
+          "name": "DrizzleSpeechStore.complete",
+          "startLine": 1413,
+          "endLine": 1531,
+          "bodyLines": 119
+        },
+        {
+          "name": "DrizzleSpeechStore.claim",
+          "startLine": 1135,
+          "endLine": 1249,
+          "bodyLines": 115
+        },
+        {
+          "name": "this.workerTransaction callback",
+          "startLine": 1415,
+          "endLine": 1527,
+          "bodyLines": 113
+        },
+        {
+          "name": "this.workerTransaction callback",
+          "startLine": 1658,
+          "endLine": 1761,
+          "bodyLines": 104
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/pricing/openrouter-price-source.ts",
+      "category": "implementation",
+      "physicalLines": 593,
+      "nonblankLines": 538,
+      "functionCount": 21,
+      "longestFunctionBodyLines": 188,
+      "longFunctions": [
+        {
+          "name": "OpenRouterPriceSource.fetchPrices",
+          "startLine": 405,
+          "endLine": 592,
+          "bodyLines": 188
+        },
+        {
+          "name": "normalize",
+          "startLine": 273,
+          "endLine": 393,
+          "bodyLines": 121
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-enqueue.ts",
+      "category": "implementation",
+      "physicalLines": 230,
+      "nonblankLines": 216,
+      "functionCount": 2,
+      "longestFunctionBodyLines": 187,
+      "longFunctions": [
+        {
+          "name": "enqueue",
+          "startLine": 44,
+          "endLine": 230,
+          "bodyLines": 187
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 45,
+          "endLine": 229,
+          "bodyLines": 185
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/interface/http/provider-prices.routes.ts",
+      "category": "implementation",
+      "physicalLines": 209,
+      "nonblankLines": 197,
+      "functionCount": 8,
+      "longestFunctionBodyLines": 187,
+      "longFunctions": [
+        {
+          "name": "createProviderPriceRoutes",
+          "startLine": 23,
+          "endLine": 209,
+          "bodyLines": 187
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/conversation-source-context.ts",
+      "category": "implementation",
+      "physicalLines": 328,
+      "nonblankLines": 296,
+      "functionCount": 32,
+      "longestFunctionBodyLines": 186,
+      "longFunctions": [
+        {
+          "name": "projectConversationSource",
+          "startLine": 143,
+          "endLine": 328,
+          "bodyLines": 186
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/interface/http/passkey-auth.routes.ts",
+      "category": "implementation",
+      "physicalLines": 327,
+      "nonblankLines": 301,
+      "functionCount": 16,
+      "longestFunctionBodyLines": 186,
+      "longFunctions": [
+        {
+          "name": "createPasskeyAuthRoutes",
+          "startLine": 55,
+          "endLine": 240,
+          "bodyLines": 186
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/media-audio-validation.ts",
+      "category": "implementation",
+      "physicalLines": 201,
+      "nonblankLines": 173,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 186,
+      "longFunctions": [
+        {
+          "name": "verifyKnowledgeAudio",
+          "startLine": 16,
+          "endLine": 201,
+          "bodyLines": 186
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/ai/pasted-terms-proposal-generators.ts",
+      "category": "implementation",
+      "physicalLines": 623,
+      "nonblankLines": 565,
+      "functionCount": 30,
+      "longestFunctionBodyLines": 185,
+      "longFunctions": [
+        {
+          "name": "createMastraPastedTermsProposalGenerator",
+          "startLine": 249,
+          "endLine": 433,
+          "bodyLines": 185
+        },
+        {
+          "name": "generate",
+          "startLine": 251,
+          "endLine": 417,
+          "bodyLines": 167
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposals.ts",
+      "category": "implementation",
+      "physicalLines": 421,
+      "nonblankLines": 387,
+      "functionCount": 15,
+      "longestFunctionBodyLines": 184,
+      "longFunctions": [
+        {
+          "name": "conversationApplyBlockProposal",
+          "startLine": 238,
+          "endLine": 421,
+          "bodyLines": 184
+        },
+        {
+          "name": "conversationTransaction callback",
+          "startLine": 243,
+          "endLine": 420,
+          "bodyLines": 178
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-document-proposal.ts",
+      "category": "implementation",
+      "physicalLines": 395,
+      "nonblankLines": 357,
+      "functionCount": 6,
+      "longestFunctionBodyLines": 183,
+      "longFunctions": [
+        {
+          "name": "stageDocumentProposal",
+          "startLine": 31,
+          "endLine": 213,
+          "bodyLines": 183
+        },
+        {
+          "name": "context.database.transaction callback",
+          "startLine": 32,
+          "endLine": 212,
+          "bodyLines": 181
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/application/texts-worker-service.ts",
+      "category": "implementation",
+      "physicalLines": 250,
+      "nonblankLines": 226,
+      "functionCount": 13,
+      "longestFunctionBodyLines": 183,
+      "longFunctions": [
+        {
+          "name": "TextsWorkerService.processNext",
+          "startLine": 42,
+          "endLine": 224,
+          "bodyLines": 183
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/text-selection-enqueue.ts",
+      "category": "implementation",
+      "physicalLines": 222,
+      "nonblankLines": 206,
+      "functionCount": 1,
+      "longestFunctionBodyLines": 183,
+      "longFunctions": [
+        {
+          "name": "enqueueSelectionJob",
+          "startLine": 40,
+          "endLine": 222,
+          "bodyLines": 183
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/interface/http/model-prices.routes.ts",
+      "category": "implementation",
+      "physicalLines": 209,
+      "nonblankLines": 192,
+      "functionCount": 9,
+      "longestFunctionBodyLines": 183,
+      "longFunctions": [
+        {
+          "name": "createModelPriceRoutes",
+          "startLine": 27,
+          "endLine": 209,
+          "bodyLines": 183
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-preparation-start.ts",
+      "category": "implementation",
+      "physicalLines": 216,
+      "nonblankLines": 200,
+      "functionCount": 5,
+      "longestFunctionBodyLines": 182,
+      "longFunctions": [
+        {
+          "name": "sentencePreparationStart",
+          "startLine": 35,
+          "endLine": 216,
+          "bodyLines": 182
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 38,
+          "endLine": 215,
+          "bodyLines": 178
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/ai/card-proposal-generators.ts",
+      "category": "implementation",
+      "physicalLines": 524,
+      "nonblankLines": 464,
+      "functionCount": 20,
+      "longestFunctionBodyLines": 181,
+      "longFunctions": [
+        {
+          "name": "createMastraCardProposalGenerator",
+          "startLine": 111,
+          "endLine": 291,
+          "bodyLines": 181
+        },
+        {
+          "name": "generate",
+          "startLine": 113,
+          "endLine": 275,
+          "bodyLines": 163
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/conversation-worker-service.ts",
+      "category": "implementation",
+      "physicalLines": 218,
+      "nonblankLines": 202,
+      "functionCount": 15,
+      "longestFunctionBodyLines": 179,
+      "longFunctions": [
+        {
+          "name": "ConversationWorkerService.processNext",
+          "startLine": 39,
+          "endLine": 217,
+          "bodyLines": 179
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/interview-session-operations.ts",
+      "category": "implementation",
+      "physicalLines": 390,
+      "nonblankLines": 364,
+      "functionCount": 10,
+      "longestFunctionBodyLines": 178,
+      "longFunctions": [
+        {
+          "name": "start",
+          "startLine": 73,
+          "endLine": 250,
+          "bodyLines": 178
+        },
+        {
+          "name": "persistence.database.transaction callback",
+          "startLine": 74,
+          "endLine": 249,
+          "bodyLines": 176
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/administration/interface/http/admin-text-ai-probe.routes.ts",
+      "category": "implementation",
+      "physicalLines": 192,
+      "nonblankLines": 181,
+      "functionCount": 6,
+      "longestFunctionBodyLines": 176,
+      "longFunctions": [
+        {
+          "name": "registerAdminTextAiProbeRoutes",
+          "startLine": 17,
+          "endLine": 192,
+          "bodyLines": 176
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-free-store.ts",
+      "category": "implementation",
+      "physicalLines": 401,
+      "nonblankLines": 362,
+      "functionCount": 22,
+      "longestFunctionBodyLines": 175,
+      "longFunctions": [
+        {
+          "name": "DrizzleKnowledgeSentenceFreeStore.next",
+          "startLine": 159,
+          "endLine": 333,
+          "bodyLines": 175
+        },
+        {
+          "name": "this.run callback",
+          "startLine": 163,
+          "endLine": 330,
+          "bodyLines": 168
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts",
+      "category": "implementation",
+      "physicalLines": 226,
+      "nonblankLines": 208,
+      "functionCount": 8,
+      "longestFunctionBodyLines": 175,
+      "longFunctions": [
+        {
+          "name": "DrizzleTextAiAdmissionParticipant.resolve",
+          "startLine": 51,
+          "endLine": 225,
+          "bodyLines": 175
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/operations/admin-mcp-operations.ts",
+      "category": "implementation",
+      "physicalLines": 573,
+      "nonblankLines": 522,
+      "functionCount": 13,
+      "longestFunctionBodyLines": 172,
+      "longFunctions": [
+        {
+          "name": "AdminMcpOperations.applyMutation",
+          "startLine": 357,
+          "endLine": 528,
+          "bodyLines": 172
+        },
+        {
+          "name": "AdminMcpOperations.read",
+          "startLine": 70,
+          "endLine": 208,
+          "bodyLines": 139
+        },
+        {
+          "name": "AdminMcpOperations.preview",
+          "startLine": 215,
+          "endLine": 339,
+          "bodyLines": 125
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/interview-enqueue-operation.ts",
+      "category": "implementation",
+      "physicalLines": 210,
+      "nonblankLines": 192,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 172,
+      "longFunctions": [
+        {
+          "name": "enqueue",
+          "startLine": 39,
+          "endLine": 210,
+          "bodyLines": 172
+        },
+        {
+          "name": "withActionQuotePersistence callback",
+          "startLine": 41,
+          "endLine": 208,
+          "bodyLines": 168
+        },
+        {
+          "name": "persistence.database.transaction callback",
+          "startLine": 41,
+          "endLine": 208,
+          "bodyLines": 168
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/block-copy-store.ts",
+      "category": "implementation",
+      "physicalLines": 263,
+      "nonblankLines": 237,
+      "functionCount": 5,
+      "longestFunctionBodyLines": 168,
+      "longFunctions": [
+        {
+          "name": "DrizzleKnowledgeBlockCopyStore.copy",
+          "startLine": 95,
+          "endLine": 262,
+          "bodyLines": 168
+        },
+        {
+          "name": "this.database.transaction callback",
+          "startLine": 96,
+          "endLine": 261,
+          "bodyLines": 166
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/block-copy.routes.ts",
+      "category": "implementation",
+      "physicalLines": 200,
+      "nonblankLines": 181,
+      "functionCount": 7,
+      "longestFunctionBodyLines": 167,
+      "longFunctions": [
+        {
+          "name": "createKnowledgeBlockCopyRoutes",
+          "startLine": 34,
+          "endLine": 200,
+          "bodyLines": 167
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/speech/infrastructure/knowledge-snippet-source.ts",
+      "category": "implementation",
+      "physicalLines": 299,
+      "nonblankLines": 264,
+      "functionCount": 7,
+      "longestFunctionBodyLines": 163,
+      "longFunctions": [
+        {
+          "name": "resolveSaved",
+          "startLine": 137,
+          "endLine": 299,
+          "bodyLines": 163
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/conversation-action-accounting.ts",
+      "category": "implementation",
+      "physicalLines": 323,
+      "nonblankLines": 298,
+      "functionCount": 10,
+      "longestFunctionBodyLines": 162,
+      "longFunctions": [
+        {
+          "name": "createConversationActionAccounting",
+          "startLine": 48,
+          "endLine": 209,
+          "bodyLines": 162
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/interview-action-accounting.ts",
+      "category": "implementation",
+      "physicalLines": 286,
+      "nonblankLines": 261,
+      "functionCount": 9,
+      "longestFunctionBodyLines": 158,
+      "longFunctions": [
+        {
+          "name": "createInterviewActionAccounting",
+          "startLine": 50,
+          "endLine": 207,
+          "bodyLines": 158
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/operations/user-financial-report.ts",
+      "category": "implementation",
+      "physicalLines": 180,
+      "nonblankLines": 172,
+      "functionCount": 9,
+      "longestFunctionBodyLines": 158,
+      "longFunctions": [
+        {
+          "name": "userFinancialReport",
+          "startLine": 23,
+          "endLine": 180,
+          "bodyLines": 158
+        },
+        {
+          "name": "database.transaction callback",
+          "startLine": 27,
+          "endLine": 177,
+          "bodyLines": 151
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-record-operations.ts",
+      "category": "implementation",
+      "physicalLines": 248,
+      "nonblankLines": 222,
+      "functionCount": 4,
+      "longestFunctionBodyLines": 157,
+      "longFunctions": [
+        {
+          "name": "record",
+          "startLine": 30,
+          "endLine": 186,
+          "bodyLines": 157
+        },
+        {
+          "name": "persistence.database.transaction callback",
+          "startLine": 31,
+          "endLine": 185,
+          "bodyLines": 155
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-worker-completion.ts",
+      "category": "implementation",
+      "physicalLines": 268,
+      "nonblankLines": 248,
+      "functionCount": 18,
+      "longestFunctionBodyLines": 154,
+      "longFunctions": [
+        {
+          "name": "conversationMemory",
+          "startLine": 115,
+          "endLine": 268,
+          "bodyLines": 154
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/app.ts",
+      "category": "implementation",
+      "physicalLines": 221,
+      "nonblankLines": 183,
+      "functionCount": 1,
+      "longestFunctionBodyLines": 154,
+      "longFunctions": [
+        {
+          "name": "createApp",
+          "startLine": 68,
+          "endLine": 221,
+          "bodyLines": 154
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/interface/http/transcription-admin-routes.ts",
+      "category": "implementation",
+      "physicalLines": 205,
+      "nonblankLines": 188,
+      "functionCount": 12,
+      "longestFunctionBodyLines": 154,
+      "longFunctions": [
+        {
+          "name": "createTranscriptionAdminRoutes",
+          "startLine": 52,
+          "endLine": 205,
+          "bodyLines": 154
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-knowledge-share.ts",
+      "category": "implementation",
+      "physicalLines": 179,
+      "nonblankLines": 160,
+      "functionCount": 1,
+      "longestFunctionBodyLines": 154,
+      "longFunctions": [
+        {
+          "name": "readSharedConversationNote",
+          "startLine": 26,
+          "endLine": 179,
+          "bodyLines": 154
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant.ts",
+      "category": "implementation",
+      "physicalLines": 418,
+      "nonblankLines": 380,
+      "functionCount": 13,
+      "longestFunctionBodyLines": 153,
+      "longFunctions": [
+        {
+          "name": "DrizzleActionAccountingParticipant.reserve",
+          "startLine": 57,
+          "endLine": 209,
+          "bodyLines": 153
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/application/admin-mcp-check-service.ts",
+      "category": "implementation",
+      "physicalLines": 269,
+      "nonblankLines": 248,
+      "functionCount": 8,
+      "longestFunctionBodyLines": 153,
+      "longFunctions": [
+        {
+          "name": "AdminMcpCheckService.run",
+          "startLine": 116,
+          "endLine": 268,
+          "bodyLines": 153
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-practice-selection.ts",
+      "category": "implementation",
+      "physicalLines": 243,
+      "nonblankLines": 230,
+      "functionCount": 12,
+      "longestFunctionBodyLines": 153,
+      "longFunctions": [
+        {
+          "name": "sentencePracticePool",
+          "startLine": 45,
+          "endLine": 197,
+          "bodyLines": 153
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-library-publication.ts",
+      "category": "implementation",
+      "physicalLines": 275,
+      "nonblankLines": 249,
+      "functionCount": 11,
+      "longestFunctionBodyLines": 152,
+      "longFunctions": [
+        {
+          "name": "publishLibraryText",
+          "startLine": 124,
+          "endLine": 275,
+          "bodyLines": 152
+        },
+        {
+          "name": "persistence.db.transaction callback",
+          "startLine": 125,
+          "endLine": 274,
+          "bodyLines": 150
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/administration-user-mutations.ts",
+      "category": "implementation",
+      "physicalLines": 441,
+      "nonblankLines": 400,
+      "functionCount": 8,
+      "longestFunctionBodyLines": 150,
+      "longFunctions": [
+        {
+          "name": "cancelUserDeletion",
+          "startLine": 51,
+          "endLine": 200,
+          "bodyLines": 150
+        },
+        {
+          "name": "persistence.database.transaction callback",
+          "startLine": 52,
+          "endLine": 199,
+          "bodyLines": 148
+        },
+        {
+          "name": "mutateUser",
+          "startLine": 206,
+          "endLine": 348,
+          "bodyLines": 143
+        },
+        {
+          "name": "persistence.database.transaction callback",
+          "startLine": 207,
+          "endLine": 347,
+          "bodyLines": 141
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/infrastructure/authentication-composition.ts",
+      "category": "implementation",
+      "physicalLines": 230,
+      "nonblankLines": 220,
+      "functionCount": 6,
+      "longestFunctionBodyLines": 150,
+      "longFunctions": [
+        {
+          "name": "createAuthenticationComposition",
+          "startLine": 68,
+          "endLine": 217,
+          "bodyLines": 150
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/conversation-worker-composition.ts",
+      "category": "implementation",
+      "physicalLines": 185,
+      "nonblankLines": 177,
+      "functionCount": 18,
+      "longestFunctionBodyLines": 150,
+      "longFunctions": [
+        {
+          "name": "createConversationWorkerComposition",
+          "startLine": 36,
+          "endLine": 185,
+          "bodyLines": 150
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/flashcard-attempt-mutations.ts",
+      "category": "implementation",
+      "physicalLines": 292,
+      "nonblankLines": 264,
+      "functionCount": 4,
+      "longestFunctionBodyLines": 149,
+      "longFunctions": [
+        {
+          "name": "flashcardUndo",
+          "startLine": 144,
+          "endLine": 292,
+          "bodyLines": 149
+        },
+        {
+          "name": "flashcardRun callback",
+          "startLine": 151,
+          "endLine": 289,
+          "bodyLines": 139
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/application/authentication-service.ts",
+      "category": "implementation",
+      "physicalLines": 1597,
+      "nonblankLines": 1438,
+      "functionCount": 35,
+      "longestFunctionBodyLines": 147,
+      "longFunctions": [
+        {
+          "name": "AuthenticationService.passwordLogin",
+          "startLine": 391,
+          "endLine": 537,
+          "bodyLines": 147
+        },
+        {
+          "name": "AuthenticationService.signUp",
+          "startLine": 129,
+          "endLine": 244,
+          "bodyLines": 116
+        },
+        {
+          "name": "AuthenticationService.finishPasskeyAuthentication",
+          "startLine": 1307,
+          "endLine": 1413,
+          "bodyLines": 107
+        },
+        {
+          "name": "AuthenticationService.finishPasskeyRegistration",
+          "startLine": 1158,
+          "endLine": 1260,
+          "bodyLines": 103
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-paid.ts",
+      "category": "implementation",
+      "physicalLines": 428,
+      "nonblankLines": 394,
+      "functionCount": 11,
+      "longestFunctionBodyLines": 147,
+      "longFunctions": [
+        {
+          "name": "DrizzleKnowledgeSentencePaid.enqueueCheck",
+          "startLine": 192,
+          "endLine": 338,
+          "bodyLines": 147
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 195,
+          "endLine": 337,
+          "bodyLines": 143
+        },
+        {
+          "name": "DrizzleKnowledgeSentencePaid.admission",
+          "startLine": 48,
+          "endLine": 186,
+          "bodyLines": 139
+        },
+        {
+          "name": "admitGeneration",
+          "startLine": 50,
+          "endLine": 184,
+          "bodyLines": 135
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/document/native-document-parser.ts",
+      "category": "implementation",
+      "physicalLines": 930,
+      "nonblankLines": 802,
+      "functionCount": 42,
+      "longestFunctionBodyLines": 146,
+      "longFunctions": [
+        {
+          "name": "parsePdf",
+          "startLine": 706,
+          "endLine": 851,
+          "bodyLines": 146
+        },
+        {
+          "name": "parseMarkdownAst",
+          "startLine": 115,
+          "endLine": 243,
+          "bodyLines": 129
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/development-harness/infrastructure/mastra/development-harness-primitives.ts",
+      "category": "implementation",
+      "physicalLines": 274,
+      "nonblankLines": 248,
+      "functionCount": 13,
+      "longestFunctionBodyLines": 143,
+      "longFunctions": [
+        {
+          "name": "createDevelopmentHarnessPrimitives",
+          "startLine": 64,
+          "endLine": 206,
+          "bodyLines": 143
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/knowledge-action-admission.ts",
+      "category": "implementation",
+      "physicalLines": 198,
+      "nonblankLines": 181,
+      "functionCount": 5,
+      "longestFunctionBodyLines": 142,
+      "longFunctions": [
+        {
+          "name": "enqueueKnowledgeTextAction",
+          "startLine": 57,
+          "endLine": 198,
+          "bodyLines": 142
+        },
+        {
+          "name": "transaction callback",
+          "startLine": 74,
+          "endLine": 197,
+          "bodyLines": 124
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/interface/http/dictionary-document.routes.ts",
+      "category": "implementation",
+      "physicalLines": 187,
+      "nonblankLines": 174,
+      "functionCount": 8,
+      "longestFunctionBodyLines": 142,
+      "longFunctions": [
+        {
+          "name": "createDictionaryDocumentRoutes",
+          "startLine": 46,
+          "endLine": 187,
+          "bodyLines": 142
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/persistence/drizzle/administration-credit-operations.ts",
+      "category": "implementation",
+      "physicalLines": 280,
+      "nonblankLines": 259,
+      "functionCount": 9,
+      "longestFunctionBodyLines": 141,
+      "longFunctions": [
+        {
+          "name": "mutateAiCredits",
+          "startLine": 70,
+          "endLine": 210,
+          "bodyLines": 141
+        },
+        {
+          "name": "persistence.database.transaction callback",
+          "startLine": 71,
+          "endLine": 209,
+          "bodyLines": 139
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/persistence/drizzle/admin-mcp-quota-store.ts",
+      "category": "implementation",
+      "physicalLines": 320,
+      "nonblankLines": 295,
+      "functionCount": 12,
+      "longestFunctionBodyLines": 140,
+      "longFunctions": [
+        {
+          "name": "AdminMcpQuotaStore.reserveInTransaction",
+          "startLine": 59,
+          "endLine": 198,
+          "bodyLines": 140
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/ai/texts-ai-provider.ts",
+      "category": "implementation",
+      "physicalLines": 319,
+      "nonblankLines": 298,
+      "functionCount": 9,
+      "longestFunctionBodyLines": 139,
+      "longFunctions": [
+        {
+          "name": "createTextsAiProvider",
+          "startLine": 164,
+          "endLine": 302,
+          "bodyLines": 139
+        },
+        {
+          "name": "run",
+          "startLine": 166,
+          "endLine": 300,
+          "bodyLines": 135
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/drizzle-dictionary-deletion-store.ts",
+      "category": "implementation",
+      "physicalLines": 467,
+      "nonblankLines": 419,
+      "functionCount": 22,
+      "longestFunctionBodyLines": 138,
+      "longFunctions": [
+        {
+          "name": "DrizzleDictionaryDeletionStore.deleteDictionaryCards",
+          "startLine": 216,
+          "endLine": 353,
+          "bodyLines": 138
+        },
+        {
+          "name": "this.database.transaction callback",
+          "startLine": 217,
+          "endLine": 352,
+          "bodyLines": 136
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-tools.ts",
+      "category": "implementation",
+      "physicalLines": 157,
+      "nonblankLines": 143,
+      "functionCount": 6,
+      "longestFunctionBodyLines": 138,
+      "longFunctions": [
+        {
+          "name": "createContextualTutorTools",
+          "startLine": 20,
+          "endLine": 157,
+          "bodyLines": 138
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-probe-store.ts",
+      "category": "implementation",
+      "physicalLines": 519,
+      "nonblankLines": 471,
+      "functionCount": 14,
+      "longestFunctionBodyLines": 137,
+      "longFunctions": [
+        {
+          "name": "DrizzleTextAiProbeStore.reserve",
+          "startLine": 57,
+          "endLine": 193,
+          "bodyLines": 137
+        },
+        {
+          "name": "this.database.transaction callback",
+          "startLine": 58,
+          "endLine": 192,
+          "bodyLines": 135
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-fail.ts",
+      "category": "implementation",
+      "physicalLines": 155,
+      "nonblankLines": 142,
+      "functionCount": 2,
+      "longestFunctionBodyLines": 135,
+      "longFunctions": [
+        {
+          "name": "fail",
+          "startLine": 21,
+          "endLine": 155,
+          "bodyLines": 135
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 22,
+          "endLine": 154,
+          "bodyLines": 133
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-working-content.ts",
+      "category": "implementation",
+      "physicalLines": 531,
+      "nonblankLines": 483,
+      "functionCount": 17,
+      "longestFunctionBodyLines": 131,
+      "longFunctions": [
+        {
+          "name": "updateWorking",
+          "startLine": 45,
+          "endLine": 175,
+          "bodyLines": 131
+        },
+        {
+          "name": "persistence.database.transaction callback",
+          "startLine": 46,
+          "endLine": 174,
+          "bodyLines": 129
+        },
+        {
+          "name": "resolveWorking",
+          "startLine": 187,
+          "endLine": 291,
+          "bodyLines": 105
+        },
+        {
+          "name": "persistence.database.transaction callback",
+          "startLine": 188,
+          "endLine": 290,
+          "bodyLines": 103
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/routing-admission.ts",
+      "category": "implementation",
+      "physicalLines": 265,
+      "nonblankLines": 245,
+      "functionCount": 13,
+      "longestFunctionBodyLines": 131,
+      "longFunctions": [
+        {
+          "name": "computeAdminTextAiRouting",
+          "startLine": 41,
+          "endLine": 171,
+          "bodyLines": 131
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/ai-credit-reservation-operations.ts",
+      "category": "implementation",
+      "physicalLines": 440,
+      "nonblankLines": 402,
+      "functionCount": 8,
+      "longestFunctionBodyLines": 130,
+      "longFunctions": [
+        {
+          "name": "settleReservation",
+          "startLine": 240,
+          "endLine": 369,
+          "bodyLines": 130
+        },
+        {
+          "name": "reserveAttempt",
+          "startLine": 46,
+          "endLine": 173,
+          "bodyLines": 128
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/conversation-memory-messages.ts",
+      "category": "implementation",
+      "physicalLines": 244,
+      "nonblankLines": 219,
+      "functionCount": 14,
+      "longestFunctionBodyLines": 126,
+      "longFunctions": [
+        {
+          "name": "ConversationMemoryMessages.listMessages",
+          "startLine": 71,
+          "endLine": 196,
+          "bodyLines": 126
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-worker-authority.ts",
+      "category": "implementation",
+      "physicalLines": 237,
+      "nonblankLines": 212,
+      "functionCount": 6,
+      "longestFunctionBodyLines": 126,
+      "longFunctions": [
+        {
+          "name": "sentenceWorkerValid",
+          "startLine": 37,
+          "endLine": 162,
+          "bodyLines": 126
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/authentication/interface/http/auth-http-error-mapping.ts",
+      "category": "implementation",
+      "physicalLines": 152,
+      "nonblankLines": 138,
+      "functionCount": 1,
+      "longestFunctionBodyLines": 126,
+      "longFunctions": [
+        {
+          "name": "mapAuthenticationHttpError",
+          "startLine": 27,
+          "endLine": 152,
+          "bodyLines": 126
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/native-provider-pricing.ts",
+      "category": "implementation",
+      "physicalLines": 565,
+      "nonblankLines": 488,
+      "functionCount": 30,
+      "longestFunctionBodyLines": 125,
+      "longFunctions": [
+        {
+          "name": "evaluateNativeProviderAmount",
+          "startLine": 369,
+          "endLine": 493,
+          "bodyLines": 125
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/transcription-openai.ts",
+      "category": "implementation",
+      "physicalLines": 260,
+      "nonblankLines": 236,
+      "functionCount": 5,
+      "longestFunctionBodyLines": 125,
+      "longFunctions": [
+        {
+          "name": "OpenAiKnowledgeTranscriptionProvider.transcribe",
+          "startLine": 135,
+          "endLine": 259,
+          "bodyLines": 125
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/speech/infrastructure/audio/openrouter-speech-provider.ts",
+      "category": "implementation",
+      "physicalLines": 254,
+      "nonblankLines": 225,
+      "functionCount": 14,
+      "longestFunctionBodyLines": 125,
+      "longFunctions": [
+        {
+          "name": "OpenRouterSpeechProvider.submit",
+          "startLine": 125,
+          "endLine": 249,
+          "bodyLines": 125
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/domain/card-authoring.ts",
+      "category": "implementation",
+      "physicalLines": 963,
+      "nonblankLines": 895,
+      "functionCount": 52,
+      "longestFunctionBodyLines": 124,
+      "longFunctions": [
+        {
+          "name": "mergeDictionaryCardAuthoringProposal",
+          "startLine": 650,
+          "endLine": 773,
+          "bodyLines": 124
+        },
+        {
+          "name": "z\n    .object({\n        format: z.union([\n            z.literal(dictionaryCardAu callback",
+          "startLine": 208,
+          "endLine": 330,
+          "bodyLines": 123
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-sharing.ts",
+      "category": "implementation",
+      "physicalLines": 230,
+      "nonblankLines": 215,
+      "functionCount": 6,
+      "longestFunctionBodyLines": 122,
+      "longFunctions": [
+        {
+          "name": "readSharedDictionary",
+          "startLine": 109,
+          "endLine": 230,
+          "bodyLines": 122
+        },
+        {
+          "name": "context.database.transaction callback",
+          "startLine": 110,
+          "endLine": 229,
+          "bodyLines": 120
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/administration/infrastructure/sentence-library-administration-hooks.ts",
+      "category": "implementation",
+      "physicalLines": 139,
+      "nonblankLines": 128,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 121,
+      "longFunctions": [
+        {
+          "name": "createSentenceLibraryAdministrationHooks",
+          "startLine": 19,
+          "endLine": 139,
+          "bodyLines": 121
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-document-cleanup-claim.ts",
+      "category": "implementation",
+      "physicalLines": 133,
+      "nonblankLines": 127,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 121,
+      "longFunctions": [
+        {
+          "name": "claimCleanup",
+          "startLine": 13,
+          "endLine": 133,
+          "bodyLines": 121
+        },
+        {
+          "name": "context.database.transaction callback",
+          "startLine": 14,
+          "endLine": 132,
+          "bodyLines": 119
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-practice-jobs.ts",
+      "category": "implementation",
+      "physicalLines": 254,
+      "nonblankLines": 234,
+      "functionCount": 9,
+      "longestFunctionBodyLines": 120,
+      "longFunctions": [
+        {
+          "name": "sentencePracticeEnqueueCheck",
+          "startLine": 135,
+          "endLine": 254,
+          "bodyLines": 120
+        },
+        {
+          "name": "sentencePracticeRun callback",
+          "startLine": 140,
+          "endLine": 251,
+          "bodyLines": 112
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/dictionary-composition.ts",
+      "category": "implementation",
+      "physicalLines": 181,
+      "nonblankLines": 173,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 120,
+      "longFunctions": [
+        {
+          "name": "createDictionaryComposition",
+          "startLine": 62,
+          "endLine": 181,
+          "bodyLines": 120
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-admission.ts",
+      "category": "implementation",
+      "physicalLines": 210,
+      "nonblankLines": 191,
+      "functionCount": 4,
+      "longestFunctionBodyLines": 118,
+      "longFunctions": [
+        {
+          "name": "assertGenerationAdmission",
+          "startLine": 55,
+          "endLine": 172,
+          "bodyLines": 118
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/pinned-note-access.ts",
+      "category": "implementation",
+      "physicalLines": 206,
+      "nonblankLines": 185,
+      "functionCount": 2,
+      "longestFunctionBodyLines": 118,
+      "longFunctions": [
+        {
+          "name": "readPinnedKnowledgeNoteSource",
+          "startLine": 89,
+          "endLine": 206,
+          "bodyLines": 118
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-cancellation.ts",
+      "category": "implementation",
+      "physicalLines": 288,
+      "nonblankLines": 264,
+      "functionCount": 6,
+      "longestFunctionBodyLines": 117,
+      "longFunctions": [
+        {
+          "name": "cancel",
+          "startLine": 31,
+          "endLine": 147,
+          "bodyLines": 117
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 32,
+          "endLine": 146,
+          "bodyLines": 115
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/text-selection-target.ts",
+      "category": "implementation",
+      "physicalLines": 258,
+      "nonblankLines": 237,
+      "functionCount": 2,
+      "longestFunctionBodyLines": 117,
+      "longFunctions": [
+        {
+          "name": "saveSelectionCard",
+          "startLine": 142,
+          "endLine": 258,
+          "bodyLines": 117
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-job-accounting.ts",
+      "category": "implementation",
+      "physicalLines": 250,
+      "nonblankLines": 231,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 117,
+      "longFunctions": [
+        {
+          "name": "settleSentenceAttempt",
+          "startLine": 134,
+          "endLine": 250,
+          "bodyLines": 117
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-document-cleanup-versions.ts",
+      "category": "implementation",
+      "physicalLines": 188,
+      "nonblankLines": 172,
+      "functionCount": 10,
+      "longestFunctionBodyLines": 117,
+      "longFunctions": [
+        {
+          "name": "recordDataVersionsDeleted",
+          "startLine": 72,
+          "endLine": 188,
+          "bodyLines": 117
+        },
+        {
+          "name": "context.database.transaction callback",
+          "startLine": 73,
+          "endLine": 187,
+          "bodyLines": 115
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-routing-store.ts",
+      "category": "implementation",
+      "physicalLines": 407,
+      "nonblankLines": 369,
+      "functionCount": 20,
+      "longestFunctionBodyLines": 116,
+      "longFunctions": [
+        {
+          "name": "DrizzleTextAiRoutingStore.publishInTransaction",
+          "startLine": 219,
+          "endLine": 334,
+          "bodyLines": 116
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-worker-jobs.ts",
+      "category": "implementation",
+      "physicalLines": 210,
+      "nonblankLines": 199,
+      "functionCount": 6,
+      "longestFunctionBodyLines": 115,
+      "longFunctions": [
+        {
+          "name": "pgView('sentence_worker_jobs').as callback",
+          "startLine": 13,
+          "endLine": 127,
+          "bodyLines": 115
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/users/infrastructure/recovery/drizzle-account-deletion-recovery-store.ts",
+      "category": "implementation",
+      "physicalLines": 161,
+      "nonblankLines": 147,
+      "functionCount": 5,
+      "longestFunctionBodyLines": 115,
+      "longFunctions": [
+        {
+          "name": "DrizzleAccountDeletionRecoveryStore.blockAccount",
+          "startLine": 46,
+          "endLine": 160,
+          "bodyLines": 115
+        },
+        {
+          "name": "this.database.transaction callback",
+          "startLine": 47,
+          "endLine": 159,
+          "bodyLines": 113
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/infrastructure/persistence/drizzle/sentence-worker-completion.ts",
+      "category": "implementation",
+      "physicalLines": 276,
+      "nonblankLines": 248,
+      "functionCount": 11,
+      "longestFunctionBodyLines": 114,
+      "longFunctions": [
+        {
+          "name": "sentenceWorkerCompleteGeneration",
+          "startLine": 105,
+          "endLine": 218,
+          "bodyLines": 114
+        },
+        {
+          "name": "sentenceWorkerComplete callback",
+          "startLine": 111,
+          "endLine": 216,
+          "bodyLines": 106
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/mastra/development-server-policy.ts",
+      "category": "implementation",
+      "physicalLines": 581,
+      "nonblankLines": 498,
+      "functionCount": 33,
+      "longestFunctionBodyLines": 113,
+      "longFunctions": [
+        {
+          "name": "createDevelopmentServerMiddleware",
+          "startLine": 48,
+          "endLine": 160,
+          "bodyLines": 113
+        },
+        {
+          "name": "validateAgentRequestBody",
+          "startLine": 223,
+          "endLine": 333,
+          "bodyLines": 111
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-model-price-participant.ts",
+      "category": "implementation",
+      "physicalLines": 387,
+      "nonblankLines": 359,
+      "functionCount": 14,
+      "longestFunctionBodyLines": 113,
+      "longFunctions": [
+        {
+          "name": "DrizzleModelPriceParticipant.current",
+          "startLine": 36,
+          "endLine": 148,
+          "bodyLines": 113
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/pricing/evolink-price-source.ts",
+      "category": "implementation",
+      "physicalLines": 369,
+      "nonblankLines": 339,
+      "functionCount": 18,
+      "longestFunctionBodyLines": 113,
+      "longFunctions": [
+        {
+          "name": "normalize",
+          "startLine": 152,
+          "endLine": 264,
+          "bodyLines": 113
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-admin-store.ts",
+      "category": "implementation",
+      "physicalLines": 340,
+      "nonblankLines": 311,
+      "functionCount": 14,
+      "longestFunctionBodyLines": 113,
+      "longFunctions": [
+        {
+          "name": "DrizzleTranscriptionAdminStore.apply",
+          "startLine": 227,
+          "endLine": 339,
+          "bodyLines": 113
+        },
+        {
+          "name": "this.database.transaction callback",
+          "startLine": 228,
+          "endLine": 336,
+          "bodyLines": 109
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/tutor-request-sources.ts",
+      "category": "implementation",
+      "physicalLines": 332,
+      "nonblankLines": 302,
+      "functionCount": 39,
+      "longestFunctionBodyLines": 113,
+      "longFunctions": [
+        {
+          "name": "readFrozenLearningBlocks",
+          "startLine": 152,
+          "endLine": 264,
+          "bodyLines": 113
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/persistence/drizzle/admin-mcp-deletion-participant.ts",
+      "category": "implementation",
+      "physicalLines": 130,
+      "nonblankLines": 119,
+      "functionCount": 4,
+      "longestFunctionBodyLines": 113,
+      "longFunctions": [
+        {
+          "name": "purgeAdminMcpForOwner",
+          "startLine": 18,
+          "endLine": 130,
+          "bodyLines": 113
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/infrastructure/worker/dictionary-worker-runtime.ts",
+      "category": "implementation",
+      "physicalLines": 556,
+      "nonblankLines": 506,
+      "functionCount": 41,
+      "longestFunctionBodyLines": 112,
+      "longFunctions": [
+        {
+          "name": "DictionaryWorkerRuntime.#poll",
+          "startLine": 310,
+          "endLine": 421,
+          "bodyLines": 112
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/text-selection-accounting.ts",
+      "category": "implementation",
+      "physicalLines": 216,
+      "nonblankLines": 202,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 112,
+      "longFunctions": [
+        {
+          "name": "settleSelectionAttempt",
+          "startLine": 105,
+          "endLine": 216,
+          "bodyLines": 112
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/interface/http/learner-ai-credit-balance.routes.ts",
+      "category": "implementation",
+      "physicalLines": 134,
+      "nonblankLines": 120,
+      "functionCount": 7,
+      "longestFunctionBodyLines": 112,
+      "longFunctions": [
+        {
+          "name": "createLearnerAiCreditBalanceRoutes",
+          "startLine": 23,
+          "endLine": 134,
+          "bodyLines": 112
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/action-allowance-consent.ts",
+      "category": "implementation",
+      "physicalLines": 343,
+      "nonblankLines": 307,
+      "functionCount": 13,
+      "longestFunctionBodyLines": 111,
+      "longFunctions": [
+        {
+          "name": "authorizeActionAllowance",
+          "startLine": 233,
+          "endLine": 343,
+          "bodyLines": 111
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/infrastructure/ai/tutor-test-fixtures.ts",
+      "category": "implementation",
+      "physicalLines": 200,
+      "nonblankLines": 182,
+      "functionCount": 19,
+      "longestFunctionBodyLines": 111,
+      "longFunctions": [
+        {
+          "name": "scriptedTutorModel",
+          "startLine": 22,
+          "endLine": 132,
+          "bodyLines": 111
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/ai-credit-grant-operations.ts",
+      "category": "implementation",
+      "physicalLines": 410,
+      "nonblankLines": 372,
+      "functionCount": 6,
+      "longestFunctionBodyLines": 110,
+      "longFunctions": [
+        {
+          "name": "adjustByAdmin",
+          "startLine": 235,
+          "endLine": 344,
+          "bodyLines": 110
+        },
+        {
+          "name": "revokePurchaseGrantAvailable",
+          "startLine": 120,
+          "endLine": 222,
+          "bodyLines": 103
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/learning-content-validation.ts",
+      "category": "implementation",
+      "physicalLines": 331,
+      "nonblankLines": 288,
+      "functionCount": 31,
+      "longestFunctionBodyLines": 110,
+      "longFunctions": [
+        {
+          "name": "validateReferences",
+          "startLine": 188,
+          "endLine": 297,
+          "bodyLines": 110
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-document-processing.ts",
+      "category": "implementation",
+      "physicalLines": 249,
+      "nonblankLines": 227,
+      "functionCount": 5,
+      "longestFunctionBodyLines": 110,
+      "longFunctions": [
+        {
+          "name": "recordDocumentProcessingFailure",
+          "startLine": 126,
+          "endLine": 235,
+          "bodyLines": 110
+        },
+        {
+          "name": "context.database.transaction callback",
+          "startLine": 127,
+          "endLine": 234,
+          "bodyLines": 108
+        },
+        {
+          "name": "terminalizeExtraction",
+          "startLine": 17,
+          "endLine": 119,
+          "bodyLines": 103
+        },
+        {
+          "name": "context.database.transaction callback",
+          "startLine": 18,
+          "endLine": 118,
+          "bodyLines": 101
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/ai/learner-interviewer.ts",
+      "category": "implementation",
+      "physicalLines": 169,
+      "nonblankLines": 155,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 110,
+      "longFunctions": [
+        {
+          "name": "createLearnerInterviewerRunner",
+          "startLine": 60,
+          "endLine": 169,
+          "bodyLines": 110
+        },
+        {
+          "name": "run",
+          "startLine": 62,
+          "endLine": 167,
+          "bodyLines": 106
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/text-content-mutations.ts",
+      "category": "implementation",
+      "physicalLines": 450,
+      "nonblankLines": 406,
+      "functionCount": 13,
+      "longestFunctionBodyLines": 109,
+      "longFunctions": [
+        {
+          "name": "moveText",
+          "startLine": 121,
+          "endLine": 229,
+          "bodyLines": 109
+        },
+        {
+          "name": "persistence.db.transaction callback",
+          "startLine": 122,
+          "endLine": 228,
+          "bodyLines": 107
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learner-portraits/infrastructure/persistence/drizzle/interview-worker-operations.ts",
+      "category": "implementation",
+      "physicalLines": 361,
+      "nonblankLines": 328,
+      "functionCount": 10,
+      "longestFunctionBodyLines": 109,
+      "longFunctions": [
+        {
+          "name": "complete",
+          "startLine": 210,
+          "endLine": 318,
+          "bodyLines": 109
+        },
+        {
+          "name": "claim",
+          "startLine": 42,
+          "endLine": 148,
+          "bodyLines": 107
+        },
+        {
+          "name": "withOperation callback",
+          "startLine": 212,
+          "endLine": 317,
+          "bodyLines": 106
+        },
+        {
+          "name": "persistence.database.transaction callback",
+          "startLine": 43,
+          "endLine": 147,
+          "bodyLines": 105
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-accounting.ts",
+      "category": "implementation",
+      "physicalLines": 226,
+      "nonblankLines": 210,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 109,
+      "longFunctions": [
+        {
+          "name": "settleTextsAttempt",
+          "startLine": 118,
+          "endLine": 226,
+          "bodyLines": 109
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/learning/domain/flashcard-projection.ts",
+      "category": "implementation",
+      "physicalLines": 149,
+      "nonblankLines": 135,
+      "functionCount": 5,
+      "longestFunctionBodyLines": 109,
+      "longFunctions": [
+        {
+          "name": "projectFlashcard",
+          "startLine": 41,
+          "endLine": 149,
+          "bodyLines": 109
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/conversations/application/learning-content-contract.ts",
+      "category": "implementation",
+      "physicalLines": 252,
+      "nonblankLines": 231,
+      "functionCount": 10,
+      "longestFunctionBodyLines": 108,
+      "longFunctions": [
+        {
+          "name": "learningContentRequirements",
+          "startLine": 145,
+          "endLine": 252,
+          "bodyLines": 108
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/text-selection-worker.ts",
+      "category": "implementation",
+      "physicalLines": 152,
+      "nonblankLines": 138,
+      "functionCount": 14,
+      "longestFunctionBodyLines": 108,
+      "longFunctions": [
+        {
+          "name": "TextSelectionWorker.processNext",
+          "startLine": 20,
+          "endLine": 127,
+          "bodyLines": 108
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/mastra/composition.ts",
+      "category": "implementation",
+      "physicalLines": 288,
+      "nonblankLines": 275,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 107,
+      "longFunctions": [
+        {
+          "name": "createCanonicalMastra",
+          "startLine": 100,
+          "endLine": 206,
+          "bodyLines": 107
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/admin-mcp/infrastructure/persistence/drizzle/admin-mcp-preview-store.ts",
+      "category": "implementation",
+      "physicalLines": 199,
+      "nonblankLines": 181,
+      "functionCount": 6,
+      "longestFunctionBodyLines": 106,
+      "longFunctions": [
+        {
+          "name": "AdminMcpPreviewStore.executePreview",
+          "startLine": 93,
+          "endLine": 198,
+          "bodyLines": 106
+        },
+        {
+          "name": "this.database.transaction callback",
+          "startLine": 96,
+          "endLine": 197,
+          "bodyLines": 102
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-epochs.ts",
+      "category": "implementation",
+      "physicalLines": 188,
+      "nonblankLines": 173,
+      "functionCount": 12,
+      "longestFunctionBodyLines": 106,
+      "longFunctions": [
+        {
+          "name": "syncLearningEpochs",
+          "startLine": 83,
+          "endLine": 188,
+          "bodyLines": 106
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/document/bubblewrap-sandboxed-document-extractor.ts",
+      "category": "implementation",
+      "physicalLines": 430,
+      "nonblankLines": 388,
+      "functionCount": 17,
+      "longestFunctionBodyLines": 105,
+      "longFunctions": [
+        {
+          "name": "BubblewrapSandboxedDocumentExtractor.extract",
+          "startLine": 325,
+          "endLine": 429,
+          "bodyLines": 105
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/domain/provider-cost-admission.ts",
+      "category": "implementation",
+      "physicalLines": 363,
+      "nonblankLines": 320,
+      "functionCount": 13,
+      "longestFunctionBodyLines": 105,
+      "longFunctions": [
+        {
+          "name": "nativeTextProviderReservationMicros",
+          "startLine": 68,
+          "endLine": 172,
+          "bodyLines": 105
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/generation-worker-leases.ts",
+      "category": "implementation",
+      "physicalLines": 206,
+      "nonblankLines": 188,
+      "functionCount": 5,
+      "longestFunctionBodyLines": 105,
+      "longFunctions": [
+        {
+          "name": "releaseWorkerLeases",
+          "startLine": 102,
+          "endLine": 206,
+          "bodyLines": 105
+        },
+        {
+          "name": "modelPricingTransaction callback",
+          "startLine": 103,
+          "endLine": 205,
+          "bodyLines": 103
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/legacy-action-accounting.ts",
+      "category": "implementation",
+      "physicalLines": 511,
+      "nonblankLines": 475,
+      "functionCount": 10,
+      "longestFunctionBodyLines": 104,
+      "longFunctions": [
+        {
+          "name": "reserveLegacyAction",
+          "startLine": 169,
+          "endLine": 272,
+          "bodyLines": 104
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/domain/learning-block-text.ts",
+      "category": "implementation",
+      "physicalLines": 107,
+      "nonblankLines": 91,
+      "functionCount": 3,
+      "longestFunctionBodyLines": 104,
+      "longFunctions": [
+        {
+          "name": "learningBlockPlainText",
+          "startLine": 4,
+          "endLine": 107,
+          "bodyLines": 104
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/texts/domain/text.ts",
+      "category": "implementation",
+      "physicalLines": 340,
+      "nonblankLines": 304,
+      "functionCount": 20,
+      "longestFunctionBodyLines": 103,
+      "longFunctions": [
+        {
+          "name": "resolveTextSelection",
+          "startLine": 238,
+          "endLine": 340,
+          "bodyLines": 103
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/vocabulary-practice-attempts.ts",
+      "category": "implementation",
+      "physicalLines": 253,
+      "nonblankLines": 231,
+      "functionCount": 8,
+      "longestFunctionBodyLines": 103,
+      "longFunctions": [
+        {
+          "name": "undoVocabularyEntry",
+          "startLine": 151,
+          "endLine": 253,
+          "bodyLines": 103
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/ai/exercise-evaluation-provider.ts",
+      "category": "implementation",
+      "physicalLines": 177,
+      "nonblankLines": 165,
+      "functionCount": 5,
+      "longestFunctionBodyLines": 102,
+      "longFunctions": [
+        {
+          "name": "runKnowledgeExerciseEvaluation",
+          "startLine": 76,
+          "endLine": 177,
+          "bodyLines": 102
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-free-history.ts",
+      "category": "implementation",
+      "physicalLines": 389,
+      "nonblankLines": 363,
+      "functionCount": 10,
+      "longestFunctionBodyLines": 101,
+      "longFunctions": [
+        {
+          "name": "knowledgeSentenceReveal",
+          "startLine": 133,
+          "endLine": 233,
+          "bodyLines": 101
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-lifecycle.ts",
+      "category": "implementation",
+      "physicalLines": 274,
+      "nonblankLines": 252,
+      "functionCount": 19,
+      "longestFunctionBodyLines": 101,
+      "longFunctions": [
+        {
+          "name": "reorderCards",
+          "startLine": 174,
+          "endLine": 274,
+          "bodyLines": 101
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts",
+      "category": "implementation",
+      "physicalLines": 221,
+      "nonblankLines": 203,
+      "functionCount": 5,
+      "longestFunctionBodyLines": 101,
+      "longFunctions": [
+        {
+          "name": "transcriptionConfiguration",
+          "startLine": 92,
+          "endLine": 192,
+          "bodyLines": 101
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/dictionary-generation-service.ts",
+      "category": "implementation",
+      "physicalLines": 690,
+      "nonblankLines": 625,
+      "functionCount": 26,
+      "longestFunctionBodyLines": 87,
+      "longFunctions": [],
+      "reasons": [
+        "large-file"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/workbook-store.ts",
+      "category": "implementation",
+      "physicalLines": 546,
+      "nonblankLines": 488,
+      "functionCount": 37,
+      "longestFunctionBodyLines": 84,
+      "longFunctions": [],
+      "reasons": [
+        "large-file"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/application/dictionary-service.ts",
+      "category": "implementation",
+      "physicalLines": 774,
+      "nonblankLines": 690,
+      "functionCount": 43,
+      "longestFunctionBodyLines": 81,
+      "longFunctions": [],
+      "reasons": [
+        "large-file"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-transaction.ts",
+      "category": "implementation",
+      "physicalLines": 508,
+      "nonblankLines": 454,
+      "functionCount": 19,
+      "longestFunctionBodyLines": 77,
+      "longFunctions": [],
+      "reasons": [
+        "large-file"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/domain/generation.ts",
+      "category": "implementation",
+      "physicalLines": 544,
+      "nonblankLines": 522,
+      "functionCount": 23,
+      "longestFunctionBodyLines": 61,
+      "longFunctions": [],
+      "reasons": [
+        "large-file"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/administration/application/administration-service.ts",
+      "category": "implementation",
+      "physicalLines": 818,
+      "nonblankLines": 728,
+      "functionCount": 35,
+      "longestFunctionBodyLines": 59,
+      "longFunctions": [],
+      "reasons": [
+        "large-file"
+      ]
+    },
+    {
+      "path": "apps/backend/src/index.ts",
+      "category": "implementation",
+      "physicalLines": 751,
+      "nonblankLines": 735,
+      "functionCount": 22,
+      "longestFunctionBodyLines": 18,
+      "longFunctions": [],
+      "reasons": [
+        "large-file"
+      ]
+    },
+    {
+      "path": "apps/backend/src/infrastructure/worker/dictionary-worker-environment.ts",
+      "category": "declarative-review",
+      "physicalLines": 448,
+      "nonblankLines": 411,
+      "functionCount": 9,
+      "longestFunctionBodyLines": 285,
+      "longFunctions": [
+        {
+          "name": "loadDictionaryWorkerEnvironment",
+          "startLine": 164,
+          "endLine": 448,
+          "bodyLines": 285
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/config/api-environment.ts",
+      "category": "declarative-review",
+      "physicalLines": 763,
+      "nonblankLines": 694,
+      "functionCount": 27,
+      "longestFunctionBodyLines": 275,
+      "longFunctions": [
+        {
+          "name": "loadEnvironment",
+          "startLine": 290,
+          "endLine": 564,
+          "bodyLines": 275
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/speech/infrastructure/audio/dictionary-audio-environment.ts",
+      "category": "declarative-review",
+      "physicalLines": 365,
+      "nonblankLines": 341,
+      "functionCount": 9,
+      "longestFunctionBodyLines": 264,
+      "longFunctions": [
+        {
+          "name": "loadDictionaryAudioEnvironment",
+          "startLine": 98,
+          "endLine": 361,
+          "bodyLines": 264
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/ai/text-ai-provider-catalog.ts",
+      "category": "declarative-review",
+      "physicalLines": 843,
+      "nonblankLines": 779,
+      "functionCount": 21,
+      "longestFunctionBodyLines": 169,
+      "longFunctions": [
+        {
+          "name": "RestrictedGatewayModel.observe",
+          "startLine": 544,
+          "endLine": 712,
+          "bodyLines": 169
+        },
+        {
+          "name": "transform",
+          "startLine": 606,
+          "endLine": 708,
+          "bodyLines": 103
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/schema.ts",
+      "category": "declarative-review",
+      "physicalLines": 1352,
+      "nonblankLines": 1325,
+      "functionCount": 32,
+      "longestFunctionBodyLines": 135,
+      "longFunctions": [
+        {
+          "name": "pgTable callback",
+          "startLine": 540,
+          "endLine": 674,
+          "bodyLines": 135
+        }
+      ],
+      "reasons": [
+        "large-file",
+        "long-function"
+      ]
+    },
+    {
+      "path": "apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-catalog-query.ts",
+      "category": "declarative-review",
+      "physicalLines": 168,
+      "nonblankLines": 162,
+      "functionCount": 12,
+      "longestFunctionBodyLines": 102,
+      "longFunctions": [
+        {
+          "name": "readTextAiCatalog",
+          "startLine": 67,
+          "endLine": 168,
+          "bodyLines": 102
+        }
+      ],
+      "reasons": [
+        "long-function"
+      ]
+    }
+  ]
+}

@@ -16,6 +16,55 @@ const input = {
 };
 
 describe('accounted tutor model', () => {
+    it('exposes fresh immutable budget snapshots and reclaims measured unused output', async () => {
+        const provider = scriptedTutorModel(['Explanation']);
+        const gate = createTutorModelGate({
+            accounting: tutorAccountingFixture(),
+            signal: new AbortController().signal,
+            maxInputTokens: 64000,
+            maxCalls: 4,
+        });
+        const before = gate.remainingBudget;
+
+        expect(before).toEqual({
+            remainingCalls: 4,
+            remainingOutputTokens: 10_000,
+        });
+
+        expect(Object.isFrozen(before)).toBe(true);
+        expect(gate.remainingBudget).not.toBe(before);
+
+        await gate.wrap(provider.model, 'authoring').doGenerate(input);
+
+        expect(gate.remainingBudget).toEqual({
+            remainingCalls: 3,
+            remainingOutputTokens: 9988,
+        });
+
+        expect(before).toEqual({
+            remainingCalls: 4,
+            remainingOutputTokens: 10_000,
+        });
+    });
+
+    it('retains failed calls with unknown usage in the available-budget snapshot', async () => {
+        const provider = scriptedTutorModel([]);
+        const gate = createTutorModelGate({
+            accounting: tutorAccountingFixture(),
+            signal: new AbortController().signal,
+            maxInputTokens: 64000,
+        });
+
+        await expect(
+            gate.wrap(provider.model, 'authoring').doGenerate(input),
+        ).rejects.toThrow('Unexpected model dispatch');
+
+        expect(gate.remainingBudget).toEqual({
+            remainingCalls: 4,
+            remainingOutputTokens: 5904,
+        });
+    });
+
     it('keeps concurrent SDK dispatch witnesses bound to their admitted calls and clears them afterwards', async () => {
         let releaseStarted!: () => void;
         const bothStarted = new Promise<void>((resolve) => {
@@ -112,15 +161,22 @@ describe('accounted tutor model', () => {
 
         await vi.waitFor(() => expect(accounting.admit).toHaveBeenCalledOnce());
         expect(provider.requests).toHaveLength(0);
+        expect(gate.remainingBudget).toEqual({
+            remainingCalls: 4,
+            remainingOutputTokens: 5904,
+        });
+
         admit();
         await vi.waitFor(() =>
             expect(accounting.settle).toHaveBeenCalledOnce(),
         );
 
         expect(done).toBe(false);
+        expect(gate.remainingBudget.remainingOutputTokens).toBe(5904);
         settle();
         await result;
         expect(done).toBe(true);
+        expect(gate.remainingBudget.remainingOutputTokens).toBe(9988);
     });
 
     it('bounds all provider calls and reserves room for an actor after memory processing', async () => {

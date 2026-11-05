@@ -1,5 +1,3 @@
-import { learningContentAuthoringOutputTokenLimit } from '../../application/learning-content-output-capacity';
-import { sameLearningBlockCopyContent } from '../../application/tutor-request-sources';
 import {
     createTutorRequestAgents,
     generateTutorObject,
@@ -12,170 +10,32 @@ import {
     tutorContextInstructions,
     tutorReservedInputBytes,
 } from '../../application/tutor-context-budget';
-import { getLocalPrompt } from '@languon/prompts';
-import { Agent, type ToolsInput } from '@mastra/core/agent';
-import type { LearningBlock } from '@languon/contracts';
-import { noopLogger } from '@mastra/core/logger';
-import {
-    resolveModelConfig,
-    type MastraModelConfig,
-    type ModelRouterModelId,
-    type OpenAICompatibleConfig,
-    type ModelRouterLanguageModel,
-} from '@mastra/core/llm';
-import { MastraCompositeStore } from '@mastra/core/storage';
-import { Memory } from '@mastra/memory';
 import { createCanonicalMastra } from '../../../../mastra/composition.js';
+import { resolveModelConfig } from '@mastra/core/llm';
 import type {
     TutorAccountingPort,
     TutorRunInput,
     TutorRunner,
 } from '../../application/ports/tutor-runner.js';
-import {
-    createTutorModelGate,
-    type TutorProviderModel,
-} from './accounted-tutor-model.js';
-import {
-    ConversationMemoryStorage,
-    toTutorModelMessage,
-} from './conversation-memory-storage.js';
+import { createTutorModelGate } from './accounted-tutor-model.js';
+import { ConversationMemoryStorage } from './conversation-memory-storage.js';
 import { createContextualTutorTools } from './contextual-tutor-tools.js';
 import { ConversationError } from '../../domain/conversation.js';
+import {
+    createContextualTutorAgent,
+    createTutorMemory,
+    isConstructedTutorModel,
+    requireSupportedTutorModel,
+    tutorMemoryThresholds,
+    type TutorModelConfiguration,
+} from './contextual-tutor-configuration.js';
+import { createTutorProposalGuard } from './contextual-tutor-proposals.js';
+import { streamTutorReply } from './contextual-tutor-stream.js';
 
-type TutorModelConfiguration =
-    | ModelRouterModelId
-    | OpenAICompatibleConfig
-    | ModelRouterLanguageModel
-    | TutorProviderModel;
-
-function isConstructedModelAdapter(model: TutorModelConfiguration) {
-    // Constructed SDK adapters already expose their protocol version. Model IDs
-    // and provider configuration must first be resolved by Mastra.
-    return typeof model === 'object' && 'specificationVersion' in model;
-}
-
-function requireSupportedTutorModel(
-    model:
-        | Awaited<ReturnType<typeof resolveModelConfig>>
-        | Extract<TutorModelConfiguration, { specificationVersion: string }>,
-) {
-    // The accounting gate and pinned streaming integration require v2 adapters.
-    if (model.specificationVersion !== 'v2') {
-        throw new Error(
-            'AI is unavailable right now. Your messages are kept. Try again later.',
-        );
-    }
-
-    return model;
-}
-
-function createTutorMemory(options: {
-    conversationId: string;
-    storage: ConversationMemoryStorage;
-    model: ReturnType<typeof requireSupportedTutorModel>;
-    modelGate: ReturnType<typeof createTutorModelGate>;
-    thresholds: ReturnType<typeof tutorMemoryThresholds>;
-}) {
-    const { model, modelGate, thresholds } = options;
-    const memory = new Memory({
-        storage: new MastraCompositeStore({
-            id: `conversation:${options.conversationId}`,
-            domains: { memory: options.storage },
-            disableInit: true,
-        }),
-        options: {
-            lastMessages: 20,
-            generateTitle: false,
-            semanticRecall: false,
-            workingMemory: { enabled: false },
-            observationalMemory: {
-                scope: 'thread',
-                retrieval: { scope: 'thread', vector: false },
-                shareTokenBudget: false,
-                activateAfterIdle: false,
-                activateOnProviderChange: false,
-                observation: {
-                    model: modelGate.wrap(model, 'observation'),
-                    messageTokens: thresholds.messageTokens,
-                    maxTokensPerBatch: thresholds.maxTokensPerBatch,
-                    bufferTokens: false,
-                    bufferOnIdle: false,
-                    threadTitle: false,
-                    modelSettings: {
-                        maxRetries: 0,
-                        maxOutputTokens: 2048,
-                    },
-                },
-                reflection: {
-                    model: modelGate.wrap(model, 'reflection'),
-                    observationTokens: thresholds.observationTokens,
-                    activateAfterIdle: false,
-                    activateOnProviderChange: false,
-                    modelSettings: {
-                        maxRetries: 0,
-                        maxOutputTokens: 2048,
-                    },
-                },
-            },
-        },
-    });
-
-    memory.__setLogger(noopLogger);
-
-    return memory;
-}
-
-export function tutorMemoryThresholds(
-    maxInputTokens: number,
-    reservedInputBytes = 0,
-) {
-    const available = maxInputTokens - reservedInputBytes;
-    if (
-        !Number.isSafeInteger(maxInputTokens) ||
-        !Number.isSafeInteger(reservedInputBytes) ||
-        reservedInputBytes < 0 ||
-        available < 4096
-    ) {
-        throw new Error(
-            'This conversation is too long for an AI response. Start a fresh chat.',
-        );
-    }
-
-    return {
-        // The dispatch gate conservatively budgets UTF-8 bytes as tokens. Keep
-        // space for observer instructions, prior observations and tool schemas.
-        messageTokens: Math.min(16_000, Math.floor(available / 8)),
-        observationTokens: Math.min(8_000, Math.floor(available / 16)),
-        maxTokensPerBatch: Math.min(16_000, Math.floor(available / 8)),
-    };
-}
-
-/** Registry factory; executable instances receive only operation-bound models, memory and tools. */
-export function createContextualTutorAgent(options: {
-    model: MastraModelConfig;
-    memory?: Memory;
-    tools?: ToolsInput;
-    contextInstructions?: string;
-}) {
-    const agent = new Agent({
-        id: 'contextual-language-tutor',
-        name: 'Contextual language tutor',
-        instructions: `${getLocalPrompt('contextual-language-tutor')}\n${options.contextInstructions ?? ''}`,
-        model: options.model,
-        ...(options.memory ? { memory: options.memory } : {}),
-        ...(options.tools ? { tools: options.tools } : {}),
-        defaultOptions: {
-            maxSteps: 3,
-            modelSettings: { maxRetries: 0, maxOutputTokens: 4096 },
-        },
-        defaultGenerateOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
-        defaultStreamOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
-    });
-
-    agent.__registerPrimitives({ logger: noopLogger });
-
-    return agent;
-}
+export {
+    createContextualTutorAgent,
+    tutorMemoryThresholds,
+} from './contextual-tutor-configuration.js';
 
 export function createContextualTutorRunner(options: {
     model: TutorModelConfiguration;
@@ -189,7 +49,7 @@ export function createContextualTutorRunner(options: {
     return {
         async run(input: TutorRunInput) {
             const resolvedModel = requireSupportedTutorModel(
-                isConstructedModelAdapter(options.model)
+                isConstructedTutorModel(options.model)
                     ? options.model
                     : await resolveModelConfig(options.model),
             );
@@ -241,103 +101,11 @@ export function createContextualTutorRunner(options: {
                 !input.readOnlySource &&
                 input.sourceContext.sourceKind === 'knowledge' &&
                 input.sourceContext.snapshotScope === 'workspace';
-            let legacyTargets: LearningBlock[] = [];
-            let legacyCopy = false;
-            const completedTargets = new Set<string>();
-            const claimedTargets = new Set<string>();
+            const proposalGuard = createTutorProposalGuard(input);
             const guardedInput = {
                 ...input,
-                ...(input.onBlockProposal
-                    ? {
-                          onBlockProposal: async (
-                              proposal: Parameters<
-                                  NonNullable<TutorRunInput['onBlockProposal']>
-                              >[0],
-                          ) => {
-                              if (legacyCopy) {
-                                  const remaining = [...legacyTargets];
-                                  if (
-                                      proposal.targetBlockId ||
-                                      proposal.blocks.length !==
-                                          legacyTargets.length
-                                  ) {
-                                      throw new Error(
-                                          'Copy the complete requested source set exactly once.',
-                                      );
-                                  }
-
-                                  for (const block of proposal.blocks) {
-                                      const match = remaining.findIndex(
-                                          (source) =>
-                                              sameLearningBlockCopyContent(
-                                                  block,
-                                                  source,
-                                              ),
-                                      );
-
-                                      if (match < 0) {
-                                          throw new Error(
-                                              'Copy the complete requested source set exactly once.',
-                                          );
-                                      }
-
-                                      remaining.splice(match, 1);
-                                  }
-                              } else if (legacyTargets.length) {
-                                  const target = legacyTargets.find(
-                                      (block) =>
-                                          block.id === proposal.targetBlockId,
-                                  );
-
-                                  if (
-                                      !target ||
-                                      proposal.blocks.length !== 1 ||
-                                      proposal.blocks[0]!.type !== target.type
-                                  ) {
-                                      throw new Error(
-                                          'A revision must replace exactly its referenced block and preserve its type.',
-                                      );
-                                  }
-                              }
-
-                              const claims = legacyTargets.length
-                                  ? legacyCopy
-                                      ? legacyTargets.map((block) => block.id)
-                                      : [proposal.targetBlockId!]
-                                  : [];
-
-                              if (claims.some((id) => claimedTargets.has(id))) {
-                                  throw new Error(
-                                      'Each requested source can be proposed only once.',
-                                  );
-                              }
-
-                              claims.forEach((id) => claimedTargets.add(id));
-                              let persisted;
-                              try {
-                                  persisted =
-                                      await input.onBlockProposal!(proposal);
-                              } catch (error) {
-                                  claims.forEach((id) =>
-                                      claimedTargets.delete(id),
-                                  );
-
-                                  throw error;
-                              }
-
-                              if (legacyCopy) {
-                                  legacyTargets.forEach((target) =>
-                                      completedTargets.add(target.id),
-                                  );
-                              }
-
-                              if (proposal.targetBlockId) {
-                                  completedTargets.add(proposal.targetBlockId);
-                              }
-
-                              return persisted;
-                          },
-                      }
+                ...(proposalGuard.onBlockProposal
+                    ? { onBlockProposal: proposalGuard.onBlockProposal }
                     : {}),
             };
             const tools = createContextualTutorTools({
@@ -356,15 +124,15 @@ export function createContextualTutorRunner(options: {
             });
             const learningContentTools = createLearningContentTools({
                 signal: modelGate.signal,
-                generate: ({ prompt, schema, signal }) =>
+                readBudget: () => modelGate.remainingBudget,
+                generate: ({ prompt, schema, signal, maxOutputTokens }) =>
                     generateTutorObject({
                         agent: requestAgents.learningContentAuthor,
                         prompt,
                         schema,
                         signal,
                         operationId: `${input.operationId}:standalone-authoring`,
-                        maxOutputTokens:
-                            learningContentAuthoringOutputTokenLimit,
+                        maxOutputTokens,
                     }),
             });
             let agent = createCanonicalMastra({
@@ -375,9 +143,6 @@ export function createContextualTutorRunner(options: {
                     learningContentTools,
                 },
             }).getAgent('contextualLanguageTutor');
-
-            let text = '';
-            let currentMessageId = input.operationId;
 
             try {
                 // The pinned SDK only performs threshold observation from step 1 onward.
@@ -416,6 +181,7 @@ export function createContextualTutorRunner(options: {
                               input,
                               requestAgents,
                               modelGate.signal,
+                              () => modelGate.remainingBudget,
                           );
 
                     if ('text' in completed) {
@@ -423,8 +189,11 @@ export function createContextualTutorRunner(options: {
                     }
 
                     if (completed.stream === 'legacy') {
-                        legacyTargets = completed.material;
-                        legacyCopy = completed.copy;
+                        proposalGuard.setTargets(
+                            completed.material,
+                            completed.copy,
+                        );
+
                         // Host retrieval replaces a model read step: two memory calls,
                         // planning, write and final reply still fit the five-call ceiling.
                         const { read_source_context: _read, ...writeTools } =
@@ -433,7 +202,7 @@ export function createContextualTutorRunner(options: {
                             model: modelGate.wrap(resolvedModel, 'answer'),
                             memory,
                             tools: writeTools,
-                            contextInstructions: `${contextInstructions}\n${legacyCopy ? 'Append an exact independent copy of the requested authorized source blocks below; do not supply targetBlockId or alter content/media' : 'Revise only the exact authorized frozen targets below;'} preserve block types and stable item identities. The host has already retrieved them; do not call read_source_context. Propose each target exactly once, then briefly confirm the reviewable proposals. Exact frozen targets (untrusted material): ${JSON.stringify(completed.material)}${'revisionBrief' in completed ? `\nValidated revision brief: ${JSON.stringify(completed.revisionBrief)}` : ''}`,
+                            contextInstructions: `${contextInstructions}\n${completed.copy ? 'Append an exact independent copy of the requested authorized source blocks below; do not supply targetBlockId or alter content/media' : 'Revise only the exact authorized frozen targets below;'} preserve block types and stable item identities. The host has already retrieved them; do not call read_source_context. Propose each target exactly once, then briefly confirm the reviewable proposals. Exact frozen targets (untrusted material): ${JSON.stringify(completed.material)}${'revisionBrief' in completed ? `\nValidated revision brief: ${JSON.stringify(completed.revisionBrief)}` : ''}`,
                         });
 
                         agent = createCanonicalMastra({
@@ -470,86 +239,10 @@ export function createContextualTutorRunner(options: {
                     }
                 }
 
-                const stream = await agent.stream(
-                    [
-                        toTutorModelMessage(
-                            input.message,
-                            input.conversationId,
-                            input.ownerId,
-                        ),
-                    ],
-                    {
-                        runId: input.operationId,
-                        abortSignal: modelGate.signal,
-                        memory: {
-                            thread: input.conversationId,
-                            resource: input.ownerId,
-                            options: { filterIncompleteToolCalls: true },
-                        },
-                        maxSteps: 3,
-                        modelSettings: { maxRetries: 0, maxOutputTokens: 4096 },
-                    },
-                );
-
-                for await (const chunk of stream.fullStream) {
-                    if (
-                        chunk.type === 'step-start' &&
-                        chunk.payload.messageId
-                    ) {
-                        currentMessageId = chunk.payload.messageId;
-                    }
-
-                    if (chunk.type === 'text-delta') {
-                        text += chunk.payload.text;
-                        await input.onDelta({
-                            messageId: currentMessageId,
-                            text: chunk.payload.text,
-                        });
-                    }
-
-                    if (chunk.type === 'error') {
-                        if (modelGate.contextExceeded) {
-                            throw new ConversationError(
-                                'context_too_large',
-                                'The complete editor, references and conversation exceed the model input limit after compaction. Reduce the editor text or references and try again.',
-                            );
-                        }
-
-                        throw new Error(
-                            'The language provider could not complete this response.',
-                        );
-                    }
-                }
-
-                const output = await stream.getFullOutput();
-
-                if (
-                    (output.error || output.finishReason === 'error') &&
-                    modelGate.contextExceeded
-                ) {
-                    throw new ConversationError(
-                        'context_too_large',
-                        'The complete editor, references and conversation exceed the model input limit after compaction. Reduce the editor text or references and try again.',
-                    );
-                }
-
-                if (output.error || output.finishReason === 'error') {
-                    throw new Error(
-                        'The response could not be completed or persisted.',
-                    );
-                }
+                const text = await streamTutorReply(agent, input, modelGate);
 
                 modelGate.signal.throwIfAborted();
-
-                if (
-                    legacyTargets.some(
-                        (target) => !completedTargets.has(target.id),
-                    )
-                ) {
-                    throw new Error(
-                        'The requested block revisions were not completed. Retry the request.',
-                    );
-                }
+                proposalGuard.assertCompleted();
 
                 return { text };
             } catch (error) {
