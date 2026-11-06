@@ -256,8 +256,11 @@ export function useKnowledgePageActions(noteId: string) {
         void state.query.refetch();
     }
 
-    function refreshAfterSend() {
-        void state.reload().catch(() => undefined);
+    function refreshAfterSend(firstMessage: boolean) {
+        // First admission may name an eligible Untitled note and advance its branch.
+        if (firstMessage && title === 'Untitled') {
+            void state.reload().catch(() => undefined);
+        }
     }
 
     async function beforeSend() {

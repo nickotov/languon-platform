@@ -211,7 +211,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     studiedLanguage: 'en',
                     explanationLanguage: 'ru',
                     body: {
-                        schemaVersion: 1,
+                        schemaVersion: 2,
                         document: {
                             type: 'doc',
                             content: [
@@ -790,7 +790,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     studiedLanguage: 'en',
                     explanationLanguage: 'ru',
                     body: {
-                        schemaVersion: 1,
+                        schemaVersion: 2,
                         document: {
                             type: 'doc',
                             content: [

@@ -33,10 +33,6 @@ export function publishedLearningIdentities(
     body: unknown,
 ): LearningEpochIdentity[] {
     const parsed = KnowledgeBodySchema.parse(body);
-    if (parsed.schemaVersion === 1) {
-        return [];
-    }
-
     const blocks = (parsed.document.content ?? []).flatMap((node) =>
         node.type === 'learningBlock' && node.attrs?.block
             ? [node.attrs.block]

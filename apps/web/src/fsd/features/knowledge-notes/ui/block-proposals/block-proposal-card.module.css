@@ -146,7 +146,7 @@
     font-size: var(--size-12);
     margin: 0;
     line-height: var(--size-20);
-    min-width: 0;
+    min-width: var(--size-128);
 }
 
 .panelActions button {

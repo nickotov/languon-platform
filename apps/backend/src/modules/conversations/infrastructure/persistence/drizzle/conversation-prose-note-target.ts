@@ -1,11 +1,12 @@
 import { and, eq } from 'drizzle-orm';
+import { ProseKnowledgeBodySchema } from '@languon/contracts';
 import { knowledgeNotesTable } from '../../../../knowledge/infrastructure/persistence/drizzle/schema';
 import { KnowledgeDomainError } from '../../../../knowledge/domain/knowledge';
 import { conflict } from './conversation-persistence-context';
 import type { ConversationsTransaction } from './conversation-source';
 
 /** Hold the target stable until the enclosing proposal/publication transaction commits. */
-export async function assertLegacyNoteTarget(
+export async function assertProseNoteTarget(
     tx: ConversationsTransaction,
     ownerId: string,
     noteId: string,
@@ -28,7 +29,7 @@ export async function assertLegacyNoteTarget(
         );
     }
 
-    if (note.body.schemaVersion !== 1) {
+    if (!ProseKnowledgeBodySchema.safeParse(note.body).success) {
         throw conflict(
             'This note contains interactive blocks. Use block-aware editing instead of replacing it with a prose proposal.',
         );

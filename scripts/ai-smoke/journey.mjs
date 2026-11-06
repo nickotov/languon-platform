@@ -124,7 +124,7 @@ export async function runJourney({
                 title: config.title,
                 summary: 'Disposable synthetic language-learning context.',
                 body: {
-                    schemaVersion: 1,
+                    schemaVersion: 2,
                     document: {
                         type: 'doc',
                         content: [

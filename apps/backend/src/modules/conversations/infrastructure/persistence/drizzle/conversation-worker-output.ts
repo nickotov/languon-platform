@@ -2,7 +2,7 @@ import { isReadOnlyKnowledgeSource } from '../../../domain/conversation';
 import {
     ConversationToolCallSchema,
     conversationToolCallLimit,
-    LegacyKnowledgeNoteContentSchema,
+    ProseKnowledgeNoteContentSchema,
     type ConversationToolCall,
     type KnowledgeNoteContent,
 } from '@languon/contracts';
@@ -14,7 +14,7 @@ import {
     type SourceMaterial,
 } from '../../../domain/conversation';
 import { conversationEvent } from './conversation-events';
-import { assertLegacyNoteTarget } from './conversation-legacy-note-target';
+import { assertProseNoteTarget } from './conversation-prose-note-target';
 import {
     conflict,
     draftView,
@@ -193,7 +193,7 @@ export async function conversationPropose(
         }
 
         if (target) {
-            await assertLegacyNoteTarget(tx, turn.ownerId, target.noteId);
+            await assertProseNoteTarget(tx, turn.ownerId, target.noteId);
         }
 
         const now = persistence.now();
@@ -202,7 +202,7 @@ export async function conversationPropose(
             .values({
                 id: randomUUID(),
                 conversationId: turn.conversationId,
-                content: LegacyKnowledgeNoteContentSchema.parse(content),
+                content: ProseKnowledgeNoteContentSchema.parse(content),
                 targetNoteId: target?.noteId ?? null,
                 expectedNoteVersion: target?.version ?? null,
                 createdAt: now,

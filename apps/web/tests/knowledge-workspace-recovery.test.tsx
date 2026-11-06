@@ -34,7 +34,7 @@ const content: KnowledgeNoteContent = {
     studiedLanguage: null,
     explanationLanguage: null,
     body: {
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: { type: 'doc', content: [{ type: 'paragraph' }] },
     },
 };
@@ -228,7 +228,7 @@ describe('working draft recovery', () => {
             result.current.change((current) => ({
                 ...current,
                 body: {
-                    schemaVersion: 1,
+                    schemaVersion: 2,
                     document: {
                         type: 'doc',
                         content: [

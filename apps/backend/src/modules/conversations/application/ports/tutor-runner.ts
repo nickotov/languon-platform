@@ -111,3 +111,9 @@ export interface TutorRunInput {
 export interface TutorRunner {
     run(input: TutorRunInput): Promise<{ text: string }>;
 }
+
+/** Prepared model context; canonical stored messages are never replaced by this view. */
+export interface PreparedTutorHistory {
+    observations?: string;
+    messages: { role: 'user' | 'assistant'; content: string }[];
+}

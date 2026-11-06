@@ -234,7 +234,7 @@ export async function createDraft(
             studiedLanguage: null,
             explanationLanguage: null,
             body: {
-                schemaVersion: 1,
+                schemaVersion: 2,
                 document: { type: 'doc', content: [{ type: 'paragraph' }] },
             },
         });

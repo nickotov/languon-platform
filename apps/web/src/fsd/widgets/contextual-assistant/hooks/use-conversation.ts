@@ -142,7 +142,9 @@ export function useConversation(
         submitTurn: stream.submit,
         setQuestion,
         setAttachments,
-        refresh,
+        refresh: async () => {
+            await client.invalidateQueries({ queryKey: listKey });
+        },
     });
 
     function clearActionFailure(

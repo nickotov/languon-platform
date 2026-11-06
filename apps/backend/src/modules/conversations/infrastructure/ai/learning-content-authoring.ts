@@ -1,3 +1,5 @@
+import { learningContentSchemaForBrief } from '../../application/learning-content-registry';
+import type { z } from 'zod';
 import { getLocalPrompt } from '@languon/prompts';
 import type { LearningBlock } from '@languon/contracts';
 import { learningContentOutputSchema } from '../../application/learning-content-output-contract';
@@ -32,7 +34,7 @@ export const learningContentAuthoringInstructions = getLocalPrompt(
 
 export interface LearningContentModelCall {
     prompt: string;
-    schema: typeof learningContentOutputSchema;
+    schema: z.ZodType;
     signal: AbortSignal;
     maxOutputTokens: number;
 }
@@ -133,7 +135,7 @@ export function createLearningContentAuthoring(
                     // Transport failures/uncertain submissions propagate without redispatch.
                     const output = await options.generate({
                         prompt,
-                        schema: learningContentOutputSchema,
+                        schema: learningContentSchemaForBrief(batch.brief),
                         signal,
                         maxOutputTokens,
                     });

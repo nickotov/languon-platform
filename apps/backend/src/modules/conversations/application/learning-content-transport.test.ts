@@ -115,6 +115,7 @@ it.each(['missing', 'duplicate', 'unknown', 'unused'] as const)(
 it('requires host-resolved source content in standalone tools before any model dispatch', async () => {
     const generate = vi.fn();
     const tools = createLearningContentTools({
+        publish: async () => ({ id: '01900000-0000-4000-8000-000000000002' }),
         generate,
         signal: new AbortController().signal,
     });

@@ -53,6 +53,17 @@ BL-016. These entries are in progress; this allocation is not completion evidenc
 The runnable BL-014 Playground, broader BL-016 artifact lifecycle and BL-017 remain
 outside this delivery.
 
+On 2026-11-06, the user authorized
+[feature 061](../../.agent/features/061-reliable-learning-content-pipeline/FEATURE.md)
+to complete BL-013 and the relevant BL-015 behavior as one delivery: canonical
+tool/publication contracts, phase-correct context budgets, compact historical
+tool context and targeted chat refreshes. It builds on feature 060. Implementation
+and selected verification pass. BL-013/015 remain in progress for
+S3 operational security closure: provider-key rotation/revocation or explicit user
+acceptance of the residual risk. No main merge is approved. The root pre-release policy
+permits direct current-contract updates rather than compatibility bridges for
+unreleased versions. The runnable BL-014 Playground remains separate.
+
 [Feature 059](../../.agent/features/059-interactive-workbooks/FEATURE.md) is in
 progress for interactive knowledge workbooks, the associated BL-003 progress
 slice, BL-006 interactive documents/exercises, and BL-007 initial manual exercise

@@ -133,6 +133,7 @@ export interface ConversationPersistenceDependencies {
             fingerprint?: string;
             confirmedQuoteId?: string;
             inputTokenBound?: number;
+            minimumInputBound: number;
             reserveToolContinuation?: boolean;
         },
     ) => Promise<Record<string, unknown>>) & {

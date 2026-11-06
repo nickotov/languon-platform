@@ -1,13 +1,16 @@
-import type { LearningContentExecutionBudget } from '../../application/learning-content-batches';
+import type { PreparedTutorHistory } from '../../application/ports/tutor-runner';
 import {
-    serializeLearningContentBrief,
-    deserializeLearningContentBrief,
-} from '../../application/learning-content-transport';
+    createLearningContentOperations,
+    type LearningContentReceipt,
+} from './learning-content-operations';
+import { executeLearningBlockOperation } from './learning-block-operations';
+import { learningProposalReadyPresentation } from '../../application/learning-content-presentation';
+import type { LearningContentExecutionBudget } from '../../application/learning-content-batches';
+import { serializeLearningContentBrief } from '../../application/learning-content-transport';
 import {
     frozenTutorTextSources,
     mergePendingLearningContentBrief,
     groundLearningContentBrief,
-    readFrozenLearningBlocks,
 } from '../../application/tutor-request-sources';
 import {
     describeLearningProposal,
@@ -19,14 +22,18 @@ import {
     learningContentPresentation,
 } from '../../application/learning-content-presentation';
 import { randomUUID } from 'node:crypto';
-import { learningContentCapabilities } from '../../application/learning-content-contract';
+import {
+    learningContentCapabilities,
+    type LearningContentBrief,
+} from '../../application/learning-content-contract';
 import {
     TutorRequestResolutionSchema,
-    TutorRequestStateSchema,
     tutorRequestStateKey,
-    type TutorRequestState,
 } from '../../application/tutor-request-contract';
-import { tutorMessageModelContent } from '../../application/tutor-message-context';
+import {
+    buildTutorPlannerPrompt,
+    readTutorPlannerState,
+} from '../../application/tutor-planner-prompt';
 import type { TutorRunInput } from '../../application/ports/tutor-runner';
 import { createLearningContentAuthoring } from './learning-content-authoring';
 import {
@@ -36,72 +43,42 @@ import {
 
 type RequestAgents = ReturnType<typeof createTutorRequestAgents>;
 
+/** Only a previously host-grounded pending brief may retain descriptor source text. */
+function sanitizeSourcePatch(
+    brief: LearningContentBrief,
+    pending: LearningContentBrief | null,
+): LearningContentBrief {
+    return {
+        tasks: brief.tasks.map((task) => {
+            const previous = pending?.tasks.find((item) => item.id === task.id);
+            if (!task.source && !previous?.source) {
+                return task;
+            }
+
+            const { sourceText: _untrustedText, ...requirements } = task;
+
+            return requirements;
+        }),
+    };
+}
+
 /** Returns null for ordinary streamed prose; all other paths complete without actor tool selection. */
 export async function executeTutorRequest(
     input: TutorRunInput,
     agents: RequestAgents,
     signal: AbortSignal,
-    readBudget?: () => LearningContentExecutionBudget,
+    readBudget: (() => LearningContentExecutionBudget) | undefined,
+    history: PreparedTutorHistory,
 ) {
     const stored = await input.memory.readState(tutorRequestStateKey);
-    let pending = null;
-    if (stored?.pending) {
-        try {
-            pending = deserializeLearningContentBrief(stored.pending);
-        } catch {
-            /* Corrupt bounded private state cannot authorize a source or generation. */
-        }
-    }
-
-    const previousState = TutorRequestStateSchema.safeParse(
-        stored ? { ...stored, pending } : stored,
-    );
-    const state: TutorRequestState = previousState.success
-        ? previousState.data
-        : { pending: null, proposals: [] };
+    const state = readTutorPlannerState(stored);
     const loaded = await loadLearningProposalCatalog(input, state);
     state.proposals = loaded.catalog;
     const frozenSources = frozenTutorTextSources(input);
-    const history = await input.memory.listMessages({
-        offset: 0,
-        limit: 6,
-        order: 'desc',
-    });
     const resolution = TutorRequestResolutionSchema.parse(
         await generateTutorObject({
             agent: agents.tutorRequestResolver,
-            prompt: JSON.stringify({
-                hostExecutionPolicy: {
-                    capacityAuthority: 'host',
-                    vocabularyBatching: 'automatic',
-                    vocabularyPublication: 'one-complete-block',
-                    priorAssistantCapacityClaimsAuthoritative: false,
-                },
-                currentMessage: tutorMessageModelContent(input.message),
-                source: input.sourceContext,
-                preferences: input.preferences,
-                approvedPortrait: input.portraitContext,
-                editorTarget: input.message.editorTarget,
-                availableTextSources: {
-                    editor: frozenSources.editor?.length ?? 0,
-                    selection: frozenSources.selection?.length ?? 0,
-                },
-                pendingBrief: state.pending
-                    ? JSON.parse(
-                          serializeLearningContentBrief(
-                              state.pending,
-                              frozenSources,
-                          ),
-                      )
-                    : null,
-                priorProposals: state.proposals,
-                // Recent raw wording only. Exact artifacts are retrieved separately after planning.
-                recentMessages: history.messages.reverse().map((message) => ({
-                    role: message.role,
-                    content: message.content.slice(0, 2_000),
-                })),
-                capabilities: learningContentCapabilities,
-            }),
+            prompt: buildTutorPlannerPrompt(input, state, history),
             schema: TutorRequestResolutionSchema,
             signal,
             operationId: `${input.operationId}:planning`,
@@ -143,6 +120,36 @@ export async function executeTutorRequest(
         return { text };
     };
 
+    async function rememberReceipt(
+        receipt: LearningContentReceipt,
+        summary: string,
+    ) {
+        const ordinal =
+            Math.max(0, ...state.proposals.map((item) => item.ordinal ?? 0)) +
+            1;
+        const canonical = input.readBlockProposal
+            ? await input.readBlockProposal(receipt.proposalId)
+            : undefined;
+        const descriptor = canonical
+            ? describeLearningProposal(
+                  canonical.id,
+                  canonical.blocks,
+                  summary,
+                  ordinal,
+              )
+            : {
+                  id: receipt.proposalId,
+                  summary,
+                  ordinal,
+                  kinds: [...new Set(receipt.content.map((item) => item.kind))],
+                  titles: receipt.content
+                      .flatMap((item) => (item.title ? [item.title] : []))
+                      .slice(0, 8),
+              };
+
+        state.proposals = [...state.proposals, descriptor].slice(-8);
+    }
+
     if (resolution.kind === 'answer') {
         await input.onResponseMetadata?.({
             kind: resolution.purpose,
@@ -155,82 +162,54 @@ export async function executeTutorRequest(
     }
 
     if (
-        resolution.kind === 'legacy-revision' ||
-        resolution.kind === 'legacy-copy' ||
+        resolution.kind === 'copy' ||
+        resolution.kind === 'revise-blocks' ||
         resolution.kind === 'revise'
     ) {
-        await input.onResponseMetadata?.({
-            kind: 'revision',
-            documentUse: false,
+        const receipts = await executeLearningBlockOperation({
+            input,
+            resolution,
+            agents,
+            signal,
+            readBudget,
         });
 
-        const mentioned = input.sourceContext.referencedBlocks;
-        const ids = Array.isArray(mentioned)
-            ? mentioned.flatMap((block: unknown) =>
-                  block !== null &&
-                  typeof block === 'object' &&
-                  'id' in block &&
-                  typeof block.id === 'string'
-                      ? [block.id]
-                      : [],
-              )
-            : [];
-
-        const catalog = input.sourceContext.availableBlocks;
-        const catalogIds = Array.isArray(catalog)
-            ? catalog.flatMap((block: unknown) =>
-                  block !== null &&
-                  typeof block === 'object' &&
-                  'id' in block &&
-                  typeof block.id === 'string'
-                      ? [block.id]
-                      : [],
-              )
-            : [];
-        const authorizedTargets = ids.length ? ids : catalogIds;
-        if (
-            resolution.kind === 'revise' &&
-            !authorizedTargets.includes(resolution.targetBlockId)
-        ) {
-            throw new Error(
-                'An update must target a block in the authorized frozen source.',
-            );
+        state.pending = null;
+        for (const receipt of receipts) {
+            await rememberReceipt(receipt, receipt.summary);
         }
 
-        const targetIds =
-            resolution.kind === 'revise'
-                ? [resolution.targetBlockId]
-                : resolution.kind === 'legacy-copy'
-                  ? resolution.sourceBlockIds
-                  : ids;
+        await saveState();
 
-        if (!targetIds.length && resolution.kind !== 'legacy-copy') {
-            throw new Error('Select the learning block to revise.');
-        }
-
-        const material = await readFrozenLearningBlocks(input, targetIds);
-
-        if (!material.length) {
-            throw new Error('The exact source blocks to copy are unavailable.');
-        }
-
-        return {
-            stream: 'legacy' as const,
-            copy: resolution.kind === 'legacy-copy',
-            material,
-            ...(resolution.kind === 'revise'
-                ? {
-                      targetBlockId: resolution.targetBlockId,
-                      revisionBrief: resolution.brief,
-                  }
-                : {}),
-        };
+        return finishText(
+            learningProposalReadyPresentation({
+                preferences: input.preferences,
+                message: input.message.content,
+                replyLanguage: resolution.replyLanguage,
+            }),
+            'revision',
+        );
     }
 
     if (resolution.kind === 'clarify') {
-        state.pending = resolution.continuesPending
-            ? mergePendingLearningContentBrief(state.pending, resolution.brief)
-            : resolution.brief;
+        const extracted = sanitizeSourcePatch(
+            resolution.brief,
+            resolution.continuesPending ? state.pending : null,
+        );
+        const pending = resolution.continuesPending
+            ? mergePendingLearningContentBrief(state.pending, extracted)
+            : extracted;
+
+        try {
+            state.pending = groundLearningContentBrief(
+                pending,
+                frozenSources,
+                loaded.blocks,
+            );
+        } catch {
+            // Unavailable sources stay unresolved rather than storing model-invented text.
+            state.pending = pending;
+        }
 
         await saveState();
 
@@ -249,9 +228,13 @@ export async function executeTutorRequest(
         );
     }
 
+    const extractedBrief = sanitizeSourcePatch(
+        resolution.brief,
+        resolution.continuesPending ? state.pending : null,
+    );
     const requestedBrief = resolution.continuesPending
-        ? mergePendingLearningContentBrief(state.pending, resolution.brief)
-        : resolution.brief;
+        ? mergePendingLearningContentBrief(state.pending, extractedBrief)
+        : extractedBrief;
     const sourceIds = [
         ...new Set([
             ...(resolution.sourceProposalIds ?? []),
@@ -357,7 +340,23 @@ export async function executeTutorRequest(
                 maxOutputTokens,
             }),
     });
-    const result = await authoring.generate(normalized.brief, signal);
+
+    if (
+        !input.canProposeBlocks ||
+        input.readOnlySource ||
+        !input.onBlockProposal
+    ) {
+        throw new Error('This source cannot propose learning content.');
+    }
+
+    const operations = createLearningContentOperations({
+        authoring,
+        signal,
+        publish: input.onBlockProposal,
+        resolveSources: async () => normalized.brief,
+        ...(input.onTool ? { onTool: input.onTool } : {}),
+    });
+    const result = await operations.generateAndPropose(normalized.brief);
     if (result.status === 'needs-clarification') {
         if (result.code === 'word-count-conflict') {
             return finishText(
@@ -428,73 +427,25 @@ export async function executeTutorRequest(
     }
 
     signal.throwIfAborted();
-    if (
-        !input.canProposeBlocks ||
-        input.readOnlySource ||
-        !input.onBlockProposal
-    ) {
-        throw new Error('This source cannot propose learning content.');
-    }
+    state.pending = null;
+    const receipt = result.receipt;
+    const summary = brief.tasks
+        .map((task) => `${task.kind}: ${task.instruction}`)
+        .join('; ')
+        .slice(0, 2_000);
 
-    const proposal = result.proposal;
-    const callId = randomUUID();
-    await input.onTool?.({
-        id: callId,
-        name: 'propose_learning_blocks',
-        state: 'running',
-    });
+    await rememberReceipt(receipt, summary);
+    await saveState();
 
-    try {
-        const persisted = await input.onBlockProposal(proposal);
-        signal.throwIfAborted();
-        state.pending = null;
-        const canonical = input.readBlockProposal
-            ? await input.readBlockProposal(persisted.id)
-            : { id: persisted.id, blocks: result.proposal.blocks };
-        const ordinal =
-            Math.max(0, ...state.proposals.map((item) => item.ordinal ?? 0)) +
-            1;
-
-        state.proposals = [
-            ...state.proposals,
-            describeLearningProposal(
-                canonical.id,
-                canonical.blocks,
-                brief.tasks
-                    .map((task) => `${task.kind}: ${task.instruction}`)
-                    .join('; ')
-                    .slice(0, 2_000),
-                ordinal,
-            ),
-        ].slice(-8);
-
-        await saveState();
-        await input.onTool?.({
-            id: callId,
-            name: 'propose_learning_blocks',
-            state: 'succeeded',
-        });
-
-        return finishText(
-            learningContentPresentation({
-                status: 'ready',
-                brief,
-                preferences: input.preferences,
-                message: input.message.content,
-                appliedDefaults: normalized.appliedDefaults,
-                ...(resolution.replyLanguage
-                    ? { replyLanguage: resolution.replyLanguage }
-                    : {}),
-            }),
-            'generation',
-        );
-    } catch (error) {
-        await input.onTool?.({
-            id: callId,
-            name: 'propose_learning_blocks',
-            state: 'failed',
-        });
-
-        throw error;
-    }
+    return finishText(
+        learningContentPresentation({
+            status: 'ready',
+            brief,
+            preferences: input.preferences,
+            message: input.message.content,
+            appliedDefaults: normalized.appliedDefaults,
+            replyLanguage: resolution.replyLanguage,
+        }),
+        'generation',
+    );
 }

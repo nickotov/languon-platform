@@ -211,7 +211,7 @@ describe('learning block editor', () => {
 
     it('adds and edits a grammar block only through explicit Apply', async () => {
         const empty = KnowledgeBodySchema.parse({
-            schemaVersion: 1,
+            schemaVersion: 2,
             document: { type: 'doc', content: [{ type: 'paragraph' }] },
         });
         const onChange = vi.fn();
@@ -297,7 +297,7 @@ describe('learning block editor', () => {
 
     it('uploads an audio asset before explicit block application', async () => {
         const empty = KnowledgeBodySchema.parse({
-            schemaVersion: 1,
+            schemaVersion: 2,
             document: { type: 'doc', content: [{ type: 'paragraph' }] },
         });
         const uploadAudio = vi.fn().mockResolvedValue({ assetId: id });
@@ -414,7 +414,7 @@ it('authors a manual exercise with selected source passages and retains them on 
 
 it('appends a validated generated block as one undoable draft edit', async () => {
     const empty = KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: { type: 'doc', content: [{ type: 'paragraph' }] },
     });
     const editor = createRef<KnowledgeEditorHandle>();

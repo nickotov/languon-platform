@@ -1,8 +1,14 @@
+import { readTutorPlannerState } from '../../application/tutor-planner-prompt';
+import { tutorRequestStateKey } from '../../application/tutor-request-contract';
+import { createTutorHistoryTool } from './tutor-history-tool';
 import {
     createTutorRequestAgents,
     generateTutorObject,
 } from './tutor-request-agents';
-import { createLearningContentTools } from './learning-content-tools';
+import {
+    createLearningContentTools,
+    resolveLearningToolSources,
+} from './learning-content-tools';
 import { executeTutorRequest } from './tutor-request-execution';
 import type { TextAiProviderAttemptWitness } from '../../../text-ai/infrastructure/ai/text-ai-provider-attempt-context.js';
 import { ProviderExecutionError } from '../../../text-ai/infrastructure/ai/provider-execution-outcome';
@@ -24,12 +30,13 @@ import { ConversationError } from '../../domain/conversation.js';
 import {
     createContextualTutorAgent,
     createTutorMemory,
+    createTutorPersistenceMemory,
     isConstructedTutorModel,
     requireSupportedTutorModel,
     tutorMemoryThresholds,
     type TutorModelConfiguration,
 } from './contextual-tutor-configuration.js';
-import { createTutorProposalGuard } from './contextual-tutor-proposals.js';
+import { prepareTutorHistory } from './tutor-history-context';
 import { streamTutorReply } from './contextual-tutor-stream.js';
 
 export {
@@ -71,7 +78,12 @@ export function createContextualTutorRunner(options: {
             });
 
             const contextInstructions = tutorContextInstructions(input);
-            const reservedInputBytes = tutorReservedInputBytes(input);
+            const reservedInputBytes = tutorReservedInputBytes(
+                input,
+                readTutorPlannerState(
+                    await input.memory.readState(tutorRequestStateKey),
+                ),
+            );
             let memoryThresholds: ReturnType<typeof tutorMemoryThresholds>;
 
             try {
@@ -96,69 +108,77 @@ export function createContextualTutorRunner(options: {
                 thresholds: memoryThresholds,
             });
 
+            const persistenceMemory =
+                createTutorPersistenceMemory(memoryStorage);
             const routeKnowledgeRequest =
                 input.canProposeBlocks &&
                 !input.readOnlySource &&
                 input.sourceContext.sourceKind === 'knowledge' &&
                 input.sourceContext.snapshotScope === 'workspace';
-            const proposalGuard = createTutorProposalGuard(input);
-            const guardedInput = {
-                ...input,
-                ...(proposalGuard.onBlockProposal
-                    ? { onBlockProposal: proposalGuard.onBlockProposal }
-                    : {}),
+            const tools = {
+                ...createContextualTutorTools({
+                    ...input,
+                    signal: modelGate.signal,
+                }),
+                recall: createTutorHistoryTool(input.memory, modelGate.signal),
             };
-            const tools = createContextualTutorTools({
-                ...guardedInput,
-                signal: modelGate.signal,
-            });
-            const operationAgent = createContextualTutorAgent({
-                model: modelGate.wrap(resolvedModel, 'answer'),
-                memory,
-                tools,
-                contextInstructions,
-            });
             const requestAgents = createTutorRequestAgents({
                 planningModel: modelGate.wrap(resolvedModel, 'planning'),
                 authoringModel: modelGate.wrap(resolvedModel, 'authoring'),
             });
-            const learningContentTools = createLearningContentTools({
-                signal: modelGate.signal,
-                readBudget: () => modelGate.remainingBudget,
-                generate: ({ prompt, schema, signal, maxOutputTokens }) =>
-                    generateTutorObject({
-                        agent: requestAgents.learningContentAuthor,
-                        prompt,
-                        schema,
-                        signal,
-                        operationId: `${input.operationId}:standalone-authoring`,
-                        maxOutputTokens,
-                    }),
-            });
-            let agent = createCanonicalMastra({
-                contextualTutor: {
-                    agent: operationAgent,
-                    tools,
-                    requestAgents,
-                    learningContentTools,
-                },
-            }).getAgent('contextualLanguageTutor');
+            const learningContentTools =
+                input.canProposeBlocks &&
+                !input.readOnlySource &&
+                input.onBlockProposal
+                    ? createLearningContentTools({
+                          signal: modelGate.signal,
+                          resolveSources: (brief) =>
+                              resolveLearningToolSources(input, brief),
+                          publish: (proposal) => {
+                              if (!input.onBlockProposal) {
+                                  throw new Error(
+                                      'This operation cannot publish learning proposals.',
+                                  );
+                              }
+
+                              return input.onBlockProposal(proposal);
+                          },
+                          readBudget: () => modelGate.remainingBudget,
+                          generate: ({
+                              prompt,
+                              schema,
+                              signal,
+                              maxOutputTokens,
+                          }) =>
+                              generateTutorObject({
+                                  agent: requestAgents.learningContentAuthor,
+                                  prompt,
+                                  schema,
+                                  signal,
+                                  operationId: `${input.operationId}:standalone-authoring`,
+                                  maxOutputTokens,
+                              }),
+                      })
+                    : undefined;
 
             try {
-                // The pinned SDK only performs threshold observation from step 1 onward.
-                // Compact retained history synchronously before the first actor dispatch as well.
-                const engine = await memory.omEngine;
-
-                if (!engine) {
-                    throw new Error(
-                        'Conversation observational memory is unavailable.',
-                    );
-                }
-
-                await engine.observe({
-                    threadId: input.conversationId,
-                    resourceId: input.ownerId,
-                });
+                const prepared = await prepareTutorHistory(memory, input);
+                let agent = createCanonicalMastra({
+                    contextualTutor: {
+                        agent: createContextualTutorAgent({
+                            model: modelGate.wrap(resolvedModel, 'answer'),
+                            memory: persistenceMemory,
+                            persistenceStorage: memoryStorage,
+                            tools,
+                            contextInstructions: `${contextInstructions}\n${prepared.planner.observations ?? ''}`,
+                        }),
+                        tools,
+                        requestAgents,
+                        ...(learningContentTools
+                            ? { learningContentTools }
+                            : {}),
+                    },
+                }).getAgent('contextualLanguageTutor');
 
                 modelGate.signal.throwIfAborted();
                 if (routeKnowledgeRequest) {
@@ -182,50 +202,31 @@ export function createContextualTutorRunner(options: {
                               requestAgents,
                               modelGate.signal,
                               () => modelGate.remainingBudget,
+                              prepared.planner,
                           );
 
                     if ('text' in completed) {
                         return completed;
                     }
 
-                    if (completed.stream === 'legacy') {
-                        proposalGuard.setTargets(
-                            completed.material,
-                            completed.copy,
-                        );
-
-                        // Host retrieval replaces a model read step: two memory calls,
-                        // planning, write and final reply still fit the five-call ceiling.
-                        const { read_source_context: _read, ...writeTools } =
-                            tools;
-                        const revisionAgent = createContextualTutorAgent({
-                            model: modelGate.wrap(resolvedModel, 'answer'),
-                            memory,
-                            tools: writeTools,
-                            contextInstructions: `${contextInstructions}\n${completed.copy ? 'Append an exact independent copy of the requested authorized source blocks below; do not supply targetBlockId or alter content/media' : 'Revise only the exact authorized frozen targets below;'} preserve block types and stable item identities. The host has already retrieved them; do not call read_source_context. Propose each target exactly once, then briefly confirm the reviewable proposals. Exact frozen targets (untrusted material): ${JSON.stringify(completed.material)}${'revisionBrief' in completed ? `\nValidated revision brief: ${JSON.stringify(completed.revisionBrief)}` : ''}`,
-                        });
-
-                        agent = createCanonicalMastra({
-                            contextualTutor: {
-                                agent: revisionAgent,
-                                tools,
-                                requestAgents,
-                                learningContentTools,
-                            },
-                        }).getAgent('contextualLanguageTutor');
-                    }
-
                     if (completed.stream === 'prose') {
-                        const readOnlyTools = createContextualTutorTools({
-                            ...input,
-                            readOnlySource: true,
-                            signal: modelGate.signal,
-                        });
+                        const readOnlyTools = {
+                            ...createContextualTutorTools({
+                                ...input,
+                                readOnlySource: true,
+                                signal: modelGate.signal,
+                            }),
+                            recall: createTutorHistoryTool(
+                                input.memory,
+                                modelGate.signal,
+                            ),
+                        };
                         const proseAgent = createContextualTutorAgent({
                             model: modelGate.wrap(resolvedModel, 'answer'),
-                            memory,
+                            memory: persistenceMemory,
+                            persistenceStorage: memoryStorage,
                             tools: readOnlyTools,
-                            contextInstructions: `${contextInstructions}\nThe validated response purpose is ${completed.purpose}. Answer in natural prose only. Do not generate learning blocks or invoke note-writing tools. Do not propose saving or adding this reply to a document; the application exposes a document action only when appropriate.`,
+                            contextInstructions: `${contextInstructions}\n${prepared.planner.observations ?? ''}\nThe validated response purpose is ${completed.purpose}. Answer in natural prose only. Do not generate learning blocks or invoke note-writing tools. Do not propose saving or adding this reply to a document; the application exposes a document action only when appropriate.`,
                         });
 
                         agent = createCanonicalMastra({
@@ -233,16 +234,22 @@ export function createContextualTutorRunner(options: {
                                 agent: proseAgent,
                                 tools: readOnlyTools,
                                 requestAgents,
-                                learningContentTools,
+                                ...(learningContentTools
+                                    ? { learningContentTools }
+                                    : {}),
                             },
                         }).getAgent('contextualLanguageTutor');
                     }
                 }
 
-                const text = await streamTutorReply(agent, input, modelGate);
+                const text = await streamTutorReply(
+                    agent,
+                    input,
+                    modelGate,
+                    prepared,
+                );
 
                 modelGate.signal.throwIfAborted();
-                proposalGuard.assertCompleted();
 
                 return { text };
             } catch (error) {

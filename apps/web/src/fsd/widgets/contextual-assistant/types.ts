@@ -81,7 +81,7 @@ export type WorkspaceAssistantProps = {
     /** Persist the working draft before creating a turn from the frozen snapshot. */
     beforeSend?(): Promise<void | { id: string; version: number }>;
     restoreTarget?(anchor: ConversationEditorTarget): Promise<string | null>;
-    onSent?(): void;
+    onSent?(firstMessage: boolean): void;
     onBusyChange?(busy: boolean): void;
     onAcceptProposal(
         text: string,

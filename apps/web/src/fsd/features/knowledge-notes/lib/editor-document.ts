@@ -9,7 +9,6 @@ import {
 /** Tiptap presentation defaults are not part of the stored content contract. */
 export function normalizeEditorDocument(document: unknown): KnowledgeBody {
     let count = 0;
-    let hasBlocks = false;
     function node(value: unknown, depth = 0): unknown {
         count += 1;
         if (depth > 12 || count > 5_000) {
@@ -27,7 +26,6 @@ export function normalizeEditorDocument(document: unknown): KnowledgeBody {
                 : {};
 
         if (input.type === 'learningBlock') {
-            hasBlocks = true;
             if (
                 Object.keys(input).some(
                     (key) => !['type', 'attrs'].includes(key),
@@ -102,7 +100,7 @@ export function normalizeEditorDocument(document: unknown): KnowledgeBody {
     const normalized = node(document);
 
     return KnowledgeBodySchema.parse({
-        schemaVersion: hasBlocks ? 2 : 1,
+        schemaVersion: 2,
         document: normalized,
     });
 }

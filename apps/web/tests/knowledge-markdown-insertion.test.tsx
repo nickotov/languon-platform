@@ -13,7 +13,7 @@ import { render } from './render';
 
 function body(text = ''): KnowledgeBody {
     return KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: {
             type: 'doc',
             content: [
@@ -88,7 +88,7 @@ describe('Markdown proposals in the real Knowledge editor', () => {
 
     it('includes editor plugin-added paragraphs in atomic node-limit validation', async () => {
         const value = KnowledgeBodySchema.parse({
-            schemaVersion: 1,
+            schemaVersion: 2,
             document: {
                 type: 'doc',
                 content: [
@@ -258,7 +258,7 @@ describe('Markdown proposals in the real Knowledge editor', () => {
 
 it('retains the pinned editor HR node size and plain offsets through insertion, anchors and undo', async () => {
     const value = KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: {
             type: 'doc',
             content: [

@@ -70,9 +70,6 @@ function replay<T extends { fingerprint: string; result: unknown }>(
 
 function blocks(body: unknown): LearningBlock[] {
     const parsed = KnowledgeBodySchema.parse(body);
-    if (parsed.schemaVersion === 1) {
-        return [];
-    }
 
     return (parsed.document.content ?? []).flatMap((node) =>
         node.type === 'learningBlock' && node.attrs?.block

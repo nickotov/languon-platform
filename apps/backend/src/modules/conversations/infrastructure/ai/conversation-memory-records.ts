@@ -1,3 +1,4 @@
+import { projectTutorMemoryConfig } from './conversation-memory-config';
 import type { ObservationalMemoryRecord } from '@mastra/core/storage';
 import type { TutorMemoryPort } from '../../application/ports/tutor-runner.js';
 
@@ -38,6 +39,7 @@ export class ConversationMemoryRecords {
 
         const record = {
             ...raw,
+            config: projectTutorMemoryConfig(raw.config),
             createdAt: new Date(String(raw.createdAt)),
             updatedAt: new Date(String(raw.updatedAt)),
             lastObservedAt: raw.lastObservedAt
@@ -63,6 +65,7 @@ export class ConversationMemoryRecords {
         await this.port.writeState({
             [recordKey(record.id)]: serialize({
                 ...record,
+                config: projectTutorMemoryConfig(record.config),
                 updatedAt: new Date(),
             }),
             ...(append

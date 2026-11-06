@@ -5,13 +5,30 @@ summary: Source chat and note workspaces share durable tutor turns while working
 source_paths:
     - docs/adr/0042-knowledge-workspace-document-and-context-boundaries.md
     - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
+    - docs/adr/0055-learning-content-context-and-publication.md
     - packages/contracts/src/knowledge-interactive.ts
     - packages/contracts/src/learning-blocks.ts
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/workbook-access.ts
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/workbook-copy.ts
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/learning-epochs.ts
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/media-grants.ts
-    - apps/backend/src/modules/conversations/infrastructure/ai/contextual-block-tools.ts
+    - apps/backend/src/modules/conversations/application/tutor-context-budget.ts
+    - apps/backend/src/modules/conversations/application/tutor-planner-prompt.ts
+    - apps/backend/src/modules/conversations/application/learning-content-registry.ts
+    - apps/backend/src/modules/conversations/application/learning-block-revision.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/tutor-request-execution.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/tutor-history-context.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-content-authoring.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-content-operations.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-block-operations.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-content-tools.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-tool-sources.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/conversation-memory-messages.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/conversation-memory-config.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/conversation-memory-records.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-worker-completion.ts
+    - apps/web/src/fsd/features/knowledge-notes/hooks/use-block-proposals.ts
+    - apps/web/src/fsd/features/knowledge-notes/lib/proposal-completions.ts
     - docs/user-flows/knowledge-workspace.md
     - apps/backend/src/config/environment.ts
     - apps/backend/src/modules/conversations/application/workspace-turn-context.ts
@@ -61,8 +78,8 @@ source_paths:
     - apps/web/src/fsd/features/knowledge-notes/lib/read-media-block-form.ts
     - apps/web/src/fsd/features/knowledge-notes/lib/read-text-block-form.ts
     - apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts
-source_fingerprint: sha256:83e3c96e55e21289e667c4f421ce9b6db322df976c9730441b022ae20ec4a939
-reviewed: 2026-11-01
+source_fingerprint: sha256:0c02971675f6a5cc978c6eb3876d80273436cf86d69468e908eb5a5590197418
+reviewed: 2026-11-06
 ---
 
 # Conversations and Knowledge workspace
@@ -84,8 +101,8 @@ explicitly resolve alternatives"]
     Workspace --> WSend["Send complete current editor snapshot
 persist validated target anchor
 optional focus + copied Text bodies"]
-    WSend --> Limit["Editor and copied-content character limits
-full request budget after compaction"]
+    WSend --> Limit["Character limits + irreducible first-phase budget
+compactable history stays eligible"]
     Limit -->|"Too large"| Reject["Explain limit; keep composer
 no silent excerpting"]
     Limit --> Admission
@@ -95,19 +112,43 @@ model, funding and independent rate snapshots
 bounded credit + operator USD allowance"]
     Admission --> Worker["Existing worker slot claims turn
 lease + latest source snapshot"]
-    Worker --> Tutor["Mastra contextual tutor
-accounted answer + synchronous memory calls"]
+    Worker --> Memory["Prepare thread context once
+thread-scoped Drizzle storage + lease fences
+completed tool pairs become compact receipts
+bounded synchronous Observational Memory"]
+    Memory --> Intent{"Owned workspace without
+an explicit prose proposal?"}
+    Intent -->|"No"| Tutor["Streamed contextual tutor
+persistence-only Memory saves current output"]
+    Intent -->|"Yes"| Planner["Knowledge request planner
+prepared history + observations + frozen sources"]
+    Planner -->|"Conversation or explanation"| Tutor
+    Planner -->|"Missing or ambiguous requirements"| Clarify["Clarify and retain the pending brief
+no applicable partial material"]
+    Planner -->|"New components"| Author["Shared authoring and validation
+single or ordered mixed request"]
+    Planner -->|"Exact copy or revision"| BlockOps["Authorized frozen target operation
+host copy or validated replacements"]
+    Author --> Propose["Canonical block publication operation
+all components ready before publication
+compact proposal receipt"]
+    BlockOps --> Propose
     Tutor --> Read["read_source_context
 bounded authorized material"]
-    Tutor --> Memory["Thread-scoped Observational Memory
-application Drizzle storage and lease fences"]
     Tutor --> Reply["Persist batched prose: 100ms or 4KiB
 and durable tool exchanges"] --> Replay["Durable replay to useChat transport
 reconnect without duplicate generation"]
-    Tutor --> Propose["Owner-only prose or typed block proposal
-validated content + target authority"]
-    Propose --> Review["Conversation-owned editable proposal"]
-    Review --> Publish["Explicit legacy draft publication"]
+    Clarify --> Reply
+    Propose -->|"Successful durable turn"| Query["Actor + conversation proposal query owner
+initial read; success / Apply / reconnect refresh
+no status polling"]
+    Replay -->|"Reconnect reconciliation"| Query
+    Query --> BlockReview["Review exact stored learning blocks
+explicit Apply or Update block"] --> Auto
+    Tutor --> ProseDraft["Owner-only standalone prose note draft
+validated current prose contract"]
+    ProseDraft --> Review["Conversation-owned editable prose draft"]
+    Review --> Publish["Explicit standalone note Save"]
     Workspace --> Apply["Review reply proposal
 Insert / Append / Replace with target check"] --> Auto
     Auto --> Save["Explicit Save
@@ -160,8 +201,10 @@ The model gate also bounds each turn to five provider calls and two memory calls
 observation/reflection run synchronously inside accounted work, with background
 buffering and vector recall disabled. Full readable history remains canonical.
 
-Tools can read the current authorized source and propose one bounded note draft;
-they cannot publish, overwrite or delete Knowledge. Store-backed Save delegates
+Tools can read the current authorized source and prepare bounded prose drafts or
+typed learning proposals; they cannot publish, overwrite or delete a saved note.
+The block publication operation stores a reviewable proposal, not a saved document.
+Store-backed Save delegates
 publication to the Knowledge transaction participant with ownership/version checks.
 The Knowledge service also supports independent manual create/edit, revisions and
 restore; restoring a version makes a new saved revision. A note workspace starts
@@ -210,8 +253,55 @@ this does not publish a working draft. Model selection follows the admin-owned
 routing revision under ADR-0046, rather than a learner-selected model. These
 internal extractions preserve the graph's ownership, Apply and explicit Save edges.
 
+[ADR-0055](../adr/0055-learning-content-context-and-publication.md) separates
+mandatory current input from reducible history and budgets the actual planner,
+authoring and streamed-answer phases independently. An irreducible overflow fails
+before a turn or credit hold; the dispatch gate still checks each real model call.
+Historical editor snapshots and completed tool pairs become model-context receipts,
+while canonical messages, exact current sources and active tool dependencies remain
+available under their existing authorization. Receipts never grant source authority.
+One explicit memory preparation supplies both the planner and streamed path;
+streamed output uses SDK history persistence without a second automatic memory cycle.
+Persisted memory configuration contains only allowlisted scalar scope/budget settings
+and numeric thresholds; live model adapters, credentials, headers and executable
+configuration remain in process. Record reads and writes enforce the same projection.
+
+The capability registry and shared authoring/publication operation serve dedicated
+tools and coordinated mixed generation. All new components validate before one
+proposal is stored. Copy and revision operations resolve exact frozen targets;
+revisions reconcile identities and counts before any proposal write. Missing source
+or material requirements produce clarification instead of reconstructed content.
+The current pre-release Knowledge contract is schema version 2 for both prose and
+block documents; historical compatibility-rollout text in ADR-0050 does not describe
+an active dual-format reader.
+
+The browser has one proposal query owner keyed by actor and conversation. Initial
+history, a new successful proposal-producing turn, explicit Apply and reconnect
+reconcile that cache. Queued/running/failed status updates do not poll it. Durable
+events own conversation detail after Send; ordinary sends do not reload an unchanged
+workspace. The first eligible Untitled-note admission still synchronizes automatic
+naming and its resulting branch version.
+
 ## Sources
 
+- [ADR-0055: learning-content context and publication](../adr/0055-learning-content-context-and-publication.md)
+- [Phase input budgets](../../apps/backend/src/modules/conversations/application/tutor-context-budget.ts)
+- [Exact planner envelope and retained brief](../../apps/backend/src/modules/conversations/application/tutor-planner-prompt.ts)
+- [Capability registry](../../apps/backend/src/modules/conversations/application/learning-content-registry.ts)
+- [Canonical revision reconciliation](../../apps/backend/src/modules/conversations/application/learning-block-revision.ts)
+- [Knowledge request execution](../../apps/backend/src/modules/conversations/infrastructure/ai/tutor-request-execution.ts)
+- [Prepared history and receipt projection](../../apps/backend/src/modules/conversations/infrastructure/ai/tutor-history-context.ts)
+- [Shared raw authoring](../../apps/backend/src/modules/conversations/infrastructure/ai/learning-content-authoring.ts)
+- [Canonical proposal publication](../../apps/backend/src/modules/conversations/infrastructure/ai/learning-content-operations.ts)
+- [Frozen copy and revision operations](../../apps/backend/src/modules/conversations/infrastructure/ai/learning-block-operations.ts)
+- [Dedicated learning-content tools](../../apps/backend/src/modules/conversations/infrastructure/ai/learning-content-tools.ts)
+- [Authorized learning-tool sources](../../apps/backend/src/modules/conversations/infrastructure/ai/learning-tool-sources.ts)
+- [Canonical memory message guards](../../apps/backend/src/modules/conversations/infrastructure/ai/conversation-memory-messages.ts)
+- [Persisted memory configuration projection](../../apps/backend/src/modules/conversations/infrastructure/ai/conversation-memory-config.ts)
+- [Thread-scoped observational memory records](../../apps/backend/src/modules/conversations/infrastructure/ai/conversation-memory-records.ts)
+- [Worker completion authority](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-worker-completion.ts)
+- [Proposal query ownership](../../apps/web/src/fsd/features/knowledge-notes/hooks/use-block-proposals.ts)
+- [Successful proposal completion identity](../../apps/web/src/fsd/features/knowledge-notes/lib/proposal-completions.ts)
 - [docs/adr/0042-knowledge-workspace-document-and-context-boundaries.md](../adr/0042-knowledge-workspace-document-and-context-boundaries.md)
 - [docs/user-flows/knowledge-workspace.md](../user-flows/knowledge-workspace.md)
 - [apps/backend/src/config/environment.ts](../../apps/backend/src/config/environment.ts)

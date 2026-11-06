@@ -29,6 +29,6 @@ export function noteContent(value: KnowledgeNoteContent): KnowledgeNoteContent {
 }
 
 export const emptyKnowledgeBody = KnowledgeBodySchema.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     document: { type: 'doc', content: [{ type: 'paragraph' }] },
 });

@@ -17,7 +17,10 @@ import { projectConversationSource } from '../../../application/conversation-sou
 import { resolveConversationPortrait } from '../../../application/portrait-context';
 import type { ConversationAccess } from '../../../application/ports/conversation-store';
 import type { TutorMemoryMessage } from '../../../application/ports/tutor-runner';
-import { tutorAdmissionInputBytes } from '../../../application/tutor-context-budget';
+import {
+    tutorAdmissionInputBytes,
+    tutorMinimumInputBytes,
+} from '../../../application/tutor-context-budget';
 import {
     assertTutorCurrentMessageFits,
     projectTutorUserMessage,
@@ -350,39 +353,46 @@ export async function conversationSubmit(
                 .orderBy(desc(messages.createdAt))
                 .limit(20);
             const retainedMemory = await tx
-                .select({ value: memory.value })
+                .select({ key: memory.key, value: memory.value })
                 .from(memory)
                 .where(eq(memory.conversationId, id));
-            const inputTokenBound = tutorAdmissionInputBytes(
-                {
-                    message: {
-                        id: input.requestId,
-                        role: 'user',
-                        content: learnerContent,
-                        attachments: learnerAttachments,
-                        modelContent,
-                        createdAt: persistence.now().toISOString(),
-                        ...(editorTarget ? { editorTarget } : {}),
-                    },
-                    sourceContext: projectConversationSource(
-                        chat.source.kind,
-                        snapshot,
-                        learnerContent,
-                    ).initialContext,
-                    preferences: personalization.preferences,
-                    ...(personalization.context
-                        ? { portraitContext: personalization.context }
-                        : {}),
+            const contextInput = {
+                message: {
+                    id: input.requestId,
+                    role: 'user' as const,
+                    content: learnerContent,
+                    attachments: learnerAttachments,
+                    modelContent,
+                    createdAt: persistence.now().toISOString(),
+                    ...(editorTarget ? { editorTarget } : {}),
                 },
+                sourceContext: projectConversationSource(
+                    chat.source.kind,
+                    snapshot,
+                    learnerContent,
+                ).initialContext,
+                preferences: personalization.preferences,
+                ...(personalization.context
+                    ? { portraitContext: personalization.context }
+                    : {}),
+            };
+            const inputTokenBound = tutorAdmissionInputBytes(
+                contextInput,
                 recent,
                 retainedMemory,
             );
+            const minimumInputBound = tutorMinimumInputBytes(
+                contextInput,
+                retainedMemory,
+            );
+
             const execution = await persistence.dependencies.admitTurn(tx, {
                 ownerId: access.ownerId,
                 turnId,
                 conversationId: id,
                 requestId: input.requestId,
                 inputTokenBound,
+                minimumInputBound,
                 reserveToolContinuation: Boolean(snapshot.blockTarget),
                 fingerprint,
                 ...(input.confirmedQuoteId

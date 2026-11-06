@@ -9,6 +9,7 @@ surfaces:
 source_paths:
     - .agent/features/059-interactive-workbooks/**
     - .agent/features/060-intent-aware-learning-content/**
+    - .agent/features/061-reliable-learning-content-pipeline/**
     - apps/web/src/app/workbooks/**
     - apps/web/src/app/shared/workbooks/**
     - apps/web/src/fsd/features/workbooks/**
@@ -49,6 +50,7 @@ e2e_scenarios:
     - workbook-share-private-copy-revoke
     - block-review-atomic-edit-inline-feedback
 related_features:
+    - reliable-learning-content-pipeline
     - intent-aware-learning-content
     - knowledge-workspace
     - contextual-language-assistant-and-knowledge
@@ -112,7 +114,11 @@ synthetic accounts. API health must succeed before browser interaction.
    clarified; a Markdown list does not count as an interactive exercise result.
    Exact follow-ups may use an unapplied proposal in that same chat. The
    [Knowledge workspace guide](./knowledge-workspace.md#intent-aware-content-generation)
-   owns that routing/clarification journey and its evidence.
+   owns that routing/clarification journey and its evidence, including continuing
+   with a new request after applying a large vocabulary block. Generators share
+   one validated publication operation: mixed requested content appears only
+   after every component is ready. The compact acknowledgement refers to the
+   exact stored proposal; it is not a replacement for its full Review content.
    An empty note keeps audio prerequisites and unavailable copying out of the
    writing area. Library insertion stays a compact secondary action. Existing
    blocks have a drag handle for whole-block selection/reordering and a heading-right

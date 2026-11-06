@@ -2,7 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import { noopLogger } from '@mastra/core/logger';
 import type { MastraModelConfig } from '@mastra/core/llm';
 import { getLocalPrompt } from '@languon/prompts';
-import type { z } from 'zod';
+import { z } from 'zod';
 
 /** Single-step, operation-bound primitives; development wiring injects synthetic authority. */
 export function createTutorRequestAgents(options: {
@@ -73,7 +73,8 @@ export async function generateTutorObject(input: {
         // transport errors and ambiguous submissions are never redispatched here.
         if (
             error instanceof Error &&
-            error.name === 'AI_NoObjectGeneratedError'
+            (error.name === 'AI_NoObjectGeneratedError' ||
+                (error.name === 'Error' && error.cause instanceof z.ZodError))
         ) {
             input.signal.throwIfAborted();
 

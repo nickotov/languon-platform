@@ -94,7 +94,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                           },
                       }
                     : {
-                          schemaVersion: 1,
+                          schemaVersion: 2,
                           document: {
                               type: 'doc',
                               content: [

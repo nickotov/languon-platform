@@ -1,4 +1,5 @@
 import { projectTutorUserMessage } from '../../application/tutor-message-context';
+import type { LearningBlock } from '@languon/contracts';
 import { LearningContentBriefSchema } from '../../application/learning-content-contract';
 import {
     serializeLearningContentBrief,
@@ -185,6 +186,59 @@ async function run(input: TutorRunInput, responses: string[]) {
 }
 
 describe('Knowledge request planning with real pinned Mastra execution', () => {
+    it('grounds planner source descriptors before storing clarification or authoring later', async () => {
+        const { input, memory } = fixture();
+        input.message.modelContent = projectTutorUserMessage({
+            content: input.message.content,
+            editorContext: { content: 'Exact original source.' },
+        });
+
+        const sourceTask = {
+            ...task,
+            source: { kind: 'editor' },
+            sourceText: 'Invented planner source.',
+        };
+
+        await run(input, [
+            JSON.stringify({
+                kind: 'clarify',
+                question: 'Which detail level?',
+                brief: { tasks: [sourceTask] },
+            }),
+        ]);
+
+        const stored = memory.state.get(tutorRequestStateKey)?.pending;
+        expect(JSON.stringify(stored)).toContain('Exact original source.');
+        expect(JSON.stringify(stored)).not.toContain(
+            'Invented planner source.',
+        );
+
+        input.message = {
+            ...input.message,
+            id: 'next',
+            content: 'Brief.',
+            modelContent: projectTutorUserMessage({
+                content: 'Brief.',
+                editorContext: { content: 'Newer editor source.' },
+            }),
+        };
+
+        memory.messages.set(input.message.id, input.message);
+        const { provider } = await run(input, [
+            JSON.stringify({
+                ...plan,
+                continuesPending: true,
+                brief: { tasks: [sourceTask] },
+            }),
+            JSON.stringify(authored),
+        ]);
+        const author = JSON.stringify(provider.requests[1]?.prompt);
+        expect(author).toContain('Exact original source.');
+        expect(author).not.toContain('Invented planner source.');
+        expect(author).not.toContain('Newer editor source.');
+        expect(input.onBlockProposal).toHaveBeenCalledOnce();
+    });
+
     it('supplies host-owned batching policy alongside a complete pending request and an obsolete refusal', async () => {
         const { input, memory } = fixture();
         const plan = structuredClone(shoppingPlan);
@@ -311,6 +365,155 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         });
     });
 
+    it('repairs a completed candidate rejected by the narrowed provider schema without publishing it', async () => {
+        const { input } = fixture();
+        const wrongKind = {
+            tasks: [
+                {
+                    taskId: 'grammar',
+                    blocks: [
+                        {
+                            id: blockId,
+                            type: 'vocabulary',
+                            language: 'fr',
+                            translationLanguage: 'ru',
+                            entries: [
+                                {
+                                    id: proposalId,
+                                    term: 'chat',
+                                    translation: 'кот',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        };
+        const { accounting } = await run(input, [
+            JSON.stringify(plan),
+            JSON.stringify(wrongKind),
+            JSON.stringify(authored),
+        ]);
+
+        expect(
+            accounting.admit.mock.calls.map(([call]) => call.purpose),
+        ).toEqual(['planning', 'authoring', 'authoring']);
+
+        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
+            blocks: [grammar],
+        });
+    });
+
+    it('normalizes unchanged vocabulary identities before publishing a canonical revision', async () => {
+        const { input } = fixture();
+        const entryId = randomUUID();
+        const vocabulary = {
+            id: blockId,
+            type: 'vocabulary',
+            language: 'fr',
+            translationLanguage: 'en',
+            entries: [{ id: entryId, term: 'bonjour', translation: 'hello' }],
+        };
+
+        input.sourceContext.availableBlocks = [vocabulary];
+        input.readContext = async () => ({
+            material: [
+                {
+                    id: blockId,
+                    label: 'Frozen vocabulary',
+                    content: JSON.stringify(vocabulary),
+                },
+            ],
+            total: 1,
+        });
+
+        const { provider } = await run(input, [
+            JSON.stringify({
+                kind: 'revise-blocks',
+                sourceBlockIds: [blockId],
+                instruction: 'Improve the translation.',
+            }),
+            JSON.stringify({
+                proposals: [
+                    {
+                        targetBlockId: blockId,
+                        blocks: [
+                            {
+                                ...vocabulary,
+                                entries: [
+                                    {
+                                        id: randomUUID(),
+                                        term: 'bonjour',
+                                        translation: 'good morning',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            }),
+        ]);
+
+        expect(provider.requests).toHaveLength(2);
+        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
+            targetBlockId: blockId,
+            blocks: [
+                {
+                    ...vocabulary,
+                    entries: [
+                        {
+                            id: entryId,
+                            term: 'bonjour',
+                            translation: 'good morning',
+                        },
+                    ],
+                },
+            ],
+        });
+    });
+
+    it('validates the entire canonical revision set before any proposal publication', async () => {
+        const { input } = fixture();
+        const second = {
+            ...grammar,
+            id: '01900000-0000-4000-8000-000000000091',
+            rule: 'Second frozen rule.',
+        };
+
+        input.sourceContext.availableBlocks = [grammar, second];
+        input.readContext = vi.fn(async () => ({
+            material: [grammar, second].map((block) => ({
+                id: block.id,
+                label: 'Frozen grammar',
+                content: JSON.stringify(block),
+            })),
+            total: 2,
+        }));
+
+        const first = {
+            targetBlockId: grammar.id,
+            blocks: [{ ...grammar, rule: 'First revised rule.' }],
+        };
+        const last = {
+            targetBlockId: second.id,
+            blocks: [{ ...second, rule: 'Second revised rule.' }],
+        };
+        const { provider } = await run(input, [
+            JSON.stringify({
+                kind: 'revise-blocks',
+                sourceBlockIds: [grammar.id, second.id],
+                instruction: 'Clarify both rules.',
+            }),
+            JSON.stringify({ proposals: [first] }),
+            JSON.stringify({ proposals: [first, last] }),
+        ]);
+
+        expect(provider.requests).toHaveLength(3);
+        expect(input.onBlockProposal).toHaveBeenCalledTimes(2);
+        expect(input.onBlockProposal).toHaveBeenNthCalledWith(1, first);
+        expect(input.onBlockProposal).toHaveBeenNthCalledWith(2, last);
+    });
+
     it.each([
         { remainingCalls: 1, remainingOutputTokens: 10_000 },
         { remainingCalls: 4, remainingOutputTokens: 5_000 },
@@ -335,6 +538,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                 agents,
                 gate.signal,
                 () => remainingBudget,
+                { messages: [] },
             );
 
             expect(result).toHaveProperty('text');
@@ -394,10 +598,16 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             authoringModel: gate.wrap(provider.model, 'authoring'),
         });
 
-        await executeTutorRequest(input, agents, gate.signal, () => ({
-            remainingCalls: 4,
-            remainingOutputTokens: 3900,
-        }));
+        await executeTutorRequest(
+            input,
+            agents,
+            gate.signal,
+            () => ({
+                remainingCalls: 4,
+                remainingOutputTokens: 3900,
+            }),
+            { messages: [] },
+        );
 
         expect(provider.requests[1]?.maxOutputTokens).toBe(3900);
         expect(accounting.admit.mock.calls[1]?.[0].maxOutputTokens).toBe(3900);
@@ -587,6 +797,153 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         expect(input.onBlockProposal).toHaveBeenCalledTimes(1);
     });
 
+    it('generates Russian-guided six-word vocabulary then retrieves all exact words for typed follow-up exercises', async () => {
+        const { input, memory } = fixture();
+        const words = [
+            'travail',
+            'joie',
+            'ménage',
+            'carrelage',
+            'poisson',
+            'nourriture',
+        ];
+        const translations = [
+            'работа',
+            'радость',
+            'уборка',
+            'плитка',
+            'рыба',
+            'корм',
+        ];
+        const vocabulary = {
+            id: blockId,
+            type: 'vocabulary' as const,
+            language: 'fr',
+            translationLanguage: 'ru',
+            entries: words.map((term, index) => ({
+                id: randomUUID(),
+                term,
+                translation: translations[index]!,
+            })),
+        };
+        const exerciseProposalId = randomUUID();
+        const proposals = new Map<string, LearningBlock[]>();
+        const groupId = randomUUID();
+        const exercises = words.map((word, index) => ({
+            id: randomUUID(),
+            type: 'exercise' as const,
+            format: 'free-text' as const,
+            question: `Как по-французски «${translations[index]}»?`,
+            referenceAnswer: word,
+            explanation: `«${word}» означает «${translations[index]}».`,
+            group: { id: groupId, title: 'Практика шести слов' },
+        }));
+
+        input.message.content =
+            'Сделай французский словарный блок с переводом на русский: travail — работа, joie — радость, ménage — уборка, carrelage — плитка, poisson — рыба, nourriture — корм.';
+
+        input.onBlockProposal = vi.fn(async (proposal) => {
+            const id = proposals.size ? exerciseProposalId : proposalId;
+            proposals.set(id, proposal.blocks);
+
+            return { id };
+        });
+
+        input.readBlockProposal = vi.fn(async (id) => {
+            const blocks = proposals.get(id);
+
+            if (!blocks) {
+                throw new Error('Unavailable authorized proposal.');
+            }
+
+            return { id, blocks };
+        });
+
+        await run(input, [
+            JSON.stringify({
+                kind: 'generate',
+                replyLanguage: 'ru',
+                brief: {
+                    tasks: [
+                        {
+                            id: 'vocabulary',
+                            kind: 'vocabulary',
+                            instruction:
+                                'Создай словарь для указанных шести слов.',
+                            language: 'fr',
+                            translationLanguage: 'ru',
+                            words,
+                            count: 6,
+                        },
+                    ],
+                },
+            }),
+            JSON.stringify({
+                tasks: [{ taskId: 'vocabulary', blocks: [vocabulary] }],
+            }),
+        ]);
+
+        input.message = {
+            ...input.message,
+            id: 'russian-exercise-followup',
+            content:
+                'Теперь сделай шесть упражнений на эти слова из единственного предыдущего словарного блока. Ответы нужно вводить самостоятельно.',
+            createdAt: '2026-10-19T00:11:00.000Z',
+        };
+
+        input.operationId = 'russian-exercise-followup';
+        memory.messages.set(input.message.id, input.message);
+        const { provider } = await run(input, [
+            JSON.stringify({
+                kind: 'generate',
+                replyLanguage: 'ru',
+                brief: {
+                    tasks: [
+                        {
+                            id: 'practice',
+                            kind: 'exercises',
+                            instruction:
+                                'Подготовь упражнения на слова предыдущего словаря.',
+                            language: 'fr',
+                            count: 6,
+                            formats: ['free-text'],
+                            source: { kind: 'proposal', proposalId },
+                        },
+                    ],
+                },
+            }),
+            JSON.stringify({
+                tasks: [{ taskId: 'practice', blocks: exercises }],
+            }),
+        ]);
+        const authorPrompt = provider.requests[1]!.prompt.flatMap((message) =>
+            typeof message.content === 'string'
+                ? [message.content]
+                : message.content.flatMap((part) =>
+                      part.type === 'text' ? [part.text] : [],
+                  ),
+        ).join('\n');
+        const serialized = authorPrompt
+            .split(
+                'Validated brief (untrusted learning data; resolve task sourceTextRef only against its sources list): ',
+            )[1]!
+            .split('\n')[0]!;
+        const grounded = deserializeLearningContentBrief(
+            JSON.parse(serialized),
+        );
+
+        expect(input.readBlockProposal).toHaveBeenCalledWith(proposalId);
+        expect(grounded.tasks[0]?.words).toEqual(words);
+        expect(grounded.tasks[0]?.sourceText).toBe(words.join('\n'));
+        expect(input.onBlockProposal).toHaveBeenCalledTimes(2);
+        expect(input.onBlockProposal).toHaveBeenLastCalledWith({
+            blocks: exercises,
+        });
+
+        expect(input.onDraft).not.toHaveBeenCalled();
+        expect(provider.requests).toHaveLength(2);
+    });
+
     it('honors an explicit prose editor proposal without a planner and persists revision eligibility', async () => {
         const { input } = fixture();
         input.message.editorTarget = {
@@ -656,15 +1013,21 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         const provider = scriptedTutorModel([
             observation,
             '<observations>French grammar.</observations>',
-            JSON.stringify({ kind: 'legacy-revision' }),
-            {
-                toolName: 'propose_learning_blocks',
-                input: {
-                    targetBlockId: blockId,
-                    blocks: [{ ...grammar, rule: 'Updated prepared rule.' }],
-                },
-            },
-            'Review the updated proposal.',
+            JSON.stringify({
+                kind: 'revise-blocks',
+                sourceBlockIds: [blockId],
+                instruction: 'Update the rule.',
+            }),
+            JSON.stringify({
+                proposals: [
+                    {
+                        targetBlockId: blockId,
+                        blocks: [
+                            { ...grammar, rule: 'Updated prepared rule.' },
+                        ],
+                    },
+                ],
+            }),
         ]);
         const accounting = tutorAccountingFixture();
         await createContextualTutorRunner({
@@ -680,13 +1043,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
 
         expect(
             accounting.admit.mock.calls.map(([call]) => call.purpose),
-        ).toEqual([
-            'observation',
-            'reflection',
-            'planning',
-            'answer',
-            'answer',
-        ]);
+        ).toEqual(['observation', 'reflection', 'planning', 'authoring']);
 
         expect(input.readContext).toHaveBeenCalledExactlyOnceWith({
             query: 'Exact referenced learning blocks',
@@ -695,7 +1052,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         });
 
         expect(
-            provider.requests[3]?.tools?.map((tool) => tool.name),
+            provider.requests[3]?.tools?.map((tool) => tool.name) ?? [],
         ).not.toContain('read_source_context');
 
         expect(JSON.stringify(provider.requests[3]?.prompt)).toContain(
@@ -728,9 +1085,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         }));
 
         const provider = scriptedTutorModel([
-            JSON.stringify({ kind: 'legacy-copy', sourceBlockIds: [audio.id] }),
-            { toolName: 'propose_learning_blocks', input: { blocks: [audio] } },
-            'Review the copied audio proposal.',
+            JSON.stringify({ kind: 'copy', sourceBlockIds: [audio.id] }),
         ]);
 
         await createContextualTutorRunner({
@@ -749,70 +1104,58 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             blockIds: [audio.id],
         });
 
-        expect(
-            provider.requests[1]?.tools?.map((tool) => tool.name),
-        ).not.toContain('read_source_context');
+        expect(provider.requests).toHaveLength(1);
     });
 
-    it.each(['complete', 'missing', 'duplicate'] as const)(
-        'matches the complete multimedia copy set one-to-one: %s',
-        async (candidate) => {
-            const { input } = fixture();
-            input.message.content =
-                'Copy both the prepared audio and video blocks.';
+    it('copies every selected multimedia block directly from the authorized source', async () => {
+        const { input } = fixture();
+        const audio = {
+            id: blockId,
+            type: 'audio',
+            language: 'fr',
+            sourceText: 'Bonjour.',
+        };
+        const video = {
+            id: '01900000-0000-4000-8000-000000000080',
+            type: 'video',
+            source: { kind: 'youtube', videoId: 'abcdefghijk' },
+        };
 
-            const audio = {
-                id: blockId,
-                type: 'audio',
-                language: 'fr',
-                sourceText: 'Bonjour.',
-            };
-            const video = {
-                id: '01900000-0000-4000-8000-000000000080',
-                type: 'video',
-                source: { kind: 'youtube', videoId: 'abcdefghijk' },
-            };
+        input.message.content = 'Copy both prepared blocks.';
+        input.readContext = vi.fn(async () => ({
+            material: [audio, video].map((block) => ({
+                id: block.id,
+                label: 'Prepared multimedia',
+                content: JSON.stringify(block),
+            })),
+            total: 2,
+        }));
 
-            input.readContext = vi.fn(async () => ({
-                material: [audio, video].map((block) => ({
-                    id: block.id,
-                    label: 'Prepared multimedia',
-                    content: JSON.stringify(block),
-                })),
-                total: 2,
-            }));
+        const { provider } = await run(input, [
+            JSON.stringify({
+                kind: 'copy',
+                sourceBlockIds: [audio.id, video.id],
+            }),
+        ]);
 
-            const blocks =
-                candidate === 'complete'
-                    ? [audio, video]
-                    : candidate === 'missing'
-                      ? [audio]
-                      : [audio, audio];
-            const provider = scriptedTutorModel([
-                JSON.stringify({
-                    kind: 'legacy-copy',
-                    sourceBlockIds: [audio.id, video.id],
-                }),
-                { toolName: 'propose_learning_blocks', input: { blocks } },
-                'Review the multimedia copy.',
-            ]);
-            const result = createContextualTutorRunner({
-                model: provider.model,
-                accounting: tutorAccountingFixture(),
-                maxInputTokens: 100_000,
-            }).run(input);
+        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
+            blocks: [audio, video],
+        });
 
-            if (candidate === 'complete') {
-                await result;
-                expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-                    blocks: [audio, video],
-                });
-            } else {
-                await expect(result).rejects.toThrow('were not completed');
-                expect(input.onBlockProposal).not.toHaveBeenCalled();
-            }
-        },
-    );
+        expect(provider.requests).toHaveLength(1);
+    });
+
+    it('does not publish when an exact selected copy source is unavailable', async () => {
+        const { input } = fixture();
+        input.readContext = vi.fn(async () => ({ material: [], total: 0 }));
+        await expect(
+            run(input, [
+                JSON.stringify({ kind: 'copy', sourceBlockIds: [blockId] }),
+            ]),
+        ).rejects.toThrow('unavailable');
+
+        expect(input.onBlockProposal).not.toHaveBeenCalled();
+    });
 
     it('patches a multi-component pending brief without dropping unchanged tasks', async () => {
         const { input, memory } = fixture();
@@ -894,7 +1237,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         expect(memory.state.get(tutorRequestStateKey)?.pending).toBeNull();
     });
 
-    it('stores and sends one near-limit frozen source for a mixed pending continuation', async () => {
+    it('keeps a near-limit older pending source out of a changed-editor plan and restores it exactly for authoring', async () => {
         const { input, memory } = fixture();
         const passage =
             'BASIS_BEGIN' + 'La source originale. '.repeat(1_700) + 'BASIS_END';
@@ -920,7 +1263,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             content: 'French.',
             modelContent: projectTutorUserMessage({
                 content: 'French.',
-                editorContext: { content: passage },
+                editorContext: { content: 'CURRENT_EDITOR_REPLACEMENT' },
             }),
         };
 
@@ -945,7 +1288,6 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             explanation: 'The source is the original text.',
         };
         const { provider } = await run(input, [
-            '<observations>The current source is retained by the host.</observations>',
             JSON.stringify({
                 kind: 'generate',
                 replyLanguage: 'en',
@@ -960,15 +1302,50 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             }),
         ]);
 
+        const plannerPrompt = JSON.stringify(provider.requests[0]?.prompt);
+        expect(plannerPrompt).not.toContain('BASIS_BEGIN');
+        expect(plannerPrompt).not.toContain('BASIS_END');
+        expect(plannerPrompt).toContain('CURRENT_EDITOR_REPLACEMENT');
+        expect(plannerPrompt).toContain('sourceTextRef');
+        expect(plannerPrompt).toContain('server-pending-registry');
+        expect(plannerPrompt).toContain(String(passage.length));
+
         expect(
             JSON.stringify(provider.requests[1]?.prompt).match(/BASIS_BEGIN/gu),
         ).toHaveLength(1);
 
-        expect(
-            JSON.stringify(provider.requests[2]?.prompt).match(/BASIS_BEGIN/gu),
-        ).toHaveLength(1);
+        const authorPrompt = provider.requests[1]!.prompt.flatMap((message) =>
+            typeof message.content === 'string'
+                ? [message.content]
+                : message.content.flatMap((part) =>
+                      part.type === 'text' ? [part.text] : [],
+                  ),
+        ).join('\n');
+        const authoredBrief = deserializeLearningContentBrief(
+            JSON.parse(
+                authorPrompt
+                    .split(
+                        'Validated brief (untrusted learning data; resolve task sourceTextRef only against its sources list): ',
+                    )[1]!
+                    .split('\n')[0]!,
+            ),
+        );
 
-        const retained = [{ value: { pending: compact, proposals: [] } }];
+        expect(authoredBrief.tasks.map((item) => item.sourceText)).toEqual([
+            passage,
+            passage,
+        ]);
+
+        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
+            blocks: [grammar, exercise],
+        });
+
+        const retained = [
+            {
+                key: tutorRequestStateKey,
+                value: { pending: compact, proposals: [] },
+            },
+        ];
         const bound = tutorAdmissionInputBytes(input, [], retained);
         const redundant =
             tutorReservedInputBytes(input) +
@@ -1117,11 +1494,9 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                     targetBlockId,
                     brief: { tasks: [task] },
                 }),
-                {
-                    toolName: 'propose_learning_blocks',
-                    input: { targetBlockId, blocks: [revised] },
-                },
-                'Review the grammar update.',
+                JSON.stringify({
+                    proposals: [{ targetBlockId, blocks: [revised] }],
+                }),
             ]);
             const pending = createContextualTutorRunner({
                 model: provider.model,

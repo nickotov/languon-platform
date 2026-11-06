@@ -12,7 +12,7 @@ import type {
     WorkbookLearningState,
 } from '@languon/contracts';
 
-// @user-flow-revision interactive-workbooks sha256:e5af57d58fff2f5f
+// @user-flow-revision interactive-workbooks sha256:03b18ee5278fe7c9
 const origin = 'http://localhost:3336';
 const tokens = new WeakMap<Page, string>();
 async function signup(page: Page, info: TestInfo, suffix: string) {
@@ -2531,7 +2531,34 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
         review.getByText('работа / труд', { exact: true }),
     ).toBeVisible();
 
+    const revisionPublicationNotice = review.getByText(
+        'Not published until you Save.',
+        {
+            exact: true,
+        },
+    );
+
+    await expect
+        .poll(
+            async () => (await revisionPublicationNotice.boundingBox())?.height,
+        )
+        .toBeLessThan(60);
+
     await capture(page, info, 'chat-target-update-review');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(revisionPublicationNotice).toBeVisible();
+    await expect
+        .poll(
+            async () => (await revisionPublicationNotice.boundingBox())?.height,
+        )
+        .toBeLessThan(60);
+
+    await expect(
+        review.getByRole('button', { name: 'Update block', exact: true }),
+    ).toBeInViewport();
+
+    await capture(page, info, 'chat-target-update-review-mobile');
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await review.getByRole('button', { name: 'Close', exact: true }).click();
     // An unrelated title edit must not invalidate the captured vocabulary target.
     await page

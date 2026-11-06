@@ -1,7 +1,15 @@
 # Improvement: Complete larger vocabulary requests through bounded batches
 
-Status: In progress (implementation verified; runtime activation/live proof pending)
+Status: Escalated to feature 061
 Created: 2026-11-04
+
+The combined implementation and current verification now belong to
+[feature 061](../features/061-reliable-learning-content-pipeline/FEATURE.md).
+The diagnosis and earlier bounded delivery below remain historical evidence.
+Feature 061 also fixes credential-bearing SDK memory configuration; technical
+verification and local cleanup are recorded there, with provider-key rotation
+still required before operational security closure. Earlier no-commit and stale
+worker statements describe the earlier task, not the current authorized feature.
 
 ## Outcome, classification and scope
 
@@ -306,3 +314,151 @@ Final remediation patch identities relative to main0bc905fb:
 - `apps/backend/src/modules/conversations/application/tutor-request-evaluation-cases.ts`: `6476d64d2e5d75bf41f57c0262b136af74f6987f3669bb15c95e48b3ee42477c`.
 
 Independent final remediation evidence approval: `/root/batching_review` inspected the final251-test native artifact and source hashes, confirmed no material findings, accepted reuse of the unchanged browser evidence, and explicitly excluded real-model intent quality from deterministic approval.
+
+## 2026-11-06 expanded incident review
+
+Reviewed runtime source at HEAD89ff4193 with independent backend context-budget
+and frontend refresh reviewers. User supplied a successful50-entry generation
+followed by repeated10-entry generation failures after applying that block to
+the editor. Current phase is diagnosis and a concrete repair proposal, following
+the latest request to review deeply and propose an adequate solution. No runtime
+source changed in this review; no paid calls, service restarts, data changes or
+health/quota resets. Only this existing record is updated.
+
+### Confirmed reproduction
+
+Read-only local DB metadata for the five latest failed turns shows
+`failure_code=context_too_large`, `provider_dispatched=false`, zero provider
+attempts and admitted input64000. Recomputed the actual61b1a73f turn using
+`projectConversationSource`, `tutorReservedInputBytes`, and
+`tutorMemoryThresholds` without invoking a model. Printed numeric metadata only:
+
+| Component                                  | UTF-8 bytes conservatively charged as input units |
+| ------------------------------------------ | ------------------------------------------------: |
+| Current message, including complete editor |                                             16740 |
+| Base contextual instructions and metadata  |                                              6519 |
+| Prospective structured-source retrieval    |                                             21015 |
+| Largest planner/authoring/legacy framing   |                                             19940 |
+| Generic reservation padding                |                                             10000 |
+| Total                                      |                                             74214 |
+| Admitted per-call ceiling                  |                                             64000 |
+
+The learner question is71characters. Its model parts are71,14887 and288bytes
+before envelope escaping/overhead. The source has4available material fragments.
+The memory threshold calculation receives available=-10214 and throws before
+observation, planning or authoring. Repeated retries cannot change this arithmetic.
+
+### Findings and required repair
+
+- KB-1 High: `application/tutor-context-budget.ts:91-126` reserves inputs from
+  different execution phases together; `contextual-tutor-runner.ts:73-88` treats
+  that hypothetical sum as one mandatory model call before determining intent.
+  The applied50-entry block both enlarges the complete editor and activates the
+  prospective21KB retrieval reserve. Replace this with shared phase-specific
+  envelope construction/budgeting. Planning must receive the complete immutable
+  editor once, resolver schema and bounded context; authoring receives its own
+  brief/schema/source registry; tool-result allowances belong to the continuation
+  where those results are actually needed. Preserve ADR0042 full editor snapshots
+  and the exact dispatch gate; do not raise route/global limits or silently omit
+  editor text. Do not require every possible legacy/tool path to fit before the
+  planner can resolve which path the learner actually needs.
+- KB-2 High: `conversation-turn-admission.ts:326-391` accepts a current-message
+  envelope up to170KB, while accounting caps the allowance at the route ceiling
+  (`conversation-accounting.ts:243-246`) and worker preflight then fails. Share
+  minimum-fit checks for noncompactable phase inputs between admission/worker,
+  rejecting genuinely impossible input before quote/hold/queued-turn insertion.
+  Keep the accounting quote upper bound separate from execution minimums. Do
+  **not** reject simply because the existing history-inclusive admission upper
+  bound exceeds64000: history can compact and must remain eligible.
+- KB-3 Medium: all context-too-large failures render question/attachment guidance
+  (`entities/conversation/lib/copy.ts:104-108`, `conversation-error-notice.tsx:60`).
+  This misidentifies an editor/model-envelope failure as a large short question.
+  Render accurate context guidance using existing safe product error semantics;
+  any new public reason field requires explicit contract/scope review.
+- KR-1 Medium: `assistant-panel.tsx:123` includes conversation timestamp and latest
+  turn ID/status in proposal refresh identity; the proposal-list effect immediately
+  reloads on key/active changes and polls every2seconds while active. Thus queued,
+  running and failed transitions each download proposal history. The backend only
+  exposes succeeded-turn proposals, so none of these reads can discover a new
+  proposal. The effect-local loading flag does not deduplicate restarts. Use one
+  cached query owner, initial history load, and one invalidation when a successful
+  proposal-producing turn is durable. Preserve explicit Apply refresh and reconnect
+  recovery; do not add a new SSE/public event merely to implement this correction.
+- KR-2 Medium: successful admission invokes list/detail invalidation and a separate
+  workspace reload (`use-conversation-admission.ts:100`, `use-conversation.ts:99`,
+  `use-assistant-panel.ts:413`, `use-knowledge-page-actions.ts:259`). SSE already
+  reconciles canonical detail; this creates redundant fetch/cancellation work.
+  Split invalidation by changed resource. Ordinary admission should not reload an
+  unchanged workspace; preserve first-send server auto-title synchronization
+  (`conversation-turn-admission.ts:260-292`) and explicit snapshot/replay recovery.
+  Keep at most one sidebar/list update or patch that cache from canonical state.
+- KT-1 Medium: mandatory Knowledge SDK cases use100000input units, while production
+  route uses64000. Existing production-composition cases have small editor sources.
+  The50-entry browser journey verifies output/publication, not the next question
+  after Apply. No frontend regression asserts request counts/lifecycle changes.
+
+### Distinctions and constraints
+
+The extra GETs do not admit model calls or feed response bodies into the model.
+One POST is one admission; the SSE GET is expected durable replay. The prior
+proposal returned by repeated GETs belongs to its original successful turn and
+is filtered by turnId in rendering. Its full content is not serialized into the
+new planner prompt: bounded descriptors are sent, though the server eagerly
+loads blocks into a local map. Its applied editor text is what affects KB-1.
+Retained failed-turn snapshots are a separate compaction risk, not the observed
+cause: this failure happens before memory runs. Preserve exact stored snapshots.
+
+### Proposed verification before implementation
+
+1. Add a red64K production-composition regression: realistic50-entry applied
+   vocabulary block, ~16.7KB full current message,4materials/~21KB retrieval bound,
+   then a10-entry topic request. Assert planning occurs, full editor survives,
+   output is valid and every actual provider call respects the same admitted gate.
+2. Verify true irreducible overflow fails synchronously with no turn/hold/provider
+   dispatch; large compactable history and repeated failed snapshots can still
+   complete. Include normal/reduced budgets, source authority and cancellation.
+3. Add lifecycle request-count tests: initial proposal history load once; queued,
+   running and failed cause no refresh/polling; successful proposal completion and
+   Apply invalidate once. Preserve StrictMode, reconnect/replay and auto-title.
+4. Registered ai-conversation selection (~1min) and focused frontend tests/static
+   checks. Real browser journey: Apply50entries, send next10-entry request, verify
+   successful proposal and bounded network requests. Update affected existing
+   Knowledge/contextual-assistant guide/mappings via user-flow-e2e. Broader suites
+   only for evidenced shared impact; external providers remain deterministic.
+5. Readiness/live proof remain separate under standing smoke policy. The user's
+   reported50-entry success is useful incident evidence, not a newly authorized
+   unguarded replay of their private conversation.
+
+Implementation and its final evidence remain pending. This review does not mark
+the incident fixed or reuse earlier251tests as proof of the missing64K journey.
+
+## Tool-context research follow-up
+
+2026-11-06: user requested Mastra and other agent-project research on compact
+tool input/output context. Saved the primary-source comparison, source audit,
+installed-version compatibility and proposed policy in
+[the survey](../../docs/surveys/agent-tool-context-compaction.md); indexed under
+docs/surveys. This is a proposal, not runtime implementation or an accepted ADR.
+
+Key distinction: public tool events already expose onlyID/name/state, and
+proposal writes already return small receipts. Private SDK history can retain
+large tool arguments/results; dedicated host-authored proposals take a different
+path. Use exact data for execution/canonical artifacts, relevant results for the
+immediate continuation, and concise source-bound outcomes for completed historical
+exchanges. A necessary source read cannot be replaced by anID-only receipt.
+
+Pinned core1.57.0 supports `toModelOutput` and transient `processLLMRequest`.
+Its built-in ToolCallFilter and TokenLimiter use earlier MessageList hooks,
+unlike newer online documentation; the limiter does not protect tool pairs or
+count schemas. Prefer a focused pair-aware transient projection for historical
+context, preserving current exact editor data and active tool dependencies.
+Reusing OM for semantic older facts must retain admitted accounting and must
+not turn historical capacity failures into current capability limits. Validate
+persisted raw data, provider prompt shape and exact source follow-ups before
+adopting a filter. This complements KB-1; it does not fix the false74214unit
+preflight reservation on its own.
+
+Research used official Mastra, Anthropic and LangChain pages fetched over HTTPS
+and installed package declarations/runtime; search connector unavailable405.
+No paid benchmark, runtime change, framework upgrade or user data upload. Scoped
+Prettier, local survey-link checks and diff checks pass.

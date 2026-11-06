@@ -1,3 +1,4 @@
+import type { prepareTutorHistory } from './tutor-history-context';
 import type { TutorRunInput } from '../../application/ports/tutor-runner.js';
 import { ConversationError } from '../../domain/conversation.js';
 import type { createTutorModelGate } from './accounted-tutor-model.js';
@@ -17,6 +18,7 @@ export async function streamTutorReply(
         ReturnType<typeof createTutorModelGate>,
         'signal' | 'contextExceeded'
     >,
+    prepared: Awaited<ReturnType<typeof prepareTutorHistory>>,
 ) {
     let text = '';
     let currentMessageId = input.operationId;
@@ -29,6 +31,7 @@ export async function streamTutorReply(
             ),
         ],
         {
+            context: prepared.messages,
             runId: input.operationId,
             abortSignal: modelGate.signal,
             memory: {

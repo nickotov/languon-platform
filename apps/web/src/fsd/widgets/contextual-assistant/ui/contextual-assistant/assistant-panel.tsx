@@ -1,7 +1,10 @@
 'use client';
 import { BlockContextPicker } from './block-context-picker';
 import type { KnowledgeBlockProposal } from '@languon/contracts';
-import { KnowledgeBlockProposals } from '@/fsd/features/knowledge-notes';
+import {
+    KnowledgeBlockProposals,
+    blockProposalCompletionKey,
+} from '@/fsd/features/knowledge-notes';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
 import { LoadingState, useCompanionLayout } from '@/fsd/shared/ui';
@@ -120,7 +123,7 @@ export function AssistantPanel(
                           ?.title,
               }
             : undefined;
-    const blockProposalRefresh = `${detail?.conversation.updatedAt ?? ''}:${lastTurn?.id ?? ''}:${lastTurn?.status ?? ''}`;
+    const proposalCompletionKey = blockProposalCompletionKey(detail);
     const portrait = {
         ownerId: props.actorId,
         requestWithSession: panel.requestWithSession,
@@ -234,8 +237,9 @@ export function AssistantPanel(
                     {showContent && detail && (
                         <KnowledgeBlockProposals
                             context={blockProposalContext}
-                            refreshKey={blockProposalRefresh}
-                            active={panel.active}
+                            actorId={props.actorId}
+                            completionKey={proposalCompletionKey}
+                            reconciliationKey={chat.stream.reconciliations}
                         >
                             <ConversationMessages
                                 detail={detail}

@@ -23,8 +23,10 @@ export function toTutorModelMessage(
         threadId,
         resourceId,
         createdAt: new Date(message.createdAt),
-        content: tutorMessageModelContent(
-            message,
+        // Mastra stamps mutable per-part metadata during conversion. Keep those
+        // writes inside an SDK-owned copy of the admitted canonical envelope.
+        content: structuredClone(
+            tutorMessageModelContent(message),
         ) as MastraDBMessage['content'],
     };
 }
@@ -37,6 +39,8 @@ function visibleText(message: MastraDBMessage): string {
 
 /** Canonical message projection, bounded history reads and SDK message persistence. */
 export class ConversationMemoryMessages {
+    private readonly emittedAssistantIds = new Set<string>();
+
     constructor(
         private readonly options: {
             conversationId: string;
@@ -207,37 +211,47 @@ export class ConversationMemoryMessages {
                 continue;
             }
 
-            // User text/copies are admitted by the application. SDK-only source
-            // provenance and memory markers must never replace that visible text.
-            const canonical =
-                message.role === 'user'
-                    ? (
-                          await this.options.port.listMessages({
-                              ids: [message.id],
-                              offset: 0,
-                              limit: 1,
-                              order: 'asc',
-                          })
-                      ).messages[0]
-                    : undefined;
+            const canonical = (
+                await this.options.port.listMessages({
+                    ids: [message.id],
+                    offset: 0,
+                    limit: 1,
+                    order: 'asc',
+                })
+            ).messages[0];
 
-            if (message.role === 'user' && canonical?.role !== 'user') {
-                unsupported();
+            if (message.role === 'user') {
+                if (canonical?.role !== 'user') {
+                    unsupported();
+                }
+
+                // Admission owns text, editor copies and private provenance.
+                // SDK observation markers belong to memory state, not this envelope.
+                continue;
             }
 
+            if (canonical && !this.emittedAssistantIds.has(message.id)) {
+                if (canonical.role !== 'assistant') {
+                    unsupported();
+                }
+
+                // Historical SDK replays are read-only, including tool arguments.
+                continue;
+            }
+
+            this.emittedAssistantIds.add(message.id);
             saved.push({
                 id: message.id,
                 role: message.role,
-                content: canonical?.content ?? visibleText(message),
-                ...(canonical?.attachments
-                    ? { attachments: canonical.attachments }
-                    : {}),
+                content: visibleText(message),
                 createdAt: message.createdAt.toISOString(),
                 modelContent: serialize(message.content),
             });
         }
 
-        await this.options.port.saveMessages(saved);
+        if (saved.length > 0) {
+            await this.options.port.saveMessages(saved);
+        }
 
         return { messages };
     }

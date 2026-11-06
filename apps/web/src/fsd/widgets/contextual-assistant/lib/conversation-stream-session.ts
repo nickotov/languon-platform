@@ -39,7 +39,7 @@ export function createConversationStreamSession({
         detail: undefined as ConversationDetail | undefined,
         admission: null as Admission | null,
     };
-    let flags = { reconnecting: false, unavailable: false };
+    let flags = { reconnecting: false, unavailable: false, reconciliations: 0 };
     const listeners = new Set<() => void>();
     function updateFlags(next: Partial<typeof flags>) {
         flags = { ...flags, ...next };
@@ -79,7 +79,14 @@ export function createConversationStreamSession({
             }
 
             if (part.type === 'data-connection') {
-                updateFlags({ reconnecting: part.data.reconnecting });
+                const reconciled =
+                    flags.reconnecting && !part.data.reconnecting;
+
+                updateFlags({
+                    reconnecting: part.data.reconnecting,
+                    reconciliations:
+                        flags.reconciliations + (reconciled ? 1 : 0),
+                });
 
                 return;
             }

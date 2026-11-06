@@ -9,7 +9,26 @@ import {
     KnowledgeBlockProposalsForTurn,
     type KnowledgeBlockProposalContext,
 } from '../src/fsd/features/knowledge-notes';
-import { render } from './render';
+import { render as renderWithLocale } from './render';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactElement, ReactNode } from 'react';
+
+function render(ui: ReactElement) {
+    const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+    });
+
+    function Wrapper({ children }: { children: ReactNode }) {
+        return (
+            <QueryClientProvider client={client}>
+                {children}
+            </QueryClientProvider>
+        );
+    }
+
+    return renderWithLocale(ui, { wrapper: Wrapper });
+}
+
 const id = '11111111-1111-4111-8111-111111111111';
 const branchId = '22222222-2222-4222-8222-222222222222';
 const proposal = KnowledgeBlockProposalSchema.parse({
@@ -93,7 +112,10 @@ it('previews safe blocks and changes only the working branch after explicit Appl
     );
 
     const current = context();
-    const { container } = render(<KnowledgeBlockProposals context={current} />);
+    const { container } = render(
+        <KnowledgeBlockProposals actorId='synthetic-owner' context={current} />,
+    );
+
     expect(await screen.findByText('<script>literal</script>')).toBeVisible();
     expect(container.querySelector('script')).toBeNull();
     expect(requests.every((request) => request.method === 'GET')).toBe(true);
@@ -110,6 +132,16 @@ it('previews safe blocks and changes only the working branch after explicit Appl
     expect(await screen.findByRole('status')).toHaveTextContent(
         'Save the note to publish',
     );
+
+    await waitFor(() =>
+        expect(
+            requests.filter((request) => request.method === 'GET'),
+        ).toHaveLength(2),
+    );
+
+    expect(
+        requests.filter((request) => request.method === 'POST'),
+    ).toHaveLength(1);
 });
 
 it('refuses applying if draft recovery changes the destination branch', async () => {
@@ -120,7 +152,10 @@ it('refuses applying if draft recovery changes the destination branch', async ()
         .fn()
         .mockResolvedValue({ branchId: id, version: 4 });
 
-    render(<KnowledgeBlockProposals context={current} />);
+    render(
+        <KnowledgeBlockProposals actorId='synthetic-owner' context={current} />,
+    );
+
     fireEvent.click(
         await screen.findByRole('button', { name: 'Apply to working draft' }),
     );
@@ -142,7 +177,7 @@ it('renders a proposal at its originating assistant turn and opens a full review
     vi.stubGlobal('fetch', fetch);
     const current = context();
     render(
-        <KnowledgeBlockProposals context={current}>
+        <KnowledgeBlockProposals actorId='synthetic-owner' context={current}>
             <div data-testid='other-turn'>
                 <KnowledgeBlockProposalsForTurn turnId={id} />
             </div>
@@ -208,7 +243,10 @@ it('adds a stale proposal separately only after explicit confirmation with the c
         beforeApply: vi.fn().mockResolvedValue({ branchId, version: 4 }),
     };
 
-    render(<KnowledgeBlockProposals context={current} />);
+    render(
+        <KnowledgeBlockProposals actorId='synthetic-owner' context={current} />,
+    );
+
     const button = await screen.findByRole('button', {
         name: 'Add separately',
     });
@@ -254,7 +292,10 @@ it('uses target staleness rather than unrelated document revisions for update pr
         beforeApply: vi.fn().mockResolvedValue({ branchId, version: 4 }),
     };
 
-    render(<KnowledgeBlockProposals context={current} />);
+    render(
+        <KnowledgeBlockProposals actorId='synthetic-owner' context={current} />,
+    );
+
     fireEvent.click(
         await screen.findByRole('button', { name: 'Update block' }),
     );
@@ -278,7 +319,10 @@ it('keeps the applying action visible and disabled, then reveals the applied blo
     );
 
     const current = { ...context(), onShowBlocks: vi.fn() };
-    render(<KnowledgeBlockProposals context={current} />);
+    render(
+        <KnowledgeBlockProposals actorId='synthetic-owner' context={current} />,
+    );
+
     fireEvent.click(
         await screen.findByRole('button', { name: 'Apply to working draft' }),
     );
@@ -350,7 +394,10 @@ it('retains a failed proposal for explicit retry without silently applying or dr
     );
 
     const current = context();
-    render(<KnowledgeBlockProposals context={current} />);
+    render(
+        <KnowledgeBlockProposals actorId='synthetic-owner' context={current} />,
+    );
+
     fireEvent.click(
         await screen.findByRole('button', { name: 'Apply to working draft' }),
     );
@@ -411,7 +458,10 @@ it('reviews stale source dependencies before an explicit independent copy and re
     );
 
     const current = { ...context(), onShowBlocks: vi.fn() };
-    render(<KnowledgeBlockProposals context={current} />);
+    render(
+        <KnowledgeBlockProposals actorId='synthetic-owner' context={current} />,
+    );
+
     await screen.findByRole('button', { name: 'Add separately' });
     fireEvent.click(screen.getByRole('button', { name: 'Review' }));
     const dialog = await screen.findByRole('dialog', {
@@ -442,7 +492,13 @@ it('reviews stale source dependencies before an explicit independent copy and re
 it('dismisses a proposal reversibly without applying any content', async () => {
     const fetch = vi.fn(async () => Response.json({ proposals: [proposal] }));
     vi.stubGlobal('fetch', fetch);
-    render(<KnowledgeBlockProposals context={context()} />);
+    render(
+        <KnowledgeBlockProposals
+            actorId='synthetic-owner'
+            context={context()}
+        />,
+    );
+
     fireEvent.click(
         await screen.findByRole('button', { name: 'Dismiss', exact: true }),
     );
@@ -499,7 +555,10 @@ it('captures the insertion cursor before flush and sends its mapped position wit
         }),
     };
 
-    render(<KnowledgeBlockProposals context={current} />);
+    render(
+        <KnowledgeBlockProposals actorId='synthetic-owner' context={current} />,
+    );
+
     fireEvent.click(
         await screen.findByRole('button', {
             name: 'Add at cursor',
@@ -532,6 +591,7 @@ it('identifies the original target independently of the proposed block title', a
 
     render(
         <KnowledgeBlockProposals
+            actorId='synthetic-owner'
             context={{
                 ...context(),
                 getBlockLabel: (blockId) =>

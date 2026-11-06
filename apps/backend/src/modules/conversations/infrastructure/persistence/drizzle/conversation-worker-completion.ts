@@ -184,19 +184,8 @@ export function conversationMemory(
                             );
                         }
 
-                        await tx
-                            .update(messages)
-                            .set({
-                                modelContent: [
-                                    {
-                                        ...value,
-                                        content: original.content,
-                                        attachments: original.attachments,
-                                    },
-                                ],
-                            })
-                            .where(eq(messages.id, original.id));
-
+                        // The admitted model envelope is immutable. SDK-only OM
+                        // markers are stored through writeState, never in user copies.
                         continue;
                     }
 
@@ -208,7 +197,11 @@ export function conversationMemory(
                                 row.role === 'assistant',
                         );
 
-                    if (!target || target.role !== 'assistant') {
+                    if (
+                        !target ||
+                        target.role !== 'assistant' ||
+                        target.turnId !== turn.id
+                    ) {
                         throw new ConversationError(
                             'memory_conflict',
                             'The message does not belong to this response.',

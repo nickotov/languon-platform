@@ -89,5 +89,12 @@ export function shoppingVocabularyBatch(
 
     return shoppingVocabulary
         .slice(offset, offset + count)
-        .map(([term, translation]) => ({ term, translation }));
+        .map(([term, translation]) => ({
+            term,
+            translation,
+            pronunciation: term,
+            definition: `A common shopping expression used to discuss ${term} in a store.`,
+            example: `When I go shopping, I ask the assistant about ${term} before buying.`,
+            exampleTranslation: `Когда я хожу за покупками, я спрашиваю продавца: «${translation}».`,
+        }));
 }

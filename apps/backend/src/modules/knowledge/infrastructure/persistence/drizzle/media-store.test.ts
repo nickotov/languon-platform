@@ -37,7 +37,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             studiedLanguage: null,
             explanationLanguage: null,
             body: {
-                schemaVersion: 1 as const,
+                schemaVersion: 2 as const,
                 document: {
                     type: 'doc' as const,
                     content: [

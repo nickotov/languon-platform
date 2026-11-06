@@ -13,6 +13,7 @@ source_paths:
     - packages/contracts/src/portrait-interview.ts
     - .agent/features/044-contextual-language-assistant-and-knowledge/**
     - .agent/features/060-intent-aware-learning-content/**
+    - .agent/features/061-reliable-learning-content-pipeline/**
     - apps/backend/src/modules/conversations/**
     - apps/backend/src/modules/authentication/application/ports/rate-limiter.ts
     - apps/backend/src/modules/authentication/infrastructure/rate-limit/redis-rate-limiter.ts
@@ -64,6 +65,7 @@ e2e_scenarios:
     - durable-close-reopen-stop-retry
     - dictionary-card-copies-preserve-visible-fields
 related_features:
+    - reliable-learning-content-pipeline
     - intent-aware-learning-content
     - ai-accounting
     - learner-portrait
@@ -223,6 +225,16 @@ admission. Reconfirm a newer reduced offer; it cannot silently shrink an already
 reviewed authorization. Response limit reached offers explicit Continue as a new
 action/budget. Disconnecting only unsubscribes: generation continues until it
 finishes or the learner selects Stop. Reconnect replays durable events.
+Normal admission and event delivery update the active chat without reloading an
+unchanged document workspace or repeatedly fetching proposal history on every
+turn-state change. Reconnect reconciles canonical data without submitting the
+question again. First-send automatic note naming remains synchronized.
+
+The tutor prepares compact historical context once for an admitted action.
+Completed tool work can be represented by concise outcomes, while exact selected
+source material remains available through authorized reads. Current editor text,
+copied references and a source read needed by the next model step are not silently
+discarded. Compact history is not permission to read a different learner's data.
 
 The dedicated [AI accounting guide](./ai-accounting.md) owns the repeatable
 settings, quote, canonical billing and Continue scenarios. This guide retains
@@ -313,10 +325,11 @@ accounting behavior have separate real composed HTTP/integration coverage.
 - A question and its attachments have an aggregate encoded limit of 8,000 UTF-8
   bytes, including private source metadata and a 1,024-byte transport allowance.
   This applies to dictionary/text chat. Knowledge workspace turns have separate
-  configurable editor and copied-reference character allowances, plus a full
-  model-input budget check after compaction. An oversized request returns
-  `context_too_large` before an answer proceeds; shorten the question, editor
-  or references, then send again.
+  configurable editor and copied-reference character allowances, plus an
+  applicable model-call input budget. Genuinely oversized noncompactable current
+  input returns `context_too_large` before a queued turn, credit hold or model
+  dispatch. Older history remains eligible for compaction. Guidance identifies
+  document/chat context rather than blaming only a short question or its attachments.
 - Unsaved source content participates only after **Use current draft**. Saved
   source edits refresh the next admitted turn; earlier wording is preserved.
 - Model/source text cannot authorize saving, deleting, or reading another source.

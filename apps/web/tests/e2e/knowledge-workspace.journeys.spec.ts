@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision knowledge-workspace sha256:84bb6cf8d19bf2dd
+// @user-flow-revision knowledge-workspace sha256:e6621242a1235d99
 
 type Share = { locator: string; key: string };
 
@@ -950,7 +950,7 @@ test('the workspace Text picker accepts exactly the reference limit and rejects 
 
     await expect(
         tutor.getByText(
-            'This question and its attachments are too large. Shorten the question or remove attachments, then send it again.',
+            'The current document, chat history and attachments exceed the available context. Shorten the document or attachments, or start a new conversation.',
             { exact: true },
         ),
     ).toBeVisible();
@@ -968,38 +968,32 @@ test('the workspace Text picker accepts exactly the reference limit and rejects 
             status: string;
         }>;
     };
-    await expect
-        .poll(async () => {
-            const detail = await api<ConversationDetail>(
-                page,
-                token,
-                `/conversations/${conversationId}`,
-            );
+    const rejected = await sentRequest.response();
+    expect(rejected?.status()).toBe(400);
+    expect(await rejected?.json()).toMatchObject({
+        error: { code: 'context_too_large' },
+    });
 
-            return detail.turns.at(-1)?.failureCode ?? null;
-        })
-        .toBe('context_too_large');
-
-    const failedDetail = await api<ConversationDetail>(
+    const rejectedDetail = await api<ConversationDetail>(
         page,
         token,
         `/conversations/${conversationId}`,
     );
-    const failedTurn = failedDetail.turns.at(-1)!;
-    expect(failedTurn.status).toBe('failed');
-    expect(failedTurn.failureCode).toBe('context_too_large');
-    const failedUserMessage = failedDetail.messages.find(
-        (message) =>
-            message.turnId === failedTurn.id && message.role === 'user',
-    )!;
 
-    expect(failedUserMessage.attachments).toHaveLength(2);
-    expect(
-        failedUserMessage.attachments.reduce(
-            (total, attachment) => total + attachment.content.length,
-            0,
-        ),
-    ).toBe(40_000);
+    expect(rejectedDetail.turns).toHaveLength(0);
+    expect(rejectedDetail.messages).toHaveLength(0);
+    await expect(tutor.getByLabel('Your question')).toHaveValue(
+        'Explain this focused passage',
+    );
+
+    for (const title of ['First exact reference', 'Second exact reference']) {
+        await tutor
+            .getByRole('button', {
+                name: `Remove attachment: ${title}`,
+                exact: true,
+            })
+            .click();
+    }
 
     await editor.click();
     await expect(editor).toBeFocused();
@@ -2147,13 +2141,8 @@ test('fifty shopping words become one complete vocabulary proposal and survive e
     expect(new Set(reviewedTerms).size).toBe(50);
     expect(reviewedTerms[0]).toBe('shop');
     expect(reviewedTerms.at(-1)).toBe('warranty');
-    await review
-        .getByText('warranty', { exact: true })
-        .scrollIntoViewIfNeeded();
-
-    await expect(
-        review.getByText('warranty', { exact: true }),
-    ).toBeInViewport();
+    await terms.last().scrollIntoViewIfNeeded();
+    await expect(terms.last()).toBeInViewport();
 
     await capture(page, info, 'shopping-fifty-vocabulary-review');
     await review
@@ -2184,6 +2173,57 @@ test('fifty shopping words become one complete vocabulary proposal and survive e
             exact: true,
         }),
     ).toHaveCount(1);
+
+    const requests: string[] = [];
+    page.on('request', (request) => {
+        const url = new URL(request.url());
+        if (url.pathname.startsWith('/api/')) {
+            requests.push(`${request.method()} ${url.pathname}`);
+        }
+    });
+
+    await tutor
+        .getByLabel('Your question')
+        .fill(
+            'Generate vocabulary with top 10 words that are used in context of shopping, English to Russian.',
+        );
+
+    await tutor.getByRole('button', { name: 'Send', exact: true }).click();
+    const proposals = tutor.getByRole('article', {
+        name: 'Proposed learning blocks',
+        exact: true,
+    });
+
+    await expect(proposals).toHaveCount(2);
+    const followup = proposals.last();
+    await expect(followup).toContainText('Vocabulary · 10');
+    await followup.getByRole('button', { name: 'Review', exact: true }).click();
+    await expect(review.locator('li span[lang="en"]')).toHaveCount(10);
+    await expect(block.locator('li span[lang="en"]')).toHaveCount(50);
+    await capture(page, info, 'shopping-ten-after-fifty-review');
+    await expect
+        .poll(() =>
+            requests.filter((item) => item.endsWith('/block-proposals')),
+        )
+        .toHaveLength(1);
+
+    expect(
+        requests.filter(
+            (item) => item.startsWith('POST ') && item.endsWith('/turns'),
+        ),
+    ).toHaveLength(1);
+
+    expect(
+        requests.filter(
+            (item) =>
+                item.startsWith('GET ') &&
+                /\/conversations\/[^/]+$/u.test(item),
+        ),
+    ).toHaveLength(0);
+
+    expect(requests.filter((item) => item.endsWith('/workspace'))).toHaveLength(
+        0,
+    );
 
     assertRuntime();
 });

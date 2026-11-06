@@ -12,8 +12,10 @@ not deep-import source files.
 - `prompts`: keep checked-in local fallbacks deterministic and free of secrets;
   hide Langfuse and model-provider details behind adapters.
 
-Preserve backward compatibility for any public export already used by multiple
-applications, or coordinate the migration in one ExecPlan. Add behavior-focused
+Follow the root pre-release policy: change current exports directly and update
+all affected consumers in the same delivery, without compatibility shims for
+unreleased versions. Coordinate cross-application changes in one ExecPlan.
+For released consumers, follow the accepted release/migration contracts. Add behavior-focused
 tests for package logic and build packages before dependent workspace checks.
 
 ```sh

@@ -172,7 +172,6 @@ describe('conversation worker bounded source context', () => {
                 toolName: 'read_source_context',
                 input: { query: 'zafiro', limit: 10 },
             },
-            observations,
             'Zafiro means sapphire in this context.',
         ]);
         const accounting = tutorAccountingFixture();
@@ -184,6 +183,11 @@ describe('conversation worker bounded source context', () => {
                     model: provider.model,
                     accounting,
                     maxInputTokens: 64_000,
+                    memoryThresholds: {
+                        messageTokens: 1_000,
+                        observationTokens: 10_000,
+                        maxTokensPerBatch: 10_000,
+                    },
                 });
 
                 return {
@@ -209,9 +213,9 @@ describe('conversation worker bounded source context', () => {
         expect(store.finish).toHaveBeenCalledExactlyOnceWith(turn, 'succeeded');
         expect(
             accounting.admit.mock.calls.map(([call]) => call.purpose),
-        ).toEqual(['observation', 'answer', 'observation', 'answer']);
+        ).toEqual(['observation', 'answer', 'answer']);
 
-        expect(accounting.settle).toHaveBeenCalledTimes(4);
+        expect(accounting.settle).toHaveBeenCalledTimes(3);
         expect(accounting.fail).not.toHaveBeenCalled();
         const retrieved =
             vi.mocked(store.recordMaterial).mock.calls[0]?.[1] ?? [];
@@ -229,6 +233,42 @@ describe('conversation worker bounded source context', () => {
         expect(memory.messages.get(turn.message.id)?.content).toBe(
             turn.message.content,
         );
+
+        expect(memory.messages.get(turn.message.id)?.modelContent).toEqual(
+            original.modelContent,
+        );
+
+        const observerPrompt = JSON.stringify(provider.requests[0]?.prompt);
+        expect(observerPrompt).not.toContain('Copied passage 0');
+        expect(observerPrompt).not.toContain('Copied passage 1');
+        for (const request of provider.requests.slice(1)) {
+            const currentParts = request.prompt
+                .filter((message) => message.role === 'user')
+                .flatMap((message) => message.content)
+                .filter((part) => part.type === 'text');
+
+            expect(
+                currentParts.filter(
+                    (part) => part.text === turn.message.content,
+                ),
+            ).toHaveLength(1);
+
+            const copiedParts = currentParts.filter((part) =>
+                part.text.startsWith('Copied learning material'),
+            );
+
+            expect(copiedParts).toHaveLength(1);
+            expect(copiedParts[0]?.text).toContain(
+                JSON.stringify(original.attachments),
+            );
+        }
+
+        expect(
+            vi
+                .mocked(store.append)
+                .mock.calls.map(([, text]) => text)
+                .join(''),
+        ).toBe('Zafiro means sapphire in this context.');
 
         expect(JSON.stringify(provider.requests.at(-1)?.prompt)).toContain(
             'sapphire',
@@ -304,7 +344,6 @@ describe('conversation worker bounded source context', () => {
                 toolName: 'read_source_context',
                 input: { query: 'zafiro', limit: 3 },
             },
-            '<observations>\n- The learner asks about zafiro in passage 77. The frozen Spanish source and English translation use zafiro and sapphire; surrounding passages provide context.\n</observations>',
             'Zafiro means sapphire in the quoted passage.',
         ]);
         const accounting = tutorAccountingFixture();
@@ -335,7 +374,7 @@ describe('conversation worker bounded source context', () => {
         await worker.processNext(new AbortController().signal);
         expect(runnerError).toBeUndefined();
         expect(store.finish).toHaveBeenCalledExactlyOnceWith(turn, 'succeeded');
-        expect(provider.requests).toHaveLength(3);
+        expect(provider.requests).toHaveLength(2);
         expect(JSON.stringify(provider.requests.at(-1)?.prompt)).toContain(
             'sapphire',
         );
@@ -350,10 +389,25 @@ describe('conversation worker bounded source context', () => {
 
         expect(
             accounting.admit.mock.calls.map(([call]) => call.purpose),
-        ).toEqual(['answer', 'observation', 'answer']);
+        ).toEqual(['answer', 'answer']);
 
-        expect(accounting.settle).toHaveBeenCalledTimes(3);
+        expect(accounting.settle).toHaveBeenCalledTimes(2);
         expect(accounting.fail).not.toHaveBeenCalled();
+        expect(
+            vi
+                .mocked(store.append)
+                .mock.calls.map(([, text]) => text)
+                .join(''),
+        ).toBe('Zafiro means sapphire in the quoted passage.');
+
+        const retrieved =
+            vi.mocked(store.recordMaterial).mock.calls[0]?.[1] ?? [];
+        const finalPrompt = JSON.stringify(provider.requests[1]?.prompt);
+        for (const material of retrieved) {
+            expect(finalPrompt).toContain(
+                JSON.stringify(material.content).slice(1, -1),
+            );
+        }
     });
 
     it('preserves all oversized unsaved draft text in safe Unicode excerpts and reports partial coverage', () => {

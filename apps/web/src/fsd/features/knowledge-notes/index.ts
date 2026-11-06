@@ -36,3 +36,5 @@ export {
     knowledgeBlockMentionIds,
 } from './lib/knowledge-block-references';
 export type { KnowledgeBlockReference } from './lib/knowledge-block-references';
+
+export { blockProposalCompletionKey } from './lib/proposal-completions';
