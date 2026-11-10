@@ -1,8 +1,8 @@
 ---
 feature: ai-provider-management
 title: AI Provider and Model Management
-status: draft
-last_verified: 2026-10-04
+status: current
+last_verified: 2026-11-10
 surfaces:
     - browser
     - admin

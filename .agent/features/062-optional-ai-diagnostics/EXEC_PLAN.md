@@ -22,11 +22,12 @@ Update admin-text-ai-routing and any existing affected setup/provider guides fou
 
 ## Milestones
 
-- [ ] M1 — Backend/SQL policy and focused regressions (AC1–4).
-- [ ] M2 — Doctor/admin/docs/ADR synchronization and focused checks (AC2,5).
-- [ ] M3 — Author preflight, independent source/security review and remediation.
-- [ ] M4 — Selected final DB/production/browser/static gates and final evidence approval (AC6).
-- [ ] M5 — Squash into main and integrate verified commit into original checkout; verify integration and local readiness.
+- [x] M1 — Backend/SQL policy and focused regressions (AC1–4).
+- [x] M2 — Doctor/admin/docs/ADR synchronization and focused checks (AC2,5).
+- [x] M3 — Author preflight, independent source/security review and remediation.
+- [x] M4 — Final local DB/production/browser/static evidence approved (AC6); bounded build/release exceptions explicit.
+- [x] M5 — Integrate source locally preserving feature061; verify production16/16, preference1/1, registry23/23 and doctor108PASS11INFO.
+- [ ] M6 — Strict production qualification/declaration completion and eventual main squash; intentionally withheld, outside current local-delivery claim.
 
 ## Decisions
 
@@ -54,3 +55,7 @@ Independent source/security review F062-CR-01 identified an overly narrow all-fi
 Release-classification discovery: main manifest was stale through0116; unrelated accumulated migrations contain transformation and old-overload retirement changes, while the deploy engine migrates before stopping the active slot. After independent review, keep marker/hash current through0165 and explicitly classify `contract` so production release intentionally fails closed pending a separately reviewed maintenance/staged plan and populated-data proof. No unrelated deployment implementation; local forward165 policy proof remains valid. Record technical implementation/local readiness separately from production-release readiness.
 
 Local delivery decision: required production compatibility qualification intentionally remains blocked; do not claim strict feature/release completion or squash into main while it fails. Commit the reviewed source on this isolated feature branch and integrate that local source commit into the user's existing feature061 checkout to repair the requested development service without merging unrelated061 work/security disposition into main. Preserve both feature branches and record final local evidence separately. Remaining final gates continue against the isolated source, with conflict-specific integration proof on the original checkout.
+
+Final local verification has finished. Reuse only exact validated case unions (shared249, sentence57), with raw failed aggregates retained. Both browser prerequisites are repaired and their real journeys pass. Original feature061production16cases, mapped preference and final typecheck pass; source hashes/proof manifests retained. Final independent evidence review is next. User-requested efficiency assessment is in EVIDENCE; no workflow/harness redesign added.
+
+Final independent completion/security verdict: source and LOCAL delivery evidence approved, no remaining material finding or further local execution requested. EVIDENCE/REVIEW now report final reality without stale pending proof claims. Strict feature/production completion remains withheld at M6; no main merge/push. User-requested efficiency assessment is complete in EVIDENCE. Only record synchronization/local commits remain.

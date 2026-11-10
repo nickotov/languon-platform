@@ -1,0 +1,1272 @@
+{
+  "scope": "shared-invariants evidence union; failed raw aggregate is not relabeled green",
+  "base": "5a8958e7",
+  "originalReport": "test-results/critical-flows/6b19ad09-7ffb-48dc-9ba7-13e7cf0227e8/ai-shared-invariants.json",
+  "originalSha256": "1a3825cf9fa248bda0cd71319818242d7e3c9d7234b1b6002c5d39ed61dad18d",
+  "originalHeaderTotal": 249,
+  "actualAssertionEntries": 249,
+  "originalPassedAssertions": 247,
+  "replacedFailedAssertions": 2,
+  "coveredAssertions": 249,
+  "remediationReports": [
+    {
+      "path": "/private/tmp/languon-user-preferences-final.json",
+      "sha256": "1efb5b174868ad12558a47572b394b8621222630e3a5a0ccb18ab2aba557a691",
+      "passedAssertions": 1,
+      "unselectedNotCountedAsPass": 0
+    },
+    {
+      "path": "/private/tmp/languon-shared-two-remediation.json",
+      "sha256": "4a95bfcdb250a4a11ee6d66283d4fcd59c971c15bac5a59a7961962d0cc35fd7",
+      "passedAssertions": 1,
+      "unselectedNotCountedAsPass": 15
+    }
+  ],
+  "cases": [
+    {
+      "name": "manual AI accounting persisted facts payment atomically issues one purchase lot; refunds revoke only explicit available credits",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "manual AI accounting persisted facts refunds cannot claw back reserved or previously consumed credits",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "manual AI accounting persisted facts reports measured, estimated and unknown costs independently of manual deposits and bill adjustment",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "manual AI accounting persisted facts materializes a cold report with native null flat rates and exact expense beyond the old integer meter",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "manual AI accounting persisted facts renews an unchanged report without history aggregation and recomputes after a committed change",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "manual AI accounting persisted facts preserves anonymous historical paid consumption while purging private credit attribution and allowing later cash-only refunds",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "manual AI accounting persisted facts retains immutable anonymous provider expense facts and denies public accounting-purge authority",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "manual AI accounting persisted facts lets the restricted purge role retain anonymous cash/expense facts without reading payment JSON or resetting global operator cost",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "manual AI accounting persisted facts pins immutable provider USD revisions by admission time with optimistic publication",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "manual AI accounting persisted facts serializes simultaneous refund totals and prevents overlapping invoice periods",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "model price actualization through persisted HTTP MCP publishes fetched prices once through HTTP previews while preserving historical pinned rates",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "model price actualization through persisted HTTP MCP returns every configured model exactly once across bounded discovery pages",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "model price actualization through persisted HTTP MCP verifies native prices without publication and separates missing credentials, retired identity and readiness",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "model price actualization through persisted HTTP MCP does not expand existing or read-only credentials and rejects revoked tokens before fetching",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "model price actualization through persisted HTTP MCP keeps expired previews and scheduled revisions from changing effective prices",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native reported money provider authority rejects foreign USD/credit fields for deepseek even from an authorized restricted worker",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native reported money provider authority rejects foreign USD/credit fields for evolink even from an authorized restricted worker",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native financial review regressions rejects incompatible native text meters in SQL even when TypeScript admission is bypassed",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native financial review regressions rejects an uncovered later dispatch gap before admitting an attempt or issuing HTTP receipts",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native financial review regressions admits a covered price transition and pins the complete exclusive action deadline horizon",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native financial review regressions preserves extreme native credit evidence while settling unrepresentable USD cost as unknown",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native price TypeScript and PostgreSQL parity keeps TS and SQL mixed-card multi-call reservation envelopes identical",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native price TypeScript and PostgreSQL parity rejects incompatible text meters, monetary overflow and excessive aggregate rules",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native price TypeScript and PostgreSQL parity retains exact rate precision independently of USD micro settlement",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native price TypeScript and PostgreSQL parity honors native currency rounding and minima before rational USD conversion",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native price TypeScript and PostgreSQL parity separates component minima from a single request minimum",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native price TypeScript and PostgreSQL parity uses exact context boundaries, endpoint ambiguity and maximum admission cards",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native price TypeScript and PostgreSQL parity prices schedule boundaries and rejects holes across authorized dispatch horizons",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native price TypeScript and PostgreSQL parity never substitutes missing token meters or reservation maxima as actual expense",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native price TypeScript and PostgreSQL parity uses validated provider-reported costs only for actual settlement",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native price TypeScript and PostgreSQL parity fails closed for invalid versions, negative/unknown meters and forbidden submillisecond instants",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed provider per-request minimum accounting keeps admission policy reads transaction scoped and invalidates same-transaction admin publications",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed provider per-request minimum accounting reserves and settles the minimum rather than adding it to token cost or learner tariffs",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed provider per-request minimum accounting rejects dispatch if remaining operator authorization cannot fund the floor",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed provider per-request minimum accounting keeps unknown usage and provider expense unknown while retaining the reserved ceiling",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed provider per-request minimum accounting pins the minimum revision and never rewrites an admitted action when prices change",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator probe environment boundaries uses documented bounded defaults and warns without supplied values",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator probe environment boundaries rejects invalid required bounded values without echoing credentials",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator probe environment boundaries keeps the synthetic fixture disabled by default",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator probe environment boundaries requires a disposable loopback database and synthetic credentials",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "synthetic production flow registry covers every registered flow using deterministic synthetic content",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "synthetic production flow registry shares exact production prompt/schema construction rather than a generic OK contract",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "synthetic production flow registry has a stable contract hash until the owned prompt/schema/fixture changes",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "synthetic production flow registry validates translated sentence identity, not just arbitrary valid JSON",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text probe accounting uses the real probe service and SDK with fake external HTTP, then persists native facts and expense",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text probe accounting settles an unambiguous native tariff without inventing a reservation amount",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text probe accounting records the entire OpenRouter reported-cost overrun through the real SDK while failing the probe",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text probe accounting rejects a caller-selected above-cap probe cost that differs from immutable native evidence",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text probe accounting rejects foreign reported money for a DeepSeek probe and retains tariff-only accounting",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text production SDK execution evidence requires a durable receipt before synthetic external HTTP and settles trusted reported USD exactly",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text production SDK execution evidence does not turn missing endpoint and missing reported cost into an invented native cost",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "durable native SDK text accounting binds SDK dispatch to a DB receipt and settles its checkpointed native evidence",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "durable native SDK text accounting retains raw reported cost checkpoint when SDK aggregate token usage is absent",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "durable native SDK text accounting reuses the observed remainder for two sequential SDK calls instead of reserving both full envelopes",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "durable native SDK text accounting rejects missing, foreign and duplicate receipt sets without losing the real checkpoint",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "durable native SDK text accounting preserves an incurred reported-cost overrun and blocks the next SDK dispatch before HTTP",
+      "status": "passed",
+      "evidence": "exact remediation"
+    },
+    {
+      "name": "durable native SDK text accounting native 'deepseek' 'operator' 'success' completes the production SDK and financial action path",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "durable native SDK text accounting native 'deepseek' 'operator' 'failure' completes the production SDK and financial action path",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "durable native SDK text accounting native 'deepseek' 'customer' 'success' completes the production SDK and financial action path",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "durable native SDK text accounting native 'deepseek' 'customer' 'failure' completes the production SDK and financial action path",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "durable native SDK text accounting native 'evolink' 'operator' 'success' completes the production SDK and financial action path",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "durable native SDK text accounting native 'evolink' 'operator' 'failure' completes the production SDK and financial action path",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "durable native SDK text accounting native 'evolink' 'customer' 'success' completes the production SDK and financial action path",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "durable native SDK text accounting native 'evolink' 'customer' 'failure' completes the production SDK and financial action path",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence atomically admits only one concurrent probe per provider",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence enforces shared daily reservation across different admins/providers and keeps unknown nonzero for cap",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence records real expense without learner rows, protects exact completed facts and idempotent settlement",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence permits unchecked routes and changed or aged diagnostic fingerprints",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence keeps failed and uncertain diagnostics independent of normal dispatch",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence serializes explicit recovery, preserves unknown expense and fences late completion",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence does not release uncertain completed execution without explicit recovery",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence recovers runtime model_retired after a bounded cooldown without a manual check",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence recovers runtime model_unavailable after a bounded cooldown without a manual check",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence recovers runtime authorization_failed after a bounded cooldown without a manual check",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence recovers runtime schema_incompatible after a bounded cooldown without a manual check",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence recovers runtime rate_limited after a bounded cooldown without a manual check",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence recovers runtime provider_credits_exhausted after a bounded cooldown without a manual check",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence recovers runtime provider_unavailable after a bounded cooldown without a manual check",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence does not let learner-induced invalid output or request rejection exclude a shared flow",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence settles reviewed minimum request charges but keeps undispatched work zero and unknown usage unknown",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence rejects an unfundable minimum and missing EvoLink minimum before creating any probe reservation",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "atomic operator model probes and immutable evidence retains bounded index lookups with representative probe history",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "immutable admin routing publication publishes exact per-flow tariffs without diagnostics and preserves the immutable FK bridge",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "immutable admin routing publication serializes concurrent publications without overwriting a newer revision",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "immutable admin routing publication emergency disables the sole active route without fresh probes and preserves history",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "immutable admin routing publication rejects missing paid tariffs, retired routes and unreviewed processing without changing active state",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "immutable admin routing publication requires credentials and provider prices but switches to a configured model without diagnostic history",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "real composed text-AI preference HTTP journey hides model identities, persists exact budgets, rejects selection and pins server-owned execution through real auth and PostgreSQL",
+      "status": "passed",
+      "evidence": "exact remediation"
+    },
+    {
+      "name": "native model price verification authority and separation verifies unconfigured catalog entries with read authority and never creates a preview",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native model price verification authority and separation reports retired exact identities without copying a replacement price",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native model price verification authority and separation does not delegate verification or native writes to legacy action snapshots",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native model price verification authority and separation uses only the separately delegated native writer and rejects native data in the flat writer",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native model price verification authority and separation ignores retrieval-only validFrom changes but preserves expired or changed native rules",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native model price verification authority and separation rechecks credential authority after fetching even for verification without financial mutation",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "MCP price verification discovery discovers and executes the read-only method for a newly delegated reader",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "MCP price verification discovery keeps both new pricing operations hidden from old action snapshots",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "pinned fallback dispatch uses only the pinned candidate, with one fresh execution after a conclusive rejection",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "pinned fallback dispatch does not retry ambiguous or policy failure 403",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "pinned fallback dispatch does not retry ambiguous or policy failure 500",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "pinned fallback dispatch does not retry ambiguous or policy failure 503",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "pinned fallback dispatch does not retry ambiguous or policy failure undefined",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "pinned fallback dispatch does not retry published",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "pinned fallback dispatch does not retry aborted",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "pinned fallback dispatch does not retry no-candidate",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "pinned fallback dispatch does not retry untyped",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "pinned fallback dispatch does not trust provider-controlled completed outcome properties",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "pinned fallback dispatch never retries the fallback or reduces confirmed output allowances",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "synthetic probe through production SDK fingerprints every registered actual flow contract",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "synthetic probe through production SDK retains bounded usage on malformed structured output (reported=true)",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "synthetic probe through production SDK retains bounded usage on malformed structured output (reported=false)",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "synthetic probe through production SDK makes one fixed-endpoint request with bounded output and no tools/retries",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "synthetic probe through production SDK changes evidence for credentials and actual flow contracts",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "synthetic probe through production SDK rejects arbitrary routes and unsupported flows while allowing explicit synthetic gateway checks",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "synthetic probe through production SDK validates the actual selected schema and domain predicate",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "synthetic probe through production SDK checks streamed prose in one bounded call and records first visible output",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "synthetic probe through production SDK does not turn absent provider usage into a zero-cost measured pass",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator-only model checks does not dispatch when delegation is revoked while reservation is waiting",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator-only model checks checks live dispatch authority after reserve and persists a known zero expense when authorization fails",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator-only model checks refuses revoked delegation before reservation and propagates revocation after dispatch",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator-only model checks requires an explicit selected flow and rejects arbitrary fields",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator-only model checks reserves before dispatch and finishes exactly once without learner authority",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator-only model checks requires approval again when the displayed maximum changed",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator-only model checks accepts a lower approved maximum and reserves that exact operator budget for one deterministic probe",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator-only model checks never calls a provider when the atomic reservation rejects",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator-only model checks records unknown expense rather than zero and hides raw errors",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator-only model checks records known zero usage for a budget rejection before any provider dispatch",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator-only model checks does not retry dispatch when persistence settlement fails",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator-only model checks rounds exact aggregate USD once, preserves cache categories",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "operator-only model checks applies reviewed request minimums only to dispatched work and never calls unknown cost zero",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic uses exact official rates and rounds the final USD sum once to micros",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic keeps component minima distinct from a minimum on the entire request",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic rounds component subtotals in native UC before exact currency conversion",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic preserves declared component and total rounding order including half-up ties",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic does not apply a positive-usage component minimum to zero quantity",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic derives uncached input only from complete reported cache evidence",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic does not treat absent audio output tokens as zero or as characters",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic honors context tier boundaries and includes lower tiers in upper bounds",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic does not guess a resolved gateway endpoint from a reservation ceiling",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic can calculate a gateway amount when unresolved endpoints have identical prices",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic selects a declared service tier and does not presume an omitted one",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic evaluates absolute half-open dispatch windows and refuses expired rules",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic reserves across price transitions but refuses uncovered dispatch-horizon gaps",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic uses independently conservative cache bounds and never subtracts cache maxima from input",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic uses authenticated reported credits or USD only for actual expense, never reservation",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic reports known zero requests as zero and rejects contradictory positive usage",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic requires explicit credit/USD conversion before using a provider credit observation",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic does not silently truncate sub-millisecond tariff or dispatch boundaries",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic validates tariff precision, windows, duplicate identities and rate/settlement separation",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic binds every native variant to measurable units for its outer publication meter",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic bounds aggregate native rule work and UTF-8 serialized size",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider financial arithmetic returns unknown when single-call or aggregate USD micros exceed signed bigint storage",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native price authority preserves legacy expense behavior preserves legacy flat token and character expenses without requiring execution facts",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native price authority preserves legacy expense behavior never falls through native prices to flat amounts and requires authoritative dispatch time",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native price authority preserves legacy expense behavior settles native speech using reported credit cost without substituting character estimates",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider attempts with several SDK requests applies the official minimum per call instead of once to aggregated token counts",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider attempts with several SDK requests rounds internal USD micros once after summing exact costs from all calls",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider attempts with several SDK requests evaluates each call context tier independently and retains mixed monetary provenance",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native provider attempts with several SDK requests rejects duplicate, empty or over-limit call lists and propagates unresolved usage",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "DrizzleAccountPurgeStore retains current shared recording text and PostgreSQL bytes after full account purge",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "DrizzleAccountPurgeStore claims only a due pending account and fences a stale worker",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "DrizzleAccountPurgeStore leaves an ID-only tombstone and preserves independent forks",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "DrizzleAccountPurgeStore purges preferences under the dedicated role without reading preference or learning content",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text expense authority lets DB checkpoints retain known reported money when SDK aggregate tokens are absent",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text expense authority retains the full amount and identity assertion for legacy pins",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "provider USD rate authorization checks origin before publishing an immutable provider price",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "provider USD rate authorization uses the recently authenticated owner identity for the price audit",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "provider USD rate authorization rejects native prices through the existing flat HTTP writer before publication",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "provider USD rate authorization bounds the legacy writer body before parsing or publication",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters sends an empty-only warnings array with legal wire items for pasted-terms",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters sends an empty-only warnings array with legal wire items for document-terms",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters bounds request-priced gateway endpoints by the pinned reviewed minimum",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters emits fixed wire model, schema and reduced allowance: evolink/gpt-6-luna",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters emits fixed wire model, schema and reduced allowance: openrouter/openai/gpt-6-luna",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters emits fixed wire model, schema and reduced allowance: openrouter/qwen/qwen3.5-flash-02-23",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters emits fixed wire model, schema and reduced allowance: openrouter/google/gemini-3.1-flash-lite",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters enforces the same gateway restrictions on a streamed request",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters forwards cancellation without starting another gateway request",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters preserves synthetic read-only tool calls and gateway controls in the real SDK",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters retains an unknown measurement when the provider omits usage",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters rejects a HTTP 200 error envelope without pretending it is successful output",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters never SDK-retries rejection 401",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters never SDK-retries rejection 402",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters never SDK-retries rejection 429",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters never SDK-retries rejection 503",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters keeps local strict output validation for non-strict gateway schema mode: evolink/gpt-6-luna",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters keeps local strict output validation for non-strict gateway schema mode: openrouter/openai/gpt-6-luna",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters keeps local strict output validation for non-strict gateway schema mode: openrouter/qwen/qwen3.5-flash-02-23",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters keeps local strict output validation for non-strict gateway schema mode: openrouter/google/gemini-3.1-flash-lite",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters rejects a gateway without pinned matching provider-price evidence before HTTP",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters retains retired Kie identity but rejects its dispatch snapshot",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "reviewed gateway production adapters exposes optional credentials quietly and reports only names for invalid credentials",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "production sentence gateway rejection metadata preserves safe execution outcome for HTTP 429",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "production sentence gateway rejection metadata preserves safe execution outcome for HTTP 403",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "production sentence gateway rejection metadata preserves safe execution outcome for HTTP 503",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text provider transport observations retains sub-micro reported USD cost through the actual SDK without changing privacy controls",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text provider transport observations does not dispatch without a durable native call receipt",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text provider transport observations does not publish successful output before its usage checkpoint completes",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text provider transport observations keeps actual SDK expense unknown when neither endpoint nor reported cost is present",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text provider transport observations captures streamed native cost while filtering raw provider frames from consumers",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text provider transport observations rejects media before authorization and keeps ambiguous endpoint pricing unknown",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "native text provider transport observations preserves per-call schedules/minima when a dictionary batch accumulates usage",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "request-scoped runtime provider health observation preserves successful actual SDK doGenerate results when a health observer is configured",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "request-scoped runtime provider health observation preserves a nonstream SDK result without attempting to pipe an absent stream",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "request-scoped runtime provider health observation retains the admitted witness when the stream is consumed outside its creation context",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "request-scoped runtime provider health observation does not poison shared route health when the learner stops a stream",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "request-scoped runtime provider health observation awaits a safe health write before exposing a streamed error part",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "request-scoped runtime provider health observation fails stream consumption if the required health record cannot be persisted",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "complete official pricing source coverage registers every real provider and verifies eight current models plus the retired identity diagnostic",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "complete official pricing source coverage preserves DeepSeek model columns and complete peak/offpeak windows with holiday provenance",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "complete official pricing source coverage does not invent holidays outside the reviewed calendar year",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "complete official pricing source coverage retains EvoLink exact UC conversion, per-component minima/ceil and strictly-greater context tiers",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "complete official pricing source coverage rejects unknown EvoLink expressions or inconsistent native FX instead of executing them",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "complete official pricing source coverage rejects expired official EvoLink metadata without assigning its cache TTL to the tariff",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "complete official pricing source coverage verifies Kie native audio-token prices and reported-credit conversion without character guesses",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "complete official pricing source coverage never copies replacement-model pricing from a retired product URL that returns HTTP200",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "complete official pricing source coverage refuses incomplete Kie pagination instead of publishing partial/ambiguous data",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery discovers future exact model IDs and keeps the published per-token decimal precision",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery retains endpoint variation and high-precision cache rates rather than flattening them",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery resolves strictly-greater context tiers and per-key override inheritance",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery supports explicit UTC override windows with bounded validity and no gaps",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery bounds the cross-product of context and scheduled price conditions",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery keeps absent cache meters absent and preserves actual zero prices",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery rejects unreviewed billing semantics: {\"prompt\":\"-1\",\"completion\":\"0\"}",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery rejects unreviewed billing semantics: {\"prompt\":\"1e-6\",\"completion\":\"0\"}",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery rejects unreviewed billing semantics: {\"completion\":\"0\"}",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery rejects unreviewed billing semantics: {\"prompt\":\"0.000000065\",\"completion\":\"0.00000026\",\"input_cache_read\":\"0.00000001\",\"input_cache_write\":\"0.000000125\",\"unknown_future_charge\":\"1\"}",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery rejects unreviewed billing semantics: {\"prompt\":\"0.000000065\",\"completion\":\"0.00000026\",\"input_cache_read\":\"0.00000001\",\"input_cache_write\":\"0.000000125\",\"discount\":0.2}",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery rejects unreviewed billing semantics: {\"prompt\":\"0.000000065\",\"completion\":\"0.00000026\",\"input_cache_read\":\"0.00000001\",\"input_cache_write\":\"0.000000125\",\"input_cache_write_1h\":\"0.1\"}",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery rejects unreviewed billing semantics: {\"prompt\":\"0.000000065\",\"completion\":\"0.00000026\",\"input_cache_read\":\"0.00000001\",\"input_cache_write\":\"0.000000125\",\"overrides\":[{\"start_time\":\"00:00\",\"prompt\":\"0.1\"}]}",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery includes nonzero per-request charges instead of silently discarding them",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery validates optional web_search prices at catalog, while scoping text-only execution",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery validates optional image prices at catalog, while scoping text-only execution",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery validates optional audio prices at catalog, while scoping text-only execution",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery validates optional input_audio_cache prices at catalog, while scoping text-only execution",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery validates optional web_search prices at endpoint, while scoping text-only execution",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery validates optional image prices at endpoint, while scoping text-only execution",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery validates optional audio prices at endpoint, while scoping text-only execution",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery validates optional input_audio_cache prices at endpoint, while scoping text-only execution",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery requires exact model/provider identity and documented speech billing units",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "OpenRouter exact native discovery returns sanitized failures and respects cancellation",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "pricing HTTP boundary rejects nonofficial sources and POST destinations before sending requests",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "pricing HTTP boundary rejects advertised oversized bodies, streamed overflows and HTTP failures",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "legacy exact rate conversion does not change six-decimal legacy money precision or round unsupported legacy rates",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "DrizzleAccountDeletionRecoveryStore replays a future blocking intent into an older active snapshot and is idempotent",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "admin synthetic model checks HTTP boundary requires recent owner authentication before operator spending",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "admin synthetic model checks HTTP boundary passes verified admin identity and validated input, never caller identity",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "admin synthetic model checks HTTP boundary rejects missing authorization and missing origin before dispatch",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "admin synthetic model checks HTTP boundary lists checks without spending and maps caps into actionable safe errors",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "admin synthetic model checks HTTP boundary requires explicit upstream-stop attestation and recent owner auth for recovery",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    }
+  ]
+}

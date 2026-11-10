@@ -1,11 +1,11 @@
 ---
 feature: user-ai-model-preferences-backend
 title: Learner AI budgets and server-owned dictionary execution
-status: draft
+status: current
 surfaces:
     - api
     - system
-last_verified: 2026-10-04
+last_verified: 2026-11-10
 source_paths:
     - packages/contracts/src/text-ai
     - apps/backend/src/modules/text-ai
