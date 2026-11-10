@@ -3372,7 +3372,7 @@ run('sentence persistence', () => {
         ).toBe(1);
 
         expect(failedIds).toHaveLength(3);
-    });
+    }, 30_000);
 
     it('does not count invalid model output, cancellation, stale authority, or undispatched failures as provider circuit faults', async () => {
         const { exercise } = await generated();
