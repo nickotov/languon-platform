@@ -1,5 +1,6 @@
 import { adminMembershipsTable } from '../../../../src/modules/administration/infrastructure/persistence/drizzle/schema';
 import { randomUUID } from 'node:crypto';
+import { aiProviderPriceRevisionsTable } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/provider-price-schema';
 import {
     createDrizzleDatabase,
     type PostgresClient,
@@ -47,8 +48,34 @@ run('immutable admin routing publication', () => {
     let client: PostgresClient;
     let database: PostgresJsDatabase<typeof databaseSchema>;
     let actor: string;
-    let readyCalls = 0;
     let store: DrizzleTextAiRoutingStore;
+    async function seedPrice(providerId: string, modelId: string) {
+        await database.insert(aiProviderPriceRevisionsTable).values({
+            id: randomUUID(),
+            providerId,
+            modelId,
+            meter: 'text-tokens',
+            version: 1,
+            effectiveAt: at,
+            createdAt: at,
+            createdBy: actor,
+            data: {
+                providerId,
+                modelId,
+                meter: 'text-tokens',
+                inputUsdPerMillionTokens: '1',
+                outputUsdPerMillionTokens: '3',
+                cacheReadUsdPerMillionTokens: null,
+                cacheWriteUsdPerMillionTokens: null,
+                usdPer1000Characters: null,
+                effectiveAt: at.toISOString(),
+                sourceReference: 'synthetic-routing-provider-price',
+                sourceUrl: null,
+                reason: 'Synthetic reviewed routing price',
+            },
+        });
+    }
+
     beforeAll(async () => {
         client = createTestPostgresClient();
         database = createDrizzleDatabase(client, databaseSchema);
@@ -72,20 +99,15 @@ run('immutable admin routing publication', () => {
             updatedAt: at,
         });
 
-        store = new DrizzleTextAiRoutingStore(
-            database,
-            async () => {
-                readyCalls++;
-            },
-            () => true,
-        );
+        await seedPrice('deepseek', 'deepseek-flash');
+        store = new DrizzleTextAiRoutingStore(database, () => true);
     });
 
     afterAll(async () => {
         await client?.end();
     });
 
-    it('publishes exact per-flow tariffs with immutable legacy FK bridge and readiness evidence', async () => {
+    it('publishes exact per-flow tariffs without diagnostics and preserves the immutable FK bridge', async () => {
         const revision = await store.publish(
             {
                 expectedVersion: 0,
@@ -97,7 +119,6 @@ run('immutable admin routing publication', () => {
         );
 
         expect(revision.version).toBe(1);
-        expect(readyCalls).toBe(12);
         expect(
             revision.configuration.flowTariffs['sentence-check']
                 ?.inputCreditsPerMillionTokens,
@@ -150,12 +171,9 @@ run('immutable admin routing publication', () => {
         expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
         expect(results.filter((r) => r.status === 'rejected')).toHaveLength(1);
         expect((await store.current())?.version).toBe(2);
-        // Unchanged active routes do not need new paid checks for a tariff-only revision.
-        expect(readyCalls).toBe(12);
     });
 
     it('emergency disables the sole active route without fresh probes and preserves history', async () => {
-        const callsBefore = readyCalls;
         const disabled = await store.disable(
             {
                 expectedVersion: 2,
@@ -166,7 +184,6 @@ run('immutable admin routing publication', () => {
             at,
         );
 
-        expect(readyCalls).toBe(callsBefore);
         expect(disabled.configuration.enabledRouteIds).toEqual([]);
         expect(disabled.configuration.default.primaryRouteId).toBe(
             'deepseek/deepseek-flash',
@@ -228,5 +245,42 @@ run('immutable admin routing publication', () => {
         ).rejects.toThrow('processing');
 
         expect((await store.current())?.version).toBe(3);
+    });
+
+    it('requires credentials and provider prices but switches to a configured model without diagnostic history', async () => {
+        const publication = {
+            expectedVersion: 3,
+            configuration: config,
+            reason: 'Synthetic configuration prerequisites',
+        };
+
+        await expect(
+            new DrizzleTextAiRoutingStore(database, () => false).publish(
+                publication,
+                actor,
+                at,
+            ),
+        ).rejects.toThrow('credentials');
+
+        const routeId = 'openrouter/openai/gpt-6-luna';
+        const switched = {
+            ...publication,
+            configuration: {
+                ...config,
+                default: { primaryRouteId: routeId, fallbackRouteIds: [] },
+                enabledRouteIds: [routeId],
+            },
+        };
+
+        await expect(store.publish(switched, actor, at)).rejects.toThrow(
+            'pricing',
+        );
+
+        expect((await store.current())?.version).toBe(3);
+
+        await seedPrice('openrouter', 'openai/gpt-6-luna');
+        const published = await store.publish(switched, actor, at);
+        expect(published.version).toBe(4);
+        expect(published.configuration.default.primaryRouteId).toBe(routeId);
     });
 });

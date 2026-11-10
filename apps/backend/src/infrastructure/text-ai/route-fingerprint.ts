@@ -18,7 +18,7 @@ function revisionsForRelease() {
     return contractRevisions;
 }
 
-/** Shared by activation, admission and disposable fixtures; no credentials escape. */
+/** Execution provenance shared by admission, runtime and diagnostics; no credentials escape. */
 export function createTextAiRouteFingerprint(
     credentials: Readonly<TextAiProviderCredentials>,
 ) {

@@ -458,9 +458,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         it('audits real SDK HTTP user lookup with stable identity and no raw email or credential', async () => {
             const f = await fixture();
             const operations = new AdminMcpOperations(db, {
-                routing: new DrizzleTextAiRoutingStore(db, async () => {
-                    throw new Error('Unused readiness dependency');
-                }),
+                routing: new DrizzleTextAiRoutingStore(db, () => true),
                 providerPrices: new DrizzleProviderPriceStore(db),
                 accounting: new DrizzleAccountingStore(
                     db,

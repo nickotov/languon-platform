@@ -6,7 +6,6 @@ import type { databaseSchema } from '../../../../../infrastructure/database/sche
 import { pinProviderPrice } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-provider-prices';
 import { parseFixed } from '../../../../ai-credits/domain/accounting';
 import { evaluateNativeProviderCost } from '../../../../ai-credits/domain/native-provider-pricing';
-import { findTextAiModel } from '../../ai/text-ai-provider-catalog';
 import { nativeTextPolicyFingerprint } from '../../ai/native-text-policy-identity';
 import {
     TextAiProbeUnavailableError,
@@ -21,9 +20,6 @@ import {
 } from './probe-schema';
 
 type Database = PostgresJsDatabase<typeof databaseSchema>;
-export type ProbeTransaction = Parameters<
-    Parameters<Database['transaction']>[0]
->[0];
 const usd = (value: bigint) =>
     `${value / 1_000_000n}.${(value % 1_000_000n).toString().padStart(6, '0')}`;
 const dto = (
@@ -460,60 +456,3 @@ export function probeCostMicros(
 
     return tokens > minimum ? tokens : minimum;
 }
-
-export async function requireProbeReady(
-    tx: ProbeTransaction,
-    input: { routeId: string; flowId: string; now: Date; fingerprint: string },
-) {
-    const model = findTextAiModel(input.routeId);
-    const currentPrice = model
-        ? await pinProviderPrice(tx, {
-              providerId: model.providerId,
-              modelId: model.modelId,
-              meter: 'text-tokens',
-              at: input.now,
-          })
-        : null;
-    const expected = {
-        ...input,
-        fingerprint: currentPrice?.nativeRules
-            ? nativeTextPolicyFingerprint(input.fingerprint)
-            : input.fingerprint,
-    };
-    const [latest] = await tx
-        .select()
-        .from(probes)
-        .where(
-            and(
-                eq(probes.routeId, input.routeId),
-                eq(probes.flowId, input.flowId),
-                eq(probes.kind, 'flow'),
-            ),
-        )
-        .orderBy(sql`${probes.startedAt} desc nulls last`)
-        .limit(1);
-
-    if (
-        !latest ||
-        latest.state !== 'passed' ||
-        latest.fingerprint !== expected.fingerprint ||
-        !latest.evidenceExpiresAt ||
-        latest.evidenceExpiresAt <= input.now ||
-        !(await isProbeDispatchAllowed(tx, expected))
-    ) {
-        throw new TextAiProbeUnavailableError('probe_check_required');
-    }
-}
-
-export async function isProbeDispatchAllowed(
-    tx: ProbeTransaction,
-    input: { routeId: string; flowId: string; now: Date; fingerprint: string },
-): Promise<boolean> {
-    const rows = await tx.execute(
-        sql`select languon_text_ai_route_dispatch_allowed(${input.routeId},${input.flowId},${input.fingerprint},${input.now.toISOString()}::timestamptz) as allowed`,
-    );
-
-    return rows[0]?.allowed === true;
-}
-
-export const requireTextAiProbeEvidence = requireProbeReady;

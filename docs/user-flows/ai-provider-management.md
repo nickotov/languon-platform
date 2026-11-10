@@ -1,7 +1,7 @@
 ---
 feature: ai-provider-management
 title: AI Provider and Model Management
-status: current
+status: draft
 last_verified: 2026-10-04
 surfaces:
     - browser
@@ -45,8 +45,8 @@ have no authority. Already-admitted jobs keep their immutable routing revision,
 provider/model candidates, tariff, provider prices and execution limits.
 
 Text and speech configuration remain separate. See
-[Admin-owned text AI routing](./admin-text-ai-routing.md) for synthetic checks,
-activation evidence, provider processing controls and emergency disabling, and
+[Admin-owned text AI routing](./admin-text-ai-routing.md) for optional synthetic
+diagnostics, provider processing controls and emergency disabling, and
 [Shared pronunciation playback](./shared-pronunciation-playback.md) for speech.
 
 The mapped journey uses a guarded deterministic provider transport and synthetic
@@ -67,12 +67,14 @@ paid services belong in these tests. Follow
 
 1. Sign in as an active owner, configure reviewed operator limits and provider
    USD rates through **AI accounting**, then open **AI settings**.
-2. Complete matching selected-flow checks for the intended route, with explicit
-   operator expense approval. Inspect configured credentials, processing
-   eligibility, worker readiness and observed check evidence separately.
+2. Inspect configured credentials, processing eligibility and compatible worker
+   readiness. Quick-response and selected-flow diagnostics are optional and need
+   explicit operator expense approval when run. Their history does not enable or
+   disable the route.
 3. Publish enabled routes, default/overrides and approved per-flow input/output
    customer tariffs with a reason. All rates use per-million tokens; provider
-   USD costs and customer credit tariffs are separate.
+   USD costs and customer credit tariffs are separate. Publication succeeds without
+   any prior diagnostic pass when these configuration prerequisites are met.
 4. Verify **Publish routing** remains reachable at a narrow viewport. Reload and
    inspect the saved revision. No credential values or arbitrary base URL appear.
 
@@ -95,7 +97,12 @@ deterministic provider transport, obtain reviewable proposals and accept one.
 ## Expected failure and edge cases
 
 - Missing routing, credentials, effective provider rates, required flow tariffs,
-  processing approval or matching flow evidence fail closed.
+  processing approval or compatible worker capabilities fail closed.
+- Missing, failed, aged or mismatched diagnostics do not block publication,
+  admission or dispatch. Prompt/schema changes and supported model switches
+  require no paid recheck; diagnostics never change runtime circuit state.
+- Actual provider failures use bounded automatic recovery independently of
+  diagnostic history. Explicit disablement still blocks new dispatch.
 - Retired Kie Gemini 2.5 Pro cannot be activated. EvoLink credentials or synthetic
   probes do not override its pending learner-processing review.
 - Duplicate idempotent admission returns the original job after policy changes.
@@ -109,7 +116,9 @@ deterministic provider transport, obtain reviewable proposals and accept one.
 
 Check the job's pinned revision rather than only today's default. A configured
 credential or successful quick response does not establish structured-flow
-compatibility. Inspect safe diagnostic codes and selected-flow evidence; never
+compatibility. Inspect actual configuration and runtime error codes; optionally
+run a bounded diagnostic to investigate provider connectivity or a synthetic flow.
+A diagnostic result never grants or removes execution eligibility. Never
 paste provider keys, raw learner prompts or response bodies into reports.
 
 ## Automated regression checks
@@ -131,5 +140,6 @@ real route through an audited revision rather than deleting configuration.
 - `admin-configures-dictionary-ai-default` proves that owner-published flow tariff
   revisions affect new jobs while queued work retains its selected revision.
   It funds the synthetic learner through admin controls, inspects immutable job
-  snapshots in PostgreSQL, processes pinned jobs through the real worker using
+  snapshots in PostgreSQL, publishes without mandatory diagnostics, processes
+  pinned jobs through the real worker using
   deterministic transport, accepts a proposal and reloads saved configuration.

@@ -115,7 +115,7 @@ export async function configureModel(
         routing.getByText('Synthetic provider checks', { exact: true }),
     ).toBeVisible();
 
-    if (options.checkFlows !== false) {
+    if (options.checkFlows === true) {
         const checks = page.locator('.ant-card').filter({
             has: page.getByText('Synthetic provider checks', {
                 exact: true,
@@ -199,7 +199,12 @@ export async function configureModel(
         (value) => value !== 'portrait-interview',
     );
 
-    for (const flow of options.includeTariffs === false ? [] : pricedFlows) {
+    const inputRate =
+        options.includeTariffs === false ? '' : (options.inputRate ?? '100');
+    const outputRate =
+        options.includeTariffs === false ? '' : (options.outputRate ?? '300');
+
+    for (const flow of pricedFlows) {
         const section = config
             .locator('.ant-collapse-item')
             .filter({ has: page.getByText(flow, { exact: true }) });
@@ -210,11 +215,11 @@ export async function configureModel(
 
         await section
             .getByLabel('Input credits per million tokens', { exact: true })
-            .fill(options.inputRate ?? '100');
+            .fill(inputRate);
 
         await section
             .getByLabel('Output credits per million tokens', { exact: true })
-            .fill(options.outputRate ?? '300');
+            .fill(outputRate);
 
         await header.click();
     }

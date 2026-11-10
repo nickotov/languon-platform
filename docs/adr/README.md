@@ -124,3 +124,5 @@ decision dates and accepted decision/rationale text unchanged.
 5. Keep current architecture documentation aligned with accepted decisions.
 
 Fixes limited to typos, formatting, and broken links do not require a new ADR.
+
+| [ADR-0056](./0056-optional-ai-diagnostics.md) | Optional AI diagnostics independent of routing and generation | Accepted |

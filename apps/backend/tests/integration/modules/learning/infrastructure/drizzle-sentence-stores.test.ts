@@ -878,7 +878,6 @@ run('sentence persistence', () => {
             const original = source!.catalogSnapshot;
             const routing = (await new DrizzleTextAiRoutingStore(
                 db,
-                async () => {},
                 () => true,
             ).current())!;
             const routeId = `${original.providerId}/${original.modelId}`;
@@ -1139,11 +1138,7 @@ run('sentence persistence', () => {
                     }),
                 ],
             );
-            const routingStore = new DrizzleTextAiRoutingStore(
-                db,
-                async () => {},
-                () => true,
-            );
+            const routingStore = new DrizzleTextAiRoutingStore(db, () => true);
             const current = (await routingStore.current())!;
             const [authority] = await db
                 .select()
@@ -1611,7 +1606,7 @@ run('sentence persistence', () => {
             const original = source!.catalogSnapshot;
             const current = (await new DrizzleTextAiRoutingStore(
                 db,
-                async () => {},
+                () => true,
             ).current())!;
             const [authority] = await db
                 .select()
@@ -1653,7 +1648,7 @@ run('sentence persistence', () => {
             }
 
             const running = alreadyClaimed ? await claim() : null;
-            await new DrizzleTextAiRoutingStore(db, async () => {}).disable(
+            await new DrizzleTextAiRoutingStore(db, () => true).disable(
                 {
                     expectedVersion: current.version,
                     routeId,

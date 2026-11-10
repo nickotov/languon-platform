@@ -209,6 +209,15 @@ export async function startWorker() {
                 KIE_API_KEY: 'synthetic-test-key',
                 DICTIONARY_AI_PROVIDER_FIXTURE_MODE: 'deterministic',
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
+                DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-flash',
+                // Mastra startup needs a complete bounded budget before routing is published.
+                DICTIONARY_GENERATION_MAX_INPUT_TOKENS: '65536',
+                DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS: '1024',
+                DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS:
+                    '1000000',
+                DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS:
+                    '10000000',
+                DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT: '100000',
                 DICTIONARY_JOB_API_ENQUEUED_FORMATS: formats,
                 DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: formats,
                 DICTIONARY_WORKER_DATABASE_URL: databaseUrl,

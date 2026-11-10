@@ -89,6 +89,7 @@ export const backendExecutionGroups = Object.freeze({
         'tests/integration/database/model-price-actualization.journeys.test.ts',
         'tests/integration/modules/text-ai/text-ai-probes.test.ts',
         'tests/integration/modules/text-ai/text-ai-routing.test.ts',
+        'tests/integration/modules/text-ai/user-ai-model-preferences.journeys.test.ts',
         'tests/unit/modules/text-ai/infrastructure/gateway-provider-adapters.test.ts',
         'tests/unit/infrastructure/probe-flow-registry.test.ts',
         'tests/unit/modules/text-ai/text-ai-probe-service.test.ts',
@@ -109,6 +110,12 @@ export const backendExecutionFiles = Object.freeze(
 
 /** Required incident regressions cannot disappear behind an aggregate passing count. */
 export const requiredBackendScenarios = Object.freeze([
+    {
+        file: 'tests/integration/modules/text-ai/user-ai-model-preferences.journeys.test.ts',
+        titles: [
+            'hides model identities, persists exact budgets, rejects selection and pins server-owned execution through real auth and PostgreSQL',
+        ],
+    },
     {
         file: 'src/modules/knowledge/infrastructure/persistence/drizzle/block-field-actions.database.test.ts',
         titles: [
@@ -144,14 +151,17 @@ export const requiredBackendScenarios = Object.freeze([
     {
         file: 'tests/integration/modules/conversations/conversation-production-execution.test.ts',
         titles: [
-            "'operator' 'success' 'append' survives admission through the default worker and SDK without widening its budget",
-            "'operator' 'failure' 'append' survives admission through the default worker and SDK without widening its budget",
-            "'customer' 'success' 'append' survives admission through the default worker and SDK without widening its budget",
-            "'customer' 'failure' 'append' survives admission through the default worker and SDK without widening its budget",
-            "'operator' 'success' 'update' survives admission through the default worker and SDK without widening its budget",
-            "'customer' 'success' 'update' survives admission through the default worker and SDK without widening its budget",
-            "'operator' 'success' 'multi-update' survives admission through the default worker and SDK without widening its budget",
-            "'customer' 'success' 'multi-update' survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'success' 'append' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'success' 'append' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'failure' 'append' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'failure' 'append' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'success' 'update' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'success' 'update' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'success' 'multi-update' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'success' 'multi-update' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'success' 'append' with 'changed-fingerprint' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'success' 'append' with 'failed' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'recover' 'append' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
             'admits a 50-entry applied vocabulary draft and a following 10-entry request at the production 64k boundary',
             'rejects an irreducibly escaped editor before holding or queueing work',
             'runs one observational-memory preparation before planner and a source-read answer without rewriting persisted history',
@@ -414,6 +424,14 @@ export const flows = [
         grep: '.',
         prerequisite: 'empty-admin-database',
         env: { ADMIN_E2E_SYNTHETIC_PROBES: 'true' },
+    },
+    {
+        id: 'ai-provider-management',
+        minimumTests: 1,
+        app: 'admin',
+        file: 'admin-user-management.journeys.spec.ts',
+        grep: 'owner publishes routing tariffs and queued jobs retain their selected revisions',
+        prerequisite: 'empty-admin-database',
     },
     {
         id: 'authentication',

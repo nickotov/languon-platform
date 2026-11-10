@@ -2,7 +2,7 @@
 type: operations
 title: Configure text AI routes in admin with concrete local-testing examples
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-11-10
 source_paths:
     - apps/admin/src/pages/ai-settings
     - apps/admin/src/pages/accounting
@@ -62,17 +62,14 @@ The [environment setup instructions](local-testing-setup.md#environment-settings
 list credentials and the five optional admin-check variables.
 
 Restart `pnpm dev:all` after replacing a key. It runs migrations before starting
-API/workers. Wait for both processes to become ready. Changing a key invalidates
-matching check fingerprints, so perform fresh checks afterward.
+API/workers. Wait for both processes to become ready. Changing a key can make old
+diagnostic results inapplicable; it does not require a new check before generation.
 
-Default check limits are USD 0.01 per request and USD 0.10 per UTC day across
-admins. The initial single-route recipe needs 13 checks: one quick and 12 flow
-checks. Actual expense is usually below the reservation, but 13 checks could cost
-up to USD 0.13, so the daily gate can stop setup. If you explicitly want a larger
-setup allowance, temporarily set `AI_ADMIN_PROBE_DAILY_MAX_COST_MICROS=500000`
-(USD 0.50/day), restart, and restore `100000` afterward. Leave
-`AI_ADMIN_PROBE_MAX_COST_MICROS=10000` (USD 0.01/check). Every click still needs
-its own displayed expense approval; this is not an instruction to retry failures.
+Default optional-check limits are USD 0.01 per request and USD 0.10 per UTC day
+across admins. No checks are required for setup or publication. Each deliberate
+check needs its displayed expense approval and remains within the existing
+allowance. Exhausting the diagnostic allowance stops further checks; it does not
+disable configured routes. Do not raise an allowance just to complete setup.
 
 Sign in as an active **owner**. Sensitive publications require a recent sign-in
 within five minutes. If prompted, sign in again and review the current form;
@@ -159,11 +156,11 @@ reconciliation remains separate. Sources above were checked on 2026-10-26.
 
 ## 5. Example A — Luna as the only route
 
-This is the simplest starting configuration. It does not claim that the current
-OpenRouter account/model has already passed live checks: run them with your
-replacement inference key first.
+This is the simplest starting configuration. It can be published without a live
+check. That does not claim that the current OpenRouter account/model has been
+verified against the provider.
 
-### Run the checks before publication
+### Inspect prerequisites and optionally test connectivity
 
 Open **AI settings → Text AI routes**. Inspect Luna's row:
 
@@ -171,36 +168,38 @@ Open **AI settings → Text AI routes**. Inspect Luna's row:
   Disabled before you publish the enabled route list.
 - **Processing eligibility** must allow this route.
 - **Observed worker readiness** must show compatible worker observations.
-- **Flow check evidence** is a separate state; key presence and a healthy worker
-  do not replace an actual successful check. The row summarizes recent evidence;
-  it does not prove that all 12 flow checks have passed.
+- Historical **Check result** and **Checked at** describe past diagnostics,
+  independently of route readiness. Missing or failed checks do not block
+  publication or generation. A historical pass does not prove current provider
+  availability or all application journeys.
 
-In **Synthetic provider checks**:
+If you want an optional diagnostic, use **Synthetic provider checks**:
 
 1. Set **Provider / model route** to **openrouter · Luna via OpenRouter**.
 2. Set **Check type** to **Quick response**.
 3. Tick **I approve this operator expense up to the displayed maximum.**
 4. Click **Run check** once. Inspect success, latency, token measurement and USD
    expense. Stop and troubleshoot a failure before attempting other checks.
-5. Change **Check type** to **Test selected flow**. Select each of the 12 flows
-   below, reapprove expense, and run once per flow. Wait for the displayed route
-   cooldown between requests; default 10 seconds. Approval resets after each
-   request or option change.
+5. Optionally choose **Test selected flow** for a particular synthetic flow
+   contract. Select the flow you want to investigate and reapprove its expense.
+   Wait for the displayed diagnostic cooldown between requests; default 10
+   seconds. Approval resets after each request or option change.
 
-A quick check alone does not permit activation. Every route used for a flow,
-including fallbacks, needs its own matching successful flow check. New publication
-requires fresh evidence within 24 hours by default.
+Neither quick nor selected-flow results control activation. Missing, failed, aged
+or mismatched checks leave publication and generation eligibility unchanged.
+Diagnostics do not update runtime circuit state. Normal configuration and
+execution protections still apply.
 
 ### Fill routing and credit tariffs
 
 In **Routing and flow tariffs**, set:
 
-| Field                                    | Value                                                    |
-| ---------------------------------------- | -------------------------------------------------------- |
-| Enabled routes                           | Only **openrouter · Luna via OpenRouter**                |
-| Primary route (global/default)           | **openrouter · Luna via OpenRouter**                     |
-| Ordered fallback routes (global/default) | Empty                                                    |
-| Reason for change                        | `Use verified OpenRouter Luna for local text AI testing` |
+| Field                                    | Value                                           |
+| ---------------------------------------- | ----------------------------------------------- |
+| Enabled routes                           | Only **openrouter · Luna via OpenRouter**       |
+| Primary route (global/default)           | **openrouter · Luna via OpenRouter**            |
+| Ordered fallback routes (global/default) | Empty                                           |
+| Reason for change                        | `Use OpenRouter Luna for local text AI testing` |
 
 Expand **all 12** entries under **Per-flow overrides and credit tariffs**.
 For each entry, leave its per-flow Primary route empty and fallback list empty:
@@ -209,7 +208,7 @@ flow; the fields are not automatically copied between flows:
 
 If the capability is already **Free (operator funded)**, its tariff fields may
 remain blank. You can publish Free routing without filling the table below;
-provider USD prices, operator limits and successful checks are still required.
+provider USD prices and operator limits are still required.
 Do not switch an existing Free policy to Paid just to follow this example.
 
 | AI flow / check name  | What it covers                             | Input credits / 1M | Output credits / 1M | Cached input credits / 1M |
@@ -256,21 +255,23 @@ a 10-credit action budget is a cap, not a fixed charge or guaranteed output size
 
 ## 6. Example B — cheap Qwen flows and a Gemini fallback
 
-Keep Luna as the global primary with **no global fallback**. This avoids requiring
-additional fallback checks for all 12 flows immediately.
+Keep Luna as the global primary with **no global fallback**, and add alternatives
+only to the flows below.
 
-Publish the Qwen and Gemini provider prices from section 4. Run Quick response
-once for each newly added route. Then complete this matrix of flow checks:
+Publish the Qwen and Gemini provider prices from section 4. Confirm configured
+credentials, compatible workers, processing eligibility and supported formats.
+If you want to investigate connectivity or a synthetic contract before switching,
+the following diagnostics are optional:
 
 | Selected route                       | Test selected flow values                                                |
 | ------------------------------------ | ------------------------------------------------------------------------ |
 | Qwen3.5 Flash via OpenRouter         | `single-card`, `card-authoring`, `sentence-generation`, `sentence-check` |
 | Gemini 3.1 Flash Lite via OpenRouter | `conversation`                                                           |
 
-Only proceed if each relevant check succeeds with compatible worker readiness.
-The recommendation is a local routing hypothesis, not a verified model-quality
-ranking. If an endpoint fails strict structured-output or processing requirements,
-leave that override unconfigured and keep the already verified Luna route.
+These diagnostics do not gate the switch. The recommendation is a local routing
+hypothesis, not a verified model-quality ranking. If an actual request fails
+structured-output or provider requirements, inspect the runtime error and adjust
+your configuration deliberately; normal output validation remains authoritative.
 
 Add Luna, Qwen and Gemini to **Enabled routes**. Expand and edit only:
 
@@ -284,7 +285,7 @@ Add Luna, Qwen and Gemini to **Enabled routes**. Expand and edit only:
 | All other flows       | Empty: inherit global Luna   | Empty                                |
 
 Keep the section 5 credit tariffs unchanged. A route switch does not change the
-learner's flow price list. Set Reason to `Add verified Qwen task overrides and
+learner's flow price list. Set Reason to `Add Qwen task overrides and
 Gemini conversation fallback` and click **Publish routing**.
 
 An override replaces the whole primary/fallback policy; it does not append to the
@@ -305,7 +306,7 @@ OpenRouter balance.
 
 If you want provider independence, direct **deepseek · DeepSeek Flash** can be a
 fallback instead. It needs `DEEPSEEK_API_KEY`, its own current provider price,
-worker readiness and a successful check for every flow where you add it. Do not
+worker readiness and compatible supported formats for its assigned flows. Do not
 use OpenRouter prices for the direct provider.
 
 The existing [DeepSeek testing profile](local-testing-setup.md#reviewed-profile-values)
@@ -378,22 +379,23 @@ Quick response alone does not prove these application flows work.
 | Symptom                                           | Check / next action                                                                                                                                                                                                                                             |
 | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Route option disabled                             | Check configured credential, retired state and processing eligibility. EvoLink learner activation is intentionally blocked.                                                                                                                                     |
-| Quick check 401 / authorization failure           | Replace management/invalid key with the correct inference key, restart API/workers, rerun fresh checks.                                                                                                                                                         |
+| Quick check 401 / authorization failure           | Replace management/invalid key with the correct inference key and restart API/workers. Optionally rerun the diagnostic to inspect connectivity.                                                                                                                 |
 | Quick passed but publication fails                | Check every inherited/overridden/fallback flow, its worker readiness, effective provider prices and required paid-flow tariff.                                                                                                                                  |
 | “No eligible provider” / unavailable endpoint     | Strict request, processing or pinned price ceilings may exclude endpoints. Inspect safe diagnostics and reviewed provider endpoint metadata; do not assume more wallet credit fixes it.                                                                         |
 | Check says budget insufficient                    | Verify current provider rates/minimum and the explicit probe maximum. Review cost before raising a limit.                                                                                                                                                       |
 | Daily check allowance exhausted                   | Stop. Wait for next UTC day or explicitly approve/configure a larger operator allowance; unknown attempts may still occupy their maximum.                                                                                                                       |
 | Check timeout / execution unknown                 | Do not immediately retry or confirm recovery. First establish at the provider that upstream work has stopped. Then use Reason for recovery, the attestation checkbox and Confirm provider recovery. Recovery does not erase unknown expense or rerun the check. |
-| Generation unavailable despite learner credits    | Provider price, tariff, route evidence, worker or operator budget can still be missing/exhausted. Free work still needs operator limits.                                                                                                                        |
+| Generation unavailable despite learner credits    | Provider price, tariff, credential, compatible worker or operator budget can still be missing/exhausted; runtime cooldowns may apply. Diagnostic history is not a prerequisite. Free work still needs operator limits.                                          |
 | Learner credits exhausted / tiny output allowance | Inspect exact balance and that learner's saved maximum, not just the application default. Review tariffs; top up explicitly when needed.                                                                                                                        |
 | Recent authentication required                    | Sign in again, reload/review the current revision and submit explicitly.                                                                                                                                                                                        |
 | Revision conflict                                 | Reload latest settings, reconcile your intended edits and publish again; do not force-overwrite.                                                                                                                                                                |
-| Key/adapter/prompt/schema changed                 | Existing evidence may no longer match. Recheck before activation. Previously admitted configuration-mismatch work fails closed; start an explicit new action after remediation.                                                                                 |
+| Key/adapter/prompt/schema changed                 | New requests do not require a fresh diagnostic. Restart affected processes for credential/code changes; previously admitted work retains its immutable authorization and execution safeguards.                                                                  |
 
 For an urgent route problem, use **Emergency disable**, enter a reason and confirm.
 This blocks future dispatch including queued work; it does not stop a provider
-request already underway. Restore through reviewed checks and a new explicit
-routing publication. Never reset accounts, ledger history or migrations to fix a
+request already underway. Restore through a new explicit routing publication
+after addressing the configuration problem; no diagnostic pass is required.
+Never reset accounts, ledger history or migrations to fix a
 route.
 
 The [configuration doctor](local-testing-setup.md#inspect-first) is read-only and

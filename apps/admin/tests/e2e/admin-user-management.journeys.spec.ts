@@ -23,7 +23,7 @@ import {
 import { calibrateAccounting, configureModel } from './support/setup-admin';
 
 // @user-flow-revision admin-user-management sha256:4329a23dfacbe067
-// @user-flow-revision ai-provider-management sha256:71297ff216a3dad3
+// @user-flow-revision ai-provider-management sha256:c753dbe67597ad6d
 // @user-flow-revision ai-credit-wallet sha256:99b7d70e3e3a8ddb
 
 const execFileAsync = promisify(execFile);
@@ -311,6 +311,15 @@ async function startDictionaryWorker() {
                 DEEPSEEK_API_KEY: 'synthetic-test-key',
                 DICTIONARY_AI_PROVIDER_FIXTURE_MODE: 'deterministic',
                 DICTIONARY_GENERATION_PROVIDER_MODE: 'mastra',
+                DICTIONARY_GENERATION_MODEL_ID: 'deepseek/deepseek-flash',
+                // Keep fixture startup independent of ignored operator environment files.
+                DICTIONARY_GENERATION_MAX_INPUT_TOKENS: '65536',
+                DICTIONARY_GENERATION_MAX_OUTPUT_TOKENS: '1024',
+                DICTIONARY_GENERATION_INPUT_COST_MICROS_PER_MILLION_TOKENS:
+                    '1000000',
+                DICTIONARY_GENERATION_OUTPUT_COST_MICROS_PER_MILLION_TOKENS:
+                    '10000000',
+                DICTIONARY_GENERATION_MAX_COST_MICROS_PER_ATTEMPT: '100000',
                 DICTIONARY_JOB_API_ENQUEUED_FORMATS: 'single-card:v2',
                 DICTIONARY_JOB_WORKER_PROCESSABLE_FORMATS: 'single-card:v2',
                 DICTIONARY_WORKER_CONCURRENCY: '1',
@@ -1861,6 +1870,16 @@ test.describe.serial('admin user management journeys', () => {
             '/api/admin/auth/refresh': 401,
             [accountingReportPath]: 503,
         });
+        let diagnosticRequests = 0;
+        page.on('request', (request) => {
+            if (
+                request.method() === 'POST' &&
+                request.url().endsWith('/admin/ai-settings/probes')
+            ) {
+                diagnosticRequests++;
+            }
+        });
+
         const failedRequests: string[] = [];
         page.on('requestfailed', (request) => {
             const path = new URL(request.url()).pathname;
@@ -1896,6 +1915,8 @@ test.describe.serial('admin user management journeys', () => {
             outputRate: '300',
             reason: 'Establish reviewed baseline for pinned routing regression',
         });
+
+        expect(diagnosticRequests).toBe(0);
 
         await page.setViewportSize({ width: 390, height: 844 });
         await expect(
@@ -2158,6 +2179,7 @@ test.describe.serial('admin user management journeys', () => {
             [],
         );
 
+        expect(diagnosticRequests).toBe(0);
         await accountingReport.assertRecovered();
 
         assertNoBrowserErrors();

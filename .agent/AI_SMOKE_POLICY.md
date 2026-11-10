@@ -15,10 +15,10 @@ AI-related changes; it never permits paid calls from automated tests or CI.
 - At most **USD 0.10 per learner dispatch**, **USD 0.50 combined per UTC day**,
   and **two learner dispatches per task**. Use the existing work-record slug as
   the stable task key; restarting a session does not create a new task allowance.
-- Necessary activation checks: at most **USD 0.01 each**, within the same combined
-  daily allowance and stricter existing MCP/application ceilings. Only recheck
-  the affected route/flow when the read-only doctor shows it is needed. Use one
-  stable operation key and inspect uncertain outcomes; never blind-retry.
+- ADR-0056 removes mandatory activation checks. The former necessary-activation
+  allowance does not authorize optional administrative diagnostics. Those need
+  separate explicit spending authorization. Existing learner-smoke limits and
+  strict MCP/application ceilings remain unchanged.
 - Initial account setup: one finite **200-credit** grant and **50 credits/action**.
   Credits are a separate customer unit, not a USD conversion. No unlimited policy,
   automatic refills or raising application/operator ceilings. Exhaustion is an
@@ -38,7 +38,7 @@ AI-related changes; it never permits paid calls from automated tests or CI.
    reserves the full maximum before dispatch, retains it after failure/timeout and
    refuses corrupt or missing state. Do not reset state, change task names, or
    create another account to bypass limits. Unknown outcomes require inspection.
-4. Other affected flows and necessary MCP activation checks must first account
+4. Other affected flows and separately authorized optional MCP diagnostics must first account
    for today's ledger reservations plus operator spent/held exposure and retain
    their exact operation/turn identity. Do not run them concurrently with smoke
    dispatch. If the guard cannot establish remaining allowance, stop paid work.

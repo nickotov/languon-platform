@@ -425,11 +425,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
         async (alreadyClaimed) => {
             const job = await store.enqueue(owner, request());
             const lease = alreadyClaimed ? await claim() : null;
-            const routing = new DrizzleTextAiRoutingStore(
-                db,
-                async () => {},
-                () => true,
-            );
+            const routing = new DrizzleTextAiRoutingStore(db, () => true);
             const current = (await routing.current())!;
             const [revision] = await db
                 .select()
@@ -755,11 +751,7 @@ run('Dictionary vocabulary selection durable persistence', () => {
             .from(textAiRoutingRevisionsTable)
             .where(eq(textAiRoutingRevisionsTable.id, revision.id));
 
-        await new DrizzleTextAiRoutingStore(
-            db,
-            async () => {},
-            () => true,
-        ).publish(
+        await new DrizzleTextAiRoutingStore(db, () => true).publish(
             {
                 expectedVersion: revision.version,
                 configuration: {

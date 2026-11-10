@@ -3,6 +3,7 @@ type: design
 title: Admin-owned text AI routing and verified model routes
 status: accepted
 date: 2026-10-25
+updated: 2026-11-10
 source_paths:
     - apps/backend/src/modules/text-ai
     - apps/backend/src/modules/ai-credits
@@ -16,6 +17,8 @@ This consolidates the user's twenty confirmed interview decisions. The user
 confirmed shared understanding and authorized implementation on 2026-10-25 in
 [Feature054](../.agent/features/054-admin-text-ai-routing/FEATURE.md). Paid
 evaluation, configuration publication and deployment need their own authority.
+[ADR-0056](adr/0056-optional-ai-diagnostics.md) replaces the original mandatory
+verification policy: diagnostic history has no publication or dispatch authority.
 
 ## Outcome and scope
 
@@ -71,9 +74,11 @@ required controls stays inactive; do not silently relax constraints to activate 
 
 ## Admin checks and health
 
-Offer Quick response and Test selected flow. Both use synthetic input through the
-production adapter/execution composition. The flow check validates the real
-application-owned output contract; a successful greeting cannot establish it.
+Offer optional Quick response and Test selected flow diagnostics. Both use
+synthetic input through the production adapter/execution composition. Quick
+response checks basic reachability and a response; Test selected flow additionally
+checks its synthetic flow contract. Neither proves the entire application journey
+or grants permission to publish or dispatch.
 Display pass/fail, flow, checked time, total elapsed time, token measurement,
 calculated/estimated/unknown provider expense, and safe failure details. For
 streaming checks also capture time to first visible output when available.
@@ -85,12 +90,14 @@ audited operator spending, require reviewed prices, and never create a learner
 hold or charge. Unknown usage/cost remains unknown rather than becoming zero.
 Provider minimum charges, cache categories and context tiers count in bounds.
 
-Require a matching successful flow check from the past 24 hours when enabling or
-changing a route. Tie evidence to provider/model route, adapter revision,
-credentials revision, processing constraints and flow-contract version. Credential
-revision metadata contains no key material. A changed credential/contract is not
-validated by old evidence. Merely aging on an unchanged active route causes a
-stale warning, not an outage. No paid health check runs on learner submission.
+Publish and dispatch supported, enabled, correctly configured routes independently
+of diagnostic history. Missing, failed, aged or mismatched checks never exclude a
+route. Prompt/schema edits, credential rotation and supported model switches do
+not require paid verification. Preserve diagnostic identity metadata so historical
+results are not misrepresented as current evidence; credential revision metadata
+contains no key material. A diagnostic never changes runtime circuit state, and
+no paid health check runs on learner submission. This policy is the same in
+development and production.
 
 Keep configured state, check evidence and observed runtime health distinct. Record
 sanitized failures such as retired model, authentication, upstream credits,
@@ -98,11 +105,13 @@ rate limit, timeout, invalid output and unavailable provider. Interpret provider
 error envelopes even when HTTP status is 200. Never expose raw provider payloads,
 headers, prompts or credentials in diagnostics.
 
-Confirmed retirement, credential and schema-compatibility exclusions require a
-successful manual recheck. Transient server/rate failures use bounded circuit
-cooldown and controlled recovery. A timeout alone does not permanently disable a
-route. Exclusion scope follows evidence: provider credentials can affect multiple
-routes; one flow schema failure need not disable unrelated contracts.
+Actual runtime provider failures use bounded circuit cooldown and automatic
+recovery independently of manual diagnostics. No runtime failure permanently
+excludes a route pending a successful check. Preserve failure scope: credential
+failures can affect multiple routes of that provider; a flow schema failure need
+not disable unrelated contracts. Code-owned retired routes and explicit operator
+disablement remain excluded. Recovery never adds attempts or bypasses remaining
+privacy, financial, worker or capability requirements.
 
 Emergency Disable blocks all new dispatches, including queued actions. Running
 requests finish unless explicitly stopped. Queued work may use only a compatible
@@ -115,7 +124,8 @@ Resolve the effective policy server-side. At admission pin the routing revision,
 approved candidates and execution details, flow credit tariff, charging policy,
 candidate provider-price revisions and bounded budget. Idempotent replay returns
 the original action. Recheck current exclusions at dispatch without adding newly
-configured candidates to already-admitted work.
+configured candidates to already-admitted work. Diagnostic results and check
+fingerprint changes are not dispatch exclusions.
 
 Keep the existing aggregate output-token ceiling, affordable allowance and
 operator-cost controls. Do not reserve the learner's entire balance or multiply
@@ -179,8 +189,9 @@ a model. Do not conceal the applicable privacy/data-use disclosures.
 5. Remove learner selection authority and presentation, preserving all other
    preferences and existing-chat behavior. Update user-flow guides and tests.
 6. Deliver reviewed setup documentation and local-test profiles/doctor checks for
-   credentials, rates, tariffs, routing, workers and check evidence. Admin publishes
-   calibrated tariffs/prices and activates only verified routes.
+   credentials, rates, tariffs, routing and workers, with diagnostic history shown
+   separately as informational. Admin publishes calibrated tariffs/prices and
+   activates supported, correctly configured routes without mandatory live checks.
 7. Run affected checks, full critical gate and independent correctness/security
    review. Perform authorized synthetic live route/quality evaluation separately;
    record actual evidence before claiming a route or language quality verified.
@@ -195,8 +206,11 @@ or reset data to make rollback appear successful.
 
 - Every existing text flow resolves an effective compatible admin policy; no
   learner request or saved preference can override it.
-- Quick response differs from flow-contract validation, and stale/changed evidence
-  cannot be misrepresented as a fresh pass. Disabled/retired routes cannot dispatch.
+- Quick response differs from flow-contract diagnostics; historical results cannot
+  be misrepresented as a current pass. No diagnostic history, changed fingerprints
+  and failed diagnostics permit correctly configured routes to publish and execute.
+  Diagnostic failures never modify runtime circuit state. Disabled/retired routes
+  cannot dispatch.
 - Tests cover HTTP 200 error envelopes, malformed output, missing usage, auth,
   upstream balance, 429/5xx, timeout, unknown execution and stream interruption
   through production SDK/worker composition with offline HTTP fixtures.
@@ -223,6 +237,8 @@ or reset data to make rollback appear successful.
 ## Remaining activation inputs
 
 The product decisions are settled. Credentials, account access/geography,
-upstream processing controls, actual tariff values and live evaluation evidence
+upstream processing controls, compatible execution, actual prices and tariff values
 are implementation/activation prerequisites, not facts established by this plan.
 Stay fail-closed where a required prerequisite is missing and report it explicitly.
+Live connectivity and quality evaluation are optional separately authorized
+diagnostics; their absence or failure does not block publication or generation.

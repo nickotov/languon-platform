@@ -54,9 +54,7 @@ export async function readSnapshot(sql, learnerEmail) {
             select distinct on (route_id,flow_id,kind,fingerprint)
                 route_id,flow_id,kind,fingerprint,state,failure,evidence_expires_at,completed_at,started_at
             from text_ai_probes order by route_id,flow_id,kind,fingerprint,started_at desc
-        ) select latest.*,
-            case when kind='flow' then languon_text_ai_route_dispatch_allowed(route_id,flow_id,fingerprint,now()) else false end as dispatch_allowed
-        from latest order by started_at desc`;
+        ) select latest.* from latest order by started_at desc`;
     const prices =
         await sql`select distinct on (provider_id,model_id) provider_id,model_id,data from ai_provider_price_revisions where meter='text-tokens' and effective_at<=now() order by provider_id,model_id,effective_at desc,version desc`;
     const [settings] =

@@ -1483,11 +1483,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .from(textAiRoutingRevisionsTable)
                 .where(eq(textAiRoutingRevisionsTable.id, revision.id));
 
-            await new DrizzleTextAiRoutingStore(
-                db,
-                async () => {},
-                () => true,
-            ).publish(
+            await new DrizzleTextAiRoutingStore(db, () => true).publish(
                 {
                     expectedVersion: revision.version,
                     configuration: {

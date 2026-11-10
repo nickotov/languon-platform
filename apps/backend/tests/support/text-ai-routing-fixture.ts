@@ -29,13 +29,11 @@ export async function seedTextAiRoutingFixture(
         /** Refresh only deterministic evidence for the current release; preserve published policy. */
         refreshProbes?: boolean;
         omittedTariffFlows?: TextAiFlowId[];
+        /** Diagnostics are optional; explicit false exercises normal unchecked execution. */
+        seedProbes?: boolean;
     } = {},
 ) {
-    const store = new DrizzleTextAiRoutingStore(
-        database,
-        async () => {},
-        () => true,
-    );
+    const store = new DrizzleTextAiRoutingStore(database, () => true);
     const current = await store.current();
     if (current && !options.replace && !options.refreshProbes) {
         return current;
@@ -100,6 +98,10 @@ export async function seedTextAiRoutingFixture(
                   actorId,
                   at,
               );
+
+    if (options.seedProbes === false) {
+        return revision;
+    }
 
     await database.transaction(async (tx) => {
         for (const flowId of TextAiFlowIdSchema.options) {

@@ -117,11 +117,16 @@ Separate deterministic readiness, current price verification and live availabili
 For live checks, use existing bounded audited probe operations and synthetic data
 within previously authorized spending and credential ceilings. If that authority
 or a secret is missing, finish independent implementation/tests, then report the
-specific prerequisite; do not dispatch a paid check or mark activation complete.
+specific live-evidence limitation; do not dispatch an unauthorized paid check or
+claim live verification. Optional text diagnostics do not gate publication or
+execution and never change runtime circuit state.
 Do not retry ambiguous upstream work under a new operation key.
 
-When the user requested a switch and its activation checks pass, publish the
-existing versioned routing/profile change through authorized admin operations.
+When the user requested a switch and its actual configuration prerequisites are
+met, publish the existing versioned routing/profile change through authorized
+admin operations. A text route needs no prior diagnostic pass, even when its
+prompt/schema, credentials or model selection changed. Preserve speech-specific
+configuration review requirements independently of text diagnostic history.
 Use exact previews and stable apply keys; preview disclosure is not a new human
 approval gate. Verify the selected route/profile and required persisted journey.
 Keep preparation-only requests prepared without changing the running default.

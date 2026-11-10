@@ -7,7 +7,6 @@ import type {
 export class AdminMcpError extends Error {
     public constructor(
         public readonly code:
-            | 'check_required'
             | 'unauthorized'
             | 'permission_denied'
             | 'not_found'

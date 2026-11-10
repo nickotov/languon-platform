@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
 import {
     afterAll,
     afterEach,
@@ -38,6 +39,8 @@ import { dictionaryAiWorkerObservationsTable } from '../../../../src/modules/tex
 import { conversationExecutionObservationId } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
 import { textAiModelCatalog } from '../../../../src/modules/text-ai/application/text-ai-provider-catalog';
 import { textAiPreferencesTable } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/schema';
+import { textAiProbesTable as probes } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/probe-schema';
+import { pinProviderPrice } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-provider-prices';
 import { seedLegacyActionFixture } from '../../../support/legacy-action-fixture';
 import {
     fixtureRouteFingerprint,
@@ -100,9 +103,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         });
 
         afterEach(() => vi.unstubAllGlobals());
+
         beforeEach(async () => {
             await client`truncate dictionary_ai_worker_observations, users, ai_capability_policy_revisions, ai_accounting_settings_revisions, ai_provider_price_revisions, text_ai_routing_revisions cascade`;
             await seedLegacyActionFixture(db, '1000');
+            // The shared legacy fixture includes checks for its default route.
+            // Start this disposable execution regression with no diagnostic history.
+            await client`truncate text_ai_probes, text_ai_route_health_events cascade`;
             const [previous] = await db
                 .select()
                 .from(providerPrices)
@@ -184,6 +191,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await seedTextAiRoutingFixture(db, {
                 routeId: 'openrouter/openai/gpt-6-luna',
                 replace: true,
+                seedProbes: false,
                 omittedTariffFlows: ['conversation'],
             });
 
@@ -212,25 +220,75 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         }
 
         it.each([
-            { funding: 'operator', outcome: 'success', operation: 'append' },
-            { funding: 'customer', outcome: 'success', operation: 'append' },
-            { funding: 'operator', outcome: 'failure', operation: 'append' },
-            { funding: 'customer', outcome: 'failure', operation: 'append' },
-            { funding: 'operator', outcome: 'success', operation: 'update' },
-            { funding: 'customer', outcome: 'success', operation: 'update' },
+            {
+                funding: 'operator',
+                outcome: 'success',
+                operation: 'append',
+                diagnostic: 'missing',
+            },
+            {
+                funding: 'customer',
+                outcome: 'success',
+                operation: 'append',
+                diagnostic: 'missing',
+            },
+            {
+                funding: 'operator',
+                outcome: 'failure',
+                operation: 'append',
+                diagnostic: 'missing',
+            },
+            {
+                funding: 'customer',
+                outcome: 'failure',
+                operation: 'append',
+                diagnostic: 'missing',
+            },
+            {
+                funding: 'operator',
+                outcome: 'success',
+                operation: 'update',
+                diagnostic: 'missing',
+            },
+            {
+                funding: 'customer',
+                outcome: 'success',
+                operation: 'update',
+                diagnostic: 'missing',
+            },
             {
                 funding: 'operator',
                 outcome: 'success',
                 operation: 'multi-update',
+                diagnostic: 'missing',
             },
             {
                 funding: 'customer',
                 outcome: 'success',
                 operation: 'multi-update',
+                diagnostic: 'missing',
+            },
+            {
+                funding: 'operator',
+                outcome: 'success',
+                operation: 'append',
+                diagnostic: 'changed-fingerprint',
+            },
+            {
+                funding: 'customer',
+                outcome: 'success',
+                operation: 'append',
+                diagnostic: 'failed',
+            },
+            {
+                funding: 'customer',
+                outcome: 'recover',
+                operation: 'append',
+                diagnostic: 'missing',
             },
         ] as const)(
-            '$funding $outcome $operation survives admission through the default worker and SDK without widening its budget',
-            async ({ funding, outcome, operation }) => {
+            '$funding $outcome $operation with $diagnostic diagnostics survives admission through the default worker and SDK without widening its budget',
+            async ({ funding, outcome, operation, diagnostic }) => {
                 const now = new Date();
                 await db.insert(capabilityPolicyRevisionsTable).values({
                     id: randomUUID(),
@@ -244,6 +302,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 await seedTextAiRoutingFixture(db, {
                     routeId: 'openrouter/openai/gpt-6-luna',
                     replace: true,
+                    seedProbes: false,
                     ...(funding === 'operator'
                         ? { omittedTariffFlows: ['conversation'] }
                         : {
@@ -254,6 +313,73 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                               },
                           }),
                 });
+
+                const routeId = `${model.providerId}/${model.id}`;
+                if (diagnostic !== 'missing') {
+                    const price = await db.transaction((tx) =>
+                        pinProviderPrice(tx, {
+                            providerId: model.providerId,
+                            modelId: model.id,
+                            meter: 'text-tokens',
+                            at: now,
+                        }),
+                    );
+
+                    if (!price) {
+                        throw new Error('Synthetic provider price is missing.');
+                    }
+
+                    await db.insert(probes).values({
+                        id: randomUUID(),
+                        actorId: ownerId,
+                        routeId,
+                        providerId: model.providerId,
+                        modelId: model.id,
+                        kind: 'flow',
+                        flowId: 'conversation',
+                        fingerprint:
+                            diagnostic === 'changed-fingerprint'
+                                ? createHash('sha256')
+                                      .update('previous-conversation-prompt')
+                                      .digest('hex')
+                                : fixtureRouteFingerprint(
+                                      routeId,
+                                      'conversation',
+                                  )!,
+                        state: diagnostic === 'failed' ? 'failed' : 'passed',
+                        failure:
+                            diagnostic === 'failed'
+                                ? 'authorization_failed'
+                                : null,
+                        evidenceHours: 24,
+                        day: now.toISOString().slice(0, 10),
+                        maximumMicros: 10000n,
+                        costMicros: 1n,
+                        price,
+                        inputTokens: 1,
+                        outputTokens: 1,
+                        measurement: 'measured',
+                        elapsedMs: 1,
+                        startedAt: now,
+                        completedAt: now,
+                        evidenceExpiresAt: new Date(now.getTime() + 86400000),
+                    });
+                }
+
+                const diagnosticHistory = await db
+                    .select()
+                    .from(probes)
+                    .where(eq(probes.routeId, routeId));
+
+                expect(diagnosticHistory).toHaveLength(
+                    diagnostic === 'missing' ? 0 : 1,
+                );
+
+                if (diagnostic === 'changed-fingerprint') {
+                    expect(diagnosticHistory[0]!.fingerprint).not.toBe(
+                        fixtureRouteFingerprint(routeId, 'conversation'),
+                    );
+                }
 
                 if (funding === 'customer') {
                     await db.insert(textAiPreferencesTable).values({
@@ -365,7 +491,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     { ownerId },
                     { source: { kind: 'knowledge', id: note.id } },
                 );
-                const submitted = await store.submit({ ownerId }, chat.id, {
+                const submissionInput = {
                     requestId: randomUUID(),
                     content:
                         'Propose a French to Russian vocabulary block for work, joy, cleaning, tile, fish and animal feed, with definitions and example translations.',
@@ -393,7 +519,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             version: branch.version,
                         },
                     },
-                });
+                };
+                const submitted = await store.submit(
+                    { ownerId },
+                    chat.id,
+                    submissionInput,
+                );
                 const [admitted] = await db
                     .select()
                     .from(turns)
@@ -540,7 +671,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             4096,
                         );
 
-                        if (outcome === 'failure') {
+                        if (
+                            outcome === 'failure' ||
+                            (outcome === 'recover' && outgoing.length === 1)
+                        ) {
                             return Response.json(
                                 {
                                     error: {
@@ -548,7 +682,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                         type: 'invalid_request_error',
                                     },
                                 },
-                                { status: 400 },
+                                { status: outcome === 'recover' ? 401 : 400 },
                             );
                         }
 
@@ -899,7 +1033,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
                 expect(action?.state).toBe('settled');
                 expect(action?.funding).toBe(funding);
-                if (funding === 'operator' || outcome === 'failure') {
+                if (funding === 'operator' || outcome !== 'success') {
                     expect(String(action?.charged_milli)).toBe('0');
                 } else {
                     expect(
@@ -954,7 +1088,116 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .where(eq(turns.id, submitted.id));
 
                 expect(persisted?.execution).toEqual(admitted?.execution);
+
+                expect(
+                    await db
+                        .select()
+                        .from(probes)
+                        .where(eq(probes.routeId, routeId)),
+                ).toEqual(diagnosticHistory);
+
+                if (outcome === 'recover') {
+                    const health = await db.execute(
+                        sql`select reason from text_ai_route_health_events where route_id=${routeId}`,
+                    );
+
+                    expect(health).toEqual([
+                        expect.objectContaining({
+                            reason: 'authorization_failed',
+                        }),
+                    ]);
+
+                    await expect(
+                        store.submit({ ownerId }, chat.id, {
+                            ...submissionInput,
+                            requestId: randomUUID(),
+                        }),
+                    ).rejects.toMatchObject({ code: 'model_unavailable' });
+
+                    expect(outgoing).toHaveLength(1);
+
+                    // Fenced financial dispatch reads PostgreSQL clock_timestamp().
+                    // Wait through the real production cooldown; changing JS time would
+                    // bypass admission only and would not prove worker recovery.
+                    await delay(61_000);
+                    // A fresh conversation isolates route recovery from the separate
+                    // reduced per-action input ceiling on accumulated chat history.
+                    const recoveredChat = await store.create(
+                        { ownerId },
+                        { source: { kind: 'knowledge', id: note.id } },
+                    );
+                    const recovered = await store.submit(
+                        { ownerId },
+                        recoveredChat.id,
+                        {
+                            ...submissionInput,
+                            requestId: randomUUID(),
+                        },
+                    );
+
+                    expect(
+                        await worker.processNext(new AbortController().signal),
+                    ).toBe(true);
+
+                    const recoveredDetail = await store.detail(
+                        { ownerId },
+                        recoveredChat.id,
+                    );
+
+                    expect(
+                        recoveredDetail.turns.find(
+                            (item) => item.id === recovered.id,
+                        )?.status,
+                    ).toBe('succeeded');
+
+                    expect(
+                        (
+                            await store.listBlockProposals(
+                                { ownerId },
+                                recoveredChat.id,
+                            )
+                        ).proposals,
+                    ).toHaveLength(1);
+
+                    const [recoveredAction] = await db.execute(
+                        sql`select state,held_milli,charged_milli from ai_credit_actions where id=${recovered.id}::uuid`,
+                    );
+
+                    expect(recoveredAction?.state).toBe('settled');
+                    expect(
+                        BigInt(String(recoveredAction?.charged_milli)),
+                    ).toBeLessThanOrEqual(
+                        BigInt(String(recoveredAction?.held_milli)),
+                    );
+
+                    expect(
+                        BigInt(String(recoveredAction?.charged_milli)),
+                    ).toBeGreaterThan(0n);
+
+                    const recoveredExpenses = await db.execute(
+                        sql`select provider_id,model_id,measurement from ai_provider_expense_records where action_id=${recovered.id}::uuid`,
+                    );
+
+                    expect(recoveredExpenses).toHaveLength(2);
+                    expect(
+                        recoveredExpenses.every(
+                            (expense) =>
+                                expense.provider_id === model.providerId &&
+                                expense.model_id === model.id &&
+                                expense.measurement === 'measured',
+                        ),
+                    ).toBe(true);
+
+                    expect(
+                        await db
+                            .select()
+                            .from(probes)
+                            .where(eq(probes.routeId, routeId)),
+                    ).toEqual(diagnosticHistory);
+                }
             },
+            // One recovery case intentionally crosses the production 60-second cooldown.
+            90_000,
         );
 
         it('admits a 50-entry applied vocabulary draft and a following 10-entry request at the production 64k boundary', async () => {

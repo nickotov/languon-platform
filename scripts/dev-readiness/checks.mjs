@@ -2,7 +2,7 @@ import {
     selectedModel,
     workerSupports,
     customerFunded,
-    probeEvidence,
+    probeDiagnostic,
 } from './worker.mjs';
 // Add future critical AI capabilities here with their current worker formats.
 // This registry describes prerequisites; it never claims a successful generation.
@@ -216,7 +216,7 @@ export function evaluateReadiness(
         'model',
         Boolean(configuration),
         'Admin routing is published.',
-        'Admin → AI routing: publish a default route and flow overrides after successful checks. Legacy learner/default model settings do not authorize new work.',
+        'Admin → AI routing: publish a default route and flow overrides with the required configuration. Legacy learner/default model settings do not authorize new work.',
     );
 
     const model = selectedModel(snapshot, registry[0]);
@@ -252,19 +252,11 @@ export function evaluateReadiness(
         );
     }
 
-    const evidence = probeEvidence(snapshot, env, registry[0], model);
-    check(
-        'flow-check',
-        evidence.ready,
-        evidence.stale
-            ? 'Unchanged active flow check is aged: dispatch remains allowed; rerun the selected-flow check before any routing publication.'
-            : 'Matching selected-flow check permits dispatch.',
-        `${evidence.reason} Affected route: ${routeId ?? 'unconfigured'}; flow: ${registry[0].formats[0].split(':')[0]}. ${
-            evidence.reviewCurrent
-                ? 'Review the latest check and route-wide failures first. For transient failures, wait for bounded recovery and rerun pnpm dev:doctor before considering another paid check. Hard failures require a successful explicit recheck. Any paid recheck requires explicit approval of the operator expense.'
-                : 'Admin → AI routing: select this route and Test selected flow, then explicitly approve its operator expense and run the check.'
-        } Do not change routing or add API keys merely to refresh evidence. Rerun pnpm dev:doctor after recovery.`,
-    );
+    results.push({
+        id: 'flow-check',
+        status: 'info',
+        message: probeDiagnostic(snapshot, registry[0], model),
+    });
 
     const price = snapshot.prices.find(
         (p) => p.model_id === modelId && p.provider_id === providerId,

@@ -553,8 +553,10 @@ transport. They prove implementation behavior, not provider availability.
 authorization and budget for separate live checks with approved models and the
 dedicated synthetic account. Apply its limits and stop conditions without asking
 again when the action remains covered. Report implementation verified, local-ready
-and live-verified separately; missing credentials, stale activation or an exhausted
-budget remain explicit gaps. Automated tests never make paid provider calls.
+and live-verified separately; missing credentials or an exhausted budget remain
+explicit gaps. Optional diagnostic history never blocks routing publication or
+generation, and prompt/schema changes do not require paid rechecks. Automated
+tests never make paid provider calls.
 
 ### Learn after acceptance
 

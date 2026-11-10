@@ -175,9 +175,12 @@ Before remaining selected checks:
   For AI changes, compare final affected capability doctor results from the intended
   running environment with baseline. Separately record deterministic implementation,
   local readiness and live proof under [AI smoke policy](AI_SMOKE_POLICY.md).
-  Invalidated matching flow evidence requires only authorized bounded live smoke,
-  then another doctor run. Reuse standing authorization; ask only for out-of-policy
-  expense/action. Missing credentials/readiness or exhausted limits remain explicit
+  Diagnostic history never gates routing publication or dispatch. Prompt/schema
+  changes and model switches do not require paid rechecks. Run live diagnostics
+  only when useful and within existing bounded authorization; their absence or
+  failure is a live-evidence limitation, not an admission blocker. Reuse standing
+  authorization; ask only for out-of-policy expense/action. Missing actual
+  configuration/readiness or exhausted limits remain explicit
   local/live gaps: never bypass admission or claim deterministic proof is live.
   See [local testing setup](../docs/operations/local-testing-setup.md#admin-activation).
   For new/changed test infrastructure, measure cold setup separately from test bodies

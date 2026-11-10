@@ -16,12 +16,7 @@ import { AdminMcpAdministrationAdapter } from '../../modules/admin-mcp/infrastru
 import { createAdminMcpServer } from '../../modules/admin-mcp/interface/http/admin-mcp-server';
 import { createAdminMcpChecks } from '../../modules/admin-mcp/infrastructure/admin-mcp-checks';
 import { DrizzleTextAiRoutingStore } from '../../modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-routing-store';
-import {
-    requireProbeReady,
-    DrizzleTextAiProbeStore,
-} from '../../modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-probe-store';
-import { createTextAiRouteFingerprint } from '../text-ai/route-fingerprint';
-import { TextAiProbeUnavailableError } from '../../modules/text-ai/application/ports/text-ai-probe-store';
+import { DrizzleTextAiProbeStore } from '../../modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-probe-store';
 import { TextAiProbeService } from '../../modules/text-ai/application/text-ai-probe-service';
 import { createTextAiProbeExecutor } from '../../modules/text-ai/infrastructure/ai/text-ai-probe-executor';
 import { createTextAiSyntheticFlows } from '../text-ai/probe-flow-registry';
@@ -54,23 +49,12 @@ const credentials = new AdminMcpCredentialService(
 );
 const providerKeys = loadTextAiProviderCredentials();
 const transcriptionCredentials = loadKnowledgeTranscriptionEnvironment();
-const fingerprint = createTextAiRouteFingerprint(providerKeys);
-const routing = new DrizzleTextAiRoutingStore(
-    database,
-    async (tx, request) => {
-        const identity = fingerprint(request.routeId, request.flowId);
-        if (!identity) {
-            throw new TextAiProbeUnavailableError('probe_route_unavailable');
-        }
-
-        await requireProbeReady(tx, { ...request, fingerprint: identity });
-    },
-    (providerId) =>
-        Boolean(
-            providerKeys[
-                `${providerId.toUpperCase()}_API_KEY` as keyof typeof providerKeys
-            ],
-        ),
+const routing = new DrizzleTextAiRoutingStore(database, (providerId) =>
+    Boolean(
+        providerKeys[
+            `${providerId.toUpperCase()}_API_KEY` as keyof typeof providerKeys
+        ],
+    ),
 );
 const accounting = new DrizzleAccountingStore(
     reportsDatabase,

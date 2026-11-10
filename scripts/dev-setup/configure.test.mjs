@@ -62,11 +62,12 @@ test('all preset bodies satisfy current public contracts and docs expose their e
 
 test('preview makes no writes; apply converges and repeats publish no revisions', async () => {
     const f = fixture();
+    const messages = [];
     const options = {
         profileName: 'deepseek-local-testing',
         contracts,
         request: f.request,
-        log: silent,
+        log: (message) => messages.push(message),
     };
 
     assert.equal(await configure(options), 2);
@@ -95,6 +96,19 @@ test('preview makes no writes; apply converges and repeats publish no revisions'
 
     assert.equal(await configure({ ...options, apply: true }), 0);
     assert.equal(f.writes.length, 2);
+    assert.ok(
+        messages.some((message) =>
+            message.includes(
+                'Diagnostics are optional and do not enable or disable routes.',
+            ),
+        ),
+    );
+
+    assert.ok(
+        !messages.some((message) =>
+            message.includes('successful route/flow checks'),
+        ),
+    );
 });
 
 test('future provider revision cannot masquerade as currently usable calibration', async () => {

@@ -4,10 +4,7 @@ import type { TableColumnsType } from 'antd';
 import type { TextAiProbe } from '@languon/contracts';
 import type { AiSettingsResponse } from '../../types';
 import type { RoutingCatalog } from '../../lib/text-ai-routing-form';
-import {
-    latestRouteProbe,
-    probeEvidenceAge,
-} from '../../lib/text-ai-routing-form';
+import { latestRouteProbe } from '../../lib/text-ai-routing-form';
 
 type RouteRow = {
     id: string;
@@ -16,7 +13,6 @@ type RouteRow = {
     enabled: boolean;
     health: string;
     checkedAt: string | null;
-    evidence: string;
     processing: string;
     checkedFlow: string | null;
     checkState: string | null;
@@ -42,7 +38,7 @@ export function ProviderRouteTable({
     const t = useTranslate();
     const rows: RouteRow[] = catalog.map((route) => {
         const provider = providers.find((item) => item.id === route.providerId);
-        const evidence = latestRouteProbe(
+        const latestCheck = latestRouteProbe(
             probes.filter((probe) => probe.kind === 'flow'),
             route.routeId,
         );
@@ -59,11 +55,10 @@ export function ProviderRouteTable({
             credential: route.configured ? 'configured' : 'missing',
             enabled: enabledRouteIds.includes(route.routeId),
             health: provider?.health.status ?? 'unverified',
-            checkedAt: evidence?.completedAt ?? null,
-            evidence: probeEvidenceAge(evidence?.evidenceExpiresAt ?? null),
+            checkedAt: latestCheck?.completedAt ?? null,
             processing,
-            checkedFlow: evidence?.flowId ?? null,
-            checkState: evidence?.state ?? null,
+            checkedFlow: latestCheck?.flowId ?? null,
+            checkState: latestCheck?.state ?? null,
             runtimeFailure: route.runtimeHealth?.reason ?? null,
             runtimeObservedAt: route.runtimeHealth?.observedAt ?? null,
         };
@@ -110,11 +105,6 @@ export function ProviderRouteTable({
             title: t('routing.checkState'),
             dataIndex: 'checkState',
             render: (value: string | null) => value ?? '—',
-        },
-        {
-            title: t('routing.evidence'),
-            dataIndex: 'evidence',
-            render: (value: string) => t(`routing.evidence.${value}`),
         },
         { title: t('routing.flow'), dataIndex: 'checkedFlow' },
         {

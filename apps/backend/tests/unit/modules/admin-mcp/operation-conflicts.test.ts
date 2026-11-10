@@ -6,28 +6,8 @@ import { ModelPriceConflictError } from '../../../../src/modules/ai-credits/infr
 import { CapabilityPolicyConflictError } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-capability-policy-participant';
 import { AccountingConflictError } from '../../../../src/modules/ai-credits/domain/accounting';
 import { AiCreditManagementConflictError } from '../../../../src/modules/ai-credits/domain/ai-credit';
-import { TextAiProbeUnavailableError } from '../../../../src/modules/text-ai/application/ports/text-ai-probe-store';
 
 describe('MCP optimistic conflict recovery', () => {
-    it('returns an explicit check prerequisite without implicitly dispatching work', () => {
-        try {
-            rethrowOperationConflict(
-                new TextAiProbeUnavailableError('probe_check_required'),
-            );
-        } catch (error) {
-            expect(error).toMatchObject({
-                code: 'check_required',
-                message: expect.stringContaining(
-                    'Checks never run automatically',
-                ),
-            });
-
-            return;
-        }
-
-        throw new Error('Expected a check prerequisite');
-    });
-
     it.each([
         TextAiRoutingConflictError,
         TextAiPreferenceConflictError,

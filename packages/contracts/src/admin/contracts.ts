@@ -51,7 +51,6 @@ export const AdminErrorCodeSchema = z.enum([
     'probe_cooldown',
     'probe_prices_missing',
     'probe_route_unavailable',
-    'probe_check_required',
     'invalid_request',
     'service_unavailable',
     'internal_error',

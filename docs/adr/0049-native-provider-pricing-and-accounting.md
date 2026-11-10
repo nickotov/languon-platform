@@ -3,6 +3,7 @@ type: adr
 id: ADR-0049
 title: Native provider pricing and authoritative usage accounting
 status: accepted
+superseded_in_part_by: 'ADR-0056 removes native activation check-evidence requirements; native pricing/accounting and request-policy protections remain active'
 date: 2026-10-28
 supersedes: 'ADR-0048 flat-only publication and initial provider-coverage restriction; existing source/MCP boundaries remain active'
 ---

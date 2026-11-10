@@ -148,11 +148,16 @@ test('refuses remote, query overrides, production, and mismatched database witho
 
 test('configured setup passes and phase configuration needs no running workers', () => {
     const value = snapshot();
-    assert.ok(evaluateReadiness(value, env).every((c) => c.status === 'pass'));
+    assert.ok(
+        evaluateReadiness(value, env).every((c) =>
+            ['pass', 'info'].includes(c.status),
+        ),
+    );
+
     value.workers = [];
     assert.ok(
-        evaluateReadiness(value, env, 'configuration').every(
-            (c) => c.status === 'pass',
+        evaluateReadiness(value, env, 'configuration').every((c) =>
+            ['pass', 'info'].includes(c.status),
         ),
     );
 
@@ -331,8 +336,8 @@ test('free selected interview ignores learner credit balance and budget', () => 
     };
     const registry = selectCapabilities(env, ['interview']);
     assert.ok(
-        evaluateReadiness(value, env, 'runtime', registry).every(
-            (check) => check.status === 'pass',
+        evaluateReadiness(value, env, 'runtime', registry).every((check) =>
+            ['pass', 'info'].includes(check.status),
         ),
     );
 
@@ -378,8 +383,8 @@ test('new routing is mandatory and stale learner choices cannot override admin r
     const value = snapshot();
     value.learner = { mode: 'explicit', model_id: 'gemini-2.5-pro' };
     assert.ok(
-        evaluateReadiness(value, env, 'configuration').every(
-            (check) => check.status === 'pass',
+        evaluateReadiness(value, env, 'configuration').every((check) =>
+            ['pass', 'info'].includes(check.status),
         ),
     );
 
@@ -436,50 +441,71 @@ test('all primary and fallback routes and per-flow tariffs are inspected', () =>
     assert.ok(!JSON.stringify(result).includes('synthetic-private-key'));
 });
 
-test('quick-only, changed credential and hard failures cannot establish flow readiness; unchanged aged success warns', () => {
-    const registry = selectCapabilities(env, ['interview']);
-    for (const change of [
-        (probe) => ({ ...probe, kind: 'quick' }),
-        (probe) => ({ ...probe, fingerprint: 'stale' }),
-        (probe) => ({
-            ...probe,
-            state: 'failed',
-            failure: 'model_retired',
-            dispatch_allowed: false,
-            completed_at: '2020-01-01T00:00:00Z',
-        }),
-    ]) {
-        const value = snapshot();
-        value.probes = value.probes.map(change);
-        assert.equal(
-            evaluateReadiness(value, env, 'configuration', registry).find(
-                (check) => check.id === 'flow-check',
-            ).status,
-            'blocked',
-        );
+test('optional diagnostic history never blocks configuration or runtime readiness', () => {
+    for (const capability of capabilityRequirements) {
+        const registry = selectCapabilities(env, [capability.id]);
+        for (const state of [
+            'missing',
+            'quick-only',
+            'changed-fingerprint',
+            'failed',
+            'running',
+            'aged',
+        ]) {
+            const value = snapshot();
+            value.probes = value.probes.flatMap((probe) => {
+                if (state === 'missing') {
+                    return [];
+                }
+
+                if (state === 'quick-only') {
+                    return [{ ...probe, kind: 'quick' }];
+                }
+
+                if (state === 'changed-fingerprint') {
+                    return [{ ...probe, fingerprint: 'stale' }];
+                }
+
+                if (state === 'aged') {
+                    return [
+                        {
+                            ...probe,
+                            evidence_expires_at: '2020-01-01T00:00:00Z',
+                        },
+                    ];
+                }
+
+                return [
+                    {
+                        ...probe,
+                        state,
+                        failure: 'authorization_failed',
+                        dispatch_allowed: false,
+                    },
+                ];
+            });
+
+            for (const phase of ['configuration', 'runtime']) {
+                const checks = evaluateReadiness(value, env, phase, registry);
+                assert.ok(
+                    checks.every((check) =>
+                        ['pass', 'info'].includes(check.status),
+                    ),
+                    `${capability.id}/${phase}/${state}`,
+                );
+
+                const diagnostic = checks.find(
+                    (check) => check.id === 'flow-check',
+                );
+
+                assert.equal(diagnostic.status, 'info');
+                assert.match(diagnostic.message, /Diagnostics are optional/);
+                assert.ok(
+                    !diagnostic.message.includes('synthetic-private-key'),
+                );
+            }
+        }
     }
-
-    const value = snapshot();
-    value.probes.forEach(
-        (probe) => (probe.evidence_expires_at = '2020-01-01T00:00:00Z'),
-    );
-
-    assert.match(
-        evaluateReadiness(value, env, 'configuration', registry).find(
-            (check) => check.id === 'flow-check',
-        ).message,
-        /aged/,
-    );
-
-    assert.equal(
-        evaluateReadiness(
-            value,
-            { ...env, DEEPSEEK_API_KEY: 'changed-key' },
-            'configuration',
-            registry,
-        ).find((check) => check.id === 'flow-check').status,
-        'blocked',
-    );
 });
 
 test('EvoLink credential and routing alone cannot approve learner data processing', () => {
@@ -497,125 +523,32 @@ test('EvoLink credential and routing alone cannot approve learner data processin
     assert.match(check.message, /processing\/privacy/);
 });
 
-test('flow-check diagnostics distinguish missing, invalidated and blocked evidence without changing admission', () => {
+test('doctor separates optional diagnostic outcomes from required credentials', () => {
     const registry = selectCapabilities(env, ['conversation']);
-    const flowCheck = (value, environment = env) =>
-        evaluateReadiness(value, environment, 'configuration', registry).find(
-            (check) => check.id === 'flow-check',
-        );
-    const missing = snapshot();
-    missing.probes = missing.probes.filter(
-        (probe) => probe.flow_id !== 'conversation',
-    );
-
-    expectBlocked(flowCheck(missing), /No selected-flow check exists/);
-
-    const quickOnly = snapshot();
-    quickOnly.probes = quickOnly.probes.map((probe) => ({
-        ...probe,
-        kind: 'quick',
-    }));
-
-    expectBlocked(flowCheck(quickOnly), /quick response.*does not activate/);
-
-    const changed = flowCheck(snapshot(), {
-        ...env,
-        DEEPSEEK_API_KEY: 'changed-key',
-    });
-
-    expectBlocked(changed, /do not match the current execution identity/);
-    assert.match(
-        changed.message,
-        /Affected route: deepseek\/deepseek-flash; flow: conversation/,
-    );
-
-    assert.match(changed.message, /explicitly approve its operator expense/);
-    assert.ok(!changed.message.includes('changed-key'));
-
-    const failed = snapshot();
-    failed.probes = failed.probes.map((probe) => ({
+    const value = snapshot();
+    value.probes = value.probes.map((probe) => ({
         ...probe,
         state: 'failed',
+        failure: 'authorization_failed',
         dispatch_allowed: false,
     }));
 
-    expectBlocked(flowCheck(failed), /last matching check failed/);
-    assert.match(
-        flowCheck(failed).message,
-        /Hard failures require a successful explicit recheck/,
+    const checks = evaluateReadiness(
+        value,
+        { ...env, DEEPSEEK_API_KEY: '' },
+        'configuration',
+        registry,
     );
 
-    const transient = snapshot();
-    transient.probes = transient.probes.map((probe) => ({
-        ...probe,
-        state: 'failed',
-        failure: 'timeout',
-        dispatch_allowed: false,
-    }));
-
-    const temporaryBlock = flowCheck(transient);
-    expectBlocked(
-        temporaryBlock,
-        /wait for bounded recovery.*before considering another paid check/,
+    assert.equal(
+        checks.find((check) => check.id === 'credential').status,
+        'blocked',
     );
 
-    assert.ok(
-        !temporaryBlock.message.includes(
-            'then explicitly approve its operator expense and run',
-        ),
-    );
-
-    // The database authority, not diagnostic wording or elapsed time here,
-    // decides whether a prior matching success permits recovery.
-    transient.probes.forEach((probe) => (probe.dispatch_allowed = true));
-    assert.equal(flowCheck(transient).status, 'pass');
-    assert.equal(flowCheck(snapshot()).status, 'pass');
-});
-
-function expectBlocked(check, message) {
-    assert.equal(check.status, 'blocked');
-    assert.match(check.message, message);
-}
-
-test('only database-authorized recovery with a prior matching pass can restore readiness', () => {
-    const registry = selectCapabilities(env, ['interview']);
-    const check = (value) =>
-        evaluateReadiness(value, env, 'configuration', registry).find(
-            (item) => item.id === 'flow-check',
-        ).status;
-    const failedOnly = snapshot();
-    failedOnly.probes = failedOnly.probes.map((probe) => ({
-        ...probe,
-        state: 'failed',
-        failure: 'timeout',
-        completed_at: '2020-01-01T00:00:00Z',
-        dispatch_allowed: false,
-    }));
-
-    assert.equal(check(failedOnly), 'blocked');
-    const recovered = snapshot();
-    recovered.probes = recovered.probes.map((probe) => ({
-        ...probe,
-        state: 'failed',
-        failure: 'timeout',
-        completed_at: '2020-01-01T00:00:00Z',
-        dispatch_allowed: true,
-    }));
-
-    assert.equal(check(recovered), 'pass');
-    const hardThenTimeout = snapshot();
-    hardThenTimeout.probes = hardThenTimeout.probes.map((probe) => ({
-        ...probe,
-        state: 'failed',
-        failure: 'timeout',
-        completed_at: '2020-01-01T00:00:00Z',
-        dispatch_allowed: false,
-    }));
-
-    assert.equal(check(hardThenTimeout), 'blocked');
-    const legacySnapshot = snapshot();
-    legacySnapshot.probes.forEach((probe) => delete probe.dispatch_allowed);
-    assert.equal(check(legacySnapshot), 'blocked');
+    const diagnostic = checks.find((check) => check.id === 'flow-check');
+    assert.equal(diagnostic.status, 'info');
+    assert.match(diagnostic.message, /diagnostic failed/);
+    assert.ok(!JSON.stringify(checks).includes('synthetic-private-key'));
 });
 
 test('knowledge actions reuse Texts routing and require the exact new worker format', () => {
@@ -629,8 +562,8 @@ test('knowledge actions reuse Texts routing and require the exact new worker for
     assert.equal(selected[0].criticalFlow, 'interactive-workbooks');
     const value = snapshot();
     assert.ok(
-        evaluateReadiness(value, env, 'runtime', selected).every(
-            (check) => check.status === 'pass',
+        evaluateReadiness(value, env, 'runtime', selected).every((check) =>
+            ['pass', 'info'].includes(check.status),
         ),
     );
 

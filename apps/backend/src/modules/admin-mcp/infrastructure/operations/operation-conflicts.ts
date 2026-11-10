@@ -5,20 +5,9 @@ import { CapabilityPolicyConflictError } from '../../../ai-credits/infrastructur
 import { AccountingConflictError } from '../../../ai-credits/domain/accounting';
 import { AiCreditManagementConflictError } from '../../../ai-credits/domain/ai-credit';
 import { AdminMcpError } from '../../domain/admin-mcp';
-import { TextAiProbeUnavailableError } from '../../../text-ai/application/ports/text-ai-probe-store';
 
 /** Keep safe recovery instructions consistent across each established store. */
 export function rethrowOperationConflict(error: unknown): never {
-    if (
-        error instanceof TextAiProbeUnavailableError &&
-        error.code === 'probe_check_required'
-    ) {
-        throw new AdminMcpError(
-            'check_required',
-            'Run an explicit successful matching flow check, then create a new routing preview. Checks never run automatically.',
-        );
-    }
-
     if (
         error instanceof TextAiRoutingConflictError ||
         error instanceof TextAiPreferenceConflictError ||

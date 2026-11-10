@@ -97,9 +97,10 @@ Request a switch as part of the same authorized feature:
 
 ```text
 $ai-provider-model-onboarding Create a feature to add <provider>/<exact-model-id>
-and switch the sentence-generation default after its required checks pass.
-Preserve the current customer tariff and other flow routes. Ask for any missing
-processing constraints, credentials or bounded live-check spending authority.
+and switch the sentence-generation default once supported execution, credentials,
+processing requirements and financial configuration are ready. Preserve the current
+customer tariff and other flow routes. Keep live diagnostics optional and ask
+for bounded spending authority only if a live check is needed for investigation.
 ```
 
 Replace the placeholders with the provider selling access and its exact model ID.
@@ -111,6 +112,9 @@ for language/voice mappings and retained profiles. Review the
 for current MCP methods and action permissions. Model-price verification reads
 metadata; it does not run a paid generation check. When the work needs a live
 probe, supply a finite spending authorization through the existing controls.
+Quick-response and selected-flow diagnostics do not gate text routing publication
+or generation; missing, failed or outdated results do not disable a configured
+route. Prompt/schema changes and supported model switches require no paid recheck.
 
 The skill prepares source, pricing and configuration changes through reviewed
 application seams; it does not add arbitrary endpoints to learner requests or

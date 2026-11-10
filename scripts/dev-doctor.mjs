@@ -65,7 +65,9 @@ export async function doctor({
                 phase,
                 capabilities: selected.map((capability) => capability.id),
                 checks,
-                ready: checks.every((check) => check.status === 'pass'),
+                ready: checks.every((check) =>
+                    ['pass', 'info'].includes(check.status),
+                ),
                 scope: 'Configuration prerequisites only; no generation, Redis connectivity, circuit-breaker state, exhausted daily quota, or provider connectivity is tested.',
             };
         });
