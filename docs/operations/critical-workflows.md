@@ -116,13 +116,13 @@ Before implementing an AI-related correction, improvement or feature, record the
 affected seams and exact checks in its active delivery record. Use this matrix to
 select coverage; unrelated presentation changes do not require new AI tests.
 
-| Affected seam                                         | Required retained regression evidence                                                                                                                 |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Prompt, schema or admission envelope                  | Real admission budget into the actual provider factory, including normal and reduced allowance; outgoing limits and structured validation.            |
-| Model routing, provider factory or SDK settings       | Actual default router/factory and SDK with strict fake external HTTP; exact model/output limits, bounded retries and capability isolation.            |
-| Worker construction, deadline, Stop or lease handling | Production composition/defaults; success beyond the previous cutoff, hard timeout, cancellation/lost ownership, and no late publication.              |
-| Accounting or shared generation configuration         | Real disposable PostgreSQL admission, claim and settlement via shared invariants and affected consumer groups; broaden when impact cannot be bounded. |
-| Browser interaction only                              | Affected browser journey and relevant component tests; execution checks when the changed path also touches a seam above.                              |
+| Affected seam                                         | Required retained regression evidence                                                                                                                           |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prompt, schema or admission envelope                  | Real admission budget into the actual provider factory, including normal and reduced allowance; outgoing limits and structured validation.                      |
+| Model routing, provider factory or SDK settings       | Actual default router/factory and SDK with strict fake external HTTP; exact model/output limits, bounded retries and capability isolation.                      |
+| Worker construction, deadline, Stop or lease handling | Production composition/defaults; success beyond the previous cutoff, hard timeout, cancellation/lost ownership, and no late publication.                        |
+| Accounting or shared generation configuration         | Real disposable PostgreSQL admission, claim and settlement for changed invariants and distinct affected execution paths; broaden when impact cannot be bounded. |
+| Browser interaction only                              | Affected browser journey and relevant component tests; execution checks when the changed path also touches a seam above.                                        |
 
 For an incident, first retain a faithful failing regression when practical, then
 verify the repair against that same path. Do not substitute an isolated successful
@@ -131,7 +131,12 @@ production deadline. Database tests retain real fencing and settlement; timing
 unit tests can use a store port fixture to control cancellation and lease loss.
 
 For routing, provider or shared generation configuration changes, retain a
-submit-to-result regression for each changed provider family. Use the selected
+submit-to-result regression for each changed provider family. A provider family
+is changed when its request/response, SDK configuration, execution or billing
+contract changes; a shared eligibility predicate alone does not change every
+provider adapter. For that bounded case, prove the predicate's cross-route/provider
+invariants and each materially different affected production path, reusing valid
+unchanged adapter evidence. Use the selected
 production configuration shape and actual catalog model IDs, including namespaced
 IDs such as OpenRouter's `vendor/model`. Cover Free policy without a customer
 tariff and Paid policy with its published tariff wherever affected. In disposable
@@ -157,17 +162,41 @@ or mandatory incident scenario was removed:
 | `ai-shared-invariants`   | Common pricing, admission, financial settlement, provider SDK observations, routing/probes and account-erasure persistence. |
 | `ai-execution-contracts` | Compatibility aggregate: every backend suite above, with its existing aggregate minimum count.                              |
 
-`ai-shared-invariants` is itself a substantial selection. During implementation,
-run focused files/cases first; for task completion select it when common admission,
-routing, provider configuration or accounting is affected, together with the
-consumer groups that exercise the changed path. A dictionary-only change normally
-selects `ai-dictionary` and the relevant browser flow, not every AI consumer.
-A shared worker/configuration change requires tracing affected consumers rather
-than treating the word “shared” as an automatic full-gate trigger. Record the
-selection and rationale in the delivery record before execution. Broaden to the
-complete backend aggregate or full critical gate when impact spans those surfaces,
-cannot be reliably bounded, or release/scheduled/user-requested verification calls
-for it. Uncertainty is a reason to investigate and, if unresolved, broaden.
+### Choose completion coverage by affected behavior
+
+`ai-shared-invariants` and the consumer groups are convenient substantial bundles,
+not automatic task-completion requirements whenever a shared file changes.
+Before execution, map each changed invariant to its callers, materially different
+production paths and exact retained tests. Equivalent callers can share proof of
+the same database predicate; a restricted-role worker and an application router
+may need separate production-composition proof. Preserve affected incident cases,
+Free/Paid accounting, success/failure, fencing and recovery coverage where relevant.
+
+Use an existing registered selection when it fits. If it includes unrelated
+pricing, account-erasure or persistence coverage, select exact existing files/cases
+through the workspace test runner and established disposable fixtures/ownership
+guards. Record the full command, setup, case identities and why omitted paths are
+unchanged or equivalent. Do not invent filters for the critical runner: its
+registered allow-lists/minimums remain strict, and a focused workspace run must
+not be reported as a passing named critical group. Important new journeys still
+join the registry under the extension rules below; no test is deleted from CI.
+
+For example, a bounded routing eligibility change needs real SQL admission and
+dispatch, configuration/authorization prerequisites, cross-route/provider failure
+scope and a usable result through each distinct affected worker/router path. It
+does not automatically need unrelated price-source actualization or account-erasure
+tests. A change to native billing units, shared settlement, auth policy or several
+provider protocols may require those broader invariants and consumer groups.
+
+Select full groups or the aggregate when the changed contract genuinely spans
+them, consequential uncertainty remains after focused discovery, or release,
+scheduled or explicitly requested comprehensive verification requires them.
+Explain that breadth and cold setup estimate in the delivery record before the
+run. A coverage gap requires investigation or broader proof, not an unsupported
+assumption of equivalent callers. Apply
+[verification cost controls](../../.agent/DELIVERY.md#control-verification-cost-before-execution)
+to fixture preflight, resource ownership and slow-run checkpoints. Required real
+database/browser/security evidence is unchanged by narrower selection.
 
 The no-argument comprehensive gate retains all browser entries and the complete
 backend aggregate, without executing its seam groups again. Explicit selections

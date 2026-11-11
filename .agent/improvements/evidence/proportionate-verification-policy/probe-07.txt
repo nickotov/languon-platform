@@ -1,0 +1,11 @@
+- **Scope:** A bounded **correction**, using the small-fix fast path. Add the missing `../` segment in the contributor guide. No feature authorization, branch, or expanded implementation is needed.
+
+- **Proportional verification:** Confirm the corrected relative URL resolves from the guide’s directory to the existing intended destination. Inspect the final diff for the exact link change and unintended edits; run the applicable focused documentation/link check and whitespace check. No application tests, build, typecheck, browser/device session, database verification, E2E, or critical smoke is warranted. Developer documentation is not application UI, and no user-flow content or mapping changes.
+
+- **Earlier evidence:** Revision A’s application-test evidence remains valid for the unchanged application at B. Record the A-to-B comparison and reuse rationale: application source, dependencies, tests, configuration, and relevant environment are unaffected. Attribute the tests to A; do not describe them as newly run at B. The corrected link needs its own focused evidence.
+
+- **Review:** Author preflight is sufficient. The supplied facts trigger no independent reviewer, separate tester, or security review.
+
+- **Completion criteria:** The link resolves correctly, the scoped documentation checks pass, the final diff contains no unintended changes, and one correction record captures the outcome, evidence, reused application-test results, review decision, and any remaining risks before being marked `Complete`. User-flow updates are explicitly inapplicable. Stay on the current branch; no automatic commit, merge, or push.
+
+This was a read-only decision probe. No files were changed and no verification checks were executed.

@@ -646,6 +646,14 @@ Run focused checks while iterating, then affected broader checks justified by th
 regression surface. The commands below are available checks, not a requirement
 to execute every suite for every task. Reuse valid final-state evidence under
 `$testing`; rerun checks when changed code/configuration/environment invalidates it.
+For shared AI changes, use the
+[affected-behavior selection rule](./operations/critical-workflows.md#choose-completion-coverage-by-affected-behavior)
+instead of automatically running every shared/consumer bundle. Keep distinct
+production paths and required security/accounting evidence. Preflight complete
+synthetic fixtures, assign one compiler owner and include repeated cold migrations
+in estimates under [verification cost controls](../.agent/DELIVERY.md#control-verification-cost-before-execution).
+Reassess slow or recurring failures before relaunching a broad run; an incomplete
+standard build or release check remains an explicit gap, never a passing check.
 
 ### Backend
 

@@ -91,6 +91,41 @@ for live authorization, bounds and reporting; deterministic tests never call pai
 Exit: scope, consumers and risks are accounted for; consequential unknowns have
 proof or explicit unresolved decisions; every criterion has development/final checks.
 
+### Control verification cost before execution
+
+Use the existing delivery record; add no approval gate or separate checklist.
+
+- Map each selected check to a changed invariant and materially different execution
+  path. Shared code requires consumer tracing, not every suite containing a caller.
+  Follow the [critical selection policy](../docs/operations/critical-workflows.md#ai-execution-regression-matrix)
+  for focused coverage and reasons to broaden.
+- Before a cold integration/browser run, validate the complete synthetic fixture
+  through the real environment schemas and composition prerequisites: model,
+  budgets, enablement flags, credentials and worker formats where applicable.
+  Prove one startup path before multiplying it across journeys. Keep test setup
+  independent of ignored developer env files; never copy real credentials to tests.
+- Assign one owner for each expensive build/typecheck and shared test resource;
+  delegated workers reuse its result/handle rather than launch duplicate compilers.
+  Estimate cold reset/migration cost times the number of resets, separately from
+  test bodies. Avoid competing declaration builds and database/browser runs when
+  resource contention can invalidate timing evidence.
+- After roughly ten minutes without the planned result, an exceeded estimate,
+  or a recurring setup failure, report the cause and next bounded action before
+  relaunching. Diagnose the smallest reproducer and reuse unchanged evidence.
+  This is a reassessment checkpoint, not a time limit or permission to omit proof,
+  increase product deadlines, or redesign the harness inside an unrelated fix.
+- Select build outputs by their consumers: source types, executable bundles,
+  migration/assets packaging and public declarations where affected. Record exact
+  commands. A partial build never counts as a green standard build; if a required
+  phase is unavailable or bounded, retain that gap and the proof actually obtained.
+  Stop only owned processes, not user services, when bounding a stalled check.
+
+An unrelated pre-existing release blocker does not expand a local repair into
+deployment work. Record it, preserve fail-closed release checks, and deliver a safe
+locally verified repair when authorized. Keep local readiness, strict feature
+completion and production approval distinct; do not merge or claim completion
+while their required gates remain open.
+
 ## 2. Implement and verify in coherent slices
 
 Use `$testing` for the cheapest reliable checks, including required browser/device,

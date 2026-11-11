@@ -38,7 +38,7 @@ not authorize arbitrary evaluation traffic.
 
 ## Start with bounded decision probes
 
-The [case directory](../.agent/evals/workflow/cases/) contains nine offline
+The [case directory](../.agent/evals/workflow/cases/) contains offline
 scenarios. Each file is a complete request plus synthetic raw task facts. They
 test routing, evidence selection, design inventory, and review scope without
 running application code. They do **not** prove implementation quality, visual

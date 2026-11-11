@@ -1,0 +1,30 @@
+{
+  "variant": "revised only; not a controlled old/new cost comparison",
+  "baseRevision": "8353ea93",
+  "files": {
+    "AGENTS.md": "6c8cf89c0c2e6d5b0fe8d9200d72becd606a4cec8c7da2df70fbf9cd99850475",
+    ".agent/DELIVERY.md": "623865c45d70f4270e4be27d16f40dde738a0bba210e28856b446114a6001675",
+    ".agents/skills/testing/SKILL.md": "b65be0385cff1de99e279015cddce87177a012a5778f5da0b148a9acf1ef12b7",
+    "docs/operations/critical-workflows.md": "85da08c55b7db08da9ff8b75d77473dcd1ec8117e1c2ba872f2ecf8569f6c11f",
+    ".agents/skills/correction-development/SKILL.md": "cb7f6d5246dae8883fcb7a8b5e23fceca11918e6bfd021a436a4038318353370",
+    ".agents/skills/improvement-development/SKILL.md": "947415b4d554e72ccf0af0dd698aed1549b703031ca1ae0926745bca6bdb6f04",
+    ".agents/skills/feature-development/SKILL.md": "8082d0442828ac8ccf596e6193b4328e41fe6fc8d11d13864e096bc440441b09"
+  },
+  "cases": [
+    "10",
+    "08",
+    "07"
+  ],
+  "isolation": "physical copies exclude application source, credentials, evaluator rubric, sibling cases and old responses; tools remain available but prompt restricts reads/side effects",
+  "caseHashes": {
+    "10": "323eb84cc4b356b918e7af4ca7ec44d259bee66a796123b198748435d05539e3",
+    "08": "e0c17bac82e20cfc815e28cd184fc3b478473470651e85bace040956906fa1f7",
+    "07": "9a2b203beba6fce3a4f25dbe0c03fcdfd73ff6777b647c8dcc7f6c64c08419d8"
+  },
+  "responseHashes": {
+    "10": "e3c0481d5433fbed2b395602d310f204acddabee18f5c5855c2d231a51fddb09",
+    "08": "8e910d6818405f0547052302ad7a72bce86fd69738dc915b84b4bb7e1e9ec392",
+    "07": "064a55940f8a1a2585b99b3341930d500082887be7dbe9a728f11d0ded355273"
+  },
+  "evaluation": "Three revised-only read-only decision probes; rubric read only after all responses saved. Not a before/after experiment or measured runtime/token comparison."
+}
