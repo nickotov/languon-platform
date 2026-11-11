@@ -2,7 +2,7 @@
 
 import type { DictionaryCardAuthoringField } from '../../types';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button, Card, InlineAlert } from '@/fsd/shared/ui';
+import { Button, Card, DialogActions, InlineAlert } from '@/fsd/shared/ui';
 import { useCardAuthoring } from '../../hooks/use-card-authoring';
 import type {
     DictionaryCardFormProps,
@@ -240,7 +240,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                             onChange={authoring.setActiveVersion}
                             total={authoring.versionCount}
                         />
-                        <div className={styles.actions}>
+                        <DialogActions className={styles.actions}>
                             <Button
                                 disabled={closeDisabled}
                                 onClick={onCancel}
@@ -257,7 +257,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
                             >
                                 {saveLabel}
                             </Button>
-                        </div>
+                        </DialogActions>
                     </div>
                 </div>
             </form>

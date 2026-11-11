@@ -79,7 +79,7 @@ export const defaultAuthoringLabels: BlockAuthoringLabels = {
     down: 'Move down',
     preview: 'Learner preview',
     cancel: 'Cancel',
-    apply: 'Apply changes',
+    apply: 'Apply',
     addRow: 'Add row',
     removeRow: 'Remove row',
     error: 'Check the required fields, languages and answer settings.',

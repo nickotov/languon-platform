@@ -101,6 +101,7 @@ export function ConversationHistory({
         <section className={styles.history}>
             <div className={styles.toolbar}>
                 <Button
+                    desktopIconOnly
                     variant='ghost'
                     size='compact'
                     leadingIcon={<ArrowLeft size={16} />}
@@ -110,6 +111,7 @@ export function ConversationHistory({
                     {copy.back}
                 </Button>
                 <Button
+                    desktopIconOnly
                     variant='secondary'
                     size='compact'
                     leadingIcon={<SquarePen size={16} />}
@@ -295,7 +297,6 @@ function HistoryRow({
                         label={`${text.rename}: ${option.label}`}
                         size='sm'
                         variant='ghost'
-                        showTooltip={false}
                         onClick={startEdit}
                         disabled={busy}
                     />
@@ -305,7 +306,6 @@ function HistoryRow({
                         label={deleteLabel}
                         size='sm'
                         variant='ghost'
-                        showTooltip={false}
                         onClick={remove}
                         disabled={busy}
                     />

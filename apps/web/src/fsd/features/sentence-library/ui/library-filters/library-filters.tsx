@@ -60,6 +60,7 @@ export function LibraryFilters(props: LibraryFiltersProps) {
                 </Button>
                 {props.activeCount ? (
                     <Button
+                        desktopIconOnly
                         variant='secondary'
                         size='compact'
                         leadingIcon={
@@ -222,6 +223,7 @@ function FilterControls({
                 </button>
                 {!stacked && activeCount > 0 ? (
                     <Button
+                        desktopIconOnly
                         variant='secondary'
                         size='compact'
                         leadingIcon={

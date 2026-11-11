@@ -1,7 +1,9 @@
 import { fireEvent, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ReactNode } from 'react';
-import { render } from './render';
+import type { ReactElement, ReactNode } from 'react';
+import type { ConversationDetail } from '@languon/contracts';
+import { render as renderWithI18n } from './render';
 import { ResponseActions } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/response-actions';
 import { AssistantPanel } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/assistant-panel';
 
@@ -33,7 +35,8 @@ vi.mock(
                 },
                 detail: {
                     conversation: {},
-                    turns: [],
+                    messages: [] satisfies ConversationDetail['messages'],
+                    turns: [] satisfies ConversationDetail['turns'],
                     drafts: [{ id: 'private-draft' }],
                 },
                 preferences: null,
@@ -103,6 +106,16 @@ const panelProps = {
     onExpand: vi.fn(),
     onSelectFromPage: vi.fn(),
 };
+
+function render(ui: ReactElement) {
+    const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+    });
+
+    return renderWithI18n(
+        <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+    );
+}
 
 beforeEach(() => {
     vi.clearAllMocks();

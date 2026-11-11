@@ -139,7 +139,7 @@ export const ru = {
     'dictionary.card.discardTitle': 'Удалить черновик?',
     'dictionary.card.discardDescription':
         'Несохранённые изменения карточки будут потеряны.',
-    'dictionary.card.keepWriting': 'Продолжить редактирование',
+    'dictionary.card.keepWriting': 'Продолжить',
     'dictionary.card.discardDraft': 'Удалить черновик',
     'dictionary.card.discardHelp':
         'Непринятые предложения удаляются вместе с черновиком. Отмена генерации — отдельное действие, которое оставляет черновик открытым.',
@@ -586,7 +586,7 @@ export const ru = {
     'dictionary.create.title': 'Создать словарь',
     'dictionary.create.description':
         'Сначала словарь будет приватным. Позже им можно поделиться по секретной ссылке.',
-    'dictionary.create.submit': 'Создать словарь',
+    'dictionary.create.submit': 'Создать',
     'dictionary.dialog.close': 'Закрыть',
     'dictionary.field.name': 'Название',
     'dictionary.field.description': 'Описание',
@@ -609,7 +609,7 @@ export const ru = {
     'dictionary.settings.exampleLanguage': 'Язык примера',
     'dictionary.settings.inactiveHelp':
         'При отключении поля его значения сохраняются, но становятся неактивными.',
-    'dictionary.settings.save': 'Сохранить настройки',
+    'dictionary.settings.save': 'Сохранить',
     'dictionary.settings.saved': 'Настройки словаря сохранены.',
     'dictionary.settings.cancelled': 'Несохранённые настройки отменены.',
     'dictionary.notation.ipa': 'МФА',
@@ -839,7 +839,7 @@ export const ru = {
     'dictionary.generation.loadFailed': 'Не удалось загрузить предложение',
     'dictionary.generation.capabilityFailed':
         'Не удалось проверить доступность пересоздания с ИИ.',
-    'dictionary.generation.close': 'Закрыть проверку',
+    'dictionary.generation.close': 'Закрыть',
     'dictionary.generation.instruction': 'Дополнительная инструкция',
     'dictionary.generation.instructionHelp':
         'Опишите конкретное исправление или контекст для этой карточки. Исходная карточка не изменится, пока вы не примете предложение.',

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check, Copy, NotebookPen } from 'lucide-react';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
+import { Button } from '@/fsd/shared/ui';
 import { messagesCopy } from '../../lib/messages-copy';
 import styles from './conversation-messages.module.css';
 
@@ -23,6 +24,12 @@ export function ResponseActions({
     const [copyError, setCopyError] = useState(false);
     const showPropose = canPropose && onPropose !== undefined;
     const copyLabel = copied ? labels.copied : labels.copy;
+    const copyIcon = copied ? (
+        <Check size={14} aria-hidden='true' />
+    ) : (
+        <Copy size={14} aria-hidden='true' />
+    );
+
     async function copyAnswer() {
         try {
             await navigator.clipboard.writeText(text);
@@ -35,14 +42,17 @@ export function ResponseActions({
 
     return (
         <>
-            <button type='button' className={styles.quiet} onClick={copyAnswer}>
-                {copied ? (
-                    <Check size={14} aria-hidden='true' />
-                ) : (
-                    <Copy size={14} aria-hidden='true' />
-                )}
+            <Button
+                type='button'
+                variant='quiet'
+                size='compact'
+                desktopIconOnly
+                className={styles.quiet}
+                leadingIcon={copyIcon}
+                onClick={copyAnswer}
+            >
                 {copyLabel}
-            </button>
+            </Button>
             {showPropose && (
                 <button
                     type='button'

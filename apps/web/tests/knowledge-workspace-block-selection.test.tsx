@@ -2,7 +2,7 @@ import { Editor, Node } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { EditorContent } from '@tiptap/react';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { I18nProvider } from '../src/fsd/shared/i18n';
 import { en } from '../src/fsd/shared/i18n/messages/en';
@@ -103,9 +103,25 @@ it('keeps prose actions for selected text and removes them when the caret is col
     );
 
     const view = render(chrome(editor));
-    expect(
-        screen.getByRole('toolbar', { name: en['knowledge.selectionActions'] }),
-    ).toBeInTheDocument();
+    const selectionToolbar = screen.getByRole('toolbar', {
+        name: en['knowledge.selectionActions'],
+    });
+
+    expect(selectionToolbar).toBeInTheDocument();
+
+    const bold = within(selectionToolbar).getByRole('button', {
+        name: en['knowledge.bold'],
+    });
+
+    expect(fireEvent.mouseDown(bold)).toBe(false);
+    expect(editor.state.selection.from).toBe(1);
+    expect(editor.state.selection.to).toBe(9);
+    fireEvent.click(bold);
+    view.rerender(chrome(editor));
+    expect(editor.isActive('bold')).toBe(true);
+    expect(bold).toHaveAttribute('aria-pressed', 'true');
+    expect(editor.state.selection.from).toBe(1);
+    expect(editor.state.selection.to).toBe(9);
 
     act(() => {
         editor.view.dispatch(

@@ -1,6 +1,6 @@
 import styles from './sentence-practice-footer.module.css';
 import { ArrowRight, Scale, SkipForward, Sparkles } from 'lucide-react';
-import { Button } from '@/fsd/shared/ui';
+import { Button, DialogActions } from '@/fsd/shared/ui';
 import { useSentenceCopy } from '../sentence-copy';
 
 type SentencePracticeFooterProps = {
@@ -65,8 +65,10 @@ export function SentencePracticeFooter({
     const nextTrailingIcon = completed ? (
         <ArrowRight aria-hidden className={styles.nextIcon} />
     ) : undefined;
+    const nextClassName = completed ? undefined : styles.skipAction;
     const nextAction = showNext ? (
         <Button
+            className={nextClassName}
             variant={nextVariant}
             leadingIcon={nextLeadingIcon}
             trailingIcon={nextTrailingIcon}
@@ -78,43 +80,36 @@ export function SentencePracticeFooter({
     ) : null;
 
     return (
-        <div className={styles.footer}>
-            <div>{!completed ? nextAction : null}</div>
-            <div className={styles.actions}>
-                {hasExercise ? (
-                    <>
-                        {showComparison ? (
-                            <Button
-                                variant='secondary'
-                                leadingIcon={
-                                    <Scale
-                                        aria-hidden
-                                        className={styles.icon}
-                                    />
-                                }
-                                loading={referenceLoading}
-                                disabled={compareDisabled}
-                                aria-describedby='practice-compare-note'
-                                onClick={compareAction}
-                            >
-                                {comparisonLabel}
-                            </Button>
-                        ) : null}
-                    </>
-                ) : null}
-                <Button
-                    leadingIcon={
-                        <Sparkles aria-hidden className={styles.icon} />
-                    }
-                    variant={checkVariant}
-                    loading={checkLoading}
-                    disabled={checkDisabled}
-                    onClick={onCheck}
-                >
-                    {checkLabel}
-                </Button>
-                {completed ? nextAction : null}
-            </div>
-        </div>
+        <DialogActions className={styles.footer}>
+            {!completed ? nextAction : null}
+            {hasExercise ? (
+                <>
+                    {showComparison ? (
+                        <Button
+                            variant='secondary'
+                            leadingIcon={
+                                <Scale aria-hidden className={styles.icon} />
+                            }
+                            loading={referenceLoading}
+                            disabled={compareDisabled}
+                            aria-describedby='practice-compare-note'
+                            onClick={compareAction}
+                        >
+                            {comparisonLabel}
+                        </Button>
+                    ) : null}
+                </>
+            ) : null}
+            <Button
+                leadingIcon={<Sparkles aria-hidden className={styles.icon} />}
+                variant={checkVariant}
+                loading={checkLoading}
+                disabled={checkDisabled}
+                onClick={onCheck}
+            >
+                {checkLabel}
+            </Button>
+            {completed ? nextAction : null}
+        </DialogActions>
     );
 }

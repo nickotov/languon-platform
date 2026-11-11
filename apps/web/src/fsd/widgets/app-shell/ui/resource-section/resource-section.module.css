@@ -53,6 +53,10 @@
     flex-shrink: 0;
 }
 
+.iconTooltipTrigger {
+    flex-shrink: 0;
+}
+
 .create,
 .disclosure {
     display: flex;

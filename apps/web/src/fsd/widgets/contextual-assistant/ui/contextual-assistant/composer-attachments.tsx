@@ -3,6 +3,7 @@ import { BookA, Clipboard, Quote, X } from 'lucide-react';
 import type { CopiedAttachment } from '@languon/contracts';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
+import { Tooltip } from '@/fsd/shared/ui';
 import { composerCopy } from './composer-copy';
 import styles from './composer.module.css';
 
@@ -113,14 +114,20 @@ function AttachmentChip({
                     {characterCount.toLocaleString(locale)}
                 </small>
             )}
-            <button
-                type='button'
-                onClick={remove}
-                aria-label={removeLabel}
-                className={styles.removeAttachment}
+            <Tooltip
+                content={removeLabel}
+                desktopOnly
+                triggerClassName={styles.iconTooltipTrigger}
             >
-                <X size={14} aria-hidden='true' />
-            </button>
+                <button
+                    type='button'
+                    onClick={remove}
+                    aria-label={removeLabel}
+                    className={styles.removeAttachment}
+                >
+                    <X size={14} aria-hidden='true' />
+                </button>
+            </Tooltip>
         </li>
     );
 }

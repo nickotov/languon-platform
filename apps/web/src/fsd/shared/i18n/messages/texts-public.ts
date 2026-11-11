@@ -8,8 +8,8 @@ export const textsPublicEn = {
         'Saving words or copying needs an account. You’ll come right back to this page.',
     'texts.public.close': 'Close dialog',
     'texts.public.email': 'Continue with email',
-    'texts.public.keepReading': 'Keep reading',
-    'texts.public.newAccount': 'New to Languon? Create a free account',
+    'texts.public.keepReading': 'Cancel',
+    'texts.public.newAccount': 'Create a free account',
     'texts.public.unavailable': 'This shared page isn’t available',
     'texts.public.unavailableHelp':
         'The link may have been turned off, or the content is no longer shared. Ask the sender for a new link.',
@@ -58,8 +58,8 @@ export const textsPublicRu = {
         'Для сохранения слов и копирования нужен аккаунт. Вы вернётесь на эту страницу.',
     'texts.public.close': 'Закрыть окно',
     'texts.public.email': 'Продолжить с почтой',
-    'texts.public.keepReading': 'Продолжить чтение',
-    'texts.public.newAccount': 'Впервые в Languon? Создать бесплатный аккаунт',
+    'texts.public.keepReading': 'Отмена',
+    'texts.public.newAccount': 'Создать бесплатный аккаунт',
     'texts.public.unavailable': 'Эта страница недоступна',
     'texts.public.unavailableHelp':
         'Возможно, ссылка отключена или доступ закрыт. Попросите отправителя прислать новую ссылку.',
@@ -108,8 +108,8 @@ export const textsPublicEs = {
         'Guardar palabras o copiar requiere una cuenta. Volverás a esta página.',
     'texts.public.close': 'Cerrar diálogo',
     'texts.public.email': 'Continuar con correo',
-    'texts.public.keepReading': 'Seguir leyendo',
-    'texts.public.newAccount': '¿Nuevo en Languon? Crea una cuenta gratis',
+    'texts.public.keepReading': 'Cancelar',
+    'texts.public.newAccount': 'Crear cuenta gratis',
     'texts.public.unavailable': 'Esta página compartida no está disponible',
     'texts.public.unavailableHelp':
         'Puede que el enlace esté desactivado o el contenido ya no se comparta. Pide un enlace nuevo.',
@@ -159,8 +159,8 @@ export const textsPublicFr = {
         'Enregistrer des mots ou copier nécessite un compte. Vous reviendrez sur cette page.',
     'texts.public.close': 'Fermer la fenêtre',
     'texts.public.email': 'Continuer par e-mail',
-    'texts.public.keepReading': 'Continuer la lecture',
-    'texts.public.newAccount': 'Nouveau sur Languon ? Créez un compte gratuit',
+    'texts.public.keepReading': 'Annuler',
+    'texts.public.newAccount': 'Créer un compte gratuit',
     'texts.public.unavailable': 'Cette page partagée est indisponible',
     'texts.public.unavailableHelp':
         'Le lien a peut-être été désactivé ou le contenu n’est plus partagé. Demandez un nouveau lien.',

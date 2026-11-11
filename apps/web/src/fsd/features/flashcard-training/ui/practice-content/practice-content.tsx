@@ -63,6 +63,7 @@ export function PracticeContent({
         if (state.lastAck && !state.pending) {
             return (
                 <Button
+                    desktopIconOnly
                     variant='ghost'
                     leadingIcon={<Undo2 className={styles.icon} />}
                     onClick={session.undo}
@@ -74,7 +75,13 @@ export function PracticeContent({
 
         if (state.pending?.kind === 'undo') {
             return (
-                <Button variant='ghost' loading disabled>
+                <Button
+                    desktopIconOnly
+                    variant='ghost'
+                    leadingIcon={<Undo2 className={styles.icon} />}
+                    loading
+                    disabled
+                >
                     {t('training.undoing')}
                 </Button>
             );

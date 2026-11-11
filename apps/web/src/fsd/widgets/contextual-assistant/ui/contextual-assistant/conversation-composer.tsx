@@ -6,6 +6,7 @@ import { ArrowUp, FileText, Plus, Square, TextSelect } from 'lucide-react';
 import type { ChatPreferences, CopiedAttachment } from '@languon/contracts';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
+import { Tooltip } from '@/fsd/shared/ui';
 import { useConversationComposerInput } from '../../hooks/use-conversation-composer-input';
 import { ComposerAttachments } from './composer-attachments';
 import { ComposerPreferences } from './composer-preferences';
@@ -184,28 +185,36 @@ export function ConversationComposer({
                 />
                 <div className={styles.inputActions}>
                     <div className={styles.contextActions}>
-                        <button
-                            type='button'
-                            className={styles.contextButton}
-                            onClick={onContext}
-                            aria-label={copy.addContext}
-                            aria-expanded={contextOpen}
-                            aria-haspopup='dialog'
-                            aria-keyshortcuts='/'
-                            disabled={
-                                (!workspace && attachments.length >= 10) || busy
-                            }
+                        <Tooltip
+                            content={copy.addContext}
+                            desktopOnly
+                            disabled={!workspace}
+                            triggerClassName={styles.iconTooltipTrigger}
                         >
-                            <Plus size={16} aria-hidden='true' />
-                            {!workspace && (
-                                <span className={styles.desktopLabel}>
-                                    {text.context}
-                                </span>
-                            )}
-                            {!workspace && (
-                                <kbd className={styles.shortcut}>/</kbd>
-                            )}
-                        </button>
+                            <button
+                                type='button'
+                                className={styles.contextButton}
+                                onClick={onContext}
+                                aria-label={copy.addContext}
+                                aria-expanded={contextOpen}
+                                aria-haspopup='dialog'
+                                aria-keyshortcuts='/'
+                                disabled={
+                                    (!workspace && attachments.length >= 10) ||
+                                    busy
+                                }
+                            >
+                                <Plus size={16} aria-hidden='true' />
+                                {!workspace && (
+                                    <span className={styles.desktopLabel}>
+                                        {text.context}
+                                    </span>
+                                )}
+                                {!workspace && (
+                                    <kbd className={styles.shortcut}>/</kbd>
+                                )}
+                            </button>
+                        </Tooltip>
                         {onSelectFromPage && (
                             <button
                                 type='button'
@@ -230,28 +239,41 @@ export function ConversationComposer({
                     )}
                     <span className={styles.actionSpacer} />
                     {active ? (
-                        <button
-                            type='button'
-                            onClick={onStop}
-                            className={styles.stop}
-                            aria-label={copy.stop}
+                        <Tooltip
+                            content={copy.stop}
+                            desktopOnly
+                            disabled={!workspace}
+                            triggerClassName={styles.iconTooltipTrigger}
                         >
-                            <Square
-                                size={12}
-                                fill='currentColor'
-                                aria-hidden='true'
-                            />
-                            {!workspace && copy.stop}
-                        </button>
+                            <button
+                                type='button'
+                                onClick={onStop}
+                                className={styles.stop}
+                                aria-label={copy.stop}
+                            >
+                                <Square
+                                    size={12}
+                                    fill='currentColor'
+                                    aria-hidden='true'
+                                />
+                                {!workspace && copy.stop}
+                            </button>
+                        </Tooltip>
                     ) : (
-                        <button
-                            type='submit'
-                            className={styles.send}
-                            aria-label={copy.send}
-                            disabled={!canSend}
+                        <Tooltip
+                            content={copy.send}
+                            desktopOnly
+                            triggerClassName={styles.iconTooltipTrigger}
                         >
-                            <ArrowUp size={16} aria-hidden='true' />
-                        </button>
+                            <button
+                                type='submit'
+                                className={styles.send}
+                                aria-label={copy.send}
+                                disabled={!canSend}
+                            >
+                                <ArrowUp size={16} aria-hidden='true' />
+                            </button>
+                        </Tooltip>
                     )}
                 </div>
             </div>

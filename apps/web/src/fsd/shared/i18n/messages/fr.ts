@@ -67,7 +67,7 @@ export const fr = {
     'dictionary.card.discardTitle': 'Abandonner ce brouillon ?',
     'dictionary.card.discardDescription':
         'La fermeture abandonne les modifications non enregistrées.',
-    'dictionary.card.keepWriting': 'Continuer la rédaction',
+    'dictionary.card.keepWriting': 'Continuer',
     'dictionary.card.discardDraft': 'Abandonner le brouillon',
     'dictionary.card.discardHelp':
         'Les suggestions non acceptées sont abandonnées avec le brouillon. Annuler la génération est une action distincte qui garde le brouillon ouvert.',
@@ -535,7 +535,7 @@ export const fr = {
     'dictionary.create.title': 'Créer un dictionnaire',
     'dictionary.create.description':
         'Un dictionnaire est privé au départ. Vous pourrez ensuite le partager par un lien de capacité.',
-    'dictionary.create.submit': 'Créer le dictionnaire',
+    'dictionary.create.submit': 'Créer',
     'dictionary.dialog.close': 'Fermer',
     'dictionary.field.name': 'Nom',
     'dictionary.field.description': 'Description',
@@ -558,7 +558,7 @@ export const fr = {
     'dictionary.settings.exampleLanguage': 'Langue de l’exemple',
     'dictionary.settings.inactiveHelp':
         'Désactiver un champ conserve ses valeurs, mais les rend inactives.',
-    'dictionary.settings.save': 'Enregistrer les paramètres',
+    'dictionary.settings.save': 'Enregistrer',
     'dictionary.settings.saved': 'Paramètres du dictionnaire enregistrés.',
     'dictionary.settings.cancelled':
         'Les paramètres non enregistrés ont été annulés.',
@@ -790,7 +790,7 @@ export const fr = {
     'dictionary.generation.loadFailed': 'Impossible de charger la révision',
     'dictionary.generation.capabilityFailed':
         'La disponibilité de la régénération par IA n’a pas pu être vérifiée.',
-    'dictionary.generation.close': 'Fermer la révision',
+    'dictionary.generation.close': 'Fermer',
     'dictionary.generation.instruction': 'Instruction personnalisée',
     'dictionary.generation.instructionHelp':
         'Décrivez une correction précise ou le contexte de cette carte. La carte source ne change pas avant votre acceptation.',

@@ -24,7 +24,7 @@ export function EndSessionDialog({
             <Button variant='secondary' onClick={onKeep}>
                 {t('training.keep')}
             </Button>
-            <Button onClick={onEnd}>{t('training.endSession')}</Button>
+            <Button onClick={onEnd}>{t('training.finish')}</Button>
         </DialogActions>
     );
 

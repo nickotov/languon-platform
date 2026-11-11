@@ -119,9 +119,7 @@ it('previews safe blocks and changes only the working branch after explicit Appl
     expect(await screen.findByText('<script>literal</script>')).toBeVisible();
     expect(container.querySelector('script')).toBeNull();
     expect(requests.every((request) => request.method === 'GET')).toBe(true);
-    fireEvent.click(
-        screen.getByRole('button', { name: 'Apply to working draft' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Insert' }));
 
     await waitFor(() => expect(current.onApplied).toHaveBeenCalledWith(branch));
     expect(current.beforeApply).toHaveBeenCalledTimes(1);
@@ -156,9 +154,7 @@ it('refuses applying if draft recovery changes the destination branch', async ()
         <KnowledgeBlockProposals actorId='synthetic-owner' context={current} />,
     );
 
-    fireEvent.click(
-        await screen.findByRole('button', { name: 'Apply to working draft' }),
-    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Insert' }));
 
     await screen.findByText(
         'The document changed. Ask for a new proposal before applying.',
@@ -252,7 +248,7 @@ it('adds a stale proposal separately only after explicit confirmation with the c
     });
 
     expect(
-        screen.queryByRole('button', { name: 'Apply to working draft' }),
+        screen.queryByRole('button', { name: 'Insert' }),
     ).not.toBeInTheDocument();
 
     expect(requests).toHaveLength(0);
@@ -296,9 +292,7 @@ it('uses target staleness rather than unrelated document revisions for update pr
         <KnowledgeBlockProposals actorId='synthetic-owner' context={current} />,
     );
 
-    fireEvent.click(
-        await screen.findByRole('button', { name: 'Update block' }),
-    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Update' }));
 
     await waitFor(() => expect(current.onApplied).toHaveBeenCalled());
 });
@@ -323,19 +317,16 @@ it('keeps the applying action visible and disabled, then reveals the applied blo
         <KnowledgeBlockProposals actorId='synthetic-owner' context={current} />,
     );
 
-    fireEvent.click(
-        await screen.findByRole('button', { name: 'Apply to working draft' }),
-    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Insert' }));
 
     await waitFor(() =>
-        expect(
-            screen.getByRole('button', { name: 'Apply to working draft' }),
-        ).toBeDisabled(),
+        expect(screen.getByRole('button', { name: 'Insert' })).toBeDisabled(),
     );
 
-    expect(
-        screen.getByRole('button', { name: 'Apply to working draft' }),
-    ).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('button', { name: 'Insert' })).toHaveAttribute(
+        'aria-busy',
+        'true',
+    );
 
     expect(
         screen.queryByRole('button', { name: 'Show in sheet' }),
@@ -398,9 +389,7 @@ it('retains a failed proposal for explicit retry without silently applying or dr
         <KnowledgeBlockProposals actorId='synthetic-owner' context={current} />,
     );
 
-    fireEvent.click(
-        await screen.findByRole('button', { name: 'Apply to working draft' }),
-    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Insert' }));
 
     const retry = await screen.findByRole('button', { name: 'Retry' });
     expect(screen.getByText('<script>literal</script>')).toBeVisible();
@@ -473,7 +462,7 @@ it('reviews stale source dependencies before an explicit independent copy and re
     expect(dialog).toHaveTextContent('also copies these sources independently');
     expect(
         within(dialog).queryByRole('button', {
-            name: 'Apply to working draft',
+            name: 'Insert',
         }),
     ).not.toBeInTheDocument();
 
@@ -504,14 +493,10 @@ it('dismisses a proposal reversibly without applying any content', async () => {
     );
 
     expect(screen.getByText('Proposal dismissed')).toBeVisible();
-    expect(
-        screen.queryByRole('button', { name: 'Apply to working draft' }),
-    ).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Insert' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Show proposal' }));
-    expect(
-        screen.getByRole('button', { name: 'Apply to working draft' }),
-    ).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Insert' })).toBeVisible();
 
     expect(
         fetch.mock.calls.every(
@@ -601,5 +586,5 @@ it('identifies the original target independently of the proposed block title', a
     );
 
     expect(await screen.findByText('Original grammar material')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Update block' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Update' })).toBeVisible();
 });

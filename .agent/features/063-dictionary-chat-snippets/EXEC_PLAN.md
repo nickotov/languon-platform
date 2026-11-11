@@ -59,3 +59,29 @@ Final completion and security evidence approvals returned2026-11-11 with no rema
 Exact results/commands and fixture rework are in EVIDENCE.md. Each final store suite took6.70s, SDK suite28.08s; critical browser setup5.60s, execution81.82s and cleanup3.07s. Early fixture failures caused repeated browser setup; the final fixture now proves canonical disabled learning/sentence capabilities before startup, preventing false404 noise. No product deadlines or legitimate assertions were weakened. Full workspace suites were not required by the changed paths. Source types plus executable/asset packaging were selected explicitly; unused backend declaration generation was not selected or represented as a complete standard build.
 
 Post-acceptance retrospective remains pending the user's acceptance; it does not delay local technical handoff.
+
+## User acceptance and integration request (2026-11-11)
+
+User accepted the implemented feature and its UI follow-ups, and explicitly
+requested committing current work, finishing the feature and merging to main.
+The snippet implementation, design/disclosure improvements and dialog/action
+polish have final independent approvals; the latter is recorded in
+../../improvements/web-dialog-and-button-polish.md. No runtime changes are made
+for this Git-only closure, so existing valid final evidence is reused.
+
+Main's ancestor89ff4193 still excludes the preserved061/062 prerequisites.
+Current records retain061 S3 provider-key rotation/revocation or explicit informed
+risk acceptance as an operational High remainder. No evidence of its disposition
+has been found; a generic merge instruction is not a claim that a key was rotated.
+Feature062's deployment contract-migration gate remains intentionally fail-closed;
+this merge request does not authorize production deployment or redesigning rollout.
+Commit accepted work now; resolve the security disposition before the main squash.
+Do not delete/push branches. No conflict resolution or test rerun is needed until
+Git reveals a real merge conflict or implementation change.
+
+Acceptance retrospective: core implementation/local runtime proof was complete
+before UI follow-ups. The avoidable UI rework was overly expanded generated cards
+and long action labels. Approved compact/disclosure patterns, isolated stories,
+brief motion and concise action rules now guide future changes. Exact timing was
+not instrumented; measured tests and setup costs remain in EVIDENCE and follow-up
+records. Production-provider connectivity and deployment remain separate claims.

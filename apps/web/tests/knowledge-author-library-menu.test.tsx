@@ -96,7 +96,7 @@ it('opens library saving from the one block menu and previews the flushed privat
         await screen.findByRole('button', { name: 'Preview', exact: true }),
     );
 
-    await screen.findByRole('button', { name: 'Save independent copy' });
+    await screen.findByRole('button', { name: 'Save' });
     expect(flush).toHaveBeenCalledOnce();
     expect(requests).toHaveLength(1);
     expect(requests[0]).toMatchObject({

@@ -90,6 +90,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         return (
             <Tooltip
                 content={label}
+                desktopOnly={!showTooltipWhenDisabled}
                 disabled={tooltipDisabled}
                 placement={tooltipPlacement}
             >

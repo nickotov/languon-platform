@@ -142,12 +142,10 @@ it('shows dependency and media counts before explicit independent-copy applicati
 
     await screen.findByRole('combobox', { name: 'Destination working draft' });
     await waitFor(() =>
-        expect(
-            screen.getByRole('button', { name: 'Preview copy' }),
-        ).toBeEnabled(),
+        expect(screen.getByRole('button', { name: 'Preview' })).toBeEnabled(),
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Preview copy' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
     await screen.findByText('Linked source blocks included: 1');
     expect(
         screen.getByText('Uploaded audio assets copied independently: 1'),
@@ -162,9 +160,7 @@ it('shows dependency and media counts before explicit independent-copy applicati
     });
 
     expect(context.onApplied).not.toHaveBeenCalled();
-    fireEvent.click(
-        screen.getByRole('button', { name: 'Copy into working draft' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
 
     await screen.findByRole('status');
     expect(calls[1]).toEqual({ ...calls[0], preview: false });
@@ -390,7 +386,7 @@ it.each([
         if (action === 'Copy block') {
             await screen.findByRole('option', { name: 'Destination' });
             expect(
-                screen.getByRole('button', { name: 'Preview copy' }),
+                screen.getByRole('button', { name: 'Preview' }),
             ).toBeDisabled();
 
             fireEvent.change(
@@ -401,11 +397,11 @@ it.each([
 
         await waitFor(() =>
             expect(
-                screen.getByRole('button', { name: 'Preview copy' }),
+                screen.getByRole('button', { name: 'Preview' }),
             ).toBeEnabled(),
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Preview copy' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
         expect(
             await screen.findByText(
                 'Uploaded audio assets copied independently: 1',

@@ -87,11 +87,7 @@ const words: Record<string, [string, string, string]> = {
         'No se ha preparado una transcripción.',
         'Aucune transcription préparée.',
     ],
-    'Apply changes': [
-        'Применить изменения',
-        'Aplicar cambios',
-        'Appliquer les modifications',
-    ],
+    Apply: ['Применить', 'Aplicar', 'Appliquer'],
     'No recording yet. Add audio when you are ready.': [
         'Записи пока нет. Добавьте аудио, когда будете готовы.',
         'Todavía no hay grabación. Añade audio cuando quieras.',
@@ -145,12 +141,8 @@ const words: Record<string, [string, string, string]> = {
         'Los cambios no se han aplicado a la hoja.',
         'Les modifications n’ont pas été appliquées à la feuille.',
     ],
-    'Keep editing': [
-        'Продолжить редактирование',
-        'Seguir editando',
-        'Continuer à modifier',
-    ],
-    Discard: ['Отменить изменения', 'Descartar', 'Abandonner'],
+    Continue: ['Продолжить', 'Continuar', 'Continuer'],
+    Discard: ['Сбросить', 'Descartar', 'Abandonner'],
     'Changes stay in this editor until you apply them.': [
         'Изменения останутся в редакторе, пока вы их не примените.',
         'Los cambios se quedan aquí hasta que los apliques.',

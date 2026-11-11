@@ -171,6 +171,10 @@
     white-space: nowrap;
 }
 
+.iconTooltipTrigger {
+    flex-shrink: 0;
+}
+
 .askTutor,
 .mark {
     display: inline-flex;

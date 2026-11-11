@@ -46,12 +46,7 @@ export function ActionConsentDialog({
     ][at]!;
     const send = ['Send', 'Отправить', 'Envoyer', 'Enviar'][at]!;
     const topUp = ['Top up', 'Пополнить', 'Recharger', 'Recargar'][at]!;
-    const cancel = [
-        'Keep editing',
-        'Продолжить редактирование',
-        'Continuer à modifier',
-        'Seguir editando',
-    ][at]!;
+    const cancel = ['Cancel', 'Отмена', 'Annuler', 'Cancelar'][at]!;
     const maximum = [
         'Maximum credits',
         'Максимум кредитов',

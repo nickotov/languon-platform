@@ -107,7 +107,7 @@ synthetic accounts. API health must succeed before browser interaction.
    without nested oversized cards. **Review** opens the full prepared material
    in a right-side panel on desktop or bottom sheet on mobile. It completes its
    follow-up response and changes the draft only after
-   **Apply to working draft**. Its acknowledgement is not offered as a separate
+   **Insert**. Its acknowledgement is not offered as a separate
    plain-text document edit. The owned Knowledge chat distinguishes learning
    material generation from conversation and explanations. Requests for several
    new components produce one complete ordered proposal after material gaps are
@@ -141,8 +141,8 @@ synthetic accounts. API health must succeed before browser interaction.
    Existing vocabulary/text editors keep language fields under a collapsed
    **Languages** settings disclosure; new blocks open that disclosure initially.
    Open it only when changing the language pair.
-   Its local changes need **Apply changes** before entering the working draft;
-   explicit document **Save** publishes them. Dirty dismissal offers Keep editing
+   Its local changes need **Apply** before entering the working draft;
+   explicit document **Save** publishes them. Dirty dismissal offers Continue
    or Discard. Audio preparation is inside the relevant block editor. An audio
    shell may exist without a recording; it must not show a fake playable asset. A pending
    request, confirmation or generated preview remains reachable if its last
@@ -221,7 +221,7 @@ synthetic accounts. API health must succeed before browser interaction.
    Looks correct, suggested replacement, stale and retry states belong to that
    field. Review the current/proposed text; **Accept** changes only that field in
    the editor draft. Other entries stay intact. The source note is unchanged until
-   Apply block and explicit Save. In a bilingual-text editor, generate a missing
+   Apply and explicit Save. In a bilingual-text editor, generate a missing
    translation for one segment without overwriting its original wording or other
    languages. Discarding accepted local suggestions leaves the document unchanged.
 8. Ask the tutor to update an existing vocabulary block. The update proposal
@@ -234,7 +234,7 @@ synthetic accounts. API health must succeed before browser interaction.
    frozen source; chips do not grant access to another note or private draft.
    Ask for an explanation to receive ordinary chat, or request updates to several
    referenced blocks to receive individual review proposals. Each update requires
-   explicit **Update block**, can be dismissed without modifying the draft (and
+   explicit **Update**, can be dismissed without modifying the draft (and
    reopened through **Show proposal**), or inserted with **Add at cursor** at
    the cursor as an independent copy. Other unchanged targets remain applicable
    after applying one proposal. Shared readers can explain referenced saved
@@ -251,7 +251,7 @@ synthetic accounts. API health must succeed before browser interaction.
    The update proposal
    captures that block’s content. An unrelated title/prose edit does not invalidate
    it; a changed/deleted target or existing source passage does. **Show in sheet**
-   reveals applied material; retrying Apply cannot duplicate it. A stale proposal
+   reveals applied material; retrying Insert cannot duplicate it. A stale proposal
    can be regenerated or explicitly **Add separately**, with independently copied
    captured source blocks and remapped question references when needed. A proposal
    never publishes shared material until document Save.
@@ -276,7 +276,7 @@ synthetic accounts. API health must succeed before browser interaction.
 
 ## E2E coverage
 
-- `author-blocks-publish-practice`: real chat-generated vocabulary preview/follow-up/explicit Apply and
+- `author-blocks-publish-practice`: real chat-generated vocabulary preview/follow-up/explicit Insert and
   UI authoring, whole-block selection, drag reordering, inline settings
   and current-draft learner preview with desktop/mobile entry and return,
   local prepared-answer reveal and preserved editor content/identity,
@@ -306,7 +306,7 @@ copy identity rules. These matrices are not duplicated in the browser.
 
 ## Expected failure and edge cases
 
-Apply uses the current working-branch version. Unrelated edits do not invalidate
+Insert uses the current working-branch version. Unrelated edits do not invalidate
 independent append proposals; target changes and changed captured dependencies do.
 Stale replacement requests reject rather than overwrite newer material. A revoked
 share cannot read source-dependent history or submit new attempts. Free-text

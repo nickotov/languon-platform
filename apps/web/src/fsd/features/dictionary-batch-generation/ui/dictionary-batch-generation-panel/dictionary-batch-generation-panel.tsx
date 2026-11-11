@@ -15,6 +15,7 @@ import {
     Button,
     Card,
     Checkbox,
+    DialogActions,
     Field,
     InlineAlert,
     Progress,
@@ -472,7 +473,10 @@ export function DictionaryBatchGenerationPanel({
                         </section>
                     ) : null}
 
-                    <div className={styles.reviewActions}>
+                    <DialogActions
+                        align='between'
+                        className={styles.reviewActions}
+                    >
                         <Button
                             className={styles.reviewButton}
                             disabled={pendingAction}
@@ -515,7 +519,7 @@ export function DictionaryBatchGenerationPanel({
                                 count: selectedDrafts.length,
                             })}
                         </Button>
-                    </div>
+                    </DialogActions>
                 </div>
             ) : null}
 

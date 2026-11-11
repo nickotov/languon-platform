@@ -11,7 +11,7 @@ import {
     type KnowledgeBlockReference,
 } from '@/fsd/features/knowledge-notes';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button } from '@/fsd/shared/ui';
+import { Button, Tooltip } from '@/fsd/shared/ui';
 import { blockReferenceCopy } from '../../lib/block-reference-copy';
 import styles from './block-reference-controls.module.css';
 
@@ -63,9 +63,15 @@ function ReferenceChip({
             <Layers size={14} aria-hidden />
             <span dir='auto'>{label}</span>
             {missing && <span>{copy.missing}</span>}
-            <button type='button' onClick={remove} aria-label={removeLabel}>
-                <X size={14} aria-hidden />
-            </button>
+            <Tooltip
+                content={removeLabel}
+                desktopOnly
+                triggerClassName={styles.removeTooltipTrigger}
+            >
+                <button type='button' onClick={remove} aria-label={removeLabel}>
+                    <X size={14} aria-hidden />
+                </button>
+            </Tooltip>
         </span>
     );
 }

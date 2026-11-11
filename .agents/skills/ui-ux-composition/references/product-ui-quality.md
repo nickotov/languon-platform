@@ -38,6 +38,18 @@ approval rules apply; this reference adds no approval ceremony.
   content, dialogs or the mobile keyboard.
 - Reuse the runtime color/font/icon vocabulary. A feature does not need a new
   palette, display font or entrance animation.
+- Keep desktop dialog action buttons in one row, with helper notes separate.
+  Keep the labels single-line too: use concise, contextual verbs and put object,
+  scope and consequences in the title/body. Preserve meaningful distinctions;
+  do not shorten paid/destructive choices into ambiguity. If an action row does
+  not fit, refine copy or contextual utilities before adjusting the dialog's
+  width. Do not wrap, shrink or truncate button text to force it into a row.
+  Mobile can stack whole buttons while retaining readable single-line labels.
+- Use the existing icon-button or responsive icon-action pattern for repeated
+  utilities whose meaning is clear from context. Retain an accessible name and
+  desktop tooltip. Keep task, confirmation, paid/AI and scope-changing actions
+  visibly labeled when an icon would hide their meaning. Explanatory help is
+  separate from a label tooltip and must remain available when needed.
 
 Initial and returning views need deliberate defaults. A newly completed result
 may open for immediate review while history starts compact. Refetch/reconnect

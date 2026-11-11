@@ -549,7 +549,7 @@ describe('dictionary settings and card authoring', () => {
         const context = screen.getByLabelText(/Dictionary context/);
         await user.type(context, 'Use the word in a museum-curation sense.');
         expect(context).toHaveAttribute('maxlength', '2000');
-        await user.click(screen.getByRole('button', { name: 'Save settings' }));
+        await user.click(screen.getByRole('button', { name: 'Save' }));
 
         expect(onSave).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -572,14 +572,12 @@ describe('dictionary settings and card authoring', () => {
 
         const context = screen.getByLabelText(/Dictionary context/);
         fireEvent.change(context, { target: { value: '😀'.repeat(1000) } });
-        await user.click(screen.getByRole('button', { name: 'Save settings' }));
+        await user.click(screen.getByRole('button', { name: 'Save' }));
         expect(onSave).toHaveBeenCalledOnce();
 
         fireEvent.change(context, { target: { value: 'a'.repeat(1001) } });
         expect(screen.getByText('Use at most 1000 characters.')).toBeVisible();
-        expect(
-            screen.getByRole('button', { name: 'Save settings' }),
-        ).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
     });
 
     it('reveals an empty card override while retaining the inherited preview', async () => {
@@ -2000,7 +1998,7 @@ describe('dictionary settings and card authoring', () => {
 
         expect(screen.getByText('Locked')).toBeVisible();
         await user.click(screen.getByLabelText('Context example'));
-        await user.click(screen.getByRole('button', { name: 'Save settings' }));
+        await user.click(screen.getByRole('button', { name: 'Save' }));
         expect(onSave).toHaveBeenCalledWith(
             expect.objectContaining({
                 settings: expect.objectContaining({
@@ -2034,7 +2032,7 @@ describe('dictionary settings and card authoring', () => {
         await user.type(screen.getByLabelText('Name'), 'Arabic studio');
         await user.type(screen.getByLabelText(/^Description/), 'RTL practice');
         await user.selectOptions(screen.getByLabelText('Translate from'), 'ar');
-        await user.click(screen.getByRole('button', { name: 'Save settings' }));
+        await user.click(screen.getByRole('button', { name: 'Save' }));
 
         expect(onSave).toHaveBeenCalledWith(
             expect.objectContaining({

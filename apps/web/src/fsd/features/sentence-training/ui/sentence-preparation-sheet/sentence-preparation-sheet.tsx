@@ -3,7 +3,7 @@ import { ActionConsentDialog } from '@/fsd/entities/ai-action';
 import styles from './sentence-preparation-sheet.module.css';
 import { PauseIcon, PlayIcon } from 'lucide-react';
 import type { SentencePreparationBatch } from '@languon/contracts';
-import { Button, Dialog } from '@/fsd/shared/ui';
+import { Button, Dialog, DialogActions } from '@/fsd/shared/ui';
 import type { Configuration, SentencePreparationController } from '../../types';
 import { usePreparationRetryCooldown } from '../../hooks/use-preparation-retry-cooldown';
 import { useCompactPresentation } from '../use-compact-presentation';
@@ -102,7 +102,7 @@ export function SentencePreparationSheet({
             {working ? (
                 <p className={styles.footerNote}>{P('backgroundNote')}</p>
             ) : null}
-            <div className={styles.actions}>
+            <DialogActions className={styles.actions}>
                 {running || stopping ? (
                     <Button
                         variant='secondary'
@@ -136,7 +136,7 @@ export function SentencePreparationSheet({
                 >
                     {working ? P('background') : P('close')}
                 </Button>
-            </div>
+            </DialogActions>
         </div>
     );
 

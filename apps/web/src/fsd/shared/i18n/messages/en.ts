@@ -110,7 +110,7 @@ export const profileFeatureMessages = {
     'dictionary.card.discardTitle': 'Discard this draft?',
     'dictionary.card.discardDescription':
         'Closing abandons your unsaved card changes.',
-    'dictionary.card.keepWriting': 'Keep writing',
+    'dictionary.card.keepWriting': 'Continue',
     'dictionary.card.discardDraft': 'Discard draft',
     'dictionary.card.discardHelp':
         'Unaccepted suggestions are discarded with the draft. Cancelling generation is a separate action and keeps the draft open.',
@@ -594,7 +594,7 @@ export const en = {
     'dictionary.create.title': 'Create a dictionary',
     'dictionary.create.description':
         'A dictionary starts private. You can share it later with a capability link.',
-    'dictionary.create.submit': 'Create dictionary',
+    'dictionary.create.submit': 'Create',
     'dictionary.dialog.close': 'Close',
     'dictionary.field.name': 'Name',
     'dictionary.field.description': 'Description',
@@ -617,7 +617,7 @@ export const en = {
     'dictionary.settings.exampleLanguage': 'Example language',
     'dictionary.settings.inactiveHelp':
         'Disabling a field keeps existing values stored but inactive.',
-    'dictionary.settings.save': 'Save settings',
+    'dictionary.settings.save': 'Save',
     'dictionary.settings.saved': 'Dictionary settings saved.',
     'dictionary.settings.cancelled': 'Unsaved settings were cancelled.',
     'dictionary.notation.ipa': 'IPA',
@@ -844,7 +844,7 @@ export const en = {
     'dictionary.generation.loadFailed': 'Could not load generation review',
     'dictionary.generation.capabilityFailed':
         'AI regeneration availability could not be checked.',
-    'dictionary.generation.close': 'Close review',
+    'dictionary.generation.close': 'Close',
     'dictionary.generation.instruction':
         'Instruction for this review (optional)',
     'dictionary.generation.instructionHelp':

@@ -2076,9 +2076,7 @@ test('capability replies stay in chat and mixed content generates one reviewed i
 
     await expect(page.locator('[data-learning-block-id]')).toHaveCount(0);
     await capture(page, info, 'intent-mixed-proposal-desktop');
-    await proposal
-        .getByRole('button', { name: 'Apply to working draft', exact: true })
-        .click();
+    await proposal.getByRole('button', { name: 'Insert', exact: true }).click();
 
     await expect(page.locator('[data-learning-block-id]')).toHaveCount(5);
     await page
@@ -2145,9 +2143,7 @@ test('fifty shopping words become one complete vocabulary proposal and survive e
     await expect(terms.last()).toBeInViewport();
 
     await capture(page, info, 'shopping-fifty-vocabulary-review');
-    await review
-        .getByRole('button', { name: 'Apply to working draft', exact: true })
-        .click();
+    await review.getByRole('button', { name: 'Insert', exact: true }).click();
 
     await review.getByRole('button', { name: 'Close', exact: true }).click();
     const block = page.locator('[data-learning-block-id]');

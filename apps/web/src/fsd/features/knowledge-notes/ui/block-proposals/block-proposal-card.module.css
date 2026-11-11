@@ -134,23 +134,21 @@
 }
 
 .panelActions {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
     gap: var(--space-8);
+    width: 100%;
 }
 
 .panelActions p {
     color: var(--text-tertiary);
-    flex: 1;
     font-size: var(--size-12);
     margin: 0;
     line-height: var(--size-20);
-    min-width: var(--size-128);
+    min-width: 0;
 }
 
-.panelActions button {
-    flex-shrink: 0;
+.panelActionButtons {
+    gap: var(--space-8);
 }
 
 .heightButton {
@@ -178,9 +176,5 @@
 
     .reviewFooter {
         padding-bottom: max(var(--space-12), env(safe-area-inset-bottom));
-    }
-
-    .panelActions p {
-        flex: 0 0 100%;
     }
 }

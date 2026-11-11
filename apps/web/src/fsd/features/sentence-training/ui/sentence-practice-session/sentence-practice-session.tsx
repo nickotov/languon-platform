@@ -13,7 +13,7 @@ import {
     useRef,
     useState,
 } from 'react';
-import { Button, Dialog } from '@/fsd/shared/ui';
+import { Button, Dialog, DialogActions } from '@/fsd/shared/ui';
 import { SENTENCE_LIMITS, type SentenceAttempt } from '@languon/contracts';
 import type { ApiError } from '../../lib/api-error';
 import type {
@@ -468,12 +468,12 @@ export function SentencePracticeSession({
                 onClose={keepPractising}
                 title={t('Leave practice?')}
                 footer={
-                    <div className={styles.comparisonActions}>
+                    <DialogActions className={styles.comparisonActions}>
                         <Button variant='secondary' onClick={keepPractising}>
                             {t('Keep practising')}
                         </Button>
                         <Button onClick={finish}>{t('Leave practice')}</Button>
-                    </div>
+                    </DialogActions>
                 }
             >
                 <p className={styles.referenceNote}>

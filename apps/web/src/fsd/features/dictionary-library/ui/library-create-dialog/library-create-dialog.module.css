@@ -17,11 +17,9 @@
 }
 
 .createFooter {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
     gap: var(--space-12);
-    justify-content: space-between;
+    width: 100%;
 }
 
 .privateNotice {
@@ -34,24 +32,11 @@
 }
 
 .actions {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
     gap: var(--space-8);
-    justify-content: flex-end;
 }
 
 @media (max-width: 640px) {
     .languageFields {
         grid-template-columns: 1fr;
-    }
-
-    .createFooter {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .actions {
-        align-self: flex-end;
     }
 }

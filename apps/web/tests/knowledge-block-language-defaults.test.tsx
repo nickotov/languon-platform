@@ -48,7 +48,7 @@ it('preserves the selected speech language without a transcript through local pr
         ),
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     expect(apply).toHaveBeenCalledWith(
         expect.objectContaining({
             language: 'fr',
@@ -95,7 +95,7 @@ it('inherits missing legacy audio language once without resetting a title edit w
     );
 
     expect(screen.getByLabelText('Content language')).toHaveValue('fr');
-    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     expect(apply).toHaveBeenCalledWith(
         expect.objectContaining({ title: 'New title', language: 'fr' }),
     );
@@ -132,7 +132,7 @@ it.each([
             target: { value: 'Edited recording' },
         });
 
-        fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
         expect(apply).toHaveBeenCalledWith(
             expect.objectContaining({
                 language: expected,
@@ -163,7 +163,7 @@ it('initializes a new vocabulary block from note languages', () => {
         target: { value: 'радость' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     expect(apply).toHaveBeenCalledWith(
         expect.objectContaining({ language: 'fr', translationLanguage: 'ru' }),
     );
@@ -220,7 +220,7 @@ it('updates transcript language when the author explicitly changes the content l
         target: { value: 'fr' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     expect(apply).toHaveBeenCalledWith(
         expect.objectContaining({
             language: 'fr',

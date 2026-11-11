@@ -31,12 +31,7 @@ const values = {
     ],
     name: ['Name', 'Название', 'Nombre', 'Nom'],
     preview: ['Preview', 'Предпросмотр', 'Vista previa', 'Aperçu'],
-    commit: [
-        'Save independent copy',
-        'Сохранить независимую копию',
-        'Guardar copia independiente',
-        'Enregistrer une copie indépendante',
-    ],
+    commit: ['Save', 'Сохранить', 'Guardar', 'Enregistrer'],
     cancel: ['Cancel', 'Отмена', 'Cancelar', 'Annuler'],
     select: [
         'Select an item',
@@ -82,10 +77,10 @@ const values = {
         'Langue de traduction',
     ],
     prepared: [
-        'Prepared content only. No AI generation is required.',
-        'Сохраняется готовое содержимое. Генерация ИИ не требуется.',
-        'Solo contenido preparado. No requiere generación de IA.',
-        'Contenu préparé uniquement. Aucune génération par IA.',
+        'Saves an independent copy of prepared content. No AI generation is required.',
+        'Сохраняется независимая копия готового содержимого. Генерация ИИ не требуется.',
+        'Guarda una copia independiente del contenido preparado. No requiere generación de IA.',
+        'Enregistre une copie indépendante du contenu préparé. Aucune génération par IA.',
     ],
     empty: [
         'No available items.',
@@ -93,12 +88,7 @@ const values = {
         'No hay elementos disponibles.',
         'Aucun élément disponible.',
     ],
-    insertSelected: [
-        'Insert selected content',
-        'Вставить выбранное содержимое',
-        'Insertar contenido seleccionado',
-        'Insérer le contenu sélectionné',
-    ],
+    insertSelected: ['Insert', 'Вставить', 'Insertar', 'Insérer'],
 };
 
 export type LibraryLabels = { [Key in keyof typeof values]: string };
