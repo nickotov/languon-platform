@@ -393,7 +393,9 @@ export async function conversationSubmit(
                 requestId: input.requestId,
                 inputTokenBound,
                 minimumInputBound,
-                reserveToolContinuation: Boolean(snapshot.blockTarget),
+                reserveToolContinuation:
+                    !!snapshot.blockTarget ||
+                    !!snapshot.dictionaryGenerationContext,
                 fingerprint,
                 ...(input.confirmedQuoteId
                     ? { confirmedQuoteId: input.confirmedQuoteId }

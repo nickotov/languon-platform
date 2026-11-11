@@ -27,6 +27,7 @@ export function DictionaryEditorPage({
             <ContextualAssistant
                 source={{ kind: 'dictionary', id }}
                 contextLabel={name}
+                dictionarySnippets={{ dictionaryId: id }}
             />
         );
     }

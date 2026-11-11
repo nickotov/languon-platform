@@ -533,6 +533,14 @@ export const flows = [
         prerequisite: 'deterministic-assistant',
     },
     {
+        id: 'dictionary-chat-snippets',
+        minimumTests: 1,
+        app: 'assistant',
+        file: 'contextual-assistant.journeys.spec.ts',
+        grep: 'owned dictionary chat snippets preserve review, ordered reusable insertion and archival replacement$',
+        prerequisite: 'deterministic-assistant',
+    },
+    {
         id: 'insufficient-credits',
         minimumTests: 1,
         app: 'portrait',

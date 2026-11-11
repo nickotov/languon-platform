@@ -1,3 +1,5 @@
+import { DictionaryChatGenerationContextSchema } from '@languon/contracts';
+import { settingsValues } from '../../../../dictionaries/infrastructure/persistence/drizzle/dictionary-rows';
 import { projectConversationDictionaryCards } from './conversation-dictionary-material';
 import { readSharedConversationNote } from './conversation-knowledge-share';
 import { learningBlockSourceMaterial } from '../../../application/learning-block-source-material';
@@ -296,6 +298,27 @@ export class ConversationSourceResolver {
                     title: dictionary.name,
                     description: dictionary.description,
                     studiedLanguage: dictionary.sourceLanguageTag,
+                    ...(settings && dictionary.ownerId === ownerId
+                        ? {
+                              dictionaryGenerationContext:
+                                  DictionaryChatGenerationContextSchema.parse({
+                                      sourceLanguage:
+                                          dictionary.sourceLanguageTag,
+                                      targetLanguage:
+                                          dictionary.targetLanguageTag,
+                                      translationContext:
+                                          dictionary.translationContext,
+                                      settings: {
+                                          ...settingsValues(settings),
+                                          exampleTranslationEnabled:
+                                              settings.exampleEnabled &&
+                                              settings.exampleTranslationEnabled,
+                                      },
+                                      settingsVersion: settings.version,
+                                      dictionaryVersion: dictionary.version,
+                                  }),
+                          }
+                        : {}),
                     version: `${dictionary.version}:${settings?.version ?? settingsRevision?.version ?? 0}:${revision}`,
                     provenance: 'saved',
                     material,

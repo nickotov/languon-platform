@@ -1,3 +1,4 @@
+import { createDictionarySnippetAuthoring } from './dictionary-snippet-authoring';
 import { readTutorPlannerState } from '../../application/tutor-planner-prompt';
 import { tutorRequestStateKey } from '../../application/tutor-request-contract';
 import { createTutorHistoryTool } from './tutor-history-tool';
@@ -115,17 +116,30 @@ export function createContextualTutorRunner(options: {
                 !input.readOnlySource &&
                 input.sourceContext.sourceKind === 'knowledge' &&
                 input.sourceContext.snapshotScope === 'workspace';
-            const tools = {
-                ...createContextualTutorTools({
-                    ...input,
-                    signal: modelGate.signal,
-                }),
-                recall: createTutorHistoryTool(input.memory, modelGate.signal),
-            };
             const requestAgents = createTutorRequestAgents({
                 planningModel: modelGate.wrap(resolvedModel, 'planning'),
                 authoringModel: modelGate.wrap(resolvedModel, 'authoring'),
             });
+            let dictionaryAuthoringFailure: unknown;
+            const dictionaryAuthor = createDictionarySnippetAuthoring({
+                agent: requestAgents.dictionarySnippetAuthor,
+                signal: modelGate.signal,
+                operationId: input.operationId,
+                abort: (error) => {
+                    dictionaryAuthoringFailure = error;
+                    modelGate.abort(error);
+                },
+            });
+            const tools = {
+                ...createContextualTutorTools(
+                    {
+                        ...input,
+                        signal: modelGate.signal,
+                    },
+                    dictionaryAuthor,
+                ),
+                recall: createTutorHistoryTool(input.memory, modelGate.signal),
+            };
             const learningContentTools =
                 input.canProposeBlocks &&
                 !input.readOnlySource &&
@@ -269,7 +283,7 @@ export function createContextualTutorRunner(options: {
                     );
                 }
 
-                throw error;
+                throw dictionaryAuthoringFailure ?? error;
             }
         },
     };

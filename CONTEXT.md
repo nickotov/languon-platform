@@ -93,6 +93,13 @@ outside Languon and is distinct from a balance estimated from Languon's records.
 
 ### Learning content
 
+**Dictionary snippet**:
+A reusable proposal of ordered, complete word or phrase cards for an existing
+dictionary, generated according to its settings and retained in the conversation.
+Its content is read-only in chat; the learner can insert all or selected cards
+through Append, Prepend or Replace, then edit them in the dictionary.
+_Avoid_: Generated dictionary, when referring to a proposal for an existing dictionary.
+
 **Contextual language assistant**:
 A conversational assistant opened from a dictionary, text, or knowledge note
 that explains language, usage, and relevant cultural context, including learning

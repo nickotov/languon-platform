@@ -24,6 +24,8 @@ export type ContextualAssistantProps = {
     currentDraft?: string | undefined;
     selectionRootId?: string | undefined;
     workspace?: WorkspaceAssistantProps | undefined;
+    /** Present only for an owned active dictionary; server authorization remains authoritative. */
+    dictionarySnippets?: { dictionaryId: string } | undefined;
 };
 
 export type WorkspaceEditorSnapshot = {

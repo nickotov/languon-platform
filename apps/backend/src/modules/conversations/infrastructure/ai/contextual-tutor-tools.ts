@@ -1,3 +1,5 @@
+import type { DictionarySnippetAuthor } from './dictionary-snippet-authoring';
+import { createDictionarySnippetTools } from './dictionary-snippet-tools';
 import { ProseKnowledgeNoteContentSchema } from '@languon/contracts';
 import { randomUUID } from 'node:crypto';
 import { createTool } from '@mastra/core/tools';
@@ -9,7 +11,17 @@ export function createContextualTutorTools(
     input: Pick<
         TutorRunInput,
         'readContext' | 'onDraft' | 'onTool' | 'signal' | 'readOnlySource'
-    >,
+    > &
+        Partial<
+            Pick<
+                TutorRunInput,
+                | 'canProposeDictionarySnippet'
+                | 'onDictionarySnippet'
+                | 'readDictionarySnippet'
+                | 'sourceContext'
+            >
+        >,
+    dictionaryAuthor?: DictionarySnippetAuthor,
 ) {
     let retrievals = 0;
     let proposed = false;
@@ -139,5 +151,8 @@ export function createContextualTutorTools(
         return { read_source_context: tools.read_source_context };
     }
 
-    return tools;
+    return {
+        ...tools,
+        ...createDictionarySnippetTools(input, dictionaryAuthor),
+    };
 }

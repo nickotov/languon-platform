@@ -26,6 +26,14 @@ export type ConversationUIMessage = UIMessage<
             input: Record<string, never>;
             output: { state: 'succeeded' };
         };
+        propose_dictionary_snippet: {
+            input: Record<string, never>;
+            output: { state: 'succeeded' };
+        };
+        read_dictionary_snippet: {
+            input: Record<string, never>;
+            output: { state: 'succeeded' };
+        };
         propose_knowledge_note: {
             input: Record<string, never>;
             output: { state: 'succeeded' };

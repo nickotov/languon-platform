@@ -35,6 +35,11 @@ export function createTutorRequestAgents(options: {
             options.planningModel,
             getLocalPrompt('tutor-request-resolution'),
         ),
+        dictionarySnippetAuthor: create(
+            'dictionary-snippet-author',
+            options.authoringModel,
+            getLocalPrompt('dictionary-chat-snippet-authoring'),
+        ),
         learningContentAuthor: create(
             'learning-content-author',
             options.authoringModel,

@@ -194,7 +194,11 @@ configuration startup requires its guard and does not own this cleanup.
    vocabulary/grammar/text/exercise requests produce typed reviewable proposals
    after material requirements are resolved. Exact prior-proposal follow-ups are
    limited to that owned Knowledge chat. This does not enable standalone
-   interactive generation in dictionary/text or shared-source conversations.
+   interactive Knowledge-block generation in dictionary/text or shared-source conversations.
+   Owned active dictionary chats have a separate typed card-snippet capability:
+   see [Dictionary chat snippets](dictionary-chat-snippets.md), including the
+   `owned-chat-review-and-apply-snippets` scenario for read-only selection,
+   Append/Prepend/Replace, retained history and current-setting writes.
 5. Ask about a saved note and request a revision. Change the saved note elsewhere
    before applying the draft. Its update is rejected; the draft remains for
    comparison or **Save as a new note**. No silent overwrite occurs.

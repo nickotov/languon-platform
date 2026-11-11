@@ -1163,6 +1163,20 @@
       "when": 1794336174237,
       "tag": "0165_optional-ai-diagnostics",
       "breakpoints": true
+    },
+    {
+      "idx": 166,
+      "version": "7",
+      "when": 1794385643683,
+      "tag": "0166_dictionary-chat-snippets",
+      "breakpoints": true
+    },
+    {
+      "idx": 167,
+      "version": "7",
+      "when": 1794385648920,
+      "tag": "0167_dictionary-chat-snippet-authority",
+      "breakpoints": true
     }
   ]
 }

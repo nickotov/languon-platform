@@ -51,6 +51,28 @@ test('sentence practice uses the reviewed deterministic sentence worker', () => 
     ]);
 });
 
+test('dictionary chat snippets select one real assistant browser journey without unrelated execution groups', () => {
+    const selected = selectFlows(['--flow', 'dictionary-chat-snippets']);
+    assert.equal(selected.length, 1);
+    assert.equal(selected[0].app, 'assistant');
+    assert.equal(selected[0].file, 'contextual-assistant.journeys.spec.ts');
+    assert.equal(selected[0].minimumTests, 1);
+    assert.equal(
+        selected[0].grep,
+        'owned dictionary chat snippets preserve review, ordered reusable insertion and archival replacement$',
+    );
+    assert.match(
+        'chromium contextual-assistant.journeys.spec.ts owned dictionary chat snippets preserve review, ordered reusable insertion and archival replacement',
+        new RegExp(selected[0].grep),
+    );
+
+    assert.ok(
+        browserCommand(selected[0]).includes(
+            'tests/e2e/support/contextual-assistant-playwright.config.ts',
+        ),
+    );
+});
+
 const report = (
     status = 'passed',
     expectedStatus = 'passed',

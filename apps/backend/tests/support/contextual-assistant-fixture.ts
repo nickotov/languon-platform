@@ -42,6 +42,8 @@ import {
     AuthenticationSuccessResponseSchema,
     SignUpResponseSchema,
     KnowledgeNoteContentSchema,
+    DictionaryChatGenerationContextSchema,
+    type DictionaryChatSnippetInput,
 } from '@languon/contracts';
 import { createApp } from '../../src/app';
 import { createNavigationService } from '../../src/modules/navigation/infrastructure/navigation-composition';
@@ -52,6 +54,8 @@ import { createDictionaryComposition } from '../../src/modules/dictionaries/infr
 import { createTextsContentComposition } from '../../src/modules/texts/infrastructure/texts-composition';
 import { loadTextTranslationProposal } from '../../src/modules/texts/infrastructure/persistence/drizzle/texts-job-support';
 import { createConversationsComposition } from '../../src/modules/conversations/infrastructure/conversations-composition';
+import { createLearningComposition } from '../../src/modules/learning/infrastructure/learning-composition';
+import { createSentenceComposition } from '../../src/modules/learning/infrastructure/sentence-composition';
 import {
     conversationAdmission,
     createConversationAccounting,
@@ -279,11 +283,70 @@ export function purposeAwareFixtureAccounting(
     };
 }
 
+function dictionarySnippetProposal(
+    suppliedContext: unknown,
+): DictionaryChatSnippetInput {
+    const context =
+        DictionaryChatGenerationContextSchema.parse(suppliedContext);
+
+    if (context.sourceLanguage !== 'fr' || context.targetLanguage !== 'en') {
+        throw new Error(
+            'Dictionary browser fixture requires its trusted French-to-English authoring context.',
+        );
+    }
+
+    const settings = context.settings;
+    const rows = [
+        {
+            source: 'le poisson',
+            translation: 'fish',
+            transcription: '/pwa.sɔ̃/',
+            definition: 'Un animal qui vit dans l’eau.',
+            example: 'Le poisson nage dans la rivière.',
+            exampleTranslation: 'The fish swims in the river.',
+        },
+        {
+            source: 'la joie',
+            translation: 'joy',
+            transcription: '/ʒwa/',
+            definition: 'Un sentiment de bonheur.',
+            example: 'La joie se lit sur son visage.',
+            exampleTranslation: 'Joy shows on her face.',
+        },
+        {
+            source: 'le travail',
+            translation: 'work',
+            transcription: '/tʁa.vaj/',
+            definition: 'Une activité professionnelle.',
+            example: 'Le travail commence demain.',
+            exampleTranslation: 'Work starts tomorrow.',
+        },
+    ];
+
+    return {
+        title: 'Three French dictionary cards',
+        cards: rows.map((row) => ({
+            source: row.source,
+            translation: row.translation,
+            transcription: settings.transcriptionEnabled
+                ? row.transcription
+                : null,
+            definition: settings.definitionEnabled ? row.definition : null,
+            example: settings.exampleEnabled ? row.example : null,
+            exampleTranslation:
+                settings.exampleEnabled && settings.exampleTranslationEnabled
+                    ? row.exampleTranslation
+                    : null,
+        })),
+    };
+}
+
 /** Real SDK/tools/memory/accounting; replace only the paid external model boundary. */
 function deterministicModel(
     question: string,
     fail: boolean,
     purpose: AsyncLocalStorage<TutorCallPurpose>,
+    dictionaryGenerationContext?: unknown,
 ): TutorProviderModel {
     let dispatched = 0;
 
@@ -295,10 +358,21 @@ function deterministicModel(
         doGenerate: async (options) => {
             const callPurpose = purpose.getStore();
             if (callPurpose === 'planning' || callPurpose === 'authoring') {
-                const value =
-                    callPurpose === 'planning'
-                        ? fixtureRequestResolution(question, options.prompt)
-                        : fixtureAuthoringOutput(options.prompt);
+                const dictionaryAuthoring =
+                    callPurpose === 'authoring' &&
+                    JSON.stringify(options.prompt).includes(
+                        'Dictionary snippet generation request:',
+                    );
+                let value: unknown;
+                if (dictionaryAuthoring) {
+                    value = dictionarySnippetProposal(
+                        dictionaryGenerationContext,
+                    );
+                } else if (callPurpose === 'planning') {
+                    value = fixtureRequestResolution(question, options.prompt);
+                } else {
+                    value = fixtureAuthoringOutput(options.prompt);
+                }
 
                 return {
                     content: [
@@ -395,6 +469,10 @@ function deterministicModel(
             }
 
             const ordinal = dispatched++;
+            const dictionarySnippet =
+                dictionaryGenerationContext !== undefined &&
+                question === 'Generate three French dictionary cards fixture' &&
+                ordinal === 0;
             const hostPrefetched = !options.tools?.some(
                 (tool) => tool.name === 'read_source_context',
             );
@@ -426,6 +504,14 @@ function deterministicModel(
             const progressive = /progressively/iu.test(question);
             let text =
                 'A river bank is the land beside a river. This explanation uses your saved learning context.';
+
+            if (
+                dictionaryGenerationContext !== undefined &&
+                question === 'Generate three French dictionary cards fixture'
+            ) {
+                text =
+                    'I prepared three French dictionary cards. Review the read-only cards and explicitly choose how to add them.';
+            }
 
             if (question.includes('What can you do?')) {
                 text =
@@ -464,12 +550,23 @@ function deterministicModel(
 
                             if (
                                 draft ||
+                                dictionarySnippet ||
                                 blockProposal ||
                                 readUpdate ||
                                 readMentioned ||
                                 mentionedProposals
                             ) {
                                 const toolInputs = () => {
+                                    if (dictionarySnippet) {
+                                        return [
+                                            {
+                                                request:
+                                                    'Three French vocabulary cards',
+                                                count: 3,
+                                            },
+                                        ];
+                                    }
+
                                     if (mentionedProposals) {
                                         return mentionedBlockProposals(
                                             options.prompt,
@@ -523,18 +620,23 @@ function deterministicModel(
                                     ];
                                 };
                                 const inputs = toolInputs();
+                                let toolName = 'propose_knowledge_note';
+                                if (dictionarySnippet) {
+                                    toolName = 'propose_dictionary_snippet';
+                                } else if (readUpdate || readMentioned) {
+                                    toolName = 'read_source_context';
+                                } else if (
+                                    blockProposal ||
+                                    mentionedProposals
+                                ) {
+                                    toolName = 'propose_learning_blocks';
+                                }
 
                                 for (const input of inputs) {
                                     controller.enqueue({
                                         type: 'tool-call',
                                         toolCallId: randomUUID(),
-                                        toolName:
-                                            readUpdate || readMentioned
-                                                ? 'read_source_context'
-                                                : blockProposal ||
-                                                    mentionedProposals
-                                                  ? 'propose_learning_blocks'
-                                                  : 'propose_knowledge_note',
+                                        toolName,
                                         input: JSON.stringify(input),
                                     });
                                 }
@@ -773,18 +875,23 @@ export async function createContextualAssistantFixture(
                     }),
                     purpose,
                 );
-                const runner = createContextualTutorRunner({
-                    model: deterministicModel(
-                        turn.message.content,
-                        fail,
-                        purpose,
-                    ),
-                    maxInputTokens: snapshot.perCallMaxInputTokens,
-                    accounting,
-                });
 
                 return {
                     async run(input) {
+                        const runner = createContextualTutorRunner({
+                            model: deterministicModel(
+                                turn.message.content,
+                                fail,
+                                purpose,
+                                input.canProposeDictionarySnippet
+                                    ? input.sourceContext
+                                          .dictionaryGenerationContext
+                                    : undefined,
+                            ),
+                            maxInputTokens: snapshot.perCallMaxInputTokens,
+                            accounting,
+                        });
+
                         try {
                             return await runner.run(input);
                         } catch (error) {
@@ -928,6 +1035,18 @@ export async function createContextualAssistantFixture(
                 policy: authentication.options.policy,
             }),
             authentication: authentication.options,
+            learning: createLearningComposition({
+                ...d,
+                dictionaryHmacSecret: secret,
+                enabled: false,
+                policy: authentication.options.policy,
+            }).routes,
+            sentenceLearning: createSentenceComposition({
+                ...d,
+                dictionaryHmacSecret: secret,
+                enabled: false,
+                policy: authentication.options.policy,
+            }).routes,
             dictionaries: createDictionaryComposition({
                 ...d,
                 dictionaryHmacSecret: secret,

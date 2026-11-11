@@ -3,6 +3,7 @@ type: adr
 id: ADR-0011
 title: 'Dictionary persistence and composition'
 status: accepted
+superseded_in_part_by: 'ADR-0057 dictionary-chat snippets use current manual-style write validation rather than generation-time version pins; other rules active'
 date: 2026-08-21
 supersedes: 'None'
 ---

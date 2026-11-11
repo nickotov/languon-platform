@@ -1,3 +1,5 @@
+import * as dictionarySnippetSchema from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-snippet-schema';
+export * from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-snippet-schema';
 import * as knowledgeFieldSourceSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/block-field-source-schema';
 export * from '../../modules/knowledge/infrastructure/persistence/drizzle/block-field-source-schema';
 import * as knowledgeSentenceJobSourceSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-job-source-schema';
@@ -173,6 +175,7 @@ import {
 } from '../../modules/dictionaries/infrastructure/persistence/drizzle/schema';
 
 export const databaseSchema = {
+    ...dictionarySnippetSchema,
     ...adminMcpSchema,
     ...textAiRouteHealthSchema,
     ...textAiRoutingSchema,

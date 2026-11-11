@@ -123,3 +123,74 @@ describe('historical model context projection', () => {
         expect(JSON.stringify(source)).toContain('OLD_EDITOR');
     });
 });
+
+it('keeps immutable dictionary snippet references while omitting historical full card arguments', () => {
+    const original = [
+        message('snippet', [
+            {
+                type: 'tool-invocation',
+                toolInvocation: {
+                    toolCallId: 'snippet-create',
+                    toolName: 'propose_dictionary_snippet',
+                    state: 'result',
+                    args: {
+                        title: 'Food',
+                        cards: [{ source: 'large source '.repeat(10_000) }],
+                    },
+                    result: {
+                        id: 'retained-snippet-id',
+                        cardCount: 10,
+                        status: 'ready',
+                        requiresLearnerApply: true,
+                    },
+                },
+            },
+        ]),
+    ];
+    const before = structuredClone(original);
+    const encoded = JSON.stringify(projectHistoricalTutorMessages(original));
+
+    expect(encoded).toContain('retained-snippet-id');
+    expect(encoded).toContain('cardCount');
+    expect(encoded).toContain('10');
+    expect(encoded).not.toContain('large source');
+    expect(encoded.length).toBeLessThan(1_000);
+    expect(original).toEqual(before);
+});
+
+it('bounds historical snippet readback without losing its exact-source reference and paging metadata', () => {
+    const original = [
+        message('snippet-read', [
+            {
+                type: 'tool-invocation',
+                toolInvocation: {
+                    toolCallId: 'snippet-read',
+                    toolName: 'read_dictionary_snippet',
+                    state: 'result',
+                    args: { id: 'exact-snippet', startIndex: 0, limit: 10 },
+                    result: {
+                        id: 'exact-snippet',
+                        total: 30,
+                        nextIndex: 10,
+                        cards: [
+                            {
+                                index: 0,
+                                values: {
+                                    definition: 'exact canonical text '.repeat(
+                                        10_000,
+                                    ),
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+        ]),
+    ];
+    const encoded = JSON.stringify(projectHistoricalTutorMessages(original));
+
+    expect(encoded).toContain('exact-snippet');
+    expect(encoded).toContain('nextIndex');
+    expect(encoded).toContain('30');
+    expect(encoded).not.toContain('exact canonical text');
+});

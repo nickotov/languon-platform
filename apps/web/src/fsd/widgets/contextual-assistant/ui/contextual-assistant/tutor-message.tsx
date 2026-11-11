@@ -3,6 +3,7 @@ import { MessageBlockReferences } from './block-reference-controls';
 import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
 import { Check } from 'lucide-react';
 import { KnowledgeBlockProposalsForTurn } from '@/fsd/features/knowledge-notes';
+import { DictionarySnippetsForTurn } from '@/fsd/features/dictionary-chat-snippets';
 import type {
     ConversationEditorTarget,
     ConversationTurn,
@@ -109,7 +110,9 @@ export function TutorMessage({
         (part) =>
             part.type === 'tool-read_source_context' ||
             part.type === 'tool-propose_knowledge_note' ||
-            part.type === 'tool-propose_learning_blocks',
+            part.type === 'tool-propose_learning_blocks' ||
+            part.type === 'tool-propose_dictionary_snippet' ||
+            part.type === 'tool-read_dictionary_snippet',
     );
     const complete = !isUser && canonical.status === 'complete';
     const hasBlockProposal = canonical.toolCalls.some(
@@ -188,6 +191,14 @@ export function TutorMessage({
                             name = labels.preparingBlocks;
                         }
 
+                        if (tool.type === 'tool-propose_dictionary_snippet') {
+                            name = labels.preparingCards;
+                        }
+
+                        if (tool.type === 'tool-read_dictionary_snippet') {
+                            name = labels.readingSnippet;
+                        }
+
                         const state = error ? copy.toolFailed : copy.running;
 
                         return (
@@ -212,6 +223,9 @@ export function TutorMessage({
                 )}
                 {!isUser && (
                     <KnowledgeBlockProposalsForTurn turnId={canonical.turnId} />
+                )}
+                {!isUser && (
+                    <DictionarySnippetsForTurn turnId={canonical.turnId} />
                 )}
                 {canonical.sourceProvenance === 'draft' && (
                     <span className={styles.notice}>{copy.draftLabel}</span>

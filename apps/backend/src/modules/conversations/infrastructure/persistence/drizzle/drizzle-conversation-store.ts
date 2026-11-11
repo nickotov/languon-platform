@@ -1,3 +1,9 @@
+import {
+    conversationProposeDictionarySnippet,
+    conversationReadDictionarySnippet,
+    conversationListDictionarySnippets,
+    conversationApplyDictionarySnippet,
+} from './conversation-dictionary-snippets';
 import { conversationReadBlockProposal } from './conversation-proposal-readback';
 import { conversationRecordResponseMetadata } from './conversation-response-metadata';
 import {
@@ -6,6 +12,8 @@ import {
     conversationApplyBlockProposal,
 } from './conversation-block-proposals';
 import {
+    type ApplyDictionaryChatSnippetRequest,
+    type DictionaryChatSnippetInput,
     type ChatPreferences,
     type ConversationResponseMetadata,
     type ConversationEvent,
@@ -79,6 +87,48 @@ export class DrizzleConversationStore implements ConversationStore {
             dependencies,
             now: dependencies.now ?? (() => new Date()),
         };
+    }
+
+    proposeDictionarySnippet(
+        turn: ClaimedConversationTurn,
+        input: DictionaryChatSnippetInput,
+    ) {
+        return conversationProposeDictionarySnippet(
+            this.persistence,
+            turn,
+            input,
+        );
+    }
+
+    readDictionarySnippet(turn: ClaimedConversationTurn, snippetId: string) {
+        return conversationReadDictionarySnippet(
+            this.persistence,
+            turn,
+            snippetId,
+        );
+    }
+
+    listDictionarySnippets(access: ConversationAccess, conversationId: string) {
+        return conversationListDictionarySnippets(
+            this.persistence,
+            access,
+            conversationId,
+        );
+    }
+
+    applyDictionarySnippet(
+        access: ConversationAccess,
+        conversationId: string,
+        snippetId: string,
+        input: ApplyDictionaryChatSnippetRequest,
+    ) {
+        return conversationApplyDictionarySnippet(
+            this.persistence,
+            access,
+            conversationId,
+            snippetId,
+            input,
+        );
     }
 
     proposeBlocks(

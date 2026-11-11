@@ -18,6 +18,8 @@ export type ConversationWorkerStore = Pick<
     | 'propose'
     | 'proposeBlocks'
     | 'readBlockProposal'
+    | 'proposeDictionarySnippet'
+    | 'readDictionarySnippet'
     | 'recordMaterial'
     | 'finish'
     | 'memory'
@@ -86,6 +88,44 @@ export class ConversationWorkerService {
                     !!turn.sourceSnapshot.blockTarget &&
                     turn.source.kind === 'knowledge' &&
                     !isReadOnlyKnowledgeSource(turn.source),
+                canProposeDictionarySnippet:
+                    turn.source.kind === 'dictionary' &&
+                    turn.authority.sourceOwnerId === turn.ownerId &&
+                    !!turn.sourceSnapshot.dictionaryGenerationContext &&
+                    !!this.dependencies.store.proposeDictionarySnippet &&
+                    !!this.dependencies.store.readDictionarySnippet,
+                onDictionarySnippet: async (proposal) => {
+                    combined.throwIfAborted();
+                    if (
+                        turn.source.kind !== 'dictionary' ||
+                        turn.authority.sourceOwnerId !== turn.ownerId ||
+                        !turn.sourceSnapshot.dictionaryGenerationContext ||
+                        !this.dependencies.store.proposeDictionarySnippet
+                    ) {
+                        throw new ConversationError(
+                            'read_only_source',
+                            'This source cannot propose dictionary cards.',
+                        );
+                    }
+
+                    return this.dependencies.store.proposeDictionarySnippet(
+                        turn,
+                        proposal,
+                    );
+                },
+                ...(this.dependencies.store.readDictionarySnippet
+                    ? {
+                          readDictionarySnippet: async (id: string) => {
+                              combined.throwIfAborted();
+                              const snippet = await this.dependencies.store
+                                  .readDictionarySnippet!(turn, id);
+
+                              combined.throwIfAborted();
+
+                              return snippet;
+                          },
+                      }
+                    : {}),
                 onBlockProposal: async (proposal) => {
                     if (
                         turn.source.kind !== 'knowledge' ||

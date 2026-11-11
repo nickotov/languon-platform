@@ -1,5 +1,6 @@
 import type {
     ConversationActionQuote,
+    DictionaryChatGenerationContext,
     CopiedAttachment,
     ConversationSource,
 } from '@languon/contracts';
@@ -27,6 +28,7 @@ export type SourceAuthority = {
 
 export type SourceMaterial = CopiedAttachment;
 export type ConversationSourceSnapshot = {
+    dictionaryGenerationContext?: DictionaryChatGenerationContext;
     blockReferences?: string[];
     learningBlocks?: SourceMaterial[];
     blockTarget?: {

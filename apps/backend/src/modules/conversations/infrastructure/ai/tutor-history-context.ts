@@ -10,6 +10,8 @@ const completedTools = new Set([
     'read_source_context',
     'recall',
     'propose_knowledge_note',
+    'propose_dictionary_snippet',
+    'read_dictionary_snippet',
     'generate_vocabulary',
     'generate_grammar',
     'generate_bilingual_text',
@@ -114,6 +116,8 @@ function outcomeText(name: string, result: unknown) {
             'count',
             'coverage',
             'total',
+            'cardCount',
+            'nextIndex',
         ].flatMap((key) =>
             typeof data[key] === 'string' || typeof data[key] === 'number'
                 ? [[key, data[key]]]

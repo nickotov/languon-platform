@@ -446,6 +446,18 @@ compaction. Multiple private conversations belong to the note but never appear
 in the shared response. Existing dictionary/text source chat keeps its own
 draft/excerpt behavior.
 
+Owned dictionary chat additionally captures trusted authoring settings and can
+propose complete, read-only dictionary snippets through the same accounted tutor
+model. Canonical linguistic rules are shared with card authoring. Snippets belong
+to the private conversation; historical model context retains compact references,
+and follow-ups read exact retained cards through a lease-fenced tool. Explicit
+learner application is a separate dictionary-owned transaction: append/prepend
+preserve selected order, while Replace archives current active cards and creates
+fresh AI-authored cards without changing title/settings or old learning history.
+Current ordinary write validation applies without a generation-age gate or AI call;
+duplicates notify without blocking. See [ADR-0057](adr/0057-dictionary-chat-snippet-application.md)
+and the [dictionary-chat journey](user-flows/dictionary-chat-snippets.md).
+
 Mastra Memory1.26.0/Core1.57.0 use an application-owned transactional adapter.
 Observation, reflection and actor calls share bounded per-turn execution and
 credit settlement. The existing worker pool executes conversation turns and

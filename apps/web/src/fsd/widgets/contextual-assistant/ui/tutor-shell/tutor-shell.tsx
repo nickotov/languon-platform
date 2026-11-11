@@ -111,7 +111,7 @@ export function TutorShell({
 
         if (
             document.querySelector(
-                '[role="menu"], [data-state="open"][role="dialog"]',
+                '[role="menu"], dialog[open], [data-state="open"][role="dialog"]',
             )
         ) {
             return;

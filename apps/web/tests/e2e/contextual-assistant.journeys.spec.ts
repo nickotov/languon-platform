@@ -1,4 +1,5 @@
-// @user-flow-revision contextual-language-assistant-and-knowledge sha256:b3712ef1da3bfd90
+// @user-flow-revision contextual-language-assistant-and-knowledge sha256:f0af9a8b479478e6
+// @user-flow-revision dictionary-chat-snippets sha256:7d000c468bf2ec35
 import { mkdir, copyFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import {
@@ -2345,5 +2346,358 @@ test('closing reconnects without duplicating a turn, Stop retains partials, and 
 
     await noOverflow(page);
     await capture(page, info, 'assistant-reconnected-mobile');
+    assertClean();
+});
+
+async function readSnippetDictionaryCards(
+    page: Page,
+    token: string,
+    dictionaryId: string,
+    lifecycle: 'active' | 'archived' = 'active',
+) {
+    const { ListDictionaryCardsResponseSchema } =
+        await import('@languon/contracts');
+
+    return ListDictionaryCardsResponseSchema.parse(
+        await api(
+            page,
+            token,
+            `/dictionaries/${dictionaryId}/cards?lifecycle=${lifecycle}&limit=100`,
+        ),
+    );
+}
+
+// @user-flow dictionary-chat-snippets/owned-chat-review-and-apply-snippets
+test('owned dictionary chat snippets preserve review, ordered reusable insertion and archival replacement', async ({
+    page,
+}, info) => {
+    const assertClean = runtimeErrors(page);
+    const httpFailures: string[] = [];
+    page.on('response', (response) => {
+        const path = new URL(response.url()).pathname;
+        if (
+            response.status() >= 400 &&
+            !(response.status() === 401 && path.endsWith('/auth/refresh'))
+        ) {
+            httpFailures.push(`${response.status()} ${path}`);
+        }
+    });
+
+    const token = await signup(page, info);
+    const preference = await api(page, token, '/users/me/ai-model-preference');
+    await api(
+        page,
+        token,
+        '/users/me/ai-model-preference',
+        {
+            mode: 'auto',
+            expectedVersion: preference.version,
+            maxCreditsPerAction: '100',
+        },
+        'PUT',
+    );
+
+    const { dictionary } = (await api(page, token, '/dictionaries', {
+        name: 'French dictionary chat review',
+        sourceLanguage: 'fr',
+        targetLanguage: 'en',
+        settings: {
+            transcriptionEnabled: true,
+            transcriptionNotation: 'ipa',
+            transcriptionCustomLabel: null,
+            definitionEnabled: true,
+            definitionLanguage: 'source',
+            exampleEnabled: true,
+            exampleLanguage: 'source',
+            exampleTranslationEnabled: true,
+        },
+    })) as { dictionary: OwnedDictionary };
+
+    await api(page, token, `/dictionaries/${dictionary.id}/cards`, {
+        expectedDictionaryVersion: dictionary.version,
+        expectedSettingsVersion: dictionary.settingsVersion,
+        values: {
+            source: 'le soleil',
+            translation: 'sun',
+            transcription: '/sɔ.lɛj/',
+            definition: 'L’étoile de notre système.',
+            example: 'Le soleil brille.',
+            exampleTranslation: 'The sun shines.',
+        },
+    });
+
+    await page.goto(`/dictionaries/${dictionary.id}`);
+    await page.getByRole('button', { name: /^Open language tutor/u }).click();
+    const tutor = page.getByRole('region', {
+        name: 'Language tutor',
+        exact: true,
+    });
+
+    await send(page, 'Generate three French dictionary cards fixture');
+    const preview = tutor.getByRole('region', {
+        name: 'Three French dictionary cards',
+        exact: true,
+    });
+
+    await expect(preview).toBeVisible();
+    await expect(
+        preview.locator('[data-dictionary-snippet-index]'),
+    ).toHaveCount(3);
+
+    await expect(preview.getByRole('textbox')).toHaveCount(0);
+    for (const label of [
+        'Source phrase',
+        'Translation',
+        'Transcription',
+        'Definition',
+        'Context example',
+        'Example translation',
+    ]) {
+        await expect(
+            preview
+                .getByRole('term')
+                .filter({ hasText: new RegExp(`^${label}$`, 'u') }),
+        ).toHaveCount(3);
+    }
+
+    for (const source of ['le poisson', 'la joie', 'le travail']) {
+        await expect(preview.getByText(source, { exact: true })).toBeVisible();
+    }
+
+    const { conversations } = await api(
+        page,
+        token,
+        `/conversations?sourceKind=dictionary&sourceId=${dictionary.id}`,
+    );
+    const conversationId = conversations[0].id;
+    await expect
+        .poll(async () => {
+            const detail = await api(
+                page,
+                token,
+                `/conversations/${conversationId}`,
+            );
+
+            return detail.turns[0]?.status;
+        })
+        .toBe('succeeded');
+
+    const retained = await api(
+        page,
+        token,
+        `/conversations/${conversationId}/dictionary-snippets`,
+    );
+
+    expect(retained.snippets).toHaveLength(1);
+    expect(
+        retained.snippets[0].generationContext.settings.definitionEnabled,
+    ).toBe(true);
+
+    expect(
+        (await readSnippetDictionaryCards(page, token, dictionary.id)).data,
+    ).toHaveLength(1);
+
+    const secondCheckbox = preview.getByRole('checkbox', {
+        name: 'Select card 2: la joie',
+        exact: true,
+    });
+
+    await secondCheckbox.focus();
+    await secondCheckbox.press('Space');
+    await expect(secondCheckbox).not.toBeChecked();
+    await expect(
+        preview.getByText('Selected: 2', { exact: true }),
+    ).toBeVisible();
+
+    await preview.getByRole('button', { name: 'Prepend', exact: true }).click();
+    await expect(
+        page.getByText('Added 2 cards to the dictionary.', { exact: true }),
+    ).toBeVisible();
+
+    const prepended = await readSnippetDictionaryCards(
+        page,
+        token,
+        dictionary.id,
+    );
+
+    expect(prepended.data.map((card) => card.values.source)).toEqual([
+        'le poisson',
+        'le travail',
+        'le soleil',
+    ]);
+
+    await capture(page, info, 'dictionary-snippet-selected-prepend-desktop');
+    await noOverflow(page);
+
+    await preview.getByRole('button', { name: 'Append', exact: true }).click();
+    await expect(
+        page.getByText(
+            'Added 2 cards to the dictionary. 2 duplicate cards are included.',
+            { exact: true },
+        ),
+    ).toBeVisible();
+
+    expect(
+        (await readSnippetDictionaryCards(page, token, dictionary.id)).data,
+    ).toHaveLength(5);
+
+    await page.reload();
+    await page.getByRole('button', { name: /^Open language tutor/u }).click();
+    await expect(preview).toBeVisible();
+    expect(
+        (
+            await api(
+                page,
+                token,
+                `/conversations/${conversationId}/dictionary-snippets`,
+            )
+        ).snippets[0].id,
+    ).toBe(retained.snippets[0].id);
+
+    const beforeSettings = (
+        await api(page, token, `/dictionaries/${dictionary.id}`)
+    ).dictionary;
+    const changed = (
+        await api(
+            page,
+            token,
+            `/dictionaries/${dictionary.id}`,
+            {
+                expectedDictionaryVersion: beforeSettings.version,
+                expectedSettingsVersion: beforeSettings.settingsVersion,
+                settings: { definitionEnabled: false },
+            },
+            'PATCH',
+        )
+    ).dictionary;
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(
+        preview.getByRole('term').filter({ hasText: /^Definition$/u }),
+    ).toHaveCount(3);
+
+    await preview
+        .getByRole('checkbox', { name: 'Select all', exact: true })
+        .uncheck();
+
+    await expect(
+        preview.getByRole('button', { name: 'Append', exact: true }),
+    ).toBeDisabled();
+
+    await preview
+        .getByRole('checkbox', { name: 'Select card 2: la joie', exact: true })
+        .check();
+
+    await preview.getByRole('button', { name: 'Append', exact: true }).click();
+    await expect(
+        page.getByText('Added 1 cards to the dictionary.', { exact: true }),
+    ).toBeVisible();
+
+    await expect(
+        preview.getByRole('term').filter({ hasText: /^Definition$/u }),
+    ).toHaveCount(3);
+
+    await noOverflow(page);
+    await expect
+        .poll(() =>
+            tutor.evaluate(
+                (element) => element.scrollWidth <= element.clientWidth + 1,
+            ),
+        )
+        .toBe(true);
+
+    await capture(
+        page,
+        info,
+        'dictionary-snippet-selection-current-settings-narrow',
+    );
+
+    const beforeReplace = await readSnippetDictionaryCards(
+        page,
+        token,
+        dictionary.id,
+    );
+
+    expect(beforeReplace.data.map((card) => card.values.source)).toEqual([
+        'le poisson',
+        'le travail',
+        'le soleil',
+        'le poisson',
+        'le travail',
+        'la joie',
+    ]);
+
+    const oldIds = beforeReplace.data.map((card) => card.id);
+
+    await preview.getByRole('button', { name: 'Replace', exact: true }).click();
+    const confirm = page.getByRole('dialog', {
+        name: 'Replace active cards?',
+        exact: true,
+    });
+
+    await expect(confirm).toContainText('Archive all 6 current active cards');
+    await confirm.press('Escape');
+    await expect(confirm).not.toBeVisible();
+    expect(
+        (await readSnippetDictionaryCards(page, token, dictionary.id)).data,
+    ).toHaveLength(6);
+
+    await preview.getByRole('button', { name: 'Replace', exact: true }).click();
+    await expect(confirm).toContainText('Archive all 6 current active cards');
+    await capture(page, info, 'dictionary-snippet-replace-confirm-narrow');
+    await confirm.getByRole('button', { name: 'Replace', exact: true }).click();
+    await expect(confirm).not.toBeVisible();
+    await expect
+        .poll(
+            async () =>
+                (await readSnippetDictionaryCards(page, token, dictionary.id))
+                    .data.length,
+        )
+        .toBe(1);
+
+    const finalCards = (
+        await readSnippetDictionaryCards(page, token, dictionary.id)
+    ).data;
+
+    expect(finalCards[0].values.source).toBe('la joie');
+    expect(finalCards[0].authorship).toBe('ai-generated');
+    expect(oldIds).not.toContain(finalCards[0].id);
+    const archived = (
+        await readSnippetDictionaryCards(page, token, dictionary.id, 'archived')
+    ).data;
+
+    expect(archived.map((card) => card.id).sort()).toEqual([...oldIds].sort());
+
+    const finalDictionary = (
+        await api(page, token, `/dictionaries/${dictionary.id}`)
+    ).dictionary;
+
+    expect(finalDictionary.name).toBe(dictionary.name);
+    expect(finalDictionary.settings).toEqual(changed.settings);
+    await expect(preview).toBeVisible();
+
+    await tutor
+        .getByRole('button', { name: 'Minimize tutor', exact: true })
+        .click();
+
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page
+        .getByRole('button', { name: 'Card actions, card 1', exact: true })
+        .click();
+
+    await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
+    const editor = page.getByRole('dialog', { name: 'Edit card', exact: true });
+    await expect(editor.getByLabel(/^Source word or phrase/u)).toHaveValue(
+        'la joie',
+    );
+
+    await expect(editor.getByLabel(/^Translation/u)).toHaveValue('joy');
+
+    await expect(
+        editor.getByRole('button', { name: 'Save card', exact: true }),
+    ).toBeVisible();
+
+    await noOverflow(page);
+    expect(httpFailures).toEqual([]);
     assertClean();
 });

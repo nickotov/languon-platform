@@ -12,7 +12,13 @@ export function TutorActivity({
     active: boolean;
     queued: boolean;
     text: string;
-    tool?: 'reading' | 'preparing' | 'preparingBlocks' | undefined;
+    tool?:
+        | 'reading'
+        | 'preparing'
+        | 'preparingBlocks'
+        | 'preparingCards'
+        | 'readingSnippet'
+        | undefined;
 }) {
     const { locale } = useI18n();
     const copy = messagesCopy(locale);
@@ -38,7 +44,9 @@ export function TutorActivity({
         | 'writing'
         | 'reading'
         | 'preparing'
-        | 'preparingBlocks' = 'working';
+        | 'preparingBlocks'
+        | 'preparingCards'
+        | 'readingSnippet' = 'working';
 
     if (queued) {
         state = 'waiting';

@@ -669,8 +669,13 @@ An authenticated owner or currently authorized shared reader can choose
 **Ask about this** for a private source conversation. Explicit Knowledge draft
 review/publication and shared-source conversation permissions belong to the
 [Contextual Language Assistant and Knowledge guide](contextual-language-assistant-and-knowledge.md).
-Dictionary authoring, sharing, forks and AI card proposals retain the scenarios
-declared here; this guide does not treat a conversation draft as a card proposal.
+Owned active dictionary chat additionally supports retained read-only card snippets,
+selection and explicit Append, Prepend or archival Replace. The
+[`owned-chat-review-and-apply-snippets` scenario](dictionary-chat-snippets.md#e2e-coverage)
+owns that journey through the separate contextual-assistant fixture and critical
+registration. Knowledge drafts retain their separate publication contract.
+Dictionary authoring, sharing, forks and existing generation-job proposals retain
+the scenarios declared here.
 
 ## Automated regression checks
 

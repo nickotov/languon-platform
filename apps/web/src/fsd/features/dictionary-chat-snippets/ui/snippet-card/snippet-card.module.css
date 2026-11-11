@@ -1,0 +1,72 @@
+.snippet {
+    display: grid;
+    gap: var(--space-12);
+    min-width: 0;
+    margin-block: var(--space-12);
+    padding: var(--space-16);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-12);
+    background: var(--background-surface);
+    color: var(--text-primary);
+}
+
+.title {
+    margin: 0;
+    font-size: var(--size-16);
+    overflow-wrap: anywhere;
+}
+
+.help {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+}
+
+.selection,
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+}
+
+.cards {
+    display: grid;
+    gap: var(--space-12);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.card {
+    display: grid;
+    gap: var(--space-12);
+    padding: var(--space-12);
+    border: var(--size-1) solid var(--border-default);
+    border-radius: var(--radius-8);
+    overflow-wrap: anywhere;
+}
+
+.fields {
+    display: grid;
+    gap: var(--space-8);
+    margin: 0;
+}
+
+.field {
+    display: grid;
+    gap: var(--space-4);
+    min-width: 0;
+}
+
+.fieldLabel {
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+}
+
+.value {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: var(--size-14);
+}

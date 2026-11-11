@@ -867,6 +867,8 @@ export const ConversationToolCallSchema = z
             'read_source_context',
             'propose_knowledge_note',
             'propose_learning_blocks',
+            'propose_dictionary_snippet',
+            'read_dictionary_snippet',
         ]),
         state: z.enum(['running', 'succeeded', 'failed']),
     })

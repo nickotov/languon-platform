@@ -162,6 +162,19 @@ export function createConversationWorkerComposition(input: {
                                     published = true;
                                     await runInput.onTool?.(call);
                                 },
+                                ...(runInput.onDictionarySnippet
+                                    ? {
+                                          onDictionarySnippet: async (
+                                              content,
+                                          ) => {
+                                              published = true;
+
+                                              return runInput.onDictionarySnippet!(
+                                                  content,
+                                              );
+                                          },
+                                      }
+                                    : {}),
                                 onDraft: async (content) => {
                                     published = true;
 

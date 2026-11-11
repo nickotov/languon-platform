@@ -126,3 +126,4 @@ decision dates and accepted decision/rationale text unchanged.
 Fixes limited to typos, formatting, and broken links do not require a new ADR.
 
 | [ADR-0056](./0056-optional-ai-diagnostics.md) | Optional AI diagnostics independent of routing and generation | Accepted |
+| [ADR-0057](./0057-dictionary-chat-snippet-application.md) | Dictionary-chat snippets and manual-style application | Accepted |
