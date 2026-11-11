@@ -1,5 +1,5 @@
 // @user-flow-revision contextual-language-assistant-and-knowledge sha256:f0af9a8b479478e6
-// @user-flow-revision dictionary-chat-snippets sha256:7d000c468bf2ec35
+// @user-flow-revision dictionary-chat-snippets sha256:8ad3091aa2f1a02c
 import { mkdir, copyFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import {
@@ -2427,6 +2427,7 @@ test('owned dictionary chat snippets preserve review, ordered reusable insertion
     });
 
     await page.goto(`/dictionaries/${dictionary.id}`);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.getByRole('button', { name: /^Open language tutor/u }).click();
     const tutor = page.getByRole('region', {
         name: 'Language tutor',
@@ -2440,11 +2441,73 @@ test('owned dictionary chat snippets preserve review, ordered reusable insertion
     });
 
     await expect(preview).toBeVisible();
+    const review = preview.getByRole('button', {
+        name: 'Review cards: Three French dictionary cards',
+        exact: true,
+    });
+    const actions = preview.getByRole('group', {
+        name: 'Insert selected cards',
+        exact: true,
+    });
+
+    await expect(review).toHaveAttribute('aria-expanded', 'true');
     await expect(
         preview.locator('[data-dictionary-snippet-index]'),
     ).toHaveCount(3);
 
     await expect(preview.getByRole('textbox')).toHaveCount(0);
+    await expect(preview.getByRole('term')).toHaveCount(0);
+    const sources = ['le poisson', 'la joie', 'le travail'];
+
+    for (const [index, source] of sources.entries()) {
+        const row = preview.locator(
+            `[data-dictionary-snippet-index="${index}"]`,
+        );
+
+        await expect(
+            row.getByText(source, { exact: true }).first(),
+        ).toBeVisible();
+
+        await expect(
+            row.getByRole('button', {
+                name: `Card details ${index + 1}: ${source}`,
+                exact: true,
+            }),
+        ).toHaveAttribute('aria-expanded', 'false');
+    }
+
+    const firstDetails = preview.getByRole('button', {
+        name: 'Card details 1: le poisson',
+        exact: true,
+    });
+
+    await firstDetails.focus();
+    await firstDetails.press('Enter');
+    await expect(firstDetails).toHaveAttribute('aria-expanded', 'true');
+    await expect(
+        preview.getByRole('checkbox', {
+            name: 'Select card 1: le poisson',
+            exact: true,
+        }),
+    ).toBeChecked();
+
+    await expect(
+        preview.getByRole('term').filter({ hasText: /^Definition$/u }),
+    ).toHaveCount(1);
+
+    await firstDetails.press('Space');
+    await expect(firstDetails).toHaveAttribute('aria-expanded', 'false');
+    await expect(preview.getByRole('term')).toHaveCount(0);
+
+    for (const [index, source] of sources.entries()) {
+        await preview
+            .getByRole('button', {
+                name: `Card details ${index + 1}: ${source}`,
+                exact: true,
+            })
+            .click();
+    }
+
     for (const label of [
         'Source phrase',
         'Translation',
@@ -2460,9 +2523,110 @@ test('owned dictionary chat snippets preserve review, ordered reusable insertion
         ).toHaveCount(3);
     }
 
-    for (const source of ['le poisson', 'la joie', 'le travail']) {
-        await expect(preview.getByText(source, { exact: true })).toBeVisible();
+    const cards = preview.locator('[data-dictionary-snippet-list]');
+    const desktopList = await cards.evaluate((element) => ({
+        maxHeight: Number.parseFloat(getComputedStyle(element).maxHeight),
+        viewportHeight: window.innerHeight,
+    }));
+
+    expect(desktopList.maxHeight).toBeCloseTo(
+        desktopList.viewportHeight * 0.5,
+        1,
+    );
+
+    await expect
+        .poll(() =>
+            cards.evaluate(
+                (element) => element.scrollHeight > element.clientHeight,
+            ),
+        )
+        .toBe(true);
+
+    // Fields become accessible before their opening transition finishes growing
+    // the list. Settle that geometry before testing the keyboard's scroll target.
+    await cards.evaluate(async (element) => {
+        element.getBoundingClientRect();
+
+        await Promise.all(
+            element
+                .getAnimations({ subtree: true })
+                .map((animation) => animation.finished.catch(() => undefined)),
+        );
+    });
+
+    await cards.focus();
+    await cards.press('End');
+    await expect
+        .poll(() =>
+            cards.evaluate(
+                (element) =>
+                    element.scrollTop + element.clientHeight >=
+                    element.scrollHeight - 1,
+            ),
+        )
+        .toBe(true);
+
+    for (let index = 0; index < 6; index += 1) {
+        await page.keyboard.press('Tab');
     }
+
+    const lastDetails = preview.getByRole('button', {
+        name: 'Card details 3: le travail',
+        exact: true,
+    });
+
+    await expect(lastDetails).toBeFocused();
+    await expect(lastDetails).toBeInViewport();
+
+    const disclosureIds = await Promise.all([
+        review.getAttribute('aria-controls'),
+        firstDetails.getAttribute('aria-controls'),
+    ]);
+    const disclosures = disclosureIds.map((id) =>
+        preview.locator(`[id="${id}"]`),
+    );
+
+    for (const disclosure of disclosures) {
+        const motion = await disclosure.evaluate((element) => {
+            const style = getComputedStyle(element);
+
+            return {
+                properties: style.transitionProperty
+                    .split(',')
+                    .map((value) => value.trim()),
+                durations: style.transitionDuration
+                    .split(',')
+                    .map(
+                        (value) =>
+                            Number.parseFloat(value) *
+                            (value.trim().endsWith('ms') ? 1 : 1_000),
+                    ),
+            };
+        });
+
+        expect(motion.properties).toContain('grid-template-rows');
+        const gridIndex = motion.properties.indexOf('grid-template-rows');
+
+        expect(motion.durations[gridIndex % motion.durations.length]).toBe(200);
+    }
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+
+    for (const disclosure of disclosures) {
+        const durations = await disclosure.evaluate((element) =>
+            getComputedStyle(element)
+                .transitionDuration.split(',')
+                .map(
+                    (value) =>
+                        Number.parseFloat(value) *
+                        (value.trim().endsWith('ms') ? 1 : 1_000),
+                ),
+        );
+
+        expect(durations.every((duration) => duration <= 1)).toBe(true);
+    }
+
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
 
     const { conversations } = await api(
         page,
@@ -2506,10 +2670,40 @@ test('owned dictionary chat snippets preserve review, ordered reusable insertion
     await secondCheckbox.press('Space');
     await expect(secondCheckbox).not.toBeChecked();
     await expect(
-        preview.getByText('Selected: 2', { exact: true }),
+        preview.getByText('Selected: 2', { exact: true }).first(),
     ).toBeVisible();
 
-    await preview.getByRole('button', { name: 'Prepend', exact: true }).click();
+    for (const [index, source] of sources.entries()) {
+        const details = preview.getByRole('button', {
+            name: `Card details ${index + 1}: ${source}`,
+            exact: true,
+        });
+
+        await expect(details).toHaveAttribute('aria-expanded', 'true');
+        await details.click();
+    }
+
+    await expect(preview.getByRole('term')).toHaveCount(0);
+    await expect(disclosures[1]!).toHaveAttribute('aria-hidden', 'true');
+    await expect(disclosures[1]!).toHaveAttribute('inert', '');
+    await preview
+        .getByRole('button', { name: 'Collapse cards', exact: true })
+        .click();
+
+    await expect(review).toHaveAttribute('aria-expanded', 'false');
+    await expect(review).toBeFocused();
+    await expect(preview.getByRole('checkbox')).toHaveCount(0);
+
+    await expect(disclosures[0]!).toHaveAttribute('aria-hidden', 'true');
+    await expect(disclosures[0]!).toHaveAttribute('inert', '');
+    await review.click();
+    await expect(review).toHaveAttribute('aria-expanded', 'true');
+    await expect(secondCheckbox).not.toBeChecked();
+    await expect(
+        preview.getByText('Selected: 2', { exact: true }).first(),
+    ).toBeVisible();
+
+    await actions.getByRole('button', { name: 'Prepend', exact: true }).click();
     await expect(
         page.getByText('Added 2 cards to the dictionary.', { exact: true }),
     ).toBeVisible();
@@ -2529,13 +2723,19 @@ test('owned dictionary chat snippets preserve review, ordered reusable insertion
     await capture(page, info, 'dictionary-snippet-selected-prepend-desktop');
     await noOverflow(page);
 
-    await preview.getByRole('button', { name: 'Append', exact: true }).click();
+    await actions.getByRole('button', { name: 'Append', exact: true }).click();
+    await review.click();
     await expect(
         page.getByText(
             'Added 2 cards to the dictionary. 2 duplicate cards are included.',
             { exact: true },
         ),
     ).toBeVisible();
+
+    await expect(review).toHaveAttribute('aria-expanded', 'false');
+
+    await review.click();
+    await expect(secondCheckbox).not.toBeChecked();
 
     expect(
         (await readSnippetDictionaryCards(page, token, dictionary.id)).data,
@@ -2544,6 +2744,21 @@ test('owned dictionary chat snippets preserve review, ordered reusable insertion
     await page.reload();
     await page.getByRole('button', { name: /^Open language tutor/u }).click();
     await expect(preview).toBeVisible();
+    await expect(review).toHaveAttribute('aria-expanded', 'false');
+    await expect(preview.getByRole('checkbox')).toHaveCount(0);
+    await expect(preview.getByRole('term')).toHaveCount(0);
+    await capture(page, info, 'dictionary-snippet-history-compact-desktop');
+    await review.click();
+    await expect(review).toHaveAttribute('aria-expanded', 'true');
+    await expect(preview.getByRole('term')).toHaveCount(0);
+
+    const secondDetails = preview.getByRole('button', {
+        name: 'Card details 2: la joie',
+        exact: true,
+    });
+
+    await secondDetails.click();
+    await expect(secondDetails).toHaveAttribute('aria-expanded', 'true');
     expect(
         (
             await api(
@@ -2572,30 +2787,40 @@ test('owned dictionary chat snippets preserve review, ordered reusable insertion
     ).dictionary;
 
     await page.setViewportSize({ width: 390, height: 844 });
+    const mobileList = await cards.evaluate((element) => ({
+        maxHeight: Number.parseFloat(getComputedStyle(element).maxHeight),
+        viewportHeight: window.innerHeight,
+    }));
+
+    expect(mobileList.maxHeight).toBeCloseTo(
+        mobileList.viewportHeight * 0.7,
+        1,
+    );
+
     await expect(
         preview.getByRole('term').filter({ hasText: /^Definition$/u }),
-    ).toHaveCount(3);
+    ).toHaveCount(1);
 
     await preview
         .getByRole('checkbox', { name: 'Select all', exact: true })
         .uncheck();
 
     await expect(
-        preview.getByRole('button', { name: 'Append', exact: true }),
+        actions.getByRole('button', { name: 'Append', exact: true }),
     ).toBeDisabled();
 
     await preview
         .getByRole('checkbox', { name: 'Select card 2: la joie', exact: true })
         .check();
 
-    await preview.getByRole('button', { name: 'Append', exact: true }).click();
+    await actions.getByRole('button', { name: 'Append', exact: true }).click();
     await expect(
         page.getByText('Added 1 cards to the dictionary.', { exact: true }),
     ).toBeVisible();
 
     await expect(
         preview.getByRole('term').filter({ hasText: /^Definition$/u }),
-    ).toHaveCount(3);
+    ).toHaveCount(1);
 
     await noOverflow(page);
     await expect
@@ -2629,7 +2854,7 @@ test('owned dictionary chat snippets preserve review, ordered reusable insertion
 
     const oldIds = beforeReplace.data.map((card) => card.id);
 
-    await preview.getByRole('button', { name: 'Replace', exact: true }).click();
+    await actions.getByRole('button', { name: 'Replace', exact: true }).click();
     const confirm = page.getByRole('dialog', {
         name: 'Replace active cards?',
         exact: true,
@@ -2642,7 +2867,7 @@ test('owned dictionary chat snippets preserve review, ordered reusable insertion
         (await readSnippetDictionaryCards(page, token, dictionary.id)).data,
     ).toHaveLength(6);
 
-    await preview.getByRole('button', { name: 'Replace', exact: true }).click();
+    await actions.getByRole('button', { name: 'Replace', exact: true }).click();
     await expect(confirm).toContainText('Archive all 6 current active cards');
     await capture(page, info, 'dictionary-snippet-replace-confirm-narrow');
     await confirm.getByRole('button', { name: 'Replace', exact: true }).click();
@@ -2676,6 +2901,14 @@ test('owned dictionary chat snippets preserve review, ordered reusable insertion
     expect(finalDictionary.settings).toEqual(changed.settings);
     await expect(preview).toBeVisible();
 
+    await tutor
+        .getByRole('button', { name: 'Minimize tutor', exact: true })
+        .click();
+
+    await page.getByRole('button', { name: /^Open language tutor/u }).click();
+    await expect(preview).toBeVisible();
+    await expect(review).toHaveAttribute('aria-expanded', 'false');
+    await expect(preview.getByRole('checkbox')).toHaveCount(0);
     await tutor
         .getByRole('button', { name: 'Minimize tutor', exact: true })
         .click();

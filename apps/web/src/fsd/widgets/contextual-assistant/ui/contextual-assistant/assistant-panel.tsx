@@ -262,6 +262,7 @@ export function AssistantPanel(
                             reconciliationKey={chat.stream.reconciliations}
                         >
                             <DictionarySnippets
+                                visible={!props.folded && !panel.history}
                                 context={dictionarySnippetContext}
                                 actorId={props.actorId}
                                 completionKey={snippetCompletionKey}

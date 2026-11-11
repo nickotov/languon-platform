@@ -2,6 +2,12 @@ import type { Locale } from '@/fsd/shared/i18n';
 
 const messages = {
     en: {
+        actions: 'Insert selected cards',
+        actionsAfterReview: 'Insert selected cards after review',
+        collapse: 'Collapse cards',
+        review: 'Review cards',
+        details: 'Card details',
+        cardCount: '{count} cards',
         title: 'Dictionary cards',
         selectAll: 'Select all',
         select: 'Select card',
@@ -23,6 +29,12 @@ const messages = {
         dismiss: 'Dismiss',
     },
     ru: {
+        actions: 'Вставить выбранные карточки',
+        actionsAfterReview: 'Вставить выбранные карточки после проверки',
+        collapse: 'Свернуть карточки',
+        review: 'Проверить карточки',
+        details: 'Подробности карточки',
+        cardCount: 'Карточек: {count}',
         title: 'Карточки словаря',
         selectAll: 'Выбрать все',
         select: 'Выбрать карточку',
@@ -44,6 +56,12 @@ const messages = {
         dismiss: 'Закрыть',
     },
     fr: {
+        actions: 'Insérer les cartes sélectionnées',
+        actionsAfterReview: 'Insérer les cartes après vérification',
+        collapse: 'Réduire les cartes',
+        review: 'Vérifier les cartes',
+        details: 'Détails de la carte',
+        cardCount: '{count} cartes',
         title: 'Cartes du dictionnaire',
         selectAll: 'Tout sélectionner',
         select: 'Sélectionner la carte',
@@ -65,6 +83,12 @@ const messages = {
         dismiss: 'Fermer',
     },
     es: {
+        actions: 'Insertar tarjetas seleccionadas',
+        actionsAfterReview: 'Insertar tarjetas después de revisarlas',
+        collapse: 'Contraer tarjetas',
+        review: 'Revisar tarjetas',
+        details: 'Detalles de la tarjeta',
+        cardCount: '{count} tarjetas',
         title: 'Tarjetas del diccionario',
         selectAll: 'Seleccionar todas',
         select: 'Seleccionar tarjeta',

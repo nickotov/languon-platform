@@ -119,6 +119,36 @@ Run `pnpm agent-skills:check` after every skill change. The validator checks all
 repository skill frontmatter, directory/name agreement, required Codex UI
 metadata, default prompts, size bounds, and explicit-only invocation policy.
 
+## Product UI design and isolated stories
+
+[`$ui-ux-composition`](../.agents/skills/ui-ux-composition/SKILL.md) includes
+[product UI guidance](../.agents/skills/ui-ux-composition/references/product-ui-quality.md)
+for realistic content density, disclosure and first-use/returning behavior. For
+substantive hierarchy or interaction work, use the read-only
+[`ui-designer`](../.codex/agents/ui-designer.toml) role for a bounded brief and
+rendered critique. Small corrections retain the ordinary fast path. The role
+inherits the session model; it does not add another paid service or executable.
+
+Add/update colocated stories for shared web primitives and useful presentational
+leaves such as chat items, dictionary cards/text and editor custom blocks. Use
+the real component with typed fake props and controlled callbacks. Keep whole
+chat/account/network orchestration in app tests. Existing Storybook theme/viewport
+controls provide visual coverage; stories do not replace app integration proof.
+
+This is a modified Languon adaptation reviewed2026-11-11 from Impeccable at
+[`c1e0e5492fbb524f5df84d635ecfae7dc438ec45`](https://github.com/pbakaus/impeccable/tree/c1e0e5492fbb524f5df84d635ecfae7dc438ec45/.agents/skills/impeccable)
+and Vercel Web Interface Guidelines at
+[`434b7f91364665f2f733b310ec54809bf8f37937`](https://github.com/vercel-labs/web-interface-guidelines/blob/434b7f91364665f2f733b310ec54809bf8f37937/command.md).
+Selected planning, Operate-mode, critique and interaction concepts were rewritten
+for project authority, runtime tokens, proportional verification and the safe
+browser wrapper. Retained licenses:
+[Apache2.0](../.agents/skills/ui-ux-composition/licenses/impeccable-APACHE-2.0.txt),
+[Impeccable notice](../.agents/skills/ui-ux-composition/licenses/impeccable-NOTICE.txt),
+and [Vercel MIT](../.agents/skills/ui-ux-composition/licenses/vercel-MIT.txt).
+Upstream binaries, hooks, live overlays and automatic updates are not installed.
+This is not an unmodified Impeccable installation or its complete critique workflow.
+See the [research](./surveys/product-ui-design-skills.md) for selection and limits.
+
 ## Code search
 
 Use [`$efficient-code-search`](../.agents/skills/efficient-code-search/SKILL.md)

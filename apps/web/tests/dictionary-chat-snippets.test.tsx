@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { screen, waitFor, within } from '@testing-library/react';
+import {
+    act,
+    renderHook,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -10,6 +16,7 @@ import type {
 import { dictionaryApi } from '../src/fsd/entities/dictionary';
 import { dictionarySnippetsApi } from '../src/fsd/features/dictionary-chat-snippets/api/dictionary-snippets-api';
 import { DictionarySnippetCard } from '../src/fsd/features/dictionary-chat-snippets/ui/snippet-card/snippet-card';
+import { useSnippetDisclosure } from '../src/fsd/features/dictionary-chat-snippets/hooks/use-snippet-disclosure';
 import {
     DictionarySnippets,
     DictionarySnippetsForTurn,
@@ -90,6 +97,7 @@ function setupCard() {
                 snippet={snippet}
                 context={context}
                 onApplying={vi.fn()}
+                defaultExpanded
             />
             <ToastHost label='Notifications' />
         </QueryClientProvider>,
@@ -114,18 +122,33 @@ afterEach(() => vi.unstubAllGlobals());
 
 it('renders every generation-enabled field as plain read-only text and requires a selection', async () => {
     const user = setupCard();
+    expect(screen.queryByRole('term')).not.toBeInTheDocument();
+    await user.click(
+        screen.getByRole('button', { name: 'Card details 1: der Apfel' }),
+    );
+
     for (const value of Object.values(values)) {
         expect(screen.getAllByText(value).length).toBeGreaterThan(0);
     }
 
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     await user.click(screen.getByRole('checkbox', { name: 'Select all' }));
-    expect(screen.getByRole('button', { name: 'Append' })).toBeDisabled();
+    expect(
+        within(
+            screen.getByRole('group', { name: 'Insert selected cards' }),
+        ).getByRole('button', { name: 'Append' }),
+    ).toBeDisabled();
+
     await user.click(
         screen.getByRole('checkbox', { name: 'Select card 2: die Birne' }),
     );
 
-    await user.click(screen.getByRole('button', { name: 'Prepend' }));
+    await user.click(
+        within(
+            screen.getByRole('group', { name: 'Insert selected cards' }),
+        ).getByRole('button', { name: 'Prepend' }),
+    );
+
     await waitFor(() =>
         expect(dictionarySnippetsApi.apply).toHaveBeenCalledOnce(),
     );
@@ -146,7 +169,12 @@ it('retains the exact operation on retry, permits later deliberate application, 
         .mockResolvedValue({ ...success, duplicateCount: 1 });
 
     const user = setupCard();
-    await user.click(screen.getByRole('button', { name: 'Append' }));
+    await user.click(
+        within(
+            screen.getByRole('group', { name: 'Insert selected cards' }),
+        ).getByRole('button', { name: 'Append' }),
+    );
+
     await user.click(await screen.findByRole('button', { name: 'Retry' }));
     await waitFor(() =>
         expect(dictionarySnippetsApi.apply).toHaveBeenCalledTimes(2),
@@ -163,7 +191,12 @@ it('retains the exact operation on retry, permits later deliberate application, 
         ),
     ).toBeVisible();
 
-    await user.click(screen.getByRole('button', { name: 'Append' }));
+    await user.click(
+        within(
+            screen.getByRole('group', { name: 'Insert selected cards' }),
+        ).getByRole('button', { name: 'Append' }),
+    );
+
     await waitFor(() =>
         expect(dictionarySnippetsApi.apply).toHaveBeenCalledTimes(3),
     );
@@ -179,7 +212,12 @@ it('retains the exact operation on retry, permits later deliberate application, 
 
 it('confirms Replace using the current active count and cancels without applying', async () => {
     const user = setupCard();
-    await user.click(screen.getByRole('button', { name: 'Replace' }));
+    await user.click(
+        within(
+            screen.getByRole('group', { name: 'Insert selected cards' }),
+        ).getByRole('button', { name: 'Replace' }),
+    );
+
     const dialog = await screen.findByRole('dialog', {
         name: 'Replace active cards?',
     });
@@ -193,7 +231,12 @@ it('confirms Replace using the current active count and cancels without applying
     );
 
     expect(dictionarySnippetsApi.apply).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Replace' }));
+    await user.click(
+        within(
+            screen.getByRole('group', { name: 'Insert selected cards' }),
+        ).getByRole('button', { name: 'Replace' }),
+    );
+
     await user.click(
         within(await screen.findByRole('dialog')).getByRole('button', {
             name: 'Replace',
@@ -224,10 +267,35 @@ it('disables repeated actions while an apply is pending and shows a retryable er
     );
 
     const user = setupCard();
-    await user.click(screen.getByRole('button', { name: 'Append' }));
-    expect(screen.getByRole('button', { name: 'Append' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Prepend' })).toBeDisabled();
+    await user.click(
+        within(
+            screen.getByRole('group', { name: 'Insert selected cards' }),
+        ).getByRole('button', { name: 'Append' }),
+    );
+
+    expect(
+        within(
+            screen.getByRole('group', { name: 'Insert selected cards' }),
+        ).getByRole('button', { name: 'Append' }),
+    ).toBeDisabled();
+
+    expect(
+        within(
+            screen.getByRole('group', { name: 'Insert selected cards' }),
+        ).getByRole('button', { name: 'Prepend' }),
+    ).toBeDisabled();
+
     expect(screen.getByRole('checkbox', { name: 'Select all' })).toBeDisabled();
+    await user.click(
+        screen.getByRole('button', { name: 'Review cards: Fruit vocabulary' }),
+    );
+
+    expect(
+        within(
+            screen.getByRole('region', { name: 'Fruit vocabulary' }),
+        ).getByRole('status'),
+    ).toHaveTextContent('Adding cards…');
+
     rejectApply(new TypeError('network'));
     expect(await screen.findByRole('alert')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled();
@@ -253,18 +321,32 @@ it('does not fetch snippets without the owned dictionary context', () => {
     ).not.toBeInTheDocument();
 });
 
-it('loads retained snippets on reopening chat and refreshes turn completions without replacing old output', async () => {
+it('keeps history compact, opens a new completion once, and folds on chat reopen without refetch overriding choice', async () => {
     const client = new QueryClient();
+    const newTurn = '19d712f4-2204-49fe-8564-bb7291100175';
     const second = {
         ...snippet,
         id: '18d712f4-2204-49fe-8564-bb7291100175',
+        turnId: newTurn,
         title: 'More fruit',
     };
 
     function History() {
-        const [completionKey, setCompletionKey] = useState(turnId);
+        const [completionKey, setCompletionKey] = useState(
+            `${turnId}:succeeded`,
+        );
+        const [visible, setVisible] = useState(true);
+        const [revision, setRevision] = useState(0);
         function completeTurn() {
-            setCompletionKey(`${turnId},new-turn`);
+            setCompletionKey(`${turnId}:succeeded,${newTurn}:snippet:tool`);
+        }
+
+        function toggleChat() {
+            setVisible((current) => !current);
+        }
+
+        function reconcile() {
+            setRevision((current) => current + 1);
         }
 
         return (
@@ -273,10 +355,14 @@ it('loads retained snippets on reopening chat and refreshes turn completions wit
                     context={context}
                     actorId='actor'
                     completionKey={completionKey}
-                    reconciliationKey={0}
+                    reconciliationKey={revision}
+                    visible={visible}
                 >
                     <DictionarySnippetsForTurn turnId={turnId} />
+                    <DictionarySnippetsForTurn turnId={newTurn} />
                     <button onClick={completeTurn}>Complete turn</button>
+                    <button onClick={toggleChat}>Toggle chat</button>
+                    <button onClick={reconcile}>Reconnect</button>
                 </DictionarySnippets>
             </QueryClientProvider>
         );
@@ -284,22 +370,217 @@ it('loads retained snippets on reopening chat and refreshes turn completions wit
 
     const user = userEvent.setup();
     render(<History />);
-    expect(
-        await screen.findByRole('region', { name: 'Fruit vocabulary' }),
-    ).toBeVisible();
+    const oldToggle = await screen.findByRole('button', {
+        name: 'Review cards: Fruit vocabulary',
+    });
 
+    expect(oldToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     vi.mocked(dictionarySnippetsApi.list).mockResolvedValue({
         snippets: [snippet, second],
     });
 
+    await user.click(screen.getByRole('button', { name: 'Reconnect' }));
+    const earlyToggle = await screen.findByRole('button', {
+        name: 'Review cards: More fruit',
+    });
+
+    expect(earlyToggle).toHaveAttribute('aria-expanded', 'false');
     await user.click(screen.getByRole('button', { name: 'Complete turn' }));
+    const freshToggle = await screen.findByRole('button', {
+        name: 'Review cards: More fruit',
+    });
+
+    await waitFor(() =>
+        expect(freshToggle).toHaveAttribute('aria-expanded', 'true'),
+    );
+
+    expect(oldToggle).toHaveAttribute('aria-expanded', 'false');
+    await user.click(
+        screen.getByRole('checkbox', { name: 'Select card 2: die Birne' }),
+    );
+
+    await user.click(freshToggle);
+    await user.click(screen.getByRole('button', { name: 'Reconnect' }));
+    await waitFor(() =>
+        expect(dictionarySnippetsApi.list).toHaveBeenCalledTimes(4),
+    );
+
+    expect(freshToggle).toHaveAttribute('aria-expanded', 'false');
+    await user.click(freshToggle);
     expect(
-        await screen.findByRole('region', { name: 'More fruit' }),
-    ).toBeVisible();
+        screen.getByRole('checkbox', { name: 'Select card 2: die Birne' }),
+    ).not.toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Toggle chat' }));
+    await user.click(screen.getByRole('button', { name: 'Toggle chat' }));
+    expect(freshToggle).toHaveAttribute('aria-expanded', 'false');
+    await user.click(freshToggle);
+    expect(
+        screen.getByRole('checkbox', { name: 'Select card 2: die Birne' }),
+    ).not.toBeChecked();
+});
+
+it('discloses complete fields independently of row selection', async () => {
+    const user = setupCard();
+    const details = screen.getByRole('button', {
+        name: 'Card details 1: der Apfel',
+    });
+    const checkbox = screen.getByRole('checkbox', {
+        name: 'Select card 1: der Apfel',
+    });
+
+    await user.click(details);
+    expect(checkbox).toBeChecked();
+    expect(details).toHaveAttribute('aria-expanded', 'true');
+    await user.click(checkbox);
+    expect(details).toHaveAttribute('aria-expanded', 'true');
+    await user.click(
+        screen.getByRole('button', { name: 'Review cards: Fruit vocabulary' }),
+    );
+
+    await user.click(
+        screen.getByRole('button', { name: 'Review cards: Fruit vocabulary' }),
+    );
+
+    expect(checkbox).not.toBeChecked();
+    expect(details).toHaveAttribute('aria-expanded', 'true');
+});
+
+it('shows all100 cards without pagination while preserving selection and source indices', async () => {
+    const many = {
+        ...snippet,
+        cards: Array.from({ length: 100 }, (_, index) => ({
+            ...values,
+            source: `card ${index + 1}`,
+        })),
+    };
+    const client = new QueryClient();
+    render(
+        <QueryClientProvider client={client}>
+            <DictionarySnippetCard
+                snippet={many}
+                context={context}
+                onApplying={vi.fn()}
+                defaultExpanded
+            />
+        </QueryClientProvider>,
+    );
+
+    const user = userEvent.setup();
+    expect(screen.getAllByRole('checkbox')).toHaveLength(101);
+    await user.click(screen.getByRole('checkbox', { name: 'Select all' }));
+    await user.click(
+        screen.getByRole('checkbox', { name: 'Select card 2: card 2' }),
+    );
 
     expect(
-        screen.getByRole('region', { name: 'Fruit vocabulary' }),
-    ).toBeVisible();
+        screen.queryByRole('button', { name: 'Next', exact: true }),
+    ).not.toBeInTheDocument();
+
+    expect(
+        screen.getByRole('list', { name: 'Dictionary cards' }),
+    ).toHaveAttribute('tabindex', '0');
+
+    await user.click(
+        screen.getByRole('checkbox', { name: 'Select card 100: card 100' }),
+    );
+
+    await user.click(
+        within(
+            screen.getByRole('group', { name: 'Insert selected cards' }),
+        ).getByRole('button', { name: 'Append', exact: true }),
+    );
+
+    await waitFor(() =>
+        expect(dictionarySnippetsApi.apply).toHaveBeenCalledOnce(),
+    );
+
+    expect(
+        vi.mocked(dictionarySnippetsApi.apply).mock.calls[0]![2]
+            .selectedIndices,
+    ).toEqual([1, 99]);
+});
+
+it('does not offer redundant detail expansion when only source and translation are enabled', () => {
+    const onlyRequired = {
+        ...snippet,
+        generationContext: {
+            ...snippet.generationContext,
+            settings: {
+                ...settings,
+                transcriptionEnabled: false,
+                definitionEnabled: false,
+                exampleEnabled: false,
+                exampleTranslationEnabled: false,
+            },
+        },
+    };
+    const client = new QueryClient();
+    render(
+        <QueryClientProvider client={client}>
+            <DictionarySnippetCard
+                snippet={onlyRequired}
+                context={context}
+                onApplying={vi.fn()}
+                defaultExpanded
+            />
+        </QueryClientProvider>,
+    );
+
+    expect(
+        screen.queryByRole('button', { name: /Card details/ }),
+    ).not.toBeInTheDocument();
+
+    expect(screen.getByText('the apple')).toBeVisible();
+});
+
+it('honors manual review before a late event and keeps hidden completions compact on return', () => {
+    const initial = {
+        scope: 'actor:conversation',
+        snippets: [] as DictionaryChatSnippet[],
+        key: '',
+        visible: true,
+    };
+    const { result, rerender } = renderHook(
+        (props) =>
+            useSnippetDisclosure(
+                props.scope,
+                props.snippets,
+                true,
+                props.key,
+                props.visible,
+            ),
+        { initialProps: initial },
+    );
+
+    rerender({ ...initial, snippets: [snippet] });
+    act(() => result.current.toggle(snippet.id));
+    act(() => result.current.toggle(snippet.id));
+    const completed = {
+        ...initial,
+        snippets: [snippet],
+        key: `${turnId}:snippet:tool`,
+    };
+
+    rerender(completed);
+    expect(result.current.expandedIds.has(snippet.id)).toBe(false);
+    const hidden = {
+        ...snippet,
+        id: '1ad712f4-2204-49fe-8564-bb7291100175',
+        turnId: '1bd712f4-2204-49fe-8564-bb7291100175',
+    };
+    const hiddenCompletion = {
+        ...completed,
+        snippets: [snippet, hidden],
+        key: `${completed.key},${hidden.turnId}:succeeded`,
+        visible: false,
+    };
+
+    rerender(hiddenCompletion);
+    rerender({ ...hiddenCompletion, visible: true });
+    expect(result.current.expandedIds.has(hidden.id)).toBe(false);
+    expect(result.current.expandedIds.has(snippet.id)).toBe(false);
 });
 
 it('retries a definitive append conflict with fresh dictionary versions and a new operation', async () => {
@@ -315,7 +596,12 @@ it('retries a definitive append conflict with fresh dictionary versions and a ne
     );
 
     const user = setupCard();
-    await user.click(screen.getByRole('button', { name: 'Append' }));
+    await user.click(
+        within(
+            screen.getByRole('group', { name: 'Insert selected cards' }),
+        ).getByRole('button', { name: 'Append' }),
+    );
+
     const retry = await screen.findByRole('button', { name: 'Retry' });
     const first = vi.mocked(dictionarySnippetsApi.apply).mock.calls[0]![2];
     vi.mocked(dictionaryApi.readDictionary).mockResolvedValue({
@@ -353,7 +639,9 @@ it('requires a new Replace confirmation with the updated active count after a de
 
     const user = setupCard();
     await user.click(
-        screen.getByRole('button', { name: 'Replace', exact: true }),
+        within(
+            screen.getByRole('group', { name: 'Insert selected cards' }),
+        ).getByRole('button', { name: 'Replace', exact: true }),
     );
 
     const firstDialog = await screen.findByRole('dialog', {
@@ -481,6 +769,7 @@ it('lets native Replace dialog handle Escape before the tutor fold shortcut', as
                     snippet={snippet}
                     context={context}
                     onApplying={vi.fn()}
+                    defaultExpanded
                 />
             </TutorShell>
         </QueryClientProvider>,
@@ -488,7 +777,9 @@ it('lets native Replace dialog handle Escape before the tutor fold shortcut', as
 
     const user = userEvent.setup();
     await user.click(
-        screen.getByRole('button', { name: 'Replace', exact: true }),
+        within(
+            screen.getByRole('group', { name: 'Insert selected cards' }),
+        ).getByRole('button', { name: 'Replace', exact: true }),
     );
 
     const dialog = await screen.findByRole('dialog', {

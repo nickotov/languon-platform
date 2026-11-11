@@ -47,6 +47,11 @@ Run this after rendering. Record concrete failures, not generic approval.
 
 ## States
 
+For disclosure and similar simple state changes, verify brief purposeful opening
+and closing motion using existing tokens, responsive controls throughout, and an
+instant reduced-motion alternative. Hidden content must immediately leave the
+keyboard/accessibility interaction order even while its exit remains visible.
+
 - Loading
 - Empty
 - Error

@@ -1,36 +1,37 @@
+import { useState } from 'react';
 import type { DictionaryChatSnippet } from '@languon/contracts';
 import { dictionaryErrorMessage } from '@/fsd/entities/dictionary';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button, Checkbox, Dialog, InlineAlert } from '@/fsd/shared/ui';
+import { Button, Dialog } from '@/fsd/shared/ui';
 import { useSnippetApplication } from '../../hooks/use-snippet-application';
 import { snippetCopy, snippetCount } from '../../lib/snippet-copy';
 import type { DictionarySnippetContext } from '../../types';
-import { SnippetFields } from './snippet-fields';
-import styles from './snippet-card.module.css';
+import { DictionarySnippetView } from './snippet-view';
 
 export function DictionarySnippetCard({
     snippet,
     context,
     disabled = false,
     onApplying,
+    expanded,
+    defaultExpanded = false,
+    onToggleExpanded,
 }: {
     snippet: DictionaryChatSnippet;
     context: DictionarySnippetContext;
     disabled?: boolean;
     onApplying(value: boolean): void;
+    expanded?: boolean;
+    defaultExpanded?: boolean;
+    onToggleExpanded?(id: string): void;
 }) {
     const { locale, t } = useI18n();
     const copy = snippetCopy(locale);
     const application = useSnippetApplication(snippet, context, onApplying);
+    const [localExpanded, setLocalExpanded] = useState(defaultExpanded);
+    const isExpanded = expanded ?? localExpanded;
     const busy = disabled || application.pending;
-    const empty = application.selected.length === 0;
-    const actionsDisabled = busy || empty;
-    const selectedLabel = snippetCount(
-        copy.selected,
-        application.selected.length,
-    );
-    const allSelected = application.selected.length === snippet.cards.length;
-    const mixedSelection = !allSelected && !empty;
+    const actionsDisabled = busy || application.selected.length === 0;
     const error = application.error
         ? dictionaryErrorMessage(application.error, t)
         : null;
@@ -51,80 +52,32 @@ export function DictionarySnippetCard({
         application.requestApply('replace');
     }
 
+    function toggleExpanded() {
+        if (onToggleExpanded) {
+            onToggleExpanded(snippet.id);
+        } else {
+            setLocalExpanded((current) => !current);
+        }
+    }
+
     return (
-        <section
-            className={styles.snippet}
-            aria-label={snippet.title}
-            data-dictionary-snippet={snippet.id}
-        >
-            <h3 className={styles.title}>{snippet.title}</h3>
-            <p className={styles.help}>{copy.help}</p>
-            <div className={styles.selection}>
-                <Checkbox
-                    checked={allSelected}
-                    indeterminate={mixedSelection}
-                    disabled={busy}
-                    onChange={application.toggleAll}
-                    label={copy.selectAll}
-                />
-                <span className={styles.help}>{selectedLabel}</span>
-            </div>
-            <ol className={styles.cards}>
-                {snippet.cards.map((_, index) => (
-                    <SnippetFields
-                        key={index}
-                        snippet={snippet}
-                        index={index}
-                        checked={application.selected.includes(index)}
-                        disabled={busy}
-                        onToggle={application.toggle}
-                    />
-                ))}
-            </ol>
-            <div className={styles.actions}>
-                <Button
-                    type='button'
-                    size='small'
-                    onClick={append}
-                    disabled={actionsDisabled}
-                >
-                    {copy.append}
-                </Button>
-                <Button
-                    type='button'
-                    size='small'
-                    variant='secondary'
-                    onClick={prepend}
-                    disabled={actionsDisabled}
-                >
-                    {copy.prepend}
-                </Button>
-                <Button
-                    type='button'
-                    size='small'
-                    variant='danger'
-                    onClick={replace}
-                    disabled={actionsDisabled}
-                >
-                    {copy.replace}
-                </Button>
-            </div>
-            {application.pending && (
-                <p role='status' className={styles.help}>
-                    {copy.pending}
-                </p>
-            )}
-            {error && <InlineAlert tone='error'>{error}</InlineAlert>}
-            {error && application.canRetry && (
-                <Button
-                    type='button'
-                    variant='secondary'
-                    onClick={application.retry}
-                    disabled={busy}
-                >
-                    {copy.retry}
-                </Button>
-            )}
+        <>
+            <DictionarySnippetView
+                snippet={snippet}
+                expanded={isExpanded}
+                selected={application.selected}
+                disabled={disabled}
+                pending={application.pending}
+                error={error}
+                canRetry={application.canRetry}
+                onToggleExpanded={toggleExpanded}
+                onToggle={application.toggle}
+                onToggleAll={application.toggleAll}
+                onAppend={append}
+                onPrepend={prepend}
+                onReplace={replace}
+                onRetry={application.retry}
+            />
             <Dialog
                 showCloseButton={false}
                 open={Boolean(application.replacement)}
@@ -152,6 +105,6 @@ export function DictionarySnippetCard({
                     </>
                 }
             />
-        </section>
+        </>
     );
 }

@@ -1,6 +1,8 @@
+import { useId, useState } from 'react';
+import { ChevronRight } from 'lucide-react';
 import type { DictionaryChatSnippet } from '@languon/contracts';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Checkbox } from '@/fsd/shared/ui';
+import { Checkbox, IconButton } from '@/fsd/shared/ui';
 import { snippetCopy } from '../../lib/snippet-copy';
 import styles from './snippet-card.module.css';
 
@@ -21,7 +23,29 @@ export function SnippetFields({
     const copy = snippetCopy(locale);
     const card = snippet.cards[index]!;
     const settings = snippet.generationContext.settings;
-    const label = `${copy.select} ${index + 1}: ${card.source}`;
+    const [expanded, setExpanded] = useState(false);
+    const detailId = useId();
+    const detailLabel = `${copy.details} ${index + 1}: ${card.source}`;
+    const hasDetails =
+        settings.transcriptionEnabled ||
+        settings.definitionEnabled ||
+        settings.exampleEnabled ||
+        settings.exampleTranslationEnabled;
+    const selectionAriaLabel = `${copy.select} ${index + 1}: ${card.source}`;
+    const selectionLabel = (
+        <span lang={snippet.generationContext.sourceLanguage} dir='auto'>
+            {card.source}
+        </span>
+    );
+    const translation = (
+        <span
+            className={styles.translation}
+            lang={snippet.generationContext.targetLanguage}
+            dir='auto'
+        >
+            {card.translation}
+        </span>
+    );
     const fields: {
         key: keyof typeof card;
         label: string;
@@ -70,28 +94,67 @@ export function SnippetFields({
         onToggle(index);
     }
 
+    function toggleDetails() {
+        setExpanded((current) => !current);
+    }
+
     return (
         <li className={styles.card} data-dictionary-snippet-index={index}>
-            <Checkbox
-                checked={checked}
-                disabled={disabled}
-                onChange={toggle}
-                label={label}
-            />
-            <dl className={styles.fields}>
-                {fields.map((field) => (
-                    <div key={field.key} className={styles.field}>
-                        <dt className={styles.fieldLabel}>{field.label}</dt>
-                        <dd
-                            className={styles.value}
-                            lang={field.language}
-                            dir='auto'
-                        >
-                            {card[field.key]}
-                        </dd>
+            <div className={styles.entrySummary}>
+                <Checkbox
+                    className={styles.entrySelection}
+                    checked={checked}
+                    disabled={disabled}
+                    onChange={toggle}
+                    aria-label={selectionAriaLabel}
+                    label={selectionLabel}
+                    description={translation}
+                />
+                {hasDetails && (
+                    <IconButton
+                        variant='ghost'
+                        label={detailLabel}
+                        aria-expanded={expanded}
+                        aria-controls={detailId}
+                        onClick={toggleDetails}
+                        showTooltip={false}
+                    >
+                        <ChevronRight
+                            aria-hidden='true'
+                            className={styles.chevron}
+                            data-expanded={expanded}
+                        />
+                    </IconButton>
+                )}
+            </div>
+            {hasDetails && (
+                <div
+                    id={detailId}
+                    className={styles.disclosure}
+                    data-expanded={expanded}
+                    aria-hidden={!expanded}
+                    inert={!expanded}
+                >
+                    <div className={styles.disclosureInner}>
+                        <dl className={styles.fields}>
+                            {fields.map((field) => (
+                                <div key={field.key} className={styles.field}>
+                                    <dt className={styles.fieldLabel}>
+                                        {field.label}
+                                    </dt>
+                                    <dd
+                                        className={styles.value}
+                                        lang={field.language}
+                                        dir='auto'
+                                    >
+                                        {card[field.key]}
+                                    </dd>
+                                </div>
+                            ))}
+                        </dl>
                     </div>
-                ))}
-            </dl>
+                </div>
+            )}
         </li>
     );
 }

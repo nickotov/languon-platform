@@ -1,0 +1,63 @@
+{
+  "baseline": "c2bbe761",
+  "date": "2026-11-11",
+  "source_sha256": {
+    ".agents/skills/frontend-development/SKILL.md": "98391beb879cc19937212d6876e1dd26b447b8cce4e0d61d61a80614db1037af",
+    ".agents/skills/ui-ux-composition/SKILL.md": "6d1b83ebba8fb4541611d6571bff1aa5ce7e89521f5edab0bb149b572f5dc80e",
+    ".agents/skills/ui-ux-composition/licenses/impeccable-APACHE-2.0.txt": "02bb8c3b4e70190e3986c0404ad2fd8d639b4f534252d82379cc1b502b6d1812",
+    ".agents/skills/ui-ux-composition/licenses/impeccable-NOTICE.txt": "c60a093c2845fd9fb82f9c6f742ece31f379f8190b535309d32d66c45ccffdcb",
+    ".agents/skills/ui-ux-composition/licenses/vercel-MIT.txt": "6cd1609c9c12233507cdd2ce0d32e9a721e3c27494951be06b90090deeeb7af2",
+    ".agents/skills/ui-ux-composition/references/product-ui-quality.md": "e69f7920705dda9efe263fa4001ebffd196766697b873c170a5f3b71af1c9c96",
+    ".codex/agents/ui-designer.toml": "56b4911bee0b58bb112edbfa567efb16c3cfdfca2299ad3811d56cec22222b33",
+    "AGENTS.md": "26146037608ed42c9cafb9b28137bd426f7fc30f07bb15b8a330c30fa89200bb",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/hooks/use-snippet-disclosure.ts": "e3031af83c86040053a223c9b2c7cd31102f762b66aaece914bfc939639903f5",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/lib/snippet-completions.ts": "7e25a444cf3131950e882848782b046e8ece6cf00de76b3d0bc03d92f7ad803f",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/lib/snippet-copy.ts": "20847406717d6ae511ce7c6822d4ce0ed30e7cc6a2d3313d405bca4407269eb2",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/ui/snippet-card/snippet-actions.tsx": "54a973821c63c91bc934f1c6c785cac1394eefa6385f7459b9fba7d633ae4cae",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/ui/snippet-card/snippet-card.module.css": "b51cebbe77e9707e6f2bbb275609bdfb3f22cc0b4275535e68a104c59f03edcb",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/ui/snippet-card/snippet-card.tsx": "cff90c22130d6fb478b3098402b29f820599c977c5169a99116ddfde0f6e60ef",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/ui/snippet-card/snippet-fields.tsx": "3f7d7e51004668dd341e436a30fdfa1c6383b801c4658934aca618c187d8069d",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/ui/snippet-card/snippet-view.stories.tsx": "a3642e9306a947c1bceea9bb31bf1c2536850a0b32d213a721e1061d3a39637c",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/ui/snippet-card/snippet-view.tsx": "ccd300fdbdd8d9d2e34dc282af2fe7cf4d1dbdfeb12cee6cf81f44f102b9f41b",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/ui/snippet-list/snippet-list.tsx": "1521eba15dbc8d12a62967366134d5f5028e94f93b76ca2b2b093a24741eec9c",
+    "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/assistant-panel.tsx": "3ce9818fa91c8dccd062ed1b20e9f723589c76413726f114c774ddc2b35c08a3",
+    "apps/web/tests/dictionary-chat-snippets.test.tsx": "0cc774028cc3b62a0de32595a74730a0911e8c5bfd0f2a39c5185098ac90e0d3",
+    "apps/web/tests/e2e/contextual-assistant.journeys.spec.ts": "4e0a0df31c5f42783c8511280f232837ea69fa1e0067aed12d0408ee3886728d",
+    "docs/agent-skills.md": "06baa339e4056eae1275e9e672c819d74454a6ba156ba7c1af6e0ea9497e9359",
+    "docs/agentic-development.md": "0fb216cc285a60f83454ca1a060c46fd2e6f00aea601bbf6e09e1513ebd00d27",
+    "docs/surveys/README.md": "c6229a22caf8e34ea43a7aaf30bb041afb343384a9e99ee746205df18c521ed5",
+    "docs/surveys/product-ui-design-skills.md": "2df70e279f5817957f4ad3aa949acd54d0a84895d560bad58b86f3cbc870f252",
+    "docs/user-flows/dictionary-chat-snippets.md": "39d66b4c9ef8173cac169de172554fd7956371299b03628eb4843a87a509caa4"
+  },
+  "report_sha256": {
+    "/private/tmp/languon-snippet-ui-components.log": "a327c9eb4579ad00a01bf3c9a0e113649f2a030474ef37cbdafd2fd5202b7ba8",
+    "/private/tmp/languon-snippet-ui-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/private/tmp/languon-snippet-ui-format.log": "b6df35ad19a643951883e3a4bde88447455a6958e3ccc1725098a5bb362480ab",
+    "/private/tmp/languon-ui-panel-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/private/tmp/languon-ui-web-types-final.log": "ae14908e3b57a39350f27667c551ee2035df7c97325978285d44bb58bcb6cb0e",
+    "/private/tmp/languon-ui-storybook-build-final.log": "0f9a74134c03250453be2b832bae4f1832244117aad193fd8eb70d59a8c0fe96",
+    "/private/tmp/languon-ui-agent-skills.log": "3e449798f67d54f35406c4cd7fbbe0f5f60d9af574730204c318eaebb7877208",
+    "/private/tmp/languon-ui-styles.log": "7c0e88fb551317883000ef903c6aef5a0247b668f439d81eb3a62dd3fa236a1d",
+    "/private/tmp/languon-ui-critical.log": "cfbda586fcf48c2b4d94f6074bef63b46b887b41c6d543c8a4f0933b71a660b6",
+    "test-results/critical-flows/c0decea7-4efc-4bba-bfb5-312491f5bc5e/summary.json": "32516ac2d9b6eb087853092853b86315379c8334b202f859069565ce5b650f2e"
+  },
+  "results": {
+    "components": {
+      "passed": 14,
+      "duration_seconds": 2.39
+    },
+    "web_typecheck": "passed",
+    "story_catalog_build": "passed",
+    "critical": {
+      "passed": 1,
+      "skipped": 0,
+      "run_id": "c0decea7-4efc-4bba-bfb5-312491f5bc5e",
+      "total_seconds": 44.849
+    },
+    "new_stories": 9,
+    "skills": 27,
+    "skill_validator_tests": 10,
+    "style_contract": "passed",
+    "live_model_calls": 0
+  }
+}

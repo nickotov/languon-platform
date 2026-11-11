@@ -33,7 +33,10 @@ accepted ADRs and applicable instructions/guides in full before planning, coding
 or review. Metadata discovery never replaces the source-of-truth order.
 
 For visual/shared-UI work, inspect runtime tokens, primitives, stories and comparable
-screens before styling. `design/DESIGN_SYSTEM.md` and `design/` artifacts are
+screens before styling. For material hierarchy/disclosure changes, use
+`$ui-ux-composition` and the project `ui-designer` role for a bounded brief and
+rendered critique; include isolated stories for shared/presentational blocks.
+`design/DESIGN_SYSTEM.md` and `design/` artifacts are
 optional guidance. Before substantive UI coding, choose the
 [design direction](.agent/DESIGN_HANDOFF.md#choose-the-ui-direction-before-implementation):
 extend an approved pattern, obtain approval of an agent preview, or use the

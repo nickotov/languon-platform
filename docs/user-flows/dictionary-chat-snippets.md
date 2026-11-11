@@ -8,6 +8,7 @@ surfaces:
     - api
 source_paths:
     - .agent/features/063-dictionary-chat-snippets/**
+    - .agent/improvements/product-ui-design-quality.md
     - apps/backend/src/modules/conversations/**
     - apps/backend/src/modules/dictionaries/infrastructure/persistence/drizzle/dictionary-chat-snippet-application.ts
     - apps/backend/tests/support/contextual-assistant-fixture.ts
@@ -76,27 +77,61 @@ both canonical capability responses before accepting browser requests.
 1. Create an owned French-to-English dictionary with Transcription, Definition,
    Context example and Example translation enabled. Add one ordinary saved card,
    then open **Open language tutor** and explicitly send a request for three cards.
-   Expect a retained snippet, complete labeled fields and natural French noun
-   articles. The preview exposes selection checkboxes and no editable fields.
-   Generation alone leaves the dictionary unchanged.
+   Expect the new retained snippet to open once, showing a distinct summary,
+   card count, selection/actions and compact source/translation rows with natural
+   French noun articles. Each row's **Card details** control independently reveals
+   its complete generation-enabled fields. Use Enter and Space to open/close a
+   row; this must not select or deselect it. The preview contains no editable
+   fields, and generation alone leaves the dictionary unchanged.
+   Open all three entries to exercise overflow. At desktop widths of at least
+   1024px, the card list is scrollable with a maximum height of `50vh`; all entries
+   remain in the list without pagination. Focus the list and use keyboard
+   scrolling/Tab to reach the final entry. Selection and insertion controls sit
+   outside the scrolling list and remain reachable above and below it.
 2. Use keyboard Space to deselect the middle card, then **Prepend**. Expect only
    the first and third cards in their original order before the existing card.
    Reuse the same snippet with **Append**. All cards are added deliberately,
    including duplicates; a non-blocking success notification reports their count.
-3. Reload and reopen chat. Expect the same retained snippet and read-only fields.
-   Change the dictionary's current settings, then select another subset and
-   append it. Generation-time fields remain inspectable; a settings-age banner
-   or regeneration requirement does not appear. Ordinary current write versions
+   Fold/reopen the artifact using **Review cards** and expect the current
+   selection to remain intact. Manual folding must not be undone when an
+   insertion finishes or the existing result is refetched.
+3. Reload and reopen chat. Expect the same retained snippet to start compact,
+   with **Review cards**, identity and card count visible. Opening the artifact
+   shows compact rows, and opening a row restores its full read-only fields.
+   Change the dictionary's current settings, then select another subset and append
+   it. Generation-time fields remain inspectable; a settings-age banner or
+   regeneration requirement does not appear. Ordinary current write versions
    still protect against concurrent mutations.
-4. At 390 × 844, confirm checkboxes, all field labels and action buttons remain
-   reachable without horizontal overflow. **Replace** names the current active
+4. At 390 × 844, confirm compact rows, independent checkboxes/detail controls,
+   revealed field labels and action buttons remain reachable without horizontal
+   overflow. Below 1024px the list's maximum height is `70vh`. **Replace** names the current active
    card count. Escape or **Cancel** leaves all cards intact. Confirming archives
    all currently active cards and inserts the selection with fresh IDs and AI
    authorship. Previously archived cards and learning history remain retained;
    dictionary title and settings are unchanged.
-5. Fold the tutor and open the inserted card's normal **Edit** action. Its saved
-   values are editable there. Check desktop 1440 × 1000 rendering, keyboard
-   selection and modal dismissal, console errors and unexpected failed requests.
+5. Fold and reopen the tutor without reloading. Expect retained snippets to be
+   compact again. Fold the tutor and open the inserted card's normal **Edit**
+   action. Its saved values are editable there. Check desktop 1440 × 1000
+   rendering, keyboard selection/disclosure and modal dismissal, console errors
+   and unexpected failed requests.
+6. Check the outer artifact and individual row disclosure in ordinary and reduced
+   motion preferences. Both use a 200ms grid transition in ordinary motion;
+   reduced motion removes the perceptible transition. Collapsed panels remain
+   mounted for the animation but expose `aria-hidden` and `inert`, so hidden
+   controls cannot receive focus. The lower **Collapse cards** action restores
+   focus to the artifact's summary control. Do not rely on timing sleeps or a
+   particular intermediate animation frame to verify these outcomes.
+
+## Isolated visual previews
+
+The colocated dictionary snippet presentation stories render the actual leaf
+component with typed fake values and controlled callbacks. They expose compact
+history, expanded results, individual details, selection, long localized content,
+large scrollable results and relevant pending/error states without mounting the full chat,
+logging in or calling the backend/model. Use the existing Storybook catalog's
+viewport and theme controls to inspect density and contrast. A representative
+50-card story complements the real three-card insertion journey; stories do not
+replace integration, lifecycle or persistence proof.
 
 ## API verification
 
@@ -125,10 +160,14 @@ local Origin. Do not place tokens, share secrets or real learner data in example
 ## E2E coverage
 
 `owned-chat-review-and-apply-snippets` covers real admitted native-tool generation,
-all generation-enabled fields, read-only selection, ordered subset Prepend and
-Append, deliberate reuse/duplicate notification, reload, changed current settings,
-Replace cancellation/confirmation, archival IDs and fresh saved editable cards at
-desktop and narrow widths. Its critical registration selects exactly this test.
+new-result opening, independent keyboard disclosure/selection, all generation-enabled
+fields on demand, fold-preserved selection, ordered subset Prepend and Append,
+deliberate reuse/duplicate notification, compact history after reload/reopening,
+bounded desktop/mobile scrolling, final-entry keyboard reachability, ordinary and
+reduced-motion disclosure configuration, changed current settings, Replace
+cancellation/confirmation, archival IDs and fresh saved editable cards at desktop
+and narrow widths. Its critical registration
+selects exactly this test.
 
 Exhaustive authorization, idempotency mismatch, capacity rollback, retained
 progress/history, concurrent transactions and operation fences belong to focused
@@ -139,6 +178,15 @@ completion, exact prior-snippet follow-up and no-charge technical failure.
 
 - Empty selection disables all apply actions. Pending actions disable repeated
   clicks. Preview fields are plain React text, including untrusted model output.
+- Disclosure is presentation state: folding preserves the current task and does
+  not insert cards. Historical snippets start compact; refetch/reconnect must not
+  repeatedly reopen a snippet the learner folded. Card selection and detail
+  disclosure are independent, and every generation-enabled field remains
+  reachable through the row's detail control.
+- All generated entries remain in one scrollable list. Select all still refers
+  to the complete snippet, including entries outside the visible scroll area.
+  Collapsed animated panels are inert and hidden from assistive technology;
+  reduced motion must not prevent expansion or hide content permanently.
 - Network errors retain the selection and expose Retry. An unchanged retry keeps
   the same operation/body; changing selection starts a new deliberate operation.
 - Ordinary current-version conflicts display standard dictionary guidance.

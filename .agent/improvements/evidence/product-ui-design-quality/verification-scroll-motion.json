@@ -1,0 +1,77 @@
+{
+  "baseline": "c2bbe761",
+  "date": "2026-11-11",
+  "source_sha256": {
+    ".agents/skills/frontend-development/SKILL.md": "98391beb879cc19937212d6876e1dd26b447b8cce4e0d61d61a80614db1037af",
+    ".agents/skills/ui-ux-composition/SKILL.md": "8214f67b657b005e14abc7f8309a95fb6b21fef026170c71648ce854a7b27348",
+    ".agents/skills/ui-ux-composition/licenses/impeccable-APACHE-2.0.txt": "02bb8c3b4e70190e3986c0404ad2fd8d639b4f534252d82379cc1b502b6d1812",
+    ".agents/skills/ui-ux-composition/licenses/impeccable-NOTICE.txt": "c60a093c2845fd9fb82f9c6f742ece31f379f8190b535309d32d66c45ccffdcb",
+    ".agents/skills/ui-ux-composition/licenses/vercel-MIT.txt": "6cd1609c9c12233507cdd2ce0d32e9a721e3c27494951be06b90090deeeb7af2",
+    ".agents/skills/ui-ux-composition/references/product-ui-quality.md": "c5f862eea51c920663aeb12ef78113de62d722e35a9586f263a793f22c3ff212",
+    ".agents/skills/ui-ux-composition/references/review-checklist.md": "7aa0f3c00b08184af514ebef20a8b4c1b439aedf9d15b00f708f4e33b596a2b2",
+    ".codex/agents/ui-designer.toml": "56b4911bee0b58bb112edbfa567efb16c3cfdfca2299ad3811d56cec22222b33",
+    "AGENTS.md": "26146037608ed42c9cafb9b28137bd426f7fc30f07bb15b8a330c30fa89200bb",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/hooks/use-snippet-disclosure.ts": "e3031af83c86040053a223c9b2c7cd31102f762b66aaece914bfc939639903f5",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/lib/snippet-completions.ts": "7e25a444cf3131950e882848782b046e8ece6cf00de76b3d0bc03d92f7ad803f",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/lib/snippet-copy.ts": "23110f5b5d89d69cfc0d319050d3a68156d0d85cfafa469c2504f446fb0fffc1",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/ui/snippet-card/snippet-actions.tsx": "54a973821c63c91bc934f1c6c785cac1394eefa6385f7459b9fba7d633ae4cae",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/ui/snippet-card/snippet-card.module.css": "b681c55656c70e8a905e0c8d8cc630aba3dc1b3cc4d89818472a12d2553ad243",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/ui/snippet-card/snippet-card.tsx": "cff90c22130d6fb478b3098402b29f820599c977c5169a99116ddfde0f6e60ef",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/ui/snippet-card/snippet-fields.tsx": "0c09553b0be762c11edbbf3a193ab14899f3c6b680c0af1ac07670fb3a094fe4",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/ui/snippet-card/snippet-view.stories.tsx": "a3642e9306a947c1bceea9bb31bf1c2536850a0b32d213a721e1061d3a39637c",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/ui/snippet-card/snippet-view.tsx": "53c7a1b5dc2f9fc7870fa039614d5dd06aef98a30f47aa8f0053e44761eb1faa",
+    "apps/web/src/fsd/features/dictionary-chat-snippets/ui/snippet-list/snippet-list.tsx": "1521eba15dbc8d12a62967366134d5f5028e94f93b76ca2b2b093a24741eec9c",
+    "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/assistant-panel.tsx": "3ce9818fa91c8dccd062ed1b20e9f723589c76413726f114c774ddc2b35c08a3",
+    "apps/web/tests/dictionary-chat-snippets.test.tsx": "827673c6391542f465f040e1bd472ed6df73d077f2e883944b572fc26b0fb1b4",
+    "apps/web/tests/e2e/contextual-assistant.journeys.spec.ts": "ac79a42a391b25071cac07b4457c3b64a61ffc90ca871a9ab256c71f83f82b0a",
+    "docs/agent-skills.md": "06baa339e4056eae1275e9e672c819d74454a6ba156ba7c1af6e0ea9497e9359",
+    "docs/agentic-development.md": "0fb216cc285a60f83454ca1a060c46fd2e6f00aea601bbf6e09e1513ebd00d27",
+    "docs/surveys/README.md": "c6229a22caf8e34ea43a7aaf30bb041afb343384a9e99ee746205df18c521ed5",
+    "docs/surveys/product-ui-design-skills.md": "2df70e279f5817957f4ad3aa949acd54d0a84895d560bad58b86f3cbc870f252",
+    "docs/user-flows/dictionary-chat-snippets.md": "b79d59bdf485e81b6e8a20e02a861cc3f1d5701b884bbd4193ea815a7157e2f9"
+  },
+  "report_sha256": {
+    "/private/tmp/languon-ui-scroll-components-final.log": "b42bbd31529a0d88292b055dcb36eaf3df8ed1faca91de01495ee2b90782b458",
+    "/private/tmp/languon-ui-scroll-types-final.log": "ae14908e3b57a39350f27667c551ee2035df7c97325978285d44bb58bcb6cb0e",
+    "/private/tmp/languon-ui-scroll-lint-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/private/tmp/languon-ui-scroll-styles.log": "7c0e88fb551317883000ef903c6aef5a0247b668f439d81eb3a62dd3fa236a1d",
+    "/private/tmp/languon-ui-scroll-skills.log": "5cb772d466e9e658a2c126476e01fe7dcf1984b6a1957a17d910b9710e44efde",
+    "/private/tmp/languon-ui-scroll-critical-final.log": "3205051e7472b4d65036430889ade69d5ab181bf954e81d474cfe6426787d233",
+    "/private/tmp/languon-snippet-motion-guide-checks.log": "ca3a359d3ee90414f3798b99fcd5b8041b08aaaa7b617a4b3de159f5afdb986b",
+    "test-results/critical-flows/5d6e286f-e459-4d00-960b-9ef56230898e/summary.json": "700d899011c58279bdecc0d307e7ab697884b5de54e223f4a08627b41e0d5084"
+  },
+  "results": {
+    "components": 14,
+    "critical": {
+      "status": "passed",
+      "selected": [
+        "dictionary-chat-snippets"
+      ],
+      "results": [
+        {
+          "id": "dictionary-chat-snippets",
+          "status": "passed",
+          "tests": 1,
+          "timings": {
+            "setupMs": 1782,
+            "executionMs": 21254,
+            "cleanupMs": 893,
+            "totalMs": 23930
+          }
+        }
+      ],
+      "timings": {
+        "buildMs": 353,
+        "totalMs": 24288
+      }
+    },
+    "desktop_height_vh": 50,
+    "mobile_height_vh": 70,
+    "normal_disclosure_ms": 200,
+    "reduced_motion_ms_max": 1,
+    "web_types": "passed",
+    "styles": "passed",
+    "skills": "passed",
+    "catalog": "current Vite story render and Next journey; full build not selected for bounded follow-up"
+  }
+}

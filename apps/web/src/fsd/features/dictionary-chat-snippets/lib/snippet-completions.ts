@@ -17,7 +17,7 @@ export function dictionarySnippetCompletionKey(
                     tool.name === 'propose_dictionary_snippet' &&
                     tool.state === 'succeeded',
             )
-            .map((tool) => tool.id),
+            .map((tool) => `${message.turnId}:snippet:${tool.id}`),
     );
 
     return [...terminalTurns, ...publishedTools].sort().join(',');

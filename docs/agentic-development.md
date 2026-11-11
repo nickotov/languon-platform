@@ -171,9 +171,8 @@ Use Figma Make or `design/main.pen` when the request explicitly supplies or
 requires that design context; missing design-tool access is not a blocker.
 Implement app-local primitives under
 `apps/web/src/fsd/shared/ui/<component>/` with TSX and a colocated Storybook story.
-Use ADR-0017's exact accepted Magic tokens and Tailwind v3 semantic utilities;
-CSS Modules remain supported for existing/component-specific styling and
-`--sys-*` remains a compatibility mapping. Prefer semantic native HTML, keep caller-provided
+Use ADR-0029's colocated CSS Modules and current semantic/geometry tokens.
+Prefer semantic native HTML, keep caller-provided
 content localizable, and use the public `shared/ui` export instead of duplicating
 control styles in a page or feature.
 
@@ -187,6 +186,15 @@ the production catalog with `pnpm --filter @languon/web storybook:build`. A
 design-system feature keeps `design/`, stories, runtime code, guide/E2E mappings,
 and browser evidence synchronized; Storybook is an implementation catalog, not a
 replacement source of truth.
+
+Also add stories for useful presentational leaves in their owning FSD slice:
+chat items, dictionary cards/text and custom editor blocks. Supply typed fake
+props and controlled callbacks; a whole chat/editor page, login, backend or model
+call is not needed to preview one block. Use meaningful compact/expanded,
+selection, long-content and pending/error states plus global theme/viewport
+controls. Material UI composition uses the project `ui-designer` role and
+[`$ui-ux-composition`](../.agents/skills/ui-ux-composition/SKILL.md) before coding
+and for a rendered critique. Small corrections remain lightweight.
 
 Backend and Next.js host processes bind to `127.0.0.1` by default. Compose also
 publishes application and infrastructure ports only on loopback; the containers
