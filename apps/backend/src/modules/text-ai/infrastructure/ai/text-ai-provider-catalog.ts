@@ -210,7 +210,7 @@ function gatewayCatalogEntry(
             acceptedStatuses: [200, 204, 405],
             method: 'HEAD',
             // OpenRouter rejects HEAD on completions with 404. Catalog HEAD
-            // checks reachability only; matching admin flow checks still gate use.
+            // checks reachability only; optional admin diagnostics do not gate use.
             url:
                 providerId === 'openrouter'
                     ? `${apiBaseUrl}/models`

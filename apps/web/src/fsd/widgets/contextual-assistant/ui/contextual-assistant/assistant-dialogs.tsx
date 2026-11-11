@@ -2,7 +2,6 @@ import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
 import { AlertDialog, Button, Dialog, DialogActions } from '@/fsd/shared/ui';
 import type { useAssistantNavigation } from '../../hooks/use-assistant-navigation';
-import styles from './contextual-assistant.module.css';
 
 export function AssistantDialogs({
     navigation,
@@ -46,16 +45,18 @@ export function AssistantDialogs({
                 title={copy.deleteChat}
                 onClose={onCancelDelete}
                 closeLabel={copy.cancel}
+                footer={
+                    <DialogActions>
+                        <Button variant='danger' onClick={onConfirmDelete}>
+                            {copy.delete}
+                        </Button>
+                        <Button variant='secondary' onClick={onCancelDelete}>
+                            {copy.cancel}
+                        </Button>
+                    </DialogActions>
+                }
             >
                 <p>{copy.confirmDelete}</p>
-                <div className={styles.toolbar}>
-                    <Button variant='danger' onClick={onConfirmDelete}>
-                        {copy.delete}
-                    </Button>
-                    <Button variant='secondary' onClick={onCancelDelete}>
-                        {copy.cancel}
-                    </Button>
-                </div>
             </Dialog>
         </>
     );

@@ -199,8 +199,8 @@ export const knowledgeEn = {
     'knowledge.unsavedTitle': 'Discard unsaved changes?',
     'knowledge.unsavedHelp':
         'These changes have not reached private draft recovery yet.',
-    'knowledge.discard': 'Discard changes',
-    'knowledge.keepEditing': 'Keep editing',
+    'knowledge.discard': 'Discard',
+    'knowledge.keepEditing': 'Continue',
     'knowledge.invalid': 'Add a title and document content before saving.',
     'knowledge.saveError':
         'Your changes could not be saved. They are still here.',
@@ -448,8 +448,8 @@ export const knowledgeRu = {
     'knowledge.unsavedTitle': 'Отменить несохранённые изменения?',
     'knowledge.unsavedHelp':
         'Эти изменения ещё не сохранены в приватном черновике.',
-    'knowledge.discard': 'Отменить изменения',
-    'knowledge.keepEditing': 'Продолжить редактирование',
+    'knowledge.discard': 'Отбросить',
+    'knowledge.keepEditing': 'Продолжить',
     'knowledge.invalid':
         'Добавьте заголовок и текст документа перед сохранением.',
     'knowledge.saveError': 'Не удалось сохранить изменения. Они не потеряны.',
@@ -703,8 +703,8 @@ export const knowledgeEs = {
     'knowledge.unsavedTitle': '¿Descartar los cambios sin guardar?',
     'knowledge.unsavedHelp':
         'Estos cambios aún no se han recuperado en tu borrador privado.',
-    'knowledge.discard': 'Descartar cambios',
-    'knowledge.keepEditing': 'Seguir editando',
+    'knowledge.discard': 'Descartar',
+    'knowledge.keepEditing': 'Continuar',
     'knowledge.invalid': 'Añade un título y contenido antes de guardar.',
     'knowledge.saveError': 'No se pudieron guardar los cambios. Siguen aquí.',
     'knowledge.conflict':
@@ -959,8 +959,8 @@ export const knowledgeFr = {
     'knowledge.unsavedTitle': 'Abandonner les modifications ?',
     'knowledge.unsavedHelp':
         'Ces modifications ne sont pas encore conservées dans votre brouillon privé.',
-    'knowledge.discard': 'Abandonner les modifications',
-    'knowledge.keepEditing': 'Continuer la modification',
+    'knowledge.discard': 'Abandonner',
+    'knowledge.keepEditing': 'Continuer',
     'knowledge.invalid': 'Ajoutez un titre et du contenu avant d’enregistrer.',
     'knowledge.saveError':
         'Vos modifications n’ont pas pu être enregistrées. Elles sont conservées ici.',

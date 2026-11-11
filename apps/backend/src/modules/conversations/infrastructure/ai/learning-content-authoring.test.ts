@@ -347,6 +347,9 @@ describe('dedicated content authoring', () => {
 
     it('keeps schemas representable for the real provider and standalone tool registration', () => {
         const tools = createLearningContentTools({
+            publish: async () => ({
+                id: '01900000-0000-4000-8000-000000000002',
+            }),
             generate: vi.fn(),
             signal: signal(),
         });
@@ -376,6 +379,9 @@ describe('dedicated content authoring', () => {
             output([vocabulary()], 'requested-content'),
         );
         const tools = createLearningContentTools({
+            publish: async () => ({
+                id: '01900000-0000-4000-8000-000000000002',
+            }),
             generate,
             signal: signal(),
         });

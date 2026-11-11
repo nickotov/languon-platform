@@ -1,14 +1,15 @@
 ---
 feature: admin-text-ai-routing
 title: Admin AI routing and audio transcription configuration
-status: draft
-last_verified: 2026-10-31
+status: current
+last_verified: 2026-11-10
 surfaces:
     - browser
     - admin
     - api
 source_paths:
     - .agent/features/054-admin-text-ai-routing/**
+    - .agent/features/062-optional-ai-diagnostics/**
     - apps/admin/src/pages/ai-settings/**
     - apps/backend/src/infrastructure/text-ai/**
     - apps/backend/src/modules/text-ai/**
@@ -32,6 +33,7 @@ related_features:
     - ai-provider-management
     - ai-accounting
     - user-ai-model-preferences-backend
+    - optional-ai-diagnostics
 ---
 
 # Admin AI routing and audio transcription configuration
@@ -39,13 +41,13 @@ related_features:
 ## What this verifies
 
 An owner can inspect provider configuration, processing eligibility, worker
-readiness and actual check evidence separately, explicitly authorize a bounded
+readiness and historical diagnostic results separately, explicitly authorize an optional bounded
 synthetic provider check, publish flow routing/tariffs and emergency-disable a
 route. Learners see neither model names nor model selectors. Their language,
 tone, explanation and maximum-spend preferences remain independent.
 
-The mapped browser journey passed in the
-[final feature verification](../../.agent/features/054-admin-text-ai-routing/EVIDENCE.md).
+The current diagnostic policy is specified in
+[Optional AI diagnostics](../../.agent/features/062-optional-ai-diagnostics/FEATURE.md).
 Deterministic probes prove application behavior, not live provider availability,
 model quality or multilingual accuracy.
 
@@ -64,28 +66,27 @@ A key alone never authorizes an agent to spend money.
 ## Browser verification
 
 1. Sign in as an active owner and open **AI settings → Text AI routes**.
-2. Inspect processing eligibility and observed worker readiness. Neither a
-   configured key nor a fresh worker is proof of a successful flow response.
-   Read **Check current readiness after AI changes**. The table reports the latest
-   historical flow check per route, including failures; recorded evidence age
-   does not certify the current execution identity. **Refresh check history**
-   reloads existing records without running a provider check.
-3. Select a provider/model and **Quick response**. Confirm **Run check** is
-   disabled until the displayed maximum operator expense is explicitly approved.
-4. Run it once. Inspect passed/failed state, evidence window, latency, usage
-   measurement and provider expense. Approval resets after the request.
-5. Select **Test selected flow → sentence-check**, approve the displayed cap
-   again and run. A quick response alone cannot approve a structured flow.
-   The result below the form must match the selected route, check type and flow.
-   A selection with no recorded check shows a warning, rather than another flow's
-   result. Switching a selection resets expense approval and never starts a check.
-6. Verify the controls at desktop and narrow viewport widths.
+2. Read **Diagnostics are optional**. Inspect processing eligibility and observed
+   worker readiness separately from historical check results. **Refresh check
+   history** reloads existing records without running a provider check.
+3. Publish a supported, configured route without running any diagnostic. Missing,
+   old or failed diagnostics do not block publication or generation.
+4. Optionally select a provider/model and **Quick response**. Confirm **Run check**
+   is disabled until the displayed maximum operator expense is explicitly approved.
+   Run once and inspect the result, latency, usage measurement and provider expense.
+   Approval resets after the request; the result does not change route eligibility.
+5. Optionally select **Test selected flow → sentence-check**, approve the displayed
+   cap again and run. This checks its synthetic probe contract, not the entire
+   generation pipeline. The result must match the selected route, type and flow.
+   A selection with no recorded check shows an informational notice. Switching a
+   selection resets expense approval and never starts a check.
+6. Verify controls and optional-diagnostic guidance at desktop and narrow widths.
 
 ## Admin verification
 
 Publish an enabled primary route, optional ordered fallbacks and per-flow
-customer tariffs through **Routing and flow tariffs** after successful matching
-checks for every route/flow. Operator-funded Free flows need no learner tariff;
+customer tariffs through **Routing and flow tariffs**. A successful diagnostic is
+not a publication prerequisite. Operator-funded Free flows need no learner tariff;
 leave their tariff fields blank. They still need provider prices and expense
 limits. If a tariff is entered, provide both input and output rates; an incomplete
 tariff shows a configuration error. The server requires tariffs for paid flows.
@@ -94,8 +95,8 @@ independent of provider USD prices. New flows inherit the default policy.
 
 Use **Emergency disable**, enter a reason and confirm. The route becomes disabled
 for new dispatch, including queued work; an already-running request retains its
-admitted policy. Re-enabling requires explicit audited publication and valid
-checks. Do not delete immutable configuration, charges or check history.
+admitted policy. Re-enabling requires explicit audited publication with valid
+configuration; no diagnostic is required. Do not delete immutable configuration, charges or check history.
 
 ## Audio transcription configuration
 
@@ -155,14 +156,14 @@ credentials or arbitrary model overrides.
 
 ## Expected failure and edge cases
 
-- A missing key, price, paid-flow tariff, current matching flow check or compatible
-  worker blocks activation/admission. An unreviewed provider-processing policy
-  also blocks learner dispatch even when synthetic checks pass.
-- Changing credentials, adapter, prompt/schema or processing controls invalidates
-  matching evidence. Publication requires successful checks within 24 hours;
-  age alone does not disable an unchanged active route.
-- Retired/authentication failures require rechecking. Timeouts use bounded
-  transient recovery and never permanently disable a route by themselves.
+- A missing key, price, paid-flow tariff or compatible worker blocks the applicable
+  configuration/admission path. An unreviewed provider-processing policy also blocks
+  learner dispatch. Diagnostic success cannot override these prerequisites.
+- Changing prompts, schemas, credentials or supported models does not require a
+  diagnostic. No missing, expired, mismatched or failed diagnostic blocks routing
+  publication or generation. Existing results remain historical observations.
+- Actual provider failures use bounded runtime cooldowns and recover automatically
+  without manual checks. Diagnostic results do not alter runtime circuit state.
 - Checks consume operator funds only, within per-probe/daily limits, provider
   concurrency and cooldown. They never reserve or debit learner credits.
 - Fallback candidates and economics are pinned at admission. At most one safe
@@ -173,35 +174,27 @@ credentials or arbitrary model overrides.
 
 ## Automated regression checks
 
-Run the registered command shown by `pnpm user-flow:e2e -- inspect admin-text-ai-routing` against its guarded disposable infrastructure. Run the full critical gate for
-shared routing/accounting changes and the production-adapter contract/database
-checks described in feature evidence. Live provider checks are separate,
+Run the registered command shown by `pnpm user-flow:e2e -- inspect admin-text-ai-routing` against its guarded disposable infrastructure. Run the affected shared routing/accounting and production-adapter/database
+selections described in feature evidence. Live provider checks are separate,
 bounded and explicitly authorized; deterministic execution never claims live
 readiness or linguistic quality.
 
 ## Troubleshooting
 
-Check provider prices, explicit expense approval, recent owner authentication and
-matching selected-flow evidence. A stale version requires reloading the latest
-configuration. Inspect safe provider error codes without recording raw prompts,
-responses or credential values.
+For configuration or generation errors, inspect provider prices, credentials,
+processing controls, worker readiness, budgets and required paid-flow tariffs.
+A stale version requires reloading the latest configuration. Inspect safe provider
+error codes without recording raw prompts, responses or credential values.
 
-For local development, run `pnpm dev:doctor -- --capability conversation` after
-conversation prompt/schema, adapter, credential or processing-policy changes.
-Use the affected capability for other flows, or run `pnpm dev:doctor` for all
-enabled capabilities. The read-only doctor identifies the route and flow, and
-distinguishes no selected-flow evidence, checks for an older execution identity,
-and current evidence that denies dispatch. It does not spend operator funds.
-An invalidated check can cause `model_unavailable` (503) even with valid keys.
-For transient failures, wait for bounded recovery and rerun the doctor first.
-Missing or invalidated evidence and hard failures require **Test selected flow**
-for the reported route/flow with explicit expense approval, then rerun the doctor.
-Changing environment keys or routing is not
-required merely to refresh evidence. Age alone does not block an unchanged
-active route. Historical records in this screen do not expose current fingerprint
-validity; use the doctor for current local admission prerequisites. Doctor unit
-tests cover identity changes; synthetic browser checks do not prove live provider
-availability.
+For local development, `pnpm dev:doctor -- --capability conversation` inspects
+conversation prerequisites; use the affected capability for other flows or
+`pnpm dev:doctor` for all enabled capabilities. It makes no paid calls and does
+not prove provider connectivity. Diagnostic history is informational and never
+causes a failing readiness result on its own. Prompt/schema edits and model
+switches do not require a new check. For actual provider failures, inspect the
+reported cause and allow bounded runtime recovery. Use **Quick response** or
+**Test selected flow** only when an optional paid diagnostic helps investigate;
+review and explicitly approve the displayed maximum expense first.
 
 While history reloads, mutation controls are busy so a stale refresh cannot hide
 a newly completed paid check. Expense approval is bound to the selected route,
@@ -217,11 +210,12 @@ revision; never reset accounts or financial history to repair a route.
 ## E2E coverage
 
 - `admin-checks-and-disables-reviewed-route` verifies explicit operator expense
-  approval, quick and selected-flow checks, evidence display, desktop/narrow
-  controls, readiness guidance, selection-specific check history and read-only
-  history refresh without paid calls, publication with omitted tariffs for Free flows, audited emergency
-  disable and explicit restoration through real
-  admin controls with a guarded deterministic probe executor.
+  approval, optional quick and selected-flow diagnostics, historical results,
+  desktop/narrow controls, optional-diagnostic guidance, selection-specific history
+  and read-only refresh. It publishes before any check, publishes again after a
+  recovered failed/unknown diagnostic, omits tariffs for Free flows, and verifies
+  audited emergency disable/restoration through real admin controls with a guarded
+  deterministic probe executor.
 
 - `owner-reviews-disabled-transcription-configuration` verifies real owner
   authentication, explicit disabled preparation without an invented tariff,

@@ -12,7 +12,7 @@ import type {
     WorkbookLearningState,
 } from '@languon/contracts';
 
-// @user-flow-revision interactive-workbooks sha256:e5af57d58fff2f5f
+// @user-flow-revision interactive-workbooks sha256:031bff1bdbb49194
 const origin = 'http://localhost:3336';
 const tokens = new WeakMap<Page, string>();
 async function signup(page: Page, info: TestInfo, suffix: string) {
@@ -162,9 +162,7 @@ async function addBlock(
         await dialog.getByLabel(label, { exact: true }).fill(value);
     }
 
-    await dialog
-        .getByRole('button', { name: 'Apply changes', exact: true })
-        .click();
+    await dialog.getByRole('button', { name: 'Apply', exact: true }).click();
 
     await expect(dialog).not.toBeVisible();
 }
@@ -493,9 +491,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     expect(frame).toEqual({ border: '1px', padding: '0px' });
     await expect(page.locator('[data-learning-block-id]')).toHaveCount(0);
     await capture(page, info, 'chat-vocabulary-proposal');
-    await proposal
-        .getByRole('button', { name: 'Apply to working draft', exact: true })
-        .click();
+    await proposal.getByRole('button', { name: 'Insert', exact: true }).click();
 
     await expect(page.locator('[data-learning-block-id]')).toHaveCount(1);
     const proseEditor = page.locator(
@@ -718,7 +714,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
         .fill('Visité París el año pasado.');
 
     await translationEditor
-        .getByRole('button', { name: 'Apply changes', exact: true })
+        .getByRole('button', { name: 'Apply', exact: true })
         .click();
 
     await page
@@ -747,7 +743,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
 
     await expect(
         translationEditor.getByRole('button', {
-            name: 'Apply changes',
+            name: 'Apply',
             exact: true,
         }),
     ).toBeDisabled();
@@ -869,7 +865,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
         .fill('Listening sample');
 
     await audioDialog
-        .getByRole('button', { name: 'Apply changes', exact: true })
+        .getByRole('button', { name: 'Apply', exact: true })
         .click();
 
     await expect(
@@ -1079,7 +1075,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     ).toBeVisible();
 
     await textLibrary
-        .getByRole('button', { name: 'Save independent copy', exact: true })
+        .getByRole('button', { name: 'Save', exact: true })
         .click();
 
     await expect(
@@ -2061,9 +2057,7 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
         editor.getByRole('button', { name: 'Collapse editor', exact: true }),
     ).toBeVisible();
 
-    await editor
-        .getByRole('button', { name: 'Apply changes', exact: true })
-        .click();
+    await editor.getByRole('button', { name: 'Apply', exact: true }).click();
 
     await expect(editor).not.toBeVisible();
     expect(
@@ -2102,9 +2096,7 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
     ).toBeVisible();
 
     await expect(library.getByText(/BAD translation/u)).toHaveCount(0);
-    await library
-        .getByRole('button', { name: 'Save independent copy', exact: true })
-        .click();
+    await library.getByRole('button', { name: 'Save', exact: true }).click();
 
     await expect(
         library.getByText('Independent copy saved.', { exact: true }),
@@ -2208,7 +2200,7 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
     ).toBeVisible();
 
     await recordingEditor
-        .getByRole('button', { name: 'Apply changes', exact: true })
+        .getByRole('button', { name: 'Apply', exact: true })
         .click();
 
     const audioSaved = page.waitForResponse(
@@ -2330,7 +2322,7 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
     await expect(grammarProposal.locator('ul > li')).toHaveCount(2);
     await expect(grammarProposal.locator('table')).toBeVisible();
     await grammarProposal
-        .getByRole('button', { name: 'Apply to working draft', exact: true })
+        .getByRole('button', { name: 'Insert', exact: true })
         .click();
 
     const grammarSheet = page.locator('[data-learning-block-id]').filter({
@@ -2458,7 +2450,7 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
     ).toBeVisible();
 
     await mentionedVocabulary
-        .getByRole('button', { name: 'Update block', exact: true })
+        .getByRole('button', { name: 'Update', exact: true })
         .click();
 
     await expect(
@@ -2531,16 +2523,41 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
         review.getByText('работа / труд', { exact: true }),
     ).toBeVisible();
 
+    const revisionPublicationNotice = review.getByText(
+        'Not published until you Save.',
+        {
+            exact: true,
+        },
+    );
+
+    await expect
+        .poll(
+            async () => (await revisionPublicationNotice.boundingBox())?.height,
+        )
+        .toBeLessThan(60);
+
     await capture(page, info, 'chat-target-update-review');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(revisionPublicationNotice).toBeVisible();
+    await expect
+        .poll(
+            async () => (await revisionPublicationNotice.boundingBox())?.height,
+        )
+        .toBeLessThan(60);
+
+    await expect(
+        review.getByRole('button', { name: 'Update', exact: true }),
+    ).toBeInViewport();
+
+    await capture(page, info, 'chat-target-update-review-mobile');
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await review.getByRole('button', { name: 'Close', exact: true }).click();
     // An unrelated title edit must not invalidate the captured vocabulary target.
     await page
         .getByLabel('Title', { exact: true })
         .fill('Block review laboratory updated');
 
-    await proposal
-        .getByRole('button', { name: 'Update block', exact: true })
-        .click();
+    await proposal.getByRole('button', { name: 'Update', exact: true }).click();
 
     await expect(
         proposal.getByRole('button', { name: 'Show in sheet', exact: true }),

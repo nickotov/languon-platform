@@ -1,5 +1,5 @@
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button } from '@/fsd/shared/ui';
+import { Button, DialogActions } from '@/fsd/shared/ui';
 
 import type { GenerationReviewState } from '../../hooks/use-generation-review';
 import type { GenerationReviewProps } from '../../model/generation-review';
@@ -105,8 +105,9 @@ export function ReviewFooter({
     const reviewActions = resolveReviewActions();
 
     return (
-        <div className={styles.footer}>
+        <DialogActions className={styles.footer}>
             <Button
+                className={styles.closeAction}
                 disabled={pending}
                 onClick={onClose}
                 type='button'
@@ -114,8 +115,8 @@ export function ReviewFooter({
             >
                 {closeLabel}
             </Button>
-            <div className={styles.footerActions}>{reviewActions}</div>
-        </div>
+            {reviewActions}
+        </DialogActions>
     );
 }
 

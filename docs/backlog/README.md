@@ -110,8 +110,10 @@ change between backlog preparation and delivery.
   unavailable unless a separately authorized snapshot publication exists.
 - [ADR-0012 — Dictionary worker and document ingestion](../adr/0012-dictionary-worker-and-document-ingestion.md):
   durable jobs, worker fencing, compatibility, and expand/activate/drain discipline.
-  Changing inline acceptance or generation contracts must account for already
-  admitted jobs and supported older formats.
+  Released deployment contracts retain their admitted-job and supported-format
+  requirements. During the current pre-release phase, follow the root direct-contract
+  policy: retire affected queued work safely and update current callers together,
+  rather than preserving obsolete application-format readers or execution paths.
 - [ADR-0021 — Dictionary AI provider routing](../adr/0021-dictionary-ai-provider-routing.md):
   curated provider/model catalog, immutable job configuration, bounded trusted
   infrastructure adapters, server-held credentials, and stable retry routing.

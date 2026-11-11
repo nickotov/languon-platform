@@ -9,6 +9,7 @@ import type {
     ModelRouterLanguageModel,
 } from '@mastra/core/llm';
 import { MastraCompositeStore } from '@mastra/core/storage';
+import { MessageHistory } from '@mastra/core/processors';
 import { Memory } from '@mastra/memory';
 import type {
     createTutorModelGate,
@@ -99,6 +100,30 @@ export function createTutorMemory(options: {
     return memory;
 }
 
+/** Persistence shares the canonical adapter but cannot trigger another OM pass. */
+export function createTutorPersistenceMemory(
+    storage: ConversationMemoryStorage,
+) {
+    const memory = new Memory({
+        storage: new MastraCompositeStore({
+            id: 'conversation-persistence',
+            domains: { memory: storage },
+            disableInit: true,
+        }),
+        options: {
+            lastMessages: false,
+            observationalMemory: false,
+            semanticRecall: false,
+            workingMemory: { enabled: false },
+            generateTitle: false,
+        },
+    });
+
+    memory.__setLogger(noopLogger);
+
+    return memory;
+}
+
 export function tutorMemoryThresholds(
     maxInputTokens: number,
     reservedInputBytes = 0,
@@ -130,12 +155,22 @@ export function createContextualTutorAgent(options: {
     memory?: Memory;
     tools?: ToolsInput;
     contextInstructions?: string;
+    persistenceStorage?: ConversationMemoryStorage;
 }) {
     const agent = new Agent({
         id: 'contextual-language-tutor',
         name: 'Contextual language tutor',
         instructions: `${getLocalPrompt('contextual-language-tutor')}\n${options.contextInstructions ?? ''}`,
         model: options.model,
+        ...(options.persistenceStorage
+            ? {
+                  outputProcessors: [
+                      new MessageHistory({
+                          storage: options.persistenceStorage,
+                      }),
+                  ],
+              }
+            : {}),
         ...(options.memory ? { memory: options.memory } : {}),
         ...(options.tools ? { tools: options.tools } : {}),
         defaultOptions: {

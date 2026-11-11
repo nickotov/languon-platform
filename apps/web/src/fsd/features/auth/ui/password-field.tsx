@@ -4,7 +4,7 @@ import { useId, useState } from 'react';
 import { Eye, EyeOff, Lock } from 'lucide-react';
 
 import { useI18n } from '@/fsd/shared/i18n';
-import { Input } from '@/fsd/shared/ui';
+import { Input, Tooltip } from '@/fsd/shared/ui';
 import styles from './auth-ui.module.css';
 
 export function PasswordField({
@@ -53,24 +53,30 @@ export function PasswordField({
                     required
                     type={visible ? 'text' : 'password'}
                 />
-                <button
-                    aria-label={toggleLabel}
-                    className={styles.passwordToggle}
-                    onClick={toggleVisibility}
-                    type='button'
+                <Tooltip
+                    content={toggleLabel}
+                    desktopOnly
+                    triggerClassName={styles.passwordToggleTrigger}
                 >
-                    {visible ? (
-                        <EyeOff
-                            aria-hidden='true'
-                            className={styles.passwordToggleIcon}
-                        />
-                    ) : (
-                        <Eye
-                            aria-hidden='true'
-                            className={styles.passwordToggleIcon}
-                        />
-                    )}
-                </button>
+                    <button
+                        aria-label={toggleLabel}
+                        className={styles.passwordToggle}
+                        onClick={toggleVisibility}
+                        type='button'
+                    >
+                        {visible ? (
+                            <EyeOff
+                                aria-hidden='true'
+                                className={styles.passwordToggleIcon}
+                            />
+                        ) : (
+                            <Eye
+                                aria-hidden='true'
+                                className={styles.passwordToggleIcon}
+                            />
+                        )}
+                    </button>
+                </Tooltip>
             </span>
             {autoComplete === 'new-password' ? (
                 <small className={styles.fieldHint} id={hintId}>

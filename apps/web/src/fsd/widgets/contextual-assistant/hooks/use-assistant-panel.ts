@@ -399,6 +399,8 @@ export function useAssistantPanel(
 
                 preparationFailed.current = false;
                 setLocalError(null);
+                const firstMessage = !chat.detail.data?.conversation.title;
+
                 try {
                     await chat.submit.mutateAsync({
                         content: question,
@@ -417,7 +419,7 @@ export function useAssistantPanel(
                                 );
                             }
 
-                            props.workspace?.onSent?.();
+                            props.workspace?.onSent?.(firstMessage);
                             workspaceSelection.sent(selectedPassage?.id);
                             blockReferences.sent(referencedIds);
                         },

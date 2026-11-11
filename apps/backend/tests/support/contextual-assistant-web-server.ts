@@ -1,9 +1,37 @@
 import { serve } from '@hono/node-server';
 import { setTimeout as delay } from 'node:timers/promises';
-import { AuthenticationSuccessResponseSchema } from '@languon/contracts';
+import assert from 'node:assert/strict';
+import {
+    AuthenticationSuccessResponseSchema,
+    LearningCapabilitiesResponseSchema,
+    SentenceCapabilitiesResponseSchema,
+} from '@languon/contracts';
 import { createContextualAssistantFixture } from './contextual-assistant-fixture';
 
 const fixture = await createContextualAssistantFixture();
+try {
+    const [flashcards, sentences] = await Promise.all([
+        fixture.request('/learning/capabilities'),
+        fixture.request('/learning/sentences/capabilities'),
+    ]);
+
+    assert.equal(flashcards.status, 200);
+    assert.equal(sentences.status, 200);
+    assert.deepEqual(
+        LearningCapabilitiesResponseSchema.parse(await flashcards.json()),
+        { flashcardsEnabled: false },
+    );
+
+    assert.deepEqual(
+        SentenceCapabilitiesResponseSchema.parse(await sentences.json()),
+        { sentencesEnabled: false },
+    );
+} catch (error) {
+    await fixture.close();
+
+    throw error;
+}
+
 const controller = new AbortController();
 process.once('SIGINT', () => controller.abort());
 process.once('SIGTERM', () => controller.abort());

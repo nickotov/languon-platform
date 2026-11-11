@@ -51,6 +51,7 @@ export function SessionHeader({
                 </div>
                 <div className={styles.actions}>
                     <Button
+                        desktopIconOnly
                         variant='secondary'
                         leadingIcon={modeIcon}
                         onClick={onMode}
@@ -58,6 +59,7 @@ export function SessionHeader({
                         {modeLabel}
                     </Button>
                     <Button
+                        desktopIconOnly
                         variant='secondary'
                         leadingIcon={<X className={styles.icon} />}
                         onClick={onEnd}

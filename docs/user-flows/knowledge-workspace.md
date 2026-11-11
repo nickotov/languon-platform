@@ -10,6 +10,7 @@ source_paths:
     - .agent/features/047-knowledge-workspace/**
     - .agent/features/049-knowledge-markdown-insertion/**
     - .agent/features/060-intent-aware-learning-content/**
+    - .agent/features/061-reliable-learning-content-pipeline/**
     - apps/backend/src/modules/knowledge/**
     - apps/backend/src/modules/conversations/**
     - apps/backend/drizzle/**
@@ -40,6 +41,7 @@ e2e_scenarios:
     - workspace-intent-content-generation
     - workspace-large-vocabulary-generation
 related_features:
+    - reliable-learning-content-pipeline
     - intent-aware-learning-content
     - knowledge-markdown-insertion
     - persistent-tutor-modes
@@ -57,6 +59,10 @@ copied Text references within the configured limits. An unlisted reader sees
 only the saved version and can make an independent copy after signing in.
 
 Owned workspaces support intent-aware generation of interactive learning content.
+The complete current editor remains available when continuing a chat after
+applying generated material. Completed tool work is represented compactly in
+later model context while exact prepared content remains available through
+authorized proposal references.
 
 The first version uses model knowledge and supplied learning material. It does
 not fetch web pages or interpret linked media. Knowledge conversation history,
@@ -144,8 +150,7 @@ pnpm test:e2e:contextual-assistant
    Completed learning explanations also offer **Use in document** to open that
    review above the document canvas. Capability/help answers, clarifications,
    limitations and generated-block acknowledgements do not offer a prose
-   document action. Historical replies without response classification require
-   an explicit editor request before exposing that action. Choose **Insert at cursor**, **Append to end**
+   document action. Choose **Insert at cursor**, **Append to end**
    or **Replace selection** and accept through the matching **Insert**, **Append**
    or **Replace** action. Move the cursor and edit surrounding content
    during generation: the original target stays identified. If target wording
@@ -214,6 +219,18 @@ pnpm test:e2e:contextual-assistant
    changes, then select **Save** separately to publish. A failed or incomplete
    generation offers retry or a request adjustment; it does not report success
    with a Markdown exercise list or a partial proposal.
+6. After applying and saving the 50-entry vocabulary block, request a new
+   10-entry vocabulary block for a different topic using the established language
+   pair. The current editor remains complete; the earlier count does not replace
+   the new request. Review the new proposal beside its own reply. Reopen the chat
+   and verify earlier proposals still refer to their original exact material.
+   In the browser network panel, one Send produces one turn submission and durable
+   event delivery. Queued/running/failed status changes do not repeatedly download
+   unchanged proposal history, and active generation does not poll it every two
+   seconds. A completed proposal or explicit Apply refreshes the relevant data;
+   an ordinary send does not reload an unchanged document workspace. First-send
+   automatic naming and reconnect recovery still synchronize the workspace when
+   needed.
 
 ## API verification
 
@@ -230,8 +247,11 @@ pnpm test:e2e:contextual-assistant
    both fail, including after a new link is issued.
 4. Submit a tutor turn with current `editorContext` and copied Text bodies. A
    request above either configured character limit fails before generation;
-   exactly the limit is admitted if the complete model budget fits. Previous
-   turn snapshots and copied references remain unchanged after later edits.
+   exactly the limit is admitted if the applicable model-call budget fits.
+   Genuinely oversized noncompactable current input fails before a queued turn,
+   credit hold or provider dispatch. Retained history that can be compacted is
+   not rejected merely for exceeding a raw-history estimate. Previous turn
+   snapshots and copied references remain unchanged after later edits.
 5. For owned workspace replies, inspect canonical message `responseMetadata`
    through conversation detail and replayed message events. Its kind and
    `documentUse` eligibility survive reconnect/reload. Private generation briefs,
@@ -256,10 +276,10 @@ pnpm test:e2e:contextual-assistant
 - `workspace-text-reference-limit` proves the Text picker admits exactly
   40,000 copied characters and rejects the next reference as a whole with the
   actionable limit toast. An editor focus passage remains separate and does not
-  reduce the copied-reference allowance. The full references persist unchanged;
-  when instructions and tool framing exceed the configured model's separate
-  input budget, the turn fails specifically with `context_too_large`, without
-  silently truncating them. Removing the focus passage then permits a successful
+  reduce the copied-reference allowance. References are not silently truncated;
+  the configured character allowance does not guarantee that the complete
+  applicable model-call envelope fits. A genuine irreducible input overflow
+  returns `context_too_large` before generation. Removing the copied references and focus passage then permits a successful
   ordinary turn in the same conversation with no stale references, selected
   text, replacement target or persisted passage wrapper.
 - `workspace-proposal-target-review` proves a persisted reply proposal can
@@ -291,9 +311,13 @@ pnpm test:e2e:contextual-assistant
   [feature 060 evidence](../../.agent/features/060-intent-aware-learning-content/EVIDENCE.md).
 - `workspace-large-vocabulary-generation` proves a request for 50 shopping words
   produces one complete vocabulary proposal, with 50 distinct entries in review,
-  and one interactive block after explicit Apply, Save and reload. External model
-  responses are deterministic; authoring, validation, compilation and persistence
-  use the real application path.
+  and one interactive block after explicit Apply, Save and reload. A subsequent
+  10-entry request succeeds with that populated editor and retains its own count.
+  Network assertions distinguish the single turn submission and durable event
+  delivery from proposal reads: no active polling or admission-triggered unchanged
+  workspace/detail reload, with proposal refresh only for initial history and
+  successful publication. External model responses are deterministic; authoring,
+  validation, compilation and persistence use the real application path.
 
 Character boundaries, concurrent branch races, proposal target mapping and
 model budget/compaction have focused contract, integration and editor tests.
@@ -318,7 +342,10 @@ model budget/compaction have focused contract, integration and editor tests.
   acceptance state.
 - Invalid or revoked share credentials reveal no note or workspace content.
 - Oversized copied references, editor context or complete model input fail with
-  an actionable limit message; no paragraph is silently omitted.
+  an actionable document/chat-context limit message; no paragraph is silently
+  omitted. Sequential planning, authoring and possible source-read payloads do not
+  count as if they occupied one model call. A short question after applying a
+  vocabulary block must not fail solely because of that hypothetical sum.
 - A new conversation contains neither another chat's history nor its copied
   attachments. Removing a chat does not delete the note.
 

@@ -83,6 +83,7 @@ export function LibrarySelectionToolbar({ c }: { c: SelectionController }) {
                         ) : null}
                         {selectedRestore ? (
                             <Button
+                                desktopIconOnly
                                 size='compact'
                                 disabled={c.pending}
                                 leadingIcon={
@@ -97,6 +98,7 @@ export function LibrarySelectionToolbar({ c }: { c: SelectionController }) {
                             </Button>
                         ) : null}
                         <Button
+                            desktopIconOnly
                             size='compact'
                             variant='secondary'
                             leadingIcon={

@@ -8,7 +8,7 @@ const proposal = {
     studiedLanguage: 'en',
     explanationLanguage: 'en',
     body: {
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: {
             type: 'doc',
             content: [
@@ -21,7 +21,7 @@ const proposal = {
     },
 };
 
-describe('legacy Knowledge proposal authority', () => {
+describe('canonical prose Knowledge proposal authority', () => {
     const tools = createContextualTutorTools({
         signal: new AbortController().signal,
         readContext: async () => ({ material: [], total: 0 }),
@@ -48,21 +48,21 @@ describe('legacy Knowledge proposal authority', () => {
         expect(await accepts(proposal)).toBe(true);
     });
 
-    it('does not admit a future document version through the legacy tool', async () => {
+    it('does not admit a future document version through the prose tool', async () => {
         expect(
             await accepts({
                 ...proposal,
-                body: { ...proposal.body, schemaVersion: 2 },
+                body: { ...proposal.body, schemaVersion: 3 },
             }),
         ).toBe(false);
     });
 
-    it('rejects an interactive node disguised as a legacy document', async () => {
+    it('rejects an interactive node in a prose-only proposal', async () => {
         expect(
             await accepts({
                 ...proposal,
                 body: {
-                    schemaVersion: 1,
+                    schemaVersion: 2,
                     document: {
                         type: 'doc',
                         content: [
@@ -78,10 +78,6 @@ describe('legacy Knowledge proposal authority', () => {
         const tools = createContextualTutorTools({
             signal: new AbortController().signal,
             readOnlySource: true,
-            canProposeBlocks: true,
-            onBlockProposal: async () => {
-                throw new Error('Must not execute');
-            },
             readContext: async () => ({ material: [], total: 0 }),
             onDraft: async () => {
                 throw new Error('Must not execute');

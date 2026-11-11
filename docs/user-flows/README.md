@@ -74,6 +74,8 @@ evidence with a repeatable manual/browser/API/device recipe.
 - [Dictionary pronunciation audio](./dictionary-pronunciation-audio.md) — private
   saved-field playback for authenticated learners, on-demand generation and cached audio.
 - [Texts folders and aligned reading](./texts.md) — optional folders, whole-text translation, contextual vocabulary, sharing and independent copies.
+- [Dictionary chat snippets](./dictionary-chat-snippets.md) — read-only generated
+  cards, explicit ordered insertion, reusable snippets and archival replacement.
 - [Dictionary Platform](./dictionary-platform.md) — personal dictionary and
   card authoring, lifecycle recovery, unlisted reading, and private forks.
 - [Flashcard training backend](./flashcard-training-backend.md) — bounded card

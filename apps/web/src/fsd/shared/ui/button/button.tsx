@@ -62,7 +62,13 @@ export function Button({
         </button>
     );
 
-    return responsive ? <Tooltip content={tooltip}>{button}</Tooltip> : button;
+    return responsive ? (
+        <Tooltip content={tooltip} desktopOnly>
+            {button}
+        </Tooltip>
+    ) : (
+        button
+    );
 }
 
 export function ButtonLink({
@@ -104,5 +110,11 @@ export function ButtonLink({
         </Link>
     );
 
-    return responsive ? <Tooltip content={tooltip}>{link}</Tooltip> : link;
+    return responsive ? (
+        <Tooltip content={tooltip} desktopOnly>
+            {link}
+        </Tooltip>
+    ) : (
+        link
+    );
 }

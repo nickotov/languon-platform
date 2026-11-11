@@ -28,7 +28,7 @@ export const adminMessages = {
     'routing.recover': 'Confirm provider recovery',
     'routing.title': 'Text AI routes',
     'routing.summary':
-        'Choose reviewed provider routes, test their response contracts, and publish server-owned routing for each text flow.',
+        'Choose supported provider routes and publish server-owned routing for each text flow. Optional diagnostics can help investigate provider responses.',
     'routing.configuration': 'Routing and flow tariffs',
     'routing.primary': 'Primary route',
     'routing.fallbacks': 'Ordered fallback routes',
@@ -45,7 +45,7 @@ export const adminMessages = {
     'routing.outputRate': 'Output credits per million tokens',
     'routing.cacheRate': 'Cached input credits per million tokens (optional)',
     'routing.activationNotice':
-        'New or changed routes require matching successful flow checks from the last 24 hours. Server validation also checks compatibility, credentials and provider prices.',
+        'Publish supported, configured routes without running diagnostics. Server validation checks compatibility, credentials, processing controls and provider prices; paid flows also require learner tariffs.',
     'routing.enabled': 'Enabled routes',
     'routing.flows': 'Per-flow overrides and credit tariffs',
     'routing.tariffHelp':
@@ -63,30 +63,26 @@ export const adminMessages = {
     'routing.runtimeObservedAt': 'Runtime observed at',
     'routing.noRuntimeObservation': 'No runtime observation',
     'routing.failure.schema_incompatible':
-        'The provider rejected the required response schema. Recheck this flow after updating the adapter.',
+        'The provider rejected the required response schema. Review the adapter and required response format.',
     'routing.failure.request_rejected':
-        'The provider rejected this request. Review the route configuration and run a new check.',
+        'The provider rejected this request. Review the route configuration and request requirements.',
     'routing.failure.model_unavailable':
-        'This model is unavailable at the provider. Run a check before using it again.',
+        'This model is unavailable at the provider. Review its availability; runtime cooldowns recover automatically.',
     'routing.runtimeHealth': 'Observed worker readiness',
-    'routing.evidence': 'Recorded evidence window',
     'routing.checked': 'Checked at',
     'routing.separateStates':
-        'This table shows the latest historical flow check per route, including failures. Configured routes, check history and runtime observations are separate signals. A historical pass does not establish current readiness or compatibility with other flows.',
-    'routing.readinessTitle': 'Check current readiness after AI changes',
+        'This table shows the latest historical flow check per route, including failures. Diagnostic results describe that request only and never enable or disable routes. Configuration and runtime observations are separate signals.',
+    'routing.readinessTitle': 'Diagnostics are optional',
     'routing.readinessHelp':
-        'Changing a prompt/schema, adapter, credential or processing policy can invalidate earlier checks and block requests with model_unavailable (503). History below does not certify the current execution contract. For local development, run this read-only command to identify the exact route, flow and blocking prerequisite:',
+        'Publishing routes, switching models and changing prompts do not require a successful check. Missing, old or failed diagnostics do not block generation. For local development, inspect configuration prerequisites with this read-only command:',
     'routing.readinessRecovery':
-        'For transient failures, wait for bounded recovery and rerun the doctor first. Missing or invalidated evidence and hard failures require Test selected flow for the reported route and flow. Review the maximum operator expense, explicitly approve it and run once, then rerun the doctor. Quick response is insufficient. No paid check runs automatically. Age alone does not block an unchanged active route.',
+        'Run Quick response to investigate backend-to-provider connectivity, or Test selected flow to inspect a synthetic response for that flow. Review and approve the displayed operator expense before running. Results do not change routing or runtime cooldowns. No paid check runs automatically.',
     'routing.refreshHistory': 'Refresh check history',
     'routing.noSelectedCheck':
-        'No recorded check for this selection. A check for another flow or Quick response does not verify this flow.',
-    'routing.evidence.none': 'Not verified',
-    'routing.evidence.fresh': 'Within evidence window',
-    'routing.evidence.stale': 'Stale — recheck before changing',
+        'No recorded check for this selection. Checks are optional and are not required to use this route.',
     'routing.checks': 'Synthetic provider checks',
     'routing.checkHelp':
-        'Quick response tests basic connectivity. Test selected flow validates its application response contract. These checks do not prove multilingual educational quality.',
+        'Quick response tests backend-to-provider connectivity. Test selected flow checks a synthetic response against that flow’s probe contract. Both are optional diagnostics and do not prove multilingual educational quality or the full generation pipeline.',
     'routing.probeBudget':
         'Maximum USD {maximum} per check; USD {daily} per UTC day across admins. Route cooldown: {cooldown} seconds.',
     'routing.operatorExpense':
@@ -110,7 +106,7 @@ export const adminMessages = {
     'routing.failure.model_retired':
         'The provider has retired this model. Select a supported route.',
     'routing.failure.authorization_failed':
-        'Provider authentication failed. Check its server credentials and run a new check.',
+        'Provider authentication failed. Review the configured server credentials.',
     'routing.failure.provider_credits_exhausted':
         'The provider account has insufficient funds.',
     'routing.failure.rate_limited':

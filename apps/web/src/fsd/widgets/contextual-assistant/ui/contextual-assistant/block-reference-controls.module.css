@@ -22,6 +22,11 @@
 .chip:where([data-missing='true']) {
     color: var(--text-error);
 }
+
+.removeTooltipTrigger {
+    flex-shrink: 0;
+}
+
 .chip button {
     display: inline-flex;
     align-items: center;

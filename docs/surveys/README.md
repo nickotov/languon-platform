@@ -9,12 +9,14 @@ Surveys capture requirements, source-backed comparisons, recommendations, and
 unresolved questions before implementation. They are research records, not
 accepted architecture decisions or proof of provider quality.
 
-| Survey                                                                                      | Research date | Scope                                                                                                           |
-| ------------------------------------------------------------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
-| [Voice answers and pronunciation assessment](./voice-answers-pronunciation-assessment.md)   | 2026-10-12    | Multilingual sentence practice, provider selection, credits, recording storage, and future standalone training. |
-| [Multilingual text-to-speech playback](./multilingual-text-to-speech-playback.md)           | 2026-10-14    | Russia-access provider selection, web/native playback, multilingual voices, S3 audio reuse, and costs.          |
-| [Chat Markdown insertion into the Knowledge editor](./chat-markdown-to-knowledge-editor.md) | 2026-10-20    | Root cause, official Tiptap Markdown integration, schema limits, and safe rich-text insertion.                  |
-| [Text AI providers and flow routing](./text-ai-provider-routing.md)                         | 2026-10-25    | Provider research, bounded model checks, learner selection removal and per-flow routing discovery.              |
+| Survey                                                                                      | Research date | Scope                                                                                                                  |
+| ------------------------------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| [Voice answers and pronunciation assessment](./voice-answers-pronunciation-assessment.md)   | 2026-10-12    | Multilingual sentence practice, provider selection, credits, recording storage, and future standalone training.        |
+| [Multilingual text-to-speech playback](./multilingual-text-to-speech-playback.md)           | 2026-10-14    | Russia-access provider selection, web/native playback, multilingual voices, S3 audio reuse, and costs.                 |
+| [Chat Markdown insertion into the Knowledge editor](./chat-markdown-to-knowledge-editor.md) | 2026-10-20    | Root cause, official Tiptap Markdown integration, schema limits, and safe rich-text insertion.                         |
+| [Text AI providers and flow routing](./text-ai-provider-routing.md)                         | 2026-10-25    | Provider research, bounded model checks, learner selection removal and per-flow routing discovery.                     |
+| [Compact tool context for Knowledge chat](./agent-tool-context-compaction.md)               | 2026-11-06    | Mastra, Anthropic and LangChain guidance; tool-result projections, safe history compaction and source-bound retrieval. |
+| [Product UI design skills and review workflow](./product-ui-design-skills.md)               | 2026-11-11    | Design-skill comparison, project-native UI designer proposal, and compact dictionary-chat snippet review.              |
 
 Use the repository [`$survey` skill](../../.agents/skills/survey/SKILL.md) with a
 short description, for example:

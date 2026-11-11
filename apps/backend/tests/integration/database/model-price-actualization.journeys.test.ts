@@ -169,9 +169,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const target = targets[0]!;
             const prices = new DrizzleProviderPriceStore(database);
             const operations = new AdminMcpOperations(database, {
-                routing: new DrizzleTextAiRoutingStore(database, async () => {
-                    throw new Error('Unused route check');
-                }),
+                routing: new DrizzleTextAiRoutingStore(database, () => true),
                 providerPrices: prices,
                 accounting: new DrizzleAccountingStore(
                     database,

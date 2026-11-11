@@ -1,5 +1,5 @@
-import { projectConversationSource } from '../../application/conversation-source-context';
 import { tutorReservedInputBytes } from '../../application/tutor-context-budget';
+import { projectConversationSource } from '../../application/conversation-source-context';
 import {
     textAiModelCatalog,
     type TextAiExecutionSnapshot,
@@ -47,18 +47,13 @@ function runInput(memory = tutorMemoryFixture()): TutorRunInput {
 }
 
 describe('contextual tutor with the real pinned Mastra SDK', () => {
-    it('retains authorized source tools across sequential multi-proposal turns and pre-answer observation', async () => {
+    it('retains authorized source tools across sequential turns and pre-answer observation', async () => {
         const memory = tutorMemoryFixture();
         const first = {
             id: '01900000-0000-4000-8000-000000000091',
             type: 'grammar',
             language: 'fr',
             rule: 'Use the prepared first rule.',
-        };
-        const second = {
-            ...first,
-            id: '01900000-0000-4000-8000-000000000092',
-            rule: 'Use the prepared second rule.',
         };
         const read = {
             toolName: 'read_source_context',
@@ -68,20 +63,13 @@ describe('contextual tutor with the real pinned Mastra SDK', () => {
                 limit: 1,
             },
         };
-        const proposal = (block: typeof first) => ({
-            toolName: 'propose_learning_blocks',
-            input: { targetBlockId: block.id, blocks: [block] },
-        });
         const provider = scriptedTutorModel([
-            proposal(first),
-            proposal(second),
-            'Review both independent proposals.',
             read,
-            proposal(first),
-            'Review the updated first rule.',
-            '<observations>\n- The learner reviewed two grammar blocks and requested an update to the first rule.\n</observations>',
+            'The first source explanation.',
             read,
-            proposal(first),
+            'The second source explanation.',
+            '<observations>\n- The learner reviewed the first grammar rule.\n</observations>',
+            read,
             'The source tool remains available after observation.',
         ]);
 
@@ -141,23 +129,21 @@ describe('contextual tutor with the real pinned Mastra SDK', () => {
                 },
             }).run(input);
 
-            expect(input.onBlockProposal).toHaveBeenCalledTimes(
-                turn === 0 ? 2 : 1,
-            );
+            expect(input.onBlockProposal).not.toHaveBeenCalled();
 
-            expect(input.readContext).toHaveBeenCalledTimes(turn === 0 ? 0 : 1);
+            expect(input.readContext).toHaveBeenCalledTimes(1);
             expect(
                 accounting.admit.mock.calls.map(([call]) => call.purpose),
             ).toEqual(
                 turn === 2
-                    ? ['observation', 'answer', 'answer', 'answer']
-                    : ['answer', 'answer', 'answer'],
+                    ? ['observation', 'answer', 'answer']
+                    : ['answer', 'answer'],
             );
         }
 
-        expect(provider.requests[6]?.tools).toBeUndefined();
-        expect(provider.requests[6]?.toolChoice).toBeUndefined();
-        for (const index of [0, 3, 7]) {
+        expect(provider.requests[4]?.tools).toBeUndefined();
+        expect(provider.requests[4]?.toolChoice).toBeUndefined();
+        for (const index of [0, 2, 5]) {
             expect(
                 provider.requests[index]?.tools?.map((tool) => tool.name),
             ).toContain('read_source_context');
@@ -168,77 +154,27 @@ describe('contextual tutor with the real pinned Mastra SDK', () => {
         );
     });
 
-    it('delivers an explicitly authorized typed block proposal through the real SDK tool path', async () => {
+    it('keeps model-authored block payload tools out of the actor tool registry', async () => {
         const input = runInput();
         input.canProposeBlocks = true;
+        input.onBlockProposal = vi.fn(async () => ({ id: 'unpublished' }));
         input.sourceContext = {
             ...input.sourceContext,
             blockProposalsAvailable: true,
-            availableMaterialCount: 0,
-            snapshotScope: 'workspace',
         };
 
-        input.onBlockProposal = vi.fn(async () => ({
-            id: '01900000-0000-4000-8000-000000000001',
-        }));
-
-        input.onDraft = vi.fn(async () => ({ id: 'legacy-must-not-run' }));
-        input.onTool = vi.fn(async () => undefined);
-        const blocks = [
-            {
-                id: '01900000-0000-4000-8000-000000000002',
-                type: 'grammar',
-                language: 'es',
-                rule: 'Use ser for identity.',
-            },
-        ];
-        const provider = scriptedTutorModel([
-            { toolName: 'propose_learning_blocks', input: { blocks } },
-            'Review the proposed grammar block.',
-        ]);
-
+        const provider = scriptedTutorModel(['A learning explanation.']);
         await createContextualTutorRunner({
             model: provider.model,
             accounting: tutorAccountingFixture(),
             maxInputTokens: 64_000,
         }).run(input);
 
-        expect(input.onBlockProposal).toHaveBeenCalledWith({ blocks });
-        expect(input.onDraft).not.toHaveBeenCalled();
-        expect(input.onTool).toHaveBeenCalledWith(
-            expect.objectContaining({
-                name: 'propose_learning_blocks',
-                state: 'succeeded',
-            }),
-        );
-
-        expect(JSON.stringify(provider.requests[0]?.tools)).toContain(
-            'propose_learning_blocks',
-        );
-
-        expect(JSON.stringify(provider.requests[0]?.tools)).toContain(
-            'correctChoiceId',
-        );
-
-        expect(JSON.stringify(provider.requests[0]?.tools)).toContain(
-            'bilingual-text',
-        );
-
-        const blockTool = provider.requests[0]?.tools?.find(
-            (tool) => tool.name === 'propose_learning_blocks',
-        );
-        const withoutBlockTool = {
-            ...input,
-            sourceContext: {
-                ...input.sourceContext,
-                blockProposalsAvailable: false,
-            },
-        };
-
         expect(
-            tutorReservedInputBytes(input) -
-                tutorReservedInputBytes(withoutBlockTool),
-        ).toBeGreaterThanOrEqual(Buffer.byteLength(JSON.stringify(blockTool)));
+            provider.requests[0]?.tools?.map((tool) => tool.name),
+        ).not.toContain('propose_learning_blocks');
+
+        expect(input.onBlockProposal).not.toHaveBeenCalled();
     });
 
     it('uses the same frozen escaped retrieval bound through the actual SDK read-tool continuation', async () => {
@@ -437,7 +373,7 @@ describe('contextual tutor with the real pinned Mastra SDK', () => {
         },
     );
 
-    it('uses the latest complete editor snapshot while retaining prior snapshots as history', async () => {
+    it('uses the current complete editor once and retains older snapshots canonically behind provenance', async () => {
         const older = {
             id: 'earlier-workspace-question',
             role: 'user' as const,
@@ -464,8 +400,40 @@ describe('contextual tutor with the real pinned Mastra SDK', () => {
         }).run(input);
 
         const dispatched = JSON.stringify(provider.requests[0]?.prompt);
-        expect(dispatched).toContain('Older exact paragraph.');
+        expect(dispatched).not.toContain('Older exact paragraph.');
+        expect(dispatched).toContain(
+            'Historical editor snapshot retained by the server',
+        );
+
+        expect(JSON.stringify(memory.messages.get(older.id))).toContain(
+            'Older exact paragraph.',
+        );
+
         expect(dispatched).toContain('Current exact paragraph.');
+    });
+
+    it('keeps earlier distinct messages sharing the current timestamp and sends the current input once', async () => {
+        const memory = tutorMemoryFixture();
+        const input = runInput(memory);
+        memory.messages.set('earlier-same-time', {
+            id: 'earlier-same-time',
+            role: 'user',
+            content: 'EARLIER_EQUAL_TIMESTAMP',
+            createdAt: input.message.createdAt,
+        });
+
+        input.message.content = 'CURRENT_INPUT_ONCE';
+        memory.messages.set(input.message.id, input.message);
+        const provider = scriptedTutorModel(['A language explanation.']);
+        await createContextualTutorRunner({
+            model: provider.model,
+            accounting: tutorAccountingFixture(),
+            maxInputTokens: 64_000,
+        }).run(input);
+
+        const dispatched = JSON.stringify(provider.requests[0]?.prompt);
+        expect(dispatched).toContain('EARLIER_EQUAL_TIMESTAMP');
+        expect(dispatched.match(/CURRENT_INPUT_ONCE/g)).toHaveLength(1);
     });
 
     it('rejects the full model input after memory preparation without a provider call', async () => {
@@ -862,7 +830,7 @@ describe('contextual tutor with the real pinned Mastra SDK', () => {
             studiedLanguage: 'es',
             explanationLanguage: 'en',
             body: {
-                schemaVersion: 1,
+                schemaVersion: 2,
                 document: {
                     type: 'doc',
                     content: [
@@ -931,7 +899,7 @@ describe('contextual tutor with the real pinned Mastra SDK', () => {
         const provider = scriptedTutorModel([
             {
                 toolName: 'recall',
-                input: { mode: 'messages', limit: 5, detail: 'high' },
+                input: { limit: 5 },
             },
             'The exact earlier wording was una casa azul.',
         ]);

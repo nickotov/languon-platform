@@ -4,9 +4,10 @@ id: BL-015
 title: Reliable tutor intent, clarification and generation outcomes
 status: in-progress
 created: 2026-10-31
-updated: 2026-11-04
+updated: 2026-11-11
 original_tasks: '2026-10-31 Russian vocabulary and exercise response diagnosis'
-evidence: []
+evidence:
+    - .agent/features/061-reliable-learning-content-pipeline/EVIDENCE.md
 depends_on:
     - BL-013
 ---
@@ -17,7 +18,38 @@ depends_on:
 
 ## Current delivery
 
-The user authorized [feature 060](../../.agent/features/060-intent-aware-learning-content/FEATURE.md) on 2026-11-04. It delivers Knowledge request resolution, clarification continuation and complete typed generation outcomes. Verification is in progress; this entry is not complete.
+[Feature 060](../../.agent/features/060-intent-aware-learning-content/FEATURE.md)
+delivered initial Knowledge request resolution, clarification continuation and
+typed generation outcomes. Its
+[evidence](../../.agent/features/060-intent-aware-learning-content/EVIDENCE.md)
+covers that bounded slice.
+
+The user authorized [feature 061](../../.agent/features/061-reliable-learning-content-pipeline/FEATURE.md)
+on 2026-11-06 to complete this behavior with BL-013's canonical tools, shared
+phase budgeting, prepared history and targeted frontend reconciliation. The
+[execution plan](../../.agent/features/061-reliable-learning-content-pipeline/EXEC_PLAN.md)
+owns implementation and verification. This task remains in progress until its
+full acceptance is verified; earlier passing tests are not proof of the new
+production-allowance and follow-up journey.
+
+## Current security and delivery limitation
+
+Implementation and selected verification pass. The final post-S3 registered gate
+passed 308 tests across 24 files with no skips/retries. Selected browser journeys,
+affected static/build checks and independent source/data/native evidence review
+pass. A strict metadata allowlist and safe merge prevent provider credentials
+from persisting in observational-memory configuration. One verified local unsafe
+configuration was scrubbed; zero remain, with observations and other data preserved.
+
+This task remains `in-progress` solely for S3's operational High security remainder:
+rotate/revoke the affected provider key or record the user's explicit acceptance
+of its residual risk. No exfiltration evidence was found. On 2026-11-11, after
+this incident was explained, the user committed to updating the key and explicitly
+authorized main integration before doing so. Key rotation itself is not yet
+confirmed, so the task remains in progress; the earlier no-main restriction is
+superseded by that informed integration decision. See feature 061's
+[evidence](../../.agent/features/061-reliable-learning-content-pipeline/EVIDENCE.md)
+and [review](../../.agent/features/061-reliable-learning-content-pipeline/REVIEW.md).
 
 ## Problem and outcome
 
@@ -46,6 +78,17 @@ established implementation gaps, not a verified trace of that incident.
   duplicate proposal or unbounded retry/model loop.
 - Align main tutor and tool prompts with this contract, preserving untrusted
   context handling, explicit Apply/Save and answer-reveal behavior.
+- Supply the Knowledge planner with prepared observations and bounded history,
+  preserving current requirements and exact source references. Historical
+  refusals are not current capability limits; a previous task's count does not
+  replace an explicitly selected count in a new request.
+- Accept the complete current editor once within a phase-correct input budget.
+  A valid short question after applying a large vocabulary block must reach
+  planning rather than fail on a hypothetical sum of sequential call payloads.
+  Report actual context limitations without blaming only the question/attachments.
+- Reconcile chat through admission and durable SSE with targeted resource
+  updates. Turn status changes and active generation must not repeatedly fetch
+  unchanged proposal history, workspace or conversation detail.
 - Add deterministic intent/brief/completion and clarification continuation tests,
   plus an opt-in model-behavior evaluation set using synthetic data. Include the
   exact two-turn Russian example, typos, paraphrases, explicit prose requests,
@@ -56,7 +99,7 @@ established implementation gaps, not a verified trace of that incident.
 
 ## Verification and delivery preparation
 
-Feature 060 has explicit authorization for the bounded generation/failure semantics above.
+Features 060 and 061 have explicit authorization for the bounded generation/failure semantics above.
 Choose the smallest viable planning mechanism; a separate model call per message
 is not mandatory. Define evaluation sample sizes and acceptance thresholds before
 running comparative evaluations. Automated CI stays deterministic; optional live
@@ -65,6 +108,28 @@ evaluation follows the AI smoke policy without raw learner-data logging.
 Exercise real production composition and default/reduced budgets, cancellation,
 repair exhaustion and settlement. Add mapped browser proof of clarification and
 typed proposal completion. Record readiness separately from live provider proof.
+
+## Acceptance reconciliation — implementation verified, operational closure pending
+
+Feature 060 supplies the initial intent/brief/clarification behavior; feature 061
+replaces the conflicting context, publication and refresh paths. The task remains
+`in-progress` for the operational S3 disposition above; technical source/data/native
+evidence is approved.
+
+| Acceptance area                          | Current implementation and evidence                                                                                                                                                                                                                                                                           |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Intent, clarification and typed outcomes | `tutor-request-contract.ts`, request agents/execution and local resolution prompts distinguish answers, clarification, generation, revision/copy and limitations. Deterministic request-execution tests cover continuation and artifact completion.                                                           |
+| Material inputs and defaults             | Capability requirements and host-applied defaults preserve explicit settings and pending brief requirements; published generation outcomes remain typed and learner-controlled.                                                                                                                               |
+| Reliable completion                      | Shared authoring/publication validates requested components before publishing. Repair, reduced-budget, invalid-output, cancellation and settlement cases pass the final native production-composition selection.                                                                                              |
+| Prepared history and exact sources       | The planner consumes prepared observations/history; completed tool exchanges project to receipts while selected authorized source content remains exact. The final post-S3 registered gate and persistence proof pass.                                                                                        |
+| Large draft and fetch behavior           | The final Chromium 50-entry Apply/Save/reload → 10-entry journey passes with one POST, one proposal GET and no detail/workspace GET during the measured follow-up send.                                                                                                                                       |
+| Intent-quality evaluation                | `tutor-request-evaluation-cases.ts` supplies a synthetic opt-in set and declared rubric, including the exact Russian vocabulary→exercise two-turn example, model/prompt revisions and separate intent, coverage and clarification fields. The set now has 17 cases; the request-execution suite has 29 tests. |
+
+The evaluation deliverable is a reusable opt-in set with declared sample size and
+thresholds. Running an automatic or comparative live-model evaluation is not a
+completion requirement. No live intent-quality score is claimed; deterministic
+transport and browser results prove execution behavior only. A future live run
+must record model/prompt revisions and follow the AI smoke policy.
 
 ## Starting points and boundaries
 

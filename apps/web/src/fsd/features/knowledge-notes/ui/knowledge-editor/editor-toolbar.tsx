@@ -13,6 +13,7 @@ import {
     Popover,
     PopoverTrigger,
     PopoverContent,
+    Tooltip,
 } from '@/fsd/shared/ui';
 import styles from './knowledge-editor.module.css';
 import { EditorTableControls } from './editor-table-controls';
@@ -93,16 +94,23 @@ export function EditorToolbar({
                 {workspace && (
                     <div className={styles.moreFormatting}>
                         <Popover>
-                            <PopoverTrigger asChild>
-                                <button
-                                    type='button'
-                                    className={styles.workspaceTool}
-                                    aria-label={t('knowledge.moreFormatting')}
-                                    onMouseDown={preserveSelection}
-                                >
-                                    <Ellipsis size={16} aria-hidden />
-                                </button>
-                            </PopoverTrigger>
+                            <Tooltip
+                                content={t('knowledge.moreFormatting')}
+                                desktopOnly
+                            >
+                                <PopoverTrigger asChild>
+                                    <button
+                                        type='button'
+                                        className={styles.workspaceTool}
+                                        aria-label={t(
+                                            'knowledge.moreFormatting',
+                                        )}
+                                        onMouseDown={preserveSelection}
+                                    >
+                                        <Ellipsis size={16} aria-hidden />
+                                    </button>
+                                </PopoverTrigger>
+                            </Tooltip>
                             <PopoverContent
                                 side='bottom'
                                 align='end'
@@ -200,8 +208,9 @@ function ToolbarControl({
     const { t } = useI18n();
     const Icon = control.icon;
     const classNames = [workspace ? styles.workspaceTool : styles.tool];
+    const triggerClassNames = [styles.iconTooltipTrigger];
     if (workspace && extraKeys.has(control.key) && !inPopover) {
-        classNames.push(styles.extraTool);
+        triggerClassNames.push(styles.extraTool);
     }
 
     if (workspace && groupStarts.has(control.key) && !inPopover) {
@@ -209,22 +218,29 @@ function ToolbarControl({
     }
 
     const className = classNames.join(' ');
+    const triggerClassName = triggerClassNames.join(' ');
+    const label = t(control.key);
     function preserveSelection(event: React.MouseEvent) {
         event.preventDefault();
     }
 
     return (
-        <button
-            type='button'
-            className={className}
-            aria-label={t(control.key)}
-            title={t(control.key)}
-            aria-pressed={control.active}
-            disabled={disabled || control.unavailable}
-            onMouseDown={preserveSelection}
-            onClick={control.action}
+        <Tooltip
+            content={label}
+            desktopOnly
+            triggerClassName={triggerClassName}
         >
-            <Icon aria-hidden size={iconSize} />
-        </button>
+            <button
+                type='button'
+                className={className}
+                aria-label={label}
+                aria-pressed={control.active}
+                disabled={disabled || control.unavailable}
+                onMouseDown={preserveSelection}
+                onClick={control.action}
+            >
+                <Icon aria-hidden size={iconSize} />
+            </button>
+        </Tooltip>
     );
 }

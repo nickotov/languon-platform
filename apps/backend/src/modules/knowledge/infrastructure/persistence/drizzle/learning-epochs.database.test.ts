@@ -189,7 +189,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 content: KnowledgeNoteContentSchema.parse({
                     ...content([]),
                     body: {
-                        schemaVersion: 1,
+                        schemaVersion: 2,
                         document: {
                             type: 'doc',
                             content: [

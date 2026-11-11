@@ -54,7 +54,7 @@ const content: KnowledgeNoteContent = {
     studiedLanguage: 'es',
     explanationLanguage: 'en',
     body: {
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: {
             type: 'doc',
             content: [
@@ -647,7 +647,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
                 expect(
                     (await knowledge.get(owner, note.id)).body.schemaVersion,
-                ).toBe(1);
+                ).toBe(2);
 
                 const latest = await knowledge.getWorkspace(owner, note.id);
                 const currentBranch = latest.branches.find(
@@ -840,7 +840,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(listed.proposals[0]?.blocks[0]?.id).not.toBe(originalId);
             expect(
                 (await knowledge.get(owner, note.id)).body.schemaVersion,
-            ).toBe(1);
+            ).toBe(2);
 
             const applied = await store.applyBlockProposal(
                 access(),
@@ -856,7 +856,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
             expect(
                 (await knowledge.get(owner, note.id)).body.schemaVersion,
-            ).toBe(1);
+            ).toBe(2);
 
             const replay = await store.applyBlockProposal(
                 access(),
@@ -1646,6 +1646,300 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(detail.turns[0]?.status).toBe('cancelled');
         });
 
+        it('keeps the complete admitted user envelope immutable through the real memory port', async () => {
+            const chat = await create();
+            const copied = await store.context(access(), chat.id, 'ser');
+            await store.submit(access(), chat.id, {
+                ...submit(),
+                attachments: copied.material,
+            });
+
+            const claimed = (await store.claim())!;
+            const memory = store.memory(claimed);
+            const [before] =
+                await client`select * from conversation_messages where id=${claimed.message.id}`;
+
+            expect(before).toBeDefined();
+            expect(JSON.stringify(before!.model_content)).toContain(
+                'Application source provenance',
+            );
+
+            expect(JSON.stringify(before!.model_content)).toContain(
+                'Soy médico.',
+            );
+
+            // The visible wording and admitted ID match. Private model parts,
+            // copied material and timestamps still cannot be replaced by the SDK.
+            await memory.saveMessages([
+                {
+                    ...claimed.message,
+                    attachments: [],
+                    createdAt: new Date(clock.getTime() + 60_000).toISOString(),
+                    modelContent: {
+                        format: 2,
+                        parts: [
+                            { type: 'text', text: claimed.message.content },
+                            {
+                                type: 'text',
+                                text: 'FORGED_EDITOR_COPY_AND_PROVENANCE',
+                            },
+                            {
+                                type: 'tool-invocation',
+                                toolInvocation: {
+                                    toolCallId: 'forged',
+                                    toolName: 'read_source_context',
+                                    state: 'result',
+                                    args: { query: 'FORGED_ARGUMENTS' },
+                                    result: { material: [] },
+                                },
+                            },
+                        ],
+                    },
+                },
+            ]);
+
+            const [after] =
+                await client`select * from conversation_messages where id=${claimed.message.id}`;
+
+            expect(after).toEqual(before);
+            const visible = await store.detail(access(), chat.id);
+            expect(
+                visible.messages.find(
+                    (message) => message.id === claimed.message.id,
+                )?.attachments,
+            ).toEqual(copied.material);
+
+            await store.finish(claimed, 'succeeded');
+        });
+
+        it('rejects prior assistant segment and row rewrites while allowing current-turn memory updates', async () => {
+            const chat = await create();
+            await store.submit(access(), chat.id, submit());
+            const first = (await store.claim())!;
+            const firstSegment = {
+                id: randomUUID(),
+                role: 'assistant' as const,
+                content: 'Original assistant response.',
+                createdAt: clock.toISOString(),
+                modelContent: {
+                    format: 2,
+                    parts: [
+                        { type: 'text', text: 'Original assistant response.' },
+                    ],
+                },
+            };
+
+            await store.memory(first).saveMessages([firstSegment]);
+            await store.append(first, firstSegment.content);
+            await store.finish(first, 'succeeded');
+            const originalRows =
+                await client`select * from conversation_messages where turn_id=${first.id} order by role`;
+            const originalAssistant = originalRows.find(
+                (row) => row.role === 'assistant',
+            );
+
+            expect(originalAssistant).toBeDefined();
+
+            await store.submit(access(), chat.id, submit('Explain estar.'));
+            const current = (await store.claim())!;
+            const memory = store.memory(current);
+            const currentBefore =
+                await client`select * from conversation_messages where turn_id=${current.id} order by role`;
+
+            for (const id of [
+                firstSegment.id,
+                originalAssistant!.id as string,
+            ]) {
+                await expect(
+                    memory.saveMessages([
+                        {
+                            ...firstSegment,
+                            id,
+                            createdAt: new Date(
+                                clock.getTime() + 60_000,
+                            ).toISOString(),
+                            content: 'FORGED_HISTORICAL_RESPONSE',
+                            modelContent: {
+                                format: 2,
+                                parts: [
+                                    {
+                                        type: 'text',
+                                        text: 'FORGED_HISTORICAL_TOOL_RESULT',
+                                    },
+                                ],
+                            },
+                        },
+                    ]),
+                ).rejects.toMatchObject({ code: 'memory_conflict' });
+            }
+
+            expect(
+                await client`select * from conversation_messages where turn_id=${first.id} order by role`,
+            ).toEqual(originalRows);
+
+            expect(
+                await client`select * from conversation_messages where turn_id=${current.id} order by role`,
+            ).toEqual(currentBefore);
+
+            const response = {
+                id: randomUUID(),
+                role: 'assistant' as const,
+                content: 'Current answer.',
+                createdAt: clock.toISOString(),
+                modelContent: {
+                    format: 2,
+                    parts: [{ type: 'text', text: 'Current answer.' }],
+                },
+            };
+
+            await memory.saveMessages([response]);
+            const completed = {
+                ...response,
+                content: 'Current answer completed.',
+                modelContent: {
+                    format: 2,
+                    parts: [
+                        { type: 'text', text: 'Current answer completed.' },
+                    ],
+                },
+            };
+
+            await memory.saveMessages([completed]);
+            const stored = await memory.listMessages({
+                ids: [response.id],
+                offset: 0,
+                limit: 1,
+                order: 'asc',
+            });
+
+            expect(stored.messages).toEqual([completed]);
+            const [currentAssistant] =
+                await client`select model_content from conversation_messages where turn_id=${current.id} and role='assistant'`;
+
+            expect(currentAssistant?.model_content).toEqual([completed]);
+            expect(
+                await client`select * from conversation_messages where turn_id=${first.id} order by role`,
+            ).toEqual(originalRows);
+
+            await store.append(current, completed.content);
+            await store.finish(current, 'succeeded');
+        });
+
+        it('never serializes resolved model credentials through the real observational-memory port', async () => {
+            const chat = await create();
+            await store.submit(access(), chat.id, submit());
+            const claimed = (await store.claim())!;
+            const { ConversationMemoryStorage } =
+                await import('../../../../src/modules/conversations/infrastructure/ai/conversation-memory-storage');
+            const { createTutorMemory, requireSupportedTutorModel } =
+                await import('../../../../src/modules/conversations/infrastructure/ai/contextual-tutor-configuration');
+            const { createTutorModelGate } =
+                await import('../../../../src/modules/conversations/infrastructure/ai/accounted-tutor-model');
+            const { resolveModelConfig } = await import('@mastra/core/llm');
+            const sentinel = 'SYNTHETIC_DB_OM_CREDENTIAL_SENTINEL';
+            const model = requireSupportedTutorModel(
+                await resolveModelConfig({
+                    providerId: 'openai',
+                    modelId: 'gpt-4o-mini',
+                    url: 'http://synthetic.invalid/v1',
+                    apiKey: sentinel,
+                    headers: { Authorization: sentinel },
+                }),
+            );
+            const storage = new ConversationMemoryStorage({
+                conversationId: chat.id,
+                ownerId: owner,
+                createdAt: chat.createdAt,
+                port: store.memory(claimed),
+            });
+            const modelGate = createTutorModelGate({
+                signal: new AbortController().signal,
+                maxInputTokens: 64_000,
+                accounting: {
+                    admit: async () => {
+                        throw new Error(
+                            'Memory persistence setup cannot dispatch a provider request.',
+                        );
+                    },
+                    settle: async () => {
+                        throw new Error('No provider request was dispatched.');
+                    },
+                    fail: async () => {
+                        throw new Error('No provider request was dispatched.');
+                    },
+                },
+            });
+            const sdkMemory = createTutorMemory({
+                conversationId: chat.id,
+                storage,
+                model,
+                modelGate,
+                thresholds: {
+                    messageTokens: 1_000,
+                    observationTokens: 500,
+                    maxTokensPerBatch: 1_000,
+                },
+            });
+            const engine = (await sdkMemory.omEngine)!;
+            const record = await engine.getOrCreateRecord(chat.id, owner);
+            await storage.updateObservationalMemoryConfig({
+                id: record.id,
+                config: {
+                    model,
+                    headers: { Authorization: sentinel },
+                    _overrides: {
+                        observation: { messageTokens: 1_100 },
+                        reflection: { observationTokens: 600, model },
+                    },
+                },
+            });
+
+            await storage.updateObservationalMemoryConfig({
+                id: record.id,
+                config: {
+                    observation: {
+                        model,
+                        providerOptions: { credential: sentinel },
+                    },
+                    _overrides: {
+                        observation: { messageTokens: 1_200, model },
+                    },
+                },
+            });
+
+            await storage.createReflectionGeneration({
+                currentRecord: record,
+                reflection: 'The learner reviewed ser.',
+                tokenCount: 7,
+            });
+
+            const reflected = await storage.getObservationalMemory(
+                chat.id,
+                owner,
+            );
+            const rows =
+                await client`select value from conversation_memory where conversation_id=${chat.id}`;
+            const encoded = JSON.stringify(rows.map((row) => row.value));
+            // Boolean assertions deliberately never print model configuration or
+            // even synthetic credentials if the privacy regression reappears.
+            expect(encoded.includes(sentinel)).toBe(false);
+            expect(encoded.includes('apiKey')).toBe(false);
+            expect(encoded.includes('Authorization')).toBe(false);
+            expect(encoded.includes('providerOptions')).toBe(false);
+            expect(Buffer.byteLength(encoded)).toBeLessThan(8_192);
+            expect(reflected?.config).toMatchObject({
+                observation: { messageTokens: 1_000, maxTokensPerBatch: 1_000 },
+                reflection: { observationTokens: 500 },
+                _overrides: {
+                    observation: { messageTokens: 1_200 },
+                    reflection: { observationTokens: 600 },
+                },
+            });
+
+            expect(reflected?.generationCount).toBe(1);
+            await store.finish(claimed, 'succeeded');
+        });
+
         it('copies only active learner-visible fields, freezes admitted content, and refreshes the next turn', async () => {
             const chat = await create();
             const copied = await store.context(access(), chat.id, 'ser');
@@ -2372,7 +2666,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
 
             expect(copy.id).not.toBe(note.id);
-            expect(copy.body.schemaVersion).toBe(1);
+            expect(copy.body.schemaVersion).toBe(2);
         });
 
         it('publishes drafts once, retains stale revisions, and cannot resurrect a deleted saved target', async () => {

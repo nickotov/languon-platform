@@ -3,7 +3,7 @@ import { KnowledgeBodySchema } from '@languon/contracts';
 import { knowledgeBodyPlainText } from './knowledge';
 import { randomUUID } from 'node:crypto';
 it('indexes H1 words and treats rules as separators without making a rule-only document nonempty', () => {
-    for (const schemaVersion of [1, 2]) {
+    for (const schemaVersion of [2]) {
         const body = KnowledgeBodySchema.parse({
             schemaVersion,
             document: {
@@ -40,7 +40,7 @@ it('indexes H1 words and treats rules as separators without making a rule-only d
 
 it('indexes words crossing inline marks as a single word and preserves block boundaries', () => {
     const body = KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: {
             type: 'doc',
             content: [

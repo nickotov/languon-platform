@@ -81,6 +81,9 @@ function contextualTools(
             inputSchema: tool.inputSchema,
             outputSchema: tool.outputSchema,
             execute: tool.execute,
+            ...(tool.toModelOutput
+                ? { toModelOutput: tool.toModelOutput }
+                : {}),
         };
     }
 

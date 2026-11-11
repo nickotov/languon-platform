@@ -164,7 +164,7 @@ export function ProbeControls({
                 <ProbeResult probe={result} />
             ) : routeId && (!isFlow || flowId) ? (
                 <Alert
-                    type='warning'
+                    type='info'
                     showIcon
                     message={t('routing.noSelectedCheck')}
                 />

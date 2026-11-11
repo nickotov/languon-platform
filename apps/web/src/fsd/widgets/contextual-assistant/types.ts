@@ -24,6 +24,8 @@ export type ContextualAssistantProps = {
     currentDraft?: string | undefined;
     selectionRootId?: string | undefined;
     workspace?: WorkspaceAssistantProps | undefined;
+    /** Present only for an owned active dictionary; server authorization remains authoritative. */
+    dictionarySnippets?: { dictionaryId: string } | undefined;
 };
 
 export type WorkspaceEditorSnapshot = {
@@ -81,7 +83,7 @@ export type WorkspaceAssistantProps = {
     /** Persist the working draft before creating a turn from the frozen snapshot. */
     beforeSend?(): Promise<void | { id: string; version: number }>;
     restoreTarget?(anchor: ConversationEditorTarget): Promise<string | null>;
-    onSent?(): void;
+    onSent?(firstMessage: boolean): void;
     onBusyChange?(busy: boolean): void;
     onAcceptProposal(
         text: string,

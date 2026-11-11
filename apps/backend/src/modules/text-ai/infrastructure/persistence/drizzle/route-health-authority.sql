@@ -55,23 +55,21 @@ CREATE TRIGGER text_ai_health_event_guard BEFORE UPDATE OR DELETE ON public.text
 -- Both the application and fenced worker dispatch use this exact gate. Every history lookup is indexed.
 CREATE OR REPLACE FUNCTION languon_text_ai_route_dispatch_allowed(route_value text,flow_value text,fingerprint_value text,at_value timestamptz) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
-DECLARE passed_at timestamptz; transient_at timestamptz; probe_transient_at timestamptz; provider_value text:=split_part(route_value,'/',1);
 BEGIN
  PERFORM pg_advisory_xact_lock_shared(hashtextextended(route_value,1920424421));
- SELECT started_at INTO passed_at FROM public.text_ai_probes
- WHERE route_id=route_value AND flow_id=flow_value AND fingerprint=fingerprint_value AND state='passed' AND kind='flow'
- ORDER BY started_at DESC NULLS LAST LIMIT 1;
- IF passed_at IS NULL THEN RETURN false; END IF;
- -- Hard failures remain excluded until a later manual check; a newer timeout cannot clear them.
- IF EXISTS(SELECT 1 FROM public.text_ai_probes WHERE route_id=route_value AND state='failed' AND failure IN ('model_retired','authorization_failed') AND started_at>passed_at)
-   OR EXISTS(SELECT 1 FROM public.text_ai_probes WHERE route_id=route_value AND flow_id=flow_value AND state='failed' AND failure='invalid_output' AND started_at>passed_at)
-   OR EXISTS(SELECT 1 FROM public.text_ai_probes WHERE provider_id=provider_value AND state='failed' AND failure='authorization_failed' AND started_at>passed_at)
-   OR EXISTS(SELECT 1 FROM public.text_ai_route_health_events WHERE route_id=route_value AND reason IN ('model_retired','model_unavailable') AND observed_at>passed_at)
-   OR EXISTS(SELECT 1 FROM public.text_ai_route_health_events WHERE route_id=route_value AND flow_id=flow_value AND reason='schema_incompatible' AND observed_at>passed_at)
-   OR EXISTS(SELECT 1 FROM public.text_ai_route_health_events WHERE provider_id=provider_value AND reason='authorization_failed' AND observed_at>passed_at)
- THEN RETURN false; END IF;
- SELECT completed_at INTO probe_transient_at FROM public.text_ai_probes WHERE route_id=route_value AND state='failed' AND failure<>'budget_insufficient' AND started_at>passed_at ORDER BY started_at DESC NULLS LAST LIMIT 1;
- SELECT observed_at INTO transient_at FROM public.text_ai_route_health_events WHERE route_id=route_value AND reason IN ('provider_unavailable','rate_limited','provider_credits_exhausted') AND observed_at>passed_at ORDER BY observed_at DESC NULLS LAST LIMIT 1;
- RETURN (probe_transient_at IS NULL OR probe_transient_at<=at_value-interval '60 seconds') AND (transient_at IS NULL OR transient_at<=at_value-interval '60 seconds');
+ -- Only actual dispatched provider observations affect runtime eligibility. Manual
+ -- diagnostics never disable a route, clear a cooldown, or authorize dispatch.
+ -- Keep provider-credential failures shared across sibling routes and model/
+ -- transport failures shared across flows on the route. Only schema failures
+ -- belong to the current flow contract. Every exclusion expires automatically.
+ RETURN NOT EXISTS(
+   SELECT 1 FROM public.text_ai_route_health_events
+   WHERE observed_at>at_value-interval '60 seconds' AND observed_at<=at_value
+     AND (
+       (provider_id=split_part(route_value,'/',1) AND reason='authorization_failed')
+       OR (route_id=route_value AND reason IN ('model_retired','model_unavailable','provider_unavailable','rate_limited','provider_credits_exhausted'))
+       OR (route_id=route_value AND flow_id=flow_value AND fingerprint=fingerprint_value AND reason='schema_incompatible')
+     )
+ );
 END $$;
 REVOKE ALL ON FUNCTION languon_text_ai_route_dispatch_allowed(text,text,text,timestamptz) FROM PUBLIC;

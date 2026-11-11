@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
 
 import { Button } from '../button/button';
-import { AlertDialog, BottomSheet, Dialog } from './dialog';
+import { AlertDialog, BottomSheet, Dialog, DialogActions } from './dialog';
 
 const meta = { title: 'UI/Dialog' } satisfies Meta;
 
@@ -65,4 +65,69 @@ export const UrgentDecision: StoryObj = {
 
 export const CompactBottomSheet: StoryObj = {
     render: () => <DialogExample kind='sheet' />,
+};
+
+function FooterExample({
+    raw = false,
+    long = false,
+}: {
+    raw?: boolean;
+    long?: boolean;
+}) {
+    const [open, setOpen] = useState(true);
+    function show() {
+        setOpen(true);
+    }
+
+    function close() {
+        setOpen(false);
+    }
+
+    const actions = long ? (
+        <>
+            <Button variant='secondary' onClick={close}>
+                Продолжить
+            </Button>
+            <Button variant='secondary' onClick={close}>
+                Копировать
+            </Button>
+            <Button variant='danger' onClick={close}>
+                Заменить
+            </Button>
+        </>
+    ) : (
+        <>
+            <Button variant='secondary' onClick={close}>
+                Cancel
+            </Button>
+            <Button onClick={close}>Save</Button>
+        </>
+    );
+
+    return (
+        <>
+            <Button onClick={show}>Open footer example</Button>
+            <Dialog
+                open={open}
+                onClose={close}
+                title='Review changes'
+                footer={
+                    raw ? actions : <DialogActions>{actions}</DialogActions>
+                }
+            >
+                <p>
+                    Review the current dictionary before replacing it. Actions
+                    use concise single-line labels; mobile can reflow.
+                </p>
+            </Dialog>
+        </>
+    );
+}
+
+export const FooterActions: StoryObj = { render: () => <FooterExample /> };
+export const LongLocalizedFooter: StoryObj = {
+    render: () => <FooterExample long />,
+};
+export const DirectFooterActions: StoryObj = {
+    render: () => <FooterExample raw />,
 };

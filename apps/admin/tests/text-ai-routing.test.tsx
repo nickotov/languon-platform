@@ -14,7 +14,6 @@ import { ProviderRouteTable } from '../src/pages/ai-settings/ui/text-ai-routing/
 import { RoutingReadinessNotice } from '../src/pages/ai-settings/ui/text-ai-routing/routing-readiness-notice';
 import { RoutingConfigurationForm } from '../src/pages/ai-settings/ui/text-ai-routing/routing-configuration-form';
 import {
-    probeEvidenceAge,
     reviewedRouteOptions,
     routingInitialValues,
     latestRouteProbe,
@@ -114,12 +113,12 @@ function json(body: unknown, status = 200) {
 }
 
 describe('admin routing safety and API boundary', () => {
-    it('identifies history as insufficient for current readiness and keeps rechecks explicitly paid', () => {
+    it('explains optional diagnostics without coupling history to generation', () => {
         render(<RoutingReadinessNotice />);
         expect(screen.getByText('pnpm dev:doctor')).toBeInTheDocument();
         expect(
             screen.getByText(
-                /History below does not certify the current execution contract/,
+                /Missing, old or failed diagnostics do not block generation/,
             ),
         ).toBeInTheDocument();
 
@@ -197,12 +196,20 @@ describe('admin routing safety and API boundary', () => {
 
         expect(screen.getByText('failed', { exact: true })).toBeInTheDocument();
         expect(
-            screen.queryByText('Within evidence window'),
+            screen.queryByText('Recorded evidence window'),
         ).not.toBeInTheDocument();
 
         expect(
             screen.getByText(/latest historical flow check per route/),
         ).toBeInTheDocument();
+
+        expect(
+            screen.getByText('Enabled', { exact: true }),
+        ).toBeInTheDocument();
+
+        expect(
+            screen.getByRole('button', { name: 'Emergency disable' }),
+        ).toBeEnabled();
     });
 
     it('submits routing with omitted tariffs instead of inventing prices for free flows', async () => {
@@ -291,22 +298,7 @@ describe('admin routing safety and API boundary', () => {
         ).toBe(true);
     });
 
-    it('distinguishes stale evidence and preserves unknown cost', () => {
-        expect(probeEvidenceAge(null)).toBe('none');
-        expect(
-            probeEvidenceAge(
-                '2026-10-25T10:00:00.000Z',
-                Date.parse('2026-10-25T11:00:00.000Z'),
-            ),
-        ).toBe('stale');
-
-        expect(
-            probeEvidenceAge(
-                '2026-10-25T10:00:00.000Z',
-                Date.parse('2026-10-25T09:00:00.000Z'),
-            ),
-        ).toBe('fresh');
-
+    it('shows a historical failure and preserves unknown cost without an expiry gate', () => {
         render(<ProbeResult probe={probe} />);
         expect(screen.getByText('Unknown')).toBeInTheDocument();
         expect(
@@ -316,6 +308,9 @@ describe('admin routing safety and API boundary', () => {
         ).toBeInTheDocument();
 
         expect(screen.queryByText('$0')).not.toBeInTheDocument();
+        expect(
+            screen.queryByText('Recorded evidence window'),
+        ).not.toBeInTheDocument();
     });
 
     it('does not start a paid probe merely by opening controls', () => {

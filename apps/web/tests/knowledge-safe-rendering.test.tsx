@@ -5,7 +5,7 @@ import { KnowledgeBody } from '../src/fsd/entities/knowledge/ui/knowledge-body/k
 
 it('renders validated Tiptap text and safe links without interpreting stored markup', () => {
     const body = KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: {
             type: 'doc',
             content: [
@@ -62,7 +62,7 @@ it('rejects executable document nodes and URLs at the renderer boundary', () => 
     ]) {
         expect(() =>
             KnowledgeBodySchema.parse({
-                schemaVersion: 1,
+                schemaVersion: 2,
                 document: { type: 'doc', content: [node] },
             }),
         ).toThrow();
@@ -71,7 +71,7 @@ it('rejects executable document nodes and URLs at the renderer boundary', () => 
 
 it('renders all supported heading levels and a safe leaf separator in static reading', () => {
     const body = KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: {
             type: 'doc',
             content: [

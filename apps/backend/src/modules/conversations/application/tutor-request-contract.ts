@@ -51,13 +51,15 @@ export const TutorRequestResolutionSchema = z.discriminatedUnion('kind', [
     z
         .object({
             replyLanguage: AssistantLanguageSchema.optional(),
-            kind: z.literal('legacy-revision'),
+            kind: z.literal('revise-blocks'),
+            sourceBlockIds: z.array(z.uuid()).min(1).max(8),
+            instruction: responseText,
         })
         .strict(),
     z
         .object({
             replyLanguage: AssistantLanguageSchema.optional(),
-            kind: z.literal('legacy-copy'),
+            kind: z.literal('copy'),
             sourceBlockIds: z
                 .array(z.uuid())
                 .min(1)

@@ -380,16 +380,13 @@ const BoundedDocumentSchema = z
         visit(document);
     });
 
-/** Frozen prose-only boundary for the legacy note-proposal tool. */
-export const LegacyKnowledgeBodySchema = z
-    .object({ schemaVersion: z.literal(1), document: BoundedDocumentSchema })
+/** Prose proposals cannot introduce interactive learning blocks. */
+export const ProseKnowledgeBodySchema = z
+    .object({ schemaVersion: z.literal(2), document: BoundedDocumentSchema })
     .strict();
 export const InteractiveKnowledgeBodySchema =
     createInteractiveKnowledgeBodySchema(BoundedDocumentSchema);
-export const KnowledgeBodySchema = z.union([
-    LegacyKnowledgeBodySchema,
-    InteractiveKnowledgeBodySchema,
-]);
+export const KnowledgeBodySchema = InteractiveKnowledgeBodySchema;
 export type KnowledgeBody = z.infer<typeof KnowledgeBodySchema>;
 export const KnowledgeNoteContentSchema = z
     .object({
@@ -422,10 +419,10 @@ export const KnowledgeNoteContentSchema = z
         explanationLanguage: AssistantLanguageSchema.nullable(),
     })
     .strict();
-/** New document readers must not implicitly widen legacy agent write authority. */
-export const LegacyKnowledgeNoteContentSchema =
+/** Prose-writing authority remains narrower than document-reading authority. */
+export const ProseKnowledgeNoteContentSchema =
     KnowledgeNoteContentSchema.extend({
-        body: LegacyKnowledgeBodySchema,
+        body: ProseKnowledgeBodySchema,
     });
 /** Incomplete private edits are recoverable; publication applies the stricter note rules. */
 export const KnowledgeWorkingContentSchema = KnowledgeNoteContentSchema.extend({
@@ -870,6 +867,8 @@ export const ConversationToolCallSchema = z
             'read_source_context',
             'propose_knowledge_note',
             'propose_learning_blocks',
+            'propose_dictionary_snippet',
+            'read_dictionary_snippet',
         ]),
         state: z.enum(['running', 'succeeded', 'failed']),
     })

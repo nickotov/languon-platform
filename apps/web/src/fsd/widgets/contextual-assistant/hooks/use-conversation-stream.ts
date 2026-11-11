@@ -119,7 +119,7 @@ export function useConversationStream(
         }
 
         resetPublication(true);
-        session.updateFlags({ unavailable: false, reconnecting: false });
+        session.updateFlags({ unavailable: false, reconnecting: true });
         chat.clearError();
         void chat.resumeStream();
     }

@@ -80,6 +80,26 @@ theme journey does not create data or require a signed-in account.
    header controls, form content, status copy, and actions to reflow without
    overlap or horizontal clipping. Controls retain at least a 44px touch target.
 
+## Dialog actions and utility controls
+
+Desktop dialog footers keep their action buttons and labels on one line. Concise
+verbs identify the action; titles, body text and helper notes explain its object,
+scope and consequences. Labels are not wrapped, shrunk or truncated to force a
+fit. Helper notes remain separate from the action group; mobile footers can stack
+whole buttons without clipping choices.
+
+Repeated utility actions use the shared responsive icon-button pattern when
+their icon and surrounding context make the effect clear. Their accessible names
+remain available and desktop pointer/keyboard interaction shows a shared tooltip;
+mobile retains text on responsive icon-and-label controls. Label-only utility
+tooltips do not open on touch-sized layouts. Explanatory help and disabled-action
+reasons retain the ordinary tooltip contract. Creation, AI, save, confirmation,
+training-rating and scope-changing actions keep meaningful visible labels.
+
+Inspect the shared Dialog footer and SentenceRow stories for isolated examples.
+These presentation checks are separate from the theme journey below; focused
+component tests cover tooltip modality, trigger identity and keyboard dismissal.
+
 ## E2E coverage
 
 - `theme-preference-persistence` proves the SSR default, accessible guest Settings appearance

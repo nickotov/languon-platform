@@ -1,3 +1,7 @@
+.footer {
+    width: 100%;
+}
+
 .footerNote {
     font-size: var(--size-12);
     line-height: var(--size-16);
@@ -5,10 +9,6 @@
 }
 
 .actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
     gap: var(--space-8);
 }
 

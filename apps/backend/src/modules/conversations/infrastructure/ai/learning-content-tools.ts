@@ -1,32 +1,28 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
+import { learningContentCapability } from '../../application/learning-content-registry';
 import {
-    LearningContentTaskSchema,
+    createLearningContentOperations,
+    LearningContentReceiptSchema,
+} from './learning-content-operations';
+import type { TutorRunInput } from '../../application/ports/tutor-runner';
+import {
     LearningContentLimitationCodeSchema,
-    learningContentCapabilities,
     type LearningContentTask,
+    type LearningContentBrief,
 } from '../../application/learning-content-contract';
 import {
     createLearningContentAuthoring,
-    learningContentOutputSchema,
     type LearningContentAuthoringOptions,
 } from './learning-content-authoring';
 
-const toolInputSchema = LearningContentTaskSchema.omit({
-    id: true,
-    kind: true,
-});
+export { resolveLearningToolSources } from './learning-tool-sources';
+
 const resultSchema = z.discriminatedUnion('status', [
     z
         .object({
             status: z.literal('ready'),
-            proposal: z
-                .object({
-                    blocks: learningContentOutputSchema.shape.tasks.element
-                        .shape.blocks,
-                })
-                .strict(),
-            summary: z.string(),
+            receipt: LearningContentReceiptSchema,
         })
         .strict(),
     z
@@ -57,29 +53,39 @@ const resultSchema = z.discriminatedUnion('status', [
 
 /** Standalone tools use the same bounded authoring implementation as coordinated tutor batches. */
 export function createLearningContentTools(
-    options: LearningContentAuthoringOptions & { signal: AbortSignal },
+    options: LearningContentAuthoringOptions & {
+        signal: AbortSignal;
+        publish: NonNullable<TutorRunInput['onBlockProposal']>;
+        onTool?: TutorRunInput['onTool'];
+        resolveSources?: (
+            brief: LearningContentBrief,
+        ) => Promise<LearningContentBrief>;
+    },
 ) {
     const authoring = createLearningContentAuthoring(options);
+    const operations = createLearningContentOperations({
+        authoring,
+        signal: options.signal,
+        publish: options.publish,
+        ...(options.resolveSources
+            ? { resolveSources: options.resolveSources }
+            : {}),
+        ...(options.onTool ? { onTool: options.onTool } : {}),
+    });
     const tool = (kind: LearningContentTask['kind']) => {
-        const capability = learningContentCapabilities.find(
-            (item) => item.kind === kind,
-        )!;
+        const capability = learningContentCapability(kind);
 
         return createTool({
             id: capability.toolId,
-            description: `${capability.instruction} Accept a generation brief, not authored blocks. Missing material requirements return needs-clarification without a model call. This tool returns content only; it does not change or publish a document.`,
-            inputSchema: toolInputSchema,
+            description: `${capability.instruction} Accept a generation brief, not authored blocks. Missing material requirements return needs-clarification without a model call. The tool creates a reviewable proposal and returns a compact receipt. Apply and Save remain learner actions.`,
+            inputSchema: capability.inputSchema,
             outputSchema: resultSchema,
+            toModelOutput: (result) => JSON.stringify(result),
             execute: async (input) =>
                 resultSchema.parse(
-                    await authoring.generate(
-                        {
-                            tasks: [
-                                { ...input, id: 'requested-content', kind },
-                            ],
-                        },
-                        options.signal,
-                    ),
+                    await operations.generateAndPropose({
+                        tasks: [{ ...input, id: 'requested-content', kind }],
+                    }),
                 ),
         });
     };

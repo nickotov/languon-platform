@@ -30,7 +30,9 @@ pnpm dev:doctor -- --env-file /path/to/local-test.env --phase configuration
 The env file is authoritative for standalone checks. The doctor reads local
 PostgreSQL in a read-only transaction, checks migration history, admin-owned routing for each flow and approved fallback,
 required worker formats, effective customer/provider prices and operator limits.
-Runtime checks include fresh worker evidence. Explicit capability selection also
+Diagnostic history is informational: missing, aged, changed or failed checks do
+not block readiness, publication or generation. The doctor never certifies live
+provider availability. Runtime checks include fresh worker evidence. Explicit capability selection also
 checks its enable flag; disabled optional capabilities are omitted by default.
 Dictionary readiness includes document-file ingestion only when document storage,
 the document runtime, or an explicit API/worker format allowlist configures it.
@@ -110,7 +112,8 @@ AI_ADMIN_PROBE_TIMEOUT_MS=30000
 
 The five probe settings are optional and show the implemented fallback values:
 USD 0.01 per check, USD 0.10 total per UTC day, a 10-second cooldown, a 24-hour
-activation evidence window and a 30-second check timeout. Omitted settings log
+diagnostic evidence window and a 30-second check timeout. The evidence window
+affects diagnostic reporting only, never activation or dispatch. Omitted settings log
 fallback warnings; invalid values fail validation. These limits govern admin
 checks, not ordinary learner generation timeouts or learner credit budgets.
 
@@ -139,20 +142,22 @@ the complete sanitized environment reference.
    flow. These are independent of provider USD costs. Review operator probe caps
    before running any checks: checks spend operator funds and need explicit
    authorization when operated by an agent. The user-approved [standing local smoke allowance](../../.agent/AI_SMOKE_POLICY.md) supplies that authorization only within its fixed account, route, task and cost bounds.
-4. Use **Quick response** for basic connectivity, then **Test selected flow** for
-   every route/flow to be activated. A quick response is insufficient to activate
-   structured work. Successful matching checks are required within 24 hours when
-   publishing a route. Credentials, schema or adapter changes invalidate checks.
+4. Optionally use **Quick response** to inspect basic provider connectivity, or
+   **Test selected flow** for a synthetic flow contract. These explicit paid
+   diagnostics are not activation prerequisites. Missing/failed checks, changed
+   prompts/schemas, rotated credentials and supported model switches never require
+   a successful diagnostic before publication or generation. Diagnostic results
+   do not change runtime circuit state.
 5. Publish explicitly. EvoLink remains unavailable for learner dispatch until its
    processing/privacy controls are reviewed; possessing its key or passing a
    synthetic probe does not approve processing learner content. Retired Kie
    Gemini 2.5 Pro cannot be activated.
 6. Run `pnpm dev:doctor -- --capability texts` (substitute the intended capability),
    then the registered deterministic critical flows. The doctor inspects primary
-   and fallback prerequisites and never performs a live probe. An unchanged
-   active route with aged evidence reports a warning in its successful check:
-   dispatch remains allowed, but publication needs fresh evidence. Hard failures
-   block readiness until rechecked; transient failures use bounded recovery.
+   and fallback configuration prerequisites and never performs a live probe.
+   Diagnostic history is informational. Actual runtime failures use bounded
+   automatic recovery without a manual-check requirement; explicit disablement
+   and missing configuration remain authoritative blockers.
 
 Learners cannot select models. Existing model preferences are ignored for new
 work; language, tone, explanation preferences and saved action budgets remain.
@@ -202,7 +207,7 @@ provider expense. Operator-funded conversations legitimately show free learner
 billing; this does not mean the provider call was free. Missing/corrupt quota
 state, changed route, unavailable funding or exhausted limits stop dispatch.
 Do not delete journal/marker/lock files to recover quota or retry an unknown call.
-The runner never replenishes credits, changes routing or invokes activation checks.
+The runner never replenishes credits, changes routing or invokes admin diagnostics.
 
 A passing conversation smoke does not prove other AI capabilities. Select affected
 deterministic journeys and run only separately covered live actions when needed.
@@ -295,7 +300,8 @@ Synthetic economics for the disposable deterministic test runtime only.
 key can authenticate for administration while completion requests return401;
 account credit balance does not change that restriction. Replace it in the
 ignored server environment, restart the affected API/worker processes, and run
-fresh matching flow checks before activation. Never paste credentials into
+an optional connectivity diagnostic if you want to confirm the replacement.
+No passing check is required for activation. Never paste credentials into
 reports or a learner chat. See OpenRouter's
 [management-key documentation](https://openrouter.ai/blog/tutorials/team-spend-controls-setup/)
 and [current-key endpoint](https://openrouter.ai/docs/api/api-reference/api-keys/get-current-key).

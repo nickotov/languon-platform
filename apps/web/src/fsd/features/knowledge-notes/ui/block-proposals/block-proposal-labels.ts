@@ -1,12 +1,7 @@
 import type { Locale } from '@/fsd/shared/i18n';
 const values = {
     blockIdentity: ['Block', 'Блок', 'Bloque', 'Bloc'],
-    update: [
-        'Update block',
-        'Обновить блок',
-        'Actualizar bloque',
-        'Mettre à jour le bloc',
-    ],
+    update: ['Update', 'Обновить', 'Actualizar', 'Actualiser'],
     addAtCursor: [
         'Add at cursor',
         'Добавить у курсора',
@@ -98,12 +93,7 @@ const values = {
         'Bloques de aprendizaje propuestos',
         'Blocs pédagogiques proposés',
     ],
-    apply: [
-        'Apply to working draft',
-        'Применить к черновику',
-        'Aplicar al borrador',
-        'Appliquer au brouillon',
-    ],
+    apply: ['Insert', 'Вставить', 'Insertar', 'Insérer'],
     applied: [
         'Added to your draft. Save the note to publish.',
         'Добавлено в черновик. Сохраните документ для публикации.',

@@ -83,11 +83,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         }
 
         it('takes no advisory route fence during preparation and rejects a route disabled before capacity admission', async () => {
-            const store = new DrizzleTextAiRoutingStore(
-                db,
-                async () => {},
-                () => true,
-            );
+            const store = new DrizzleTextAiRoutingStore(db, () => true);
             const current = (await store.current())!;
             const [authority] =
                 await client`select created_by as actor from text_ai_routing_revisions where id=${current.id}`;

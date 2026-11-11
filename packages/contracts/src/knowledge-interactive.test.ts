@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
     InteractiveKnowledgeBodySchema,
     KnowledgeBodySchema,
-    LegacyKnowledgeBodySchema,
-    LegacyKnowledgeNoteContentSchema,
+    ProseKnowledgeBodySchema,
+    ProseKnowledgeNoteContentSchema,
 } from './contextual-assistant';
 
 const audioId = '00000000-0000-4000-8000-000000000001';
@@ -37,8 +37,8 @@ const paragraph = {
     content: [{ type: 'text', text: 'Hello' }],
 };
 
-describe('interactive knowledge document compatibility and safety', () => {
-    it.each([1, 2])(
+describe('interactive knowledge document contract and safety', () => {
+    it.each([2])(
         'round trips H1/H2/H3 and leaf rules in body version %i',
         (schemaVersion) => {
             const value = {
@@ -67,7 +67,7 @@ describe('interactive knowledge document compatibility and safety', () => {
         },
     );
 
-    it.each([1, 2])(
+    it.each([2])(
         'keeps rule leaves, placement, heading attributes and limits strict in body version %i',
         (schemaVersion) => {
             const parse = (content: unknown[]) =>
@@ -122,14 +122,14 @@ describe('interactive knowledge document compatibility and safety', () => {
         },
     );
 
-    it('retains v1 round trips unchanged', () => {
+    it('rejects retired body versions without coercing their content', () => {
         const legacy = {
             schemaVersion: 1,
             document: { type: 'doc', content: [paragraph] },
         };
 
-        expect(KnowledgeBodySchema.parse(legacy)).toEqual(legacy);
-        expect(LegacyKnowledgeBodySchema.parse(legacy)).toEqual(legacy);
+        expect(KnowledgeBodySchema.safeParse(legacy).success).toBe(false);
+        expect(ProseKnowledgeBodySchema.safeParse(legacy).success).toBe(false);
     });
 
     it('round trips mixed prose and typed learning blocks', () => {
@@ -145,13 +145,17 @@ describe('interactive knowledge document compatibility and safety', () => {
         ).toBe(true);
     });
 
-    it('keeps legacy proposal authority constrained to v1', () => {
+    it('keeps prose proposal authority restricted within the current body format', () => {
         expect(
-            LegacyKnowledgeBodySchema.safeParse(body([node(audio)])).success,
+            ProseKnowledgeBodySchema.safeParse(body([paragraph])).success,
+        ).toBe(true);
+
+        expect(
+            ProseKnowledgeBodySchema.safeParse(body([node(audio)])).success,
         ).toBe(false);
 
         expect(
-            LegacyKnowledgeNoteContentSchema.safeParse({
+            ProseKnowledgeNoteContentSchema.safeParse({
                 title: 'Test',
                 summary: '',
                 categories: [],

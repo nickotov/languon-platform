@@ -10,7 +10,7 @@ const paragraph = (text: string) => ({
     content: [{ type: 'text', text }],
 });
 const body = KnowledgeBodySchema.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     document: {
         type: 'doc',
         content: [

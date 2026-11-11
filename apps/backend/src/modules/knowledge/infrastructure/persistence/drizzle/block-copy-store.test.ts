@@ -40,7 +40,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             studiedLanguage: null,
             explanationLanguage: null,
             body: {
-                schemaVersion: 1 as const,
+                schemaVersion: 2 as const,
                 document: {
                     type: 'doc' as const,
                     content: [
@@ -214,7 +214,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
             expect(
                 (await notes.get(reader, destination.id)).body.schemaVersion,
-            ).toBe(1);
+            ).toBe(2);
 
             await notes.delete(owner, source.id, {
                 operationId: randomUUID(),

@@ -1,6 +1,8 @@
 import type { TextAiProviderUsage } from '../../../text-ai/application/ports/text-ai-provider-usage';
 import type {
     ChatPreferences,
+    DictionaryChatSnippetInput,
+    DictionaryChatSnippet,
     ConversationResponseMetadata,
     KnowledgeNoteContent,
     LearningBlockProposalInput,
@@ -79,6 +81,11 @@ export interface TutorRunInput {
     conversationId: string;
     /** Server-resolved source capability; never inferred from model instructions. */
     readOnlySource?: boolean;
+    canProposeDictionarySnippet?: boolean;
+    onDictionarySnippet?(
+        input: DictionaryChatSnippetInput,
+    ): Promise<{ id: string }>;
+    readDictionarySnippet?(id: string): Promise<DictionaryChatSnippet>;
     canProposeBlocks?: boolean;
     onBlockProposal?(
         input: LearningBlockProposalInput,
@@ -110,4 +117,10 @@ export interface TutorRunInput {
 
 export interface TutorRunner {
     run(input: TutorRunInput): Promise<{ text: string }>;
+}
+
+/** Prepared model context; canonical stored messages are never replaced by this view. */
+export interface PreparedTutorHistory {
+    observations?: string;
+    messages: { role: 'user' | 'assistant'; content: string }[];
 }

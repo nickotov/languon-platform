@@ -398,3 +398,40 @@ it('freezes selected block references at Send and preserves references added dur
         result.current.blockReferences.selected.map((item) => item.id),
     ).toEqual([blocks[2]!.id]);
 });
+
+it.each([
+    { previousTitle: null, expectedFirst: true },
+    { previousTitle: 'Existing conversation', expectedFirst: false },
+])(
+    'captures first-send naming eligibility before admission/SSE updates the title: $previousTitle',
+    async ({ previousTitle, expectedFirst }) => {
+        const { chat, workspace, props } = fixture();
+        Object.assign(chat.detail.data.conversation, { title: previousTitle });
+        workspace.onSent = vi.fn();
+        chat.submit.mutateAsync.mockImplementation(async (request) => {
+            Object.assign(chat.detail.data.conversation, {
+                title: 'Name from admission',
+            });
+
+            const turn = { id: 'turn-one' };
+            (request as { onAccepted?(value: typeof turn): void }).onAccepted?.(
+                turn,
+            );
+
+            return { turn };
+        });
+
+        const { result } = renderHook(() => useAssistantPanel(props), {
+            wrapper: Wrapper,
+        });
+
+        await waitFor(() =>
+            expect(result.current.workspacePassage).not.toBeNull(),
+        );
+
+        await act(async () => result.current.send());
+        await waitFor(() =>
+            expect(workspace.onSent).toHaveBeenCalledWith(expectedFirst),
+        );
+    },
+);

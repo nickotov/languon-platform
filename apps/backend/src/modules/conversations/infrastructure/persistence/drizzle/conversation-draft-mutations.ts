@@ -1,6 +1,6 @@
 import { isReadOnlyKnowledgeSource } from '../../../domain/conversation';
 import {
-    LegacyKnowledgeNoteContentSchema,
+    ProseKnowledgeNoteContentSchema,
     type KnowledgeNoteContent,
     type PublishKnowledgeDraftRequest,
 } from '@languon/contracts';
@@ -8,7 +8,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { ConversationAccess } from '../../../application/ports/conversation-store';
 import { conversationUnavailable } from '../../../domain/conversation';
 import { conversationEvent } from './conversation-events';
-import { assertLegacyNoteTarget } from './conversation-legacy-note-target';
+import { assertProseNoteTarget } from './conversation-prose-note-target';
 import {
     conversationAuthorize,
     conversationTransaction,
@@ -45,7 +45,7 @@ export async function conversationUpdateDraft(
         const [row] = await tx
             .update(drafts)
             .set({
-                content: LegacyKnowledgeNoteContentSchema.parse(content),
+                content: ProseKnowledgeNoteContentSchema.parse(content),
                 version: sql`${drafts.version}+1`,
                 updatedAt: persistence.now(),
             })
@@ -157,7 +157,7 @@ export async function conversationPublishDraft(
         }
 
         if (input.mode === 'update') {
-            await assertLegacyNoteTarget(tx, access.ownerId, row.targetNoteId!);
+            await assertProseNoteTarget(tx, access.ownerId, row.targetNoteId!);
         }
 
         const note = await persistence.dependencies.publishNote(

@@ -17,7 +17,7 @@ const source = {
 };
 
 describe('frozen source passage projection', () => {
-    it.each([1, 2])(
+    it.each([2])(
         'projects H1 and rules as plain source text for body version %i',
         (schemaVersion) => {
             const material = noteSourceMaterial({
@@ -91,7 +91,7 @@ describe('frozen source passage projection', () => {
             title: 'ملاحظات 👋'.repeat(15),
             summary: 'A saved explanation',
             body: {
-                schemaVersion: 1 as const,
+                schemaVersion: 2 as const,
                 document: {
                     type: 'doc' as const,
                     content: [

@@ -138,10 +138,19 @@ export function ConversationMessages({
         (part) =>
             (part.type === 'tool-read_source_context' ||
                 part.type === 'tool-propose_knowledge_note' ||
-                part.type === 'tool-propose_learning_blocks') &&
+                part.type === 'tool-propose_learning_blocks' ||
+                part.type === 'tool-propose_dictionary_snippet' ||
+                part.type === 'tool-read_dictionary_snippet') &&
             part.state === 'input-available',
     );
-    let tool: 'reading' | 'preparing' | 'preparingBlocks' | undefined;
+    let tool:
+        | 'reading'
+        | 'preparing'
+        | 'preparingBlocks'
+        | 'preparingCards'
+        | 'readingSnippet'
+        | undefined;
+
     if (currentTool?.type === 'tool-read_source_context') {
         tool = 'reading';
     }
@@ -152,6 +161,14 @@ export function ConversationMessages({
 
     if (currentTool?.type === 'tool-propose_learning_blocks') {
         tool = 'preparingBlocks';
+    }
+
+    if (currentTool?.type === 'tool-propose_dictionary_snippet') {
+        tool = 'preparingCards';
+    }
+
+    if (currentTool?.type === 'tool-read_dictionary_snippet') {
+        tool = 'readingSnippet';
     }
 
     const responding = active || pending;

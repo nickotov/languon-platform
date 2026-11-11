@@ -66,14 +66,14 @@ describe('host-owned exact learning source selection', () => {
         ).toBe(selection);
     });
 
-    it('grounds each task independently and never overwrites explicit words or an explicit passage', () => {
+    it('grounds tasks independently and preserves a selected word subset and trusted frozen passage', () => {
         const tasks = [
             {
                 id: 'practice',
                 kind: 'exercises' as const,
                 instruction: 'Use prior words with this passage.',
                 language: 'fr',
-                words: ['congé'],
+                words: ['travail'],
                 sourceText: 'Un passage explicitement choisi.',
                 source: { kind: 'proposal' as const, proposalId },
             },
@@ -91,11 +91,32 @@ describe('host-owned exact learning source selection', () => {
         );
 
         expect(grounded.tasks[0]).toMatchObject({
-            words: ['congé'],
+            words: ['travail'],
             sourceText: 'Un passage explicitement choisi.',
         });
 
         expect(grounded.tasks[1]?.sourceText).toBeUndefined();
+    });
+
+    it('rejects explicit words outside the selected vocabulary inventory', () => {
+        expect(() =>
+            groundLearningContentBrief(
+                {
+                    tasks: [
+                        {
+                            id: 'practice',
+                            kind: 'exercises',
+                            instruction: 'Practise these words.',
+                            language: 'fr',
+                            source: { kind: 'proposal', proposalId },
+                            words: ['congé'],
+                        },
+                    ],
+                },
+                {},
+                new Map([[proposalId, [vocabulary]]]),
+            ),
+        ).toThrow('do not belong');
     });
 
     it('passes actual bilingual source wording rather than serialized block JSON to follow-up authoring', () => {

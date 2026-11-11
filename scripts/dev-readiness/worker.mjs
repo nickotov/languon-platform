@@ -77,78 +77,31 @@ export function customerFunded(snapshot, capability) {
     );
 }
 
-const { createTextAiRouteFingerprint } = await tsImport(
-    '../../apps/backend/src/infrastructure/text-ai/route-fingerprint.ts',
-    import.meta.url,
-);
-
-export function probeEvidence(
-    snapshot,
-    env,
-    capability,
-    model,
-    now = Date.now(),
-) {
+/** Historical diagnostics are informational and never authorize dispatch. */
+export function probeDiagnostic(snapshot, capability, model) {
     const routeId = model ? `${model.providerId}/${model.id}` : null;
     const flowId = capability.formats[0]?.split(':')[0];
-    let fingerprint;
-    try {
-        fingerprint = createTextAiRouteFingerprint(env)(routeId, flowId);
-    } catch {
-        return {
-            ready: false,
-            stale: false,
-            reason: 'The current execution identity could not be resolved.',
-        };
-    }
-
-    const evidence = snapshot.probes?.find(
+    const diagnostic = snapshot.probes?.find(
         (probe) =>
             probe.route_id === routeId &&
             probe.flow_id === flowId &&
-            probe.kind === 'flow' &&
-            probe.fingerprint === fingerprint,
+            probe.kind === 'flow',
     );
 
-    // The database function is the same authority used for real dispatch. It
-    // retains prior matching successes and provider/route-wide hard failures;
-    // elapsed time alone must never create activation evidence.
-    if (!evidence) {
-        const flowHistory = snapshot.probes?.some(
-            (probe) =>
-                probe.route_id === routeId &&
-                probe.flow_id === flowId &&
-                probe.kind === 'flow',
-        );
+    const scope =
+        'Diagnostics are optional and do not determine readiness or current provider connectivity.';
 
-        return {
-            ready: false,
-            stale: false,
-            reason: flowHistory
-                ? 'Existing flow checks do not match the current execution identity. Credentials, prompt/schema, adapter or processing-policy changes can invalidate earlier passes.'
-                : 'No selected-flow check exists for this route and flow. A quick response or a check for another flow does not activate it.',
-        };
+    if (!diagnostic) {
+        return `No selected-flow diagnostic recorded. ${scope}`;
     }
 
-    if (evidence.dispatch_allowed !== true) {
-        return {
-            ready: false,
-            stale: false,
-            reviewCurrent: true,
-            reason:
-                'Current matching evidence does not permit dispatch. Review the latest check and route-wide failures in Admin → AI routing' +
-                (evidence.state === 'failed'
-                    ? ' (the last matching check failed).'
-                    : evidence.state === 'running'
-                      ? ' (the last matching check is still running).'
-                      : '.'),
-        };
+    if (diagnostic.state === 'passed') {
+        return `Last recorded selected-flow diagnostic passed. ${scope}`;
     }
 
-    return {
-        ready: true,
-        stale:
-            !evidence.evidence_expires_at ||
-            new Date(evidence.evidence_expires_at).getTime() < now,
-    };
+    if (diagnostic.state === 'failed') {
+        return `Last recorded selected-flow diagnostic failed. ${scope}`;
+    }
+
+    return `A selected-flow diagnostic is unfinished. ${scope}`;
 }

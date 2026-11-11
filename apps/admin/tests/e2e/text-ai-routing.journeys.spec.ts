@@ -1,4 +1,4 @@
-// @user-flow-revision admin-text-ai-routing sha256:63e835b7246654c4
+// @user-flow-revision admin-text-ai-routing sha256:51f9eeb8602e6d88
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { resolve } from 'node:path';
@@ -20,7 +20,7 @@ import {
 let preparedOwnerEmail: string | null = null;
 
 // @user-flow admin-text-ai-routing/admin-checks-and-disables-reviewed-route
-test('admin inspects route evidence and explicitly approves synthetic check costs', async ({
+test('admin publishes unchecked routes and keeps diagnostics optional with explicit costs', async ({
     page,
     request,
 }, testInfo) => {
@@ -96,7 +96,7 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
     ).toBeVisible();
 
     await expect(
-        routing.getByText('Check current readiness after AI changes', {
+        routing.getByText('Diagnostics are optional', {
             exact: true,
         }),
     ).toBeVisible();
@@ -105,9 +105,19 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
         routing.getByText('pnpm dev:doctor', { exact: true }),
     ).toBeVisible();
 
+    const historyResponse = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'GET' &&
+            response.url().endsWith('/admin/ai-settings/probes'),
+    );
+
     await routing
         .getByRole('button', { name: 'Refresh check history', exact: true })
         .click();
+
+    const history = await historyResponse;
+    expect(history.status()).toBe(200);
+    expect((await history.json()).probes).toEqual([]);
 
     await expect(
         routing.getByRole('button', {
@@ -117,6 +127,18 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
     ).toBeEnabled();
 
     expect(probePosts).toBe(0);
+    await configureModel(page, {
+        checkFlows: false,
+        reason: 'Publish configured route without diagnostic history',
+    });
+
+    expect(probePosts).toBe(0);
+    await expect(
+        routing.getByText(
+            /Missing, old or failed diagnostics do not block generation/,
+        ),
+    ).toBeVisible();
+
     await expect(
         routing.getByRole('columnheader', { name: 'Processing eligibility' }),
     ).toBeVisible();
@@ -173,9 +195,7 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
         checks.getByText(/No recorded check for this selection/),
     ).toBeVisible();
 
-    await expect(
-        checks.getByText('Within evidence window', { exact: true }),
-    ).toHaveCount(0);
+    await expect(checks.getByText('passed', { exact: true })).toHaveCount(0);
 
     await expect(run).toBeDisabled();
     expect(probePosts).toBe(1);
@@ -190,9 +210,7 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
     const flow = await flowResponse;
     expect(flow.status()).toBe(200);
     expect((await flow.json()).state).toBe('passed');
-    await expect(
-        checks.getByText('Within evidence window', { exact: true }),
-    ).toBeVisible();
+    await expect(checks.getByText('passed', { exact: true })).toBeVisible();
 
     expect(
         await page.evaluate(
@@ -207,7 +225,7 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
 
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(
-        routing.getByText('Check current readiness after AI changes', {
+        routing.getByText('Diagnostics are optional', {
             exact: true,
         }),
     ).toBeVisible();
@@ -238,7 +256,7 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
     expect(probePosts).toBe(2);
     await page.setViewportSize({ width: 1280, height: 900 });
     // Exercise the real form with no learner tariffs for operator-funded flows.
-    // The backend still validates funding, checks, prices and every publication.
+    // The backend still validates funding, credentials, prices and every publication.
     const login = await request.post(
         `${backendOrigin}/admin/auth/login/password`,
         { data: { email, password }, headers: { Origin: adminOrigin } },
@@ -278,7 +296,7 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
         expect(changed.status()).toBe(200);
     }
 
-    await configureModel(page, { includeTariffs: false });
+    await configureModel(page, { includeTariffs: false, checkFlows: false });
     const freeRouting = await request.get(`${backendOrigin}/admin/ai/routing`, {
         headers,
     });
@@ -320,7 +338,7 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
         }),
     ).toBeDisabled();
 
-    // Restore this owned fixture through the audited form; checks remain fresh.
+    // Restore this owned fixture through the audited form without running checks.
     await configureModel(page, {
         checkFlows: false,
         reason: 'Restore deterministic route after emergency disable regression',
@@ -415,12 +433,50 @@ test('admin inspects route evidence and explicitly approves synthetic check cost
     await recovery.click();
     const recovered = await recoveredResponse;
     expect(recovered.status()).toBe(200);
-    expect((await recovered.json()).recoveredAt).toBeTruthy();
+    const recoveredProbe = await recovered.json();
+    expect(recoveredProbe.recoveredAt).toBeTruthy();
+    expect(recoveredProbe.state).toBe('failed');
     await expect(
         checks.getByText('Operator recovery confirmed', { exact: true }),
     ).toBeVisible();
 
     await expect(recovery).not.toBeVisible();
+    // Re-enable after the failure to exercise activation, not an unchanged policy.
+    await activeRow
+        .getByRole('button', { name: 'Emergency disable', exact: true })
+        .click();
+
+    await disable
+        .getByLabel('Reason for change', { exact: true })
+        .fill('Verify reactivation after a failed diagnostic');
+
+    const disabledAfterFailure = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            response.url().endsWith('/admin/ai/routing/disable'),
+    );
+
+    await disable
+        .getByRole('button', { name: 'Disable route', exact: true })
+        .click();
+
+    expect((await disabledAfterFailure).status()).toBe(200);
+    await expect(disable).not.toBeVisible();
+    // Even an unknown/failed diagnostic remains history, not publication authority.
+    await configureModel(page, {
+        checkFlows: false,
+        includeTariffs: false,
+        reason: 'Publish route independently of a failed diagnostic',
+    });
+
+    expect(probePosts).toBe(2);
+    await expect(
+        activeRow.getByRole('button', {
+            name: 'Emergency disable',
+            exact: true,
+        }),
+    ).toBeEnabled();
+
     expect(errors).toEqual([]);
 });
 

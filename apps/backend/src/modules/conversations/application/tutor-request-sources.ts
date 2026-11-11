@@ -136,6 +136,25 @@ export function groundLearningContentBrief(
                     );
                 }
 
+                const vocabulary = blocks.flatMap((block) =>
+                    block.type === 'vocabulary'
+                        ? block.entries.map((entry) =>
+                              entry.term.normalize('NFKC'),
+                          )
+                        : [],
+                );
+
+                if (
+                    vocabulary.length &&
+                    task.words?.some(
+                        (word) => !vocabulary.includes(word.normalize('NFKC')),
+                    )
+                ) {
+                    throw new Error(
+                        'Requested words do not belong to the selected proposal.',
+                    );
+                }
+
                 return groundLearningContentTask(task, blocks);
             }
 
@@ -261,31 +280,6 @@ export async function readFrozenLearningBlocks(
     }
 
     return blocks;
-}
-
-/** Copy identity is independent; every authored field must still match an authorized source. */
-export function sameLearningBlockCopyContent(
-    left: LearningBlock,
-    right: LearningBlock,
-): boolean {
-    const content = (value: unknown): unknown => {
-        if (Array.isArray(value)) {
-            return value.map(content);
-        }
-
-        if (!value || typeof value !== 'object') {
-            return value;
-        }
-
-        return Object.fromEntries(
-            Object.entries(value)
-                .filter(([key]) => key !== 'id')
-                .sort(([left], [right]) => left.localeCompare(right))
-                .map(([key, child]) => [key, content(child)]),
-        );
-    };
-
-    return JSON.stringify(content(left)) === JSON.stringify(content(right));
 }
 
 /** A clarification reply patches known tasks; it never drops untouched requested components. */

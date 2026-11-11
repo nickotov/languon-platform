@@ -1,3 +1,4 @@
+import { registerConversationDictionarySnippetRoutes } from './conversation-dictionary-snippet.routes';
 import { registerConversationBlockProposalRoutes } from './conversation-block-proposal.routes';
 import { randomUUID } from 'node:crypto';
 import type { Context } from 'hono';
@@ -887,6 +888,7 @@ export function createConversationRoutes({
     );
 
     registerConversationBlockProposalRoutes(app, service.store, access);
+    registerConversationDictionarySnippetRoutes(app, service.store, access);
 
     return app;
 }

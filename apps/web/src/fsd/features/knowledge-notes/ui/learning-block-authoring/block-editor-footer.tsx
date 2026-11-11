@@ -1,5 +1,5 @@
 'use client';
-import { Button } from '@/fsd/shared/ui';
+import { Button, DialogActions } from '@/fsd/shared/ui';
 import type { BlockAuthoringLabels } from './block-labels';
 import styles from './learning-block-authoring.module.css';
 export function BlockEditorFooter({
@@ -23,7 +23,7 @@ export function BlockEditorFooter({
 }) {
     return confirming ? (
         <div
-            className={styles.footerActions}
+            className={styles.footer}
             role='alertdialog'
             aria-label={labels.field('Discard changes?')}
         >
@@ -35,26 +35,28 @@ export function BlockEditorFooter({
                     )}
                 </p>
             </div>
-            <Button
-                type='button'
-                size='compact'
-                variant='secondary'
-                onClick={keepEditing}
-                autoFocus
-            >
-                {labels.field('Keep editing')}
-            </Button>
-            <Button
-                type='button'
-                size='compact'
-                variant='danger'
-                onClick={onClose}
-            >
-                {labels.field('Discard')}
-            </Button>
+            <DialogActions className={styles.footerActions}>
+                <Button
+                    type='button'
+                    size='compact'
+                    variant='secondary'
+                    onClick={keepEditing}
+                    autoFocus
+                >
+                    {labels.field('Continue')}
+                </Button>
+                <Button
+                    type='button'
+                    size='compact'
+                    variant='danger'
+                    onClick={onClose}
+                >
+                    {labels.field('Discard')}
+                </Button>
+            </DialogActions>
         </div>
     ) : (
-        <div className={styles.footerActions}>
+        <div className={styles.footer}>
             <p className={styles.footerNote}>
                 {labels.field(
                     dirty
@@ -62,23 +64,25 @@ export function BlockEditorFooter({
                         : 'No changes yet.',
                 )}
             </p>
-            <Button
-                type='button'
-                size='compact'
-                variant='ghost'
-                onClick={requestClose}
-            >
-                {labels.cancel}
-            </Button>
-            <Button
-                type={onApply ? 'button' : 'submit'}
-                onClick={onApply}
-                form={formId}
-                size='compact'
-                disabled={!dirty}
-            >
-                {labels.apply}
-            </Button>
+            <DialogActions className={styles.footerActions}>
+                <Button
+                    type='button'
+                    size='compact'
+                    variant='ghost'
+                    onClick={requestClose}
+                >
+                    {labels.cancel}
+                </Button>
+                <Button
+                    type={onApply ? 'button' : 'submit'}
+                    onClick={onApply}
+                    form={formId}
+                    size='compact'
+                    disabled={!dirty}
+                >
+                    {labels.apply}
+                </Button>
+            </DialogActions>
         </div>
     );
 }

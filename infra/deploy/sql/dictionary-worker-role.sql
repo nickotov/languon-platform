@@ -279,3 +279,8 @@ GRANT EXECUTE ON FUNCTION
     languon_assert_knowledge_exercise_action_source(uuid,uuid),
     languon_publish_knowledge_exercise_evaluation(uuid,text,bigint,jsonb)
     TO :"dictionary_worker_role";
+
+-- Dictionary chat tools retain a lease/source fence without direct snippet grants.
+REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLE conversation_dictionary_snippets, dictionary_chat_snippet_applications FROM :"dictionary_worker_role";
+GRANT EXECUTE ON FUNCTION public.languon_propose_dictionary_chat_snippet(uuid,uuid,jsonb) TO :"dictionary_worker_role";
+GRANT EXECUTE ON FUNCTION public.languon_read_dictionary_chat_snippet(uuid,uuid,uuid) TO :"dictionary_worker_role";

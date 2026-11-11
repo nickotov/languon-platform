@@ -5,7 +5,7 @@ status: current
 surfaces:
     - api
     - system
-last_verified: 2026-10-04
+last_verified: 2026-11-10
 source_paths:
     - packages/contracts/src/text-ai
     - apps/backend/src/modules/text-ai
@@ -33,7 +33,8 @@ related_features:
 
 The authenticated legacy preference endpoints now expose only the learner action
 budget and its optimistic version. Routing is owned by administration under
-[ADR-0046](../adr/0046-admin-owned-text-ai-routing.md). Existing explicit learner
+[ADR-0046](../adr/0046-admin-owned-text-ai-routing.md), with optional diagnostic
+semantics under [ADR-0056](../adr/0056-optional-ai-diagnostics.md). Existing explicit learner
 choices cannot override the approved route. Internal execution snapshots retain
 provider identity for operations and accounting; learner responses hide it.
 
@@ -83,8 +84,12 @@ against those targets concurrently; remove only owned temporary containers.
   repair provider configuration by selecting a model.
 - Network retry: preserve optimistic versions and AI operation identity. Never
   create duplicate admissions or charges on reconnect.
-- No approved compatible route, tariff, price or worker evidence: admission fails
-  closed; administrators inspect safe setup and health diagnostics.
+- No approved compatible route, credential, required tariff, price or worker
+  capability evidence: admission fails closed; administrators inspect safe setup
+  and runtime health diagnostics.
+- Missing, failed or mismatched manual diagnostics do not block configured
+  routes. Prompt/schema edits and supported model switches require no paid
+  recheck. Actual runtime cooldowns recover without manual verification.
 
 ## E2E coverage
 
@@ -111,8 +116,10 @@ critical AI execution gate with synthetic HTTP, not paid model requests.
 
 A skipped run is missing evidence: inspect disposable PostgreSQL/Redis confirmation
 settings rather than bypassing them. Admission failure needs an enabled approved
-route, matching synthetic check evidence, reviewed provider prices and fresh
-worker capability evidence. Never use live provider keys in this runner.
+route, configured credentials, reviewed provider prices, applicable customer
+tariffs and fresh worker capability evidence. Manual diagnostic history is
+informational and cannot explain an admission block. Never use live provider
+keys in this runner.
 
 ## Cleanup
 

@@ -77,6 +77,7 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0053](./0053-knowledge-prose-headings-and-thematic-breaks.md) | Knowledge prose headings and thematic breaks | Accepted |
 
 | [ADR-0054](./0054-ui-direction-before-implementation.md) | UI direction before substantive implementation | Accepted |
+| [ADR-0055](./0055-learning-content-context-and-publication.md) | Learning-content phase context and canonical publication | Accepted |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.
@@ -123,3 +124,6 @@ decision dates and accepted decision/rationale text unchanged.
 5. Keep current architecture documentation aligned with accepted decisions.
 
 Fixes limited to typos, formatting, and broken links do not require a new ADR.
+
+| [ADR-0056](./0056-optional-ai-diagnostics.md) | Optional AI diagnostics independent of routing and generation | Accepted |
+| [ADR-0057](./0057-dictionary-chat-snippet-application.md) | Dictionary-chat snippets and manual-style application | Accepted |

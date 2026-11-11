@@ -1,11 +1,9 @@
 import type { TextAiProbe } from '@languon/contracts';
 import { useTranslate } from '@refinedev/core';
 import { Descriptions, Tag } from 'antd';
-import { probeEvidenceAge } from '../../lib/text-ai-routing-form';
 
 export function ProbeResult({ probe }: { probe: TextAiProbe }) {
     const t = useTranslate();
-    const age = probeEvidenceAge(probe.evidenceExpiresAt);
     const cost =
         probe.providerCostUsd === null
             ? t('routing.unknown')
@@ -35,11 +33,6 @@ export function ProbeResult({ probe }: { probe: TextAiProbe }) {
         },
         { key: 'tokens', label: t('routing.tokens'), children: tokens },
         { key: 'cost', label: t('routing.cost'), children: cost },
-        {
-            key: 'evidence',
-            label: t('routing.evidence'),
-            children: t(`routing.evidence.${age}`),
-        },
         {
             key: 'failure',
             label: t('routing.failure'),

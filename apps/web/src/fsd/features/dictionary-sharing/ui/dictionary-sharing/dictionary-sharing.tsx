@@ -4,7 +4,7 @@ import type { OwnedDictionary } from '@languon/contracts';
 import { useState } from 'react';
 
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button, Card, InlineAlert } from '@/fsd/shared/ui';
+import { Button, Card, DialogActions, InlineAlert } from '@/fsd/shared/ui';
 
 import styles from './dictionary-sharing.module.css';
 
@@ -111,7 +111,7 @@ export function DictionarySharing({
             >
                 {outcome}
             </p>
-            <div className={styles.actions}>
+            <DialogActions align='start' className={styles.actions}>
                 <Button loading={pending} onClick={rotateShare} type='button'>
                     {dictionary.visibility === 'unlisted'
                         ? t('dictionary.share.rotate')
@@ -127,7 +127,7 @@ export function DictionarySharing({
                         {t('dictionary.share.revoke')}
                     </Button>
                 ) : null}
-            </div>
+            </DialogActions>
         </Card>
     );
 }

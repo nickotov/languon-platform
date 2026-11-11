@@ -219,6 +219,12 @@ export function projectConversationSource(
             : null,
         provenance: snapshot.provenance,
         sourceKind: kind,
+        ...(kind === 'dictionary' && snapshot.dictionaryGenerationContext
+            ? {
+                  dictionaryGenerationContext:
+                      snapshot.dictionaryGenerationContext,
+              }
+            : {}),
         snapshotScope: snapshot.scope ?? 'complete',
         availableMaterialCount: material.length,
         // Every read is a subset of this frozen, bounded material. Small sheets

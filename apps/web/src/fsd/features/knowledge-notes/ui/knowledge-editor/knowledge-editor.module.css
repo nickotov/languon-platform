@@ -19,6 +19,10 @@
     border-bottom: 1px solid var(--border-default);
 }
 
+.iconTooltipTrigger {
+    flex-shrink: 0;
+}
+
 .tool {
     display: inline-flex;
     align-items: center;

@@ -2,7 +2,7 @@
 import { useState, type ChangeEvent } from 'react';
 import type { LearningBlock } from '@languon/contracts';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button, InlineAlert } from '@/fsd/shared/ui';
+import { Button, DialogActions, InlineAlert } from '@/fsd/shared/ui';
 import type { KnowledgeBlockCopyContext } from '../../api/block-copy-api';
 import type { CopyDestination } from '../../types';
 import { useBlockCopy } from '../../hooks/use-block-copy';
@@ -123,7 +123,7 @@ export function BlockCopyDialog({
     }
 
     const footer = (
-        <div className={styles.actions}>
+        <DialogActions className={styles.actions}>
             <Button
                 type='button'
                 size='compact'
@@ -134,7 +134,7 @@ export function BlockCopyDialog({
                 {copy.copied ? labels.done : labels.cancel}
             </Button>
             {primaryAction}
-        </div>
+        </DialogActions>
     );
 
     return (

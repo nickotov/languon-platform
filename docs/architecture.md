@@ -226,8 +226,10 @@ A bounded candidate query and transaction-only immutable policy reads avoid
 repeated round trips; no cross-request cache stores financial authorization.
 
 Manual admin probes use the production prompt/schema/adapter with synthetic data,
-operator spending limits and append-only expense records. Matching flow checks gate
-activation; current runtime health is separate from configured state. Runtime health
+operator spending limits and append-only expense records. These optional
+diagnostics have no authority over routing publication, admission or dispatch.
+Missing, failed, old or mismatched results do not disable configured routes.
+Current runtime health is separate from configured state and diagnostic history. Runtime health
 observations derive identity from an admitted dispatch receipt and live typed
 lease/fence. Learner policy refusals and local cancellation cannot suppress a
 shared route. No learner request triggers a paid readiness check.
@@ -237,9 +239,14 @@ conclusive rejection/completion and before conflicting publication. Queued claim
 return the actual selected receipt; dispatch rechecks emergency disable immediately
 before HTTP. Inline runners bind their selected candidate to the corresponding
 receipt. Technical failures do not add learner charges; unknown provider expense
-stays unknown. Credential/adapter/flow changes fail closed and require a matching
-check and explicit new action. No arbitrary-provider or generic-prompt API exists.
-See [ADR-0046](adr/0046-admin-owned-text-ai-routing.md), the
+stays unknown. Prompt/schema edits, credential rotation and supported model
+switches do not require a passing diagnostic. Actual provider failures use bounded
+cooldowns and automatic recovery without manual verification; explicit
+disablement and configuration, capability, privacy and financial prerequisites
+remain authoritative. Admitted work retains its immutable execution safeguards.
+No arbitrary-provider or generic-prompt API exists.
+See [ADR-0046](adr/0046-admin-owned-text-ai-routing.md), its diagnostic-policy
+replacement [ADR-0056](adr/0056-optional-ai-diagnostics.md), the
 [confirmed design](text-ai-routing-design.md) and
 [admin flow](user-flows/admin-text-ai-routing.md).
 
@@ -438,6 +445,18 @@ material, followed by a complete model-input budget check after memory
 compaction. Multiple private conversations belong to the note but never appear
 in the shared response. Existing dictionary/text source chat keeps its own
 draft/excerpt behavior.
+
+Owned dictionary chat additionally captures trusted authoring settings and can
+propose complete, read-only dictionary snippets through the same accounted tutor
+model. Canonical linguistic rules are shared with card authoring. Snippets belong
+to the private conversation; historical model context retains compact references,
+and follow-ups read exact retained cards through a lease-fenced tool. Explicit
+learner application is a separate dictionary-owned transaction: append/prepend
+preserve selected order, while Replace archives current active cards and creates
+fresh AI-authored cards without changing title/settings or old learning history.
+Current ordinary write validation applies without a generation-age gate or AI call;
+duplicates notify without blocking. See [ADR-0057](adr/0057-dictionary-chat-snippet-application.md)
+and the [dictionary-chat journey](user-flows/dictionary-chat-snippets.md).
 
 Mastra Memory1.26.0/Core1.57.0 use an application-owned transactional adapter.
 Observation, reflection and actor calls share bounded per-turn execution and

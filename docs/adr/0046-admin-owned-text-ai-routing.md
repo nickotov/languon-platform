@@ -3,6 +3,7 @@ type: adr
 id: ADR-0046
 title: Admin-owned text AI routing and verified model routes
 status: accepted
+superseded_in_part_by: 'ADR-0056 diagnostic-history activation/admission gates and manual-check recovery; other requirements remain active'
 date: 2026-10-25
 supersedes: 'Partial replacement of ADR-0026 learner model selection, ADR-0037 contextual Auto/Flash-only routing, ADR-0021 no-fallback routing and ADR-0045 model-oriented customer tariff selection; other guarantees remain active'
 ---

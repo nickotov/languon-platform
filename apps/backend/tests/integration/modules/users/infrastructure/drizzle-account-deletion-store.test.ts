@@ -196,7 +196,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 studiedLanguage: null,
                 explanationLanguage: null,
                 body: {
-                    schemaVersion: 1,
+                    schemaVersion: 2,
                     document: {
                         type: 'doc',
                         content: [

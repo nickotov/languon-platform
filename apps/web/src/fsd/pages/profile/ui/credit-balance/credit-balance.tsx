@@ -30,6 +30,7 @@ export function CreditBalance() {
                     <h2>{t('profile.balanceTitle')}</h2>
                 </div>
                 <Button
+                    desktopIconOnly
                     variant='quiet'
                     size='compact'
                     onClick={refresh}

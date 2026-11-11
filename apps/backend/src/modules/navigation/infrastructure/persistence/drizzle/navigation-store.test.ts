@@ -292,7 +292,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 branchId = randomUUID(),
                 now = new Date();
             const body = {
-                schemaVersion: 1 as const,
+                schemaVersion: 2 as const,
                 document: {
                     type: 'doc' as const,
                     content: [{ type: 'paragraph' as const }],

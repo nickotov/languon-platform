@@ -27,7 +27,7 @@ it('keeps a single in-canvas title and edits optional properties without changin
     const client = new QueryClient();
     client.setQueryData(['dictionary-languages'], { languages: [] });
     const body = KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: { type: 'doc', content: [{ type: 'paragraph' }] },
     });
     const initial: KnowledgeWorkingContent = {

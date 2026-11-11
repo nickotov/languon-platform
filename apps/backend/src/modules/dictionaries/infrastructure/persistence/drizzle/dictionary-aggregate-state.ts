@@ -216,7 +216,7 @@ export async function assertOwnerCapacity(
 }
 
 export async function assertOwnerCapacityLocked(
-    context: DictionaryPersistenceContext,
+    context: Pick<DictionaryPersistenceContext, 'ownerLimits'>,
     tx: DictionaryTransaction,
     ownerId: string,
     additionalDictionaries: number,

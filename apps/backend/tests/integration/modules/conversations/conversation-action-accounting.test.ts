@@ -2,6 +2,7 @@ import {
     createConversationActionAccounting,
     type ActionConversationExecution,
 } from '../../../../src/modules/conversations/infrastructure/conversation-action-accounting';
+import { settleInterruptedConversationCalls } from '../../../../src/modules/conversations/infrastructure/conversation-accounting';
 import { DrizzleConversationStore } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/drizzle-conversation-store';
 import { ConversationSourceResolver } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/conversation-source';
 import {
@@ -25,8 +26,9 @@ import {
     it,
     vi,
 } from 'vitest';
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { databaseSchema } from '../../../../src/infrastructure/database/schema';
+import { conversationTurnsTable } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/schema';
 import { DrizzleAiCreditTransactionParticipant } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import { DrizzleActionAccountingParticipant } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant';
 import {
@@ -214,6 +216,71 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await record(action.id, first.id);
             expect((await settle(action.id, 'failure')).chargedMilli).toBe(0n);
             expect((await summary()).availableCredits).toBe(1000n);
+        });
+
+        it('settles an interrupted current action once without another provider dispatch', async () => {
+            const action = await reserve();
+            const dispatched = await attempt(action.id);
+            const [turn] = await db
+                .select()
+                .from(conversationTurnsTable)
+                .where(eq(conversationTurnsTable.id, action.id));
+
+            expect(turn?.status).toBe('running');
+            await client`update conversation_turns set lease_until=now()-interval '1 second' where id=${action.id}`;
+            const store = new DrizzleConversationStore({
+                database: db,
+                sources: new ConversationSourceResolver({
+                    verifyDictionaryShare: () => false,
+                    verifyTextShare: () => false,
+                    readNote: async () => {
+                        throw new Error(
+                            'Interrupted recovery does not read a source.',
+                        );
+                    },
+                }),
+                settleInterrupted: settleInterruptedConversationCalls,
+                admitTurn: async () => ({}),
+                publishNote: async () => {
+                    throw new Error(
+                        'Interrupted recovery does not publish a draft.',
+                    );
+                },
+            });
+
+            await store.claim();
+            await store.claim();
+
+            const [attemptRow] = await client`
+                select state, successful, input_tokens, output_tokens
+                from ai_credit_action_attempts
+                where id=${dispatched.id}::uuid
+            `;
+            const [expense] = await client`
+                select measurement, amount_usd_micros
+                from ai_provider_expense_records
+                where attempt_id=${dispatched.id}::uuid
+            `;
+            const [settlement] = await client`
+                select count(*)::integer as count
+                from ai_credit_history
+                where owner_id=${ownerId} and kind='settlement'
+            `;
+
+            expect(attemptRow).toMatchObject({
+                state: 'settled',
+                successful: 0,
+                input_tokens: null,
+                output_tokens: null,
+            });
+
+            expect(expense).toMatchObject({
+                measurement: 'unknown',
+                amount_usd_micros: null,
+            });
+
+            expect(settlement?.count).toBe(1);
+            expect((await summary()).reservedCredits).toBe(0n);
         });
 
         it('absorbs unknown usage without a later debit and skips wallet holds for operator funding', async () => {

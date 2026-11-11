@@ -162,7 +162,7 @@ it('previews authoritative saved text before an explicit library commit with sou
         screen.getByRole('button', { name: 'Preview', exact: true }),
     );
 
-    await screen.findByRole('button', { name: 'Save independent copy' });
+    await screen.findByRole('button', { name: 'Save' });
     expect(
         client.getQueryState(['texts', 'actor', 'folders'])?.isInvalidated,
     ).toBe(false);
@@ -184,9 +184,7 @@ it('previews authoritative saved text before an explicit library commit with sou
         'Bearer synthetic-token',
     );
 
-    fireEvent.click(
-        screen.getByRole('button', { name: 'Save independent copy' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await screen.findByRole('status');
     expect(
@@ -253,21 +251,15 @@ it('retains one operation identity for failed vocabulary commit retries and neve
         screen.getByRole('button', { name: 'Preview', exact: true }),
     );
 
-    fireEvent.click(
-        await screen.findByRole('button', { name: 'Save independent copy' }),
-    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Save' }));
 
     await screen.findByRole('alert');
     expect(screen.queryByRole('status')).toBeNull();
     await waitFor(() =>
-        expect(
-            screen.getByRole('button', { name: 'Save independent copy' }),
-        ).toBeEnabled(),
+        expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled(),
     );
 
-    fireEvent.click(
-        screen.getByRole('button', { name: 'Save independent copy' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(requests).toHaveLength(3));
     expect(client.getQueryState(['dictionaries', 'actor'])?.isInvalidated).toBe(
@@ -331,9 +323,7 @@ it('saves original-only blocks as drafts for an explicitly selected target langu
         screen.getByRole('button', { name: 'Preview', exact: true }),
     );
 
-    fireEvent.click(
-        await screen.findByRole('button', { name: 'Save independent copy' }),
-    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Save' }));
 
     await screen.findByRole('status');
     expect(bodies[0]).toMatchObject({ translationLanguage: 'fr' });
@@ -390,7 +380,7 @@ it('flushes a private working source once for preview and keeps its exact reques
     );
 
     const commit = await screen.findByRole('button', {
-        name: 'Save independent copy',
+        name: 'Save',
     });
 
     expect(resolveWorkingSource).toHaveBeenCalledTimes(1);
@@ -465,9 +455,7 @@ it('requires explicit fresh preview after a working source version conflict inst
         screen.getByRole('button', { name: 'Preview', exact: true }),
     );
 
-    fireEvent.click(
-        await screen.findByRole('button', { name: 'Save independent copy' }),
-    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Save' }));
 
     await screen.findByRole('alert');
     expect(resolveWorkingSource).toHaveBeenCalledTimes(1);
@@ -481,7 +469,7 @@ it('requires explicit fresh preview after a working source version conflict inst
         await screen.findByRole('button', { name: 'Preview', exact: true }),
     );
 
-    await screen.findByRole('button', { name: 'Save independent copy' });
+    await screen.findByRole('button', { name: 'Save' });
     expect(resolveWorkingSource).toHaveBeenCalledTimes(2);
     expect(bodies[2]).toMatchObject({
         workingSource: { branchId: pair, expectedVersion: 10 },

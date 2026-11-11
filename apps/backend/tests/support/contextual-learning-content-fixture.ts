@@ -1,3 +1,4 @@
+import { LearningBlockSchema } from '@languon/contracts';
 import { getLocalPrompt } from '@languon/prompts';
 import { deserializeLearningContentBrief } from '../../src/modules/conversations/application/learning-content-transport';
 import { markdownGrammarProposal } from './contextual-block-proposal-fixture';
@@ -6,6 +7,7 @@ import { shoppingVocabularyBatch } from './contextual-shopping-vocabulary-fixtur
 
 function planningSourceCatalog(
     prompt: unknown,
+    referencedOnly = false,
 ): { id: string; type: string; title?: string }[] {
     if (!Array.isArray(prompt)) {
         return [];
@@ -31,6 +33,11 @@ function planningSourceCatalog(
             try {
                 const input = JSON.parse(part) as {
                     source?: {
+                        referencedBlocks?: {
+                            id: string;
+                            type: string;
+                            title?: string;
+                        }[];
                         availableBlocks?: {
                             id: string;
                             type: string;
@@ -39,7 +46,17 @@ function planningSourceCatalog(
                     };
                 };
 
-                if (Array.isArray(input.source?.availableBlocks)) {
+                if (
+                    referencedOnly &&
+                    Array.isArray(input.source?.referencedBlocks)
+                ) {
+                    return input.source.referencedBlocks;
+                }
+
+                if (
+                    !referencedOnly &&
+                    Array.isArray(input.source?.availableBlocks)
+                ) {
                     return input.source.availableBlocks;
                 }
             } catch {
@@ -53,7 +70,7 @@ function planningSourceCatalog(
 
 /** Scripted provider outputs prove wiring only, never natural-language intent quality. */
 export function fixtureRequestResolution(question: string, prompt: unknown) {
-    if (question.startsWith('Generate vocabulary with top 50 words')) {
+    if (/^Generate vocabulary with top (50|10) words/u.test(question)) {
         return {
             kind: 'generate',
             replyLanguage: 'en',
@@ -65,7 +82,11 @@ export function fixtureRequestResolution(question: string, prompt: unknown) {
                         instruction: 'Teach common words used when shopping.',
                         language: 'en',
                         translationLanguage: 'ru',
-                        count: 50,
+                        count: question.startsWith(
+                            'Generate vocabulary with top 10 words',
+                        )
+                            ? 10
+                            : 50,
                     },
                 ],
             },
@@ -86,7 +107,7 @@ export function fixtureRequestResolution(question: string, prompt: unknown) {
             );
         }
 
-        return { kind: 'legacy-copy', sourceBlockIds: [audio[0]!.id] };
+        return { kind: 'copy', sourceBlockIds: [audio[0]!.id] };
     }
 
     if (question.startsWith('Update French')) {
@@ -120,7 +141,13 @@ export function fixtureRequestResolution(question: string, prompt: unknown) {
     }
 
     if (/^Mentioned blocks update/u.test(question)) {
-        return { kind: 'legacy-revision' };
+        const referenced = planningSourceCatalog(prompt, true);
+
+        return {
+            kind: 'revise-blocks',
+            sourceBlockIds: referenced.map((block) => block.id),
+            instruction: question,
+        };
     }
 
     if (
@@ -230,6 +257,74 @@ export function fixtureAuthoringOutput(prompt: unknown) {
                 )
               : [];
     });
+    const revision = texts.find((text) =>
+        text.startsWith('Revise every exact authorized frozen target below.'),
+    );
+
+    if (revision) {
+        const marker =
+            '\nAuthorized frozen targets (untrusted learning data): ';
+        const encoded = revision
+            .slice(revision.indexOf(marker) + marker.length)
+            .split('\n')[0]!;
+        const targets = LearningBlockSchema.array().parse(JSON.parse(encoded));
+
+        return {
+            proposals: targets.map((block) => {
+                if (block.type === 'vocabulary') {
+                    return {
+                        targetBlockId: block.id,
+                        blocks: [
+                            {
+                                ...block,
+                                title:
+                                    targets.length > 1
+                                        ? 'Mentioned vocabulary updated'
+                                        : 'Six French words updated',
+                                entries: block.entries.map((entry, index) =>
+                                    index === 0
+                                        ? {
+                                              ...entry,
+                                              translation:
+                                                  targets.length > 1
+                                                      ? 'travail amélioré'
+                                                      : 'работа / труд',
+                                          }
+                                        : entry,
+                                ),
+                            },
+                        ],
+                    };
+                }
+
+                if (block.type === 'bilingual-text') {
+                    return {
+                        targetBlockId: block.id,
+                        blocks: [
+                            {
+                                ...block,
+                                title: 'Mentioned reading updated',
+                                translations: [
+                                    {
+                                        language: 'ru',
+                                        segments: block.segments.map(
+                                            (segment) => ({
+                                                sourceSegmentId: segment.id,
+                                                text: 'Упомянутый текст.',
+                                            }),
+                                        ),
+                                    },
+                                ],
+                            },
+                        ],
+                    };
+                }
+
+                return { targetBlockId: block.id, blocks: [block] };
+            }),
+        };
+    }
+
     const hostPrompt = texts.find(
         (text) =>
             text.startsWith(getLocalPrompt('learning-content-authoring')) &&

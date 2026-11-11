@@ -1,0 +1,304 @@
+{
+  "scope": "sentence evidence union; raw broad aggregate failed and is not relabeled green",
+  "base": "5a8958e7",
+  "originalReport": "test-results/critical-flows/bd85458a-8567-420e-93f1-15d3447c5559/ai-sentence.json",
+  "originalSha256": "ce64eb2161fdd9af61aa441964acf4b1944f3f6d9b45ac16b8a78ff60fed5554",
+  "remediationReport": "/private/tmp/languon-sentence-circuit-remediation.json",
+  "remediationSha256": "d53fa2dc37b069bfa28459168d433d5becfb66002c3f2c7be690f4d245a14579",
+  "originalPassedAssertions": 52,
+  "replacedFailedAssertions": 5,
+  "coveredAssertions": 57,
+  "remediationUnselectedNotCountedAsPass": 30,
+  "onlyChangedSource": "apps/backend/tests/integration/modules/learning/infrastructure/drizzle-sentence-stores.test.ts",
+  "originalSourceSha256": "20568b1c57d91e7915b5df6da6a55213fef7c97cbe6007ee8931e36a5cb5fe20",
+  "currentSourceSha256": "e12aadde27d504efaa54bf35224f26efdfade220f11b47aa0edcd295f9ded06a",
+  "cases": [
+    {
+      "name": "production sentence worker execution deadline publishes a valid check after the old 20-second cutoff while renewing its lease",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "production sentence worker execution deadline rejects retired Kie before SDK dispatch (observer throws: false)",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "production sentence worker execution deadline rejects retired Kie before SDK dispatch (observer throws: true)",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "production sentence worker execution deadline uses the validated environment override in the production runtime",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "production sentence worker execution deadline aborts at the production 180-second deadline and cannot publish a late response",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "production sentence worker execution deadline observes explicit cancellation on heartbeat and prevents late publication",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "production sentence worker execution deadline aborts after losing the lease and cannot publish the old attempt",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "production sentence worker execution deadline leaves interrupted work recoverable on process shutdown",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence executes the real provider using the admitted generation v1 and check budgets (preparation child: false)",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence executes the real provider using the admitted generation v2 and check budgets (preparation child: false)",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence executes the real provider using the admitted generation v1 and check budgets (preparation child: true)",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence executes the real provider using the admitted generation v2 and check budgets (preparation child: true)",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence Feature052 settles a bounded sentence action only after validated publication",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence binds runtime health to the actual fenced SDK dispatch (cancelled: false)",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence binds runtime health to the actual fenced SDK dispatch (cancelled: true)",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence persists an unavailable-model failure and settles it without customer charge or retry",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence pins the actual fallback expense without rewriting admission (primary disabled before claim: false)",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence pins the actual fallback expense without rewriting admission (primary disabled before claim: true)",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence blocks an emergency-disabled route without provider dispatch (already claimed: false)",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence blocks an emergency-disabled route without provider dispatch (already claimed: true)",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence confirms a paid sentence Next quote without changing its allowance",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence persists and reuses contextual hints without adding helper entry coverage, and checks all43 disclosures",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence validates exact replay atomically and never substitutes another saved exercise or generates",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence rejects private, retired and wrong-script exact replay without exposure or protected content",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence keeps v1 admissions and saved exercises unchanged until v2 is explicitly activated",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence rejects missing/mismatched generation policies in persisted jobs and exercises",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence serializes Next replay, exposes once, keeps personal attempts and retires edited content",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence keeps reader-generated content private and denies a rotated share before dispatch",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence erases all copied candidates and A+B content while preserving unchanged A coverage and replay tombstones",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence fences stale completions and requests cancellation without publishing results",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence requires compatible claims and immutable admission snapshots at the SQL boundary",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence reserves each retry once and retains prior provider usage after cancellation",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence reveals a persisted reference freely, replays once and keeps completion and history personal",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence captures same-session reference assistance at check admission without changing AI ratings",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence erases manual reference history and retains a content-free invalid operation on candidate deletion",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence serializes concurrent free reveal and paid checks across database connections without a lock-upgrade deadlock",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence purges foreign-dictionary manual review data for a deleted learner while preserving other learners",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "sentence persistence opens the pinned sentence circuit after three provider faults, isolates formats/models, and resets after cooldown success",
+      "status": "passed",
+      "evidence": "remediation"
+    },
+    {
+      "name": "sentence persistence does not count invalid model output, cancellation, stale authority, or undispatched failures as provider circuit faults",
+      "status": "passed",
+      "evidence": "remediation"
+    },
+    {
+      "name": "sentence persistence counts another learner dictionary running job together with sentence queued work at the global boundary despite differing pinned budgets",
+      "status": "passed",
+      "evidence": "remediation"
+    },
+    {
+      "name": "sentence persistence counts the learner sentence running job and dictionary queued work together at the personal queue boundary across budget cohorts",
+      "status": "passed",
+      "evidence": "remediation"
+    },
+    {
+      "name": "sentence persistence returns retryable capacity pressure from the shared operator allowance without creating jobs or receipts",
+      "status": "passed",
+      "evidence": "remediation"
+    },
+    {
+      "name": "sentence persistence returns retryable capacity pressure for an aged runnable mixed dictionary queue without creating work or credits",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "restricted sentence worker role claims, dispatches, settles and publishes through least privilege grants",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "private note prepared sentence PostgreSQL practice privately seeds prepared examples, replays next and records free reveals without an AI check",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "private note prepared sentence PostgreSQL practice keeps learner history private and unavailable after revocation",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "private note prepared sentence PostgreSQL practice serializes concurrent operation replay and rejects changed requests",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "private note prepared sentence PostgreSQL practice keeps historical reviews outdated across material changes and deletes them with source",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "private note prepared sentence PostgreSQL practice paginates manual history and binds cursors to the exact actor/source/filter",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "private knowledge sentence paid lifecycle uses the existing provider and financial engine for private generation v1 and answer feedback",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "private knowledge sentence paid lifecycle uses the existing provider and financial engine for private generation v2 and answer feedback",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "private knowledge sentence paid lifecycle rejects revoked reads and settles a deleted source while an old worker fence cannot publish",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "private knowledge sentence paid lifecycle quiesces foreign-reader sentence jobs for a due source-owner purge while independent copies survive",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "private knowledge sentence paid lifecycle publishes private exercises under the deployment worker role and denies sheet editing",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "app-only private sentence source retention retains live-authorized app history after completed, failed and cancelled parent bodies are physically scrubbed",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "app-only private sentence source retention deletes source-bound links on permanent note deletion while an independently copied note keeps its own private job",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    },
+    {
+      "name": "app-only private sentence source retention erases a purged actor private source on a foreign note and preserves another actor independent material",
+      "status": "passed",
+      "evidence": "original unchanged pass"
+    }
+  ],
+  "originalHeaderTotal": 57,
+  "actualAssertionEntries": 57
+}

@@ -1,3 +1,4 @@
+import { dictionaryChatSnippetAuthoringPrompt } from './local/dictionary-chat-snippet-authoring';
 import { learningContentAuthoringPrompt } from './local/learning-content-authoring';
 import { tutorRequestResolutionPrompt } from './local/tutor-request-resolution';
 import { knowledgeExerciseEvaluationPrompt } from './local/knowledge-exercise-evaluation';
@@ -17,6 +18,8 @@ import { dictionaryCardAuthoringPrompt } from './local/dictionary-card-authoring
 import { contextualLanguageTutorPrompt } from './local/contextual-language-tutor';
 
 const localPrompts = {
+    [dictionaryChatSnippetAuthoringPrompt.name]:
+        dictionaryChatSnippetAuthoringPrompt.system,
     [learningContentAuthoringPrompt.name]:
         learningContentAuthoringPrompt.system,
     [tutorRequestResolutionPrompt.name]: tutorRequestResolutionPrompt.system,
@@ -45,3 +48,8 @@ export type LocalPromptName = keyof typeof localPrompts;
 export function getLocalPrompt(name: LocalPromptName): string {
     return localPrompts[name];
 }
+
+export {
+    dictionarySourceNormalizationRule,
+    dictionaryNounArticleRule,
+} from './local/dictionary-language-policy';

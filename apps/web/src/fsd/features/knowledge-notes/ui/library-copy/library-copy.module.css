@@ -52,17 +52,18 @@
 
 .prepared {
     min-width: 0;
-    flex: 1;
     color: var(--text-tertiary);
     font-size: var(--size-12);
     margin: 0;
 }
 
+.footer {
+    display: grid;
+    gap: var(--space-8);
+    width: 100%;
+}
+
 .footerActions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: end;
     gap: var(--space-8);
 }
 

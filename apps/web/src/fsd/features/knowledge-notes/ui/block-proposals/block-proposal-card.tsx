@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { CheckCircle2, Maximize2, RotateCcw } from 'lucide-react';
+import { CheckCircle2, Maximize2, RotateCcw, X } from 'lucide-react';
 import type { KnowledgeBlockProposal } from '@languon/contracts';
 import { ConversationApiError } from '@/fsd/entities/conversation';
 import {
@@ -11,6 +11,7 @@ import { ProposalBlockContent } from '../proposal-block-content/proposal-block-c
 import {
     Button,
     Dialog,
+    DialogActions,
     InlineAlert,
     useCompanionLayout,
 } from '@/fsd/shared/ui';
@@ -355,54 +356,58 @@ export function BlockProposalCard({
                                 ? labels.applied
                                 : labels.publicationNotice}
                         </p>
-                        <Button
-                            type='button'
-                            size='compact'
-                            variant='ghost'
-                            className={styles.heightButton}
-                            onClick={toggleHeight}
-                        >
-                            {fullHeight ? labels.collapse : labels.expand}
-                        </Button>
-                        <Button
-                            type='button'
-                            size='compact'
-                            variant='ghost'
-                            onClick={closeReview}
-                        >
-                            {labels.close}
-                        </Button>
-                        {canInsertAtCursor && (
-                            <Button
-                                size='compact'
-                                variant='secondary'
-                                onClick={addAtCursor}
-                                disabled={disabled || busy}
-                            >
-                                {labels.addAtCursor}
-                            </Button>
-                        )}
-                        {!isApplied && (
-                            <Button
-                                size='compact'
-                                variant='ghost'
-                                onClick={dismiss}
-                                disabled={disabled || busy}
-                            >
-                                {labels.dismiss}
-                            </Button>
-                        )}
-                        {canApply && (
+                        <DialogActions className={styles.panelActionButtons}>
                             <Button
                                 type='button'
                                 size='compact'
-                                loading={busy}
-                                onClick={apply}
-                                disabled={disabled}
+                                variant='ghost'
+                                className={styles.heightButton}
+                                onClick={toggleHeight}
                             >
-                                {applyLabel}
+                                {fullHeight ? labels.collapse : labels.expand}
                             </Button>
-                        )}
+                            <Button
+                                type='button'
+                                size='compact'
+                                variant='ghost'
+                                onClick={closeReview}
+                                desktopIconOnly
+                                leadingIcon={<X size={14} aria-hidden='true' />}
+                            >
+                                {labels.close}
+                            </Button>
+                            {canInsertAtCursor && (
+                                <Button
+                                    size='compact'
+                                    variant='secondary'
+                                    onClick={addAtCursor}
+                                    disabled={disabled || busy}
+                                >
+                                    {labels.addAtCursor}
+                                </Button>
+                            )}
+                            {!isApplied && (
+                                <Button
+                                    size='compact'
+                                    variant='ghost'
+                                    onClick={dismiss}
+                                    disabled={disabled || busy}
+                                >
+                                    {labels.dismiss}
+                                </Button>
+                            )}
+                            {canApply && (
+                                <Button
+                                    type='button'
+                                    size='compact'
+                                    loading={busy}
+                                    onClick={apply}
+                                    disabled={disabled}
+                                >
+                                    {applyLabel}
+                                </Button>
+                            )}
+                        </DialogActions>
                     </div>
                 }
             >

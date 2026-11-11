@@ -48,6 +48,73 @@ export const tutorRequestEvaluationCases = [
         kinds: ['vocabulary', 'grammar', 'exercises'],
     },
     {
+        id: 'russian-six-word-vocabulary',
+        message:
+            'Сделай французский словарный блок с переводом на русский: travail — работа, joie — радость, ménage — уборка, carrelage — плитка, poisson — рыба, nourriture — корм.',
+        expected: 'generate',
+        kinds: ['vocabulary'],
+        words: [
+            'travail',
+            'joie',
+            'ménage',
+            'carrelage',
+            'poisson',
+            'nourriture',
+        ],
+        language: 'fr',
+        translationLanguage: 'ru',
+    },
+    {
+        id: 'russian-six-word-exercise-followup',
+        message:
+            'Теперь сделай шесть упражнений на эти слова из единственного предыдущего словарного блока. Ответы нужно вводить самостоятельно.',
+        history: [
+            {
+                role: 'user',
+                content:
+                    'Сделай французский словарный блок: travail — работа, joie — радость, ménage — уборка, carrelage — плитка, poisson — рыба, nourriture — корм.',
+            },
+            {
+                role: 'assistant',
+                content:
+                    'Словарный блок из шести слов подготовлен для просмотра.',
+            },
+        ],
+        proposalCatalog: [
+            {
+                id: '01900000-0000-4000-8000-000000000061',
+                kinds: ['vocabulary'],
+                terms: [
+                    'travail',
+                    'joie',
+                    'ménage',
+                    'carrelage',
+                    'poisson',
+                    'nourriture',
+                ],
+                termsComplete: true,
+                ordinal: 1,
+            },
+        ],
+        expected: 'generate',
+        kinds: ['exercises'],
+        words: [
+            'travail',
+            'joie',
+            'ménage',
+            'carrelage',
+            'poisson',
+            'nourriture',
+        ],
+        language: 'fr',
+        count: 6,
+        formats: ['free-text'],
+        source: {
+            kind: 'proposal',
+            proposalId: '01900000-0000-4000-8000-000000000061',
+        },
+    },
+    {
         id: 'mixed-ru',
         message:
             'Подготовь французскую лексику о путешествиях с переводом на русский, грамматику вежливых вопросов и пять упражнений с выбором ответа.',

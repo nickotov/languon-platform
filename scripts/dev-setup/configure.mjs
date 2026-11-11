@@ -183,7 +183,7 @@ export async function configure({
     }
 
     log(
-        'Activation requires Admin → AI routing: reviewed per-flow tariffs, successful route/flow checks and explicit routing publication. This profile never changes routes or runs paid probes.',
+        'Configure Admin → AI routing with supported routes, provider credentials/prices, applicable per-flow tariffs and explicit publication. Diagnostics are optional and do not enable or disable routes. This profile never changes routes or runs paid probes.',
     );
 
     return operations.filter((operation) => !operation.unchanged).length;

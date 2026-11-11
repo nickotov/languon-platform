@@ -76,7 +76,7 @@ export const proposedContent = KnowledgeNoteContentSchema.parse({
     studiedLanguage: 'en',
     explanationLanguage: 'en',
     body: {
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: {
             type: 'doc',
             content: [

@@ -113,7 +113,7 @@ describe('atomic block authoring fields', () => {
 
         expect(screen.getByLabelText('Translation')).toHaveValue('радость');
         expect(apply).not.toHaveBeenCalled();
-        fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
         expect(apply).toHaveBeenCalledWith(
             expect.objectContaining({
                 entries: [
@@ -198,7 +198,7 @@ describe('atomic block authoring fields', () => {
             screen.getByRole('alertdialog', { name: 'Discard changes?' }),
         ).toBeInTheDocument();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
         expect(screen.getByLabelText('Word or phrase')).toHaveValue('travail');
     });
 
@@ -341,7 +341,7 @@ it('keeps incomplete multilingual drafts while switching languages and preserves
         'Доброе утро.',
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     expect(apply).toHaveBeenCalledOnce();
     expect(apply.mock.calls[0]![0]).toMatchObject({
         segments: [{ id: segment, text: 'Good morning.' }],
@@ -399,7 +399,7 @@ it('requires every existing prepared language to cover a new source segment with
         target: { value: 'Спокойной ночи.' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     expect(apply).not.toHaveBeenCalled();
     fireEvent.change(
         screen.getByRole('combobox', { name: 'Prepared translation' }),
@@ -414,7 +414,7 @@ it('requires every existing prepared language to cover a new source segment with
         target: { value: 'Bonne nuit.' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     expect(apply).toHaveBeenCalledOnce();
     const saved = apply.mock.calls[0]![0];
     expect(
@@ -481,7 +481,7 @@ it('keeps existing language controls behind the quiet pair disclosure and retain
         'A feeling of happiness.',
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     expect(apply.mock.calls[0]![0]).toMatchObject({
         language: 'de',
         entries: [

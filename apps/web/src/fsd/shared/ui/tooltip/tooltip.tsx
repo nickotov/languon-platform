@@ -28,6 +28,7 @@ import styles from './tooltip.module.css';
 import { arrowStyle } from './tooltip-arrow';
 import { tooltipSize } from './tooltip-size';
 import { useTooltipTopLayer } from './use-tooltip-top-layer';
+import { useDesktopTooltip } from './use-desktop-tooltip';
 
 type TriggerProps = {
     'aria-describedby'?: string;
@@ -42,9 +43,11 @@ export type TooltipProps = {
     content: ReactNode;
     delay?: number;
     disabled?: boolean;
+    desktopOnly?: boolean;
     open?: boolean;
     placement?: Placement;
     withArrow?: boolean;
+    triggerClassName?: string | undefined;
 };
 
 export function Tooltip({
@@ -53,9 +56,11 @@ export function Tooltip({
     content,
     delay = 500,
     disabled = false,
+    desktopOnly = false,
     open: forcedOpen,
     placement = 'top',
     withArrow = true,
+    triggerClassName,
 }: TooltipProps) {
     const id = useId();
 
@@ -69,7 +74,12 @@ export function Tooltip({
 
     const [open, setOpen] = useState(false);
 
-    const visible = forcedOpen ?? open;
+    const available = useDesktopTooltip(desktopOnly);
+    const canShow = !disabled && available && Boolean(content);
+    const visible = canShow && (forcedOpen ?? open);
+    const rootClassName = [styles.root, triggerClassName]
+        .filter(Boolean)
+        .join(' ');
 
     const {
         floatingStyles,
@@ -115,6 +125,16 @@ export function Tooltip({
     }, []);
 
     useEffect(() => {
+        if (!canShow) {
+            if (timer.current) {
+                clearTimeout(timer.current);
+            }
+
+            setOpen(false);
+        }
+    }, [canShow]);
+
+    useEffect(() => {
         if (!visible) {
             return;
         }
@@ -151,6 +171,10 @@ export function Tooltip({
     );
 
     function show() {
+        if (!canShow) {
+            return;
+        }
+
         if (timer.current) {
             clearTimeout(timer.current);
         }
@@ -159,6 +183,10 @@ export function Tooltip({
     }
 
     function showAfterDelay() {
+        if (!canShow) {
+            return;
+        }
+
         if (timer.current) {
             clearTimeout(timer.current);
         }
@@ -224,7 +252,7 @@ export function Tooltip({
 
     return (
         <span
-            className={styles.root}
+            className={rootClassName}
             onMouseEnter={pointerEnterHandler}
             onMouseLeave={pointerLeaveHandler}
             ref={refs.setReference}

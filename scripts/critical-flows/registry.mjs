@@ -4,8 +4,10 @@ import { resolve } from 'node:path';
 export const backendExecutionGroups = Object.freeze({
     conversation: Object.freeze([
         'tests/integration/modules/conversations/conversation-accounting.test.ts',
+        'tests/integration/modules/conversations/conversation-action-accounting.test.ts',
         'tests/integration/modules/conversations/conversation-production-execution.test.ts',
         'src/modules/conversations/infrastructure/ai/contextual-tutor-runner.test.ts',
+        'src/modules/conversations/infrastructure/ai/conversation-memory-storage.test.ts',
         'src/modules/conversations/infrastructure/ai/tutor-request-execution.test.ts',
         'src/modules/conversations/infrastructure/ai/learning-content-authoring.test.ts',
         'src/modules/conversations/application/learning-content-presentation.test.ts',
@@ -14,6 +16,12 @@ export const backendExecutionGroups = Object.freeze({
         'src/modules/conversations/application/learning-content-batches.test.ts',
         'src/modules/conversations/application/learning-content-batch-results.test.ts',
         'src/modules/conversations/infrastructure/ai/learning-content-batching.test.ts',
+        'src/modules/conversations/infrastructure/ai/tutor-history-context.test.ts',
+        'src/modules/conversations/infrastructure/ai/tutor-history-tool.test.ts',
+        'src/modules/conversations/infrastructure/ai/tutor-planner-budget.test.ts',
+        'src/modules/conversations/application/learning-content-registry.test.ts',
+        'src/modules/conversations/application/learning-block-revision.test.ts',
+        'src/modules/conversations/infrastructure/ai/learning-content-operations.test.ts',
         'src/modules/conversations/application/tutor-request-sources.test.ts',
         'src/modules/conversations/infrastructure/ai/accounted-tutor-model.test.ts',
         'src/modules/learner-portraits/infrastructure/ai/learner-interviewer.test.ts',
@@ -81,6 +89,7 @@ export const backendExecutionGroups = Object.freeze({
         'tests/integration/database/model-price-actualization.journeys.test.ts',
         'tests/integration/modules/text-ai/text-ai-probes.test.ts',
         'tests/integration/modules/text-ai/text-ai-routing.test.ts',
+        'tests/integration/modules/text-ai/user-ai-model-preferences.journeys.test.ts',
         'tests/unit/modules/text-ai/infrastructure/gateway-provider-adapters.test.ts',
         'tests/unit/infrastructure/probe-flow-registry.test.ts',
         'tests/unit/modules/text-ai/text-ai-probe-service.test.ts',
@@ -102,6 +111,12 @@ export const backendExecutionFiles = Object.freeze(
 /** Required incident regressions cannot disappear behind an aggregate passing count. */
 export const requiredBackendScenarios = Object.freeze([
     {
+        file: 'tests/integration/modules/text-ai/user-ai-model-preferences.journeys.test.ts',
+        titles: [
+            'hides model identities, persists exact budgets, rejects selection and pins server-owned execution through real auth and PostgreSQL',
+        ],
+    },
+    {
         file: 'src/modules/knowledge/infrastructure/persistence/drizzle/block-field-actions.database.test.ts',
         titles: [
             'evaluates a private saved attempt through the real SDK and fenced publication (restricted=false)',
@@ -118,6 +133,8 @@ export const requiredBackendScenarios = Object.freeze([
         file: 'tests/integration/modules/conversations/conversation-accounting.test.ts',
         titles: [
             'preserves reduced quotes and minimum output admission when reserving block continuation',
+            'rejects a true irreducible minimum before a quote or action hold',
+            'allows compactable history bounds while admitting the phase-one current input',
         ],
     },
     {
@@ -125,22 +142,29 @@ export const requiredBackendScenarios = Object.freeze([
         titles: [
             'patches a multi-component pending brief without dropping unchanged tasks',
             'generates all 50 shopping terms in bounded calls and persists one complete vocabulary proposal',
-            'matches the complete multimedia copy set one-to-one: missing',
-            'matches the complete multimedia copy set one-to-one: duplicate',
-            'stores and sends one near-limit frozen source for a mixed pending continuation',
+            'copies every selected multimedia block directly from the authorized source',
+            'does not publish when an exact selected copy source is unavailable',
+            'keeps a near-limit older pending source out of a changed-editor plan and restores it exactly for authoring',
+            'generates Russian-guided six-word vocabulary then retrieves all exact words for typed follow-up exercises',
         ],
     },
     {
         file: 'tests/integration/modules/conversations/conversation-production-execution.test.ts',
         titles: [
-            "'operator' 'success' 'append' survives admission through the default worker and SDK without widening its budget",
-            "'operator' 'failure' 'append' survives admission through the default worker and SDK without widening its budget",
-            "'customer' 'success' 'append' survives admission through the default worker and SDK without widening its budget",
-            "'customer' 'failure' 'append' survives admission through the default worker and SDK without widening its budget",
-            "'operator' 'success' 'update' survives admission through the default worker and SDK without widening its budget",
-            "'customer' 'success' 'update' survives admission through the default worker and SDK without widening its budget",
-            "'operator' 'success' 'multi-update' survives admission through the default worker and SDK without widening its budget",
-            "'customer' 'success' 'multi-update' survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'success' 'append' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'success' 'append' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'failure' 'append' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'failure' 'append' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'success' 'update' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'success' 'update' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'success' 'multi-update' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'success' 'multi-update' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'operator' 'success' 'append' with 'changed-fingerprint' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'success' 'append' with 'failed' diagnostics survives admission through the default worker and SDK without widening its budget",
+            "'customer' 'recover' 'append' with 'missing' diagnostics survives admission through the default worker and SDK without widening its budget",
+            'admits a 50-entry applied vocabulary draft and a following 10-entry request at the production 64k boundary',
+            'rejects an irreducibly escaped editor before holding or queueing work',
+            'runs one observational-memory preparation before planner and a source-read answer without rewriting persisted history',
         ],
     },
     {
@@ -150,12 +174,22 @@ export const requiredBackendScenarios = Object.freeze([
             'updates only an unchanged target and copies a stale update separately with fresh identities',
             'fences selected update identities in the repository and privileged SQL boundary',
             'captures exercise source passages and copies stale grounding independently',
+            'keeps the complete admitted user envelope immutable through the real memory port',
+            'rejects prior assistant segment and row rewrites while allowing current-turn memory updates',
+            'never serializes resolved model credentials through the real observational-memory port',
+        ],
+    },
+    {
+        file: 'src/modules/conversations/infrastructure/ai/conversation-memory-storage.test.ts',
+        titles: [
+            'keeps resolved model credentials out of actual SDK observational-memory initialization and updates',
+            'projects older unsafe config on read and never copies it into subsequent metadata writes',
         ],
     },
     {
         file: 'src/modules/conversations/infrastructure/ai/contextual-tutor-runner.test.ts',
         titles: [
-            'retains authorized source tools across sequential multi-proposal turns and pre-answer observation',
+            'retains authorized source tools across sequential turns and pre-answer observation',
         ],
     },
     {
@@ -392,6 +426,14 @@ export const flows = [
         env: { ADMIN_E2E_SYNTHETIC_PROBES: 'true' },
     },
     {
+        id: 'ai-provider-management',
+        minimumTests: 1,
+        app: 'admin',
+        file: 'admin-user-management.journeys.spec.ts',
+        grep: 'owner publishes routing tariffs and queued jobs retain their selected revisions',
+        prerequisite: 'empty-admin-database',
+    },
+    {
         id: 'authentication',
         minimumTests: 3,
         app: 'web',
@@ -451,6 +493,22 @@ export const flows = [
         prerequisite: 'deterministic-assistant',
     },
     {
+        id: 'knowledge-block-revision-copy',
+        minimumTests: 1,
+        app: 'assistant',
+        file: 'interactive-workbooks.journeys.spec.ts',
+        grep: 'reviews typed updates, accepts atomic field suggestions in side editors and evaluates private inline alternatives',
+        prerequisite: 'deterministic-assistant',
+    },
+    {
+        id: 'knowledge-reference-context-budget',
+        minimumTests: 1,
+        app: 'assistant',
+        file: 'knowledge-workspace.journeys.spec.ts',
+        grep: 'the workspace Text picker accepts exactly the reference limit and rejects the next whole reference',
+        prerequisite: 'deterministic-assistant',
+    },
+    {
         id: 'knowledge-intent-content-generation',
         minimumTests: 1,
         app: 'assistant',
@@ -472,6 +530,14 @@ export const flows = [
         app: 'assistant',
         file: 'contextual-assistant.journeys.spec.ts',
         grep: 'closing reconnects without duplicating',
+        prerequisite: 'deterministic-assistant',
+    },
+    {
+        id: 'dictionary-chat-snippets',
+        minimumTests: 1,
+        app: 'assistant',
+        file: 'contextual-assistant.journeys.spec.ts',
+        grep: 'owned dictionary chat snippets preserve review, ordered reusable insertion and archival replacement$',
         prerequisite: 'deterministic-assistant',
     },
     {

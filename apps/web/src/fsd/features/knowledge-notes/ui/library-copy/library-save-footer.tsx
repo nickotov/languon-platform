@@ -1,4 +1,4 @@
-import { Button } from '@/fsd/shared/ui';
+import { Button, DialogActions } from '@/fsd/shared/ui';
 import type { LibraryLabels } from './library-labels';
 import styles from './library-copy.module.css';
 
@@ -23,7 +23,7 @@ export function LibrarySaveFooter({
 }) {
     if (saved) {
         return (
-            <div className={styles.footerActions}>
+            <DialogActions className={styles.footerActions}>
                 <Button
                     type='button'
                     size='compact'
@@ -32,42 +32,44 @@ export function LibrarySaveFooter({
                 >
                     {labels.done}
                 </Button>
-            </div>
+            </DialogActions>
         );
     }
 
     return (
-        <div className={styles.footerActions}>
+        <div className={styles.footer}>
             <p className={styles.prepared}>{labels.prepared}</p>
-            <Button
-                type='button'
-                size='compact'
-                variant='ghost'
-                onClick={onClose}
-                disabled={busy}
-            >
-                {labels.cancel}
-            </Button>
-            {previewReady ? (
+            <DialogActions className={styles.footerActions}>
                 <Button
                     type='button'
                     size='compact'
-                    loading={busy}
-                    onClick={onCommit}
+                    variant='ghost'
+                    onClick={onClose}
+                    disabled={busy}
                 >
-                    {labels.commit}
+                    {labels.cancel}
                 </Button>
-            ) : (
-                <Button
-                    type='submit'
-                    form={formId}
-                    size='compact'
-                    loading={busy}
-                    disabled={previewDisabled}
-                >
-                    {labels.preview}
-                </Button>
-            )}
+                {previewReady ? (
+                    <Button
+                        type='button'
+                        size='compact'
+                        loading={busy}
+                        onClick={onCommit}
+                    >
+                        {labels.commit}
+                    </Button>
+                ) : (
+                    <Button
+                        type='submit'
+                        form={formId}
+                        size='compact'
+                        loading={busy}
+                        disabled={previewDisabled}
+                    >
+                        {labels.preview}
+                    </Button>
+                )}
+            </DialogActions>
         </div>
     );
 }

@@ -1,3 +1,7 @@
+import {
+    projectTutorMemoryConfig,
+    mergeTutorMemoryConfig,
+} from './conversation-memory-config';
 import { randomUUID } from 'node:crypto';
 import type { MastraDBMessage, StorageThreadType } from '@mastra/core/memory';
 import {
@@ -276,7 +280,7 @@ export class ConversationMemoryStorage extends MemoryStorage {
             isBufferingReflection: false,
             lastBufferedAtTokens: 0,
             lastBufferedAtTime: null,
-            config: input.config,
+            config: projectTutorMemoryConfig(input.config),
             ...(input.observedTimezone
                 ? { observedTimezone: input.observedTimezone }
                 : {}),
@@ -340,7 +344,7 @@ export class ConversationMemoryStorage extends MemoryStorage {
         const record = await this.records.readRecord(input.id);
         await this.records.writeRecord({
             ...record,
-            config: { ...record.config, ...input.config },
+            config: mergeTutorMemoryConfig(record.config, input.config),
         });
     }
 

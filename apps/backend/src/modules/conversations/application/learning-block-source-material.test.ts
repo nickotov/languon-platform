@@ -9,6 +9,9 @@ import type { ConversationSourceSnapshot } from '../domain/conversation';
 
 const blockId = '01900000-0000-4000-8000-000000000010';
 const segmentId = '01900000-0000-4000-8000-000000000011';
+const bytesOf = (value: unknown) =>
+    Buffer.byteLength(JSON.stringify(value), 'utf8');
+
 describe('Frozen structured block context', () => {
     it('preserves actual transcript IDs through bounded retrieval while keeping workspace text separate', () => {
         const material = learningBlockSourceMaterial([
@@ -71,18 +74,26 @@ describe('Frozen structured block context', () => {
             },
             sourceContext: source.initialContext,
         };
-        const legacy = {
+        const withMaximumFutureRead = {
             ...input,
             sourceContext: {
                 ...source.initialContext,
-                availableMaterialCount: 0,
-                blockProposalsAvailable: false,
+                retrievedContextByteBound: retrievedSourceContextBytes,
             },
         };
 
+        // Future reads consume their own dispatch budget; initial admission
+        // carries only this bounded diagnostic metadata, never its byte value.
         expect(
-            tutorReservedInputBytes(input) - tutorReservedInputBytes(legacy),
-        ).toBeGreaterThan(source.initialContext.retrievedContextByteBound);
+            Math.abs(
+                tutorReservedInputBytes(input) -
+                    tutorReservedInputBytes(withMaximumFutureRead),
+            ),
+        ).toBeLessThan(64);
+
+        expect(tutorReservedInputBytes(input) + bytesOf(selected)).toBeLessThan(
+            64_000,
+        );
     });
 
     it('bounds long transcript retrieval and carries segment identity on every excerpt', () => {
@@ -124,7 +135,7 @@ describe('Frozen structured block context', () => {
     });
 });
 
-it('reserves the actual frozen retrieval bound for a small populated workspace instead of an impossible 24KB result', () => {
+it('bounds exact frozen retrieval independently of initial dispatch reservation for a small workspace', () => {
     const material = learningBlockSourceMaterial([
         {
             id: blockId,
@@ -174,17 +185,28 @@ it('reserves the actual frozen retrieval bound for a small populated workspace i
             explanationLevel: 'auto' as const,
         },
     };
-    const legacy = {
+    const withMaximumFutureRead = {
         ...input,
         sourceContext: {
             ...source.initialContext,
-            retrievedContextByteBound: undefined,
+            retrievedContextByteBound: retrievedSourceContextBytes,
         },
     };
 
+    expect(tutorReservedInputBytes(input) + 4096).toBeLessThan(64_000);
     expect(
-        tutorReservedInputBytes(legacy) - tutorReservedInputBytes(input),
-    ).toBeGreaterThan(22_000);
+        Math.abs(
+            tutorReservedInputBytes(withMaximumFutureRead) -
+                tutorReservedInputBytes(input),
+        ),
+    ).toBeLessThan(64);
+
+    const exactRead = source.read({ query: 'travail', limit: 25 });
+    expect(JSON.stringify(exactRead)).toContain('travail');
+    expect(JSON.stringify(exactRead)).toContain('работа');
+    expect(tutorReservedInputBytes(input) + bytesOf(exactRead)).toBeLessThan(
+        64_000,
+    );
 });
 
 it('bounds every subset and relevance-neighbor read with escaped Unicode by the full frozen tool wrapper', () => {

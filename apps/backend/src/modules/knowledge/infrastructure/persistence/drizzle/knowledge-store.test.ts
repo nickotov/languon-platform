@@ -48,7 +48,7 @@ const content = KnowledgeNoteContentSchema.parse({
     studiedLanguage: 'es',
     explanationLanguage: 'en',
     body: {
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: {
             type: 'doc',
             content: [
@@ -98,7 +98,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         });
 
         afterAll(async () => client?.end(), 120_000);
-        it.each([1, 2])(
+        it.each([2])(
             'round trips H1/H2/H3 and horizontal rules through saved/shared/copied version %i documents',
             async (schemaVersion) => {
                 const formatted = KnowledgeNoteContentSchema.parse({

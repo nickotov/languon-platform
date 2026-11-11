@@ -11,12 +11,12 @@ import {
     TextAiRoutingPublishRequestSchema,
     TextAiRoutingDisableRequestSchema,
     type TextAiRoutingDisableRequest,
-    type TextAiFlowId,
     type TextAiRoutingPublishRequest,
     type TextAiRoutingRevision,
 } from '@languon/contracts';
 import type { databaseSchema } from '../../../../../infrastructure/database/schema';
 import { textAiModelCatalog } from '../../../application/text-ai-provider-catalog';
+import { pinProviderPrice } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-provider-prices';
 import {
     effectiveTextAiRouteIds,
     textAiCapabilityForFlow,
@@ -39,10 +39,6 @@ type Database = PostgresJsDatabase<typeof databaseSchema>;
 export type TextAiRoutingTransaction = Parameters<
     Parameters<Database['transaction']>[0]
 >[0];
-export type TextAiRouteReadinessCheck = (
-    tx: TextAiRoutingTransaction,
-    input: { routeId: string; flowId: TextAiFlowId; now: Date },
-) => Promise<void>;
 const dto = (row: typeof revisions.$inferSelect): TextAiRoutingRevision => ({
     id: row.id,
     version: row.version,
@@ -66,7 +62,6 @@ export async function currentTextAiRouting(
 export class DrizzleTextAiRoutingStore implements TextAiRoutingStore {
     constructor(
         private readonly database: Database,
-        private readonly requireReady: TextAiRouteReadinessCheck,
         private readonly credentialConfigured: (
             providerId: string,
         ) => boolean = () => false,
@@ -248,6 +243,7 @@ export class DrizzleTextAiRoutingStore implements TextAiRoutingStore {
             })),
         );
 
+        const configuredRouteIds = new Set<string>();
         for (const flowId of TextAiFlowIdSchema.options) {
             const tariff = input.configuration.flowTariffs[flowId];
             const policy = await new DrizzleCapabilityPolicyParticipant(
@@ -264,6 +260,7 @@ export class DrizzleTextAiRoutingStore implements TextAiRoutingStore {
                 input.configuration,
                 flowId,
             );
+
             const routePolicyChanged =
                 !current ||
                 JSON.stringify(
@@ -271,16 +268,38 @@ export class DrizzleTextAiRoutingStore implements TextAiRoutingStore {
                 ) !== JSON.stringify(nextRoutes);
 
             for (const routeId of nextRoutes) {
-                if (
-                    routePolicyChanged ||
-                    !current?.configuration.enabledRouteIds.includes(routeId)
-                ) {
-                    await this.requireReady(tx, {
-                        routeId,
-                        flowId,
-                        now: at,
-                    });
+                const unchangedActiveRoute =
+                    !routePolicyChanged &&
+                    current?.configuration.enabledRouteIds.includes(routeId);
+
+                if (unchangedActiveRoute || configuredRouteIds.has(routeId)) {
+                    continue;
                 }
+
+                const model = textAiModelCatalog.find(
+                    (entry) => `${entry.providerId}/${entry.id}` === routeId,
+                );
+
+                if (!model || !this.credentialConfigured(model.providerId)) {
+                    throw new TextAiRoutingInvalidError(
+                        `Provider credentials are not configured for ${routeId}.`,
+                    );
+                }
+
+                const price = await pinProviderPrice(tx, {
+                    providerId: model.providerId,
+                    modelId: model.id,
+                    meter: 'text-tokens',
+                    at,
+                });
+
+                if (!price) {
+                    throw new TextAiRoutingInvalidError(
+                        `Reviewed provider pricing is missing for ${routeId}.`,
+                    );
+                }
+
+                configuredRouteIds.add(routeId);
             }
         }
 

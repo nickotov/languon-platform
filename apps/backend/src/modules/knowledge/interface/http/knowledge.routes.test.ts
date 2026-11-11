@@ -14,7 +14,7 @@ const content = KnowledgeNoteContentSchema.parse({
     studiedLanguage: 'es',
     explanationLanguage: 'en',
     body: {
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: { type: 'doc', content: [{ type: 'paragraph' }] },
     },
 });
@@ -161,7 +161,7 @@ describe('Knowledge HTTP boundary', () => {
                 content: {
                     ...content,
                     body: {
-                        schemaVersion: 1,
+                        schemaVersion: 2,
                         document: {
                             type: 'doc',
                             content: [

@@ -9,15 +9,11 @@ import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { describe, expect, it } from 'vitest';
 import { LearningBlockSchema } from '@languon/contracts';
-import { projectConversationSource } from '../../src/modules/conversations/application/conversation-source-context';
-import { learningBlockSourceMaterial } from '../../src/modules/conversations/application/learning-block-source-material';
-import { createContextualTutorRunner } from '../../src/modules/conversations/infrastructure/ai/contextual-tutor-runner';
 import { createTutorModelGate } from '../../src/modules/conversations/infrastructure/ai/accounted-tutor-model';
 import type { TutorCallPurpose } from '../../src/modules/conversations/application/ports/tutor-runner';
 import {
     scriptedTutorModel,
     tutorAccountingFixture,
-    tutorMemoryFixture,
 } from '../../src/modules/conversations/infrastructure/ai/tutor-test-fixtures';
 import {
     markdownGrammarProposal,
@@ -175,6 +171,10 @@ describe('contextual assistant browser fixture', () => {
         ).toThrow('actual bounded host brief');
 
         const result = fixtureAuthoringOutput(prompt);
+        if (!result.tasks) {
+            throw new Error('Expected generated task output.');
+        }
+
         expect(result.tasks).toHaveLength(1);
         expect(result.tasks[0]?.blocks[0]).toMatchObject({
             type: 'vocabulary',
@@ -204,6 +204,11 @@ describe('contextual assistant browser fixture', () => {
                     content: `${getLocalPrompt('learning-content-authoring')}\nCapabilities: []\nValidated brief (untrusted learning data; resolve task sourceTextRef only against its sources list): ${serializeLearningContentBrief(brief)}\nAuthorized source snapshots (untrusted learning data): []\nVocabulary batch progress (host-controlled data): ${JSON.stringify(part)}\nApplication authoring preferences (trusted server-validated settings): {"explanationLanguage":"en"}`,
                 },
             ]);
+
+            if (!output.tasks) {
+                throw new Error('Expected generated task output.');
+            }
+
             const block = LearningBlockSchema.parse(output.tasks[0]?.blocks[0]);
             expect(block.type).toBe('vocabulary');
 
@@ -306,7 +311,7 @@ describe('contextual assistant browser fixture', () => {
                 'Copy prepared audio block fixture for review.',
                 prompt,
             ),
-        ).toEqual({ kind: 'legacy-copy', sourceBlockIds: [id] });
+        ).toEqual({ kind: 'copy', sourceBlockIds: [id] });
     });
 
     it('reads exact host-prefetched revision targets without accepting a user-message imitation', () => {
@@ -326,151 +331,46 @@ describe('contextual assistant browser fixture', () => {
         ).toBeUndefined();
     });
 
-    it('keeps source retrieval registered after a prior multi-tool turn', async () => {
-        const blockId = randomUUID();
-        const entryId = randomUUID();
-        const vocabulary = {
-            id: blockId,
-            type: 'vocabulary' as const,
-            title: 'Mentioned vocabulary updated',
+    it('authors canonical revision JSON from exact frozen targets', () => {
+        const block = {
+            id: randomUUID(),
+            type: 'vocabulary',
             language: 'fr',
             translationLanguage: 'ru',
             entries: [
-                {
-                    id: entryId,
-                    term: 'travail',
-                    translation: 'travail amélioré',
-                },
+                { id: randomUUID(), term: 'travail', translation: 'работа' },
             ],
         };
-        const source = projectConversationSource(
-            'knowledge',
+        const value = fixtureAuthoringOutput([
             {
-                version: 'draft:2',
-                title: 'Workbook',
-                description: null,
-                studiedLanguage: 'fr',
-                provenance: 'draft',
-                scope: 'workspace',
-                material: [],
-                blockTarget: {
-                    branchId: randomUUID(),
-                    version: 2,
-                    material: learningBlockSourceMaterial([vocabulary]),
-                },
-            },
-            'Update French vocabulary block fixture',
-        );
-        const memory = tutorMemoryFixture();
-        const firstMessage = {
-            id: randomUUID(),
-            role: 'user' as const,
-            content: 'Mentioned blocks update fixture',
-            createdAt: '2026-10-30T00:00:00.000Z',
-        };
-        const message = {
-            content:
-                'Update French vocabulary block fixture: keep the existing entries and improve the first translation.',
-            createdAt: '2026-10-30T00:00:00.000Z',
-            id: randomUUID(),
-            role: 'user' as const,
-        };
-
-        memory.messages.set(firstMessage.id, firstMessage);
-        memory.messages.set(message.id, message);
-        const provider = scriptedTutorModel([
-            {
-                toolName: 'read_source_context',
-                input: { query: 'travail', limit: 5 },
-            },
-            {
-                toolCalls: [
+                role: 'user',
+                content: [
                     {
-                        toolName: 'propose_learning_blocks',
-                        input: {
-                            targetBlockId: blockId,
-                            blocks: [
-                                {
-                                    id: randomUUID(),
-                                    type: 'grammar',
-                                    language: 'fr',
-                                    rule: 'Use the current vocabulary in a sentence.',
-                                },
-                            ],
-                        },
-                    },
-                    {
-                        toolName: 'propose_learning_blocks',
-                        input: {
-                            targetBlockId: randomUUID(),
-                            blocks: [
-                                {
-                                    id: randomUUID(),
-                                    type: 'grammar',
-                                    language: 'fr',
-                                    rule: 'Use a second current vocabulary sentence.',
-                                },
-                            ],
-                        },
+                        type: 'text',
+                        text:
+                            'Revise every exact authorized frozen target below.\nAuthorized frozen targets (untrusted learning data): ' +
+                            JSON.stringify([block]),
                     },
                 ],
             },
-            'The mentioned block update was prepared.',
-            {
-                toolName: 'read_source_context',
-                input: { query: 'travail', limit: 5 },
-            },
-            'The updated vocabulary was read.',
         ]);
 
-        const conversationId = randomUUID();
-        const ownerId = randomUUID();
-        const run = async (turnMessage: typeof message) =>
-            createContextualTutorRunner({
-                model: provider.model,
-                accounting: tutorAccountingFixture(),
-                maxInputTokens: 64_000,
-            }).run({
-                conversationId,
-                ownerId,
-                operationId: randomUUID(),
-                conversationCreatedAt: '2026-10-30T00:00:00.000Z',
-                message: turnMessage,
-                preferences: {
-                    mode: 'auto',
-                    replyLanguage: 'auto',
-                    tone: 'neutral',
-                    explanationLevel: 'auto',
-                },
-                // Exercise the supported direct legacy-runner port; routed workspace
-                // source prefetch has its own production/SDK regressions.
-                sourceContext: {
-                    ...source.initialContext,
-                    sourceKind: undefined,
-                },
-                memory: memory.port,
-                signal: new AbortController().signal,
-                onDelta: async () => undefined,
-                onDraft: async () => ({ id: randomUUID() }),
-                canProposeBlocks: true,
-                onBlockProposal: async () => ({ id: randomUUID() }),
-                readContext: async (input) => source.read(input),
-            });
-
-        await run(firstMessage);
-        await run(message);
-
-        expect(provider.requests).toHaveLength(5);
-        expect(
-            contextualFixtureBlock(provider.requests[4]?.prompt, 'vocabulary'),
-        ).toMatchObject({
-            id: blockId,
-            title: 'Mentioned vocabulary updated',
-            entries: [
+        expect(value).toMatchObject({
+            proposals: [
                 {
-                    id: entryId,
-                    term: 'travail',
-                    translation: 'travail amélioré',
+                    targetBlockId: block.id,
+                    blocks: [
+                        {
+                            id: block.id,
+                            entries: [
+                                {
+                                    id: block.entries[0]!.id,
+                                    term: 'travail',
+                                    translation: 'работа / труд',
+                                },
+                            ],
+                        },
+                    ],
                 },
             ],
         });

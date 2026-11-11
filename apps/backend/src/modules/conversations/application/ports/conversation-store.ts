@@ -1,4 +1,8 @@
 import type {
+    ApplyDictionaryChatSnippetRequest,
+    ApplyDictionaryChatSnippetResponse,
+    DictionaryChatSnippet,
+    DictionaryChatSnippetInput,
     ChatPreferences,
     ConversationResponseMetadata,
     Conversation,
@@ -41,6 +45,24 @@ export type ClaimedConversationTurn = {
     source: ConversationSource;
 };
 export interface ConversationStore {
+    proposeDictionarySnippet?(
+        turn: ClaimedConversationTurn,
+        input: DictionaryChatSnippetInput,
+    ): Promise<{ id: string }>;
+    readDictionarySnippet?(
+        turn: ClaimedConversationTurn,
+        snippetId: string,
+    ): Promise<DictionaryChatSnippet>;
+    listDictionarySnippets?(
+        access: ConversationAccess,
+        conversationId: string,
+    ): Promise<{ snippets: DictionaryChatSnippet[] }>;
+    applyDictionarySnippet?(
+        access: ConversationAccess,
+        conversationId: string,
+        snippetId: string,
+        input: ApplyDictionaryChatSnippetRequest,
+    ): Promise<ApplyDictionaryChatSnippetResponse>;
     readBlockProposal?(
         turn: ClaimedConversationTurn,
         proposalId: string,

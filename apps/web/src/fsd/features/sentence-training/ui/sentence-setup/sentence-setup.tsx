@@ -14,6 +14,7 @@ import { useSentenceCopy } from '../sentence-copy';
 import {
     Button,
     Dialog,
+    DialogActions,
     LoadingState,
     RadioGroup,
     Select,
@@ -172,7 +173,7 @@ export function SentenceSetup({
             footer={
                 preparing ? (
                     <div className={styles.footer}>
-                        <div className={styles.preparationActions}>
+                        <DialogActions className={styles.preparationActions}>
                             <Button
                                 leadingIcon={
                                     <SparklesIcon
@@ -185,13 +186,13 @@ export function SentenceSetup({
                             >
                                 {P('startPrep')}
                             </Button>
-                        </div>
+                        </DialogActions>
                         <p className={styles.preparationNote}>
                             {P('startWhenReady')}
                         </p>
                     </div>
                 ) : (
-                    <div className={styles.footerActions}>
+                    <DialogActions className={styles.footerActions}>
                         {!compact && (
                             <Button
                                 variant='secondary'
@@ -204,7 +205,7 @@ export function SentenceSetup({
                         <Button disabled={invalid} onClick={startFullscreen}>
                             {t('Start in full screen')}
                         </Button>
-                    </div>
+                    </DialogActions>
                 )
             }
         >

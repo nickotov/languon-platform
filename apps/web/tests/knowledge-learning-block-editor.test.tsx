@@ -89,7 +89,7 @@ it.each(['ru', 'fr', 'de'])(
             target: { value: 'Updated translation.' },
         });
 
-        fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
         const result = apply.mock.calls[0]?.[0];
         if (result?.type !== 'bilingual-text') {
             throw new Error('Expected a bilingual block.');
@@ -211,7 +211,7 @@ describe('learning block editor', () => {
 
     it('adds and edits a grammar block only through explicit Apply', async () => {
         const empty = KnowledgeBodySchema.parse({
-            schemaVersion: 1,
+            schemaVersion: 2,
             document: { type: 'doc', content: [{ type: 'paragraph' }] },
         });
         const onChange = vi.fn();
@@ -228,7 +228,7 @@ describe('learning block editor', () => {
         });
 
         expect(onChange).not.toHaveBeenCalled();
-        fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
         await waitFor(() => expect(onChange).toHaveBeenCalled());
         expect(onChange.mock.lastCall?.[0]).toMatchObject({ schemaVersion: 2 });
         expect(ref.current?.getSnapshot().content).toContain(
@@ -247,7 +247,7 @@ describe('learning block editor', () => {
             target: { value: 'Use the present tense.' },
         });
 
-        fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
         expect(ref.current?.getSnapshot().content).toContain(
             'Use the present tense.',
         );
@@ -297,7 +297,7 @@ describe('learning block editor', () => {
 
     it('uploads an audio asset before explicit block application', async () => {
         const empty = KnowledgeBodySchema.parse({
-            schemaVersion: 1,
+            schemaVersion: 2,
             document: { type: 'doc', content: [{ type: 'paragraph' }] },
         });
         const uploadAudio = vi.fn().mockResolvedValue({ assetId: id });
@@ -324,10 +324,10 @@ describe('learning block editor', () => {
             { target: { files: [file] } },
         );
 
-        await screen.findByRole('button', { name: 'Apply changes' });
+        await screen.findByRole('button', { name: 'Apply' });
         expect(uploadAudio).toHaveBeenCalledWith(file);
         expect(onChange).not.toHaveBeenCalled();
-        fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
         await waitFor(() => expect(onChange).toHaveBeenCalled());
         const saved = onChange.mock.lastCall?.[0];
         expect(saved).toMatchObject({ schemaVersion: 2 });
@@ -385,7 +385,7 @@ it('authors a manual exercise with selected source passages and retains them on 
         screen.getByRole('checkbox', { name: 'The train leaves at noon.' }),
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     await waitFor(() => expect(onChange).toHaveBeenCalled());
     expect(JSON.stringify(onChange.mock.lastCall?.[0])).toContain(
         '"source":{"blockId":"' +
@@ -414,7 +414,7 @@ it('authors a manual exercise with selected source passages and retains them on 
 
 it('appends a validated generated block as one undoable draft edit', async () => {
     const empty = KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: { type: 'doc', content: [{ type: 'paragraph' }] },
     });
     const editor = createRef<KnowledgeEditorHandle>();
@@ -634,9 +634,7 @@ it('edits exactly one video description control and preserves that value on Appl
         target: { value: 'A flower opens in the morning.' },
     });
 
-    fireEvent.click(
-        screen.getByRole('button', { name: 'Apply changes', exact: true }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Apply', exact: true }));
 
     expect(onApply).toHaveBeenCalledWith(
         expect.objectContaining({

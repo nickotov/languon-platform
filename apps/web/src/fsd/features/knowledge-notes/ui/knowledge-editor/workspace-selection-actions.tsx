@@ -4,6 +4,7 @@ import { useState, useRef, type KeyboardEvent, type MouseEvent } from 'react';
 import { Bold, ChevronLeft, Ellipsis, Italic, Sparkles } from 'lucide-react';
 import type { Editor } from '@tiptap/react';
 import { useI18n } from '@/fsd/shared/i18n';
+import { Tooltip } from '@/fsd/shared/ui';
 import type {
     KnowledgeTutorAction,
     KnowledgeWorkspaceEditorOptions,
@@ -87,43 +88,61 @@ export function WorkspaceSelectionActions({
                             workspace={workspace}
                         />
                     ))}
-                    <button
-                        type='button'
-                        className={styles.mark}
-                        aria-label={moreLabel}
-                        aria-expanded={more}
-                        onMouseDown={preserveSelection}
-                        onClick={toggleMore}
+                    <Tooltip
+                        content={moreLabel}
+                        desktopOnly
+                        triggerClassName={styles.iconTooltipTrigger}
                     >
-                        {more ? (
-                            <ChevronLeft size={16} aria-hidden />
-                        ) : (
-                            <Ellipsis size={16} aria-hidden />
-                        )}
-                    </button>
+                        <button
+                            type='button'
+                            className={styles.mark}
+                            aria-label={moreLabel}
+                            aria-expanded={more}
+                            onMouseDown={preserveSelection}
+                            onClick={toggleMore}
+                        >
+                            {more ? (
+                                <ChevronLeft size={16} aria-hidden />
+                            ) : (
+                                <Ellipsis size={16} aria-hidden />
+                            )}
+                        </button>
+                    </Tooltip>
                 </>
             )}
             <span className={styles.separator} aria-hidden />
-            <button
-                type='button'
-                className={styles.mark}
-                aria-label={t('knowledge.bold')}
-                aria-pressed={editor.isActive('bold')}
-                onMouseDown={preserveSelection}
-                onClick={bold}
+            <Tooltip
+                content={t('knowledge.bold')}
+                desktopOnly
+                triggerClassName={styles.iconTooltipTrigger}
             >
-                <Bold size={16} aria-hidden />
-            </button>
-            <button
-                type='button'
-                className={styles.mark}
-                aria-label={t('knowledge.italic')}
-                aria-pressed={editor.isActive('italic')}
-                onMouseDown={preserveSelection}
-                onClick={italic}
+                <button
+                    type='button'
+                    className={styles.mark}
+                    aria-label={t('knowledge.bold')}
+                    aria-pressed={editor.isActive('bold')}
+                    onMouseDown={preserveSelection}
+                    onClick={bold}
+                >
+                    <Bold size={16} aria-hidden />
+                </button>
+            </Tooltip>
+            <Tooltip
+                content={t('knowledge.italic')}
+                desktopOnly
+                triggerClassName={styles.iconTooltipTrigger}
             >
-                <Italic size={16} aria-hidden />
-            </button>
+                <button
+                    type='button'
+                    className={styles.mark}
+                    aria-label={t('knowledge.italic')}
+                    aria-pressed={editor.isActive('italic')}
+                    onMouseDown={preserveSelection}
+                    onClick={italic}
+                >
+                    <Italic size={16} aria-hidden />
+                </button>
+            </Tooltip>
         </div>
     );
 }

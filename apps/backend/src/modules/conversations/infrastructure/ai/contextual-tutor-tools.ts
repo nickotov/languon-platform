@@ -1,5 +1,6 @@
-import { createLearningBlockProposalTool } from './contextual-block-tools';
-import { LegacyKnowledgeNoteContentSchema } from '@languon/contracts';
+import type { DictionarySnippetAuthor } from './dictionary-snippet-authoring';
+import { createDictionarySnippetTools } from './dictionary-snippet-tools';
+import { ProseKnowledgeNoteContentSchema } from '@languon/contracts';
 import { randomUUID } from 'node:crypto';
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
@@ -9,14 +10,18 @@ import { retrievedSourceContextBytes } from '../../application/conversation-sour
 export function createContextualTutorTools(
     input: Pick<
         TutorRunInput,
-        | 'readContext'
-        | 'onDraft'
-        | 'onTool'
-        | 'signal'
-        | 'readOnlySource'
-        | 'canProposeBlocks'
-        | 'onBlockProposal'
-    >,
+        'readContext' | 'onDraft' | 'onTool' | 'signal' | 'readOnlySource'
+    > &
+        Partial<
+            Pick<
+                TutorRunInput,
+                | 'canProposeDictionarySnippet'
+                | 'onDictionarySnippet'
+                | 'readDictionarySnippet'
+                | 'sourceContext'
+            >
+        >,
+    dictionaryAuthor?: DictionarySnippetAuthor,
 ) {
     let retrievals = 0;
     let proposed = false;
@@ -102,7 +107,7 @@ export function createContextualTutorTools(
             id: 'propose_knowledge_note',
             description:
                 'Propose one editable, standalone Knowledge note draft or revision. Does not save or overwrite a note. The learner controls saving; the application controls any revision target.',
-            inputSchema: LegacyKnowledgeNoteContentSchema,
+            inputSchema: ProseKnowledgeNoteContentSchema,
             outputSchema: z.object({
                 id: z.string(),
                 status: z.literal('draft'),
@@ -127,7 +132,7 @@ export function createContextualTutorTools(
                         }
 
                         const content =
-                            LegacyKnowledgeNoteContentSchema.parse(candidate);
+                            ProseKnowledgeNoteContentSchema.parse(candidate);
 
                         proposed = true;
                         const draft = await input.onDraft(content);
@@ -146,12 +151,8 @@ export function createContextualTutorTools(
         return { read_source_context: tools.read_source_context };
     }
 
-    if (input.canProposeBlocks && input.onBlockProposal) {
-        return {
-            ...tools,
-            propose_learning_blocks: createLearningBlockProposalTool(input),
-        };
-    }
-
-    return tools;
+    return {
+        ...tools,
+        ...createDictionarySnippetTools(input, dictionaryAuthor),
+    };
 }

@@ -286,7 +286,7 @@ export function learningContentPresentation(input: {
     brief: LearningContentBrief;
     preferences: ChatPreferences;
     message: string;
-    replyLanguage?: string;
+    replyLanguage?: string | undefined;
     appliedDefaults?: LearningContentAppliedDefault[];
     limitationCode?: LearningContentLimitationCode;
 }): string {
@@ -332,4 +332,19 @@ export function learningContentPresentation(input: {
     return descriptions.length
         ? `${labels.ready}\n\n${labels.defaults}: ${descriptions.join('; ')}.`
         : labels.ready;
+}
+
+/** A revision/copy has no generation defaults to disclose. */
+export function learningProposalReadyPresentation(input: {
+    preferences: ChatPreferences;
+    message: string;
+    replyLanguage?: string | undefined;
+}): string {
+    const language = presentationLanguage(
+        input.preferences,
+        input.message,
+        input.replyLanguage,
+    );
+
+    return (copy[language] ?? copy.en!).ready;
 }

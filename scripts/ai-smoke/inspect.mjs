@@ -72,7 +72,9 @@ export async function openInspection(root, env, userId) {
                 );
 
                 requireSafe(
-                    checks.every((check) => check.status === 'pass'),
+                    checks.every((check) =>
+                        ['pass', 'info'].includes(check.status),
+                    ),
                     'conversation-readiness-blocked',
                 );
 

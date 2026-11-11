@@ -1,0 +1,23 @@
+The plan is a bounded repair of the documented rule that diagnostic history must not gate publication or dispatch. Keep existing configuration, authorization, accounting and runtime-failure protections. No deployment or paid calls are included.
+
+Retain this coverage:
+
+- **Real disposable PostgreSQL:** missing, stale and failed diagnostic history permits publication/use when normal prerequisites hold. Preserve credential, price and enablement rejection; provider/route/flow failure isolation; cooldown recovery; and affected admission/dispatch incident cases.
+- **Distinct production paths:** prove application-router and restricted-role-worker execution separately, including effective database permissions. Sharing a predicate does not establish equivalent runtime composition.
+- **Submission through settlement:** reuse the existing real worker/router/provider-SDK test with strict fake external HTTP. Cover Free without a customer tariff and Paid with a published tariff, admission, queue/claim, persisted usable output/readback and settlement. Retain technical-failure health writes, hold release, no learner charge, and relevant fencing/recovery assertions. Admission or enqueue alone is insufficient.
+- **Admin browser journey:** retain publication without successful diagnostic history and explicit cost consent when diagnostics are voluntarily requested. Use real-browser evidence for changed visible behavior, plus focused component/doctor tests.
+- **Static checks and documentation:** affected lint/type/readability checks, consumer-required build outputs, and applicable user-flow scenario/mapping validation. Capture baseline and final capability-doctor readiness separately.
+
+Do **not** automatically execute `ai-shared-invariants`, the backend aggregate or the comprehensive gate. The shared predicate does not change provider adapters, native pricing, schemas or erasure behavior. Select exact existing affected SQL, production-composition and admin cases through supported workspace commands and disposable-fixture guards. Preserve unrelated suites in CI. Record omitted coverage and its unchanged invariants; never label focused results as a passing named bundle. Broaden if caller equivalence remains unproved, another contract is affected, or comprehensive verification is explicitly required.
+
+Before execution, record exact files/case identities, commands, prerequisites and estimates. Doctor/component tests take seconds; focused cold timings are unknown; the full bundle’s roughly ten-minute estimate is a comparator, not a required run.
+
+Fix the worker fixture’s ignored-env dependency first. Supply complete synthetic model IDs, budgets, flags, credentials and worker configuration; validate through real schemas/composition and prove one startup before multiplying journeys. Reject unexpected external HTTP. Estimate reset/migration cost separately from test bodies.
+
+Assign one owner to each expensive build/typecheck and shared database/browser resource; other work reuses its results. Avoid duplicate builds and conflicting resets. Select outputs by actual consumers: executable bundles and applicable source-type checks matter; unused private declaration output need not automatically be selected. Any bounded/partial build must be reported accurately, never as a successful standard build.
+
+If a run exceeds its estimate or approximately ten minutes without its planned result, report the current phase and next bounded diagnostic action before relaunching. Investigate fixture startup, migrations, resource contention and declaration bundling. Preserve product deadlines and legitimate assertions; stop only owned processes. A slow run neither justifies broader coverage nor waives required proof.
+
+Keep evidence tied to the tested patch, exact selection and relevant configuration, preserving failures and remediation. Reuse only demonstrably unaffected evidence. SQL and admission/charging risks warrant focused independent source/security review; required browser/database evidence remains mandatory.
+
+**Nothing has run for this patch.** This response delivers a verification plan only. A locally implemented repair can later be handed off after its affected gates pass, with the pre-existing release compatibility failure recorded separately and its fail-closed check preserved. Do not expand into deployment, claim release readiness, merge with required gates open, or claim live-provider availability. Missing live proof is explicit; diagnostic history itself remains no admission prerequisite.

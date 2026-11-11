@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { aiProviderPriceRevisionsTable } from '../../../src/modules/ai-credits/infrastructure/persistence/drizzle/provider-price-schema';
 import {
     TextAiFlowIdSchema,
     type TextAiRoutingConfiguration,
@@ -24,7 +25,6 @@ import { AdminMcpOperations } from '../../../src/modules/admin-mcp/infrastructur
 import { AdminMcpAdministrationService } from '../../../src/modules/admin-mcp/application/admin-mcp-administration-service';
 import { AdminMcpAdministrationAdapter } from '../../../src/modules/admin-mcp/infrastructure/admin-mcp-administration-adapter';
 import { AdminMcpCheckBudget } from '../../../src/modules/admin-mcp/infrastructure/admin-mcp-check-budget';
-import { TextAiProbeUnavailableError } from '../../../src/modules/text-ai/application/ports/text-ai-probe-store';
 import { purgeAdminMcpForOwner } from '../../../src/modules/admin-mcp/infrastructure/persistence/drizzle/admin-mcp-deletion-participant';
 import { DrizzleCapabilityPolicyParticipant } from '../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-capability-policy-participant';
 import { DrizzleProviderPriceStore } from '../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-provider-prices';
@@ -59,13 +59,39 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         let previews: AdminMcpPreviewStore;
         let actor: AdminMcpActor;
         let targetUserId: string;
+
+        async function seedRoutingPrice() {
+            const priceAt = new Date();
+            await database.insert(aiProviderPriceRevisionsTable).values({
+                id: randomUUID(),
+                providerId: 'deepseek',
+                modelId: 'deepseek-flash',
+                meter: 'text-tokens',
+                version: 1,
+                effectiveAt: priceAt,
+                createdAt: priceAt,
+                data: {
+                    providerId: 'deepseek',
+                    modelId: 'deepseek-flash',
+                    meter: 'text-tokens',
+                    inputUsdPerMillionTokens: '1',
+                    outputUsdPerMillionTokens: '3',
+                    cacheReadUsdPerMillionTokens: null,
+                    cacheWriteUsdPerMillionTokens: null,
+                    usdPer1000Characters: null,
+                    effectiveAt: priceAt.toISOString(),
+                    sourceReference: 'synthetic-mcp-routing-provider-price',
+                    sourceUrl: null,
+                    reason: 'Synthetic reviewed routing price',
+                },
+            });
+        }
+
         beforeAll(() => {
             client = createTestPostgresClient();
             database = createDrizzleDatabase(client, databaseSchema);
             operations = new AdminMcpOperations(database, {
-                routing: new DrizzleTextAiRoutingStore(database, async () => {
-                    throw new Error('Readiness check required');
-                }),
+                routing: new DrizzleTextAiRoutingStore(database, () => true),
                 providerPrices: new DrizzleProviderPriceStore(database),
                 accounting: new DrizzleAccountingStore(
                     database,
@@ -626,7 +652,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
         });
 
-        it('returns an explicit check-required prerequisite when routing is published without flow evidence', async () => {
+        it('publishes configured routing through delegated apply without diagnostic history', async () => {
             const credentials = new AdminMcpCredentialService(
                 new DrizzleAdminMcpStore(database),
             );
@@ -635,21 +661,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expiresInDays: 1,
                 permissions: ['routing.write'],
                 limits: {},
-                reason: 'Synthetic check prerequisite regression',
+                reason: 'Synthetic optional diagnostic regression',
             });
             const publisher = await credentials.authenticate(issued.secret);
             const guarded = new AdminMcpOperations(database, {
-                routing: new DrizzleTextAiRoutingStore(database, async () => {
-                    throw new TextAiProbeUnavailableError(
-                        'probe_check_required',
-                    );
-                }),
+                routing: new DrizzleTextAiRoutingStore(database, () => true),
                 providerPrices: new DrizzleProviderPriceStore(database),
                 accounting: new DrizzleAccountingStore(
                     database,
                     (tx) => new DrizzleAiCreditTransactionParticipant(tx),
                 ),
             });
+
+            await seedRoutingPrice();
             const configuration: TextAiRoutingConfiguration = {
                 default: {
                     primaryRouteId: 'deepseek/deepseek-flash',
@@ -682,12 +706,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     randomUUID(),
                     (tx, saved) => guarded.apply(tx, publisher, saved),
                 ),
-            ).rejects.toMatchObject({
-                code: 'check_required',
-                message: expect.stringContaining(
-                    'explicit successful matching flow check',
-                ),
-            });
+            ).resolves.toMatchObject({ version: 1 });
 
             const [counts] = await database.execute(
                 sql`select (select count(*) from text_ai_probes)::int as probes,(select count(*) from ai_provider_expense_records)::int as expenses`,
@@ -717,9 +736,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 databaseSchema,
             );
             const limitedOperations = new AdminMcpOperations(limitedDb, {
-                routing: new DrizzleTextAiRoutingStore(limitedDb, async () => {
-                    throw new Error('Checks must not run');
-                }),
+                routing: new DrizzleTextAiRoutingStore(limitedDb, () => true),
                 providerPrices: new DrizzleProviderPriceStore(limitedDb),
                 accounting: new DrizzleAccountingStore(
                     limitedDb,

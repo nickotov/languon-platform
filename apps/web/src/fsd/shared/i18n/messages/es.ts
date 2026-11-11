@@ -67,7 +67,7 @@ export const es = {
     'dictionary.card.discardTitle': '¿Descartar este borrador?',
     'dictionary.card.discardDescription':
         'Al cerrar se perderán los cambios sin guardar.',
-    'dictionary.card.keepWriting': 'Seguir escribiendo',
+    'dictionary.card.keepWriting': 'Continuar',
     'dictionary.card.discardDraft': 'Descartar borrador',
     'dictionary.card.discardHelp':
         'Las sugerencias no aceptadas se descartan con el borrador. Cancelar la generación es una acción distinta que mantiene el borrador abierto.',
@@ -533,7 +533,7 @@ export const es = {
     'dictionary.create.title': 'Crear un diccionario',
     'dictionary.create.description':
         'El diccionario empieza siendo privado. Después puedes compartirlo con un enlace de capacidad.',
-    'dictionary.create.submit': 'Crear diccionario',
+    'dictionary.create.submit': 'Crear',
     'dictionary.dialog.close': 'Cerrar',
     'dictionary.field.name': 'Nombre',
     'dictionary.field.description': 'Descripción',
@@ -556,7 +556,7 @@ export const es = {
     'dictionary.settings.exampleLanguage': 'Idioma del ejemplo',
     'dictionary.settings.inactiveHelp':
         'Desactivar un campo conserva los valores existentes, pero inactivos.',
-    'dictionary.settings.save': 'Guardar ajustes',
+    'dictionary.settings.save': 'Guardar',
     'dictionary.settings.saved': 'Ajustes del diccionario guardados.',
     'dictionary.settings.cancelled': 'Se cancelaron los ajustes sin guardar.',
     'dictionary.notation.ipa': 'AFI',
@@ -785,7 +785,7 @@ export const es = {
     'dictionary.generation.loadFailed': 'No se pudo cargar la revisión',
     'dictionary.generation.capabilityFailed':
         'No se pudo comprobar la disponibilidad de la regeneración con IA.',
-    'dictionary.generation.close': 'Cerrar revisión',
+    'dictionary.generation.close': 'Cerrar',
     'dictionary.generation.instruction': 'Instrucción personalizada',
     'dictionary.generation.instructionHelp':
         'Describe una corrección concreta o el contexto para esta tarjeta. La tarjeta original no cambia hasta que aceptes.',

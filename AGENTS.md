@@ -33,7 +33,10 @@ accepted ADRs and applicable instructions/guides in full before planning, coding
 or review. Metadata discovery never replaces the source-of-truth order.
 
 For visual/shared-UI work, inspect runtime tokens, primitives, stories and comparable
-screens before styling. `design/DESIGN_SYSTEM.md` and `design/` artifacts are
+screens before styling. For material hierarchy/disclosure changes, use
+`$ui-ux-composition` and the project `ui-designer` role for a bounded brief and
+rendered critique; include isolated stories for shared/presentational blocks.
+`design/DESIGN_SYSTEM.md` and `design/` artifacts are
 optional guidance. Before substantive UI coding, choose the
 [design direction](.agent/DESIGN_HANDOFF.md#choose-the-ui-direction-before-implementation):
 extend an approved pattern, obtain approval of an agent preview, or use the
@@ -94,6 +97,29 @@ tooling is unavailable, use the documented fallback and state coverage limits.
 Search is read-only; normal implementation/verification authority still applies.
 
 ## Global engineering constraints
+
+### Pre-release compatibility and development data
+
+Languon is pre-release until its first released application version is explicitly
+declared. Implement one current contract directly. Do not add or retain
+backward-compatibility shims, obsolete execution paths, deprecated aliases,
+dual-format readers/writers or old-format decoders solely to support unreleased
+application versions. Update affected applications, packages, tests and current
+documentation together; preserve historical evidence as history.
+
+Affected local development user content may be cleared when necessary to replace
+obsolete formats. Verify the target, affected rows and dependencies; safely retire
+related queued work and preserve accounting invariants and unrelated configuration.
+Reuse the user's existing cleanup authorization without repeated confirmation.
+Use `$development-cleanup` and `$db-verification` for actual deletion. Shared or
+production data is outside this allowance.
+
+Preserve current product capabilities through their canonical replacement.
+Currently required SDK/provider protocols and security, authorization, idempotency
+and accounting protections remain requirements. After the first release, apply
+the accepted release and migration contracts to released consumers.
+
+### Implementation constraints
 
 - For handwritten code changes, apply [code readability](docs/code-readability.md):
   logical grouping, meaningful decisions, cohesive helpers and reason/invariant

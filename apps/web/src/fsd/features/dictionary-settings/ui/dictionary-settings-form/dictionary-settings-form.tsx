@@ -1,7 +1,7 @@
 'use client';
 
 import { useI18n } from '@/fsd/shared/i18n';
-import { Button, Field, Input, Textarea } from '@/fsd/shared/ui';
+import { Button, DialogActions, Field, Input, Textarea } from '@/fsd/shared/ui';
 import { useSettingsDraft } from '../../hooks/use-settings-draft';
 import type { SettingsFormProps } from '../../types';
 import { SettingsLanguagePair } from '../settings-language-pair/settings-language-pair';
@@ -98,7 +98,7 @@ export function DictionarySettingsForm(props: SettingsFormProps) {
                 <p className={styles.footerDescription}>
                     {t('dictionary.settings.saveHelp')}
                 </p>
-                <div className={styles.actions}>
+                <DialogActions align='between' className={styles.actions}>
                     <Button
                         disabled={pending}
                         onClick={state.cancel}
@@ -114,7 +114,7 @@ export function DictionarySettingsForm(props: SettingsFormProps) {
                     >
                         {t('dictionary.settings.save')}
                     </Button>
-                </div>
+                </DialogActions>
             </footer>
         </form>
     );

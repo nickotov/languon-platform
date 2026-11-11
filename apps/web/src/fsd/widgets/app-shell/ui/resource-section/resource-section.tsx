@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useId } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
+import { Tooltip } from '@/fsd/shared/ui';
 import type { AppShellState } from '../../hooks/use-app-shell-state';
 import { isRouteWithin } from '../../lib/is-route-within';
 import type { NavigationSection } from '../../lib/navigation-sections';
@@ -57,29 +58,42 @@ export function ResourceSection({
                     <Icon aria-hidden size={18} strokeWidth={1.75} />
                     <span>{t(section.label)}</span>
                 </Link>
-                <button
-                    aria-label={t(section.createLabel)}
-                    className={styles.create}
-                    onClick={createResource}
-                    title={t(section.createLabel)}
-                    type='button'
+                <Tooltip
+                    content={t(section.createLabel)}
+                    desktopOnly
+                    triggerClassName={styles.iconTooltipTrigger}
                 >
-                    <Plus aria-hidden size={16} />
-                </button>
-                <button
-                    aria-controls={id}
-                    aria-expanded={expanded}
-                    aria-label={disclosureLabel}
-                    className={styles.disclosure}
-                    onClick={toggle}
-                    type='button'
+                    <button
+                        aria-label={t(section.createLabel)}
+                        className={styles.create}
+                        onClick={createResource}
+                        type='button'
+                    >
+                        <Plus aria-hidden size={16} />
+                    </button>
+                </Tooltip>
+                <Tooltip
+                    content={disclosureLabel}
+                    desktopOnly
+                    triggerClassName={styles.iconTooltipTrigger}
                 >
-                    <ChevronRight
-                        aria-hidden
-                        className={expanded ? styles.openChevron : undefined}
-                        size={16}
-                    />
-                </button>
+                    <button
+                        aria-controls={id}
+                        aria-expanded={expanded}
+                        aria-label={disclosureLabel}
+                        className={styles.disclosure}
+                        onClick={toggle}
+                        type='button'
+                    >
+                        <ChevronRight
+                            aria-hidden
+                            className={
+                                expanded ? styles.openChevron : undefined
+                            }
+                            size={16}
+                        />
+                    </button>
+                </Tooltip>
             </div>
             {expanded ? (
                 <div id={id}>

@@ -33,8 +33,8 @@ const copy = {
         leaveTitle: 'Discard unsaved AI preferences?',
         leaveDescription:
             'Your action budget has not been saved. Discard it to leave this section.',
-        keepEditing: 'Keep editing',
-        discard: 'Discard changes',
+        keepEditing: 'Continue',
+        discard: 'Discard',
         close: 'Close dialog',
     },
     ru: {
@@ -69,8 +69,8 @@ const copy = {
         leaveTitle: 'Отменить несохранённые настройки ИИ?',
         leaveDescription:
             'Бюджет не сохранён. Отмените изменения, чтобы выйти.',
-        keepEditing: 'Продолжить редактирование',
-        discard: 'Отменить изменения',
+        keepEditing: 'Продолжить',
+        discard: 'Сбросить',
         close: 'Закрыть окно',
     },
     fr: {
@@ -106,8 +106,8 @@ const copy = {
         leaveTitle: 'Abandonner les préférences IA non enregistrées ?',
         leaveDescription:
             'Le budget n’est pas enregistré. Abandonnez les modifications pour quitter.',
-        keepEditing: 'Continuer à modifier',
-        discard: 'Abandonner les modifications',
+        keepEditing: 'Continuer',
+        discard: 'Abandonner',
         close: 'Fermer la fenêtre',
     },
     es: {
@@ -143,8 +143,8 @@ const copy = {
         leaveTitle: '¿Descartar las preferencias de IA sin guardar?',
         leaveDescription:
             'No has guardado el presupuesto. Descarta los cambios para salir.',
-        keepEditing: 'Seguir editando',
-        discard: 'Descartar cambios',
+        keepEditing: 'Continuar',
+        discard: 'Descartar',
         close: 'Cerrar ventana',
     },
 };

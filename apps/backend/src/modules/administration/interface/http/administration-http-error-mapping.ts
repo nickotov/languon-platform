@@ -47,8 +47,6 @@ export function mapAdministrationHttpError(
                 'Publish reviewed provider prices before running this check.',
             probe_route_unavailable:
                 'This reviewed route or flow is not available for checks.',
-            probe_check_required:
-                'Run a matching successful flow check before activation.',
         };
 
         return new AdministrationHttpError(

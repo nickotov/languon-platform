@@ -8,6 +8,7 @@ import { useI18n } from '@/fsd/shared/i18n';
 import {
     Button,
     Dialog,
+    DialogActions,
     Field,
     Input,
     Select,
@@ -82,7 +83,7 @@ export function LibraryCreateDialog({
                 <Lock aria-hidden size={14} />
                 {labels.privateNotice}
             </p>
-            <div className={styles.actions}>
+            <DialogActions className={styles.actions}>
                 <Button
                     disabled={state.create.isPending}
                     onClick={state.closeCreate}
@@ -98,7 +99,7 @@ export function LibraryCreateDialog({
                 >
                     {labels.submit}
                 </Button>
-            </div>
+            </DialogActions>
         </div>
     );
 

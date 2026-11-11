@@ -6,11 +6,11 @@
     border-bottom-left-radius: 0px !important;
 }
 
+.footer {
+    width: 100%;
+}
+
 .preparationActions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
     gap: var(--space-8);
 }
 
@@ -27,9 +27,6 @@
 }
 
 .footerActions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
     gap: var(--space-8);
 }
 

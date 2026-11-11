@@ -139,6 +139,7 @@ export function ManualSelection({
             )}
             <nav aria-label={t('training.pages')} className={styles.pagination}>
                 <Button
+                    desktopIconOnly
                     variant='secondary'
                     size='compact'
                     leadingIcon={<ChevronLeft className={styles.icon} />}
@@ -149,6 +150,7 @@ export function ManualSelection({
                 </Button>
                 <span className={styles.pageLabel}>{pageLabel}</span>
                 <Button
+                    desktopIconOnly
                     variant='secondary'
                     size='compact'
                     trailingIcon={<ChevronRight className={styles.icon} />}

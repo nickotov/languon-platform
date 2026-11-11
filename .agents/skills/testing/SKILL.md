@@ -68,6 +68,15 @@ selection must still exercise the behavior at risk; mock only external transport
 when real internal composition/persistence is required.
 
 Select affected core smoke through the [critical workflow policy](../../../docs/operations/critical-workflows.md).
+Choose coverage by changed invariant and distinct execution path, not the name or
+size of a registry group. A focused existing file/case selection can establish
+shared routing coverage when it retains real database/production composition and
+all affected invariants. A changed common predicate does not by itself invalidate
+every unchanged consumer's accounting, pricing or account-erasure tests. Trace
+callers and state which paths are equivalent versus materially different; broaden
+when that equivalence cannot be established. Retain mandatory incident scenarios
+for the affected paths. Never describe a focused run as a passing broader group.
+
 Full repository or critical regressions require evidenced shared impact, a
 release/scheduled run, or an explicit request; feature completion is not a trigger.
 When justified, schedule broad suites after focused preflight and source-review
@@ -86,6 +95,10 @@ paid providers; standing live authorization applies only within that policy.
 
 If a check fails, distinguish implementation, fixture, environment and assumption
 errors. Repair and rerun the focused reproducer before a justified broader check.
+Apply [verification cost controls](../../../.agent/DELIVERY.md#control-verification-cost-before-execution)
+before multiplying cold setups: validate the complete synthetic fixture, assign
+one compiler owner, estimate repeated migration cost and use the reassessment
+checkpoint. A long run is not evidence that more coverage is needed.
 Measure cold reset/migration/setup cost separately from body time when diagnosing
 slow integration tests. Diagnose waits, asynchronous work and resource contention
 before changing a bounded harness watchdog; preserve product/cancellation deadline
@@ -113,6 +126,13 @@ and rationale. Invalidate checks for changed affected paths or uncertain impact;
 rerun the smallest reproducer and necessary broader checks. Shared primitives,
 contracts, migrations, build configuration, or infrastructure can invalidate
 multiple consumers even when their files did not change.
+
+For a fixture-only or bounded harness repair, a case-level evidence union may reuse
+unchanged passing assertions and replace exactly the failed cases with clean focused
+results. Verify the affected test/source/configuration state, exact case identities
+and that the union covers every selected requirement. Keep raw failed reports;
+count neither unselected nor skipped/retried cases as passes. A production behavior
+change invalidates its affected cases even if an older report was green.
 
 A prose-only correction normally requires documentation/traceability checks,
 not another database or build run. A changed guide coverage promise requires

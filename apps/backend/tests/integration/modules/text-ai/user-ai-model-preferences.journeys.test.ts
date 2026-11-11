@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-// @user-flow-revision user-ai-model-preferences-backend sha256:73f31c71e6640ceb
+// @user-flow-revision user-ai-model-preferences-backend sha256:76c98e529995f6c9
 import {
     AuthenticationSuccessResponseSchema,
     DictionaryCardResponseSchema,
@@ -101,6 +101,7 @@ run('real composed text-AI preference HTTP journey', () => {
             dictionaries: createDictionaryComposition({
                 ...authentication.productDependencies,
                 dictionaryHmacSecret,
+                aiCreditEnforcementEnabled: true,
                 generation: {
                     acceptableFormats: [dictionaryGenerationFormat],
                     cancellableFormats: [dictionaryGenerationFormat],
@@ -382,7 +383,11 @@ run('real composed text-AI preference HTTP journey', () => {
                 replayKey,
             );
 
-            expect(selected.status).toBe(202);
+            expect(
+                selected.status,
+                JSON.stringify(await selected.clone().json()),
+            ).toBe(202);
+
             const selectedBody = (await selected.json()) as {
                 job: { id: string };
             };
@@ -514,7 +519,38 @@ run('real composed text-AI preference HTTP journey', () => {
             );
 
             expect(replayAfterBudget.status).toBe(202);
-            expect(await replayAfterBudget.json()).toEqual(selectedBody);
+            const currentOriginal = await request(
+                `/dictionary-generation-jobs/${selectedBody.job.id}`,
+                { token: learner.token },
+            );
+
+            expect(currentOriginal.status).toBe(200);
+            const currentOriginalBody = await currentOriginal.json();
+            expect(currentOriginalBody.job).toMatchObject({
+                id: selectedBody.job.id,
+                state: 'running',
+            });
+
+            expect(await replayAfterBudget.json()).toEqual(currentOriginalBody);
+
+            const [replayedJob] =
+                await authentication.productDependencies.database
+                    .select({
+                        id: dictionaryGenerationJobsTable.id,
+                        selectedExecutionSnapshot:
+                            dictionaryGenerationJobsTable.selectedExecutionSnapshot,
+                        selectedExecutionVersion:
+                            dictionaryGenerationJobsTable.selectedExecutionVersion,
+                    })
+                    .from(dictionaryGenerationJobsTable)
+                    .where(
+                        eq(
+                            dictionaryGenerationJobsTable.id,
+                            selectedBody.job.id,
+                        ),
+                    );
+
+            expect(replayedJob).toEqual(kieJob);
             const jobCount = await db
                 .select({ id: dictionaryGenerationJobsTable.id })
                 .from(dictionaryGenerationJobsTable);

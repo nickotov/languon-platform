@@ -100,9 +100,9 @@ export const textsWorkspaceEn = {
     'texts.workspace.leaveTitle': 'Leave without saving?',
     'texts.workspace.leaveHint':
         'You have changes that aren’t saved. If you leave now, they’ll be lost.',
-    'texts.workspace.keep': 'Keep editing',
-    'texts.workspace.discardClose': 'Discard and close',
-    'texts.workspace.saveClose': 'Save and close',
+    'texts.workspace.keep': 'Continue',
+    'texts.workspace.discardClose': 'Discard',
+    'texts.workspace.saveClose': 'Save',
     'texts.workspace.stopTitle': 'Stop translating and close?',
     'texts.workspace.stopHint':
         'The translation in progress will be cancelled. Unsaved text will be lost.',
@@ -226,9 +226,9 @@ export const textsWorkspaceRu = {
     'texts.workspace.leaveTitle': 'Выйти без сохранения?',
     'texts.workspace.leaveHint':
         'Несохранённые изменения будут потеряны при выходе.',
-    'texts.workspace.keep': 'Продолжить редактирование',
-    'texts.workspace.discardClose': 'Отбросить и закрыть',
-    'texts.workspace.saveClose': 'Сохранить и закрыть',
+    'texts.workspace.keep': 'Продолжить',
+    'texts.workspace.discardClose': 'Отбросить',
+    'texts.workspace.saveClose': 'Сохранить',
     'texts.workspace.stopTitle': 'Остановить перевод и закрыть?',
     'texts.workspace.stopHint':
         'Перевод будет отменён. Несохранённый текст будет потерян.',
@@ -352,9 +352,9 @@ export const textsWorkspaceEs = {
     'texts.workspace.leaveTitle': '¿Salir sin guardar?',
     'texts.workspace.leaveHint':
         'Tienes cambios sin guardar. Se perderán si sales.',
-    'texts.workspace.keep': 'Seguir editando',
-    'texts.workspace.discardClose': 'Descartar y cerrar',
-    'texts.workspace.saveClose': 'Guardar y cerrar',
+    'texts.workspace.keep': 'Continuar',
+    'texts.workspace.discardClose': 'Descartar',
+    'texts.workspace.saveClose': 'Guardar',
     'texts.workspace.stopTitle': '¿Detener la traducción y cerrar?',
     'texts.workspace.stopHint':
         'Se cancelará la traducción. Se perderá el texto sin guardar.',
@@ -480,9 +480,9 @@ export const textsWorkspaceFr = {
     'texts.workspace.leaveTitle': 'Quitter sans enregistrer ?',
     'texts.workspace.leaveHint':
         'Vos modifications non enregistrées seront perdues si vous quittez.',
-    'texts.workspace.keep': 'Continuer la modification',
-    'texts.workspace.discardClose': 'Ignorer et fermer',
-    'texts.workspace.saveClose': 'Enregistrer et fermer',
+    'texts.workspace.keep': 'Continuer',
+    'texts.workspace.discardClose': 'Abandonner',
+    'texts.workspace.saveClose': 'Enregistrer',
     'texts.workspace.stopTitle': 'Arrêter la traduction et fermer ?',
     'texts.workspace.stopHint':
         'La traduction sera annulée. Le texte non enregistré sera perdu.',

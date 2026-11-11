@@ -2,7 +2,7 @@ import type { Locale } from '@/fsd/shared/i18n';
 
 const en = {
     contextTooLarge:
-        'This question and its attachments are too large. Shorten the question or remove attachments, then send it again.',
+        'The current document, chat history and attachments exceed the available context. Shorten the document or attachments, or start a new conversation.',
 
     estimated: 'Estimated',
     reported: 'Reported',
@@ -104,7 +104,7 @@ const en = {
 type Copy = { [K in keyof typeof en]: string };
 const ru: Copy = {
     contextTooLarge:
-        'Вопрос и вложения слишком большие. Сократите вопрос или уберите вложения и отправьте его снова.',
+        'Текущий документ, история чата и вложения превышают доступный контекст. Сократите документ или вложения либо начните новый разговор.',
 
     estimated: 'Оценка',
     reported: 'По данным провайдера',
@@ -203,7 +203,7 @@ const ru: Copy = {
 };
 const es: Copy = {
     contextTooLarge:
-        'La pregunta y sus adjuntos son demasiado grandes. Acorta la pregunta o quita adjuntos y vuelve a enviarla.',
+        'El documento actual, el historial del chat y los adjuntos superan el contexto disponible. Reduce el documento o los adjuntos, o inicia una conversación nueva.',
 
     estimated: 'Estimado',
     reported: 'Informado',
@@ -304,7 +304,7 @@ const es: Copy = {
 };
 const fr: Copy = {
     contextTooLarge:
-        'La question et ses pièces jointes sont trop volumineuses. Raccourcissez la question ou retirez des pièces jointes, puis renvoyez-la.',
+        'Le document actuel, l’historique du chat et les pièces jointes dépassent le contexte disponible. Réduisez le document ou les pièces jointes, ou commencez une nouvelle conversation.',
 
     estimated: 'Estimé',
     reported: 'Déclaré',

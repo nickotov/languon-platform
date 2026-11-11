@@ -82,8 +82,7 @@ export class TextAiProbeUnavailableError extends Error {
             | 'probe_busy'
             | 'probe_cooldown'
             | 'probe_prices_missing'
-            | 'probe_route_unavailable'
-            | 'probe_check_required',
+            | 'probe_route_unavailable',
     ) {
         super(code);
     }

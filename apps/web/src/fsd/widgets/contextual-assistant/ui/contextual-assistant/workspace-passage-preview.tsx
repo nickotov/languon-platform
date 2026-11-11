@@ -1,6 +1,7 @@
 import { TextQuote, X } from 'lucide-react';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
+import { Tooltip } from '@/fsd/shared/ui';
 import type { WorkspacePendingPassage } from '../../hooks/use-workspace-passage';
 import styles from './composer.module.css';
 
@@ -24,14 +25,20 @@ export function WorkspacePassagePreview({
                     {passage.content}
                 </span>
             </div>
-            <button
-                type='button'
-                className={styles.removeAttachment}
-                onClick={onRemove}
-                aria-label={removeLabel}
+            <Tooltip
+                content={removeLabel}
+                desktopOnly
+                triggerClassName={styles.iconTooltipTrigger}
             >
-                <X size={14} aria-hidden='true' />
-            </button>
+                <button
+                    type='button'
+                    className={styles.removeAttachment}
+                    onClick={onRemove}
+                    aria-label={removeLabel}
+                >
+                    <X size={14} aria-hidden='true' />
+                </button>
+            </Tooltip>
         </div>
     );
 }

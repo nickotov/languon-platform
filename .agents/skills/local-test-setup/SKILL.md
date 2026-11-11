@@ -22,6 +22,8 @@ a diagnosis-only request authorizes inspection only.
    invent provider prices. A real provider profile does not authorize paid calls.
 4. Rerun doctor and preview. A second application must require no settings
    mutation. Report blockers with the admin page/field or environment setting.
+   Treat missing, changed or failed AI diagnostics as informational; they do not
+   block setup, route publication or generation and do not authorize paid rechecks.
 5. Verify the intended registered critical Playwright flow. Use
    `$critical-browser-verification` for missing manual observations. Configuration
    success alone is not generation success.

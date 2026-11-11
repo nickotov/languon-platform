@@ -11,7 +11,7 @@ import { hashEditorText } from '../src/fsd/features/knowledge-notes/lib/editor-t
 
 it('does not report a learner edit when an empty draft editor initializes', async () => {
     const body = KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: { type: 'doc', content: [{ type: 'paragraph' }] },
     });
     const onChange = vi.fn();
@@ -24,7 +24,7 @@ it('does not report a learner edit when an empty draft editor initializes', asyn
 
 it('opens the outline request from a workspace without mutating the private draft', async () => {
     const body = KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: { type: 'doc', content: [{ type: 'paragraph' }] },
     });
     const onChange = vi.fn();
@@ -65,7 +65,7 @@ it('opens the outline request from a workspace without mutating the private draf
 
 it('inserts a lesson starter into only the working body as one undoable edit', async () => {
     const body = KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: { type: 'doc', content: [{ type: 'paragraph' }] },
     });
     const editor = createRef<KnowledgeEditorHandle>();
@@ -105,7 +105,7 @@ it('inserts a lesson starter into only the working body as one undoable edit', a
 
 it('accepts an append as one editable draft change', async () => {
     const body = KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: { type: 'doc', content: [{ type: 'paragraph' }] },
     });
     const onChange = vi.fn();
@@ -129,7 +129,7 @@ it('accepts an append as one editable draft change', async () => {
 it('previews the remembered passage and surrounding text after unrelated edits', async () => {
     const text = 'Before. Selected passage. After.';
     const body = KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: {
             type: 'doc',
             content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
@@ -185,7 +185,7 @@ it('keeps the Ask tutor target while the cursor and surrounding document change 
     try {
         const text = 'Alpha paragraph. Beta paragraph.';
         const body = KnowledgeBodySchema.parse({
-            schemaVersion: 1,
+            schemaVersion: 2,
             document: {
                 type: 'doc',
                 content: [
@@ -318,7 +318,7 @@ it('keeps the Ask tutor target while the cursor and surrounding document change 
 it('reveals selection actions for a focused remembered passage in the workspace', async () => {
     const text = 'Selected passage';
     const body = KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: {
             type: 'doc',
             content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
@@ -395,7 +395,7 @@ it('reveals selection actions for a focused remembered passage in the workspace'
 
 it('restores a captured cursor after remount only while the draft is identical', async () => {
     const body = KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: { type: 'doc', content: [{ type: 'paragraph' }] },
     });
     const initial = createRef<KnowledgeEditorHandle>();
@@ -420,7 +420,7 @@ it('restores a captured cursor after remount only while the draft is identical',
 
     const changed = createRef<KnowledgeEditorHandle>();
     const changedBody = KnowledgeBodySchema.parse({
-        schemaVersion: 1,
+        schemaVersion: 2,
         document: {
             type: 'doc',
             content: [

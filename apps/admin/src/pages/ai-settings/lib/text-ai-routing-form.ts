@@ -42,14 +42,6 @@ export function routingInitialValues(
     };
 }
 
-export function probeEvidenceAge(expiresAt: string | null, now = Date.now()) {
-    if (!expiresAt) {
-        return 'none';
-    }
-
-    return new Date(expiresAt).getTime() > now ? 'fresh' : 'stale';
-}
-
 export function latestRouteProbe(
     probes: TextAiProbe[],
     routeId: string | undefined,

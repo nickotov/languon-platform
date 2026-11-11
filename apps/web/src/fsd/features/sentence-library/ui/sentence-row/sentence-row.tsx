@@ -93,6 +93,7 @@ export function SentenceRow({
             </div>
             <div className={componentStyles.desktopActions}>
                 <Button
+                    desktopIconOnly
                     size='compact'
                     variant='secondary'
                     leadingIcon={
@@ -103,6 +104,7 @@ export function SentenceRow({
                     {L('view')}
                 </Button>
                 <Button
+                    desktopIconOnly
                     size='compact'
                     variant='secondary'
                     disabled={locked}

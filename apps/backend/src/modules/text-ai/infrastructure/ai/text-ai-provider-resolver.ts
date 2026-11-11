@@ -184,7 +184,7 @@ export function validateTextAiRouteRuntimeIdentity(
         expected !== candidate.fingerprint
     ) {
         throw new Error(
-            'Approved provider route identity has changed. A matching check is required.',
+            'The admitted provider execution identity has changed. Submit a new request with the current configuration.',
         );
     }
 

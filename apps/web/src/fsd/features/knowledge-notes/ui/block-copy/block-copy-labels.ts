@@ -39,18 +39,8 @@ const values = {
         'Cargar más notas',
         'Charger plus de notes',
     ],
-    preview: [
-        'Preview copy',
-        'Предпросмотр копирования',
-        'Vista previa de la copia',
-        'Aperçu de la copie',
-    ],
-    apply: [
-        'Copy into working draft',
-        'Копировать в черновик',
-        'Copiar al borrador',
-        'Copier dans le brouillon',
-    ],
+    preview: ['Preview', 'Предпросмотр', 'Vista previa', 'Aperçu'],
+    apply: ['Copy', 'Копировать', 'Copiar', 'Copier'],
     cancel: ['Cancel', 'Отмена', 'Cancelar', 'Annuler'],
     copied: [
         'Copied independently into the destination draft. Save that note to publish.',

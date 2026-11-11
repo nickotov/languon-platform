@@ -114,7 +114,7 @@ describe('exercise set authoring', () => {
         });
 
         expect(change).not.toHaveBeenCalled();
-        fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
         await waitFor(() => expect(change).toHaveBeenCalledOnce());
         const content = change.mock.lastCall![0].document.content;
         expect(content[0].attrs.block).toMatchObject({
@@ -258,7 +258,7 @@ it('edits audio and its ungrounded associated questions in one explicit draft tr
     });
 
     expect(change).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     await waitFor(() => expect(change).toHaveBeenCalledOnce());
     const content = change.mock.lastCall![0].document.content;
     expect(content[0].attrs.block).toMatchObject({

@@ -279,6 +279,12 @@ describe('shared UI accessibility contracts', () => {
     });
 
     it('uses the viewport-aware tooltip for icon buttons', async () => {
+        const media = window.matchMedia('(min-width: 768px)');
+        vi.spyOn(window, 'matchMedia').mockReturnValue({
+            ...media,
+            matches: true,
+        });
+
         render(
             <IconButton label='Change theme' tooltipPlacement='bottom'>
                 ◐
@@ -294,6 +300,35 @@ describe('shared UI accessibility contracts', () => {
         expect(tooltip).toHaveStyle({ position: 'fixed' });
 
         fireEvent.keyDown(document, { key: 'Escape' });
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    });
+
+    it('keeps utility labels accessible on touch and closes desktop tooltips on resize without replacing the trigger', async () => {
+        let notify = () => {};
+        const media = Object.assign(window.matchMedia(''), {
+            matches: true,
+            addEventListener: vi.fn((_type: string, listener: () => void) => {
+                notify = listener;
+            }),
+            removeEventListener: vi.fn(),
+        });
+
+        vi.spyOn(window, 'matchMedia').mockReturnValue(media);
+        render(<IconButton label='Refresh balance'>↻</IconButton>);
+        const trigger = screen.getByRole('button', { name: 'Refresh balance' });
+        fireEvent.focus(trigger);
+        expect(await screen.findByRole('tooltip')).toBeVisible();
+        act(() => {
+            Object.assign(media, { matches: false });
+            notify();
+        });
+
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Refresh balance' })).toBe(
+            trigger,
+        );
+
+        fireEvent.focus(trigger);
         expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
     });
 

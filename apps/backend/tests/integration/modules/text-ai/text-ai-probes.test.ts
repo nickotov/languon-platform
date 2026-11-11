@@ -1,3 +1,4 @@
+import { isTextAiRuntimeDispatchAllowed } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-dispatch-guard';
 import { sql } from 'drizzle-orm';
 import { probeExpenseId } from '../../../../src/modules/admin-mcp/infrastructure/admin-mcp-probe-expense';
 import { textAiRouteHealthEventsTable } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/route-health-schema';
@@ -13,11 +14,7 @@ import { databaseSchema } from '../../../../src/infrastructure/database/schema';
 import { usersTable } from '../../../../src/modules/users/infrastructure/persistence/drizzle/schema';
 import { aiProviderPriceRevisionsTable } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/provider-price-schema';
 import { aiProviderExpenseRecordsTable } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/accounting-schema';
-import {
-    DrizzleTextAiProbeStore,
-    requireProbeReady,
-    isProbeDispatchAllowed,
-} from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-probe-store';
+import { DrizzleTextAiProbeStore } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/drizzle-text-ai-probe-store';
 import {
     textAiProbesTable,
     textAiProbeRecoveriesTable,
@@ -291,13 +288,8 @@ run('atomic operator model probes and immutable evidence', () => {
         ).rejects.toThrow();
     });
 
-    it('requires fresh exact evidence for activation but not for unchanged dispatch, rejects credential changes', async () => {
-        const input = await fixture({
-            ...limits,
-            dailyMaximumCostMicros: 1_000_000n,
-        });
-        const reservation = await store.reserve(input);
-        await store.finish(reservation, result, at);
+    it('permits unchecked routes and changed or aged diagnostic fingerprints', async () => {
+        const input = await fixture();
         const gate = {
             routeId: input.identity.routeId,
             flowId: 'sentence-check',
@@ -305,39 +297,33 @@ run('atomic operator model probes and immutable evidence', () => {
             fingerprint: input.identity.fingerprint,
         };
 
-        await database.transaction((tx) => requireProbeReady(tx, gate));
-        await expect(
-            database.transaction((tx) =>
-                requireProbeReady(tx, { ...gate, fingerprint: 'changed-key' }),
-            ),
-        ).rejects.toThrow('probe_check_required');
-
-        const stale = {
-            ...gate,
-            now: new Date(at.getTime() + 25 * 60 * 60 * 1000),
-        };
-
-        await expect(
-            database.transaction((tx) => requireProbeReady(tx, stale)),
-        ).rejects.toThrow('probe_check_required');
-
         expect(
             await database.transaction((tx) =>
-                isProbeDispatchAllowed(tx, stale),
+                isTextAiRuntimeDispatchAllowed(tx, gate),
+            ),
+        ).toBe(true);
+
+        await store.finish(await store.reserve(input), result, at);
+        expect(
+            await database.transaction((tx) =>
+                isTextAiRuntimeDispatchAllowed(tx, {
+                    ...gate,
+                    fingerprint: 'b'.repeat(64),
+                }),
             ),
         ).toBe(true);
 
         expect(
             await database.transaction((tx) =>
-                isProbeDispatchAllowed(tx, {
+                isTextAiRuntimeDispatchAllowed(tx, {
                     ...gate,
-                    fingerprint: 'changed-key',
+                    now: new Date(at.getTime() + 25 * 60 * 60 * 1000),
                 }),
             ),
-        ).toBe(false);
+        ).toBe(true);
     });
 
-    it('keeps hard exclusions until manual success and does not let a later timeout clear them', async () => {
+    it('keeps failed and uncertain diagnostics independent of normal dispatch', async () => {
         const input = await fixture({
             ...limits,
             dailyMaximumCostMicros: 1_000_000n,
@@ -381,9 +367,9 @@ run('atomic operator model probes and immutable evidence', () => {
 
         expect(
             await database.transaction((tx) =>
-                isProbeDispatchAllowed(tx, gate),
+                isTextAiRuntimeDispatchAllowed(tx, gate),
             ),
-        ).toBe(false);
+        ).toBe(true);
 
         const recoveredAt = new Date(at.getTime() + 120_000);
         const uncertain = await database
@@ -406,7 +392,10 @@ run('atomic operator model probes and immutable evidence', () => {
 
         expect(
             await database.transaction((tx) =>
-                isProbeDispatchAllowed(tx, { ...gate, now: recoveredAt }),
+                isTextAiRuntimeDispatchAllowed(tx, {
+                    ...gate,
+                    now: recoveredAt,
+                }),
             ),
         ).toBe(true);
     });
@@ -529,52 +518,122 @@ run('atomic operator model probes and immutable evidence', () => {
         expect(facts[0]!.amountUsdMicros).toBeNull();
     });
 
-    it('excludes actual runtime retirement until a later manual check and preserves append-only evidence', async () => {
-        const input = await fixture({
-            ...limits,
-            dailyMaximumCostMicros: 1_000_000n,
-        });
+    it.each([
+        'model_retired',
+        'model_unavailable',
+        'authorization_failed',
+        'schema_incompatible',
+        'rate_limited',
+        'provider_credits_exhausted',
+        'provider_unavailable',
+    ] as const)(
+        'recovers runtime %s after a bounded cooldown without a manual check',
+        async (reason) => {
+            const input = await fixture({
+                ...limits,
+                dailyMaximumCostMicros: 1_000_000n,
+            });
+            const eventId = randomUUID();
+            await seedRuntimeHealth(input, reason, eventId);
+            const [event] = await database
+                .select()
+                .from(textAiRouteHealthEventsTable)
+                .where(eq(textAiRouteHealthEventsTable.id, eventId));
+            const gate = {
+                routeId: input.identity.routeId,
+                flowId: 'sentence-check',
+                fingerprint: input.identity.fingerprint,
+                now: new Date(event!.observedAt.getTime() + 1000),
+            };
 
-        await store.finish(await store.reserve(input), result, at);
-        const eventId = randomUUID();
-        await seedRuntimeHealth(input, 'model_retired', eventId);
-        const [event] = await database
-            .select()
-            .from(textAiRouteHealthEventsTable)
-            .where(eq(textAiRouteHealthEventsTable.id, eventId));
-        const gate = {
-            routeId: input.identity.routeId,
-            flowId: 'sentence-check',
-            fingerprint: input.identity.fingerprint,
-            now: new Date(event!.observedAt.getTime() + 120_000),
-        };
+            expect(
+                await database.transaction((tx) =>
+                    isTextAiRuntimeDispatchAllowed(tx, gate),
+                ),
+            ).toBe(false);
 
-        expect(
-            await database.transaction((tx) =>
-                isProbeDispatchAllowed(tx, gate),
-            ),
-        ).toBe(false);
+            expect(
+                await database.transaction((tx) =>
+                    isTextAiRuntimeDispatchAllowed(tx, {
+                        ...gate,
+                        fingerprint: 'b'.repeat(64),
+                    }),
+                ),
+            ).toBe(reason === 'schema_incompatible');
 
-        await expect(
-            database
-                .update(textAiRouteHealthEventsTable)
-                .set({ reason: 'provider_unavailable' })
-                .where(eq(textAiRouteHealthEventsTable.id, eventId)),
-        ).rejects.toThrow();
+            // A flow-specific contract fingerprint must not narrow shared runtime failures.
+            expect(
+                await database.transaction((tx) =>
+                    isTextAiRuntimeDispatchAllowed(tx, {
+                        ...gate,
+                        flowId: 'conversation',
+                        fingerprint: 'c'.repeat(64),
+                    }),
+                ),
+            ).toBe(reason === 'schema_incompatible');
 
-        const recheckAt = new Date(event!.observedAt.getTime() + 180_000);
-        await store.finish(
-            await store.reserve({ ...input, at: recheckAt }),
-            result,
-            recheckAt,
-        );
+            expect(
+                await database.transaction((tx) =>
+                    isTextAiRuntimeDispatchAllowed(tx, {
+                        ...gate,
+                        flowId: 'conversation',
+                    }),
+                ),
+            ).toBe(reason === 'schema_incompatible');
 
-        expect(
-            await database.transaction((tx) =>
-                isProbeDispatchAllowed(tx, { ...gate, now: recheckAt }),
-            ),
-        ).toBe(true);
-    });
+            expect(
+                await database.transaction((tx) =>
+                    isTextAiRuntimeDispatchAllowed(tx, {
+                        ...gate,
+                        routeId: `${input.identity.providerId}/sibling-model`,
+                        fingerprint: 'd'.repeat(64),
+                    }),
+                ),
+            ).toBe(reason !== 'authorization_failed');
+
+            expect(
+                await database.transaction((tx) =>
+                    isTextAiRuntimeDispatchAllowed(tx, {
+                        ...gate,
+                        routeId: `unrelated-${input.identity.providerId}/model`,
+                    }),
+                ),
+            ).toBe(true);
+
+            // A paid successful diagnostic neither clears nor shortens a runtime cooldown.
+            const checkAt = new Date(event!.observedAt.getTime() + 2000);
+            await store.finish(
+                await store.reserve({ ...input, at: checkAt }),
+                result,
+                checkAt,
+            );
+
+            expect(
+                await database.transaction((tx) =>
+                    isTextAiRuntimeDispatchAllowed(tx, {
+                        ...gate,
+                        now: new Date(checkAt.getTime() + 1000),
+                    }),
+                ),
+            ).toBe(false);
+
+            expect(
+                await database.transaction((tx) =>
+                    isTextAiRuntimeDispatchAllowed(tx, {
+                        ...gate,
+                        now: new Date(event!.observedAt.getTime() + 60_000),
+                    }),
+                ),
+            ).toBe(true);
+
+            await expect(
+                database
+                    .update(textAiRouteHealthEventsTable)
+                    .set({ reason: 'provider_unavailable' })
+                    .where(eq(textAiRouteHealthEventsTable.id, eventId)),
+            ).rejects.toThrow();
+        },
+    );
 
     it('does not let learner-induced invalid output or request rejection exclude a shared flow', async () => {
         const input = await fixture({
@@ -598,13 +657,13 @@ run('atomic operator model probes and immutable evidence', () => {
 
         expect(
             await database.transaction((tx) =>
-                isProbeDispatchAllowed(tx, gate),
+                isTextAiRuntimeDispatchAllowed(tx, gate),
             ),
         ).toBe(true);
 
         expect(
             await database.transaction((tx) =>
-                isProbeDispatchAllowed(tx, {
+                isTextAiRuntimeDispatchAllowed(tx, {
                     ...gate,
                     now: new Date(event!.observedAt.getTime() + 61_000),
                 }),
@@ -614,19 +673,19 @@ run('atomic operator model probes and immutable evidence', () => {
         await seedRuntimeHealth(input, 'request_rejected');
         expect(
             await database.transaction((tx) =>
-                isProbeDispatchAllowed(tx, gate),
+                isTextAiRuntimeDispatchAllowed(tx, gate),
             ),
         ).toBe(true);
 
         await seedRuntimeHealth(input, 'schema_incompatible');
         expect(
             await database.transaction((tx) =>
-                isProbeDispatchAllowed(tx, {
+                isTextAiRuntimeDispatchAllowed(tx, {
                     ...gate,
                     now: new Date(event!.observedAt.getTime() + 120_000),
                 }),
             ),
-        ).toBe(false);
+        ).toBe(true);
     });
 
     it('settles reviewed minimum request charges but keeps undispatched work zero and unknown usage unknown', async () => {

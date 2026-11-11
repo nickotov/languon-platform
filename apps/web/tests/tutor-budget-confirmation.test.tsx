@@ -161,7 +161,7 @@ it('preserves the original request/content across explicit confirmations and req
     expect(onAccepted).toHaveBeenCalledTimes(1);
 });
 
-it('shows the quoted allowance and explicit Send, Top up and keep editing choices', async () => {
+it('shows the quoted allowance and explicit Send, Top up and Cancel choices', async () => {
     const send = vi.fn();
     const close = vi.fn();
     const user = userEvent.setup();
@@ -185,7 +185,7 @@ it('shows the quoted allowance and explicit Send, Top up and keep editing choice
     expect(send).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Send' }));
     expect(send).toHaveBeenCalledTimes(1);
-    await user.click(screen.getByRole('button', { name: 'Keep editing' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(close).toHaveBeenCalled();
 });
 

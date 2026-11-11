@@ -1,6 +1,6 @@
 ---
 name: frontend-development
-description: Build and refactor Languon Next.js web or Vite/Refine admin frontend code using app-specific FSD boundaries, component folders, supported styling, hooks/lib/model/api separation, shared UI, and state/event patterns. Use for changes under apps/web or apps/admin that modify components, hooks, frontend state, API clients, shared UI, page composition, or slice imports. Do not use for backend-only, native mobile-only, or style-only review tasks.
+description: Build and refactor Languon Next.js web or Vite/Refine admin frontend code using app-specific FSD boundaries, component folders, supported styling, hooks/lib/model/api separation, shared UI, and state/event patterns. Use for changes under apps/web or apps/admin that modify components, isolated component stories, hooks, frontend state, API clients, shared UI, page composition, or slice imports. Do not use for backend-only, native mobile-only, or style-only review tasks.
 ---
 
 # Frontend development
@@ -170,6 +170,16 @@ catalog, include catalog setup in that authorized feature.
 For admin, follow Ant Design and existing component/browser verification. Do not
 introduce Storybook merely to satisfy this web convention; deliberate new admin
 catalog tooling requires its own scoped, authorized improvement.
+
+For meaningful presentational web components outside `shared` (chat items,
+dictionary cards, rendered text or editor custom blocks), add/update colocated
+stories for a useful isolated boundary. Keep the owning FSD slice and use the
+actual view with typed fake props and controlled callbacks. Extract a cohesive
+view from orchestration when needed; do not mount the whole chat/page or call real
+services to show one block. Cover important states and realistic long/large data
+with existing theme/viewport controls. Record a concrete exception for trivial
+glue or orchestration-only changes; do not add stories that duplicate whole E2E
+journeys or introduce a new catalog/mocking framework.
 
 Prefer composition and native attributes over multiplying boolean props. Keep
 the primitive's public API small, typed, and independent of application state.
