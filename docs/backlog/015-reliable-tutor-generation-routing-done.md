@@ -2,17 +2,18 @@
 type: backlog-task
 id: BL-015
 title: Reliable tutor intent, clarification and generation outcomes
-status: in-progress
+status: done
 created: 2026-10-31
-updated: 2026-11-11
+updated: 2026-11-12
 original_tasks: '2026-10-31 Russian vocabulary and exercise response diagnosis'
 evidence:
     - .agent/features/061-reliable-learning-content-pipeline/EVIDENCE.md
+    - .agent/corrections/bl-015-completion.md
 depends_on:
     - BL-013
 ---
 
-# BL-015 — Reliable tutor intent, clarification and generation outcomes
+# BL-015 — Reliable tutor intent, clarification and generation outcomes — Done
 
 [Backlog index](INDEX.md) · [Shared constraints](README.md).
 
@@ -28,9 +29,11 @@ The user authorized [feature 061](../../.agent/features/061-reliable-learning-co
 on 2026-11-06 to complete this behavior with BL-013's canonical tools, shared
 phase budgeting, prepared history and targeted frontend reconciliation. The
 [execution plan](../../.agent/features/061-reliable-learning-content-pipeline/EXEC_PLAN.md)
-owns implementation and verification. This task remains in progress until its
-full acceptance is verified; earlier passing tests are not proof of the new
-production-allowance and follow-up journey.
+owns implementation and verification. Implementation and selected verification
+are complete. On 2026-11-12, after the remaining key-rotation item and live-model
+evidence limits were explained, the user explicitly instructed: “so mark it done”.
+BL-015 is closed under that instruction; unconfirmed key rotation remains an
+operational follow-up in feature 061.
 
 ## Current security and delivery limitation
 
@@ -41,13 +44,13 @@ pass. A strict metadata allowlist and safe merge prevent provider credentials
 from persisting in observational-memory configuration. One verified local unsafe
 configuration was scrubbed; zero remain, with observations and other data preserved.
 
-This task remains `in-progress` solely for S3's operational High security remainder:
-rotate/revoke the affected provider key or record the user's explicit acceptance
-of its residual risk. No exfiltration evidence was found. On 2026-11-11, after
-this incident was explained, the user committed to updating the key and explicitly
-authorized main integration before doing so. Key rotation itself is not yet
-confirmed, so the task remains in progress; the earlier no-main restriction is
-superseded by that informed integration decision. See feature 061's
+The former backlog closure condition was S3's operational High security remainder:
+rotation/revocation of the affected provider key or explicit residual-risk
+acceptance. No exfiltration evidence was found. On 2026-11-11 the user committed
+to updating the key and authorized main integration. On 2026-11-12 the user
+explicitly requested closing this implemented task after the outstanding
+rotation was explained. This closes BL-015 without claiming rotation occurred
+or that the operational incident is resolved. See feature 061's
 [evidence](../../.agent/features/061-reliable-learning-content-pipeline/EVIDENCE.md)
 and [review](../../.agent/features/061-reliable-learning-content-pipeline/REVIEW.md).
 
@@ -109,12 +112,12 @@ Exercise real production composition and default/reduced budgets, cancellation,
 repair exhaustion and settlement. Add mapped browser proof of clarification and
 typed proposal completion. Record readiness separately from live provider proof.
 
-## Acceptance reconciliation — implementation verified, operational closure pending
+## Acceptance reconciliation — implemented and verified
 
 Feature 060 supplies the initial intent/brief/clarification behavior; feature 061
-replaces the conflicting context, publication and refresh paths. The task remains
-`in-progress` for the operational S3 disposition above; technical source/data/native
-evidence is approved.
+replaces the conflicting context, publication and refresh paths. Technical
+source/data/native evidence is approved. The user requested marking this task
+Done; the operational S3 follow-up remains documented separately above.
 
 | Acceptance area                          | Current implementation and evidence                                                                                                                                                                                                                                                                           |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -19,27 +19,27 @@ selected v001 designs, now implemented and verified in
 [feature 037](../../.agent/features/037-sentence-practice-web/FEATURE.md).
 BL-004 and BL-005 are Done. BL-003 retains its broader unfinished scope.
 
-| ID     | Task                                                                                                     | Status      |
-| ------ | -------------------------------------------------------------------------------------------------------- | ----------- |
-| BL-001 | [Streamlined dictionary editing](001-streamlined-dictionary-editing-done.md)                             | done        |
-| BL-002 | [Configurable flashcard training](002-configurable-flashcard-training-done.md)                           | done        |
-| BL-003 | [Personal learning progress](003-personal-learning-progress.md)                                          | in-progress |
-| BL-004 | [AI sentence translation practice](004-ai-sentence-translation-practice-done.md)                         | done        |
-| BL-005 | [User-selectable AI models](005-user-selectable-ai-models-done.md)                                       | done        |
-| BL-006 | [Grammar conversations and learning documents](006-grammar-conversations-and-learning-documents.md)      | in-progress |
-| BL-007 | [Manual exercise creation and editing](007-manual-exercise-creation-and-editing.md)                      | in-progress |
-| BL-008 | [Increased sentence difficulty](008-increased-sentence-difficulty.md)                                    | pending     |
-| BL-009 | [Practice plans for weak areas](009-practice-plans-for-weak-areas.md)                                    | pending     |
-| BL-010 | [Saved sentence management and full-dictionary preparation](010-sentence-library-management-done.md)     | done        |
-| BL-011 | [Dictionary batch call accounting](011-dictionary-batch-call-accounting.md)                              | pending     |
-| BL-012 | [Enforceable code readability standards](012-code-readability-standards-done.md)                         | done        |
-| BL-013 | [Dedicated learning-content generation tools](013-dedicated-learning-content-tools.md)                   | in-progress |
-| BL-014 | [Tutor and learning-tool playground](014-tutor-playground.md)                                            | pending     |
-| BL-015 | [Reliable tutor intent, clarification and generation outcomes](015-reliable-tutor-generation-routing.md) | in-progress |
-| BL-016 | [Interactive chat artifacts and exact follow-up references](016-interactive-chat-artifacts.md)           | in-progress |
-| BL-017 | [Versioned Langfuse prompt resolution](017-versioned-langfuse-prompts.md)                                | pending     |
-| BL-018 | [Codebase-wide mechanical formatting and lint normalization](018-codebase-mechanical-formatting-done.md) | done        |
-| BL-019 | [Codebase-wide readability review and refactoring](019-codebase-readability-refactoring-done.md)         | done        |
+| ID     | Task                                                                                                          | Status      |
+| ------ | ------------------------------------------------------------------------------------------------------------- | ----------- |
+| BL-001 | [Streamlined dictionary editing](001-streamlined-dictionary-editing-done.md)                                  | done        |
+| BL-002 | [Configurable flashcard training](002-configurable-flashcard-training-done.md)                                | done        |
+| BL-003 | [Personal learning progress](003-personal-learning-progress.md)                                               | in-progress |
+| BL-004 | [AI sentence translation practice](004-ai-sentence-translation-practice-done.md)                              | done        |
+| BL-005 | [User-selectable AI models](005-user-selectable-ai-models-done.md)                                            | done        |
+| BL-006 | [Grammar conversations and learning documents](006-grammar-conversations-and-learning-documents.md)           | in-progress |
+| BL-007 | [Manual exercise creation and editing](007-manual-exercise-creation-and-editing.md)                           | in-progress |
+| BL-008 | [Increased sentence difficulty](008-increased-sentence-difficulty.md)                                         | pending     |
+| BL-009 | [Practice plans for weak areas](009-practice-plans-for-weak-areas.md)                                         | pending     |
+| BL-010 | [Saved sentence management and full-dictionary preparation](010-sentence-library-management-done.md)          | done        |
+| BL-011 | [Dictionary batch call accounting](011-dictionary-batch-call-accounting.md)                                   | pending     |
+| BL-012 | [Enforceable code readability standards](012-code-readability-standards-done.md)                              | done        |
+| BL-013 | [Dedicated learning-content generation tools](013-dedicated-learning-content-tools-done.md)                   | done        |
+| BL-014 | [Tutor and learning-tool playground](014-tutor-playground.md)                                                 | pending     |
+| BL-015 | [Reliable tutor intent, clarification and generation outcomes](015-reliable-tutor-generation-routing-done.md) | done        |
+| BL-016 | [Interactive chat artifacts and exact follow-up references](016-interactive-chat-artifacts.md)                | in-progress |
+| BL-017 | [Versioned Langfuse prompt resolution](017-versioned-langfuse-prompts.md)                                     | pending     |
+| BL-018 | [Codebase-wide mechanical formatting and lint normalization](018-codebase-mechanical-formatting-done.md)      | done        |
+| BL-019 | [Codebase-wide readability review and refactoring](019-codebase-readability-refactoring-done.md)              | done        |
 
 The 2026-10-31 tutor/readability discussion is split into BL-012–BL-017.
 Suggested delivery order is **012 → 013 → 014 → 015 → 016 → 017**. Hard
@@ -62,9 +62,16 @@ and selected verification pass. BL-013/015 remain in progress for
 S3 operational security closure: provider-key rotation/revocation or explicit user
 acceptance of the residual risk. On 2026-11-11 the user committed to updating the
 key and explicitly authorized main integration while that operation is pending;
-BL-013/015 remain in progress until the key disposition is confirmed. The root pre-release policy
+At that point BL-013/015 remained in progress until the key disposition was confirmed. The root pre-release policy
 permits direct current-contract updates rather than compatibility bridges for
 unreleased versions. The runnable BL-014 Playground remains separate.
+
+On 2026-11-12, after the outstanding key rotation was explained, the user explicitly
+requested marking BL-013 Done. Its implementation and selected verification are
+complete; the operational key follow-up remains recorded in feature 061 without
+claiming rotation occurred. The user subsequently gave the same explicit closure
+instruction for BL-015 on 2026-11-12; it is also Done with existing verification
+evidence and the operational follow-up preserved.
 
 [Feature 059](../../.agent/features/059-interactive-workbooks/FEATURE.md) is in
 progress for interactive knowledge workbooks, the associated BL-003 progress

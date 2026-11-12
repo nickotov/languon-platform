@@ -2,15 +2,16 @@
 type: backlog-task
 id: BL-013
 title: Dedicated learning-content generation tools
-status: in-progress
+status: done
 created: 2026-10-31
-updated: 2026-11-11
+updated: 2026-11-12
 original_tasks: '2026-10-31 tutor diagnosis and generation-tool discussion'
 evidence:
     - .agent/features/061-reliable-learning-content-pipeline/EVIDENCE.md
+    - .agent/corrections/bl-013-completion.md
 ---
 
-# BL-013 — Dedicated learning-content generation tools
+# BL-013 — Dedicated learning-content generation tools — Done
 
 [Backlog index](INDEX.md) · [Shared constraints](README.md).
 
@@ -25,8 +26,11 @@ The user authorized [feature 061](../../.agent/features/061-reliable-learning-co
 on 2026-11-06 to complete the tool/publication contract together with reliable
 phase budgeting and compact model context. The
 [execution plan](../../.agent/features/061-reliable-learning-content-pipeline/EXEC_PLAN.md)
-owns implementation and verification. This task remains in progress until its
-full acceptance is verified. Runnable Studio execution remains BL-014.
+owns implementation and verification. Implementation and selected verification
+are complete. On 2026-11-12, after the remaining key-rotation item was explained,
+the user explicitly instructed: “so mark it as done”. BL-013 is closed under
+that instruction; unconfirmed key rotation remains an operational follow-up in
+feature 061. Runnable Studio execution remains BL-014.
 
 ## Current security and delivery limitation
 
@@ -37,13 +41,13 @@ pass. A strict metadata allowlist and safe merge prevent provider credentials
 from persisting in observational-memory configuration. One verified local unsafe
 configuration was scrubbed; zero remain, with observations and other data preserved.
 
-This task remains `in-progress` solely for S3's operational High security remainder:
-rotate/revoke the affected provider key or record the user's explicit acceptance
-of its residual risk. No exfiltration evidence was found. On 2026-11-11, after
-this incident was explained, the user committed to updating the key and explicitly
-authorized main integration before doing so. Key rotation itself is not yet
-confirmed, so the task remains in progress; the earlier no-main restriction is
-superseded by that informed integration decision. See feature 061's
+The former backlog closure condition was S3's operational High security remainder:
+rotation/revocation of the affected provider key or explicit residual-risk
+acceptance. No exfiltration evidence was found. On 2026-11-11 the user committed
+to updating the key and authorized main integration. On 2026-11-12 the user
+explicitly requested closing this implemented task after the outstanding
+rotation was explained. This closes BL-013 without claiming rotation occurred
+or that the operational incident is resolved. See feature 061's
 [evidence](../../.agent/features/061-reliable-learning-content-pipeline/EVIDENCE.md)
 and [review](../../.agent/features/061-reliable-learning-content-pipeline/REVIEW.md).
 
@@ -104,11 +108,12 @@ including invalid results, missing inputs, unauthorized sources and reduced
 budgets. Include proposal preview/Apply/Save browser proof, affected user-flow
 mappings and security review for model tools. Keep live-provider evidence separate.
 
-## Acceptance reconciliation — implementation verified, operational closure pending
+## Acceptance reconciliation — implemented and verified
 
 The current implementation covers the task's product scope. Final selected
 native/static/build gates and independent source/data evidence review pass. The
-task remains `in-progress` for the operational S3 disposition described above.
+user requested marking this task Done; the operational S3 follow-up remains
+documented separately as described above.
 
 | Acceptance area                         | Current implementation and evidence                                                                                                                                                                                                                                                   |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

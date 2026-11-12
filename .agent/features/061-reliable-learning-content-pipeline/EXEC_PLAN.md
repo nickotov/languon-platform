@@ -148,3 +148,21 @@ incident was explained and committed to updating the key. This supersedes earlie
 no-main restrictions, without claiming rotation or production qualification is
 done. See [feature063 integration decision](../063-dictionary-chat-snippets/EXEC_PLAN.md#integration-disposition--2026-11-11).
 Existing approved runtime evidence is unchanged; no deployment/push/deletion.
+
+## BL-013 closure instruction — 2026-11-12
+
+After implementation and the outstanding key rotation were explained, the user
+explicitly said “so mark it as done” for BL-013. The implemented and verified
+[task](../../../docs/backlog/013-dedicated-learning-content-tools-done.md) is now
+Done under that instruction. This supersedes earlier directions to keep BL-013
+in progress. Key rotation remains unconfirmed; this does not close S3, change
+BL-015's status, or assert new implementation/runtime evidence.
+
+## BL-015 closure instruction — 2026-11-12
+
+After BL-015's implemented behavior, verification and remaining key-rotation item
+were explained, the user explicitly said “so mark it done”. The implemented and
+verified [task](../../../docs/backlog/015-reliable-tutor-generation-routing-done.md)
+is now Done under that instruction, superseding earlier directions to keep BL-015
+in progress. Key rotation remains unconfirmed; this does not close S3 or assert
+new runtime evidence or live-model intent-quality proof.
