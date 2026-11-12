@@ -87,18 +87,19 @@
 .addCard {
     display: flex;
     align-items: center;
-    gap: var(--space-12);
+    gap: var(--space-8);
     position: fixed;
     bottom: var(--size-24);
     inset-inline-start: 50%;
     transform: translateX(-50%);
     z-index: 20;
+    width: max-content;
     max-width: calc(100vw - var(--size-32));
 }
 
 .trainButton {
-    height: var(--size-52);
-    font-size: var(--size-16);
+    height: var(--size-44);
+    font-size: var(--size-14);
     max-width: 100%;
     min-width: 0;
     padding-inline: clamp(var(--space-8), 5vw, var(--space-24));
@@ -211,6 +212,12 @@
     .addCard {
         bottom: var(--size-32);
         inset-inline-start: calc(50% + var(--app-sidebar-center-offset, 0px));
+
+        padding: var(--space-4);
+        backdrop-filter: blur(var(--size-2));
+        box-shadow: 0 0 var(--size-8) var(--size-2) rgba(0, 0, 0, 0.05);
+        border-radius: var(--radius-15);
+        background: transparent;
     }
 }
 
@@ -319,7 +326,9 @@
 
 @media (min-width: 768px) {
     .trainButton {
-        width: var(--size-52);
+        height: var(--size-36);
+        min-height: var(--size-36);
+        width: var(--size-36);
         padding-inline: 0;
     }
 }
@@ -341,6 +350,6 @@
         max-width: calc(100vw - var(--size-32));
         white-space: normal;
         height: auto;
-        min-height: var(--size-52);
+        min-height: var(--size-44);
     }
 }

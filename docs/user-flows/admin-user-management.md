@@ -340,6 +340,8 @@ verified deterministically without shared services.
 - Disabled owner or revoked session: clear memory state and return to login.
 - Expired access token with a valid admin refresh session: coordinate one
   refresh and retry the protected request once; do not persist either token.
+  Cancelling an individual page request must not cancel cookie rotation shared
+  with other pending requests or turn their refresh into a sign-out.
 - Recent authentication expired: require a fresh sign-in and never replay the
   original mutation.
 - Stale version: show conflict and require a refreshed decision.

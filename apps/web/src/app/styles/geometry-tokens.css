@@ -57,6 +57,7 @@
     --size-14: 0.875rem;
     --space-14: var(--size-14);
     --size-15: 0.9375rem;
+    --radius-15: var(--size-15);
     --size-17: 1.0625rem;
     --size-18: 1.125rem;
     --size-22: 1.375rem;

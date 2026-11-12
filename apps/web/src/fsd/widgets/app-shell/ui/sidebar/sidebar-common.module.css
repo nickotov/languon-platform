@@ -21,7 +21,10 @@
 }
 
 .railBrand {
-    justify-content: center;
+    flex-direction: column;
+    gap: var(--space-4);
+    height: auto;
+    padding-block: var(--space-8);
 }
 
 .tools {

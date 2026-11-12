@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision sidebar-navigation sha256:030165acd42957c3
+// @user-flow-revision sidebar-navigation sha256:267f9cb518298d99
 
 const api = 'http://127.0.0.1:4005';
 const runId = process.env.AUTH_E2E_RUN_ID ?? 'local';
@@ -348,6 +348,23 @@ test('contextual sidebar renders its source geometry and accessible rail and dra
         page.getByRole('heading', { name: item.name, exact: true }),
     ).toBeVisible();
 
+    for (const label of ['Train', 'Add card']) {
+        const toolbarAction = page.getByRole('button', {
+            name: label,
+            exact: true,
+        });
+
+        await expect(toolbarAction).toBeVisible();
+        await expect
+            .poll(async () => {
+                const box = await toolbarAction.boundingBox();
+
+                return box && { width: box.width, height: box.height };
+            })
+            .toEqual({ width: 36, height: 36 });
+    }
+
+    await capture(page, info, 'dictionary-compact-toolbar-1440');
     await page.goto('/');
     const sidebar = page.getByRole('complementary', {
         name: 'Application sidebar',
@@ -436,6 +453,33 @@ test('contextual sidebar renders its source geometry and accessible rail and dra
                 : Infinity;
         })
         .toBeLessThanOrEqual(1);
+
+    await expect
+        .poll(async () => {
+            const [logo, expand, search] = await Promise.all([
+                sidebar
+                    .getByRole('link', { name: 'Languon home', exact: true })
+                    .boundingBox(),
+                sidebar
+                    .getByRole('button', {
+                        name: 'Expand sidebar',
+                        exact: true,
+                    })
+                    .boundingBox(),
+                sidebar
+                    .getByRole('button', { name: 'Search', exact: true })
+                    .boundingBox(),
+            ]);
+
+            return (
+                logo !== null &&
+                expand !== null &&
+                search !== null &&
+                expand.y >= logo.y + logo.height &&
+                expand.y + expand.height <= search.y
+            );
+        })
+        .toBe(true);
 
     await sidebar.getByRole('link', { name: 'Home', exact: true }).hover();
     await expect(
@@ -573,5 +617,38 @@ test('contextual sidebar renders its source geometry and accessible rail and dra
     await page.keyboard.press('Escape');
     await expect(drawer).not.toBeVisible();
     await expect(open).toBeFocused();
+    await page.goto(`/dictionaries/${item.id}`);
+    await expect(
+        page.getByRole('heading', { name: item.name, exact: true }),
+    ).toBeVisible();
+
+    for (const label of ['Train', 'Add card']) {
+        const toolbarAction = page.getByRole('button', {
+            name: label,
+            exact: true,
+        });
+
+        await expect(toolbarAction).toBeVisible();
+        await expect
+            .poll(async () => {
+                const box = await toolbarAction.boundingBox();
+
+                return Boolean(box && box.width >= 44 && box.height >= 44);
+            })
+            .toBe(true);
+    }
+
+    const touchTrain = await page
+        .getByRole('button', { name: 'Train', exact: true })
+        .boundingBox();
+    const touchAdd = await page
+        .getByRole('button', { name: 'Add card', exact: true })
+        .boundingBox();
+
+    expect(touchTrain).not.toBeNull();
+    expect(touchAdd).not.toBeNull();
+    expect(touchTrain!.y).toBe(touchAdd!.y);
+
+    await capture(page, info, 'dictionary-touch-toolbar-390');
     assertErrors();
 });

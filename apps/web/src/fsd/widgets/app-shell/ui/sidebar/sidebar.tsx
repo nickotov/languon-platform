@@ -73,7 +73,16 @@ export function Sidebar({
                     label={t('auth.brandHome')}
                     monogram={rail}
                 />
-                {rail ? null : (
+                {rail ? (
+                    <IconButton
+                        className={`${styles.expand} ${styles.railControl}`}
+                        icon={<PanelLeftOpen />}
+                        label={t('shell.expandSidebar')}
+                        onClick={shell.toggleRail}
+                        tooltipPlacement='right'
+                        variant='ghost'
+                    />
+                ) : (
                     <IconButton
                         className={touch ? styles.touchButton : styles.collapse}
                         size='compact'
@@ -167,16 +176,6 @@ export function Sidebar({
                 ) : null}
             </nav>
             <div className={rail ? styles.railFooter : undefined}>
-                {rail ? (
-                    <IconButton
-                        className={`${styles.expand} ${styles.railControl}`}
-                        icon={<PanelLeftOpen />}
-                        label={t('shell.expandSidebar')}
-                        onClick={shell.toggleRail}
-                        tooltipPlacement='right'
-                        variant='ghost'
-                    />
-                ) : null}
                 {authenticated ? (
                     <AccountArea
                         accountOpen={shell.accountOpen}

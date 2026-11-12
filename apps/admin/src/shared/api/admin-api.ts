@@ -154,7 +154,11 @@ async function refreshAccessToken(signal?: AbortSignal): Promise<string> {
 }
 
 async function refreshSession(signal?: AbortSignal) {
+    signal?.throwIfAborted();
+
     let refreshError: unknown;
+    // Refresh rotates a shared HttpOnly cookie. Cancelling one page's request
+    // must not abort that rotation or fail other callers awaiting this session.
     const session = await adminRefreshCoordinator.refresh(() =>
         client
             .request('/admin/auth/refresh', {
@@ -162,7 +166,6 @@ async function refreshSession(signal?: AbortSignal) {
                 bodySchema: RefreshRequestSchema,
                 method: 'POST',
                 responseSchema: PasskeyAuthenticationVerifyResponseSchema,
-                signal,
             })
             .catch((error: unknown) => {
                 refreshError = error;
@@ -170,6 +173,8 @@ async function refreshSession(signal?: AbortSignal) {
                 throw error;
             }),
     );
+
+    signal?.throwIfAborted();
 
     if (refreshError) {
         throw refreshError;

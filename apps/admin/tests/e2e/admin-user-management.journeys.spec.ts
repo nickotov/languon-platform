@@ -22,7 +22,7 @@ import {
 } from '@languon/contracts';
 import { calibrateAccounting, configureModel } from './support/setup-admin';
 
-// @user-flow-revision admin-user-management sha256:4329a23dfacbe067
+// @user-flow-revision admin-user-management sha256:9dafd7d45d4d16b1
 // @user-flow-revision ai-provider-management sha256:c753dbe67597ad6d
 // @user-flow-revision ai-credit-wallet sha256:99b7d70e3e3a8ddb
 

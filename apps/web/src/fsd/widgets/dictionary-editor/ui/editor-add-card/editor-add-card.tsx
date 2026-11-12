@@ -17,7 +17,7 @@ export function EditorAddCard({
             leadingIcon={<Plus size={20} aria-hidden />}
             disabled={cardMutation.isPending}
             onClick={openCardDraft}
-            size='large'
+            size='compact'
             type='button'
         >
             {t('dictionary.cards.add')}

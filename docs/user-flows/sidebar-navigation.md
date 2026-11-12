@@ -70,7 +70,8 @@ browser file after exporting the reviewed target variables, use
    browser context, verify both the recent resource and its pin. Unpin there and
    reload the first context; the change persists. Hover and prefetch do not
    count as opens.
-4. Collapse the sidebar. Expect a 64 px rail with the brand mark centered. Hover
+4. Collapse the sidebar. Expect a 64 px rail with the brand mark centered and
+   **Expand sidebar** directly below the logo, before Search and Create. Hover
    Home and Create to reveal their visible tooltips. Focus a resource icon and open its
    flyout with the keyboard; filter by title and verify matching results. Escape
    dismisses it and restores focus. Pointer entry/exit uses the design's delays;
@@ -90,7 +91,8 @@ browser file after exporting the reviewed target variables, use
   search beyond shortcuts, successful-open recency, pin persistence in a
   second authenticated browser context and account isolation.
 - `responsive-sidebar-and-keyboard-flyouts` proves rendered 240/64 px navigation,
-  centered rail branding and visible Home/Create tooltips, keyboard flyout
+  centered rail branding, Expand directly below the logo, visible Home/Create
+  tooltips, keyboard flyout
   opening/filtering/dismissal, tablet/mobile drawers, focus
   restoration and no document overflow, with retained screenshots.
 

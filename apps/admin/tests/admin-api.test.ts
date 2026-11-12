@@ -89,6 +89,82 @@ describe('admin API boundary', () => {
         }
     });
 
+    it('keeps a shared refresh alive when its first request is cancelled', async () => {
+        const controller = new AbortController();
+        let beginRefresh!: () => void;
+        let finishRefresh!: () => void;
+        const started = new Promise<void>((resolve) => {
+            beginRefresh = resolve;
+        });
+        const pendingRefresh = new Promise<void>((resolve) => {
+            finishRefresh = resolve;
+        });
+        const fetchMock = vi.fn(
+            async (input: RequestInfo | URL, init?: RequestInit) => {
+                if (String(input).endsWith('/admin/auth/refresh')) {
+                    beginRefresh();
+                    await Promise.race([
+                        pendingRefresh,
+                        new Promise<never>((_resolve, reject) => {
+                            init?.signal?.addEventListener(
+                                'abort',
+                                () => {
+                                    reject(init.signal?.reason);
+                                },
+                                { once: true },
+                            );
+                        }),
+                    ]);
+
+                    return jsonResponse(authenticationResponse());
+                }
+
+                init?.signal?.throwIfAborted();
+
+                return jsonResponse({
+                    data: [],
+                    page: 1,
+                    pageSize: 25,
+                    total: 0,
+                });
+            },
+        );
+
+        vi.stubGlobal('fetch', fetchMock);
+        accessTokenStore.set(
+            'expired-token',
+            new Date(Date.now() - 1000).toISOString(),
+        );
+
+        const cancelled = adminApi.users(
+            { page: 1, pageSize: 25 },
+            controller.signal,
+        );
+        const surviving = adminApi.users({ page: 1, pageSize: 25 });
+        const results = Promise.allSettled([cancelled, surviving]);
+        await started;
+        controller.abort(new DOMException('Request cancelled', 'AbortError'));
+        finishRefresh();
+
+        const [cancelledResult, survivingResult] = await results;
+        expect(survivingResult).toMatchObject({
+            status: 'fulfilled',
+            value: { data: [] },
+        });
+
+        expect(cancelledResult).toMatchObject({
+            status: 'rejected',
+            reason: { name: 'AbortError' },
+        });
+
+        expect(accessTokenStore.get()).toBe('aaa.bbb.ccc');
+        expect(
+            fetchMock.mock.calls.filter(([url]) =>
+                String(url).endsWith('/admin/auth/refresh'),
+            ),
+        ).toHaveLength(1);
+    });
+
     it('does not treat recent-sign-in denial as access-token expiry', async () => {
         const fetchMock = vi.fn().mockResolvedValue(
             jsonResponse(

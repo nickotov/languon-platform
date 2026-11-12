@@ -193,6 +193,20 @@ describe('session-aware contextual sidebar', () => {
                 window.localStorage.getItem(`languon:sidebar:${user.id}`)!,
             ),
         ).toMatchObject({ collapsed: true });
+
+        await interaction.click(
+            screen.getByRole('button', { name: 'Expand sidebar' }),
+        );
+
+        expect(
+            screen.getByRole('button', { name: 'Collapse sidebar' }),
+        ).toBeInTheDocument();
+
+        expect(
+            JSON.parse(
+                window.localStorage.getItem(`languon:sidebar:${user.id}`)!,
+            ),
+        ).toMatchObject({ collapsed: false });
     });
 
     it('shows five section shortcuts and retains the whole-library count', async () => {
