@@ -12,10 +12,12 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border: var(--size-1) solid var(--border-default);
+    border: var(--size-1) solid var(--border-strong);
     border-radius: var(--radius-16);
-    background: var(--background-surface);
+    background: var(--background-assistant);
     color: var(--text-primary);
+    /* Muted labels must stay legible on the tinted conversation surface. */
+    --text-tertiary: var(--text-secondary);
     box-shadow:
         var(--elevation-lg),
         0 0 var(--size-4) rgba(15, 23, 42, 0.1);

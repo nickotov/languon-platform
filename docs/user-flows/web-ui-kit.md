@@ -100,6 +100,21 @@ Inspect the shared Dialog footer and SentenceRow stories for isolated examples.
 These presentation checks are separate from the theme journey below; focused
 component tests cover tooltip modality, trigger identity and keyboard dismissal.
 
+## Assistant conversation surfaces
+
+The contextual language tutor uses a continuous cool-gray surface with a subtle
+indigo bias, shared by its header, transcript and composer surroundings. The
+actual input and generated dictionary/learning-content cards keep neutral
+surfaces. User messages use a stronger soft-indigo bubble. Attached Knowledge
+chat retains a visible divider; floating chat retains its existing elevation.
+The same semantic assistant surface has explicit and system-dark equivalents and
+falls back to Canvas in forced-colors mode. Real focus remains on focused
+controls rather than the entire conversation panel.
+
+Inspect the Dictionary/Chat snippet stories on their assistant-surface backdrop
+in light and dark themes. These are presentation checks; the theme-persistence
+journey below remains unchanged.
+
 ## E2E coverage
 
 - `theme-preference-persistence` proves the SSR default, accessible guest Settings appearance

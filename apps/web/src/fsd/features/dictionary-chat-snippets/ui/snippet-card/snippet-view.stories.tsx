@@ -8,6 +8,7 @@ import {
     DictionarySnippetView,
     type DictionarySnippetViewProps,
 } from './snippet-view';
+import styles from './snippet-view.stories.module.css';
 
 const shopping = [
     ['Bonjour', 'Здравствуйте; добрый день'],
@@ -116,7 +117,9 @@ const meta = {
 
             return (
                 <I18nProvider locale={locale} messages={messages}>
-                    <Story />
+                    <div className={styles.conversationSurface}>
+                        <Story />
+                    </div>
                 </I18nProvider>
             );
         },

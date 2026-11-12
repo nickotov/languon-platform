@@ -2,7 +2,7 @@
     position: relative;
     flex: none;
     border-top: 1px solid var(--border-default);
-    background: var(--background-surface);
+    background: var(--background-assistant);
     padding: var(--space-12) var(--space-12) var(--space-8);
 }
 

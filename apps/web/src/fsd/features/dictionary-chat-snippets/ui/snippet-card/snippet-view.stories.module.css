@@ -1,0 +1,8 @@
+.conversationSurface {
+    width: min(100%, var(--size-480));
+    box-sizing: border-box;
+    padding: var(--space-16);
+    border: var(--size-1) solid var(--border-strong);
+    border-radius: var(--radius-16);
+    background: var(--background-assistant);
+}

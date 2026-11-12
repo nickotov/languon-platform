@@ -3,7 +3,7 @@
     margin-block: var(--space-12);
     border: var(--size-1) solid var(--border-strong);
     border-radius: var(--radius-12);
-    background: var(--background-subtle);
+    background: var(--background-surface);
     color: var(--text-primary);
     overflow-wrap: anywhere;
 }

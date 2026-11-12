@@ -1,6 +1,7 @@
 .preview {
     border: var(--size-1) solid var(--border-default);
     border-radius: var(--radius-12);
+    background: var(--background-surface);
     margin-top: var(--space-12);
     min-width: 0;
     overflow-wrap: anywhere;

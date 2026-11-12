@@ -60,7 +60,7 @@
     padding: var(--space-8) var(--space-14);
     border-radius: var(--radius-16) var(--radius-16) var(--radius-4)
         var(--radius-16);
-    background: var(--user-message-bg);
+    background: var(--primary-100);
     font-size: var(--size-14);
     line-height: var(--size-24);
     white-space: pre-wrap;
