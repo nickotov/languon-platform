@@ -1,19 +1,6 @@
-import type { CSSProperties, HTMLAttributes } from 'react';
-
-import styles from './skeleton.module.css';
-
-export type SkeletonVariant = 'circle' | 'rect' | 'text';
-
-export type SkeletonAnimation = 'none' | 'pulse' | 'shimmer';
-
-export type SkeletonProps = HTMLAttributes<HTMLDivElement> & {
-    animation?: SkeletonAnimation;
-    height?: number | string;
-    lastLineWidth?: number | string;
-    lines?: number;
-    variant?: SkeletonVariant;
-    width?: number | string;
-};
+import type { CSSProperties } from 'react';
+import styles from '../styles/skeleton-common.module.css';
+import type { SkeletonProps } from './types';
 
 export function Skeleton({
     animation = 'pulse',
@@ -79,33 +66,6 @@ export function Skeleton({
             style={blockStyle(width)}
         >
             <span className={styles.srOnly}>Loading…</span>
-        </div>
-    );
-}
-
-export type SkeletonCardProps = { className?: string; lines?: number };
-
-export function SkeletonCard({ className, lines = 3 }: SkeletonCardProps) {
-    return (
-        <div className={[styles.card, className].filter(Boolean).join(' ')}>
-            <div className={styles.cardHeader}>
-                <Skeleton
-                    animation='shimmer'
-                    className={styles.cardAvatar}
-                    variant='circle'
-                />
-                <div className={styles.cardHeading}>
-                    <Skeleton
-                        animation='shimmer'
-                        className={styles.cardTitle}
-                    />
-                    <Skeleton
-                        animation='shimmer'
-                        className={styles.cardSubtitle}
-                    />
-                </div>
-            </div>
-            <Skeleton animation='shimmer' lines={lines} />
         </div>
     );
 }

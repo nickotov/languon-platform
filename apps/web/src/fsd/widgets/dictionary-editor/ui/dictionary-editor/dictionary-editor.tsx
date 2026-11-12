@@ -29,7 +29,7 @@ import { EditorSettingsSheet } from '../editor-settings-sheet/editor-settings-sh
 import { EditorSharingSheet } from '../editor-sharing-sheet/editor-sharing-sheet';
 import { EditorSummary } from '../editor-summary/editor-summary';
 import { EditorToolbar } from '../editor-toolbar/editor-toolbar';
-import styles from '../dictionary-editor-common.module.css';
+import styles from '../styles/dictionary-editor-common.module.css';
 
 export function DictionaryEditor({
     dictionaryId,

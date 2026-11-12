@@ -17,7 +17,7 @@ import { Badge, Card, Checkbox, Menu } from '@/fsd/shared/ui';
 import type { ReactNode } from 'react';
 import type { DictionaryCardRowProps } from '../../types';
 import { OptionalFields } from '../optional-fields/optional-fields';
-import styles from '../dictionary-card-list-common.module.css';
+import styles from '../styles/dictionary-card-list-common.module.css';
 
 export function DictionaryCardRow({
     card,

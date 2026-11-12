@@ -23,7 +23,7 @@ import {
 import { portraitCopy } from '../../lib/copy';
 import { DataUseDetails } from '../data-use-details/data-use-details';
 import { PortraitPageState } from '../page-state/page-state';
-import styles from '../common.module.css';
+import styles from '../styles/common-common.module.css';
 
 export function PortraitIntroPage() {
     const management = usePortraitManagement();

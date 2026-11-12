@@ -1,6 +1,6 @@
 import { Button } from '@/fsd/shared/ui';
 import { Plus } from 'lucide-react';
-import styles from '../dictionary-editor-common.module.css';
+import styles from '../styles/dictionary-editor-common.module.css';
 import type { EditorViewFields } from '../../lib/editor-workspace';
 
 export function EditorAddCard({

@@ -1,6 +1,6 @@
 export { ConversationPreferences } from './ui/conversation-preferences/conversation-preferences';
-export { ConversationDefaults } from './ui/conversation-preferences/conversation-defaults';
-export { PortraitChatSettings } from './ui/conversation-preferences/portrait-chat-settings';
+export { ConversationDefaults } from './ui/conversation-preferences/ui/conversation-defaults/conversation-defaults';
+export { PortraitChatSettings } from './ui/conversation-preferences/ui/portrait-chat-settings/portrait-chat-settings';
 export {
     mergeDisplayedPreferences,
     inheritPortraitField,

@@ -3,14 +3,14 @@ import type { PortraitItems } from '@languon/contracts';
 import { useI18n, type Locale } from '@/fsd/shared/i18n';
 import { GOALS, NEEDS, INTERESTS } from '../../lib/options';
 import { labels, copy } from '../../lib/copy';
-import { EditorSection } from '../editor-controls/editor-controls';
+import { EditorSection } from '../editor-controls';
 import { LanguagesEditor } from '../languages-editor/languages-editor';
 import {
     StyleFields,
     PreferenceField,
     type PreferenceKey,
-} from '../preference-fields/preference-fields';
-import styles from '../common.module.css';
+} from '../preference-fields';
+import styles from '../styles/common-common.module.css';
 import { ListSection } from '../list-section/list-section';
 import { ExplanationSection } from '../explanation-section/explanation-section';
 import { ConfirmedNotesEditor } from '../confirmed-notes-editor/confirmed-notes-editor';

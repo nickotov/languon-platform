@@ -12,8 +12,8 @@ import {
     Select,
 } from '@/fsd/shared/ui';
 import { useTextDestinations } from '../../hooks/use-text-destinations';
-import { FolderFormDialog } from '../folder-form-dialog';
-import styles from '../dialogs.module.css';
+import { FolderFormDialog } from '../folder-form-dialog/folder-form-dialog';
+import styles from '../styles/dialogs-common.module.css';
 
 type Props = {
     open: boolean;

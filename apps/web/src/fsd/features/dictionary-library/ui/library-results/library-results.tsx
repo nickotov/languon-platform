@@ -8,7 +8,7 @@ import type {
     LanguageCatalogEntry,
 } from '@languon/contracts';
 import { LibraryDictionaryRow } from '../library-dictionary-row/library-dictionary-row';
-import styles from '../dictionary-library-common.module.css';
+import styles from '../styles/dictionary-library-common.module.css';
 
 export type LibraryResultsProps = {
     catalog: readonly LanguageCatalogEntry[];

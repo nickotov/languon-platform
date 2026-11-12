@@ -2,7 +2,7 @@
 import type { MoveTextRequest } from '@languon/contracts';
 import { useSessionStore } from '@/fsd/entities/session';
 import { TextsAuthBoundary } from '@/fsd/features/text-management';
-import { TextWorkspace } from './text-workspace';
+import { TextWorkspace } from './ui/text-workspace/text-workspace';
 export function TextWorkspacePage({
     folderId = null,
     textId,

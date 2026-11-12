@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { ConversationMessageSchema } from '@languon/contracts';
 import type { ConversationUIMessage } from '../src/fsd/entities/conversation';
-import { TutorMessage } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-message';
+import { TutorMessage } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/tutor-message/tutor-message';
 import { render } from './render';
 
 it.each(['succeeded', 'failed', 'none'] as const)(

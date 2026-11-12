@@ -5,7 +5,7 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { Plugin, TextSelection } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import type { LearningBlock } from '@languon/contracts';
-import styles from './learning-block-node.module.css';
+import styles from '../styles/learning-block-authoring-learning-block-node-common.module.css';
 
 /** Writable prose affordances are editor decorations, never raw HTML or synthetic saved content. */
 export const LearningBlockTextGaps = Extension.create<{ label: string }>({

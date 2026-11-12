@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { LearningBlockSchema, TextSchema } from '@languon/contracts';
-import { BlockLibrarySave } from '../src/fsd/features/knowledge-notes/ui/library-copy/block-library-save';
+import { BlockLibrarySave } from '../src/fsd/features/knowledge-notes/ui/library-copy/block-library-save/block-library-save';
 import {
     textLibraryBlock,
     vocabularyLibraryBlock,

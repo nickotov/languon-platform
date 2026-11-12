@@ -6,8 +6,8 @@ import { labels, copy } from '../../lib/copy';
 import { MIXING } from '../../lib/options';
 import { ShortTextInput } from '../short-text-input/short-text-input';
 import { languageLabel, toggleItem } from '../../lib/items';
-import { ChoiceChip, EditorSection } from '../editor-controls/editor-controls';
-import styles from '../common.module.css';
+import { ChoiceChip, EditorSection } from '../editor-controls';
+import styles from '../styles/common-common.module.css';
 export function ExplanationSection({
     items,
     onChange,

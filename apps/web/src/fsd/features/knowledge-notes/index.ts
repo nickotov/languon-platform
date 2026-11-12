@@ -26,10 +26,10 @@ export {
 } from './ui/block-proposals/knowledge-block-proposals';
 export type { KnowledgeBlockProposalContext } from './ui/block-proposals/knowledge-block-proposals';
 
-export { BlockLibrarySave } from './ui/library-copy/block-library-save';
+export { BlockLibrarySave } from './ui/library-copy/block-library-save/block-library-save';
 export { localizedBlockLabels as knowledgeLearningBlockLabels } from './ui/learning-block-authoring/block-locales';
 
-export type { KnowledgeReadingBlockOverrides } from './ui/knowledge-document-view/reader-learning-block';
+export type { KnowledgeReadingBlockOverrides } from './ui/knowledge-document-view/ui/reader-learning-block/reader-learning-block';
 
 export {
     knowledgeBlockReferences,

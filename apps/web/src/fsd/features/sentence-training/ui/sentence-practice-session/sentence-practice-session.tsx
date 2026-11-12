@@ -1,6 +1,6 @@
 'use client';
 import { ActionConsentDialog } from '@/fsd/entities/ai-action';
-import styles from './sentence-practice-session.module.css';
+import styles from '../styles/sentence-practice-session-common.module.css';
 import { restoreSentenceTopLayer } from '../restore-sentence-top-layer';
 import { useSentenceDisplay } from '../use-sentence-display';
 import { useSentenceCopy } from '../sentence-copy';
@@ -25,10 +25,10 @@ import { SentenceSessionResults } from '../sentence-session-results/sentence-ses
 import { SentencePracticeHeader } from '../sentence-practice-header/sentence-practice-header';
 import { SentencePracticeFooter } from '../sentence-practice-footer/sentence-practice-footer';
 
-import { SentencePracticeNotices } from './sentence-practice-notices';
-import { SentencePracticeExercise } from './sentence-practice-exercise';
-import { SentenceEarlierAttempts } from './sentence-earlier-attempts';
-import { SentencePracticeReference } from './sentence-practice-reference';
+import { SentencePracticeNotices } from './ui/sentence-practice-notices/sentence-practice-notices';
+import { SentencePracticeExercise } from './ui/sentence-practice-exercise/sentence-practice-exercise';
+import { SentenceEarlierAttempts } from './ui/sentence-earlier-attempts/sentence-earlier-attempts';
+import { SentencePracticeReference } from './ui/sentence-practice-reference/sentence-practice-reference';
 
 export type SentencePracticeSessionProps = {
     renderAudio?: SentenceAudioRenderer;

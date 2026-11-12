@@ -13,21 +13,21 @@ import { applyLearningBlockEdit } from '../../lib/apply-learning-block-edit';
 import type { BlockKind } from '../../lib/learning-block-form';
 import type { KnowledgeBlockCopyContext } from '../../api/block-copy-api';
 import { BlockCopyDialog } from '../block-copy/copy-blocks-to-note';
-import { LibrarySaveDialog } from '../library-copy/library-save-dialog';
+import { LibrarySaveDialog } from '../library-copy/library-save-dialog/library-save-dialog';
 import { libraryLabels } from '../library-copy/library-labels';
 import { useI18n } from '@/fsd/shared/i18n';
 import type { KnowledgeLibraryContext } from '../../api/library-copy-api';
-import { InsertLibraryBlock } from '../library-copy/insert-library-block';
-import { type UploadBlockAudio } from './audio-block-upload';
-import { useBlockAuthoring } from './block-authoring-context';
-import { BlockInsertMenu } from './block-insert-menu';
-import { ExerciseSetDialog } from './exercise-set-dialog';
-import { BlockFormDialog } from './block-form-dialog';
+import { InsertLibraryBlock } from '../library-copy/insert-library-block/insert-library-block';
+import { type UploadBlockAudio } from './ui/audio-block-upload/audio-block-upload';
+import { useBlockAuthoring } from './ui/block-authoring-context/block-authoring-context';
+import { BlockInsertMenu } from './ui/block-insert-menu/block-insert-menu';
+import { ExerciseSetDialog } from './ui/exercise-set-dialog/exercise-set-dialog';
+import { BlockFormDialog } from './ui/block-form-dialog/block-form-dialog';
 import {
     defaultAuthoringLabels,
     type BlockAuthoringLabels,
 } from './block-labels';
-import styles from './learning-block-authoring.module.css';
+import styles from '../styles/learning-block-authoring-common.module.css';
 
 export function LearningBlockAuthoring({
     editor,

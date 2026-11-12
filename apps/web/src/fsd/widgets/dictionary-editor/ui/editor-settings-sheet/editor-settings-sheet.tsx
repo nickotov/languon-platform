@@ -6,7 +6,7 @@ import { DictionarySettingsForm } from '@/fsd/features/dictionary-settings';
 import { BottomSheet } from '@/fsd/shared/ui';
 import type { ComponentProps } from 'react';
 import type { EditorViewFields } from '../../lib/editor-workspace';
-import styles from '../dictionary-editor-common.module.css';
+import styles from '../styles/dictionary-editor-common.module.css';
 
 export function EditorSettingsSheet({
     model,

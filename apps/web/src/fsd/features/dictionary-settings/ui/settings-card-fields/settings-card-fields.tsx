@@ -9,7 +9,7 @@ import { Switch } from '@/fsd/shared/ui';
 import type { SetSetting } from '../../types';
 import { SettingsTranscription } from '../settings-transcription/settings-transcription';
 import { SettingsLanguageField } from '../settings-language-field/settings-language-field';
-import styles from '../dictionary-settings-form-common.module.css';
+import styles from '../styles/dictionary-settings-form-common.module.css';
 
 export function SettingsCardFields({
     dictionary,

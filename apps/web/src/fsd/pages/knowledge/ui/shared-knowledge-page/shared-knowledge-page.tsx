@@ -9,7 +9,7 @@ import { useSessionStore } from '@/fsd/entities/session';
 import { useAuth } from '@/fsd/features/auth';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, ButtonLink, InlineAlert, LoadingState } from '@/fsd/shared/ui';
-import { SharedNoteLearning } from './shared-note-learning';
+import { SharedNoteLearning } from './ui/shared-note-learning/shared-note-learning';
 import type { WorkbookLearningShareAccess } from '@languon/contracts';
 import styles from './shared-knowledge-page.module.css';
 

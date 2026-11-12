@@ -5,7 +5,7 @@ import { useState, type ReactNode } from 'react';
 import type { SentenceExercise } from '@languon/contracts';
 import { Button } from '@/fsd/shared/ui';
 import type { ReferenceComparison } from '../../types';
-import { languageDirection } from '../sentence-content/sentence-content';
+import { languageDirection } from '../sentence-content';
 import { useSentenceCopy } from '../sentence-copy';
 
 export function SentenceReferenceComparison({

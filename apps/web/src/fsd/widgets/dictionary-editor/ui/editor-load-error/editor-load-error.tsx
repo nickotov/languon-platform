@@ -4,7 +4,7 @@ import {
 } from '@/fsd/entities/dictionary';
 import { Button, ButtonLink, ErrorState } from '@/fsd/shared/ui';
 import type { EditorViewFields } from '../../lib/editor-workspace';
-import styles from '../dictionary-editor-common.module.css';
+import styles from '../styles/dictionary-editor-common.module.css';
 
 export function EditorLoadError({
     model,

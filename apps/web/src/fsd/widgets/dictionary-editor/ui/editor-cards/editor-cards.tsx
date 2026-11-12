@@ -9,7 +9,7 @@ import type { ComponentProps } from 'react';
 import type { EditorViewFields } from '../../lib/editor-workspace';
 import { dictionarySpeechSource } from '../../lib/dictionary-speech-source';
 import { syncGenerationUrl } from '../../lib/generation-url';
-import styles from '../dictionary-editor-common.module.css';
+import styles from '../styles/dictionary-editor-common.module.css';
 import { EditorEmptyCards } from '../editor-empty-cards/editor-empty-cards';
 
 type ListProps = ComponentProps<typeof DictionaryCardList>;

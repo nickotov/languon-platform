@@ -22,8 +22,8 @@ import { en } from '../src/fsd/shared/i18n/messages/en';
 import { es } from '../src/fsd/shared/i18n/messages/es';
 import { fr } from '../src/fsd/shared/i18n/messages/fr';
 import { ru } from '../src/fsd/shared/i18n/messages/ru';
-import { TutorModeControl } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-mode-control';
-import { ComposerPreferences } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/composer-preferences';
+import { TutorModeControl } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/tutor-mode-control/tutor-mode-control';
+import { ComposerPreferences } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/composer-preferences/composer-preferences';
 import { useConversation } from '../src/fsd/widgets/contextual-assistant/hooks/use-conversation';
 
 vi.mock(

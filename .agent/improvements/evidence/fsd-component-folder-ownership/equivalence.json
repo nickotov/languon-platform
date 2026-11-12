@@ -1,0 +1,23 @@
+{
+  "import_edges": {
+    "resolvedEdgeCount": 4764,
+    "readOnlyGeneratedEdgesExcluded": 219,
+    "edgeFailures": [],
+    "stylesheetCount": 235,
+    "styleFailures": [],
+    "componentModules": 532,
+    "componentFolders": 532,
+    "componentProblems": []
+  },
+  "declarations": {
+    "baselineComponentDeclarations": 909,
+    "missing": []
+  },
+  "baseline_unit_failures": [
+    "conversation-error-notice.test.tsx: context_too_large attachment guidance expectation",
+    "knowledge-block-reply.test.tsx: acknowledgement insertion expectation (succeeded)",
+    "knowledge-block-reply.test.tsx: acknowledgement insertion expectation (failed)"
+  ],
+  "baseline_comparison": "Same 3 failures and 12 passing cases on archived 10e30632 in the two failing test files; no assertions/product behavior changed",
+  "guard_scope": "Production TSX/JSX under UI; PascalCase functions/arrow/memo/forwardRef/default exports; no symbol analysis of arbitrary custom wrappers/classes/lazy. Current inventory has no uncovered such UI component."
+}

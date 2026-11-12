@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ChatMarkdown } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/chat-markdown';
+import { ChatMarkdown } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/chat-markdown/chat-markdown';
 
 describe('tutor Markdown', () => {
     it('renders unfinished emphasis while streaming and the completed final answer', () => {

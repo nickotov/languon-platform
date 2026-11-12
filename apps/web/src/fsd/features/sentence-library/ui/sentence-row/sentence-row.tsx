@@ -20,7 +20,7 @@ import {
     DirectionBadge,
     StatusBadges,
     OwnershipMeta,
-} from '../sentence-badges/sentence-badges';
+} from '../sentence-badges';
 export function SentenceRow({
     sentence,
     selected,

@@ -4,7 +4,7 @@ import { languageLabel } from '@/fsd/entities/dictionary';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Badge, Field, Select } from '@/fsd/shared/ui';
 import type { useSettingsDraft } from '../../hooks/use-settings-draft';
-import styles from '../dictionary-settings-form-common.module.css';
+import styles from '../styles/dictionary-settings-form-common.module.css';
 
 export function SettingsLanguagePair({
     dictionary,

@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { LearningBlockSchema } from '@languon/contracts';
-import { BlockFormDialog } from '../src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-form-dialog';
+import { BlockFormDialog } from '../src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-form-dialog/block-form-dialog';
 import { defaultAuthoringLabels } from '../src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-labels';
 import { render } from './render';
 import { I18nProvider } from '../src/fsd/shared/i18n';

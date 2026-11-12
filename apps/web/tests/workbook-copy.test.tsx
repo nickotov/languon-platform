@@ -29,17 +29,26 @@ vi.mock('@/fsd/shared/i18n', () => ({
     useI18n: () => ({ locale: 'en', href: (path: string) => path }),
 }));
 
-vi.mock('@/fsd/pages/workbooks/ui/workbook-detail/workbook-membership', () => ({
-    WorkbookMembership: () => null,
-}));
+vi.mock(
+    '@/fsd/pages/workbooks/ui/workbook-detail/ui/workbook-membership/workbook-membership',
+    () => ({
+        WorkbookMembership: () => null,
+    }),
+);
 
-vi.mock('@/fsd/pages/workbooks/ui/workbook-detail/workbook-reader', () => ({
-    WorkbookReader: () => null,
-}));
+vi.mock(
+    '@/fsd/pages/workbooks/ui/workbook-detail/ui/workbook-reader/workbook-reader',
+    () => ({
+        WorkbookReader: () => null,
+    }),
+);
 
-vi.mock('@/fsd/pages/workbooks/ui/workbook-detail/workbook-note-row', () => ({
-    WorkbookNoteRow: () => null,
-}));
+vi.mock(
+    '@/fsd/pages/workbooks/ui/workbook-detail/ui/workbook-note-row/workbook-note-row',
+    () => ({
+        WorkbookNoteRow: () => null,
+    }),
+);
 
 vi.mock(
     '@/fsd/pages/workbooks/ui/workbook-progress-summary/workbook-progress-summary',

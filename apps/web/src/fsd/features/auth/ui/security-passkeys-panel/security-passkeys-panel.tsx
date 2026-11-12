@@ -9,8 +9,8 @@ import { Button, Card, InlineAlert } from '@/fsd/shared/ui';
 import { localizedAuthError } from '../../lib/auth-error-message';
 import { FormMessage } from '../auth-shell';
 import { PasskeyRow } from '../passkey-row/passkey-row';
-import styles from '../auth-ui.module.css';
-import profileStyles from '../security-settings.module.css';
+import styles from '../styles/auth-ui-common.module.css';
+import profileStyles from '../styles/security-settings-common.module.css';
 
 export function SecurityPasskeysPanel({
     embedded,

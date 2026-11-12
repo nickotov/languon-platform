@@ -1,0 +1,893 @@
+[
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/action-budget-confirmation.tsx",
+    "kind": "component",
+    "exports": [
+      "ActionBudgetConfirmation"
+    ],
+    "privateComponents": [],
+    "styles": [],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/action-budget-confirmation/action-budget-confirmation.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/assistant-dialogs.tsx",
+    "kind": "component",
+    "exports": [
+      "AssistantDialogs"
+    ],
+    "privateComponents": [],
+    "styles": [],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/assistant-dialogs/assistant-dialogs.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/assistant-panel.module.css",
+    "kind": "stylesheet",
+    "bytes": 1314,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/assistant-panel.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/published-note-notice.tsx"
+    ],
+    "disposition": "Independent shared stylesheet, all consumers import explicitly (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/assistant-panel.tsx",
+    "kind": "component",
+    "exports": [
+      "AssistantPanel"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./assistant-panel.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/assistant-panel/assistant-panel.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/block-context-picker.tsx",
+    "kind": "component",
+    "exports": [
+      "BlockContextPicker"
+    ],
+    "privateComponents": [],
+    "styles": [],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/block-context-picker/block-context-picker.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/block-reference-controls.module.css",
+    "kind": "stylesheet",
+    "bytes": 2199,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/block-reference-controls.tsx"
+    ],
+    "disposition": "Colocate stylesheet with its sole component owner (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/block-reference-controls.tsx",
+    "kind": "component",
+    "exports": [
+      "BlockReferenceChips",
+      "BlockReferencePicker",
+      "MessageBlockReferences"
+    ],
+    "privateComponents": [],
+    "styles": [],
+    "exportAliases": [],
+    "disposition": "Split independent exported components into their own folders; canonical aggregation index replaces original module",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/block-reference-controls/index.ts",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/chat-markdown.module.css",
+    "kind": "stylesheet",
+    "bytes": 2257,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/chat-markdown.tsx"
+    ],
+    "disposition": "Colocate stylesheet with its sole component owner (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/chat-markdown.tsx",
+    "kind": "component",
+    "exports": [
+      "ChatMarkdown"
+    ],
+    "privateComponents": [
+      "SafeAnchor"
+    ],
+    "styles": [
+      "./chat-markdown.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/chat-markdown/chat-markdown.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/composer-attachments.tsx",
+    "kind": "component",
+    "exports": [
+      "ComposerAttachments"
+    ],
+    "privateComponents": [
+      "AttachmentChip",
+      "AttachmentPreview"
+    ],
+    "styles": [
+      "./composer.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/composer-attachments/composer-attachments.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/composer-preferences.tsx",
+    "kind": "component",
+    "exports": [
+      "ComposerPreferences"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./portrait-composer-settings.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/composer-preferences/composer-preferences.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/composer.module.css",
+    "kind": "stylesheet",
+    "bytes": 18807,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/composer-attachments.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/context-picker.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-composer.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-passage-preview.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-reference-picker.tsx"
+    ],
+    "disposition": "Independent shared stylesheet, all consumers import explicitly (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/context-picker.tsx",
+    "kind": "component",
+    "exports": [
+      "ContextPicker"
+    ],
+    "privateComponents": [
+      "ContextResult"
+    ],
+    "styles": [
+      "./composer.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/context-picker/context-picker.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/contextual-assistant.module.css",
+    "kind": "stylesheet",
+    "bytes": 1879,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-error-notice.tsx"
+    ],
+    "disposition": "Colocate stylesheet with its sole component owner (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/contextual-assistant.tsx",
+    "kind": "component",
+    "exports": [
+      "ContextualAssistant"
+    ],
+    "privateComponents": [
+      "SourceAssistant"
+    ],
+    "styles": [],
+    "exportAliases": [],
+    "disposition": "Existing one-component folder retained",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/contextual-assistant.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-composer.tsx",
+    "kind": "component",
+    "exports": [
+      "ConversationComposer"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./composer.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/conversation-composer/conversation-composer.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-delete-confirmation.module.css",
+    "kind": "stylesheet",
+    "bytes": 622,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-delete-confirmation.tsx"
+    ],
+    "disposition": "Colocate stylesheet with its sole component owner (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-delete-confirmation.tsx",
+    "kind": "component",
+    "exports": [
+      "ConversationDeleteConfirmation"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./conversation-delete-confirmation.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/conversation-delete-confirmation/conversation-delete-confirmation.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-empty.tsx",
+    "kind": "component",
+    "exports": [
+      "ConversationEmpty"
+    ],
+    "privateComponents": [
+      "Suggestion"
+    ],
+    "styles": [
+      "./conversation-messages.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/conversation-empty/conversation-empty.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-error-notice.tsx",
+    "kind": "component",
+    "exports": [
+      "ConversationErrorNotice"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./contextual-assistant.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/conversation-error-notice/conversation-error-notice.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-history.module.css",
+    "kind": "stylesheet",
+    "bytes": 2610,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-history.tsx"
+    ],
+    "disposition": "Colocate stylesheet with its sole component owner (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-history.tsx",
+    "kind": "component",
+    "exports": [
+      "ConversationHistory"
+    ],
+    "privateComponents": [
+      "HistoryRow"
+    ],
+    "styles": [
+      "./conversation-history.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/conversation-history/conversation-history.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-messages.module.css",
+    "kind": "stylesheet",
+    "bytes": 6377,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-empty.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-messages.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/response-actions.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/response-limit-notice.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-message.tsx"
+    ],
+    "disposition": "Independent shared stylesheet, all consumers import explicitly (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-messages.tsx",
+    "kind": "component",
+    "exports": [
+      "ConversationMessages"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./conversation-messages.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/conversation-messages/conversation-messages.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/draft-comparison.tsx",
+    "kind": "component",
+    "exports": [
+      "DraftComparison"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./knowledge-draft-card.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/draft-comparison/draft-comparison.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/knowledge-draft-card.module.css",
+    "kind": "stylesheet",
+    "bytes": 3706,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/draft-comparison.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/knowledge-draft-card.tsx"
+    ],
+    "disposition": "Independent shared stylesheet, all consumers import explicitly (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/knowledge-draft-card.tsx",
+    "kind": "component",
+    "exports": [
+      "KnowledgeDraftCard"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./knowledge-draft-card.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/knowledge-draft-card/knowledge-draft-card.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/portrait-composer-settings.module.css",
+    "kind": "stylesheet",
+    "bytes": 1075,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/composer-preferences.tsx"
+    ],
+    "disposition": "Colocate stylesheet with its sole component owner (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/published-note-notice.tsx",
+    "kind": "component",
+    "exports": [
+      "PublishedNoteNotice"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./assistant-panel.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/published-note-notice/published-note-notice.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/response-actions.tsx",
+    "kind": "component",
+    "exports": [
+      "ResponseActions"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./conversation-messages.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/response-actions/response-actions.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/response-limit-notice.tsx",
+    "kind": "component",
+    "exports": [
+      "ResponseLimitNotice"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./conversation-messages.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/response-limit-notice/response-limit-notice.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-message.tsx",
+    "kind": "component",
+    "exports": [
+      "TutorMessage"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./conversation-messages.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/tutor-message/tutor-message.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-mode-control.module.css",
+    "kind": "stylesheet",
+    "bytes": 1245,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-mode-control.tsx"
+    ],
+    "disposition": "Colocate stylesheet with its sole component owner (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-mode-control.tsx",
+    "kind": "component",
+    "exports": [
+      "TutorModeControl"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./tutor-mode-control.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/tutor-mode-control/tutor-mode-control.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-note-form.module.css",
+    "kind": "stylesheet",
+    "bytes": 2811,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-note-form.tsx"
+    ],
+    "disposition": "Colocate stylesheet with its sole component owner (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/tutor-note-form.tsx",
+    "kind": "component",
+    "exports": [
+      "TutorNoteForm"
+    ],
+    "privateComponents": [
+      "NoteCategory"
+    ],
+    "styles": [
+      "./tutor-note-form.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/tutor-note-form/tutor-note-form.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/block-reference-controls/block-reference-chips/block-reference-chips.tsx",
+    "kind": "extracted-component",
+    "exports": [
+      "BlockReferenceChips"
+    ],
+    "disposition": "New canonical one-component folder; original declaration bodies/private helpers preserved",
+    "clientBoundary": false,
+    "review": "Source preflight: original JSX, handlers, hooks and types remain inside same component declarations. Imports scoped to actual use."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/block-reference-controls/block-reference-picker/block-reference-picker.tsx",
+    "kind": "extracted-component",
+    "exports": [
+      "BlockReferencePicker"
+    ],
+    "disposition": "New canonical one-component folder; original declaration bodies/private helpers preserved",
+    "clientBoundary": false,
+    "review": "Source preflight: original JSX, handlers, hooks and types remain inside same component declarations. Imports scoped to actual use."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/block-reference-controls/message-block-references/message-block-references.tsx",
+    "kind": "extracted-component",
+    "exports": [
+      "MessageBlockReferences"
+    ],
+    "disposition": "New canonical one-component folder; original declaration bodies/private helpers preserved",
+    "clientBoundary": false,
+    "review": "Source preflight: original JSX, handlers, hooks and types remain inside same component declarations. Imports scoped to actual use."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/workspace-message-materials/workspace-message-materials.tsx",
+    "kind": "extracted-component",
+    "exports": [
+      "WorkspaceMessageMaterials"
+    ],
+    "disposition": "New canonical one-component folder; original declaration bodies/private helpers preserved",
+    "clientBoundary": false,
+    "review": "Source preflight: original JSX, handlers, hooks and types remain inside same component declarations. Imports scoped to actual use."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/workspace-message-passage/workspace-message-passage.tsx",
+    "kind": "extracted-component",
+    "exports": [
+      "WorkspaceMessagePassage"
+    ],
+    "disposition": "New canonical one-component folder; original declaration bodies/private helpers preserved",
+    "clientBoundary": false,
+    "review": "Source preflight: original JSX, handlers, hooks and types remain inside same component declarations. Imports scoped to actual use."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-inline-proposal.tsx",
+    "kind": "component",
+    "exports": [
+      "WorkspaceInlineProposal"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./workspace-proposal.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/workspace-inline-proposal/workspace-inline-proposal.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-message-materials.module.css",
+    "kind": "stylesheet",
+    "bytes": 1244,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-message-materials.tsx"
+    ],
+    "disposition": "Colocate stylesheet with its sole component owner (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-message-materials.tsx",
+    "kind": "component",
+    "exports": [
+      "WorkspaceMessagePassage",
+      "WorkspaceMessageMaterials"
+    ],
+    "privateComponents": [],
+    "styles": [],
+    "exportAliases": [],
+    "disposition": "Split independent exported components into their own folders; canonical aggregation index replaces original module",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/workspace-message-materials/index.ts",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-passage-preview.tsx",
+    "kind": "component",
+    "exports": [
+      "WorkspacePassagePreview"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./composer.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/workspace-passage-preview/workspace-passage-preview.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-proposal-modes.tsx",
+    "kind": "component",
+    "exports": [
+      "WorkspaceProposalModes"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./workspace-proposal.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/workspace-proposal-modes/workspace-proposal-modes.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-proposal-preview.tsx",
+    "kind": "component",
+    "exports": [
+      "WorkspaceProposalPreviewContent"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./workspace-proposal.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/workspace-proposal-preview/workspace-proposal-preview.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-proposal-review.tsx",
+    "kind": "component",
+    "exports": [
+      "WorkspaceProposalReview"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./workspace-proposal.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/workspace-proposal-review/workspace-proposal-review.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-proposal.module.css",
+    "kind": "stylesheet",
+    "bytes": 10513,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-inline-proposal.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-proposal-modes.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-proposal-preview.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-proposal-review.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-proposal.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-suggestion-card.tsx"
+    ],
+    "disposition": "Independent shared stylesheet, all consumers import explicitly (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-proposal.tsx",
+    "kind": "component",
+    "exports": [
+      "WorkspaceProposal"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./workspace-proposal.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/workspace-proposal/workspace-proposal.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-reference-picker.tsx",
+    "kind": "component",
+    "exports": [
+      "WorkspaceReferencePicker"
+    ],
+    "privateComponents": [
+      "ReferenceRow"
+    ],
+    "styles": [
+      "./composer.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/workspace-reference-picker/workspace-reference-picker.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-suggestion-card.tsx",
+    "kind": "component",
+    "exports": [
+      "WorkspaceSuggestionCard"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./workspace-proposal.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/workspace-suggestion-card/workspace-suggestion-card.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-suggestion-preview/workspace-suggestion-preview.module.css",
+    "kind": "stylesheet",
+    "bytes": 1452,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-suggestion-preview/workspace-suggestion-preview.tsx"
+    ],
+    "disposition": "Colocate stylesheet with its sole component owner (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-suggestion-preview/workspace-suggestion-preview.tsx",
+    "kind": "component",
+    "exports": [
+      "WorkspaceSuggestionPreview"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./workspace-suggestion-preview.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Existing one-component folder retained",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-suggestion-preview/workspace-suggestion-preview.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/source-selection/source-selection.module.css",
+    "kind": "stylesheet",
+    "bytes": 1271,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/source-selection/source-selection.tsx"
+    ],
+    "disposition": "Colocate stylesheet with its sole component owner (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/source-selection/source-selection.tsx",
+    "kind": "component",
+    "exports": [
+      "SourceSelection"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./source-selection.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Existing one-component folder retained",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/source-selection/source-selection.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-activity/tutor-activity.module.css",
+    "kind": "stylesheet",
+    "bytes": 842,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-activity/tutor-activity.tsx"
+    ],
+    "disposition": "Colocate stylesheet with its sole component owner (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-activity/tutor-activity.tsx",
+    "kind": "component",
+    "exports": [
+      "TutorActivity"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./tutor-activity.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Existing one-component folder retained",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-activity/tutor-activity.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-context.tsx",
+    "kind": "component",
+    "exports": [
+      "TutorContext"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./tutor-shell.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/ui/tutor-context/tutor-context.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-header.tsx",
+    "kind": "component",
+    "exports": [
+      "TutorMark",
+      "TutorHeader"
+    ],
+    "privateComponents": [],
+    "styles": [],
+    "exportAliases": [],
+    "disposition": "Split independent exported components into their own folders; canonical aggregation index replaces original module",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/ui/tutor-header/index.ts",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-launcher.tsx",
+    "kind": "component",
+    "exports": [
+      "TutorLauncher"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./tutor-shell.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/ui/tutor-launcher/tutor-launcher.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-shell.module.css",
+    "kind": "stylesheet",
+    "bytes": 11685,
+    "consumers": [
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-context.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-header.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-launcher.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-shell.tsx",
+      "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/workspace-tutor-context.tsx"
+    ],
+    "disposition": "Independent shared stylesheet, all consumers import explicitly (root recomputes ownership after extraction)",
+    "review": "Inspected stylesheet content and original consumer graph; preserve bytes and let root centrally relocate/import rewrite."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-shell.tsx",
+    "kind": "component",
+    "exports": [
+      "TutorShell"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./tutor-shell.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Existing one-component folder retained",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/tutor-shell.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/ui/tutor-header/tutor-header.tsx",
+    "kind": "extracted-component",
+    "exports": [
+      "TutorHeader"
+    ],
+    "disposition": "New canonical one-component folder; original declaration bodies/private helpers preserved",
+    "clientBoundary": true,
+    "review": "Source preflight: original JSX, handlers, hooks and types remain inside same component declarations. Imports scoped to actual use."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/ui/tutor-mark/tutor-mark.tsx",
+    "kind": "extracted-component",
+    "exports": [
+      "TutorMark"
+    ],
+    "disposition": "New canonical one-component folder; original declaration bodies/private helpers preserved",
+    "clientBoundary": true,
+    "review": "Source preflight: original JSX, handlers, hooks and types remain inside same component declarations. Imports scoped to actual use."
+  },
+  {
+    "path": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/workspace-tutor-context.tsx",
+    "kind": "component",
+    "exports": [
+      "WorkspaceTutorContext"
+    ],
+    "privateComponents": [],
+    "styles": [
+      "./tutor-shell.module.css"
+    ],
+    "exportAliases": [],
+    "disposition": "Root relocates component module to its own folder; retain small unexported private render helpers",
+    "destination": "apps/web/src/fsd/widgets/contextual-assistant/ui/tutor-shell/ui/workspace-tutor-context/workspace-tutor-context.tsx",
+    "review": "Inspected imports, declarations/exports, private helper ownership and stylesheet use; no behavior or styling changes."
+  }
+]

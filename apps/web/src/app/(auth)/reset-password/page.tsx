@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { ResetPasswordPage } from '@/fsd/pages/reset-password/ui/reset-password-page';
+import { ResetPasswordPage } from '@/fsd/pages/reset-password/ui/reset-password-page/reset-password-page';
 import { localizedMetadata } from '@/fsd/shared/i18n/metadata';
 
 export async function generateMetadata(): Promise<Metadata> {

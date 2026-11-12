@@ -3,8 +3,8 @@ import { Fragment, useEffect, useRef, type ChangeEvent } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Dialog } from '@/fsd/shared/ui';
 import { usePalette } from '../../hooks/use-palette';
-import styles from './command-palette.module.css';
-import { PaletteRow } from './palette-row';
+import styles from '../styles/command-palette-common.module.css';
+import { PaletteRow } from './ui/palette-row/palette-row';
 
 export function CommandPalette({ onClose }: { onClose(): void }) {
     const { t } = useI18n();

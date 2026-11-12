@@ -4,7 +4,7 @@ import {
     type WorkbookProgressOptions,
 } from '../../hooks/use-workbook-progress';
 import { learningLabels } from '../../lib/labels';
-import styles from '../learning-progress/learning-progress.module.css';
+import styles from '../styles/learning-progress-common.module.css';
 export function WorkbookProgress(
     props: WorkbookProgressOptions & { locale: string },
 ) {

@@ -2,7 +2,7 @@
 
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 
-import type { ControlSize } from '../button/button';
+import type { ControlSize } from '../button';
 import { Tooltip } from '../tooltip/tooltip';
 import styles from './icon-button.module.css';
 

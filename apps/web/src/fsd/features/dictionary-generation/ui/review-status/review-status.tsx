@@ -3,8 +3,8 @@ import { Button, InlineAlert } from '@/fsd/shared/ui';
 
 import { terminalStateMessageKey } from '../../lib/review-fields';
 import type { GenerationReviewProps } from '../../model/generation-review';
-import styles from '../dictionary-generation-panel-common.module.css';
-import { ReviewCurrentCard } from './review-current-card';
+import styles from '../styles/dictionary-generation-panel-common.module.css';
+import { ReviewCurrentCard } from './ui/review-current-card/review-current-card';
 
 export function ReviewStatus({
     available,

@@ -6,9 +6,9 @@ import {
     workspaceValidation,
     type WorkspaceInput,
 } from '@/fsd/pages/texts/lib/workspace-content';
-import { WorkspaceLanguages } from '@/fsd/pages/texts/ui/workspace-page/workspace-languages';
-import { WorkspaceCompose } from '@/fsd/pages/texts/ui/workspace-page/workspace-compose';
-import { WorkspaceActions } from '@/fsd/pages/texts/ui/workspace-page/workspace-actions';
+import { WorkspaceLanguages } from '@/fsd/pages/texts/ui/workspace-page/ui/workspace-languages/workspace-languages';
+import { WorkspaceCompose } from '@/fsd/pages/texts/ui/workspace-page/ui/workspace-compose/workspace-compose';
+import { WorkspaceActions } from '@/fsd/pages/texts/ui/workspace-page/ui/workspace-actions/workspace-actions';
 import { render } from './render';
 
 const initial: WorkspaceInput = {

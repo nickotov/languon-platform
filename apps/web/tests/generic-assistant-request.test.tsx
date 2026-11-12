@@ -24,7 +24,7 @@ vi.mock('../src/fsd/entities/session', () => ({
 }));
 
 vi.mock(
-    '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/assistant-panel',
+    '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/assistant-panel/assistant-panel',
     () => ({
         AssistantPanel: (props: unknown) => {
             state.panelProps = props;

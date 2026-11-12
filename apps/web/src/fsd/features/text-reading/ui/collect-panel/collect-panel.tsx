@@ -1,16 +1,16 @@
 'use client';
 import { useState } from 'react';
-import { NewDictionaryForm } from './new-dictionary-form';
-import { SelectionContext } from './selection-context';
+import { NewDictionaryForm } from './ui/new-dictionary-form/new-dictionary-form';
+import { SelectionContext } from './ui/selection-context/selection-context';
 import { collectionFailureKey } from '../../lib/collection-failure';
-import { DuplicatePreview } from './duplicate-preview';
-import { DictionaryChoices } from './dictionary-choices';
+import { DuplicatePreview } from './ui/duplicate-preview/duplicate-preview';
+import { DictionaryChoices } from './ui/dictionary-choices/dictionary-choices';
 import type { RequestWithTextSession } from '@/fsd/entities/texts';
 import { BookPlus, Info, LogIn, Plus } from 'lucide-react';
 import { Button, ButtonLink, Skeleton } from '@/fsd/shared/ui';
 import type { CollectController } from '../../hooks/use-collect';
 import { useReadingCopy } from '../../hooks/use-reading-copy';
-import styles from './collect-panel.module.css';
+import styles from '../styles/collect-panel-common.module.css';
 
 export function CollectPanel({
     collect: c,

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import storyStyles from './badge.stories.module.css';
-import { Badge, Chip } from './badge';
+import { Badge, Chip } from '.';
 
 const meta = { title: 'UI/Badge and chip' } satisfies Meta;
 

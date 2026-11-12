@@ -23,7 +23,7 @@ import {
     type MenuItem,
 } from '@/fsd/shared/ui';
 import { KnowledgeAuthBoundary } from '../knowledge-auth-boundary/knowledge-auth-boundary';
-import { NotePreview } from '../knowledge-detail-page/note-preview';
+import { NotePreview } from '../knowledge-detail-page/ui/note-preview/note-preview';
 import styles from './knowledge-practice-page.module.css';
 
 export function KnowledgePracticePage({ noteId }: { noteId: string }) {

@@ -12,6 +12,7 @@ source_paths:
     - apps/web/src/fsd/features/dictionary-library/**
     - apps/web/src/fsd/pages/home/**
     - apps/web/src/fsd/shared/ui/popover/**
+    - apps/web/src/fsd/shared/ui/styles/popover-common.module.css
     - apps/web/src/fsd/features/change-locale/**
     - apps/web/src/fsd/shared/theme/**
     - apps/web/tests/e2e/app-shell.journeys.spec.ts

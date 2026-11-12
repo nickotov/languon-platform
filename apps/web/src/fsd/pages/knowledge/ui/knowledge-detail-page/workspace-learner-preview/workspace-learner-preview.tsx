@@ -6,7 +6,7 @@ import type {
 } from '@languon/contracts';
 import { Button } from '@/fsd/shared/ui';
 import { useI18n } from '@/fsd/shared/i18n';
-import { NotePreview } from '../note-preview';
+import { NotePreview } from '../ui/note-preview/note-preview';
 import styles from './workspace-learner-preview.module.css';
 
 /** The shared reader presentation with local practice, preserving the mounted editor. */

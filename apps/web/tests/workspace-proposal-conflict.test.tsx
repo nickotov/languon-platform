@@ -2,7 +2,7 @@ import { screen, fireEvent, within } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import type { KnowledgeWorkspace } from '@languon/contracts';
 import type { KnowledgeEditorHandle } from '../src/fsd/features/knowledge-notes';
-import { WorkspaceConflictDialogs } from '../src/fsd/pages/knowledge/ui/knowledge-detail-page/workspace-conflict-dialogs';
+import { WorkspaceConflictDialogs } from '../src/fsd/pages/knowledge/ui/knowledge-detail-page/ui/workspace-conflict-dialogs/workspace-conflict-dialogs';
 import { render } from './render';
 
 function setup(

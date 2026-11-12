@@ -18,8 +18,8 @@ import {
     conversationApi,
 } from '@/fsd/entities/conversation';
 import { useConversationAdmission } from '@/fsd/widgets/contextual-assistant/hooks/use-conversation-admission';
-import { ActionBudgetConfirmation } from '@/fsd/widgets/contextual-assistant/ui/contextual-assistant/action-budget-confirmation';
-import { ResponseLimitNotice } from '@/fsd/widgets/contextual-assistant/ui/contextual-assistant/response-limit-notice';
+import { ActionBudgetConfirmation } from '@/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/action-budget-confirmation/action-budget-confirmation';
+import { ResponseLimitNotice } from '@/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/response-limit-notice/response-limit-notice';
 import { render } from './render';
 
 const firstQuote = {

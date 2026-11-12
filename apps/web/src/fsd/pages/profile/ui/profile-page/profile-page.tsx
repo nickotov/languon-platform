@@ -8,18 +8,8 @@ import { useSessionStore } from '@/fsd/entities/session';
 import { useI18n } from '@/fsd/shared/i18n';
 import { ButtonLink, Card, LoadingState } from '@/fsd/shared/ui';
 import { isProfileTab, type ProfileTab } from '../../lib/profile-tab';
-import { AuthenticatedProfile } from './authenticated-profile';
-import styles from './profile-page.module.css';
-
-export function ProfilePageFallback() {
-    const { t } = useI18n();
-
-    return (
-        <main className={styles.centered}>
-            <LoadingState>{t('profile.loading')}</LoadingState>
-        </main>
-    );
-}
+import { AuthenticatedProfile } from './ui/authenticated-profile/authenticated-profile';
+import styles from '../styles/profile-page-common.module.css';
 
 export function ProfilePage() {
     const { href, t } = useI18n();

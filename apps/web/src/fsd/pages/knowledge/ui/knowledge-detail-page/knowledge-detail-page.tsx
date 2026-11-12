@@ -27,13 +27,13 @@ import { useKnowledgeLearningIntegrations } from '../../hooks/use-knowledge-lear
 import { useWorkspacePresentation } from '../../hooks/use-workspace-presentation';
 import { useWorkspaceLearnerPreview } from '../../hooks/use-workspace-learner-preview';
 import { KnowledgeAuthBoundary } from '../knowledge-auth-boundary/knowledge-auth-boundary';
-import { WorkspaceDocumentPane } from './workspace-document-pane';
-import { WorkspaceDialogs } from './workspace-dialogs';
+import { WorkspaceDocumentPane } from './ui/workspace-document-pane/workspace-document-pane';
+import { WorkspaceDialogs } from './ui/workspace-dialogs/workspace-dialogs';
 import { WorkspaceNotices } from '../workspace-notices/workspace-notices';
-import { WorkspaceHeader } from './workspace-header';
-import { WorkspaceShareControls } from './workspace-share-controls';
+import { WorkspaceHeader } from './ui/workspace-header/workspace-header';
+import { WorkspaceShareControls } from './ui/workspace-share-controls/workspace-share-controls';
 import { WorkspaceLearnerPreview } from './workspace-learner-preview/workspace-learner-preview';
-import styles from './knowledge-detail-page.module.css';
+import styles from '../styles/knowledge-detail-page-common.module.css';
 
 export function KnowledgeDetailPage({ noteId }: { noteId: string }) {
     const actorId = useSessionStore((state) => state.user?.id);

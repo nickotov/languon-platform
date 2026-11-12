@@ -15,8 +15,8 @@ import {
     fieldLanguage,
     originalFieldLanguage,
 } from '../../lib/review-fields';
-import styles from '../dictionary-generation-panel-common.module.css';
-import { ReviewAlternative } from './review-alternative';
+import styles from '../styles/dictionary-generation-panel-common.module.css';
+import { ReviewAlternative } from './ui/review-alternative/review-alternative';
 
 export function ReviewField({
     candidate,

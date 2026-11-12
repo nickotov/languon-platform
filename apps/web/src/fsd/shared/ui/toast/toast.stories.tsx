@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import storyStyles from './toast.stories.module.css';
 import { useEffect } from 'react';
 
-import { Button } from '../button/button';
+import { Button } from '../button';
 import {
     clearToasts,
     showToast,

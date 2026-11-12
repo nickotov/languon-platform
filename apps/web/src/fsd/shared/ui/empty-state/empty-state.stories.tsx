@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { Button } from '../button/button';
-import { EmptyState, ErrorState } from './empty-state';
+import { Button } from '../button';
+import { EmptyState, ErrorState } from '.';
 
 const meta = { component: EmptyState, title: 'UI/Empty state' } satisfies Meta<
     typeof EmptyState

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { TextFolder } from '@languon/contracts';
 import { describe, expect, it, vi } from 'vitest';
-import { FolderCard } from '@/fsd/pages/texts/ui/library-page/folder-card';
+import { FolderCard } from '@/fsd/pages/texts/ui/library-page/ui/folder-card/folder-card';
 import { textsLibraryEn } from '@/fsd/shared/i18n/messages/texts-library';
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/fsd/shared/i18n', () => ({

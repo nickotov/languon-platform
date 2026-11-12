@@ -8,7 +8,7 @@ import {
 import { render } from './render';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LearningBlockSchema } from '@languon/contracts';
-import { BlockFormDialog } from '../src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-form-dialog';
+import { BlockFormDialog } from '../src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-form-dialog/block-form-dialog';
 import { defaultAuthoringLabels } from '../src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-labels';
 import { copyLearningBlocks } from '../src/fsd/features/knowledge-notes/lib/learning-block-copy';
 import { blockFieldTarget } from '../src/fsd/features/knowledge-notes/lib/block-field-target';

@@ -1,9 +1,9 @@
 import type { FormEvent } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, Card, Field, Input } from '@/fsd/shared/ui';
-import { PasswordField } from '../password-field';
-import styles from '../auth-ui.module.css';
-import profileStyles from '../security-settings.module.css';
+import { PasswordField } from '../password-field/password-field';
+import styles from '../styles/auth-ui-common.module.css';
+import profileStyles from '../styles/security-settings-common.module.css';
 
 export function SecurityPasswordPanel({
     embedded,

@@ -12,7 +12,7 @@ import {
 } from '@/fsd/shared/ui';
 import type { DictionaryCardDeletionController } from '../../hooks/use-dictionary-card-deletion';
 import type { ChangeEvent } from 'react';
-import styles from '../dictionary-card-list-common.module.css';
+import styles from '../styles/dictionary-card-list-common.module.css';
 
 export function CardDeletionDialog({
     deletion,

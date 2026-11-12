@@ -12,7 +12,7 @@ import {
 } from '@/fsd/shared/ui';
 import { useTextDestinations } from '../../hooks/use-text-destinations';
 import { useTextMutation } from '../../hooks/use-text-mutation';
-import styles from '../dialogs.module.css';
+import styles from '../styles/dialogs-common.module.css';
 
 type Props = {
     document: TextDocument;

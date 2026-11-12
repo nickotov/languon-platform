@@ -1,7 +1,7 @@
 import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ConversationHistory } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-history';
+import { ConversationHistory } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/conversation-history/conversation-history';
 import { render } from './render';
 
 afterEach(cleanup);

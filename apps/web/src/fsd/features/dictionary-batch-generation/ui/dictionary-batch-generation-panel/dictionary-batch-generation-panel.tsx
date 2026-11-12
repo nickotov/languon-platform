@@ -22,8 +22,8 @@ import {
     Textarea,
 } from '@/fsd/shared/ui';
 
-import styles from './dictionary-batch-generation-panel.module.css';
-import { CandidateRow } from './candidate-row';
+import styles from '../styles/dictionary-batch-generation-panel-common.module.css';
+import { CandidateRow } from './ui/candidate-row/candidate-row';
 import {
     candidateForCommit,
     type CandidateDraft,

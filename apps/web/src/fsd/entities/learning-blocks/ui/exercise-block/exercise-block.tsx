@@ -6,11 +6,11 @@ import { useBlockExpansion } from '../../hooks/use-block-expansion';
 import { useExercisePractice } from '../../hooks/use-exercise-practice';
 import { checkPreparedAnswer } from '../../lib/check-prepared-answer';
 import { learningAnswerEquals } from '../../lib/learning-answer-equals';
-import { ExerciseAnswerFields } from './exercise-answer-fields';
-import { ExerciseResults } from './exercise-results';
-import { ExercisePreview } from './exercise-preview';
-import { ExerciseActions } from './exercise-actions';
-import styles from './exercise-block.module.css';
+import { ExerciseAnswerFields } from './ui/exercise-answer-fields/exercise-answer-fields';
+import { ExerciseResults } from './ui/exercise-results/exercise-results';
+import { ExercisePreview } from './ui/exercise-preview/exercise-preview';
+import { ExerciseActions } from './ui/exercise-actions/exercise-actions';
+import styles from '../styles/exercise-block-common.module.css';
 
 export function ExerciseBlock(
     props: LearningBlockViewProps & { block: ExerciseLearningBlock },

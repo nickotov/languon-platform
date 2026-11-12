@@ -24,9 +24,9 @@ import {
     KnowledgeEditor,
     type KnowledgeEditorHandle,
 } from '../knowledge-editor/knowledge-editor';
-import styles from './knowledge-note-form.module.css';
-import { WorkspaceTitle } from './workspace-title';
-import { NoteMetadata } from './note-metadata';
+import styles from '../styles/knowledge-note-form-common.module.css';
+import { WorkspaceTitle } from './ui/workspace-title/workspace-title';
+import { NoteMetadata } from './ui/note-metadata/note-metadata';
 
 export type KnowledgeTutorAction =
     'explain' | 'correct' | 'translate' | 'simplify' | 'rephrase' | 'examples';

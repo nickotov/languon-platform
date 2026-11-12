@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from './render';
 import { I18nProvider } from '@/fsd/shared/i18n';
 import { en } from '@/fsd/shared/i18n/messages/en';
-import { CounterpartSheet } from '@/fsd/features/text-reading/ui/text-reading/counterpart-sheet';
+import { CounterpartSheet } from '@/fsd/features/text-reading/ui/text-reading/ui/counterpart-sheet/counterpart-sheet';
 import { TextReading } from '@/fsd/features/text-reading';
 import type { ReadingDocument } from '@/fsd/features/text-reading';
 const pair = '54b51acb-320e-4ea9-86f3-0d4502349b89';

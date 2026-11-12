@@ -2,15 +2,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActionConsentDialog } from '@/fsd/entities/ai-action';
 import { Tabs } from '@/fsd/shared/ui';
-import { ReadingPair } from './reading-pair';
-import { CollectionLayer } from './collection-layer';
-import { CounterpartSheet } from './counterpart-sheet';
+import { ReadingPair } from './ui/reading-pair/reading-pair';
+import { CollectionLayer } from './ui/collection-layer/collection-layer';
+import { CounterpartSheet } from './ui/counterpart-sheet/counterpart-sheet';
 import { useI18n } from '@/fsd/shared/i18n';
 import { analyzeReadingSelection } from '../../lib/selection';
 import { useCollect } from '../../hooks/use-collect';
 import { useReadingCopy } from '../../hooks/use-reading-copy';
 import type { Side, TextReadingProps } from '../../types';
-import styles from './text-reading.module.css';
+import styles from '../styles/text-reading-common.module.css';
 
 export function TextReading(props: TextReadingProps) {
     // A different source authority owns a fresh selection, polling loop and marks.

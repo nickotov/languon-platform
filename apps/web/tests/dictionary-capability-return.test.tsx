@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useSessionStore } from '@/fsd/entities/session/model/session-store';
 import { AuthProvider } from '@/fsd/features/auth/model/auth-provider';
-import { LoginForm } from '@/fsd/features/auth/ui/login-form';
+import { LoginForm } from '@/fsd/features/auth/ui/login-form/login-form';
 import { AuthLinks } from '@/fsd/features/auth/ui/auth-shell';
 import { authApi } from '@/fsd/shared/api/auth-api';
 import {

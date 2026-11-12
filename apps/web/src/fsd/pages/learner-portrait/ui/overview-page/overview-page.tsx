@@ -19,7 +19,7 @@ import { DataUseDetails } from '../data-use-details/data-use-details';
 import { DeletePortraitDialog } from '../delete-dialog/delete-dialog';
 import { PortraitPageState } from '../page-state/page-state';
 import { PortraitUseControl } from '../use-control/use-control';
-import styles from '../common.module.css';
+import styles from '../styles/common-common.module.css';
 
 export function PortraitOverviewPage() {
     const management = usePortraitManagement();

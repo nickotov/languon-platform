@@ -6,7 +6,7 @@ import { DictionaryEditor } from '@/fsd/widgets/dictionary-editor';
 import { DictionaryTraining } from '@/fsd/widgets/dictionary-training';
 import { ContextualAssistant } from '@/fsd/widgets/contextual-assistant';
 
-import { AuthenticatedDictionaryBoundary } from '../authenticated-dictionary-boundary';
+import { AuthenticatedDictionaryBoundary } from '../authenticated-dictionary-boundary/authenticated-dictionary-boundary';
 
 export function DictionaryEditorPage({
     dictionaryId,

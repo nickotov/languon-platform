@@ -3,7 +3,7 @@ import { useI18n } from '@/fsd/shared/i18n';
 import { Button, ButtonLink, InlineAlert, LoadingState } from '@/fsd/shared/ui';
 import { portraitCopy } from '../../lib/copy';
 import type { PortraitManagement } from '../../hooks/use-portrait-management';
-import styles from '../common.module.css';
+import styles from '../styles/common-common.module.css';
 
 export function PortraitPageState({
     management,

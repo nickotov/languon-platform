@@ -8,7 +8,7 @@ import { knowledgeApi } from '@/fsd/entities/knowledge';
 import type { RequestWithSession } from '@/fsd/entities/dictionary';
 import { Button, InlineAlert } from '@/fsd/shared/ui';
 import type { BlockCopyLabels } from './block-copy-labels';
-import styles from './block-copy.module.css';
+import styles from '../styles/block-copy-common.module.css';
 import type { CopyDestination } from '../../types';
 export function CopyDestinationPicker({
     request,

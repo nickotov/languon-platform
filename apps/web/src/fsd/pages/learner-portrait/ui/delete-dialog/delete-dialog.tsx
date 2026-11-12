@@ -10,7 +10,7 @@ import {
 } from '@/fsd/shared/ui';
 import type { PortraitManagement } from '../../hooks/use-portrait-management';
 import { portraitCopy } from '../../lib/copy';
-import styles from '../common.module.css';
+import styles from '../styles/common-common.module.css';
 
 export function DeletePortraitDialog({
     open,

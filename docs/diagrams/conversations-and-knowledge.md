@@ -45,7 +45,7 @@ source_paths:
     - apps/web/src/fsd/widgets/contextual-assistant/hooks/use-conversation-stream.ts
     - apps/web/src/fsd/widgets/contextual-assistant/lib/conversation-stream-session.ts
     - apps/web/src/fsd/widgets/contextual-assistant/hooks/use-streaming-text.ts
-    - apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/chat-markdown.tsx
+    - apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/chat-markdown/chat-markdown.tsx
     - apps/backend/src/modules/conversations/interface/http/conversation.routes.ts
     - apps/backend/src/modules/conversations/application/conversation-service.ts
     - apps/backend/src/modules/conversations/application/conversation-worker-service.ts
@@ -78,8 +78,8 @@ source_paths:
     - apps/web/src/fsd/features/knowledge-notes/lib/read-media-block-form.ts
     - apps/web/src/fsd/features/knowledge-notes/lib/read-text-block-form.ts
     - apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts
-source_fingerprint: sha256:0c02971675f6a5cc978c6eb3876d80273436cf86d69468e908eb5a5590197418
-reviewed: 2026-11-06
+source_fingerprint: sha256:faa17cc20c76179106b6ac291eb30af42f2bd13e77bc108ad988af00963ef077
+reviewed: 2026-11-12
 ---
 
 # Conversations and Knowledge workspace
@@ -317,7 +317,7 @@ naming and its resulting branch version.
 - [apps/web/src/fsd/widgets/contextual-assistant/hooks/use-conversation-stream.ts](../../apps/web/src/fsd/widgets/contextual-assistant/hooks/use-conversation-stream.ts)
 - [apps/web/src/fsd/widgets/contextual-assistant/lib/conversation-stream-session.ts](../../apps/web/src/fsd/widgets/contextual-assistant/lib/conversation-stream-session.ts)
 - [apps/web/src/fsd/widgets/contextual-assistant/hooks/use-streaming-text.ts](../../apps/web/src/fsd/widgets/contextual-assistant/hooks/use-streaming-text.ts)
-- [apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/chat-markdown.tsx](../../apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/chat-markdown.tsx)
+- [apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/chat-markdown/chat-markdown.tsx](../../apps/web/src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/chat-markdown/chat-markdown.tsx)
 - [apps/backend/src/modules/conversations/interface/http/conversation.routes.ts](../../apps/backend/src/modules/conversations/interface/http/conversation.routes.ts)
 
 - [apps/backend/src/modules/conversations/application/conversation-service.ts](../../apps/backend/src/modules/conversations/application/conversation-service.ts)

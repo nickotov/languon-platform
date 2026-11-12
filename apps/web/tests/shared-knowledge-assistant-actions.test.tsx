@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactElement, ReactNode } from 'react';
 import type { ConversationDetail } from '@languon/contracts';
 import { render as renderWithI18n } from './render';
-import { ResponseActions } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/response-actions';
-import { AssistantPanel } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/assistant-panel';
+import { ResponseActions } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/response-actions/response-actions';
+import { AssistantPanel } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/assistant-panel/assistant-panel';
 
 const state = vi.hoisted(() => ({
     sourceProps: undefined as unknown,
@@ -67,7 +67,7 @@ vi.mock(
 );
 
 vi.mock(
-    '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-messages',
+    '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/conversation-messages/conversation-messages',
     () => ({
         ConversationMessages: (props: { children: ReactNode }) => {
             state.messageProps = props;
@@ -78,22 +78,22 @@ vi.mock(
 );
 
 vi.mock(
-    '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-history',
+    '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/conversation-history/conversation-history',
     () => ({ ConversationHistory: () => null }),
 );
 
 vi.mock(
-    '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/assistant-dialogs',
+    '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/assistant-dialogs/assistant-dialogs',
     () => ({ AssistantDialogs: () => null }),
 );
 
 vi.mock(
-    '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/knowledge-draft-card',
+    '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/knowledge-draft-card/knowledge-draft-card',
     () => ({ KnowledgeDraftCard: () => <button>Apply private draft</button> }),
 );
 
 vi.mock(
-    '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/published-note-notice',
+    '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/published-note-notice/published-note-notice',
     () => ({ PublishedNoteNotice: () => <div>Published private note</div> }),
 );
 

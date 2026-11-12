@@ -14,11 +14,11 @@ import {
     TutorHeader,
     TutorMark,
     type TutorHeaderActions,
-} from './tutor-header';
-import type { TutorContextProps } from './tutor-context';
+} from './ui/tutor-header';
+import type { TutorContextProps } from './ui/tutor-context/tutor-context';
 import { tutorShellCopy } from './shell-copy';
-import { WorkspaceTutorContext } from './workspace-tutor-context';
-import styles from './tutor-shell.module.css';
+import { WorkspaceTutorContext } from './ui/workspace-tutor-context/workspace-tutor-context';
+import styles from '../styles/tutor-shell-common.module.css';
 export type TutorShellProps = TutorContextProps &
     TutorHeaderActions & {
         folded: boolean;

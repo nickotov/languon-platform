@@ -25,8 +25,8 @@ import {
     DictionaryImportFileError,
     readDictionaryImportFile,
 } from '../../lib/read-import-file';
-import styles from './dictionary-import-panel.module.css';
-import { ImportPreviewRows } from './import-preview-rows';
+import styles from '../styles/dictionary-import-panel-common.module.css';
+import { ImportPreviewRows } from './ui/import-preview-rows/import-preview-rows';
 
 export function DictionaryImportPanel({
     aiAvailable,

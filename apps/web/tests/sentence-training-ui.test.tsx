@@ -14,7 +14,7 @@ import {
     ReferencePanel,
     segmentAnswer,
     SentenceWithHints,
-} from '@/fsd/features/sentence-training/ui/sentence-content/sentence-content';
+} from '@/fsd/features/sentence-training/ui/sentence-content';
 import { restoreSentenceTopLayer } from '@/fsd/features/sentence-training/ui/restore-sentence-top-layer';
 import { useSentenceDisplay } from '@/fsd/features/sentence-training/ui/use-sentence-display';
 

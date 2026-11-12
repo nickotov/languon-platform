@@ -2,7 +2,7 @@ import { fireEvent, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import { render } from './render';
-import { WorkspaceProposal } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-proposal';
+import { WorkspaceProposal } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/workspace-proposal/workspace-proposal';
 
 it('renders complete formatted proposals and previews without accepting or touching the captured target', async () => {
     const user = userEvent.setup();

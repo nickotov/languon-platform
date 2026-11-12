@@ -3,7 +3,7 @@ export {
     FlashcardPracticeLauncher,
     type FlashcardPracticeLauncherProps,
     type TrainingLauncherProps,
-} from './ui/training-launcher/training-launcher';
+} from './ui/training-launcher';
 export type { TrainingTarget } from './types';
 
 export { createLearningApi } from './api/learning-api';

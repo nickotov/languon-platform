@@ -13,15 +13,15 @@ import type {
     AuthoringFieldContent,
     AuthoringFieldSuggestions,
 } from '../../types';
-import { AuthoringInput } from './authoring-input';
-import { FieldProgress } from './field-progress';
+import { AuthoringInput } from './ui/authoring-input/authoring-input';
+import { FieldProgress } from './ui/field-progress/field-progress';
 import {
     cardFieldLimit,
     limitCardFieldValue,
 } from '../../lib/card-field-limits';
 import { authoringFieldRole } from '../../lib/authoring-fields';
 import { isFieldAffectedByGeneration } from '../../lib/affected-generation-fields';
-import styles from '../dictionary-card-form-common.module.css';
+import styles from '../styles/dictionary-card-form-common.module.css';
 
 export function AuthoringField({
     className,

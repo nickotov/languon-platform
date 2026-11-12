@@ -10,7 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { portraitApi } from '@/fsd/entities/learner-portrait';
 import { useSessionStore } from '@/fsd/entities/session';
 import type { PortraitManagement } from '@/fsd/pages/learner-portrait/hooks/use-portrait-management';
-import { RestartInterviewDialog } from '@/fsd/pages/learner-portrait/ui/editing-page/restart-interview-dialog';
+import { RestartInterviewDialog } from '@/fsd/pages/learner-portrait/ui/editing-page/restart-interview-dialog/restart-interview-dialog';
 import { DeletePortraitDialog } from '@/fsd/pages/learner-portrait/ui/delete-dialog/delete-dialog';
 import { render } from './render';
 

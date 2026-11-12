@@ -1,5 +1,5 @@
 'use client';
-import styles from './sentence-session-results.module.css';
+import styles from '../styles/sentence-session-results-common.module.css';
 
 import { useEffect, useRef, useState } from 'react';
 import { Repeat, Sparkles } from 'lucide-react';
@@ -8,8 +8,8 @@ import type {
     SentenceSessionController,
     SentenceAudioRenderer,
 } from '../../types';
-import { languageDirection } from '../sentence-content/sentence-content';
-import { LastSentenceReview } from './last-sentence-review';
+import { languageDirection } from '../sentence-content';
+import { LastSentenceReview } from './ui/last-sentence-review/last-sentence-review';
 import { SentenceJobStatus } from '../sentence-job-status/sentence-job-status';
 import { SentenceErrorNotice } from '../sentence-errors/sentence-errors';
 import { useSentenceCopy } from '../sentence-copy';

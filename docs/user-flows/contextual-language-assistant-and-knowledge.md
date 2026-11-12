@@ -36,7 +36,9 @@ source_paths:
     - apps/web/src/app/knowledge/**
     - apps/web/src/fsd/shared/ui/companion-layout/**
     - apps/web/src/fsd/shared/ui/menu/**
+    - apps/web/src/fsd/shared/ui/styles/menu-common.module.css
     - apps/web/src/fsd/pages/texts/ui/workspace-page/**
+    - apps/web/src/fsd/pages/texts/ui/styles/workspace-page-common.module.css
     - apps/web/src/fsd/pages/shared-dictionary/**
     - apps/web/src/fsd/features/flashcard-training/ui/training-launcher/**
     - apps/web/next.config.mjs

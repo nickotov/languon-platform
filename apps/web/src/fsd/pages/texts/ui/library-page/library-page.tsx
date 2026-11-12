@@ -20,9 +20,9 @@ import {
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, InlineAlert, Tabs } from '@/fsd/shared/ui';
 import { useTextLibrary } from '../../hooks/use-text-library';
-import { FolderGrid, FolderGridSkeleton } from './folder-grid';
-import { IndependentTexts } from './independent-texts';
-import styles from './library-page.module.css';
+import { FolderGrid, FolderGridSkeleton } from './ui/folder-grid';
+import { IndependentTexts } from './ui/independent-texts/independent-texts';
+import styles from '../styles/library-page-common.module.css';
 
 type Dialog =
     | { type: 'create' }

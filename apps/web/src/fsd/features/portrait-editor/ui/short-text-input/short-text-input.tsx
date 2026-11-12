@@ -4,7 +4,7 @@ import { portraitCharacterCount } from '@languon/contracts';
 import { Input } from '@/fsd/shared/ui';
 import type { Locale } from '@/fsd/shared/i18n';
 import { copy } from '../../lib/copy';
-import styles from '../common.module.css';
+import styles from '../styles/common-common.module.css';
 export function ShortTextInput({
     label,
     value,

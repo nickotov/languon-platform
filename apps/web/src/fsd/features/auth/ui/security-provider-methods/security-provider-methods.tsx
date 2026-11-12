@@ -1,7 +1,7 @@
 import { AtSign, Globe2 } from 'lucide-react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Badge, Button, Card } from '@/fsd/shared/ui';
-import profileStyles from '../security-settings.module.css';
+import profileStyles from '../styles/security-settings-common.module.css';
 
 export function SecurityProviderMethods({
     email,

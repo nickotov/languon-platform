@@ -7,8 +7,8 @@ import type { Locale } from '@/fsd/shared/i18n';
 import { LEVELS } from '../../lib/options';
 import { labels, copy } from '../../lib/copy';
 import { languageLabel, resolvePortraitLanguage } from '../../lib/items';
-import { ChoiceChip, ShortTextInput } from '../editor-controls/editor-controls';
-import styles from '../common.module.css';
+import { ChoiceChip, ShortTextInput } from '../editor-controls';
+import styles from '../styles/common-common.module.css';
 type LanguageEntry = PortraitItems['languages'][number];
 function LanguageRow({
     item,

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { Skeleton } from './skeleton';
+import { Skeleton } from '.';
 
 const meta = { component: Skeleton, title: 'UI/Skeleton' } satisfies Meta<
     typeof Skeleton

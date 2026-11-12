@@ -2,7 +2,7 @@ import type { DictionarySettingsValues } from '@languon/contracts';
 import { useI18n } from '@/fsd/shared/i18n';
 import { RadioGroup, Switch } from '@/fsd/shared/ui';
 import type { SetSetting } from '../../types';
-import styles from '../dictionary-settings-form-common.module.css';
+import styles from '../styles/dictionary-settings-form-common.module.css';
 
 export function SettingsLanguageField({
     field,

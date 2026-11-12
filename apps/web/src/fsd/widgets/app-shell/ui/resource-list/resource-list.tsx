@@ -9,8 +9,8 @@ import {
     type NavigationSection,
 } from '../../lib/navigation-sections';
 import { useShellNavigation } from '../../model/navigation-context';
-import { ResourceRow } from './resource-row';
-import styles from './resource-list.module.css';
+import { ResourceRow } from './ui/resource-row/resource-row';
+import styles from '../styles/resource-list-common.module.css';
 
 export function ResourceList({
     section,

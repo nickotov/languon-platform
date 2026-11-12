@@ -13,8 +13,8 @@ import { useIsCompact } from '../../hooks/use-is-compact';
 import { LibraryApiError } from '../../api/library-api';
 import { displayDetail } from '../../lib/sentence-display';
 import type { LibraryApi, SavedSentence } from '../../types';
-import styles from './sentence-detail.module.css';
-import { SentenceDetailContent } from './sentence-detail-content';
+import styles from '../styles/sentence-detail-common.module.css';
+import { SentenceDetailContent } from './ui/sentence-detail-content/sentence-detail-content';
 export function SentenceDetail({
     api,
     id,

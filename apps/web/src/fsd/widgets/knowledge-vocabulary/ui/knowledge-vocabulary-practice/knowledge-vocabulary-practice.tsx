@@ -7,7 +7,7 @@ import type {
 import { useQuery } from '@tanstack/react-query';
 import { dictionaryApi } from '@/fsd/entities/dictionary';
 import type { RequestWithSession } from '@/fsd/entities/dictionary';
-import { VocabularyTraining } from './vocabulary-training';
+import { VocabularyTraining } from './ui/vocabulary-training/vocabulary-training';
 import { createKnowledgeSentenceApi } from '../../api/knowledge-sentence-api';
 import { Ellipsis } from 'lucide-react';
 import styles from './knowledge-vocabulary-practice.module.css';

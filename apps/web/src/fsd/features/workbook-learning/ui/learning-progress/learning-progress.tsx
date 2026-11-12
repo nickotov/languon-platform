@@ -1,7 +1,7 @@
 import { ActionConsentDialog } from '@/fsd/entities/ai-action';
 import { Button, InlineAlert, LoadingState } from '@/fsd/shared/ui';
 import type { useWorkbookLearning } from '../../hooks/use-workbook-learning';
-import styles from './learning-progress.module.css';
+import styles from '../styles/learning-progress-common.module.css';
 
 export function LearningProgress({
     model,

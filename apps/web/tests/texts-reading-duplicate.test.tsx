@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { render } from './render';
 import { dictionaryApi } from '@/fsd/entities/dictionary';
-import { DuplicatePreview } from '@/fsd/features/text-reading/ui/collect-panel/duplicate-preview';
+import { DuplicatePreview } from '@/fsd/features/text-reading/ui/collect-panel/ui/duplicate-preview/duplicate-preview';
 import { collectionFailureKey } from '@/fsd/features/text-reading/lib/collection-failure';
 vi.mock('@/fsd/entities/dictionary', () => ({
     dictionaryApi: { listCards: vi.fn() },

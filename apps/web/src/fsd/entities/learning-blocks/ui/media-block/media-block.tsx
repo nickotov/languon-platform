@@ -1,16 +1,16 @@
 import { useRef, useState } from 'react';
 import type { LearningBlock } from '@languon/contracts';
-import { Button } from '@/fsd/shared/ui/button/button';
+import { Button } from '@/fsd/shared/ui/button';
 import { safeAudioUrl } from '../../lib/safe-audio-url';
 import type { LearningBlockViewProps } from '../../types';
-import { AudioPlayer } from './audio-player';
-import { Transcript } from './transcript';
+import { AudioPlayer } from './ui/audio-player/audio-player';
+import { Transcript } from './ui/transcript/transcript';
 import { LearningNarrative } from '../learning-narrative/learning-narrative';
-import { VideoPlayer, type VideoSeek } from './video-player';
-import mediaStyles from './media-block.module.css';
-export { Transcript } from './transcript';
-export { VideoPlayer, type VideoSeek } from './video-player';
-import styles from '../block-layout.module.css';
+import { VideoPlayer, type VideoSeek } from './ui/video-player/video-player';
+import mediaStyles from '../styles/media-block-common.module.css';
+export { Transcript } from './ui/transcript/transcript';
+export { VideoPlayer, type VideoSeek } from './ui/video-player/video-player';
+import styles from '../styles/block-layout-common.module.css';
 
 type Media = Extract<LearningBlock, { type: 'audio' | 'video' }>;
 export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {

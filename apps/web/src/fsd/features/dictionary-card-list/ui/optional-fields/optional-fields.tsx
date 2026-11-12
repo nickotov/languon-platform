@@ -9,7 +9,7 @@ import {
     languageLabel,
 } from '@/fsd/entities/dictionary';
 import { useI18n } from '@/fsd/shared/i18n';
-import styles from '../dictionary-card-list-common.module.css';
+import styles from '../styles/dictionary-card-list-common.module.css';
 
 export function OptionalFields({
     card,

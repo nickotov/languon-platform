@@ -6,10 +6,10 @@ import { workbookLabels } from '@/fsd/features/workbooks';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, InlineAlert, Input, LoadingState } from '@/fsd/shared/ui';
 import { useWorkbookDetail } from '../../hooks/use-workbook-detail';
-import { WorkbookNoteRow } from './workbook-note-row';
-import { WorkbookMembership } from './workbook-membership';
-import { WorkbookReader } from './workbook-reader';
-import styles from '../workbook-layout.module.css';
+import { WorkbookNoteRow } from './ui/workbook-note-row/workbook-note-row';
+import { WorkbookMembership } from './ui/workbook-membership/workbook-membership';
+import { WorkbookReader } from './ui/workbook-reader/workbook-reader';
+import styles from '../styles/workbook-layout-common.module.css';
 
 export function WorkbookDetail({ workbookId }: { workbookId: string }) {
     const { locale, href } = useI18n();

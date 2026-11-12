@@ -1,44 +1,15 @@
 'use client';
 
 import { XIcon } from 'lucide-react';
-
 import {
     createContext,
-    type HTMLAttributes,
-    type ReactNode,
     useContext,
     useLayoutEffect,
     useId,
     useRef,
 } from 'react';
-
-import styles from './dialog.module.css';
-
-export type DialogSize =
-    'large' | 'lg' | 'md' | 'medium' | 'sm' | 'small' | 'viewport';
-
-export type DialogProps = {
-    children?: ReactNode;
-    className?: string | undefined;
-    bodyClassName?: string | undefined;
-    headerClassName?: string | undefined;
-    titleClassName?: string | undefined;
-    footerClassName?: string | undefined;
-    closeLabel?: string;
-    description?: ReactNode;
-    dismissible?: boolean;
-    dismissOnEscape?: boolean;
-    dismissOnOverlayClick?: boolean;
-    footer?: ReactNode;
-    onClose(): void;
-    open: boolean;
-    role?: 'alertdialog' | 'dialog';
-    showCloseButton?: boolean;
-    showHeader?: boolean;
-    size?: DialogSize;
-    title?: string;
-    variant?: 'dialog' | 'sheet';
-};
+import styles from '../styles/dialog-common.module.css';
+import type { DialogSize, DialogProps } from './types';
 
 const DialogContext = createContext<{ onClose(): void } | null>(null);
 
@@ -257,33 +228,4 @@ export function Dialog({
             </dialog>
         </DialogContext.Provider>
     );
-}
-
-export type DialogActionsProps = HTMLAttributes<HTMLDivElement> & {
-    align?: 'between' | 'end' | 'start';
-};
-
-export function DialogActions({
-    align = 'end',
-    className,
-    ...props
-}: DialogActionsProps) {
-    return (
-        <div
-            {...props}
-            className={[styles.actions, styles[`actions-${align}`], className]
-                .filter(Boolean)
-                .join(' ')}
-        />
-    );
-}
-
-export function AlertDialog(props: Omit<DialogProps, 'role'>) {
-    return <Dialog {...props} role='alertdialog' />;
-}
-
-export function BottomSheet(
-    props: Omit<DialogProps, 'closeLabel' | 'variant'> & { closeLabel: string },
-) {
-    return <Dialog {...props} variant='sheet' />;
 }

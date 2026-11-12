@@ -6,7 +6,7 @@ import { useSettingsDraft } from '../../hooks/use-settings-draft';
 import type { SettingsFormProps } from '../../types';
 import { SettingsLanguagePair } from '../settings-language-pair/settings-language-pair';
 import { SettingsCardFields } from '../settings-card-fields/settings-card-fields';
-import styles from '../dictionary-settings-form-common.module.css';
+import styles from '../styles/dictionary-settings-form-common.module.css';
 
 export type { SaveDictionarySettings } from '../../types';
 

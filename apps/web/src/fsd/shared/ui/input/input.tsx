@@ -5,7 +5,7 @@ import {
     useId,
 } from 'react';
 
-import type { ControlSize } from '../button/button';
+import type { ControlSize } from '../button';
 import styles from './input.module.css';
 
 export type InputSize = 'lg' | 'md' | 'sm';

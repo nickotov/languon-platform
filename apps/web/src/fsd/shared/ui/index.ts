@@ -15,7 +15,7 @@ export {
     type BadgeProps,
     type BadgeSize,
     type BadgeTone,
-} from './badge/badge';
+} from './badge';
 export {
     Breadcrumb,
     type BreadcrumbItem,
@@ -27,7 +27,7 @@ export {
     ButtonLink,
     type ButtonVariant,
     type ControlSize,
-} from './button/button';
+} from './button';
 export {
     Card,
     CardContent,
@@ -40,7 +40,7 @@ export {
     type CardProps,
     type CardSectionProps,
     type CardVariant,
-} from './card/card';
+} from './card';
 export {
     Checkbox,
     type CheckboxProps,
@@ -56,8 +56,8 @@ export {
     type DialogActionsProps,
     type DialogProps,
     type DialogSize,
-} from './dialog/dialog';
-export { EmptyState, ErrorState } from './empty-state/empty-state';
+} from './dialog';
+export { EmptyState, ErrorState } from './empty-state';
 export {
     ExerciseCard,
     type ExerciseCardProps,
@@ -146,7 +146,7 @@ export {
     type RadioProps,
     type RadioSize,
     type RadioVariant,
-} from './radio-group/radio-group';
+} from './radio-group';
 export {
     ReviewBadge,
     type ReviewBadgeProps,
@@ -167,7 +167,7 @@ export {
     type SkeletonCardProps,
     type SkeletonProps,
     type SkeletonVariant,
-} from './skeleton/skeleton';
+} from './skeleton';
 export { Spinner } from './spinner/spinner';
 export { Switch, type SwitchProps, type SwitchSize } from './switch/switch';
 export {

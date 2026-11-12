@@ -21,9 +21,12 @@ import {
 } from 'react';
 import { PopoverContext } from './popover-context';
 
-export * from './popover-parts';
-export * from './popover-accessories';
-export { PopoverContent, type PopoverContentProps } from './popover-content';
+export * from './ui/popover-parts';
+export * from './ui/popover-accessories';
+export {
+    PopoverContent,
+    type PopoverContentProps,
+} from './ui/popover-content/popover-content';
 
 export type PopoverRootProps = {
     children: ReactNode;

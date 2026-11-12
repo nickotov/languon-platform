@@ -15,7 +15,7 @@ import {
 } from '@/fsd/shared/ui';
 import type { ChangeEvent } from 'react';
 import { useSharedWorkbook } from '../../hooks/use-shared-workbook';
-import styles from '../workbook-layout.module.css';
+import styles from '../styles/workbook-layout-common.module.css';
 
 export function SharedWorkbookPage({ locator }: { locator: string }) {
     const { locale, href } = useI18n();

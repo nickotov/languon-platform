@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { VerifyEmailPage } from '@/fsd/pages/verify-email/ui/verify-email-page';
+import { VerifyEmailPage } from '@/fsd/pages/verify-email/ui/verify-email-page/verify-email-page';
 import { localizedMetadata } from '@/fsd/shared/i18n/metadata';
 
 export async function generateMetadata(): Promise<Metadata> {

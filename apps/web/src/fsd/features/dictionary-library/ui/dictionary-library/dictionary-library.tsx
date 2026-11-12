@@ -12,8 +12,8 @@ import type { DictionaryLibraryProps } from '../../types';
 import { LibraryCreateDialog } from '../library-create-dialog/library-create-dialog';
 import { LibraryDeletionDialog } from '../library-deletion-dialog/library-deletion-dialog';
 import { LibraryResults } from '../library-results/library-results';
-import styles from '../dictionary-library-common.module.css';
-import { ArchivedDictionarySelection } from './archived-dictionary-selection';
+import styles from '../styles/dictionary-library-common.module.css';
+import { ArchivedDictionarySelection } from './ui/archived-dictionary-selection/archived-dictionary-selection';
 
 export function DictionaryLibrary({
     onOpenSettings,

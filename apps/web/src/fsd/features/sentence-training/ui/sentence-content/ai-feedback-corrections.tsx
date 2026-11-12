@@ -1,7 +1,7 @@
 import type { SentenceAttempt } from '@languon/contracts';
 import { Badge } from '@/fsd/shared/ui';
 import { useSentenceCopy } from '../sentence-copy';
-import styles from './sentence-content.module.css';
+import styles from '../styles/sentence-content-common.module.css';
 
 export function AiFeedbackCorrections({
     issues,

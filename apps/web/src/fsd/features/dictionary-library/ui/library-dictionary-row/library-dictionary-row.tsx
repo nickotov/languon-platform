@@ -17,7 +17,7 @@ import type {
     DictionaryLifecycle,
     LanguageCatalogEntry,
 } from '@languon/contracts';
-import styles from '../dictionary-library-common.module.css';
+import styles from '../styles/dictionary-library-common.module.css';
 
 type Props = {
     dictionary: DictionarySummary;

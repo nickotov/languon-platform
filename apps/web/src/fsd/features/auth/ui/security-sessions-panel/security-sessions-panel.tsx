@@ -1,7 +1,7 @@
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, Card } from '@/fsd/shared/ui';
-import styles from '../auth-ui.module.css';
-import profileStyles from '../security-settings.module.css';
+import styles from '../styles/auth-ui-common.module.css';
+import profileStyles from '../styles/security-settings-common.module.css';
 
 export function SecuritySessionsPanel({
     embedded,

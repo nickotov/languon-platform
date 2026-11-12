@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { LoginPage } from '@/fsd/pages/login/ui/login-page';
+import { LoginPage } from '@/fsd/pages/login/ui/login-page/login-page';
 import { localizedMetadata } from '@/fsd/shared/i18n/metadata';
 
 export async function generateMetadata(): Promise<Metadata> {

@@ -22,12 +22,12 @@ import { portraitApi, portraitQueryKey } from '@/fsd/entities/learner-portrait';
 import { useSessionStore } from '@/fsd/entities/session';
 import { useInterviewOpening } from '@/fsd/pages/learner-portrait/hooks/use-interview-opening';
 import { usePortraitInterview } from '@/fsd/pages/learner-portrait/hooks/use-portrait-interview';
-import { PortraitInterviewPage } from '@/fsd/pages/learner-portrait/ui/portrait-interview/portrait-interview-page';
+import { PortraitInterviewPage } from '@/fsd/pages/learner-portrait/ui/portrait-interview/portrait-interview-page/portrait-interview-page';
 import { localInterviewQuestion } from '@/fsd/pages/learner-portrait/lib/interview-questions';
-import { InterviewQuestion } from '@/fsd/pages/learner-portrait/ui/portrait-interview/interview-question';
-import { InterviewRecovery } from '@/fsd/pages/learner-portrait/ui/portrait-interview/interview-recovery';
-import { InterviewPreview } from '@/fsd/pages/learner-portrait/ui/portrait-interview/interview-preview';
-import { InterviewComposer } from '@/fsd/pages/learner-portrait/ui/portrait-interview/interview-composer';
+import { InterviewQuestion } from '@/fsd/pages/learner-portrait/ui/portrait-interview/interview-question/interview-question';
+import { InterviewRecovery } from '@/fsd/pages/learner-portrait/ui/portrait-interview/interview-recovery/interview-recovery';
+import { InterviewPreview } from '@/fsd/pages/learner-portrait/ui/portrait-interview/interview-preview/interview-preview';
+import { InterviewComposer } from '@/fsd/pages/learner-portrait/ui/portrait-interview/interview-composer/interview-composer';
 const requestWithSession = <T,>(operation: (token: string) => Promise<T>) =>
     operation('test-token');
 

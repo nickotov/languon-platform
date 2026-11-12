@@ -5,10 +5,10 @@ import { BottomSheet, Textarea } from '@/fsd/shared/ui';
 
 import { useGenerationReview } from '../../hooks/use-generation-review';
 import type { GenerationReviewProps } from '../../model/generation-review';
-import { ReviewFields } from '../review-field/review-fields';
+import { ReviewFields } from '../review-field/ui/review-fields/review-fields';
 import { ReviewFooter } from '../review-footer/review-footer';
 import { ReviewStatus } from '../review-status/review-status';
-import styles from '../dictionary-generation-panel-common.module.css';
+import styles from '../styles/dictionary-generation-panel-common.module.css';
 
 export function DictionaryGenerationPanel(props: GenerationReviewProps) {
     const { t } = useI18n();

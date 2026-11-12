@@ -7,7 +7,7 @@ import { Trash2 } from 'lucide-react';
 import type { DictionaryCardListProps } from '../../types';
 import { DictionaryCardRow } from '../dictionary-card-row/dictionary-card-row';
 import { CardDeletionDialog } from '../card-deletion-dialog/card-deletion-dialog';
-import styles from '../dictionary-card-list-common.module.css';
+import styles from '../styles/dictionary-card-list-common.module.css';
 
 export function DictionaryCardList(props: DictionaryCardListProps) {
     const {

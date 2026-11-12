@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import postcss from 'postcss';
 import ts from 'typescript';
 
+import { inspectComponentStructure } from './component-structure';
 import { findUtilityClasses } from './style-utilities';
 
 export const webRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -403,6 +404,14 @@ export function checkStyles(rootPath = webRoot): string[] {
 
     return [
         ...inspectWorkspaceArtifacts(rootPath),
+        ...inspectComponentStructure(
+            new Map(
+                files
+                    .filter((path) => /\.(?:css|[cm]?[jt]sx?)$/.test(path))
+                    .map((path) => [path, readFileSync(path, 'utf8')]),
+            ),
+            rootPath,
+        ),
         ...files.flatMap((path) => {
             const extension = extname(path);
             if (

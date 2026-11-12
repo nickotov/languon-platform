@@ -2,9 +2,9 @@ import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { conversationUIMessages } from '../src/fsd/entities/conversation';
 import { ConversationDetailSchema } from '@languon/contracts';
-import { ConversationMessages } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-messages';
+import { ConversationMessages } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/conversation-messages/conversation-messages';
 import { ConversationApiError } from '../src/fsd/entities/conversation/api/conversation-api';
-import { ConversationErrorNotice } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/conversation-error-notice';
+import { ConversationErrorNotice } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/conversation-error-notice/conversation-error-notice';
 import { render } from './render';
 
 afterEach(cleanup);

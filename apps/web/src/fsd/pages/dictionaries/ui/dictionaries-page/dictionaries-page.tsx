@@ -4,7 +4,7 @@ import { useAuth } from '@/fsd/features/auth';
 import { DictionaryLibrary } from '@/fsd/features/dictionary-library';
 import { useI18n } from '@/fsd/shared/i18n';
 
-import { AuthenticatedDictionaryBoundary } from '../authenticated-dictionary-boundary';
+import { AuthenticatedDictionaryBoundary } from '../authenticated-dictionary-boundary/authenticated-dictionary-boundary';
 import { useLibrarySettings } from '../../hooks/use-library-settings';
 import { LibrarySettingsSheet } from '../library-settings-sheet/library-settings-sheet';
 

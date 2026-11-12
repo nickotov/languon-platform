@@ -73,6 +73,7 @@
     --background-surface: #ffffff;
     --background-subtle: #f1f3f6;
     --background-elevated: #ffffff;
+    --background-assistant: #f0f2f8;
     --background-canvas-dark: #121417;
     --background-surface-dark: #1b1e24;
     --background-subtle-dark: #171a20;
@@ -279,6 +280,7 @@
     --background-surface: #1b1e24;
     --background-subtle: #171a20;
     --background-elevated: #23262d;
+    --background-assistant: #171d29;
     --text-primary: #f8f9fb;
     --text-secondary: #d0d5dd;
     --text-tertiary: #a6aebb;
@@ -390,6 +392,7 @@
         --background-surface: #1b1e24;
         --background-subtle: #171a20;
         --background-elevated: #23262d;
+        --background-assistant: #171d29;
         --text-primary: #f8f9fb;
         --text-secondary: #d0d5dd;
         --text-tertiary: #a6aebb;
@@ -562,9 +565,14 @@ a {
 }
 
 @media (forced-colors: active) {
+    :root[data-theme] {
+        --background-assistant: Canvas;
+    }
+
     :root {
         --background-canvas: Canvas;
         --background-surface: Canvas;
+        --background-assistant: Canvas;
         --text-primary: CanvasText;
         --text-secondary: CanvasText;
         --border-default: CanvasText;

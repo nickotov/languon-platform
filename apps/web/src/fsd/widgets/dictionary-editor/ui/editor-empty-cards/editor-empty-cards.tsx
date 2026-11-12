@@ -1,7 +1,7 @@
 import { Button } from '@/fsd/shared/ui';
 import { Plus, Sparkles } from 'lucide-react';
 import type { EditorViewFields } from '../../lib/editor-workspace';
-import styles from '../dictionary-editor-common.module.css';
+import styles from '../styles/dictionary-editor-common.module.css';
 
 export function EditorEmptyCards({
     model,

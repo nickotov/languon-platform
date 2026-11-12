@@ -6,8 +6,8 @@ import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
 import type { PortraitField } from '../../lib/portrait-preferences';
 import { portraitSettingsCopy } from '../../lib/portrait-settings-copy';
-import styles from './conversation-preferences.module.css';
-import { PreferenceField } from './preference-field';
+import styles from '../styles/conversation-preferences-common.module.css';
+import { PreferenceField } from './ui/preference-field/preference-field';
 
 export function ConversationPreferences({
     value,

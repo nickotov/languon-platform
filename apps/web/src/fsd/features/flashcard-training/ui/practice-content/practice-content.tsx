@@ -9,9 +9,9 @@ import { ConflictNotice } from '../conflict-notice/conflict-notice';
 import { ResultsPanel } from '../results-panel/results-panel';
 import { RetryButton } from '../retry-button/retry-button';
 import { SessionStatus } from '../session-status/session-status';
-import styles from './practice-content.module.css';
-import { CardSkeleton } from './card-skeleton';
-import { PracticeCardPhase } from './practice-card-phase';
+import styles from '../styles/practice-content-common.module.css';
+import { CardSkeleton } from './ui/card-skeleton/card-skeleton';
+import { PracticeCardPhase } from './ui/practice-card-phase/practice-card-phase';
 
 export function PracticeContent({
     session,

@@ -6,7 +6,7 @@ import { Button, Dialog } from '@/fsd/shared/ui';
 import { useSnippetApplication } from '../../hooks/use-snippet-application';
 import { snippetCopy, snippetCount } from '../../lib/snippet-copy';
 import type { DictionarySnippetContext } from '../../types';
-import { DictionarySnippetView } from './snippet-view';
+import { DictionarySnippetView } from './ui/snippet-view/snippet-view';
 
 export function DictionarySnippetCard({
     snippet,

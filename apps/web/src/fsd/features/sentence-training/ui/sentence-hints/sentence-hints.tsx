@@ -1,7 +1,7 @@
 'use client';
-import styles from './sentence-hints.module.css';
-import { HintWord, type HintWordActions } from './hint-word';
-import { HintPopoverContent } from './hint-popover-content';
+import styles from '../styles/sentence-hints-common.module.css';
+import { HintWord, type HintWordActions } from './ui/hint-word/hint-word';
+import { HintPopoverContent } from './ui/hint-popover-content/hint-popover-content';
 
 import {
     useEffect,

@@ -6,9 +6,9 @@ import { Button, Card, InlineAlert, Skeleton } from '@/fsd/shared/ui';
 import type { SessionRequest } from '../../api/preferences-api';
 import { useModelPreference } from '../../hooks/use-model-preference';
 import { preferenceCopy } from '../../lib/copy';
-import { ActionBudgetField } from './action-budget-field';
-import { PreferenceAlerts } from './preference-alerts';
-import styles from './model-preference-section.module.css';
+import { ActionBudgetField } from './ui/action-budget-field/action-budget-field';
+import { PreferenceAlerts } from './ui/preference-alerts/preference-alerts';
+import styles from '../styles/model-preference-section-common.module.css';
 
 type Props = {
     requestWithSession: SessionRequest;

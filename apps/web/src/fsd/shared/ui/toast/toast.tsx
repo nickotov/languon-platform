@@ -3,11 +3,11 @@
 import { useCallback } from 'react';
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
-import { Toast } from './toast-view';
+import { Toast } from './ui/toast-view/toast-view';
 import type { ToastInput, ToastId } from './types';
-import styles from './toast.module.css';
+import styles from '../styles/toast-common.module.css';
 
-export { Toast } from './toast-view';
+export { Toast } from './ui/toast-view/toast-view';
 export type {
     ToastId,
     ToastTone,

@@ -4,9 +4,9 @@ import { conversationCopy } from '@/fsd/entities/conversation';
 import { useSessionStore } from '@/fsd/entities/session';
 import { useI18n } from '@/fsd/shared/i18n';
 import { ButtonLink, useCompanionLayout } from '@/fsd/shared/ui';
-import { AssistantPanel } from './assistant-panel';
+import { AssistantPanel } from './ui/assistant-panel/assistant-panel';
 import { SourceSelection } from '../source-selection/source-selection';
-import { TutorLauncher } from '../tutor-shell/tutor-launcher';
+import { TutorLauncher } from '../tutor-shell/ui/tutor-launcher/tutor-launcher';
 import type { ContextualAssistantProps } from '../../types';
 
 export function ContextualAssistant(props: ContextualAssistantProps) {

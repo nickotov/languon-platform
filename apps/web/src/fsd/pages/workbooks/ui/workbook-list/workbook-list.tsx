@@ -8,7 +8,7 @@ import { useSessionStore } from '@/fsd/entities/session';
 import { workbookApi, workbookLabels } from '@/fsd/features/workbooks';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, Input, InlineAlert, LoadingState } from '@/fsd/shared/ui';
-import styles from '../workbook-layout.module.css';
+import styles from '../styles/workbook-layout-common.module.css';
 
 export function WorkbookList() {
     const { requestWithSession } = useAuth();

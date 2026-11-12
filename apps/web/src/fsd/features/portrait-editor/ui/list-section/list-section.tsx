@@ -4,11 +4,8 @@ import type { Locale } from '@/fsd/shared/i18n';
 import type { Option } from '../../lib/options';
 import { listCopy } from '../../lib/list-copy';
 import { toggleItem } from '../../lib/items';
-import {
-    ChoiceChip,
-    CustomEntryList,
-} from '../editor-controls/editor-controls';
-import styles from '../common.module.css';
+import { ChoiceChip, CustomEntryList } from '../editor-controls';
+import styles from '../styles/common-common.module.css';
 type ListKey = 'goals' | 'accommodations' | 'hobbies';
 export function ListSection({
     field,

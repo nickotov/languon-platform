@@ -1,9 +1,9 @@
 'use client';
-import styles from './sentence-setup.module.css';
+import styles from '../styles/sentence-setup-common.module.css';
 import { SENTENCE_LIMITS } from '@languon/contracts';
 import { useEffect, useState, type ChangeEvent } from 'react';
-import { SentenceEntrySelection } from './sentence-entry-selection';
-import { SentenceSetupEstimate } from './sentence-setup-estimate';
+import { SentenceEntrySelection } from './ui/sentence-entry-selection/sentence-entry-selection';
+import { SentenceSetupEstimate } from './ui/sentence-setup-estimate/sentence-setup-estimate';
 import { MessageSquareTextIcon, SparklesIcon } from 'lucide-react';
 import { usePreparationCopy } from '../sentence-preparation-copy';
 import { SentencePreparationOption } from '../sentence-preparation-option/sentence-preparation-option';

@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
 
-import { Button } from '../button/button';
-import { AlertDialog, BottomSheet, Dialog, DialogActions } from './dialog';
+import { Button } from '../button';
+import { AlertDialog, BottomSheet, Dialog, DialogActions } from '.';
 
 const meta = { title: 'UI/Dialog' } satisfies Meta;
 

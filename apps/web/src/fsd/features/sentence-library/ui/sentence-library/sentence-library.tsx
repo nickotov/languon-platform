@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useEffect } from 'react';
-import componentStyles from './sentence-library.module.css';
-import { SentenceLibraryHeader } from './sentence-library-header';
+import componentStyles from '../styles/sentence-library-common.module.css';
+import { SentenceLibraryHeader } from './ui/sentence-library-header/sentence-library-header';
 import {
     rememberPreviewTrigger,
     restorePreviewTrigger,

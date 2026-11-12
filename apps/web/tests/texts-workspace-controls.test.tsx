@@ -5,10 +5,10 @@ import type { TextDocument } from '@languon/contracts';
 import { textsApi } from '@/fsd/entities/texts';
 import type { TextWorkspace } from '@/fsd/pages/texts/hooks/use-text-workspace';
 import { useTextWorkspaceSave } from '@/fsd/pages/texts/hooks/use-text-workspace-save';
-import { WorkspaceCompose } from '@/fsd/pages/texts/ui/workspace-page/workspace-compose';
-import { WorkspaceLanguages } from '@/fsd/pages/texts/ui/workspace-page/workspace-languages';
-import { WorkspacePairEditor } from '@/fsd/pages/texts/ui/workspace-page/workspace-pair-editor';
-import { WorkspaceBanners } from '@/fsd/pages/texts/ui/workspace-page/workspace-banners';
+import { WorkspaceCompose } from '@/fsd/pages/texts/ui/workspace-page/ui/workspace-compose/workspace-compose';
+import { WorkspaceLanguages } from '@/fsd/pages/texts/ui/workspace-page/ui/workspace-languages/workspace-languages';
+import { WorkspacePairEditor } from '@/fsd/pages/texts/ui/workspace-page/ui/workspace-pair-editor/workspace-pair-editor';
+import { WorkspaceBanners } from '@/fsd/pages/texts/ui/workspace-page/ui/workspace-banners/workspace-banners';
 import { render } from './render';
 const id = '123e4567-e89b-42d3-a456-426614174000';
 const input = {

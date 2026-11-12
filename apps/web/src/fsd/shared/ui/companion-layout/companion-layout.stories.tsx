@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { Button } from '../button/button';
+import { Button } from '../button';
 import { CompanionLayout, useCompanionLayout } from './companion-layout';
 
 const meta = { title: 'UI/CompanionLayout' } satisfies Meta;

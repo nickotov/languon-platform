@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react';
 import type { LearningBlock } from '@languon/contracts';
-import { Button } from '@/fsd/shared/ui/button/button';
+import { Button } from '@/fsd/shared/ui/button';
 import type {
     LearningBlockLabels,
     LearningBlockPlayback,
@@ -8,9 +8,9 @@ import type {
     LearningPrivateStudy,
 } from '../../types';
 import { BlockPlayButton } from '../block-play-button/block-play-button';
-import styles from './bilingual-block.module.css';
-import { PrivateStudyPanel } from './private-study-panel';
-import { BilingualPreview } from './bilingual-preview';
+import styles from '../styles/bilingual-block-common.module.css';
+import { PrivateStudyPanel } from './ui/private-study-panel/private-study-panel';
+import { BilingualPreview } from './ui/bilingual-preview/bilingual-preview';
 
 type Bilingual = Extract<LearningBlock, { type: 'bilingual-text' }>;
 interface BilingualProps {

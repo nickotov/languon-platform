@@ -16,7 +16,7 @@ import type {
 import { I18nProvider } from '@/fsd/shared/i18n';
 import type * as SpeechPlayback from '@/fsd/features/speech-playback';
 import { en } from '@/fsd/shared/i18n/messages/en';
-import { KnowledgeMediaTools } from '@/fsd/pages/knowledge/ui/knowledge-detail-page/knowledge-media-tools';
+import { KnowledgeMediaTools } from '@/fsd/pages/knowledge/ui/knowledge-detail-page/ui/knowledge-media-tools/knowledge-media-tools';
 
 const transport = vi.hoisted(() => ({
     speechPrepare: vi.fn(),

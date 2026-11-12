@@ -12,7 +12,7 @@ import {
     AiResultPanel,
     languageDirection,
     ReferencePanel,
-} from '../sentence-content/sentence-content';
+} from '../sentence-content';
 import { SentenceErrorNotice } from '../sentence-errors/sentence-errors';
 
 export function SentenceHistory({

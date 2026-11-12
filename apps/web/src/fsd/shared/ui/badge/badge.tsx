@@ -1,18 +1,5 @@
-import type { HTMLAttributes, ReactNode } from 'react';
-
-import styles from './badge.module.css';
-
-export type BadgeTone = 'danger' | 'info' | 'neutral' | 'success' | 'warning';
-
-export type BadgeSize = 'md' | 'sm';
-
-export type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
-    children: ReactNode;
-    icon?: ReactNode;
-    size?: BadgeSize;
-    tone?: BadgeTone;
-    withDot?: boolean;
-};
+import styles from '../styles/badge-common.module.css';
+import type { BadgeProps } from './types';
 
 export function Badge({
     children,
@@ -52,8 +39,4 @@ export function Badge({
             {children}
         </span>
     );
-}
-
-export function Chip({ children }: { children: ReactNode }) {
-    return <span className={styles.chip}>{children}</span>;
 }

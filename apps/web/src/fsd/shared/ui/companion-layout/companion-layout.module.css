@@ -76,7 +76,7 @@
                 max(var(--size-340), calc(100% - var(--size-480)))
             )
         );
-        border-inline-start: 1px solid var(--border-default);
+        border-inline-start: 1px solid var(--border-strong);
     }
 }
 @media (min-width: 1024px) and (max-width: 1439px) {

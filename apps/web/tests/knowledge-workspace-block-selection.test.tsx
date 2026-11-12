@@ -6,7 +6,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { I18nProvider } from '../src/fsd/shared/i18n';
 import { en } from '../src/fsd/shared/i18n/messages/en';
-import { WorkspaceEditorChrome } from '../src/fsd/features/knowledge-notes/ui/knowledge-editor/workspace-editor-chrome';
+import { WorkspaceEditorChrome } from '../src/fsd/features/knowledge-notes/ui/knowledge-editor/ui/workspace-editor-chrome/workspace-editor-chrome';
 
 const block = {
     id: '11111111-1111-4111-8111-111111111111',

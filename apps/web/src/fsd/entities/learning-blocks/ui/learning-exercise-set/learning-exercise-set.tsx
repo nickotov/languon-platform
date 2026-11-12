@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { ListChecks } from 'lucide-react';
 import type { ExerciseLearningBlock } from '@languon/contracts';
-import { Button } from '@/fsd/shared/ui/button/button';
+import { Button } from '@/fsd/shared/ui/button';
 import type {
     LearningBlockLabels,
     LearningBlockVariant,

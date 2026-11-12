@@ -1,6 +1,6 @@
 import { EyeOffIcon } from 'lucide-react';
-import componentStyles from './library-list.module.css';
-import { LibrarySelectionToolbar } from './library-selection-toolbar';
+import componentStyles from '../styles/library-list-common.module.css';
+import { LibrarySelectionToolbar } from './ui/library-selection-toolbar/library-selection-toolbar';
 import { Button, Checkbox, InlineAlert } from '@/fsd/shared/ui';
 import { useInterfaceText } from '../../hooks/use-interface-text';
 import type { LibraryController } from '../../hooks/use-sentence-library';
@@ -10,7 +10,7 @@ import {
     LibrarySkeleton,
     LibraryLoadError,
     LibraryEmpty,
-} from '../library-states/library-states';
+} from '../library-states';
 export function LibraryList({
     c,
     practice,

@@ -12,7 +12,7 @@ import {
 } from '@/fsd/shared/ui';
 import type { LibraryState } from '../../hooks/use-dictionary-library';
 import type { ChangeEvent } from 'react';
-import styles from '../dictionary-library-common.module.css';
+import styles from '../styles/dictionary-library-common.module.css';
 
 export function LibraryDeletionDialog({ state }: { state: LibraryState }) {
     const { t } = useI18n();

@@ -16,7 +16,7 @@ import { BilingualBlock } from '../bilingual-block/bilingual-block';
 import { MediaBlock } from '../media-block/media-block';
 import { GrammarBlock } from '../grammar-block/grammar-block';
 import { ExerciseBlock } from '../exercise-block/exercise-block';
-import styles from '../block-layout.module.css';
+import styles from '../styles/block-layout-common.module.css';
 
 /** Safe fixed renderers; presentation variants never change content or source authority. */
 export function LearningBlockView(props: LearningBlockViewProps) {

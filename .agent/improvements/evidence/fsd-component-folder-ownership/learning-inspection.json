@@ -1,0 +1,1168 @@
+{
+  "scope": [
+    "apps/web/src/fsd/entities/",
+    "apps/web/src/fsd/features/knowledge-notes/",
+    "apps/web/src/fsd/features/conversation-preferences/",
+    "apps/web/src/fsd/features/portrait-editor/"
+  ],
+  "method": "Sorted TypeScript AST declarations/component-body structure, CSS consumers and CSS rule blocks; candidate multi-export bodies fully inspected before extraction",
+  "inspected": [
+    {
+      "path": "apps/web/src/fsd/entities/ai-action/ui/action-consent-dialog/action-consent-dialog.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "ActionConsentDialog"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/ai-action/ui/action-consent-dialog/action-consent-dialog.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/conversation/ui/copied-material/copied-material.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/entities/conversation/ui/copied-material/copied-material.tsx"
+      ],
+      "ruleBlocks": 5
+    },
+    {
+      "path": "apps/web/src/fsd/entities/conversation/ui/copied-material/copied-material.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "CopiedMaterial"
+      ],
+      "privateFunctions": [
+        "MaterialField"
+      ],
+      "plannedDestination": "apps/web/src/fsd/entities/conversation/ui/copied-material/copied-material.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/knowledge/ui/knowledge-body/knowledge-body.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/entities/knowledge/ui/knowledge-body/knowledge-body.tsx"
+      ],
+      "ruleBlocks": 18
+    },
+    {
+      "path": "apps/web/src/fsd/entities/knowledge/ui/knowledge-body/knowledge-body.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "KnowledgeBody"
+      ],
+      "privateFunctions": [
+        "toRenderNode",
+        "headingTag"
+      ],
+      "plannedDestination": "apps/web/src/fsd/entities/knowledge/ui/knowledge-body/knowledge-body.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/bilingual-block/bilingual-block.module.css",
+      "disposition": "Shared stylesheet; unchanged contents, central relocation will make ownership explicit",
+      "consumers": [
+        "apps/web/src/fsd/entities/learning-blocks/ui/bilingual-block/bilingual-block.tsx",
+        "apps/web/src/fsd/entities/learning-blocks/ui/bilingual-block/bilingual-preview.tsx",
+        "apps/web/src/fsd/entities/learning-blocks/ui/bilingual-block/private-study-panel.tsx"
+      ],
+      "ruleBlocks": 32
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/bilingual-block/bilingual-block.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "BilingualBlock"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/bilingual-block/bilingual-block.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/bilingual-block/bilingual-preview.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "BilingualPreview"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/bilingual-block/ui/bilingual-preview/bilingual-preview.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/bilingual-block/private-study-panel.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "PrivateStudyPanel"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/bilingual-block/ui/private-study-panel/private-study-panel.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/block-layout.module.css",
+      "disposition": "Shared stylesheet; unchanged contents, central relocation will make ownership explicit",
+      "consumers": [
+        "apps/web/src/fsd/entities/learning-blocks/ui/learning-block-view/learning-block-view.tsx",
+        "apps/web/src/fsd/entities/learning-blocks/ui/media-block/media-block.tsx",
+        "apps/web/src/fsd/entities/learning-blocks/ui/media-block/video-player.tsx"
+      ],
+      "ruleBlocks": 34
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/block-play-button/block-play-button.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/entities/learning-blocks/ui/block-play-button/block-play-button.tsx"
+      ],
+      "ruleBlocks": 3
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/block-play-button/block-play-button.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "BlockPlayButton"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/block-play-button/block-play-button.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-actions.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "ExerciseActions"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/ui/exercise-actions/exercise-actions.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-answer-fields.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "ExerciseAnswerFields"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/ui/exercise-answer-fields/exercise-answer-fields.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-block.module.css",
+      "disposition": "Shared stylesheet; unchanged contents, central relocation will make ownership explicit",
+      "consumers": [
+        "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-actions.tsx",
+        "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-answer-fields.tsx",
+        "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-block.tsx",
+        "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-hint.tsx",
+        "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-preview.tsx",
+        "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-results.tsx"
+      ],
+      "ruleBlocks": 38
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-block.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "ExerciseBlock"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-block.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-hint.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "ExerciseHint"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/ui/exercise-hint/exercise-hint.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-preview.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "ExercisePreview"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/ui/exercise-preview/exercise-preview.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/exercise-results.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "ExerciseResults"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/exercise-block/ui/exercise-results/exercise-results.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/grammar-block/grammar-block.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/entities/learning-blocks/ui/grammar-block/grammar-block.tsx"
+      ],
+      "ruleBlocks": 20
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/grammar-block/grammar-block.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "GrammarBlock"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/grammar-block/grammar-block.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/learning-block-view/learning-block-view.stories.tsx",
+      "disposition": "Existing story preserved; central relocation follows its view",
+      "exports": [
+        "Grammar",
+        "FreeTextExercise",
+        "MissingAudio",
+        "VocabularyCompact",
+        "VocabularyReview",
+        "VocabularyStudy",
+        "BilingualStudy",
+        "VideoPreview",
+        "UnpreparedAudio"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/learning-block-view/learning-block-view.stories.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/learning-block-view/learning-block-view.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "LearningBlockView"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/learning-block-view/learning-block-view.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/learning-exercise-set/learning-exercise-set.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/entities/learning-blocks/ui/learning-exercise-set/learning-exercise-set.tsx"
+      ],
+      "ruleBlocks": 14
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/learning-exercise-set/learning-exercise-set.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "LearningExerciseSet"
+      ],
+      "privateFunctions": [
+        "ExerciseSetItem"
+      ],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/learning-exercise-set/learning-exercise-set.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/learning-narrative/learning-narrative.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/entities/learning-blocks/ui/learning-narrative/learning-narrative.tsx"
+      ],
+      "ruleBlocks": 14
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/learning-narrative/learning-narrative.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "LearningNarrative"
+      ],
+      "privateFunctions": [
+        "safeLink",
+        "SafeAnchor",
+        "literalHtml"
+      ],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/learning-narrative/learning-narrative.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/audio-player.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "AudioPlayer"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/ui/audio-player/audio-player.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/media-block.module.css",
+      "disposition": "Shared stylesheet; unchanged contents, central relocation will make ownership explicit",
+      "consumers": [
+        "apps/web/src/fsd/entities/learning-blocks/ui/media-block/audio-player.tsx",
+        "apps/web/src/fsd/entities/learning-blocks/ui/media-block/media-block.tsx",
+        "apps/web/src/fsd/entities/learning-blocks/ui/media-block/video-player.tsx"
+      ],
+      "ruleBlocks": 17
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/media-block.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "MediaBlock"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/media-block.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/transcript.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/entities/learning-blocks/ui/media-block/transcript.tsx"
+      ],
+      "ruleBlocks": 5
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/transcript.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "Transcript"
+      ],
+      "privateFunctions": [
+        "TranscriptSegment"
+      ],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/ui/transcript/transcript.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/video-player.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "VideoPlayer"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/media-block/ui/video-player/video-player.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/vocabulary-block/vocabulary-block.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/entities/learning-blocks/ui/vocabulary-block/vocabulary-block.tsx"
+      ],
+      "ruleBlocks": 28
+    },
+    {
+      "path": "apps/web/src/fsd/entities/learning-blocks/ui/vocabulary-block/vocabulary-block.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "VocabularyBlock"
+      ],
+      "privateFunctions": [
+        "VocabularyEntry"
+      ],
+      "plannedDestination": "apps/web/src/fsd/entities/learning-blocks/ui/vocabulary-block/vocabulary-block.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/entities/texts/ui/text-status-badge/text-status-badge.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "TextStatusBadge"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/entities/texts/ui/text-status-badge/text-status-badge.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/conversation-preferences/ui/conversation-preferences/conversation-defaults.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "ConversationDefaults"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/conversation-preferences/ui/conversation-preferences/ui/conversation-defaults/conversation-defaults.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/conversation-preferences/ui/conversation-preferences/conversation-preferences.module.css",
+      "disposition": "Shared stylesheet; unchanged contents, central relocation will make ownership explicit",
+      "consumers": [
+        "apps/web/src/fsd/features/conversation-preferences/ui/conversation-preferences/conversation-defaults.tsx",
+        "apps/web/src/fsd/features/conversation-preferences/ui/conversation-preferences/conversation-preferences.tsx",
+        "apps/web/src/fsd/features/conversation-preferences/ui/conversation-preferences/preference-field.tsx"
+      ],
+      "ruleBlocks": 6
+    },
+    {
+      "path": "apps/web/src/fsd/features/conversation-preferences/ui/conversation-preferences/conversation-preferences.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "ConversationPreferences"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/conversation-preferences/ui/conversation-preferences/conversation-preferences.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/conversation-preferences/ui/conversation-preferences/portrait-chat-settings.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/features/conversation-preferences/ui/conversation-preferences/portrait-chat-settings.tsx"
+      ],
+      "ruleBlocks": 3
+    },
+    {
+      "path": "apps/web/src/fsd/features/conversation-preferences/ui/conversation-preferences/portrait-chat-settings.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "PortraitChatSettings"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/conversation-preferences/ui/conversation-preferences/ui/portrait-chat-settings/portrait-chat-settings.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/conversation-preferences/ui/conversation-preferences/preference-field.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "PreferenceField"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/conversation-preferences/ui/conversation-preferences/ui/preference-field/preference-field.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-copy/block-copy.module.css",
+      "disposition": "Shared stylesheet; unchanged contents, central relocation will make ownership explicit",
+      "consumers": [
+        "apps/web/src/fsd/features/knowledge-notes/ui/block-copy/copy-blocks-to-note.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/block-copy/copy-destination-picker.tsx"
+      ],
+      "ruleBlocks": 7
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-copy/copy-blocks-to-note.tsx",
+      "disposition": "Split independent exported components into own folders; canonical group index owns public exports",
+      "canonical": "apps/web/src/fsd/features/knowledge-notes/ui/block-copy/copy-blocks-to-note/index.ts"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-copy/copy-destination-picker.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "CopyDestinationPicker"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/block-copy/copy-destination-picker/copy-destination-picker.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/block-proposal-card.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/block-proposal-card.tsx"
+      ],
+      "ruleBlocks": 29
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/block-proposal-card.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "BlockProposalCard"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/block-proposal-card/block-proposal-card.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/knowledge-block-proposals.tsx",
+      "disposition": "Split independent exported components into own folders; canonical group index owns public exports",
+      "canonical": "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/knowledge-block-proposals/index.ts"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-document-view/knowledge-document-view.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-document-view/reader-learning-block.tsx"
+      ],
+      "ruleBlocks": 4
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-document-view/knowledge-document-view.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "KnowledgeDocumentView"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-document-view/knowledge-document-view.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-document-view/reader-learning-block.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "ReaderLearningBlock"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-document-view/ui/reader-learning-block/reader-learning-block.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/editor-table-controls.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "EditorTableControls"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/ui/editor-table-controls/editor-table-controls.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/editor-toolbar.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "EditorToolbar"
+      ],
+      "privateFunctions": [
+        "isExtraControl",
+        "ToolbarControl"
+      ],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/ui/editor-toolbar/editor-toolbar.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/knowledge-editor.module.css",
+      "disposition": "Shared stylesheet; unchanged contents, central relocation will make ownership explicit",
+      "consumers": [
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/editor-table-controls.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/editor-toolbar.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/knowledge-editor.tsx"
+      ],
+      "ruleBlocks": 48
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/knowledge-editor.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "KnowledgeEditor"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/knowledge-editor.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/prose-block-drag.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/prose-block-drag-view.ts"
+      ],
+      "ruleBlocks": 8
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/workspace-editor-chrome.module.css",
+      "disposition": "Shared stylesheet; unchanged contents, central relocation will make ownership explicit",
+      "consumers": [
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/workspace-editor-chrome.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/workspace-empty-starters.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/workspace-selection-actions.tsx"
+      ],
+      "ruleBlocks": 45
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/workspace-editor-chrome.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "WorkspaceEditorChrome"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/ui/workspace-editor-chrome/workspace-editor-chrome.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/workspace-empty-starters.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "WorkspaceEmptyStarters"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/ui/workspace-empty-starters/workspace-empty-starters.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/workspace-selection-actions.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "WorkspaceSelectionActions"
+      ],
+      "privateFunctions": [
+        "TutorAction"
+      ],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-editor/ui/workspace-selection-actions/workspace-selection-actions.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/knowledge-note-form.module.css",
+      "disposition": "Shared stylesheet; unchanged contents, central relocation will make ownership explicit",
+      "consumers": [
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/knowledge-note-form.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/note-category.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/note-metadata.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/workspace-properties.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/workspace-title.tsx"
+      ],
+      "ruleBlocks": 47
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/knowledge-note-form.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "KnowledgeNoteForm"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/knowledge-note-form.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/note-category.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "NoteCategory"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/ui/note-category/note-category.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/note-metadata.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "NoteMetadata"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/ui/note-metadata/note-metadata.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/workspace-properties.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "WorkspaceProperties"
+      ],
+      "privateFunctions": [
+        "Property"
+      ],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/ui/workspace-properties/workspace-properties.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/workspace-title.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "WorkspaceTitle"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-note-form/ui/workspace-title/workspace-title.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-proposal-content/knowledge-proposal-content.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-proposal-content/knowledge-proposal-content.tsx"
+      ],
+      "ruleBlocks": 3
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-proposal-content/knowledge-proposal-content.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "KnowledgeProposalContent"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/knowledge-proposal-content/knowledge-proposal-content.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/audio-block-upload.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "AudioBlockUpload"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/audio-block-upload/audio-block-upload.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/author-exercise-summary.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "AuthorExerciseSummary"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/author-exercise-summary/author-exercise-summary.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-actions.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "BlockActions"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-actions/block-actions.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-authoring-context.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "BlockAuthoringProvider",
+        "useBlockAuthoring"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-authoring-context/block-authoring-context.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-authoring-menu-actions.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "blockAuthoringMenuActions"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-authoring-menu-actions/block-authoring-menu-actions.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-footer.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "BlockEditorFooter"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-editor-footer/block-editor-footer.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-form.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "BlockEditorForm"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-editor-form/block-editor-form.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-panel.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-panel.tsx"
+      ],
+      "ruleBlocks": 20
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-panel.stories.tsx",
+      "disposition": "Existing story preserved; central relocation follows its view",
+      "exports": [
+        "LongLocalizedActions",
+        "DiscardConfirmation",
+        "LibrarySaveLongLabels",
+        "LibraryPreviewLongLabels"
+      ],
+      "privateFunctions": [
+        "FooterPanel"
+      ],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-panel.stories.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-panel.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "BlockEditorPanel"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-editor-panel/block-editor-panel.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-field-ai-action.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-field-ai-action.tsx"
+      ],
+      "ruleBlocks": 21
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-field-ai-action.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "BlockFieldAiAction"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-field-ai-action/block-field-ai-action.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-field-input.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "BlockFieldInput"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-field-input/block-field-input.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-form-dialog.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "BlockFormDialog"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-form-dialog/block-form-dialog.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-form-fields.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "BlockRowGroup"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-form-fields/block-form-fields.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-group-row.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "GroupRow"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-group-row/block-group-row.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-insert-menu.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "BlockInsertMenu"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-insert-menu/block-insert-menu.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-language-settings.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "BlockLanguageSettings"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-language-settings/block-language-settings.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/exercise-set-dialog.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "ExerciseSetDialog"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/exercise-set-dialog/exercise-set-dialog.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/exercise-set-fields.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "ExerciseSetFields"
+      ],
+      "privateFunctions": [
+        "ExerciseItemEditor"
+      ],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/exercise-set-fields/exercise-set-fields.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/exercise-source-picker.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "ExerciseSourcePicker"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/exercise-source-picker/exercise-source-picker.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-authoring.module.css",
+      "disposition": "Shared stylesheet; unchanged contents, central relocation will make ownership explicit",
+      "consumers": [
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-actions.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-footer.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-editor-form.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-field-input.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-form-dialog.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-form-fields.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-group-row.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-insert-menu.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-language-settings.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/exercise-set-dialog.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/exercise-set-fields.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/exercise-source-picker.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-authoring.tsx"
+      ],
+      "ruleBlocks": 51
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-authoring.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "LearningBlockAuthoring"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-authoring.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-node-view.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "LearningBlockNodeView"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/learning-block-node-view/learning-block-node-view.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-node.module.css",
+      "disposition": "Shared stylesheet; unchanged contents, central relocation will make ownership explicit",
+      "consumers": [
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/author-exercise-summary.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-node-view.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-text-gaps.ts"
+      ],
+      "ruleBlocks": 27
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/learning-block-node.tsx",
+      "disposition": "Tiptap node extension, not a React component; central location unchanged",
+      "exports": [
+        "LearningBlockNode"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/learning-block-node/learning-block-node.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/block-library-save.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "BlockLibrarySave"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/block-library-save/block-library-save.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/insert-library-block.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "InsertLibraryBlock"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/insert-library-block/insert-library-block.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/insert-library-dialog.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "InsertDialog"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/insert-library-dialog/insert-library-dialog.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-copy-preview.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "LibraryCopyPreview"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-copy-preview/library-copy-preview.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-copy.module.css",
+      "disposition": "Shared stylesheet; unchanged contents, central relocation will make ownership explicit",
+      "consumers": [
+        "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/insert-library-dialog.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-copy-preview.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-entry-selection.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-item-picker.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-save-dialog.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-save-fields.tsx",
+        "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-save-footer.tsx"
+      ],
+      "ruleBlocks": 14
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-entry-selection.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "LibraryEntrySelection"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-entry-selection/library-entry-selection.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-item-picker.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "LibraryItemPicker"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-item-picker/library-item-picker.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-save-dialog.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "LibrarySaveDialog"
+      ],
+      "privateFunctions": [
+        "initialTranslation"
+      ],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-save-dialog/library-save-dialog.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-save-fields.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "LibrarySaveFields"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-save-fields/library-save-fields.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-save-footer.tsx",
+      "disposition": "Single exported component (private helpers allowed); central relocation owns folder normalization",
+      "exports": [
+        "LibrarySaveFooter"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/library-copy/library-save-footer/library-save-footer.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/proposal-block-content/proposal-block-content.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/features/knowledge-notes/ui/proposal-block-content/proposal-block-content.tsx"
+      ],
+      "ruleBlocks": 4
+    },
+    {
+      "path": "apps/web/src/fsd/features/knowledge-notes/ui/proposal-block-content/proposal-block-content.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "ProposalBlockContent"
+      ],
+      "privateFunctions": [
+        "buildProposalSections",
+        "proposalSectionTitle"
+      ],
+      "plannedDestination": "apps/web/src/fsd/features/knowledge-notes/ui/proposal-block-content/proposal-block-content.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/ui/common.module.css",
+      "disposition": "Shared stylesheet; unchanged contents, central relocation will make ownership explicit",
+      "consumers": [
+        "apps/web/src/fsd/features/portrait-editor/ui/confirmed-notes-editor/confirmed-notes-editor.tsx",
+        "apps/web/src/fsd/features/portrait-editor/ui/editor-controls/editor-controls.tsx",
+        "apps/web/src/fsd/features/portrait-editor/ui/explanation-section/explanation-section.tsx",
+        "apps/web/src/fsd/features/portrait-editor/ui/languages-editor/languages-editor.tsx",
+        "apps/web/src/fsd/features/portrait-editor/ui/list-section/list-section.tsx",
+        "apps/web/src/fsd/features/portrait-editor/ui/portrait-editor/portrait-editor.tsx",
+        "apps/web/src/fsd/features/portrait-editor/ui/portrait-summary-panel/portrait-summary-panel.tsx",
+        "apps/web/src/fsd/features/portrait-editor/ui/portrait-update-diff/portrait-update-diff.tsx",
+        "apps/web/src/fsd/features/portrait-editor/ui/preference-fields/preference-fields.tsx",
+        "apps/web/src/fsd/features/portrait-editor/ui/short-text-input/short-text-input.tsx"
+      ],
+      "ruleBlocks": 33
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/ui/confirmed-notes-editor/confirmed-notes-editor.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "ConfirmedNotesEditor"
+      ],
+      "privateFunctions": [
+        "NoteRow"
+      ],
+      "plannedDestination": "apps/web/src/fsd/features/portrait-editor/ui/confirmed-notes-editor/confirmed-notes-editor.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/ui/editor-controls/editor-controls.tsx",
+      "disposition": "Split independent exported components into own folders; canonical group index owns public exports",
+      "canonical": "apps/web/src/fsd/features/portrait-editor/ui/editor-controls/index.ts"
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/ui/explanation-section/explanation-section.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "ExplanationSection"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/portrait-editor/ui/explanation-section/explanation-section.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/ui/languages-editor/languages-editor.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "LanguagesEditor"
+      ],
+      "privateFunctions": [
+        "LanguageRow"
+      ],
+      "plannedDestination": "apps/web/src/fsd/features/portrait-editor/ui/languages-editor/languages-editor.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/ui/list-section/list-section.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "ListSection"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/portrait-editor/ui/list-section/list-section.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/ui/portrait-details-list/portrait-details-list.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/features/portrait-editor/ui/portrait-details-list/portrait-details-list.tsx"
+      ],
+      "ruleBlocks": 8
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/ui/portrait-details-list/portrait-details-list.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "PortraitDetailsList"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/portrait-editor/ui/portrait-details-list/portrait-details-list.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/ui/portrait-editor/portrait-editor.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "PortraitEditor"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/portrait-editor/ui/portrait-editor/portrait-editor.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/ui/portrait-summary-panel/portrait-summary-panel.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/features/portrait-editor/ui/portrait-summary-panel/portrait-summary-panel.tsx"
+      ],
+      "ruleBlocks": 6
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/ui/portrait-summary-panel/portrait-summary-panel.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "PortraitSummaryPanel"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/portrait-editor/ui/portrait-summary-panel/portrait-summary-panel.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/ui/portrait-update-diff/portrait-update-diff.module.css",
+      "disposition": "Single stylesheet owner; unchanged contents, central relocation will colocate",
+      "consumers": [
+        "apps/web/src/fsd/features/portrait-editor/ui/portrait-update-diff/portrait-update-diff.tsx"
+      ],
+      "ruleBlocks": 10
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/ui/portrait-update-diff/portrait-update-diff.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "PortraitUpdateDiff"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/portrait-editor/ui/portrait-update-diff/portrait-update-diff.tsx"
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/ui/preference-fields/preference-fields.tsx",
+      "disposition": "Split independent exported components into own folders; canonical group index owns public exports",
+      "canonical": "apps/web/src/fsd/features/portrait-editor/ui/preference-fields/index.ts"
+    },
+    {
+      "path": "apps/web/src/fsd/features/portrait-editor/ui/short-text-input/short-text-input.tsx",
+      "disposition": "Single exported component with private helpers allowed; retain component module",
+      "exports": [
+        "ShortTextInput"
+      ],
+      "privateFunctions": [],
+      "plannedDestination": "apps/web/src/fsd/features/portrait-editor/ui/short-text-input/short-text-input.tsx"
+    }
+  ],
+  "newGroups": [
+    "apps/web/src/fsd/features/knowledge-notes/ui/block-copy/copy-blocks-to-note/index.ts",
+    "apps/web/src/fsd/features/portrait-editor/ui/editor-controls/index.ts",
+    "apps/web/src/fsd/features/portrait-editor/ui/preference-fields/index.ts",
+    "apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/knowledge-block-proposals/index.ts"
+  ],
+  "verification": {
+    "scopedPrettier": "pass",
+    "scopedEslint": "pass"
+  },
+  "notes": [
+    "No CSS content changed.",
+    "No logic/props/ref/event callback changes.",
+    "BlockAuthoringProvider and useBlockAuthoring remain colocated because there is only one component and the existing context singleton must remain shared.",
+    "KnowledgeBlockProposals and KnowledgeBlockProposalsForTurn share exactly one relocated ProposalList singleton.",
+    "Small unexported private render helpers preserved with their owning component.",
+    "No ordinary single-export file moved by this worker."
+  ]
+}

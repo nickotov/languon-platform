@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { WorkspaceAssistantProps } from '../src/fsd/widgets/contextual-assistant';
-import { WorkspaceProposal } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/workspace-proposal';
+import { WorkspaceProposal } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/workspace-proposal/workspace-proposal';
 import { render } from './render';
 import { I18nProvider } from '../src/fsd/shared/i18n';
 import { en } from '../src/fsd/shared/i18n/messages/en';

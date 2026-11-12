@@ -3,7 +3,7 @@ import { Button, DialogActions } from '@/fsd/shared/ui';
 
 import type { GenerationReviewState } from '../../hooks/use-generation-review';
 import type { GenerationReviewProps } from '../../model/generation-review';
-import styles from '../dictionary-generation-panel-common.module.css';
+import styles from '../styles/dictionary-generation-panel-common.module.css';
 
 export function ReviewFooter({
     state,

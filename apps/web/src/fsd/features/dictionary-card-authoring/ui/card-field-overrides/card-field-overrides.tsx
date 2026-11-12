@@ -7,7 +7,7 @@ import type {
     LanguageCatalogEntry,
 } from '@languon/contracts';
 import type { AuthoringFieldContent } from '../../types';
-import styles from '../dictionary-card-form-common.module.css';
+import styles from '../styles/dictionary-card-form-common.module.css';
 
 export function CardFieldOverrides({
     dictionary,

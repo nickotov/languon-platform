@@ -10,7 +10,7 @@ import { useBlockReferences } from '../src/fsd/widgets/contextual-assistant/hook
 import {
     BlockReferencePicker,
     BlockReferenceChips,
-} from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/block-reference-controls';
+} from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/block-reference-controls';
 import {
     knowledgeBlockReferences,
     KnowledgeEditor,

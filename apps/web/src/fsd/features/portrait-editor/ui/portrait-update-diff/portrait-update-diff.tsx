@@ -5,7 +5,7 @@ import type { PortraitItems } from '@languon/contracts';
 import type { Locale } from '@/fsd/shared/i18n';
 import { copy, labels } from '../../lib/copy';
 import { portraitDiff } from '../../lib/details';
-import common from '../common.module.css';
+import common from '../styles/common-common.module.css';
 import styles from './portrait-update-diff.module.css';
 export function PortraitUpdateDiff({
     before,

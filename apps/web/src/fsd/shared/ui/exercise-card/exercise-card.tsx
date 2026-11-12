@@ -5,8 +5,8 @@ import {
     Volume2Icon,
 } from 'lucide-react';
 import { useId, type ReactNode } from 'react';
-import styles from './exercise-card.module.css';
-import { ExerciseAnswerOption } from './exercise-answer-option';
+import styles from '../styles/exercise-card-common.module.css';
+import { ExerciseAnswerOption } from './ui/exercise-answer-option/exercise-answer-option';
 
 export type ExerciseKind = 'vocabulary' | 'grammar' | 'listening' | 'reading';
 

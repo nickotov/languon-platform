@@ -6,7 +6,7 @@ import type { Locale } from '@/fsd/shared/i18n';
 import { labels, copy } from '../../lib/copy';
 import { hasMeaningfulPortraitItems } from '../../lib/items';
 import { previewPortraitSummary } from '../../lib/summary';
-import common from '../common.module.css';
+import common from '../styles/common-common.module.css';
 import styles from './portrait-summary-panel.module.css';
 export function PortraitSummaryPanel({
     items,

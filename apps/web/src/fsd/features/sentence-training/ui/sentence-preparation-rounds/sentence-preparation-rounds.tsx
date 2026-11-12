@@ -1,8 +1,8 @@
 'use client';
-import styles from './sentence-preparation-rounds.module.css';
+import styles from '../styles/sentence-preparation-rounds-common.module.css';
 import { useState } from 'react';
 import { Button } from '@/fsd/shared/ui';
-import { PreparationRound } from './preparation-round';
+import { PreparationRound } from './ui/preparation-round/preparation-round';
 import type { SentencePreparationBatch } from '@languon/contracts';
 import type { SentencePreparationController } from '../../types';
 import { usePreparationCopy } from '../sentence-preparation-copy';

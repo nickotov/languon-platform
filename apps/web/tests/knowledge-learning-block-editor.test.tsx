@@ -16,8 +16,8 @@ import { normalizeEditorDocument } from '../src/fsd/features/knowledge-notes/lib
 import { copyLearningBlock } from '../src/fsd/features/knowledge-notes/lib/learning-block-copy';
 import { readBlockForm } from '../src/fsd/features/knowledge-notes/lib/learning-block-form';
 import { render } from './render';
-import { BlockFormDialog } from '../src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-form-dialog';
-import { AudioBlockUpload } from '../src/fsd/features/knowledge-notes/ui/learning-block-authoring/audio-block-upload';
+import { BlockFormDialog } from '../src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/block-form-dialog/block-form-dialog';
+import { AudioBlockUpload } from '../src/fsd/features/knowledge-notes/ui/learning-block-authoring/ui/audio-block-upload/audio-block-upload';
 import { defaultAuthoringLabels } from '../src/fsd/features/knowledge-notes/ui/learning-block-authoring/block-labels';
 
 const id = '11111111-1111-4111-8111-111111111111';

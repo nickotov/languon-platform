@@ -11,7 +11,7 @@ import { knowledgeDocumentGroups } from '../../lib/knowledge-document-groups';
 import {
     ReaderLearningBlock,
     type KnowledgeReadingBlockOverrides,
-} from './reader-learning-block';
+} from './ui/reader-learning-block/reader-learning-block';
 
 export function KnowledgeDocumentView({
     blockOptions,

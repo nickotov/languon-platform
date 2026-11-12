@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useSessionStore } from '@/fsd/entities/session/model/session-store';
 import { AuthProvider } from '@/fsd/features/auth/model/auth-provider';
-import { HomeSessionActions } from '@/fsd/features/auth/ui/home-session-actions';
+import { HomeSessionActions } from '@/fsd/features/auth/ui/home-session-actions/home-session-actions';
 import { authApi } from '@/fsd/shared/api/auth-api';
 
 import { render } from './render';

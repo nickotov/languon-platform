@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Input } from '../input/input';
-import { Button } from '../button/button';
+import { Button } from '../button';
 import { Field } from './field';
 
 const meta = { title: 'UI/Field' } satisfies Meta;

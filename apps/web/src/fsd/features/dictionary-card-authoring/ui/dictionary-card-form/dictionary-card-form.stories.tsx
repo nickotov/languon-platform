@@ -7,7 +7,7 @@ import { en } from '@/fsd/shared/i18n/messages/en';
 import { BottomSheet } from '@/fsd/shared/ui';
 
 import { DictionaryCardForm } from './dictionary-card-form';
-import { AutoSaveFeedback } from './auto-save-feedback';
+import { AutoSaveFeedback } from './ui/auto-save-feedback/auto-save-feedback';
 import { generatedStoryCard } from './card-form-story-fixtures';
 
 const languages = [

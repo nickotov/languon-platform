@@ -11,9 +11,9 @@ import {
     useState,
 } from 'react';
 
-import styles from './menu-common.module.css';
+import styles from '../styles/menu-common.module.css';
 
-import { MenuItemButton } from './menu-item';
+import { MenuItemButton } from './ui/menu-item/menu-item';
 import { Tooltip } from '../tooltip/tooltip';
 import type { MenuItem, MenuProps } from './types';
 

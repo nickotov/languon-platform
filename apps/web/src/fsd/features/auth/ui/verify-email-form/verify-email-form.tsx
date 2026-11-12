@@ -1,0 +1,242 @@
+'use client';
+
+import { VerificationCodeSchema } from '@languon/contracts';
+import { useRouter } from 'next/navigation';
+import { type FormEvent, useEffect, useState } from 'react';
+
+import { authApi } from '@/fsd/shared/api/auth-api';
+import { useI18n, useLocaleSensitiveState } from '@/fsd/shared/i18n';
+import { Button, Field, Input } from '@/fsd/shared/ui';
+import { safeReturnPath } from '@/fsd/shared/lib/return-path';
+import { preserveCapabilityReturnFragment } from '@/fsd/shared/lib/capability-return';
+import { useSessionStore } from '@/fsd/entities/session';
+
+import { useAuth } from '../../model/auth-provider';
+import styles from '../styles/auth-ui-common.module.css';
+import { localizedAuthError } from '../../lib/auth-error-message';
+import { FormMessage } from '../auth-shell';
+
+export function VerifyEmailForm({
+    flowId,
+    resendAvailableAt,
+    returnTo,
+}: {
+    flowId?: string | undefined;
+    resendAvailableAt?: string | undefined;
+    returnTo?: string | undefined;
+}) {
+    const { href, t } = useI18n();
+
+    const router = useRouter();
+
+    const { authenticate, capabilities } = useAuth();
+
+    const [activeFlowId, setActiveFlowId] = useState(flowId ?? '');
+
+    const [error, setError] = useLocaleSensitiveState<string | null>(null);
+
+    const [message, setMessage] = useLocaleSensitiveState<string | null>(null);
+
+    const [pending, setPending] = useState<'resend' | 'verify' | null>(null);
+
+    const [nextResendAt, setNextResendAt] = useState(() =>
+        resendAvailableAt ? Date.parse(resendAvailableAt) : 0,
+    );
+
+    const [now, setNow] = useState(() => Date.now());
+
+    const sessionStatus = useSessionStore((state) => state.status);
+
+    useEffect(() => {
+        const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+
+        return () => window.clearInterval(timer);
+    }, []);
+
+    async function submit(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+
+        if (sessionStatus === 'bootstrapping') {
+            return;
+        }
+
+        setError(null);
+
+        setMessage(null);
+
+        if (!activeFlowId) {
+            setError(t('verify.incompleteFull'));
+
+            return;
+        }
+
+        const code = new FormData(event.currentTarget).get('code');
+
+        const parsed = VerificationCodeSchema.safeParse(code);
+
+        if (!parsed.success) {
+            setError(t('verify.invalidCode'));
+
+            return;
+        }
+
+        setPending('verify');
+
+        try {
+            await authenticate(
+                () =>
+                    authApi.verifyEmail({
+                        code: parsed.data,
+                        flowId: activeFlowId,
+                    }),
+                (result) => result,
+            );
+
+            const destination = safeReturnPath(returnTo);
+
+            router.replace(
+                href(
+                    preserveCapabilityReturnFragment(destination, destination),
+                ),
+            );
+        } catch (caught) {
+            setError(localizedAuthError(caught, t));
+        } finally {
+            setPending(null);
+        }
+    }
+
+    async function resend() {
+        if (sessionStatus === 'bootstrapping') {
+            return;
+        }
+
+        if (!activeFlowId) {
+            return;
+        }
+
+        setError(null);
+
+        setMessage(null);
+
+        setPending('resend');
+
+        try {
+            const response = await authApi.resendVerification({
+                flowId: activeFlowId,
+            });
+
+            setActiveFlowId(response.verification.flowId);
+
+            setNextResendAt(
+                Date.parse(response.verification.resendAvailableAt),
+            );
+
+            const query = new URLSearchParams({
+                flowId: response.verification.flowId,
+                resendAvailableAt: response.verification.resendAvailableAt,
+                returnTo: safeReturnPath(returnTo),
+            });
+
+            const destination = safeReturnPath(returnTo);
+
+            router.replace(
+                href(
+                    preserveCapabilityReturnFragment(
+                        `/verify-email?${query.toString()}`,
+                        destination,
+                    ),
+                ),
+            );
+
+            setMessage(t('verify.resent'));
+        } catch (caught) {
+            setError(localizedAuthError(caught, t));
+        } finally {
+            setPending(null);
+        }
+    }
+
+    function resendVerification() {
+        void resend();
+    }
+
+    if (capabilities && !capabilities.email.verification) {
+        return <FormMessage>{t('verify.unavailable')}</FormMessage>;
+    }
+
+    const waitSeconds = Math.max(0, Math.ceil((nextResendAt - now) / 1_000));
+
+    function resolveResendLabel() {
+        if (pending === 'resend') {
+            return t('verify.sending');
+        }
+
+        if (waitSeconds > 0) {
+            return t('verify.resendIn', { seconds: waitSeconds });
+        }
+
+        return t('verify.resend');
+    }
+
+    const resendLabel = resolveResendLabel();
+
+    return (
+        <>
+            {!activeFlowId ? (
+                <FormMessage>{t('verify.incomplete')}</FormMessage>
+            ) : null}
+            {error ? <FormMessage>{error}</FormMessage> : null}
+            {message ? (
+                <FormMessage tone='success'>{message}</FormMessage>
+            ) : null}
+            <form
+                aria-busy={pending === 'verify'}
+                className={styles.form}
+                onSubmit={submit}
+            >
+                <Field label={t('verify.code')} required>
+                    <Input
+                        autoComplete='one-time-code'
+                        className={styles.code}
+                        controlSize='large'
+                        inputMode='numeric'
+                        maxLength={4}
+                        name='code'
+                        pattern='[0-9]{4}'
+                        required
+                    />
+                </Field>
+                <Button
+                    className={styles.formButton}
+                    disabled={
+                        pending !== null ||
+                        sessionStatus === 'bootstrapping' ||
+                        !activeFlowId
+                    }
+                    loading={pending === 'verify'}
+                    type='submit'
+                    size='large'
+                >
+                    {pending === 'verify'
+                        ? t('verify.checking')
+                        : t('verify.submit')}
+                </Button>
+            </form>
+            <Button
+                disabled={
+                    pending !== null ||
+                    sessionStatus === 'bootstrapping' ||
+                    !activeFlowId ||
+                    waitSeconds > 0
+                }
+                loading={pending === 'resend'}
+                onClick={resendVerification}
+                type='button'
+                variant='secondary'
+            >
+                {resendLabel}
+            </Button>
+        </>
+    );
+}

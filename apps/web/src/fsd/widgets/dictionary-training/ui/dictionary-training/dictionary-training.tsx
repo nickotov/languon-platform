@@ -1,6 +1,6 @@
 'use client';
 import { trainingCopy } from './copy';
-import { createTrainingAudio } from './training-audio';
+import { createTrainingAudio } from './ui/training-audio/training-audio';
 
 import { MessageSquareText, RefreshCw } from 'lucide-react';
 import componentStyles from './dictionary-training.module.css';

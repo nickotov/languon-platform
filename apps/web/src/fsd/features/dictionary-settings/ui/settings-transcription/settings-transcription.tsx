@@ -3,7 +3,7 @@ import type { ChangeEvent } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Field, Input, RadioGroup, Switch } from '@/fsd/shared/ui';
 import type { SetSetting } from '../../types';
-import styles from '../dictionary-settings-form-common.module.css';
+import styles from '../styles/dictionary-settings-form-common.module.css';
 
 export function SettingsTranscription({
     settings,

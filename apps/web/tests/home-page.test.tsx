@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useSessionStore } from '@/fsd/entities/session';
-import { HomePage } from '@/fsd/pages/home/ui/home-page';
+import { HomePage } from '@/fsd/pages/home/ui/home-page/home-page';
 
 import { render } from './render';
 

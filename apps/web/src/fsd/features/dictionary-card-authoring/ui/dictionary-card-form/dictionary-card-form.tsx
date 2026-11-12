@@ -13,11 +13,11 @@ import { AuthoringField } from '../authoring-field/authoring-field';
 import { AuthoringAiAssistance } from '../authoring-ai-assistance/authoring-ai-assistance';
 import { CardFieldOverrides } from '../card-field-overrides/card-field-overrides';
 import { CardTranslationContext } from '../card-translation-context/card-translation-context';
-import { FormVersionNavigation } from './form-version-navigation';
-import { AutoSaveFeedback } from './auto-save-feedback';
-import styles from '../dictionary-card-form-common.module.css';
+import { FormVersionNavigation } from './ui/form-version-navigation/form-version-navigation';
+import { AutoSaveFeedback } from './ui/auto-save-feedback/auto-save-feedback';
+import styles from '../styles/dictionary-card-form-common.module.css';
 import { optionalAuthoringFields } from '../../lib/authoring-fields';
-import { OptionalCardFields } from './optional-card-fields';
+import { OptionalCardFields } from './ui/optional-card-fields/optional-card-fields';
 
 export type {
     DictionaryCardDraft,

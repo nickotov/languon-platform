@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { WorkbookMembership } from '@/fsd/pages/workbooks/ui/workbook-detail/workbook-membership';
+import { WorkbookMembership } from '@/fsd/pages/workbooks/ui/workbook-detail/ui/workbook-membership/workbook-membership';
 import { workbookLabels } from '@/fsd/features/workbooks';
 import type { useWorkbookDetail } from '@/fsd/pages/workbooks/hooks/use-workbook-detail';
 

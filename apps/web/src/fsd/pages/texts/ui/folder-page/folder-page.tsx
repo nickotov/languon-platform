@@ -15,12 +15,18 @@ import {
 } from '@/fsd/shared/ui';
 import { useTextLibrary } from '../../hooks/use-text-library';
 import { useTextFolder } from '../../hooks/use-text-folder';
-import { FolderHeader, type FolderAction } from './folder-header';
-import type { TextRowAction } from './text-row';
-import { FolderTextList } from './folder-text-list';
-import styles from './folder-page.module.css';
+import {
+    FolderHeader,
+    type FolderAction,
+} from './ui/folder-header/folder-header';
+import type { TextRowAction } from './ui/text-row/text-row';
+import { FolderTextList } from './ui/folder-text-list/folder-text-list';
+import styles from '../styles/folder-page-common.module.css';
 
-import { FolderDialogs, type FolderDialog } from './folder-dialogs';
+import {
+    FolderDialogs,
+    type FolderDialog,
+} from './ui/folder-dialogs/folder-dialogs';
 
 export function TextFolderPage({ folderId }: { folderId: string }) {
     const returnTo = `/texts/folders/${folderId}`;

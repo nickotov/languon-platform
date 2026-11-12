@@ -5,9 +5,9 @@ import type { PortraitItems } from '@languon/contracts';
 import type { Locale } from '@/fsd/shared/i18n';
 import { IconButton } from '@/fsd/shared/ui';
 import { copy, labels } from '../../lib/copy';
-import { EditorSection } from '../editor-controls/editor-controls';
+import { EditorSection } from '../editor-controls';
 import { ShortTextInput } from '../short-text-input/short-text-input';
-import styles from '../common.module.css';
+import styles from '../styles/common-common.module.css';
 
 type Note = NonNullable<PortraitItems['notes']>[number];
 
