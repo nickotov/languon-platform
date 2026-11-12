@@ -4,6 +4,7 @@ import type { Agent } from '@mastra/core/agent';
 import type { createContextualTutorTools } from '../modules/conversations/infrastructure/ai/contextual-tutor-tools';
 import { createTextsAgents } from '../modules/texts/infrastructure/ai/texts-agents';
 import { Mastra } from '@mastra/core/mastra';
+import type { createTutorPlaygroundPrimitives } from '../modules/development-harness/infrastructure/mastra/tutor-playground-primitives';
 
 import type { DevelopmentVerificationService } from '../modules/development-harness/application/development-verification-service';
 import { createDevelopmentHarnessPrimitives } from '../modules/development-harness/infrastructure/mastra/development-harness-primitives';
@@ -49,6 +50,7 @@ export interface CanonicalMastraOptions {
         fallbackModelId: `${string}/${string}`;
         modelId: `${string}/${string}`;
         service: DevelopmentVerificationService;
+        tutorPlayground?: ReturnType<typeof createTutorPlaygroundPrimitives>;
     };
 }
 
@@ -56,6 +58,7 @@ export interface CanonicalMastraOptions {
  * Default Studio has no authenticated learner/source and receives none of these tools. */
 function contextualTools(
     contextualTutor: CanonicalMastraOptions['contextualTutor'],
+    playground?: ReturnType<typeof createTutorPlaygroundPrimitives>,
 ) {
     const registered: NonNullable<
         NonNullable<ConstructorParameters<typeof Mastra>[0]>['tools']
@@ -64,6 +67,7 @@ function contextualTools(
     for (const [name, tool] of Object.entries({
         ...contextualTutor?.tools,
         ...contextualTutor?.learningContentTools,
+        ...playground?.tools,
     })) {
         if (!tool) {
             continue;
@@ -81,6 +85,9 @@ function contextualTools(
             inputSchema: tool.inputSchema,
             outputSchema: tool.outputSchema,
             execute: tool.execute,
+            ...('requestContextSchema' in tool && tool.requestContextSchema
+                ? { requestContextSchema: tool.requestContextSchema }
+                : {}),
             ...(tool.toModelOutput
                 ? { toModelOutput: tool.toModelOutput }
                 : {}),
@@ -133,11 +140,20 @@ export function createCanonicalMastra(
         cors: false as const,
         host: '127.0.0.1',
         ...(development
-            ? { middleware: createDevelopmentServerMiddleware() }
+            ? {
+                  middleware: createDevelopmentServerMiddleware({
+                      ...(options.developmentHarness?.tutorPlayground
+                          ? {
+                                tutorPlayground:
+                                    options.developmentHarness.tutorPlayground,
+                            }
+                          : {}),
+                  }),
+              }
             : {}),
         port: 4111,
         studioHost: '127.0.0.1',
-        timeout: 30_000,
+        timeout: options.developmentHarness?.tutorPlayground ? 130_000 : 30_000,
     };
 
     if (
@@ -198,6 +214,9 @@ export function createCanonicalMastra(
             ? { contextualTutor: options.contextualTutor }
             : {}),
         development,
+        ...(options.developmentHarness?.tutorPlayground
+            ? { tutorPlayground: options.developmentHarness.tutorPlayground }
+            : {}),
         administrativeProbe: options.administrativeProbe,
         textsAgents,
         dictionaryCardAuthoringAgent,
@@ -214,6 +233,7 @@ function createDevelopmentMastra(options: {
     contextualTutor?: NonNullable<CanonicalMastraOptions['contextualTutor']>;
     textsAgents: ReturnType<typeof createTextsAgents> | undefined;
     development: ReturnType<typeof createDevelopmentHarnessPrimitives>;
+    tutorPlayground?: ReturnType<typeof createTutorPlaygroundPrimitives>;
     dictionaryCardGenerationAgent:
         ReturnType<typeof createDictionaryCardGenerationAgent> | undefined;
     dictionaryCardAuthoringAgent:
@@ -237,7 +257,10 @@ function createDevelopmentMastra(options: {
     };
 }) {
     return new Mastra({
-        tools: contextualTools(options.contextualTutor),
+        tools: contextualTools(
+            options.contextualTutor,
+            options.tutorPlayground,
+        ),
         agents: {
             ...(options.administrativeProbe
                 ? { administrativeProbe: options.administrativeProbe }
@@ -284,6 +307,7 @@ function createDevelopmentMastra(options: {
         },
         server: options.server,
         workflows: {
+            ...options.tutorPlayground?.workflows,
             developmentVerificationWorkflow:
                 options.development.verificationWorkflow,
         },

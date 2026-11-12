@@ -24,6 +24,7 @@ import {
 
 export async function conversationClaim(
     persistence: ConversationPersistenceContext,
+    scope?: { turnId: string; ownerId: string },
 ) {
     return conversationTransaction(persistence, async (tx) => {
         const now = persistence.now();
@@ -53,7 +54,13 @@ export async function conversationClaim(
         const expired = await tx
             .select()
             .from(turns)
-            .where(and(eq(turns.status, 'running'), lt(turns.leaseUntil, now)))
+            .where(
+                and(
+                    eq(turns.status, 'running'),
+                    lt(turns.leaseUntil, now),
+                    ...(scope ? [eq(turns.ownerId, scope.ownerId)] : []),
+                ),
+            )
             .limit(20);
 
         for (const row of expired) {
@@ -70,7 +77,17 @@ export async function conversationClaim(
         const candidates = await tx
             .select()
             .from(turns)
-            .where(eq(turns.status, 'queued'))
+            .where(
+                and(
+                    eq(turns.status, 'queued'),
+                    ...(scope
+                        ? [
+                              eq(turns.id, scope.turnId),
+                              eq(turns.ownerId, scope.ownerId),
+                          ]
+                        : []),
+                ),
+            )
             .orderBy(asc(turns.createdAt))
             .limit(100);
         let row: TurnRow | undefined;

@@ -2,7 +2,7 @@
 feature: mastra-agent-development-harness
 title: Mastra Agent Development Harness
 status: current
-last_verified: 2026-08-16
+last_verified: 2026-11-12
 surfaces:
     - browser
     - api
@@ -11,9 +11,11 @@ surfaces:
 source_paths:
     - .agent/features/011-mastra-agent-development-harness/**
     - .agent/features/012-mastra-deepseek-model/**
+    - .agent/features/065-tutor-learning-tool-playground/**
     - .env.example
     - README.md
     - docs/development.md
+    - docs/tutor-playground.md
     - package.json
     - turbo.json
     - scripts/dev-mastra.mjs
@@ -33,9 +35,11 @@ e2e_tests:
     - apps/backend/tests/e2e/mastra-development-harness.journey.test.ts
 e2e_scenarios:
     - playground-provision-run-persist-reset
+    - tutor-generation-session-tools
 related_features:
     - mastra-deepseek-model
     - user-authentication
+    - tutor-learning-tool-playground
 ---
 
 # Mastra Agent Development Harness
@@ -50,9 +54,16 @@ and fixture provisioning, persistence across ordinary restarts, and guarded
 reset behavior.
 
 The harness never starts Languon's Hono, web, admin, or mobile servers. It does
-not expose Mastra through the public backend, use copied user data, or provide
-persistent Mastra memory, datasets, experiments, workflow state, or trace
-storage. Use only the checked-in `example.test` fixture.
+not expose Mastra through the public backend or use copied user data. Tutor
+sessions, application memory, and proposals persist in the isolated application
+tables; global Mastra thread/workflow storage, datasets, experiments, and trace
+archives remain unavailable. Use only the checked-in `example.test` fixture.
+
+The tutor workflow and four generation tools extend the verification harness.
+Their operating examples are in [Running the tutor playground](../tutor-playground.md).
+They reuse production generation and runner factories with synthetic authority,
+bounded execution, and playground persistence. Studio execution does not prove
+application rendering, Insert/Save, or production financial settlement.
 
 The dictionary card-generation agent is intentionally absent from this Studio
 harness. Its canonical factory is composed only by the dictionary worker with a
@@ -81,7 +92,21 @@ must be loopback PostgreSQL, use a database name beginning with
 different from `DATABASE_URL`. Do not substitute shared, staging, production,
 or copied data.
 
-`MASTRA_MODEL_ID` defaults to `deepseek/deepseek-flash`. To exercise another
+`MASTRA_TUTOR_MODE=deterministic` is the tutor workflow/tool default and needs no
+model key. It replaces the external model boundary with documented synthetic
+fixtures and synthetic accounting; it does not establish language quality or
+live financial settlement. Tutor `live` mode requires reviewed conversation
+routing, prices, capability policy, and funding/budgets in the isolated
+playground database plus the selected provider's development key. It uses real
+admission, snapshot-selected provider execution, and provider-expense settlement
+in that database. Missing configuration fails closed before provider dispatch;
+startup does not copy ordinary application configuration or provision a live
+route. `MASTRA_MODEL_ID` controls only the separate verification agent.
+Automated verification stays deterministic. The operating guide documents live
+prerequisites and the separate agent-initiated AI smoke policy.
+
+For the separate verification agent, `MASTRA_MODEL_ID` defaults to
+`deepseek/deepseek-flash`. To exercise another
 Mastra-supported model, set its `provider/model` identifier as the primary and
 add that provider's standard API-key variable. DeepSeek Flash remains the fixed
 fallback, so every live agent run also requires a development-only
@@ -151,9 +176,43 @@ off.
    intended text before committing.
 9. Inspect browser errors, console output, and network requests. Expect no
    external model or application request during deterministic runs and no
-   secret or raw prompt export. Mastra Studio may request a cosmetic provider
+   credential or ordinary user-data export. Tutor model diagnostics contain
+   only bounded synthetic run material. Mastra Studio may request a cosmetic provider
    logo from `models.dev`; the repository browser wrapper does not authorize
    that request outside its loopback allowlist.
+
+### Tutor workflow and tools
+
+1. In **Workflows**, open **run-tutor-turn**. Use empty request context or a
+   matching `tutor-*` preset. Enter `scenarioId: "empty-owned"` and the message
+   “Generate 3 English vocabulary words with Spanish translations.” Inspect the
+   completed result, its generated proposal, diagnostic execution mode, and
+   bounded calls. Keep the returned session ID.
+2. Run again with that session ID and the same scenario, asking “Generate 3
+   exercises from the vocabulary proposal.” Verify the exercises use the exact
+   earlier proposal. Start another run without a session ID and confirm the
+   earlier session's proposals are not included.
+3. In **Tools**, execute `generate_vocabulary`, `generate_grammar`,
+   `generate_bilingual_text`, and `generate_exercises` with the validated input
+   examples in the operating guide. Inspect their compact ready receipts and
+   full validated proposals. Use `read-playground-proposal` with the returned
+   session/proposal IDs for exact persisted readback.
+4. Exercise the `missing-language` scenario using “Generate vocabulary without
+   a language,” then answer the clarification in the same session. In the
+   `read-only` scenario, explanation remains available but generation cannot
+   publish an author proposal. Unsupported exercise formats return a limitation.
+5. Restart the harness and read back the prior proposal. Confirm session/scenario
+   mismatches and a proposal ID from another session fail closed. Only one
+   tutor/tool execution runs at a time; verify cancellation reaches execution.
+6. Native Studio tutor agent chat is deferred: complete tutor testing uses the
+   workflow so request resolution, grounding, worker leases, memory, and
+   publication remain in the canonical path. The existing verification agent
+   remains separately testable on **Agents**.
+
+Deterministic outputs are synthetic and support fixture execution checks. General
+ambiguity handling and generation quality require intentional live testing.
+Local bounded diagnostics are not persistent trace archives or production
+accounting proof.
 
 ## API verification
 
@@ -199,6 +258,10 @@ only the regenerated fixture remains.
   access, validated context, workflow/scorer execution, repeated-start
   idempotency, persistence, database isolation, guarded reset refusal, and safe
   regeneration against disposable PostgreSQL.
+- `tutor-generation-session-tools` maps to the same disposable-database journey
+  file. It covers the production tutor runner with deterministic external model
+  responses, same-session proposal follow-up, independent tools and exact
+  readback, isolated sessions, restart persistence, and guarded reset.
 
 Studio rendering and live hot reload stay in real-browser verification because
 the UI is third-party development tooling. Target-policy matrices, cancellation,
@@ -229,6 +292,14 @@ unit tests.
   process result; stop the conflicting local process and retry.
 - Normal startup preserves data. Reset refuses unless confirmation exactly
   matches the validated target database name.
+- Tutor inputs accept only scenario/session selectors; arbitrary users, sources,
+  execution overrides, and verification-principal context fields are rejected.
+- A tutor session belongs to its original scenario; cross-scenario reuse and
+  cross-session proposal readback fail closed.
+- Tutor deterministic mode makes no external model call and uses synthetic
+  accounting. Live mode requires the isolated database's reviewed route,
+  prices, capability and funding policies, uses real admission/expense
+  settlement, and rejects missing setup before provider dispatch.
 
 ## Automated regression checks
 

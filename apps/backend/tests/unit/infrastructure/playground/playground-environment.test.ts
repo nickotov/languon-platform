@@ -28,7 +28,22 @@ describe('Mastra playground environment', () => {
             fallbackModelId: 'deepseek/deepseek-flash',
             modelId: 'deepseek/deepseek-flash',
             promptMode: 'local',
+            tutorMode: 'deterministic',
         });
+    });
+
+    it('requires deliberate tutor live opt-in and rejects unknown modes', () => {
+        expect(
+            loadPlaygroundEnvironment(
+                environment({ MASTRA_TUTOR_MODE: 'live' }),
+            ).tutorMode,
+        ).toBe('live');
+
+        expect(() =>
+            loadPlaygroundEnvironment(
+                environment({ MASTRA_TUTOR_MODE: 'automatic' }),
+            ),
+        ).toThrow();
     });
 
     it('accepts an alternate primary model while retaining DeepSeek fallback configuration', () => {

@@ -1,6 +1,12 @@
 import type { Middleware } from '@mastra/core/server';
 
 import { developmentHarnessMaximumAgentSteps } from '../modules/development-harness/infrastructure/mastra/development-harness-limits';
+import {
+    tutorPlaygroundRoute,
+    normalizeTutorPlaygroundRequest,
+    validateTutorPlaygroundBody,
+    type TutorPlaygroundPolicy,
+} from './tutor-playground-policy';
 
 const agentPath = '/api/agents/development-verification-agent';
 const allowedHosts = new Set(['127.0.0.1:4111', 'localhost:4111']);
@@ -45,8 +51,13 @@ interface PolicyFailure {
     status: 400 | 403 | 413 | 429;
 }
 
-export function createDevelopmentServerMiddleware(): Middleware[] {
+export function createDevelopmentServerMiddleware(
+    options: {
+        tutorPlayground?: TutorPlaygroundPolicy;
+    } = {},
+): Middleware[] {
     let activeAgentExecutions = 0;
+    let activeTutorExecutions = 0;
 
     return [
         {
@@ -70,6 +81,11 @@ export function createDevelopmentServerMiddleware(): Middleware[] {
             path: '/api/*',
             handler: async (context, next) => {
                 const pathname = new URL(context.req.url).pathname;
+                const tutorRoute = tutorPlaygroundRoute(
+                    pathname,
+                    options.tutorPlayground,
+                );
+
                 if (isUnsupportedProxyPath(pathname)) {
                     return context.json(
                         {
@@ -81,7 +97,8 @@ export function createDevelopmentServerMiddleware(): Middleware[] {
 
                 if (
                     isStateChangingMethod(context.req.method) &&
-                    !isAllowedMutation(context.req.method, pathname)
+                    !isAllowedMutation(context.req.method, pathname) &&
+                    !(context.req.method === 'POST' && tutorRoute)
                 ) {
                     return context.json(
                         {
@@ -91,7 +108,61 @@ export function createDevelopmentServerMiddleware(): Middleware[] {
                     );
                 }
 
-                await next();
+                if (context.req.method !== 'POST' || !tutorRoute) {
+                    await next();
+
+                    return;
+                }
+
+                const normalizedTutorRequest =
+                    await normalizeTutorPlaygroundRequest(context.req.raw);
+                const bodyFailure = await validateTutorPlaygroundBody(
+                    normalizedTutorRequest,
+                    tutorRoute.schema,
+                    developmentServerBodySizeLimit,
+                );
+
+                if (bodyFailure) {
+                    return context.json(
+                        { error: bodyFailure.message },
+                        bodyFailure.status,
+                    );
+                }
+
+                context.req.raw = normalizedTutorRequest;
+                context.req.bodyCache = {};
+
+                // Cancellation must remain reachable while an execution owns the lease.
+                if (!tutorRoute.executes) {
+                    await next();
+
+                    return;
+                }
+
+                if (activeTutorExecutions >= 1) {
+                    return context.json(
+                        {
+                            error: 'Only one tutor playground execution may run at a time.',
+                        },
+                        429,
+                    );
+                }
+
+                activeTutorExecutions += 1;
+                let responseOwnsLease = false;
+                try {
+                    await next();
+                    if (context.res.body) {
+                        responseOwnsLease = true;
+                        context.res = withCompletionLease(context.res, () => {
+                            activeTutorExecutions -= 1;
+                        });
+                    }
+                } finally {
+                    if (!responseOwnsLease) {
+                        activeTutorExecutions -= 1;
+                    }
+                }
             },
         },
         {

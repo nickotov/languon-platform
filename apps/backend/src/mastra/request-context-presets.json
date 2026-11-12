@@ -3,6 +3,15 @@
         "syntheticPrincipalId": "00000000-0000-4000-8000-000000000019",
         "variant": "concise"
     },
+    "tutor-empty-owned": {
+        "scenarioId": "empty-owned"
+    },
+    "tutor-vocabulary-follow-up": {
+        "scenarioId": "vocabulary-follow-up"
+    },
+    "tutor-read-only": {
+        "scenarioId": "read-only"
+    },
     "synthetic-principal-diagnostic": {
         "syntheticPrincipalId": "00000000-0000-4000-8000-000000000019",
         "variant": "diagnostic"

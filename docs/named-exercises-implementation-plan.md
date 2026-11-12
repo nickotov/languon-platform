@@ -27,7 +27,7 @@ Deliver this as separate features:
 
 | Order                                     | Feature                                         | Result                                                                                                            |
 | ----------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| 1 — active delivery                       | **Tutor and learning-tool playground — BL-014** | Test current tools and complete tutor turns in isolated Mastra Studio sessions.                                   |
+| 1 — completed; awaiting user check        | **Tutor and learning-tool playground — BL-014** | Test current tools and complete tutor turns in isolated Mastra Studio sessions.                                   |
 | 2 — deferred until user checks playground | **Named text exercises**                        | Deliver 19 priority activities through chat, an activity picker, interactive blocks, answer checking, and Studio. |
 | 3 — deferred                              | **Additional text activities**                  | Add the remaining nine text activities and their required interactions.                                           |
 | Later — deferred                          | **Answer-aware chat references**                | Attach specific attempts to chat and compare answers across exercises.                                            |
@@ -72,7 +72,7 @@ it must not loop through tools that independently publish proposals.
 
 ## 2. Feature 1 — Complete the isolated playground first
 
-Extend [BL-014](backlog/014-tutor-playground.md). The repository already contains
+Extend [BL-014](backlog/014-tutor-playground-done.md). The repository already contains
 playground provisioning and a generic verification harness; the missing feature
 is integration with the real tutor and learning-content operations.
 
@@ -438,3 +438,7 @@ Each feature receives its own specification, execution plan, evidence, review,
 and backlog updates. Finish and verify the playground before starting the
 exercise implementation, as requested. Audio, native Studio tutor chat, and
 answer-aware chat UI remain separate deliveries.
+
+## Playground delivery status
+
+BL-014 is complete as feature065. See [playground usage](tutor-playground.md) and [verified evidence](../.agent/features/065-tutor-learning-tool-playground/EVIDENCE.md). The user will inspect the playground before exercise implementation starts. Live model testing still requires reviewed isolated routing/pricing/funding configuration; deterministic fixtures are immediately available.

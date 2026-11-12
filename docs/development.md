@@ -159,12 +159,20 @@ verification primitives appear only when `MASTRA_DEV_HARNESS=true`; the Hono
 server imports the same production composition without exposing generic Mastra
 routes.
 
-The contextual language tutor is registered through the canonical composition
-only with an operation-bound model, tools, identity and memory store. It is
-intentionally excluded from the default Studio runtime: learner source access
-and billing cannot be established by caller-selected Studio fields. Deterministic
-integration tests exercise the same factory with synthetic source/accounting
-ports; no learner execution route is added to Studio.
+The contextual language tutor's complete execution is available in Studio through
+the **run-tutor-turn** workflow. It creates or resumes a synthetic session and
+uses production resolver, authoring, worker/runner, and proposal-persistence
+factories. Each execution has fresh model/tool/budget state. Native Studio agent
+chat does not include the surrounding product orchestration, so use the workflow
+for tutor testing. The separate verification agent remains on **Agents**.
+
+The four standalone content tools and **read-playground-proposal** are also
+registered. Their request context selects an allowlisted synthetic scenario and
+optional session; it cannot select a production learner or grant arbitrary source
+authority. Sessions and proposals survive ordinary restarts in the isolated
+playground application tables. No public learner execution route is added.
+See [Running the tutor playground](./tutor-playground.md) for exact inputs,
+scenarios, result inspection, and multi-turn examples.
 
 The knowledge block field-check and exercise-evaluation specialists are defined
 in the Knowledge module and composed into the canonical registry through the
@@ -185,11 +193,12 @@ bounded generation briefs: an instruction, optional source text or word list,
 languages, count, difficulty and exercise formats. Inputs contain no learner
 identity or document-write authority. Missing material requirements return
 `needs-clarification` before dispatch; unsupported formats return `unsupported`.
-A valid result is `ready` with validated `proposal.blocks` and a summary. Invalid
+A valid result is `ready` with a compact canonical proposal receipt. Invalid
 completed candidates receive at most one bounded repair; exhausted validation
 returns `failed`. Provider failures and cancellation propagate without blind retry.
 
-The factory accepts a cancellation signal and an injected `generate` callback
+The factory accepts a cancellation signal, an operation-bound `publish` callback,
+and an injected `generate` callback
 receiving the prompt, output schema and signal. Production supplies a model
 callback bound to the existing admitted tutor action; deterministic tests supply
 synthetic candidates. Optional `authorizedSources` must be resolved by the trusted
@@ -198,9 +207,12 @@ model arguments. Call the tool through its Mastra execution method, or use
 `createLearningContentAuthoring(...).generate({ tasks }, signal)` to exercise the
 same validation and batch-authoring implementation directly. Each task has a
 stable request ID and kind. A coordinated Knowledge request submits all required
-components in one batch and persists one proposal only after all components pass.
-Standalone tools return content only and do not create conversations, apply
-proposals, publish notes or save vocabulary into dictionaries.
+components in one coordinated operation and persists one proposal only after all
+components pass. The shared publication operation stores the validated proposal;
+its compact receipt does not replace canonical full content. Standalone tools
+require an authorized host to supply publication and source resolution; they do
+not apply proposals, publish notes, or save vocabulary into dictionaries. The
+playground supplies synthetic sessions and isolated proposal callbacks.
 
 Run the deterministic standalone authoring/tool contract tests from the root:
 
@@ -219,14 +231,14 @@ advertising it as available. The registry supplies supported requirements,
 defaults and prompt fragments; it does not replace server authorization.
 
 Canonical composition accepts operation-bound request-resolution/authoring agents
-and the same tool factory results. These primitives remain excluded from the
-default Studio server in this delivery. BL-014 will provide synthetic identity,
-source snapshots, bounded accounting, isolated proposal storage and exact
-allowlisted routes so Studio can execute them independently. Do not enable a
-production learner context or relax the harness policy as a shortcut. See
-[feature 060](../.agent/features/060-intent-aware-learning-content/FEATURE.md) and
-[BL-014](./backlog/014-tutor-playground.md) for the delivery boundary. This
-exclusion is deliberate; factory tests are not evidence of a runnable Studio flow.
+and the same tool factory results. The development playground binds those
+factories to synthetic identity, source snapshots, bounded accounting, isolated
+proposal storage, and exact allowlisted execution routes. It exposes the full
+tutor workflow and individual tools without establishing a production learner
+context. Raw resolver/author agents are internal primitives; direct base-agent
+chat is not complete tutor execution. See
+[feature 065](../.agent/features/065-tutor-learning-tool-playground/FEATURE.md)
+for delivery evidence and [the operating guide](./tutor-playground.md) for use.
 
 #### Registering Mastra primitives
 
@@ -267,8 +279,9 @@ materially changed:
    Update the Mastra user-flow guide and its mapped evidence when commands,
    expected results, failure behavior, or the visible journey changes.
 
-Registration in the canonical composition makes the primitive available to
-Studio on reload or hot reload; no Studio-specific implementation is needed.
+Registration in the canonical composition makes the primitive discoverable to
+Studio on reload or hot reload; operation-bound primitives also need a synthetic
+execution adapter and an exact allowlisted development route.
 Work is incomplete if an intended playground primitive merely compiles but is
 missing from Studio or is blocked by the exact-route development policy.
 
@@ -278,9 +291,21 @@ application service authorizes the stable ID and resolves the active verified
 row through the product users repository. Tool/workflow inputs and outputs are
 Zod validated and cancellation is preserved.
 
+`MASTRA_TUTOR_MODE` defaults to `deterministic`; tutor workflow and content-tool
+runs use synthetic responses at the external model boundary and synthetic
+accounting. Explicit `live` mode requires reviewed conversation routing,
+provider prices, capability policy, and funding/budget configuration in the
+isolated playground database, plus the admitted provider's development key. It
+uses real admission, the selected route snapshot, and provider-expense settlement
+there, and fails closed if prerequisites are absent. Configuration is never
+copied from the ordinary application database. `MASTRA_MODEL_ID` selects only
+the separate verification agent, not the tutor. See the operating guide for
+live prerequisites. Manual live configuration does not expand agent-initiated
+AI smoke spending authorization.
+
 Checked-in local prompts are the only default resolver. Neither Langfuse nor a
 model key is required to boot or run the deterministic tool, workflow, and code
-scorer. The live agent defaults to `deepseek/deepseek-flash`. When
+scorer. The separate verification agent defaults to `deepseek/deepseek-flash`. When
 `MASTRA_MODEL_ID` selects another valid Mastra `provider/model`, that model is
 the primary and DeepSeek Flash remains the fixed fallback. Live invocation is
 explicit and fails with a sanitized error when `DEEPSEEK_API_KEY` is absent so
@@ -293,8 +318,9 @@ loopback Host and Origin values (including internal refresh/restart hooks),
 rejects caller overrides for the configured model list, prompt, provider
 settings, and tools, rejects per-request processor replacement, limits agent
 requests and concurrent execution, and does not expose the generic Responses
-or Conversations model proxies. Persistent Mastra memory, workflow state,
-datasets, experiments, traces, and scorer history remain deferred.
+or Conversations model proxies. Global persistent Mastra thread/workflow state,
+datasets, experiments, traces, and scorer history remain deferred; tutor session
+memory uses the isolated application persistence path.
 
 Stop the harness with `Ctrl+C`. To intentionally discard only playground data,
 set `MASTRA_PLAYGROUND_RESET_CONFIRM` to the exact validated target name and

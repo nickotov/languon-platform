@@ -302,6 +302,11 @@ export class DrizzleConversationStore implements ConversationStore {
         return conversationClaim(this.persistence);
     }
 
+    /** Development adapters can target an admitted turn without adopting another queued operation. */
+    async claimForTurn(turnId: string, ownerId: string) {
+        return conversationClaim(this.persistence, { turnId, ownerId });
+    }
+
     async heartbeat(turn: ClaimedConversationTurn) {
         return conversationHeartbeat(this.persistence, turn);
     }

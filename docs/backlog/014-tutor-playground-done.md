@@ -2,9 +2,9 @@
 type: backlog-task
 id: BL-014
 title: Tutor and learning-tool playground
-status: pending
+status: done
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-12
 original_tasks: '2026-10-31 Mastra Playground discussion'
 evidence: []
 depends_on:
@@ -61,3 +61,11 @@ Depends on BL-013 so the harness targets the dedicated generation interfaces.
 Fixtures can later grow with BL-015/016; their completion is not required for
 this task. The dependency order may be explicitly revised if an earlier minimal
 playground becomes preferable. No implementation is authorized by this task.
+
+## Authorized delivery — 2026-11-12
+
+User explicitly authorized [feature065](../../.agent/features/065-tutor-learning-tool-playground/FEATURE.md) before exercise work, followed by usage documentation and user inspection. Implementation and selected verification are complete.
+
+## Completion evidence — 2026-11-12
+
+Delivered [feature065](../../.agent/features/065-tutor-learning-tool-playground/FEATURE.md), with [evidence](../../.agent/features/065-tutor-learning-tool-playground/EVIDENCE.md) and independent completion/security approval. Studio exposes the canonical persisted tutor workflow and four tools plus proposal readback. Selected static/build/policy, disposable DB/SDK accounting and actual browser checks pass. See [usage instructions](../tutor-playground.md). Deterministic fixtures are ready; live requires operator configuration in the isolated database. No paid provider execution or turnkey admin bootstrap is claimed. Exercises await user inspection of this playground.

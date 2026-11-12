@@ -51,6 +51,8 @@ const resultSchema = z.discriminatedUnion('status', [
         .strict(),
 ]);
 
+export const LearningContentToolResultSchema = resultSchema;
+
 /** Standalone tools use the same bounded authoring implementation as coordinated tutor batches. */
 export function createLearningContentTools(
     options: LearningContentAuthoringOptions & {

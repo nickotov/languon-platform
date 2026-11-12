@@ -15,6 +15,9 @@ const RawPlaygroundEnvironmentSchema = z.object({
     APP_ENV: z.enum(['development', 'test']),
     DATABASE_URL: z.url().optional(),
     MASTRA_DEV_HARNESS: z.literal('true'),
+    MASTRA_TUTOR_MODE: z
+        .enum(['deterministic', 'live'])
+        .default('deterministic'),
     MASTRA_MODEL_ID: z
         .string()
         .max(255)
@@ -48,6 +51,7 @@ export interface PlaygroundEnvironment {
     deepSeekApiKey?: string;
     fallbackModelId: typeof developmentHarnessDeepSeekModelId;
     modelId: DevelopmentHarnessModelId;
+    tutorMode: 'deterministic' | 'live';
     promptMode: 'local';
     resetConfirmation?: string;
 }
@@ -114,6 +118,7 @@ export function loadPlaygroundEnvironment(
             : {}),
         fallbackModelId: developmentHarnessDeepSeekModelId,
         modelId: raw.MASTRA_MODEL_ID as DevelopmentHarnessModelId,
+        tutorMode: raw.MASTRA_TUTOR_MODE,
         promptMode: raw.MASTRA_PROMPT_MODE,
         ...(raw.MASTRA_PLAYGROUND_RESET_CONFIRM
             ? { resetConfirmation: raw.MASTRA_PLAYGROUND_RESET_CONFIRM }

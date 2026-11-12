@@ -34,7 +34,7 @@ BL-004 and BL-005 are Done. BL-003 retains its broader unfinished scope.
 | BL-011 | [Dictionary batch call accounting](011-dictionary-batch-call-accounting.md)                                   | pending     |
 | BL-012 | [Enforceable code readability standards](012-code-readability-standards-done.md)                              | done        |
 | BL-013 | [Dedicated learning-content generation tools](013-dedicated-learning-content-tools-done.md)                   | done        |
-| BL-014 | [Tutor and learning-tool playground](014-tutor-playground.md)                                                 | pending     |
+| BL-014 | [Tutor and learning-tool playground](014-tutor-playground-done.md)                                            | done        |
 | BL-015 | [Reliable tutor intent, clarification and generation outcomes](015-reliable-tutor-generation-routing-done.md) | done        |
 | BL-016 | [Interactive chat artifacts and exact follow-up references](016-interactive-chat-artifacts.md)                | in-progress |
 | BL-017 | [Versioned Langfuse prompt resolution](017-versioned-langfuse-prompts.md)                                     | pending     |
@@ -83,3 +83,5 @@ The [v16 migration evidence](../../.agent/features/059-interactive-workbooks/EVI
 records the verified custom-block/editor/chat slice and its full critical gate.
 BL-003, BL-006 and BL-007 retain their broader in-progress scope; this milestone
 does not activate unapproved transcription providers or complete guided lessons.
+
+BL-014 completed on 2026-11-12 in feature065: canonical isolated Studio workflow/tools, persistence, strict policy, SDK/native-expense fixture and real-browser evidence pass. See its completion record and playground usage guide. Exercise catalog implementation awaits user inspection.

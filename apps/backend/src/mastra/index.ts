@@ -2,10 +2,14 @@ import { createDrizzleDatabase, createPostgresClient } from '@languon/database';
 import { z } from 'zod';
 
 import { databaseSchema } from '../infrastructure/database/schema';
-import { loadPlaygroundEnvironment } from '../config/environment';
+import {
+    loadPlaygroundEnvironment,
+    loadTextAiProviderCredentials,
+} from '../config/environment';
 import { DevelopmentVerificationService } from '../modules/development-harness/application/development-verification-service';
 import { developmentHarnessFixture } from '../modules/development-harness/infrastructure/development-fixture';
 import { DrizzleDevelopmentPrincipalReader } from '../modules/development-harness/infrastructure/persistence/drizzle-development-principal-reader';
+import { createTutorPlaygroundPrimitives } from '../modules/development-harness/infrastructure/mastra/tutor-playground-primitives';
 import { createCanonicalMastra } from './composition';
 import { enforceDevelopmentHarnessProcessPolicy } from './development-server-policy';
 
@@ -37,6 +41,13 @@ function createDevelopmentHarnessOptions() {
             : {}),
         fallbackModelId: environment.fallbackModelId,
         modelId: environment.modelId,
+        tutorPlayground: createTutorPlaygroundPrimitives({
+            database,
+            mode: environment.tutorMode,
+            ...(environment.tutorMode === 'live'
+                ? { credentials: loadTextAiProviderCredentials() }
+                : {}),
+        }),
         service: new DevelopmentVerificationService(
             new DrizzleDevelopmentPrincipalReader(database),
             developmentHarnessFixture.principalId,
