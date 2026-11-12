@@ -29,6 +29,10 @@ import {
     isDictionaryCursor,
 } from './dictionary-cursors';
 import { readOwnedState } from './dictionary-aggregate-state';
+import {
+    dictionaryCardPrefixQuery,
+    dictionaryCardSearchDocument,
+} from './dictionary-card-search';
 import { iso, mapCard, mapOwned, mapSummary } from './dictionary-rows';
 import {
     dictionariesTable,
@@ -144,7 +148,7 @@ export async function listCards(
 
         if (input.query.search) {
             conditions.push(
-                sql`to_tsvector('simple', coalesce(${dictionaryCardsTable.source}, '') || ' ' || coalesce(${dictionaryCardsTable.translation}, '') || ' ' || coalesce(${dictionaryCardsTable.definition}, '') || ' ' || coalesce(${dictionaryCardsTable.example}, '')) @@ websearch_to_tsquery('simple', ${input.query.search})`,
+                sql`${dictionaryCardSearchDocument(dictionaryCardsTable)} @@ ${dictionaryCardPrefixQuery(input.query.search)}`,
             );
         }
 

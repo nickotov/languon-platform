@@ -18,6 +18,7 @@ import {
     type SetStateAction,
 } from 'react';
 import { UUID_PATTERN } from '../lib/generation-url';
+import { useCardSearch } from './use-card-search';
 
 export function useEditorState(
     dictionaryId: string,
@@ -31,8 +32,6 @@ export function useEditorState(
     );
 
     const queryClient = useQueryClient();
-
-    const [search, setSearch] = useState('');
 
     const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -53,6 +52,11 @@ export function useEditorState(
 
     const [cardLifecycle, setCardLifecycle] =
         useState<DictionaryLifecycle>('active');
+
+    const { search, setSearch, committedSearch, searchPending } = useCardSearch(
+        dictionaryId,
+        cardLifecycle,
+    );
 
     const [editing, updateEditing] = useState<DictionaryCard | 'new' | null>(
         null,
@@ -126,7 +130,7 @@ export function useEditorState(
         'dictionary-cards',
         dictionaryId,
         cardLifecycle,
-        search,
+        committedSearch,
     ] as const;
 
     useEffect(() => {
@@ -161,6 +165,8 @@ export function useEditorState(
         queryClient,
         search,
         setSearch,
+        committedSearch,
+        searchPending,
         settingsOpen,
         setSettingsOpen,
         cardDraftDirty,

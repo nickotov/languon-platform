@@ -1177,6 +1177,13 @@
       "when": 1794385648920,
       "tag": "0167_dictionary-chat-snippet-authority",
       "breakpoints": true
+    },
+    {
+      "idx": 168,
+      "version": "7",
+      "when": 1794505494431,
+      "tag": "0168_faulty_thunderbird",
+      "breakpoints": true
     }
   ]
 }

@@ -4,14 +4,14 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import type { useEditorState } from './use-editor-state';
 
 export function useEditorQueries({
-    search,
+    committedSearch,
     cardLifecycle,
     cardsQueryKey,
     dictionaryId,
     requestWithSession,
 }: Pick<
     ReturnType<typeof useEditorState>,
-    | 'search'
+    | 'committedSearch'
     | 'cardLifecycle'
     | 'editing'
     | 'generationTarget'
@@ -45,7 +45,7 @@ export function useEditorQueries({
                         lifecycle: cardLifecycle,
                         limit: 50,
                         ...(pageParam ? { cursor: pageParam } : {}),
-                        ...(search.trim() ? { search: search.trim() } : {}),
+                        ...(committedSearch ? { search: committedSearch } : {}),
                     },
                     signal,
                 ),

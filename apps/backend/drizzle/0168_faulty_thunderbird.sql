@@ -1,0 +1,2 @@
+DROP INDEX "dictionary_cards_search_idx";--> statement-breakpoint
+CREATE INDEX "dictionary_cards_search_idx" ON "dictionary_cards" USING gin (to_tsvector('simple', coalesce("source", '') || ' ' || coalesce("translation", '') || ' ' || coalesce("definition", '') || ' ' || coalesce("example", '') || ' ' || coalesce("example_translation", '')));

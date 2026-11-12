@@ -1,5 +1,6 @@
 import { dictionaryAiConfigurationRevisionsTable } from '../../../../text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { sql } from 'drizzle-orm';
+import { dictionaryCardSearchDocument } from './dictionary-card-search';
 import {
     type AnyPgColumn,
     bigint,
@@ -382,7 +383,7 @@ export const dictionaryCardsTable = pgTable(
         ),
         index('dictionary_cards_search_idx').using(
             'gin',
-            sql`to_tsvector('simple', coalesce(${table.source}, '') || ' ' || coalesce(${table.translation}, '') || ' ' || coalesce(${table.definition}, '') || ' ' || coalesce(${table.example}, ''))`,
+            dictionaryCardSearchDocument(table),
         ),
     ],
 );

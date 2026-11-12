@@ -23,9 +23,12 @@ export function deriveEditorWorkspace(
 
     const catalog = languages.data!.languages;
 
-    const currentVersions = cards.data!.pages[0]!;
+    const currentVersions = cards.data?.pages[0] ?? {
+        dictionaryVersion: current.version,
+        settingsVersion: current.settingsVersion,
+    };
 
-    const cardList = cards.data!.pages.flatMap((page) => page.data);
+    const cardList = cards.data?.pages.flatMap((page) => page.data) ?? [];
 
     const mutationError =
         updateSettings.error ??

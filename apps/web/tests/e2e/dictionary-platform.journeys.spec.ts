@@ -6,8 +6,9 @@ import {
     type TestInfo,
 } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 
-// @user-flow-revision dictionary-platform sha256:3f3ad81e929e4d13
+// @user-flow-revision dictionary-platform sha256:030f8261e4e687ef
 
 const password = 'E2e!Dictionary-password-2026';
 const runId =
@@ -2410,6 +2411,214 @@ test.describe('dictionary platform journeys', () => {
         await expect(
             advanced.getByLabel('Instruction for this review (optional)'),
         ).toBeVisible();
+
+        assertNoBrowserErrors();
+    });
+
+    // @user-flow dictionary-platform/owner-searches-cards-without-losing-focus
+    test('owner searches dictionary cards without losing focus', async ({
+        page,
+    }, testInfo) => {
+        const {
+            AuthenticationSuccessResponseSchema,
+            CreateDictionaryCardRequestSchema,
+            CreateDictionaryRequestSchema,
+            DictionaryCardResponseSchema,
+            DictionaryResponseSchema,
+            ListDictionaryCardsResponseSchema,
+        } = await import('@languon/contracts');
+        const assertNoBrowserErrors = captureBrowserErrors(
+            page,
+            (path, status) => path === '/auth/sign-up' && status === 429,
+        );
+        const authenticated = page.waitForResponse(
+            (response) =>
+                response.status() === 200 &&
+                (response.url().endsWith('/auth/email-verification/verify') ||
+                    response.url().endsWith('/auth/login/password')),
+        );
+
+        await signUpAndVerifyOrSignInAfterRateLimit(
+            page,
+            syntheticEmail(testInfo, 'search-owner'),
+            '/dictionaries',
+            syntheticEmail(testInfo, 'owner'),
+        );
+
+        const { accessToken } = AuthenticationSuccessResponseSchema.parse(
+            await (await authenticated).json(),
+        );
+        const headers = { Authorization: `Bearer ${accessToken}` };
+        const created = await page.request.post('/api/dictionaries', {
+            headers: { ...headers, 'Idempotency-Key': randomUUID() },
+            data: CreateDictionaryRequestSchema.parse({
+                name: `French search ${runId}`,
+                sourceLanguage: 'fr',
+                targetLanguage: 'en',
+                settings: {
+                    transcriptionEnabled: true,
+                    transcriptionNotation: 'ipa',
+                    transcriptionCustomLabel: null,
+                    definitionEnabled: true,
+                    definitionLanguage: 'source',
+                    exampleEnabled: true,
+                    exampleLanguage: 'source',
+                    exampleTranslationEnabled: true,
+                },
+            }),
+        });
+
+        expect(created.status()).toBe(201);
+        const { dictionary } = DictionaryResponseSchema.parse(
+            await created.json(),
+        );
+        const cardsPath = `/api/dictionaries/${dictionary.id}/cards`;
+        const added = await page.request.post(cardsPath, {
+            headers,
+            data: CreateDictionaryCardRequestSchema.parse({
+                expectedDictionaryVersion: dictionary.version,
+                expectedSettingsVersion: dictionary.settingsVersion,
+                values: {
+                    source: 'Bonjour',
+                    translation: 'Hello',
+                    transcription: '/bɔ̃.ʒuʁ/',
+                    definition: 'Salutation courtoise',
+                    example: 'Bienvenue au magasin.',
+                    exampleTranslation: 'Good morning welcome to the shop.',
+                },
+            }),
+        });
+
+        expect(added.status()).toBe(201);
+        const { card } = DictionaryCardResponseSchema.parse(await added.json());
+        const requestedSearches: Array<string | null> = [];
+        let recordedOpens = 0;
+        page.on('request', (request) => {
+            const url = new URL(request.url());
+            if (request.method() === 'GET' && url.pathname === cardsPath) {
+                requestedSearches.push(url.searchParams.get('search'));
+            }
+
+            if (
+                request.method() === 'POST' &&
+                url.pathname ===
+                    `/api/navigation/resources/dictionary/${dictionary.id}/opened`
+            ) {
+                recordedOpens += 1;
+            }
+        });
+
+        function waitForCards(search: string | null) {
+            return page.waitForResponse((response) => {
+                const url = new URL(response.url());
+
+                return (
+                    response.request().method() === 'GET' &&
+                    url.pathname === cardsPath &&
+                    url.searchParams.get('search') === search
+                );
+            });
+        }
+
+        async function expectSearchResult(
+            search: string,
+            expectedIds: string[],
+        ) {
+            const response = waitForCards(search);
+            await expect(input).toBeFocused();
+            await page.keyboard.press('ControlOrMeta+A');
+            await page.keyboard.type(search, { delay: 30 });
+            await expect(input).toHaveValue(search);
+            await expect(input).toBeFocused();
+            const resolved = await response;
+            expect(resolved.status()).toBe(200);
+            const result = ListDictionaryCardsResponseSchema.parse(
+                await resolved.json(),
+            );
+
+            expect(result.data.map((entry) => entry.id)).toEqual(expectedIds);
+            await expect(input).toBeFocused();
+        }
+
+        await page.setViewportSize({ width: 1280, height: 900 });
+        await page.goto(`/dictionaries/${dictionary.id}`);
+        const input = page.getByRole('searchbox', { name: 'Search cards' });
+        const visibleCard = page
+            .getByRole('listitem')
+            .filter({ has: page.getByText('Bonjour', { exact: true }) });
+
+        await expect(visibleCard).toBeVisible();
+        await expect.poll(() => recordedOpens).toBe(1);
+        await input.click();
+        const beforeBurst = requestedSearches.length;
+        const searched = waitForCards('bon');
+        await page.keyboard.type('bon', { delay: 30 });
+        await expect(input).toHaveValue('bon');
+        await expect(input).toBeFocused();
+        const response = await searched;
+        expect(response.status()).toBe(200);
+        const result = ListDictionaryCardsResponseSchema.parse(
+            await response.json(),
+        );
+
+        expect(result.data.map((entry) => entry.id)).toEqual([card.id]);
+        expect(requestedSearches.slice(beforeBurst)).toEqual(['bon']);
+        const query = new URL(response.url()).searchParams;
+        expect(query.get('limit')).toBe('50');
+        expect(query.get('cursor')).toBeNull();
+        await expect(input).toBeFocused();
+        await expect(visibleCard).toBeVisible();
+
+        for (const term of ['hell', 'court', 'mag', 'welc']) {
+            await expectSearchResult(term, [card.id]);
+            await expect(visibleCard).toBeVisible();
+        }
+
+        const desktop = testInfo.outputPath('dictionary-search-desktop.png');
+        await page.screenshot({ path: desktop });
+        await testInfo.attach('dictionary-search-desktop', {
+            path: desktop,
+            contentType: 'image/png',
+        });
+
+        await page.setViewportSize({ width: 390, height: 844 });
+        await expectSearchResult('court', [card.id]);
+        await expect(visibleCard).toBeVisible();
+        await expectSearchResult('zzznomatch', []);
+        await expect(visibleCard).toHaveCount(0);
+        await expect(
+            page.getByRole('button', { name: 'Clear search', exact: true }),
+        ).toBeVisible();
+
+        await expect(input).toBeFocused();
+        const cleared = waitForCards(null);
+        await page.keyboard.press('ControlOrMeta+A');
+        await page.keyboard.press('Backspace');
+        const clearedResponse = await cleared;
+        expect(clearedResponse.status()).toBe(200);
+        const restored = ListDictionaryCardsResponseSchema.parse(
+            await clearedResponse.json(),
+        );
+
+        expect(restored.data.map((entry) => entry.id)).toEqual([card.id]);
+        await expect(input).toHaveValue('');
+        await expect(input).toBeFocused();
+        await expect(visibleCard).toBeVisible();
+        expect(recordedOpens).toBe(1);
+        expect(
+            await page.evaluate(
+                () =>
+                    document.documentElement.scrollWidth <=
+                    document.documentElement.clientWidth + 1,
+            ),
+        ).toBe(true);
+
+        const narrow = testInfo.outputPath('dictionary-search-narrow.png');
+        await page.screenshot({ path: narrow });
+        await testInfo.attach('dictionary-search-narrow', {
+            path: narrow,
+            contentType: 'image/png',
+        });
 
         assertNoBrowserErrors();
     });

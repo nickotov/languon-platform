@@ -403,6 +403,12 @@ const backendSelections = Object.freeze({
             },
         ]),
     ),
+    'dictionary-card-search-store': {
+        files: [
+            'tests/integration/modules/dictionaries/infrastructure/drizzle-dictionary-search.test.ts',
+        ],
+        minimumTests: 5,
+    },
 });
 
 /** Add future crucial journeys here; every entry runs against fresh owned services. */
@@ -449,6 +455,14 @@ export const flows = [
         grep: 'owner signs in, refreshes|refreshes expired admin access|expired recent-authentication window',
         prerequisite: 'empty-admin-database',
         env: { ADMIN_E2E_ACCESS_TOKEN_TTL: '60s' },
+    },
+    {
+        id: 'dictionary-card-search',
+        minimumTests: 1,
+        app: 'web',
+        file: 'dictionary-platform.journeys.spec.ts',
+        grep: 'owner searches dictionary cards without losing focus$',
+        prerequisite: 'deterministic-web',
     },
     {
         id: 'dictionary-generation',
@@ -636,7 +650,13 @@ export function selectFlows(args, registry = flows) {
     const selected = new Set();
     const ordered = [];
     const add = (flow) => {
-        if (aggregate && flow.app === 'backend' && flow !== aggregate) {
+        if (
+            aggregate &&
+            flow.app === 'backend' &&
+            Object.keys(backendExecutionGroups).some(
+                (seam) => flow.id === `ai-${seam}`,
+            )
+        ) {
             add(aggregate);
 
             return;

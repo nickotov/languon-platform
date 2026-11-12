@@ -28,6 +28,7 @@ pnpm test:e2e:critical
 pnpm test:e2e:critical -- --flow ai-execution-contracts
 pnpm test:e2e:critical -- --flow setup-to-generation
 pnpm test:e2e:critical -- --flow authentication --flow admin-session-refresh
+pnpm test:e2e:critical -- --flow dictionary-card-search-store --flow dictionary-card-search
 ```
 
 `--list` prints the catalog; with `--flow`, it prints the dependency-expanded
@@ -84,6 +85,12 @@ Use `--list` for current entries. The initial registry covers:
   text-call receipt/checkpoint accounting, reported speech credits, immutable
   history and native overrun/refund behavior with synthetic external HTTP.
 - Dictionary generation and persisted result recovery.
+- Dictionary card search (`dictionary-card-search`): continuous typing retains
+  focus, debounced requests find word prefixes across five card fields, and
+  clearing/no-match states remain usable on desktop and narrow screens. Its
+  companion `dictionary-card-search-store` stage verifies prefix parsing,
+  owner/lifecycle/cursor isolation, the generated index migration on existing
+  rows, and real query plans at the 10,000-card dictionary bound.
 - Sentence generation, AI checking, unavailable-model guidance with preserved
   answers and AI preferences, and free saved-reference practice for owners and
   shared readers.

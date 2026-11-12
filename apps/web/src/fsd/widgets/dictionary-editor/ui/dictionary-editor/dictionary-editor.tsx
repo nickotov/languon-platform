@@ -52,10 +52,10 @@ export function DictionaryEditor({
     const sessionStatus = useSessionStore((state) => state.status);
 
     const { dictionary, languages, cards } = model.queries;
+    // A card filter changes results readiness, not whether this page was opened.
     const loaded =
         dictionary.isSuccess &&
         languages.isSuccess &&
-        cards.isSuccess &&
         !dictionary.isPlaceholderData;
 
     useRecordResourceOpen(
@@ -69,16 +69,13 @@ export function DictionaryEditor({
 
     const loadErrorModel = { dictionary, languages, cards, t, href };
 
-    const loadError =
-        dictionary.error ??
-        languages.error ??
-        (cards.data ? null : cards.error);
+    const loadError = dictionary.error ?? languages.error;
 
     if (loadError) {
         return <EditorLoadError model={loadErrorModel} error={loadError} />;
     }
 
-    if (!dictionary.data || !languages.data || !cards.data) {
+    if (!dictionary.data || !languages.data) {
         return (
             <main id='dictionary-content' tabIndex={-1} className={styles.main}>
                 <LoadingState>{t('dictionary.editor.loading')}</LoadingState>

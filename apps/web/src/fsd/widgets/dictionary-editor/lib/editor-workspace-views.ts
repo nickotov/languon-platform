@@ -37,6 +37,7 @@ export function createWorkspaceViews(
         catalog: workspace.catalog,
         cardList: workspace.cardList,
         cards: controller.queries.cards,
+        searchPending: controller.state.searchPending,
         cardLifecycle: controller.state.cardLifecycle,
         generationCapabilities: controller.queries.generationCapabilities,
         audio: controller.queries.audio,

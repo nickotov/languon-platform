@@ -9,6 +9,7 @@ surfaces:
 source_paths:
     - .agent/features/021-dictionary-platform/**
     - .agent/features/031-inline-ai-field-generation/**
+    - .agent/features/064-dictionary-card-search/**
     - .agent/improvements/inline-ai-auto-accept.md
     - .agent/improvements/dictionary-word-pair-columns.md
     - apps/backend/drizzle/**
@@ -25,6 +26,7 @@ source_paths:
     - apps/web/src/fsd/widgets/dictionary-editor/**
     - apps/web/src/fsd/widgets/app-shell/**
     - apps/web/tests/e2e/dictionary-platform.journeys.spec.ts
+    - apps/web/tests/dictionary-card-search.test.tsx
     - packages/contracts/src/dictionaries/**
     - packages/languages/**
     - packages/prompts/**
@@ -33,6 +35,7 @@ e2e_tests:
     - apps/web/tests/e2e/dictionary-platform.journeys.spec.ts
 e2e_scenarios:
     - owner-creates-edits-and-restores-dictionary
+    - owner-searches-cards-without-losing-focus
     - anonymous-reader-forks-unlisted-dictionary
     - card-ai-proposal-survives-review-and-conflict
     - inline-ai-card-authoring-preserves-field-choices
@@ -45,6 +48,7 @@ related_features:
     - contextual-language-assistant-and-knowledge
     - flashcard-training-web
     - dictionary-permanent-deletion
+    - dictionary-card-search
     - dictionary-pronunciation-audio
     - inline-ai-card-authoring
     - inline-ai-field-generation
@@ -244,6 +248,38 @@ The source/target pair becomes locked after the first card, including when every
 card is archived. Disabled optional fields preserve dormant values. Version
 conflicts stay visible and require an explicit reload; the client does not
 silently overwrite or replay a stale edit.
+
+### Owner card search
+
+1. Open an owned active dictionary containing a French card with Source
+   `Bonjour`, Translation `Hello`, Definition `Salutation courtoise`, Context
+   example `Bienvenue au magasin.`, and Example translation
+   `Good morning welcome to the shop.` Enable those optional fields in settings.
+2. Focus **Search cards** once and type `bon` continuously. Expect the complete
+   value and caret to remain in that same focused input. After 300 ms without a
+   change to the trimmed term, one bounded server request searches the entire
+   dictionary; there are no separate `b` or `bo` requests. The editor header and
+   search controls remain visible while the card region loads.
+3. Replace the selected input text using the keyboard with `hell`, `court`,
+   `mag`, and `welc`. Each case-insensitive word prefix finds the same card
+   through Translation, Definition, Context example, or Example translation.
+   Multiple words require all word prefixes to match; punctuation is literal
+   input, without query operators or an infix/fuzzy-search promise.
+4. Enter a term with no matches. Expect an empty result and **Clear search**,
+   with the input still focused. Clear the input using the keyboard and expect
+   unfiltered cards to return without losing focus. Whitespace-only text shares
+   the empty filter; surrounding whitespace does not create a new search variant.
+5. Repeat at 1280 px and 390 px widths. Keep input labels, card actions and
+   content reachable without horizontal overflow. A new committed filter starts
+   at the first page; **Load more cards** retains the existing bounded pagination.
+   Active/Archived filters retain lifecycle isolation, and changing raw search
+   text clears archived-card selection before new results arrive.
+
+Only the card-results region changes during a search. Its first-page failure
+offers **Retry** while preserving the search value and focus; an obsolete
+in-flight response cannot overwrite the latest term. Focus/debounce/failure and
+pagination details have deterministic component coverage; full-dictionary
+matching, authorization and query plans have disposable database coverage.
 
 ### Inline AI-assisted card creation and editing
 
@@ -519,6 +555,13 @@ no-store` and its signed capability must never be logged or persisted by the
     scoped idempotency key for either one deterministic atomic commit or a
     distinct context-aware import-pairs job. `GET /dictionaries/{dictionaryId}/export`
     streams the selected fixed format with private no-store attachment headers.
+11. `GET /dictionaries/{dictionaryId}/cards?search=bon&limit=50` returns bounded
+    owner/lifecycle/version-scoped pages with case-insensitive word-prefix matches
+    across source, translation, definition, example and translated example,
+    including cards outside the currently loaded page. Search is limited to 200
+    characters; multiple parsed words must all match. Literal punctuation never
+    becomes an SQL or tsquery operator. No `search` parameter represents an empty
+    or whitespace-only filter.
 
 Inspect response headers as well as bodies: public and owner dictionary reads
 must be `private, no-store`; public responses reveal no owner identity or raw
@@ -538,6 +581,12 @@ capability. Use the OpenAPI document for the exact bounded request schemas.
 - `anonymous-reader-forks-unlisted-dictionary` proves explicit publication,
   anonymous capability reading, fragment-only secret transport through signup,
   and an authenticated independent private fork.
+- `owner-searches-cards-without-losing-focus` proves one debounced `bon` request,
+  real API response identities for all five searchable fields, uninterrupted
+  keyboard focus through matches/no-match/clear, and rendered wide/narrow states
+  without horizontal overflow. It uses one canonical card through the real
+  browser/API/PostgreSQL stack; component and repository tests own pagination,
+  failed responses and exhaustive matching boundaries.
 - `card-ai-proposal-survives-review-and-conflict` proves deterministic worker
   execution through the real API/database stack, reload-safe proposal review,
   editable mixed-language fields, stale acceptance rejection, reload/compare,

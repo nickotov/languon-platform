@@ -4,7 +4,7 @@ import {
 } from '@/fsd/entities/dictionary';
 import { SpeechControl } from '@/fsd/features/speech-playback';
 import { DictionaryCardList } from '@/fsd/features/dictionary-card-list';
-import { Button, ErrorState } from '@/fsd/shared/ui';
+import { Button, ErrorState, LoadingState } from '@/fsd/shared/ui';
 import type { ComponentProps } from 'react';
 import type { EditorViewFields } from '../../lib/editor-workspace';
 import { dictionarySpeechSource } from '../../lib/dictionary-speech-source';
@@ -24,6 +24,7 @@ export function EditorCards({
         | 'catalog'
         | 'cardList'
         | 'cards'
+        | 'searchPending'
         | 'cardLifecycle'
         | 'generationCapabilities'
         | 'audio'
@@ -45,6 +46,7 @@ export function EditorCards({
         catalog,
         cardList,
         cards,
+        searchPending,
         cardLifecycle,
         generationCapabilities,
         audio,
@@ -133,6 +135,34 @@ export function EditorCards({
 
     function reload() {
         void queryClient.resetQueries({ exact: true, queryKey: cardsQueryKey });
+    }
+
+    function retry() {
+        void cards.refetch();
+    }
+
+    const retryAction = (
+        <Button type='button' onClick={retry}>
+            {t('common.retry')}
+        </Button>
+    );
+
+    if (searchPending || cards.isPending) {
+        return (
+            <section className={styles.cardsSection}>
+                <LoadingState>{t('dictionary.editor.loading')}</LoadingState>
+            </section>
+        );
+    }
+
+    if (!cards.data && cards.isError) {
+        return (
+            <section className={styles.cardsSection}>
+                <ErrorState title={errorTitle} action={retryAction}>
+                    {errorMessage}
+                </ErrorState>
+            </section>
+        );
     }
 
     return (

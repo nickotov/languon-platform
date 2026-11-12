@@ -51,6 +51,24 @@ test('sentence practice uses the reviewed deterministic sentence worker', () => 
     ]);
 });
 
+test('dictionary search selects only its bounded store or browser regression', () => {
+    const [browser] = selectFlows(['--flow', 'dictionary-card-search']);
+    assert.equal(browser.app, 'web');
+    assert.equal(browser.minimumTests, 1);
+    assert.equal(browser.file, 'dictionary-platform.journeys.spec.ts');
+    assert.equal(
+        browser.grep,
+        'owner searches dictionary cards without losing focus$',
+    );
+
+    const [store] = selectFlows(['--flow', 'dictionary-card-search-store']);
+    assert.equal(store.app, 'backend');
+    assert.equal(store.minimumTests, 5);
+    assert.deepEqual(store.files, [
+        'tests/integration/modules/dictionaries/infrastructure/drizzle-dictionary-search.test.ts',
+    ]);
+});
+
 test('dictionary chat snippets select one real assistant browser journey without unrelated execution groups', () => {
     const selected = selectFlows(['--flow', 'dictionary-chat-snippets']);
     assert.equal(selected.length, 1);
@@ -61,6 +79,7 @@ test('dictionary chat snippets select one real assistant browser journey without
         selected[0].grep,
         'owned dictionary chat snippets preserve review, ordered reusable insertion and archival replacement$',
     );
+
     assert.match(
         'chromium contextual-assistant.journeys.spec.ts owned dictionary chat snippets preserve review, ordered reusable insertion and archival replacement',
         new RegExp(selected[0].grep),
@@ -538,9 +557,11 @@ test('AI seams partition all retained suites and stay narrow with reviewed exact
 
     assert.deepEqual([...seen], backendExecutionFiles);
     assert.equal(seen.size, 86);
-    assert.equal(
-        selectFlows([]).filter((flow) => flow.app === 'backend').length,
-        1,
+    assert.deepEqual(
+        selectFlows([])
+            .filter((flow) => flow.app === 'backend')
+            .map((flow) => flow.id),
+        ['ai-execution-contracts', 'dictionary-card-search-store'],
     );
 
     assert.deepEqual(
