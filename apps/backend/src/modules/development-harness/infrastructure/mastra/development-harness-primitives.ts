@@ -59,16 +59,27 @@ export interface DevelopmentHarnessPrimitiveOptions {
     service: DevelopmentVerificationService;
 }
 
+export const DevelopmentPrincipalVerificationDefinition = {
+    id: 'development-principal-verification',
+    description:
+        'Resolve the selected synthetic Mastra playground principal through the application service.',
+    inputSchema: DevelopmentVerificationInputSchema,
+    outputSchema: DevelopmentVerificationOutputSchema,
+    requestContextSchema: DevelopmentHarnessRequestContextSchema,
+};
+
+export const DevelopmentVerificationAgentDefinition = {
+    id: 'development-verification-agent',
+    name: 'Development verification agent',
+    instructions: getLocalPrompt('development-harness-agent'),
+};
+
 export function createDevelopmentHarnessPrimitives(
     options: DevelopmentHarnessPrimitiveOptions,
 ) {
     const verificationTool = createTool({
-        id: 'development-principal-verification',
-        description:
-            'Resolve the selected synthetic Mastra playground principal through the application service.',
-        inputSchema: DevelopmentVerificationInputSchema,
-        outputSchema: DevelopmentVerificationOutputSchema,
-        requestContextSchema: DevelopmentHarnessRequestContextSchema,
+        ...DevelopmentPrincipalVerificationDefinition,
+
         execute: async (input, context) => {
             const startedAt = performance.now();
             await abortableDelay(input.delayMs, context.abortSignal);
@@ -147,10 +158,9 @@ export function createDevelopmentHarnessPrimitives(
             maxRetries: 0,
             maxSteps: developmentHarnessMaximumAgentSteps,
         },
-        id: 'development-verification-agent',
-        name: 'Development verification agent',
+        ...DevelopmentVerificationAgentDefinition,
         instructions: ({ requestContext }) =>
-            `${getLocalPrompt('development-harness-agent')} Response variant: ${requestContext.get('variant') ?? 'concise'}.`,
+            `${DevelopmentVerificationAgentDefinition.instructions} Response variant: ${requestContext.get('variant') ?? 'concise'}.`,
         inputProcessors: [
             {
                 id: 'development-model-credential-guard',

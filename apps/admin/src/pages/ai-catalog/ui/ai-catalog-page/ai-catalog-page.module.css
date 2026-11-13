@@ -1,0 +1,32 @@
+.filters {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-block-end: 16px;
+}
+
+.filters label {
+    display: block;
+    margin-block-end: 6px;
+}
+
+.search {
+    flex: 1 1 260px;
+    min-width: 0;
+}
+
+.scope {
+    flex: 0 1 200px;
+    min-width: 160px;
+}
+
+.scope :global(.ant-select) {
+    width: 100%;
+}
+
+@media (max-width: 600px) {
+    .scope {
+        flex: 1 1 100%;
+    }
+}

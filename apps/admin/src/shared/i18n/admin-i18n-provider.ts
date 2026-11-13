@@ -1,9 +1,11 @@
 import type { I18nProvider } from '@refinedev/core';
+import { aiCatalogMessages } from './ai-catalog-messages';
 import { adminMcpMessages } from './admin-mcp-messages';
 import { transcriptionMessages } from './transcription-messages';
 import { nativePriceMessages } from './native-price-messages';
 
 export const adminMessages = {
+    ...aiCatalogMessages,
     ...adminMcpMessages,
     ...nativePriceMessages,
     ...transcriptionMessages,

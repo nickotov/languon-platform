@@ -1,5 +1,6 @@
 import type { TextAiProbeService } from '../../../text-ai/application/text-ai-probe-service';
 import { registerAdminTextAiProbeRoutes } from './admin-text-ai-probe.routes';
+import { registerAdminAiCatalogRoutes } from './admin-ai-catalog.routes';
 import { randomUUID } from 'node:crypto';
 
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
@@ -51,6 +52,7 @@ import { authenticationRequestMetadata } from '../../../authentication/interface
 import type { PasskeyHttpOperations } from '../../../authentication/interface/http/passkey-http-operations';
 import { AdminUserNotFoundError } from '../../application/administration-errors';
 import type { AdministrationService } from '../../application/administration-service';
+import type { AdminAiCatalogQueries } from '../../application/ports/admin-ai-catalog';
 import { AdministrationHttpError } from './administration-http-error';
 import { mapAdministrationHttpError } from './administration-http-error-mapping';
 
@@ -73,6 +75,7 @@ const bearerSecurity = [{ bearerAuth: [] as string[] }];
 
 export interface AdministrationRouteDependencies {
     administration: AdministrationService;
+    aiCatalog: AdminAiCatalogQueries;
     textAiProbes?: TextAiProbeService;
     authentication: AuthenticationHttpOperations;
     passkeys: PasskeyHttpOperations;
@@ -387,6 +390,7 @@ export function createAdministrationRoutes(
 
     registerResourceRoutes(app, dependencies, bearer);
     registerAdminTextAiProbeRoutes(app, dependencies);
+    registerAdminAiCatalogRoutes(app, dependencies);
 
     return app;
 }

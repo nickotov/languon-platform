@@ -39,6 +39,7 @@ function setup() {
         },
     }));
     const app = createAdministrationRoutes({
+        aiCatalog: { list: () => [], detail: () => undefined },
         administration: {
             authorizeOperation,
             authorizeSensitiveOperation,

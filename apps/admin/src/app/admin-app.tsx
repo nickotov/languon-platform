@@ -31,6 +31,11 @@ const AuditPage = lazy(() =>
         default: module.AuditPage,
     })),
 );
+const AiCatalogPage = lazy(() =>
+    import('@/pages/ai-catalog').then((module) => ({
+        default: module.AiCatalogPage,
+    })),
+);
 const AiSettingsPage = lazy(() =>
     import('@/pages/ai-settings/ai-settings-page').then((module) => ({
         default: module.AiSettingsPage,
@@ -81,6 +86,7 @@ function RefineApplication() {
         { name: 'users', list: '/users', show: '/users/:id' },
         { name: 'audit-events', list: '/audit' },
         { name: 'ai-settings', list: '/ai-settings' },
+        { name: 'ai-catalog', list: '/ai-catalog' },
         { name: 'accounting', list: '/accounting' },
         { name: 'speech-recordings', list: '/speech-recordings' },
     ];
@@ -128,6 +134,7 @@ function RefineApplication() {
                                 element={<AdminMcpPage />}
                             />
                         ) : null}
+                        <Route path='ai-catalog' element={<AiCatalogPage />} />
                         <Route path='accounting' element={<AccountingPage />} />
                         <Route
                             path='speech-recordings'

@@ -35,6 +35,10 @@ export const e2eCommands = new Map([
         'admin-text-ai-routing',
         'pnpm --filter @languon/admin exec playwright test tests/e2e/text-ai-routing.journeys.spec.ts',
     ],
+    [
+        'admin-ai-catalog',
+        'pnpm --filter @languon/admin exec playwright test tests/e2e/admin-ai-catalog.journeys.spec.ts',
+    ],
     ['admin-mcp', 'node scripts/run-admin-mcp-e2e.mjs'],
     ['admin-user-management', 'pnpm test:e2e:admin-user-management'],
     [

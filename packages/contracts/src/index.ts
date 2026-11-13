@@ -51,3 +51,5 @@ export * from './knowledge-block-field-ai';
 export * from './knowledge-exercise-evaluation';
 
 export * from './dictionary-chat-snippets';
+
+export * from './ai-catalog';

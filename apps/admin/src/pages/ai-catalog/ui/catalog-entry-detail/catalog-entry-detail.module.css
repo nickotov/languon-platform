@@ -1,0 +1,69 @@
+.stack {
+    display: grid;
+    gap: 20px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.notes {
+    margin: 0;
+    padding-inline-start: 20px;
+}
+
+.notes li + li {
+    margin-block-start: 8px;
+}
+
+.schema {
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    min-width: 0;
+    padding: 14px;
+}
+
+.schema summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.schema[open] summary {
+    margin-block-end: 12px;
+}
+
+.textBlock {
+    min-width: 0;
+}
+
+.blockHeading {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
+}
+
+.blockHeading h4 {
+    margin-block: 0;
+}
+
+.code {
+    background: var(--admin-canvas);
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    color: var(--admin-text);
+    font-size: 12px;
+    line-height: 1.65;
+    margin-block: 12px 0;
+    max-height: 32rem;
+    overflow: auto;
+    overflow-wrap: anywhere;
+    padding: 16px;
+    white-space: pre-wrap;
+}
+
+.referenceButton {
+    height: auto;
+    max-width: 100%;
+    text-align: start;
+    white-space: normal;
+}

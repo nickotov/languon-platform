@@ -7,6 +7,13 @@ import type {
 } from '@mastra/core/llm';
 import { getLocalPrompt } from '@languon/prompts';
 
+/** Canonical static definition reused by runtime construction and metadata inspection. */
+export function knowledgeActionAgentDefinition(
+    id: 'knowledge-block-field-agent' | 'knowledge-exercise-evaluation-agent',
+) {
+    return { id, name: id, instructions: getLocalPrompt(id) };
+}
+
 /** These specialists run only inside an authenticated, admitted knowledge action. */
 export function createKnowledgeActionAgents(options: {
     model:
@@ -18,9 +25,7 @@ export function createKnowledgeActionAgents(options: {
             | 'knowledge-exercise-evaluation-agent',
     ) => {
         const agent = new Agent({
-            id,
-            name: id,
-            instructions: getLocalPrompt(id),
+            ...knowledgeActionAgentDefinition(id),
             model: options.model,
             defaultGenerateOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
             defaultStreamOptionsLegacy: { maxRetries: 0, maxSteps: 1 },

@@ -26,6 +26,52 @@ type DictionaryToolInput = Pick<TutorRunInput, 'signal' | 'onTool'> &
     >;
 
 /** Native tools propose immutable values; they never acquire dictionary write authority. */
+export const ProposeDictionarySnippetDefinition = {
+    id: 'propose_dictionary_snippet',
+    description:
+        'Generate a complete read-only dictionary snippet from a brief, not authored cards. Supply the explicit learner count when requested; otherwise omit count for host default ten. For a revision pass sourceSnippetId so the author reads exact retained cards and preserves their count unless changed explicitly. Authoring uses the current operation-bound accounted model and dictionary settings. This never inserts/replaces cards, changes settings or grants write authority.',
+    inputSchema: DictionaryChatSnippetGenerationRequestSchema,
+    outputSchema: z
+        .object({
+            id: z.uuid(),
+            status: z.literal('ready'),
+            cardCount: z.number().int().positive().max(100),
+            requiresLearnerApply: z.literal(true),
+        })
+        .strict(),
+};
+
+export const ReadDictionarySnippetDefinition = {
+    id: 'read_dictionary_snippet',
+    description:
+        'Read exact retained dictionary-snippet cards from this conversation before a follow-up revision. Historical receipts/memory are not the card content. Page through the indicated nextIndex; never reconstruct missing fields from summaries. This does not insert cards.',
+    inputSchema: z
+        .object({
+            id: z.uuid(),
+            startIndex: z.number().int().min(0).max(99).default(0),
+            limit: z.number().int().min(1).max(10).default(10),
+        })
+        .strict(),
+    outputSchema: z
+        .object({
+            id: z.uuid(),
+            title: z.string(),
+            generationContext: DictionaryChatGenerationContextSchema,
+            cards: z.array(
+                z
+                    .object({
+                        index: z.number().int().nonnegative(),
+                        values: DictionaryChatSnippetInputSchema.shape.cards
+                            .element,
+                    })
+                    .strict(),
+            ),
+            total: z.number().int().positive(),
+            nextIndex: z.number().int().nonnegative().nullable(),
+        })
+        .strict(),
+};
+
 export function createDictionarySnippetTools(
     input: DictionaryToolInput,
     author?: DictionarySnippetAuthor,
@@ -70,18 +116,8 @@ export function createDictionarySnippetTools(
 
     return {
         propose_dictionary_snippet: createTool({
-            id: 'propose_dictionary_snippet',
-            description:
-                'Generate a complete read-only dictionary snippet from a brief, not authored cards. Supply the explicit learner count when requested; otherwise omit count for host default ten. For a revision pass sourceSnippetId so the author reads exact retained cards and preserves their count unless changed explicitly. Authoring uses the current operation-bound accounted model and dictionary settings. This never inserts/replaces cards, changes settings or grants write authority.',
-            inputSchema: DictionaryChatSnippetGenerationRequestSchema,
-            outputSchema: z
-                .object({
-                    id: z.uuid(),
-                    status: z.literal('ready'),
-                    cardCount: z.number().int().positive().max(100),
-                    requiresLearnerApply: z.literal(true),
-                })
-                .strict(),
+            ...ProposeDictionarySnippetDefinition,
+
             execute: (candidate, toolContext) =>
                 execute(
                     'propose_dictionary_snippet',
@@ -139,34 +175,8 @@ export function createDictionarySnippetTools(
                 ),
         }),
         read_dictionary_snippet: createTool({
-            id: 'read_dictionary_snippet',
-            description:
-                'Read exact retained dictionary-snippet cards from this conversation before a follow-up revision. Historical receipts/memory are not the card content. Page through the indicated nextIndex; never reconstruct missing fields from summaries. This does not insert cards.',
-            inputSchema: z
-                .object({
-                    id: z.uuid(),
-                    startIndex: z.number().int().min(0).max(99).default(0),
-                    limit: z.number().int().min(1).max(10).default(10),
-                })
-                .strict(),
-            outputSchema: z
-                .object({
-                    id: z.uuid(),
-                    title: z.string(),
-                    generationContext: DictionaryChatGenerationContextSchema,
-                    cards: z.array(
-                        z
-                            .object({
-                                index: z.number().int().nonnegative(),
-                                values: DictionaryChatSnippetInputSchema.shape
-                                    .cards.element,
-                            })
-                            .strict(),
-                    ),
-                    total: z.number().int().positive(),
-                    nextIndex: z.number().int().nonnegative().nullable(),
-                })
-                .strict(),
+            ...ReadDictionarySnippetDefinition,
+
             execute: (query, toolContext) =>
                 execute(
                     'read_dictionary_snippet',

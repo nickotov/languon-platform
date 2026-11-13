@@ -53,6 +53,20 @@ const resultSchema = z.discriminatedUnion('status', [
 
 export const LearningContentToolResultSchema = resultSchema;
 
+/** Shared by executable tools and the read-only catalog; contains no operation authority. */
+export function learningContentToolDefinition(
+    kind: LearningContentTask['kind'],
+) {
+    const capability = learningContentCapability(kind);
+
+    return {
+        id: capability.toolId,
+        description: `${capability.instruction} Accept a generation brief, not authored blocks. Missing material requirements return needs-clarification without a model call. The tool creates a reviewable proposal and returns a compact receipt. Apply and Save remain learner actions.`,
+        inputSchema: capability.inputSchema,
+        outputSchema: resultSchema,
+    };
+}
+
 /** Standalone tools use the same bounded authoring implementation as coordinated tutor batches. */
 export function createLearningContentTools(
     options: LearningContentAuthoringOptions & {
@@ -75,13 +89,8 @@ export function createLearningContentTools(
         ...(options.onTool ? { onTool: options.onTool } : {}),
     });
     const tool = (kind: LearningContentTask['kind']) => {
-        const capability = learningContentCapability(kind);
-
         return createTool({
-            id: capability.toolId,
-            description: `${capability.instruction} Accept a generation brief, not authored blocks. Missing material requirements return needs-clarification without a model call. The tool creates a reviewable proposal and returns a compact receipt. Apply and Save remain learner actions.`,
-            inputSchema: capability.inputSchema,
-            outputSchema: resultSchema,
+            ...learningContentToolDefinition(kind),
             toModelOutput: (result) => JSON.stringify(result),
             execute: async (input) =>
                 resultSchema.parse(

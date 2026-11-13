@@ -6,6 +6,12 @@ import type {
     ModelRouterLanguageModel,
 } from '@mastra/core/llm';
 
+export const DictionaryImportPairsGenerationAgentDefinition = {
+    id: 'dictionary-import-pairs-generation-agent',
+    name: 'Dictionary import pairs generation agent',
+    instructions: getLocalPrompt('dictionary-import-pairs-generation-agent'),
+};
+
 export function createDictionaryImportPairsGenerationAgent(options: {
     model:
         ModelRouterModelId | OpenAICompatibleConfig | ModelRouterLanguageModel;
@@ -14,11 +20,8 @@ export function createDictionaryImportPairsGenerationAgent(options: {
         defaultGenerateOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
         defaultOptions: { maxSteps: 1 },
         defaultStreamOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
-        id: 'dictionary-import-pairs-generation-agent',
-        name: 'Dictionary import pairs generation agent',
-        instructions: getLocalPrompt(
-            'dictionary-import-pairs-generation-agent',
-        ),
+        ...DictionaryImportPairsGenerationAgentDefinition,
+
         model: options.model,
     });
 }

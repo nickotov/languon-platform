@@ -9,12 +9,14 @@ export const adminAccessProvider: AccessControlProvider = {
                 'users',
                 'audit-events',
                 'ai-settings',
+                'ai-catalog',
                 'accounting',
                 'admin-mcp',
                 'speech-recordings',
             ].includes(resource ?? '') &&
             !['create', 'delete'].includes(action) &&
-            (resource !== 'admin-mcp' || adminMcpEnabled),
+            (resource !== 'admin-mcp' || adminMcpEnabled) &&
+            (resource !== 'ai-catalog' || ['list', 'show'].includes(action)),
         reason: 'Owner membership is required.',
     }),
     options: {

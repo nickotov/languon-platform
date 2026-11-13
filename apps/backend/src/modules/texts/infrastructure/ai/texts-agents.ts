@@ -7,6 +7,13 @@ import type {
     ModelRouterLanguageModel,
 } from '@mastra/core/llm';
 import { getLocalPrompt } from '@languon/prompts';
+/** Canonical static definition reused by runtime construction and metadata inspection. */
+export function textAgentDefinition(
+    id: 'text-translation-agent' | 'text-detection-agent',
+) {
+    return { id, name: id, instructions: getLocalPrompt(id) };
+}
+
 /** Runtime-only primitives: user content requires authenticated durable jobs and accounting. */
 export function createTextsAgents(options: {
     model:
@@ -14,9 +21,7 @@ export function createTextsAgents(options: {
 }) {
     const create = (id: 'text-translation-agent' | 'text-detection-agent') => {
         const agent = new Agent({
-            id,
-            name: id,
-            instructions: getLocalPrompt(id),
+            ...textAgentDefinition(id),
             model: options.model,
             defaultGenerateOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
             defaultStreamOptionsLegacy: { maxRetries: 0, maxSteps: 1 },

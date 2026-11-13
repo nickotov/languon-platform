@@ -1,5 +1,6 @@
 import {
     AuditOutlined,
+    ReadOutlined,
     ApiOutlined,
     DollarOutlined,
     CloudServerOutlined,
@@ -44,6 +45,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             '/users',
             '/audit',
             '/ai-settings',
+            '/ai-catalog',
             '/accounting',
             '/admin-mcp',
         ]) {
@@ -74,6 +76,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             icon: <CloudServerOutlined />,
             key: '/ai-settings',
             label: translate('shell.aiSettings'),
+        },
+        {
+            icon: <ReadOutlined />,
+            key: '/ai-catalog',
+            label: translate('catalog.title'),
         },
         {
             icon: <DollarOutlined />,

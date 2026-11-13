@@ -11,6 +11,12 @@ export interface DictionaryCardGenerationAgentOptions {
         ModelRouterModelId | OpenAICompatibleConfig | ModelRouterLanguageModel;
 }
 
+export const DictionaryCardGenerationAgentDefinition = {
+    id: 'dictionary-card-generation-agent',
+    name: 'Dictionary card generation agent',
+    instructions: getLocalPrompt('dictionary-card-generation-agent'),
+};
+
 export function createDictionaryCardGenerationAgent(
     options: DictionaryCardGenerationAgentOptions,
 ) {
@@ -24,9 +30,8 @@ export function createDictionaryCardGenerationAgent(
             maxRetries: 0,
             maxSteps: 1,
         },
-        id: 'dictionary-card-generation-agent',
-        name: 'Dictionary card generation agent',
-        instructions: getLocalPrompt('dictionary-card-generation-agent'),
+        ...DictionaryCardGenerationAgentDefinition,
+
         model: options.model,
     });
 }

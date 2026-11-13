@@ -85,6 +85,8 @@ evidence with a repeatable manual/browser/API/device recipe.
 - [Admin User Management](./admin-user-management.md) — owner authentication,
   user inspection, safe disable/restore operations, audit history, and guarded
   membership commands.
+- [Admin AI Catalog](./admin-ai-catalog.md) — read-only owner inspection of
+  registered agents, tools, prompt templates, schemas, limitations, and links.
 - [Admin AI routing and audio transcription](./admin-text-ai-routing.md) — reviewed per-flow
   routes, explicit operator checks, flow tariffs, emergency disabling and reviewed
   audio transcription configuration.

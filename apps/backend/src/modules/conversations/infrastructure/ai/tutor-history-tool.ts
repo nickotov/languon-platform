@@ -9,29 +9,34 @@ export const TutorHistoryInputSchema = z
     .strict();
 
 /** Reads only the server-bound conversation. No caller-selected owner or thread. */
+export const RecallDefinition = {
+    id: 'recall',
+    description:
+        'Read original visible wording from this authorized conversation. Does not read other chats or reconstruct generated artifacts; use exact proposal/source references for those.',
+    inputSchema: TutorHistoryInputSchema,
+    outputSchema: z
+        .object({
+            messages: z.array(
+                z.object({
+                    id: z.string(),
+                    role: z.enum(['user', 'assistant']),
+                    content: z.string(),
+                    createdAt: z.string(),
+                }),
+            ),
+            total: z.number().int().nonnegative(),
+            coverage: z.enum(['complete', 'partial']),
+        })
+        .strict(),
+};
+
 export function createTutorHistoryTool(
     memory: TutorMemoryPort,
     signal: AbortSignal,
 ) {
     return createTool({
-        id: 'recall',
-        description:
-            'Read original visible wording from this authorized conversation. Does not read other chats or reconstruct generated artifacts; use exact proposal/source references for those.',
-        inputSchema: TutorHistoryInputSchema,
-        outputSchema: z
-            .object({
-                messages: z.array(
-                    z.object({
-                        id: z.string(),
-                        role: z.enum(['user', 'assistant']),
-                        content: z.string(),
-                        createdAt: z.string(),
-                    }),
-                ),
-                total: z.number().int().nonnegative(),
-                coverage: z.enum(['complete', 'partial']),
-            })
-            .strict(),
+        ...RecallDefinition,
+
         execute: async ({ limit }) => {
             signal.throwIfAborted();
             const page = await memory.listMessages({

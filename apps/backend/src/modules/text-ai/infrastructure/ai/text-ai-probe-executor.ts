@@ -34,6 +34,13 @@ export interface TextAiSyntheticFlow {
     streaming?: boolean;
     validate(output: unknown): boolean;
 }
+export const AdminTextAiProbeDefinition = {
+    id: 'admin-text-ai-probe',
+    name: 'Administrative synthetic model check',
+    instructions:
+        'Reply with exactly OK to the synthetic connectivity check. Do not call tools.',
+};
+
 export function createTextAiProbeExecutor(options: {
     credentials: Readonly<Partial<Record<string, string>>>;
     flows: Readonly<Record<string, TextAiSyntheticFlow>>;
@@ -86,8 +93,7 @@ export function createTextAiProbeExecutor(options: {
                     ? options.flows[reservation.request.flowId ?? '']
                     : undefined;
             const instructions =
-                flow?.instructions ??
-                'Reply with exactly OK to the synthetic connectivity check. Do not call tools.';
+                flow?.instructions ?? AdminTextAiProbeDefinition.instructions;
             const input = flow?.input ?? 'Synthetic connectivity check.';
             // UTF-8 bytes dominate token counts for the reviewed tokenizer families. Include schema/control overhead.
             const inputLimit =
@@ -179,8 +185,7 @@ export function createTextAiProbeExecutor(options: {
             }
 
             const agent = new Agent({
-                id: 'admin-text-ai-probe',
-                name: 'Administrative synthetic model check',
+                ...AdminTextAiProbeDefinition,
                 instructions,
                 model: createTextAiMastraModel({
                     apiKey,

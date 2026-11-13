@@ -242,6 +242,10 @@ for delivery evidence and [the operating guide](./tutor-playground.md) for use.
 
 #### Registering Mastra primitives
 
+The admin [AI catalog](ai-catalog.md) provides read-only prompt, agent and tool
+inspection. Its extension guide explains how a canonical definition participates
+in both runtime construction and catalog registration without per-entry UI work.
+
 Mastra Studio does not scan the repository for new files. A new agent, tool,
 workflow, processor, or scorer becomes available only after it is connected to
 the canonical composition. Use this checklist whenever one is added or

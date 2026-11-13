@@ -4,21 +4,36 @@ import type { MastraModelConfig } from '@mastra/core/llm';
 import { getLocalPrompt } from '@languon/prompts';
 import { z } from 'zod';
 
+export const tutorRequestAgentDefinitions = {
+    'tutor-request-resolver': {
+        id: 'tutor-request-resolver',
+        name: 'tutor-request-resolver',
+        instructions: getLocalPrompt('tutor-request-resolution'),
+    },
+    'dictionary-snippet-author': {
+        id: 'dictionary-snippet-author',
+        name: 'dictionary-snippet-author',
+        instructions: getLocalPrompt('dictionary-chat-snippet-authoring'),
+    },
+    'learning-content-author': {
+        id: 'learning-content-author',
+        name: 'learning-content-author',
+        instructions: getLocalPrompt('learning-content-authoring'),
+    },
+};
+
 /** Single-step, operation-bound primitives; development wiring injects synthetic authority. */
 export function createTutorRequestAgents(options: {
     planningModel: MastraModelConfig;
     authoringModel: MastraModelConfig;
 }) {
     const create = (
-        id: string,
+        id: keyof typeof tutorRequestAgentDefinitions,
         model: MastraModelConfig,
-        instructions: string,
     ) => {
         const agent = new Agent({
-            id,
-            name: id,
+            ...tutorRequestAgentDefinitions[id],
             model,
-            instructions,
             defaultOptions: { maxSteps: 1 },
             defaultGenerateOptionsLegacy: { maxSteps: 1, maxRetries: 0 },
             defaultStreamOptionsLegacy: { maxSteps: 1, maxRetries: 0 },
@@ -33,17 +48,14 @@ export function createTutorRequestAgents(options: {
         tutorRequestResolver: create(
             'tutor-request-resolver',
             options.planningModel,
-            getLocalPrompt('tutor-request-resolution'),
         ),
         dictionarySnippetAuthor: create(
             'dictionary-snippet-author',
             options.authoringModel,
-            getLocalPrompt('dictionary-chat-snippet-authoring'),
         ),
         learningContentAuthor: create(
             'learning-content-author',
             options.authoringModel,
-            getLocalPrompt('learning-content-authoring'),
         ),
     };
 }

@@ -11,6 +11,12 @@ export interface DictionaryCardAuthoringAgentOptions {
         ModelRouterModelId | OpenAICompatibleConfig | ModelRouterLanguageModel;
 }
 
+export const DictionaryCardAuthoringAgentDefinition = {
+    id: 'dictionary-card-authoring-agent',
+    name: 'Dictionary card authoring agent',
+    instructions: dictionaryCardAuthoringInstructions(),
+};
+
 export function createDictionaryCardAuthoringAgent(
     options: DictionaryCardAuthoringAgentOptions,
 ) {
@@ -18,9 +24,8 @@ export function createDictionaryCardAuthoringAgent(
         defaultGenerateOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
         defaultOptions: { maxSteps: 1 },
         defaultStreamOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
-        id: 'dictionary-card-authoring-agent',
-        name: 'Dictionary card authoring agent',
-        instructions: dictionaryCardAuthoringInstructions(),
+        ...DictionaryCardAuthoringAgentDefinition,
+
         model: options.model,
     });
 }

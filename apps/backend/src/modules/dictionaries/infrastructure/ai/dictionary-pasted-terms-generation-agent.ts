@@ -11,6 +11,12 @@ export interface DictionaryPastedTermsGenerationAgentOptions {
         ModelRouterModelId | OpenAICompatibleConfig | ModelRouterLanguageModel;
 }
 
+export const DictionaryPastedTermsGenerationAgentDefinition = {
+    id: 'dictionary-pasted-terms-generation-agent',
+    name: 'Dictionary pasted terms generation agent',
+    instructions: getLocalPrompt('dictionary-pasted-terms-generation-agent'),
+};
+
 export function createDictionaryPastedTermsGenerationAgent(
     options: DictionaryPastedTermsGenerationAgentOptions,
 ) {
@@ -24,11 +30,8 @@ export function createDictionaryPastedTermsGenerationAgent(
             maxRetries: 0,
             maxSteps: 1,
         },
-        id: 'dictionary-pasted-terms-generation-agent',
-        name: 'Dictionary pasted terms generation agent',
-        instructions: getLocalPrompt(
-            'dictionary-pasted-terms-generation-agent',
-        ),
+        ...DictionaryPastedTermsGenerationAgentDefinition,
+
         model: options.model,
     });
 }

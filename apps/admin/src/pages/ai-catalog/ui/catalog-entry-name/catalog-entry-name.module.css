@@ -1,0 +1,21 @@
+.entryName {
+    max-width: 520px;
+    min-width: 0;
+}
+
+.nameButton {
+    height: auto;
+    padding: 0;
+    text-align: start;
+    white-space: normal;
+}
+
+.nameButton span,
+.identifier {
+    overflow-wrap: anywhere;
+}
+
+.description {
+    color: var(--admin-text-secondary);
+    margin-block: 6px 0 !important;
+}

@@ -32,6 +32,7 @@ export const AdminErrorCodeSchema = z.enum([
     'capability_unavailable',
     'passkey_verification_failed',
     'user_not_found',
+    'ai_catalog_entry_not_found',
     'user_state_conflict',
     'ai_settings_conflict',
     'ai_credit_account_conflict',

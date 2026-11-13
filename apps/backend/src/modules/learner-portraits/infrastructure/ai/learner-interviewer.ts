@@ -29,11 +29,16 @@ import {
 } from '../../application/ports/interview-store';
 import { buildInterviewRequest } from './interview-request';
 
+export const LearnerInterviewerDefinition = {
+    id: 'learner-interviewer',
+    name: 'Learner portrait interviewer',
+    instructions: getLocalPrompt('learner-interviewer'),
+};
+
 export function createLearnerInterviewerAgent(model: MastraModelConfig) {
     const agent = new Agent({
-        id: 'learner-interviewer',
-        name: 'Learner portrait interviewer',
-        instructions: getLocalPrompt('learner-interviewer'),
+        ...LearnerInterviewerDefinition,
+
         model,
         defaultOptions: {
             maxSteps: 1,

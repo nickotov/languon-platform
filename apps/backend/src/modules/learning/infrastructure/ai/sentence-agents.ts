@@ -6,6 +6,13 @@ import type {
     ModelRouterLanguageModel,
 } from '@mastra/core/llm';
 import { getLocalPrompt } from '@languon/prompts';
+/** Canonical static definition reused by runtime construction and metadata inspection. */
+export function sentenceAgentDefinition(
+    id: 'sentence-generation-agent' | 'sentence-check-agent',
+) {
+    return { id, name: id, instructions: getLocalPrompt(id) };
+}
+
 export function createSentenceAgents(options: {
     model:
         ModelRouterModelId | OpenAICompatibleConfig | ModelRouterLanguageModel;
@@ -14,9 +21,7 @@ export function createSentenceAgents(options: {
         id: 'sentence-generation-agent' | 'sentence-check-agent',
     ) => {
         const agent = new Agent({
-            id,
-            name: id,
-            instructions: getLocalPrompt(id),
+            ...sentenceAgentDefinition(id),
             model: options.model,
             defaultGenerateOptionsLegacy: { maxRetries: 0, maxSteps: 1 },
             defaultStreamOptionsLegacy: { maxRetries: 0, maxSteps: 1 },

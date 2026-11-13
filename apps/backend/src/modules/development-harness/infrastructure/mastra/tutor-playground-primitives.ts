@@ -102,7 +102,37 @@ export const TutorPlaygroundOutputSchema = z
     })
     .strict();
 
+/** Development variant of the canonical generation tool contract. */
+export function playgroundContentToolDefinition(
+    kind: LearningContentTask['kind'],
+) {
+    const capability = learningContentRegistry.find(
+        (item) => item.kind === kind,
+    )!;
+
+    return {
+        id: capability.toolId,
+        description: `${capability.instruction} Runs in an isolated synthetic session. Inspect returned sessionId and proposal content.`,
+        inputSchema: capability.inputSchema,
+        outputSchema: TutorPlaygroundOutputSchema,
+        requestContextSchema: TutorPlaygroundContextSchema,
+    };
+}
+
 /** Studio adapters select synthetic authority; production factories own all generation and publication. */
+export const ReadPlaygroundProposalDefinition = {
+    id: 'read-playground-proposal',
+    description:
+        'Read the exact validated proposal from its own synthetic session.',
+    inputSchema: TutorPlaygroundReadInputSchema,
+    outputSchema: z
+        .object({
+            sessionId: z.uuid(),
+            proposal: KnowledgeBlockProposalSchema,
+        })
+        .strict(),
+};
+
 export function createTutorPlaygroundPrimitives(
     options: TutorPlaygroundOptions,
 ) {
@@ -113,11 +143,7 @@ export function createTutorPlaygroundPrimitives(
         )!;
 
         return createTool({
-            id: capability.toolId,
-            description: `${capability.instruction} Runs in an isolated synthetic session. Inspect returned sessionId and proposal content.`,
-            inputSchema: capability.inputSchema,
-            outputSchema: TutorPlaygroundOutputSchema,
-            requestContextSchema: TutorPlaygroundContextSchema,
+            ...playgroundContentToolDefinition(kind),
             execute: async (data, context) =>
                 TutorPlaygroundOutputSchema.parse(
                     await service.runTool(
@@ -140,16 +166,8 @@ export function createTutorPlaygroundPrimitives(
         generate_exercises: activityTool('exercises'),
     };
     const readTool = createTool({
-        id: 'read-playground-proposal',
-        description:
-            'Read the exact validated proposal from its own synthetic session.',
-        inputSchema: TutorPlaygroundReadInputSchema,
-        outputSchema: z
-            .object({
-                sessionId: z.uuid(),
-                proposal: KnowledgeBlockProposalSchema,
-            })
-            .strict(),
+        ...ReadPlaygroundProposalDefinition,
+
         execute: async (input) => service.readProposal(input),
     });
     const step = createStep({

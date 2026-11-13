@@ -117,6 +117,7 @@ function setup(options: { denyMembership?: boolean } = {}) {
     } as unknown as AuthenticationHttpOperations;
     const passkeys = {} as PasskeyHttpOperations;
     const app = createAdministrationRoutes({
+        aiCatalog: { list: () => [], detail: () => undefined },
         administration,
         authentication,
         passkeys,

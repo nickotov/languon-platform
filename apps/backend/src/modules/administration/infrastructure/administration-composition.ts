@@ -6,6 +6,7 @@ import { AuthHttpPolicy } from '../../authentication/interface/http/auth-http-po
 import { AdministrationService } from '../application/administration-service';
 import { DrizzleAdministrationStore } from './persistence/drizzle/drizzle-administration-store';
 import type { AccountDeletionRecoveryJournal } from '../../users/application/ports/account-deletion-recovery-journal';
+import { getAiCatalogEntry, getAiCatalogSummaries } from './ai-catalog';
 
 export function createAdministrationComposition(
     environment: Environment,
@@ -16,6 +17,10 @@ export function createAdministrationComposition(
     const dependencies = authentication.administrationDependencies;
 
     return {
+        aiCatalog: {
+            list: getAiCatalogSummaries,
+            detail: getAiCatalogEntry,
+        },
         administration: new AdministrationService({
             accessTokens: dependencies.accessTokens,
             authentication: dependencies.authentication,

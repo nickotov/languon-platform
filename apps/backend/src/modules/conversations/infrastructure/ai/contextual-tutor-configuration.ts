@@ -149,6 +149,12 @@ export function tutorMemoryThresholds(
     };
 }
 
+export const ContextualLanguageTutorDefinition = {
+    id: 'contextual-language-tutor',
+    name: 'Contextual language tutor',
+    instructions: getLocalPrompt('contextual-language-tutor'),
+};
+
 /** Registry factory; executable instances receive only operation-bound models, memory and tools. */
 export function createContextualTutorAgent(options: {
     model: MastraModelConfig;
@@ -158,9 +164,8 @@ export function createContextualTutorAgent(options: {
     persistenceStorage?: ConversationMemoryStorage;
 }) {
     const agent = new Agent({
-        id: 'contextual-language-tutor',
-        name: 'Contextual language tutor',
-        instructions: `${getLocalPrompt('contextual-language-tutor')}\n${options.contextInstructions ?? ''}`,
+        ...ContextualLanguageTutorDefinition,
+        instructions: `${ContextualLanguageTutorDefinition.instructions}\n${options.contextInstructions ?? ''}`,
         model: options.model,
         ...(options.persistenceStorage
             ? {
