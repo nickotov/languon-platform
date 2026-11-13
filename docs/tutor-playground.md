@@ -33,6 +33,41 @@ PostgreSQL, applies migrations, provisions the synthetic principal, and starts
 Studio and prompt watching. It does not start Hono, web, admin, mobile, or Redis.
 Stop with `Ctrl+C`. Restarting preserves playground sessions and proposals.
 
+## Choose the Studio entry point
+
+| What to test                                                        | Studio entry                                                                                                  | Request context                                | Model behavior                                   |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------ |
+| Provider connectivity and principal verification                    | **Agents → Development verification agent**                                                                   | **synthetic-principal** preset                 | Real model; requires its configured credentials. |
+| Complete learning tutor, including planning and proposal generation | **Workflows → run-tutor-turn**                                                                                | Empty or a matching **tutor-*** preset         | Controlled by `MASTRA_TUTOR_MODE`.               |
+| A particular content generator                                      | **Tools → generate_vocabulary**, **generate_grammar**, **generate_bilingual_text**, or **generate_exercises** | Empty or a matching **tutor-*** preset/session | Controlled by `MASTRA_TUTOR_MODE`.               |
+
+Request-context presets are not interchangeable. The verification agent requires
+`syntheticPrincipalId`; the tutor workflow and generators use `scenarioId` and
+an optional `sessionId` instead.
+
+## Run the verification agent
+
+1. Open **Agents → Development verification agent**.
+2. Open **Request Context** and select **synthetic-principal**. If entering JSON
+   manually, use:
+
+    ```json
+    {
+        "syntheticPrincipalId": "00000000-0000-4000-8000-000000000019",
+        "variant": "concise"
+    }
+    ```
+
+3. Confirm that context is selected before submitting a message such as
+   “Verify the synthetic principal.” An empty context or a `tutor-*` preset
+   will fail validation before a model response can be generated.
+
+This agent makes real model calls independently of `MASTRA_TUTOR_MODE`. It uses
+`MASTRA_MODEL_ID`, requires `DEEPSEEK_API_KEY` for its default/fallback, and also
+requires the primary provider's key if a different primary model is configured.
+It is a connectivity/principal check; use the workflow below to test the learning
+tutor and its generation pipeline.
+
 ## Deterministic and live execution
 
 The default is `MASTRA_TUTOR_MODE=deterministic`. It needs no provider credentials
@@ -49,6 +84,12 @@ configuration records; enabling live mode or supplying a provider key does not
 create them. The playground never copies configuration from the ordinary
 application database. Missing configuration fails closed before provider dispatch.
 
+Live execution is implemented, but a fresh playground is **not provisioned for
+live generation**. Startup seeds the synthetic fixtures, not the route, pricing,
+and funding configuration. There is currently no standalone command that
+bootstraps all those live prerequisites. Provider keys alone, or changing only
+`MASTRA_TUTOR_MODE`, are insufficient.
+
 After that configuration is present, set `.env.local` before startup:
 
 ```dotenv
@@ -64,6 +105,18 @@ or tools, and `MASTRA_MODEL_ID` does not select the tutor model. The configured
 route's authorization, prices, budgets, and funding policy remain authoritative;
 real provider calls cost money. Deterministic mode uses synthetic accounting and
 does not establish live financial proof.
+
+To get real generated content, complete these steps in order:
+
+1. Configure the reviewed route, prices, charging policy, budgets, and applicable
+   synthetic learner funding in the **isolated playground database**, using the
+   controls listed below.
+2. Supply the selected provider's development credential and set
+   `MASTRA_TUTOR_MODE=live` in `.env.local`.
+3. Stop and restart `pnpm dev:mastra` so the process reloads its configuration.
+4. Run the tutor workflow or a generation tool and inspect `diagnostics.mode`;
+   it should report `live`. Check the turn's `status` and `failureCode` as well:
+   a failed live request is not successful generation.
 
 The [admin routing cookbook](operations/admin-text-ai-routing-cookbook.md)
 describes the route, price, and funding records. Its ordinary application setup
@@ -203,12 +256,13 @@ not an independent language model.
 ## Troubleshooting and reset
 
 - **Studio cannot connect:** open the canonical `127.0.0.1:4111` address. Restart the harness and use **Reset Studio Configuration** if an old browser connection is cached.
+- **Verification agent returns HTTP 500 with `syntheticPrincipalId: Invalid input: expected string, received undefined`:** its required request context is missing. Select **synthetic-principal** or enter the JSON in [Run the verification agent](#run-the-verification-agent), then resubmit. A `tutor-*` preset does not contain this field. The reported 500 is a context-validation failure, not evidence that the provider failed.
 - **Invalid tutor request context:** use an empty context or a `tutor-*` preset, not `synthetic-principal`.
 - **Unavailable session/proposal:** use the returned IDs from the same scenario/session; a full playground reset removes them.
 - **Another operation is running:** wait for completion or cancel it before submitting another tool/workflow run.
 - **Missing live route, price, capability, or funding:** configure those records through administration explicitly bound to the isolated playground database. Changing `MASTRA_MODEL_ID` does not configure tutor routing. Use deterministic mode until the live prerequisites are ready.
 - **No provider key in live mode:** supply the admitted route's provider development credential and restart, or return to deterministic mode.
-- **Synthetic answer to an arbitrary request:** deterministic mode supports fixture behavior; switch deliberately to live mode to test model quality.
+- **Synthetic answer to an arbitrary request:** the workflow/tools default to deterministic fixture responses. Follow the complete [live setup sequence](#deterministic-and-live-execution) before switching modes; changing the flag alone does not provision a route or funding. `MASTRA_MODEL_ID` changes only the separate verification agent.
 
 For a fresh conversation, omit `sessionId`. To discard the entire positively
 identified playground, stop the harness and set confirmation to the exact
