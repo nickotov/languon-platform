@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { ExerciseLearningBlock, LearningBlock } from '@languon/contracts';
+import type {
+    ExerciseLearningBlock,
+    LearningBlock,
+    NamedExerciseSemantics,
+} from '@languon/contracts';
 import {
     evaluateWorkbookAnswer,
     exerciseSemanticRevision,
@@ -38,6 +42,63 @@ const audio: LearningBlock = {
             },
         ],
     },
+};
+const vocabulary: LearningBlock = {
+    id: sourceId,
+    type: 'vocabulary',
+    language: 'fr',
+    translationLanguage: 'en',
+    entries: [
+        {
+            id: segmentId,
+            term: 'café',
+            translation: 'coffee',
+            definition: 'A hot drink.',
+        },
+    ],
+};
+const namedSemantics: NamedExerciseSemantics = {
+    activity: { id: 'V01', version: 1 },
+    objective: 'Recall the word for the supplied sense.',
+    language: 'fr',
+    explanationLanguage: 'en',
+    format: 'free-text',
+    checking: {
+        policy: 'hybrid',
+        key: { kind: 'text', acceptedAnswers: ['café'] },
+        rubric: {
+            criteria: [
+                {
+                    dimension: 'task-completion',
+                    requirement: 'Recall the word.',
+                },
+                { dimension: 'meaning', requirement: 'Preserve the sense.' },
+                {
+                    dimension: 'target-use',
+                    requirement: 'Use the selected word.',
+                },
+            ],
+        },
+    },
+    sources: [
+        {
+            kind: 'vocabulary',
+            origin: { kind: 'block', blockId: sourceId },
+            entries: [
+                { entryId: segmentId, term: 'café', sense: 'A hot drink.' },
+            ],
+        },
+    ],
+};
+const namedRecall: ExerciseLearningBlock = {
+    id,
+    type: 'exercise',
+    format: 'free-text',
+    question: 'Which French word means coffee?',
+    referenceAnswer: 'café',
+    explanation: 'The accent is part of the word.',
+    acceptedAnswers: ['café'],
+    semantics: namedSemantics,
 };
 
 describe('workbook semantic revisions', () => {
@@ -210,6 +271,329 @@ describe('workbook semantic revisions', () => {
         };
 
         expect(exerciseSemanticRevision(changed, [renamed])).toBe(original);
+    });
+});
+
+describe('named activity semantic revisions', () => {
+    it('versions objective, rubric, frozen meaning and live source edits', () => {
+        const revision = exerciseSemanticRevision(namedRecall, [vocabulary]);
+        const semanticChanges = [
+            {
+                ...namedSemantics,
+                objective: 'Use the word in its plural form.',
+            },
+            {
+                ...namedSemantics,
+                checking: {
+                    ...namedSemantics.checking,
+                    rubric: {
+                        criteria: [
+                            {
+                                dimension: 'task-completion' as const,
+                                requirement: 'Recall exactly one word.',
+                            },
+                            {
+                                dimension: 'meaning' as const,
+                                requirement: 'Preserve the sense.',
+                            },
+                            {
+                                dimension: 'target-use' as const,
+                                requirement: 'Use the selected word.',
+                            },
+                        ],
+                    },
+                },
+            },
+            {
+                ...namedSemantics,
+                sources: [
+                    {
+                        kind: 'vocabulary' as const,
+                        origin: { kind: 'block' as const, blockId: sourceId },
+                        entries: [
+                            {
+                                entryId: segmentId,
+                                term: 'café',
+                                sense: 'A place serving drinks.',
+                            },
+                        ],
+                    },
+                ],
+            },
+        ];
+
+        for (const semantics of semanticChanges) {
+            expect(
+                exerciseSemanticRevision({ ...namedRecall, semantics }, [
+                    vocabulary,
+                ]),
+            ).not.toBe(revision);
+        }
+
+        if (vocabulary.type !== 'vocabulary') {
+            throw new Error('fixture');
+        }
+
+        expect(
+            exerciseSemanticRevision(namedRecall, [
+                {
+                    ...vocabulary,
+                    entries: [
+                        { ...vocabulary.entries[0]!, translation: 'cafe' },
+                    ],
+                },
+            ]),
+        ).not.toBe(revision);
+
+        expect(() => exerciseSemanticRevision(namedRecall, [])).toThrow(
+            'source',
+        );
+    });
+
+    it('ignores copied source identities and presentation explanations', () => {
+        const revision = exerciseSemanticRevision(namedRecall, [vocabulary]);
+        expect(
+            exerciseSemanticRevision(
+                {
+                    ...namedRecall,
+                    semantics: { ...namedSemantics, explanationLanguage: 'ru' },
+                },
+                [vocabulary],
+            ),
+        ).toBe(revision);
+
+        if (vocabulary.type !== 'vocabulary') {
+            throw new Error('fixture');
+        }
+
+        const copied = {
+            ...namedRecall,
+            id: otherId,
+            semantics: {
+                ...namedSemantics,
+                sources: [
+                    {
+                        kind: 'vocabulary' as const,
+                        origin: { kind: 'block' as const, blockId: choiceId },
+                        entries: [
+                            {
+                                entryId: otherId,
+                                term: 'café',
+                                sense: 'A hot drink.',
+                            },
+                        ],
+                    },
+                ],
+            },
+        };
+
+        expect(
+            exerciseSemanticRevision(copied, [
+                {
+                    ...vocabulary,
+                    id: choiceId,
+                    entries: [{ ...vocabulary.entries[0]!, id: otherId }],
+                },
+            ]),
+        ).toBe(revision);
+
+        expect(
+            exerciseSemanticRevision(
+                {
+                    ...namedRecall,
+                    explanation: 'Clearer explanation.',
+                    title: 'New title',
+                },
+                [vocabulary],
+            ),
+        ).toBe(revision);
+    });
+});
+
+describe('named activity prepared checking', () => {
+    it('returns the selected choice explanation and does not version cosmetic key explanation edits', () => {
+        const { source: _source, ...choice } = exercise;
+        const key = {
+            kind: 'choice' as const,
+            correctChoiceId: choiceId,
+            explanations: [
+                {
+                    choiceId,
+                    explanation: 'The text explicitly says a cat sleeps.',
+                },
+                {
+                    choiceId: otherId,
+                    explanation: 'The text does not mention a dog.',
+                },
+            ],
+        };
+        const named: ExerciseLearningBlock = {
+            ...choice,
+            semantics: {
+                activity: { id: 'R01', version: 1 },
+                format: 'multiple-choice',
+                objective: 'Identify what the passage says.',
+                language: 'en',
+                explanationLanguage: 'en',
+                checking: { policy: 'prepared-key', key },
+                sources: [
+                    {
+                        kind: 'text-selection',
+                        origin: { noteId: id, noteVersion: 1 },
+                        text: 'A cat sleeps.',
+                    },
+                ],
+            },
+        };
+
+        expect(
+            evaluateWorkbookAnswer(named, {
+                format: 'multiple-choice',
+                choiceId: otherId,
+            }),
+        ).toEqual({
+            status: 'incorrect',
+            method: 'deterministic',
+            feedback: 'The text does not mention a dog.',
+        });
+
+        const revised: ExerciseLearningBlock = {
+            ...named,
+            semantics: {
+                ...named.semantics!,
+                checking: {
+                    policy: 'prepared-key',
+                    key: {
+                        ...key,
+                        explanations: key.explanations.map((item) => ({
+                            ...item,
+                            explanation: 'A clearer prepared explanation.',
+                        })),
+                    },
+                },
+            },
+        };
+
+        expect(exerciseSemanticRevision(revised)).toBe(
+            exerciseSemanticRevision(named),
+        );
+    });
+
+    it('accepts only prepared hybrid alternatives and leaves other text unchecked without fuzzy matching', () => {
+        expect(
+            evaluateWorkbookAnswer(namedRecall, {
+                format: 'free-text',
+                text: ' cafe\u0301 ',
+            }),
+        ).toEqual({
+            status: 'correct',
+            method: 'deterministic',
+            feedback: namedRecall.explanation,
+        });
+
+        for (const text of ['coffee', 'cafe', 'Café', 'café!', '猫']) {
+            expect(
+                evaluateWorkbookAnswer(namedRecall, {
+                    format: 'free-text',
+                    text,
+                }),
+            ).toEqual({ status: 'unchecked' });
+        }
+    });
+
+    it('leaves rubric-only responses unchecked even when they match the reference', () => {
+        const free: ExerciseLearningBlock = {
+            ...namedRecall,
+            acceptedAnswers: [],
+            semantics: {
+                ...namedSemantics,
+                activity: { id: 'V07', version: 1 },
+                checking: {
+                    policy: 'ai-rubric',
+                    rubric:
+                        'rubric' in namedSemantics.checking
+                            ? namedSemantics.checking.rubric
+                            : { criteria: [] },
+                },
+            },
+        };
+
+        expect(
+            evaluateWorkbookAnswer(free, { format: 'free-text', text: 'café' }),
+        ).toEqual({ status: 'unchecked' });
+    });
+
+    it('distinguishes constrained misses from open hybrid gaps and uses the prepared explanation', () => {
+        const gaps: ExerciseLearningBlock = {
+            id,
+            type: 'exercise',
+            format: 'fill-in-the-blank',
+            question: 'Complete the target form.',
+            referenceAnswer: 'café',
+            explanation: 'The target is café.',
+            parts: [{ kind: 'gap', id: choiceId, acceptedAnswers: ['café'] }],
+            semantics: {
+                ...namedSemantics,
+                activity: { id: 'V06', version: 1 },
+                format: 'fill-in-the-blank',
+                checking: {
+                    policy: 'prepared-key',
+                    key: {
+                        kind: 'gaps',
+                        gaps: [
+                            {
+                                gapId: choiceId,
+                                acceptedAnswers: ['café'],
+                                explanation: 'Keep the accented ending.',
+                            },
+                        ],
+                    },
+                },
+            },
+        };
+
+        expect(
+            evaluateWorkbookAnswer(gaps, {
+                format: 'fill-in-the-blank',
+                gaps: [{ id: choiceId, answer: 'cafe' }],
+            }),
+        ).toEqual({
+            status: 'incorrect',
+            method: 'deterministic',
+            feedback: 'Keep the accented ending.',
+        });
+
+        const hybrid: ExerciseLearningBlock = {
+            ...gaps,
+            semantics: {
+                ...gaps.semantics!,
+                activity: { id: 'V03', version: 1 },
+                checking: {
+                    policy: 'hybrid',
+                    key: {
+                        kind: 'gaps',
+                        gaps: [
+                            {
+                                gapId: choiceId,
+                                acceptedAnswers: ['café'],
+                                explanation: 'Keep the meaning.',
+                            },
+                        ],
+                    },
+                    rubric:
+                        'rubric' in namedSemantics.checking
+                            ? namedSemantics.checking.rubric
+                            : { criteria: [] },
+                },
+            },
+        };
+
+        expect(
+            evaluateWorkbookAnswer(hybrid, {
+                format: 'fill-in-the-blank',
+                gaps: [{ id: choiceId, answer: 'espresso' }],
+            }),
+        ).toEqual({ status: 'unchecked' });
     });
 });
 

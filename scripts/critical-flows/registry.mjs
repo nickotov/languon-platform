@@ -3,6 +3,11 @@ import { resolve } from 'node:path';
 /** Reviewed, disjoint selections; the compatibility aggregate retains every suite. */
 export const backendExecutionGroups = Object.freeze({
     conversation: Object.freeze([
+        'src/modules/conversations/application/exercise-activity-allocation.test.ts',
+        'src/modules/conversations/application/conversation-block-references.test.ts',
+        'src/modules/conversations/infrastructure/ai/exercise-activities.test.ts',
+        'src/modules/conversations/infrastructure/ai/exercise-authoring-context.test.ts',
+        'src/modules/conversations/infrastructure/ai/exercise-source-resolution.test.ts',
         'tests/integration/modules/conversations/conversation-accounting.test.ts',
         'tests/integration/modules/conversations/conversation-action-accounting.test.ts',
         'tests/integration/modules/conversations/conversation-production-execution.test.ts',
@@ -10,6 +15,7 @@ export const backendExecutionGroups = Object.freeze({
         'src/modules/conversations/infrastructure/ai/conversation-memory-storage.test.ts',
         'src/modules/conversations/infrastructure/ai/tutor-request-execution.test.ts',
         'src/modules/conversations/infrastructure/ai/learning-content-authoring.test.ts',
+        'src/modules/conversations/infrastructure/ai/learning-block-revision-wire.test.ts',
         'src/modules/conversations/application/learning-content-presentation.test.ts',
         'src/modules/conversations/application/learning-content-transport.test.ts',
         'src/modules/conversations/application/learning-content-output-capacity.test.ts',
@@ -29,6 +35,7 @@ export const backendExecutionGroups = Object.freeze({
         'tests/integration/modules/conversations/conversation-store.test.ts',
     ]),
     knowledge: Object.freeze([
+        'src/modules/knowledge/infrastructure/ai/exercise-evaluation-provider.test.ts',
         'src/modules/knowledge/infrastructure/persistence/drizzle/block-copy-store.test.ts',
         'src/modules/knowledge/infrastructure/persistence/drizzle/media-store.test.ts',
         'src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-store.test.ts',
@@ -423,6 +430,14 @@ export const flows = [
         env: { ADMIN_E2E_SETUP_JOURNEY: 'true' },
     },
     {
+        id: 'admin-ai-catalog',
+        minimumTests: 1,
+        app: 'admin',
+        file: 'admin-ai-catalog.journeys.spec.ts',
+        grep: '.',
+        prerequisite: 'empty-admin-database',
+    },
+    {
         id: 'admin-text-ai-routing',
         minimumTests: 2,
         app: 'admin',
@@ -492,7 +507,7 @@ export const flows = [
     },
     {
         id: 'interactive-workbooks',
-        minimumTests: 3,
+        minimumTests: 5,
         app: 'assistant',
         file: 'interactive-workbooks.journeys.spec.ts',
         grep: '.',

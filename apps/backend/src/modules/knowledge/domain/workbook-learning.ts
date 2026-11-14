@@ -5,13 +5,9 @@ import type {
     WorkbookAttemptAnswer,
     WorkbookAttemptEvaluation,
 } from '@languon/contracts';
-
-export class WorkbookLearningError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'WorkbookLearningError';
-    }
-}
+import { namedExerciseSemanticDescriptor } from './named-exercise-semantics';
+import { WorkbookLearningError } from './workbook-learning-error';
+export { WorkbookLearningError } from './workbook-learning-error';
 
 function sourceDescriptor(
     exercise: ExerciseLearningBlock,
@@ -101,6 +97,7 @@ export function exerciseSemanticDescriptor(
     exercise: ExerciseLearningBlock,
     blocks: readonly LearningBlock[] = [],
 ): string {
+    const semantics = namedExerciseSemanticDescriptor(exercise, blocks);
     let format;
     if (exercise.format === 'multiple-choice') {
         const correctIndex = exercise.choices.findIndex(
@@ -143,6 +140,7 @@ export function exerciseSemanticDescriptor(
             evaluationCriteria: exercise.evaluationCriteria ?? null,
             format,
             source: sourceDescriptor(exercise, blocks),
+            ...(semantics ? { semantics } : {}),
         },
         (_key, value: unknown) => {
             if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -182,8 +180,29 @@ export function evaluateWorkbookAnswer(
         );
     }
 
-    if (exercise.format === 'free-text') {
+    const checking = exercise.semantics?.checking;
+    if (checking?.policy === 'ai-rubric') {
         return { status: 'unchecked' };
+    }
+
+    if (exercise.format === 'free-text' && answer.format === 'free-text') {
+        if (!checking || !('key' in checking) || checking.key.kind !== 'text') {
+            return { status: 'unchecked' };
+        }
+
+        const accepted = checking.key.acceptedAnswers.some(
+            (value) => normalizeAnswer(value) === normalizeAnswer(answer.text),
+        );
+
+        if (!accepted && checking.policy === 'hybrid') {
+            return { status: 'unchecked' };
+        }
+
+        return {
+            status: accepted ? 'correct' : 'incorrect',
+            method: 'deterministic',
+            feedback: exercise.explanation,
+        };
     }
 
     let correct = false;
@@ -226,9 +245,45 @@ export function evaluateWorkbookAnswer(
         );
     }
 
+    if (!correct && checking?.policy === 'hybrid') {
+        return { status: 'unchecked' };
+    }
+
+    let feedback = exercise.explanation;
+    if (checking && 'key' in checking) {
+        if (
+            checking.key.kind === 'choice' &&
+            answer.format === 'multiple-choice'
+        ) {
+            feedback =
+                checking.key.explanations.find(
+                    (item) => item.choiceId === answer.choiceId,
+                )?.explanation ?? feedback;
+        } else if (
+            checking.key.kind === 'gaps' &&
+            answer.format === 'fill-in-the-blank' &&
+            !correct
+        ) {
+            const submitted = new Map(
+                answer.gaps.map((gap) => [gap.id, gap.answer]),
+            );
+
+            feedback =
+                checking.key.gaps.find(
+                    (gap) =>
+                        !gap.acceptedAnswers.some(
+                            (accepted) =>
+                                normalizeAnswer(accepted) ===
+                                normalizeAnswer(submitted.get(gap.gapId) ?? ''),
+                        ),
+                )?.explanation ?? feedback;
+        }
+    }
+
     return {
         status: correct ? 'correct' : 'incorrect',
         method: 'deterministic',
+        ...(checking ? { feedback } : {}),
     };
 }
 

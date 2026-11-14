@@ -22,3 +22,7 @@ export {
     learningBlockCount,
 } from './lib/learning-block-metadata';
 export { exercisePracticeIdentity } from './lib/exercise-practice-identity';
+export {
+    namedExerciseLabels,
+    exerciseCheckingLabel,
+} from './lib/named-exercise-labels';

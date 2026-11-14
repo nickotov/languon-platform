@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { createInteractiveKnowledgeBodySchema } from './knowledge-interactive';
 import type { LearningBlock } from './learning-blocks';
+import { ExerciseGenerationRequestSchema } from './exercise-generation';
 
 const validAssistantText = (value: string) =>
     !/[\uD800-\uDFFF]/u.test(value) && !value.includes('\u0000');
@@ -1032,6 +1033,7 @@ export type UpdateConversationRequest = z.infer<
 export const SubmitConversationTurnRequestSchema = z
     .object({
         requestId: z.uuid(),
+        exerciseRequest: ExerciseGenerationRequestSchema.optional(),
         confirmedQuoteId: z.uuid().optional(),
         content: z
             .string()

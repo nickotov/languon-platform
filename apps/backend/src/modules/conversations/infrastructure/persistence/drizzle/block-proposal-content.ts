@@ -1,5 +1,23 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { LearningBlockSchema, type LearningBlock } from '@languon/contracts';
+import {
+    LearningBlockIdSchema,
+    LearningBlockSchema,
+    type LearningBlock,
+} from '@languon/contracts';
+
+function historicalExerciseSource(value: Record<string, unknown>): boolean {
+    const origin = value.origin;
+
+    return (
+        value.kind === 'text-selection' ||
+        ((value.kind === 'vocabulary' ||
+            value.kind === 'grammar' ||
+            value.kind === 'text') &&
+            typeof origin === 'object' &&
+            origin !== null &&
+            (origin as Record<string, unknown>).kind === 'proposal')
+    );
+}
 
 /** JSONB key order is not stable; compare content using canonical object keys. */
 function canonical(value: unknown): unknown {
@@ -96,7 +114,15 @@ export function freshProposalBlocks(blocks: LearningBlock[]): LearningBlock[] {
         }
 
         const object = value as Record<string, unknown>;
-        if (typeof object.id === 'string' && !ids.has(object.id)) {
+        if (historicalExerciseSource(object)) {
+            return;
+        }
+
+        if (
+            typeof object.id === 'string' &&
+            LearningBlockIdSchema.safeParse(object.id).success &&
+            !ids.has(object.id)
+        ) {
             ids.set(object.id, randomUUID());
         }
 
@@ -119,12 +145,22 @@ export function freshProposalBlocks(blocks: LearningBlock[]): LearningBlock[] {
                 'segmentIds',
                 'correctChoiceId',
                 'parentBlockId',
+                'choiceId',
+                'gapId',
+                'entryId',
+                'segmentId',
             ].includes(key)
         ) {
             return ids.get(value) ?? value;
         }
 
         if (!value || typeof value !== 'object') {
+            return value;
+        }
+
+        // Historical origins are immutable provenance, even if their UUIDs
+        // happen to match structural identities being inserted in this batch.
+        if (historicalExerciseSource(value as Record<string, unknown>)) {
             return value;
         }
 

@@ -17,6 +17,7 @@ export type ConversationWorkerStore = Pick<
     | 'recordResponseMetadata'
     | 'propose'
     | 'proposeBlocks'
+    | 'proposeBlockBatch'
     | 'readBlockProposal'
     | 'proposeDictionarySnippet'
     | 'readDictionarySnippet'
@@ -83,6 +84,19 @@ export class ConversationWorkerService {
                 ownerId: turn.ownerId,
                 operationId: turn.id,
                 conversationCreatedAt: turn.conversationCreatedAt,
+                ...(turn.source.kind === 'knowledge'
+                    ? {
+                          sourceNote: {
+                              noteId: turn.source.id,
+                              noteVersion: Number(
+                                  turn.sourceSnapshot.version.replace(
+                                      /^draft:/u,
+                                      '',
+                                  ),
+                              ),
+                          },
+                      }
+                    : {}),
                 message: turn.message,
                 canProposeBlocks:
                     !!turn.sourceSnapshot.blockTarget &&
@@ -127,6 +141,7 @@ export class ConversationWorkerService {
                       }
                     : {}),
                 onBlockProposal: async (proposal) => {
+                    combined.throwIfAborted();
                     if (
                         turn.source.kind !== 'knowledge' ||
                         isReadOnlyKnowledgeSource(turn.source) ||
@@ -142,6 +157,27 @@ export class ConversationWorkerService {
                     return this.dependencies.store.proposeBlocks(
                         turn,
                         proposal,
+                        combined,
+                    );
+                },
+                onBlockProposals: async (proposals) => {
+                    combined.throwIfAborted();
+                    if (
+                        turn.source.kind !== 'knowledge' ||
+                        isReadOnlyKnowledgeSource(turn.source) ||
+                        !turn.sourceSnapshot.blockTarget ||
+                        !this.dependencies.store.proposeBlockBatch
+                    ) {
+                        throw new ConversationError(
+                            'read_only_source',
+                            'This source cannot propose learning blocks.',
+                        );
+                    }
+
+                    return this.dependencies.store.proposeBlockBatch(
+                        turn,
+                        proposals,
+                        combined,
                     );
                 },
                 ...(this.dependencies.store.readBlockProposal

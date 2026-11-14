@@ -160,7 +160,16 @@ export function createKnowledgePrivateTranslationFixture(input: {
                               'Use this translation for the selected source phrase.',
                       };
         } else if ('exercise' in payload) {
-            const exercise = payload.exercise as { referenceAnswer?: string };
+            const exercise = payload.exercise as {
+                referenceAnswer?: string;
+                semantics?: {
+                    checking?: {
+                        rubric?: {
+                            criteria?: { dimension: string }[];
+                        };
+                    };
+                };
+            };
             const learnerAnswer = payload.learnerAnswer;
             let answer =
                 typeof learnerAnswer === 'string'
@@ -184,15 +193,60 @@ export function createKnowledgePrivateTranslationFixture(input: {
                         .replace(/[.!]/gu, '')
                         .trim();
 
-            result = {
-                status: correct ? 'correct' : 'incorrect',
-                feedback: alternative
-                    ? 'A valid alternative expresses the reference meaning.'
-                    : correct
-                      ? 'Your answer expresses the reference meaning.'
-                      : 'Review the source passage and try again.',
-                validAlternative: alternative,
-            };
+            const dimensions = exercise.semantics?.checking?.rubric?.criteria
+                ?.map((criterion) => criterion.dimension)
+                .filter(
+                    (
+                        dimension,
+                    ): dimension is
+                        | 'task-completion'
+                        | 'meaning'
+                        | 'target-use'
+                        | 'evidence' =>
+                        [
+                            'task-completion',
+                            'meaning',
+                            'target-use',
+                            'evidence',
+                        ].includes(dimension),
+                );
+
+            if (answer.includes('partial') && dimensions?.length) {
+                result = {
+                    status: 'partially-correct',
+                    feedback: 'The response is partly successful.',
+                    validAlternative: false,
+                    criteria: dimensions.map((dimension, index) => ({
+                        dimension,
+                        status: index === 0 ? 'met' : 'partially-met',
+                        feedback: `Fixture feedback for ${dimension}.`,
+                    })),
+                    corrections: ['Use the selected source more precisely.'],
+                };
+            } else if (answer.includes('unknown') && dimensions?.length) {
+                result = {
+                    status: 'unable-to-assess',
+                    feedback:
+                        'The response cannot be assessed reliably. <img src=x onerror=alert(1)>',
+                    validAlternative: false,
+                    criteria: dimensions.map((dimension) => ({
+                        dimension,
+                        status: 'unable-to-assess',
+                        feedback: `Fixture feedback for ${dimension}.`,
+                    })),
+                    corrections: [],
+                };
+            } else {
+                result = {
+                    status: correct ? 'correct' : 'incorrect',
+                    feedback: alternative
+                        ? 'A valid alternative expresses the reference meaning.'
+                        : correct
+                          ? 'Your answer expresses the reference meaning.'
+                          : 'Review the source passage and try again.',
+                    validAlternative: alternative,
+                };
+            }
         } else {
             if (
                 !Array.isArray(payload.segments) ||

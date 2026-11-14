@@ -8,7 +8,10 @@ import type { LearningContentBrief } from '../../src/modules/conversations/appli
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { describe, expect, it } from 'vitest';
-import { LearningBlockSchema } from '@languon/contracts';
+import {
+    exerciseActivityCatalog,
+    LearningBlockSchema,
+} from '@languon/contracts';
 import { createTutorModelGate } from '../../src/modules/conversations/infrastructure/ai/accounted-tutor-model';
 import type { TutorCallPurpose } from '../../src/modules/conversations/application/ports/tutor-runner';
 import {
@@ -21,8 +24,67 @@ import {
 } from './contextual-block-proposal-fixture';
 import { contextualFixtureBlock } from './contextual-fixture-block';
 import { purposeAwareFixtureAccounting } from './contextual-assistant-fixture';
+import { namedExerciseFixture } from './named-exercise-fixture';
+import { completeNamedExerciseSources } from '../../src/modules/conversations/infrastructure/ai/exercise-authoring-context';
+import { validateNamedExerciseActivity } from '../../src/modules/conversations/infrastructure/ai/exercise-activities';
 
 describe('contextual assistant browser fixture', () => {
+    it('emits every named activity through the production source-fill and validation boundary', () => {
+        const vocabularyId = randomUUID();
+        const grammarId = randomUUID();
+        const textId = randomUUID();
+        const sources = LearningBlockSchema.array().parse([
+            {
+                id: vocabularyId,
+                type: 'vocabulary',
+                language: 'fr',
+                translationLanguage: 'en',
+                entries: [
+                    {
+                        id: randomUUID(),
+                        term: 'travail',
+                        translation: 'work',
+                    },
+                ],
+            },
+            {
+                id: grammarId,
+                type: 'grammar',
+                language: 'fr',
+                rule: 'Use the conditional for polite requests.',
+            },
+            {
+                id: textId,
+                type: 'bilingual-text',
+                language: 'fr',
+                segments: [
+                    { id: randomUUID(), text: 'Mira travaille le lundi.' },
+                ],
+                translations: [],
+            },
+        ]);
+
+        for (const activity of exerciseActivityCatalog) {
+            const wire = namedExerciseFixture({
+                activityId: activity.id,
+                sources,
+                language: 'fr',
+                explanationLanguage: 'en',
+            });
+            const complete = completeNamedExerciseSources(wire, {
+                blocks: sources,
+            });
+
+            if (complete.type !== 'exercise') {
+                throw new Error('Expected an exercise fixture.');
+            }
+
+            expect(() =>
+                validateNamedExerciseActivity(complete, sources),
+            ).not.toThrow();
+        }
+    });
+
     it('binds the admitted actor purpose through the real accounting gate', async () => {
         const purpose = new AsyncLocalStorage<TutorCallPurpose>();
         const accounting = tutorAccountingFixture();

@@ -11,6 +11,7 @@ source_paths:
     - .agent/features/049-knowledge-markdown-insertion/**
     - .agent/features/060-intent-aware-learning-content/**
     - .agent/features/061-reliable-learning-content-pipeline/**
+    - .agent/features/067-named-text-exercises/**
     - apps/backend/src/modules/knowledge/**
     - apps/backend/src/modules/conversations/**
     - apps/backend/drizzle/**
@@ -23,6 +24,8 @@ source_paths:
     - apps/web/src/fsd/entities/knowledge/**
     - apps/web/src/fsd/entities/conversation/**
     - packages/contracts/src/contextual-assistant.ts
+    - packages/contracts/src/exercise-generation.ts
+    - packages/contracts/src/named-exercises.ts
     - packages/prompts/src/local/contextual-language-tutor.ts
     - packages/prompts/src/local/tutor-request-resolution.ts
     - scripts/run-contextual-assistant-e2e.mjs
@@ -63,6 +66,13 @@ The complete current editor remains available when continuing a chat after
 applying generated material. Completed tool work is represented compactly in
 later model context while exact prepared content remains available through
 authorized proposal references.
+
+Named-exercise requests carry only the learner's selected activity allocation,
+languages and difficulty. The workspace freezes the selected source before the
+tutor runs; provider output selects source identities only and the host restores
+canonical provenance. The picker-to-publication browser journey is mapped by
+[Interactive workbooks](./interactive-workbooks.md#e2e-coverage), while this
+guide retains the workspace authorization and conversation-context boundary.
 
 The first version uses model knowledge and supplied learning material. It does
 not fetch web pages or interpret linked media. Knowledge conversation history,

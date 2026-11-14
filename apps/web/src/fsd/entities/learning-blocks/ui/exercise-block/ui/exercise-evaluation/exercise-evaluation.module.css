@@ -1,0 +1,35 @@
+.root {
+    display: grid;
+    gap: var(--space-8);
+    padding: var(--space-8) var(--space-12);
+    border-radius: var(--radius-8);
+    background: var(--background-subtle);
+    font-size: var(--size-14);
+    line-height: 1.7;
+}
+
+.root:where([data-outcome='correct']) {
+    background: var(--success-subtle);
+}
+
+.root:where([data-outcome='partially-correct'], [data-outcome='incorrect']) {
+    background: var(--warning-subtle);
+}
+
+.root p,
+.root ul,
+.criteria,
+.criteria dd {
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.criteria {
+    display: grid;
+    gap: var(--space-8);
+}
+
+.criteria dt,
+.label {
+    font-weight: 600;
+}

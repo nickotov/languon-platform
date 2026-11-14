@@ -90,7 +90,11 @@ function isNonClassLiteral(base: string): boolean {
     }
 
     // Domain resource and copied-material discriminators are not color utilities.
-    if (base === 'text-folders' || base === 'text-reference') {
+    if (
+        base === 'text-folders' ||
+        base === 'text-reference' ||
+        base === 'text-selection'
+    ) {
         return true;
     }
 

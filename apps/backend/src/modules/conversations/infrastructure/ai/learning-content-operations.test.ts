@@ -78,6 +78,7 @@ describe('canonical learning generation and proposal publication', () => {
                 resolveLearningToolSources(
                     {
                         memory: memory.port,
+                        sourceContext: {},
                         message: {
                             id: 'source',
                             role: 'user',
@@ -129,6 +130,7 @@ describe('canonical learning generation and proposal publication', () => {
                 resolveLearningToolSources(
                     {
                         memory: memory.port,
+                        sourceContext: {},
                         readBlockProposal,
                         message: {
                             id: 'source',

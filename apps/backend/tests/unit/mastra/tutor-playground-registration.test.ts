@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { namedExerciseToolDefinitions } from '../../../src/modules/conversations/infrastructure/ai/learning-content-tools';
 import { createCanonicalMastra } from '../../../src/mastra/composition';
 import { DevelopmentVerificationService } from '../../../src/modules/development-harness/application/development-verification-service';
 import { createTutorPlaygroundPrimitives } from '../../../src/modules/development-harness/infrastructure/mastra/tutor-playground-primitives';
@@ -31,8 +32,28 @@ describe('canonical tutor playground registration', () => {
                 'generate_bilingual_text',
                 'generate_exercises',
                 'read-playground-proposal',
+                ...namedExerciseToolDefinitions.map(
+                    (definition) => definition.id,
+                ),
             ]),
         );
+
+        expect(namedExerciseToolDefinitions).toHaveLength(19);
+        expect(
+            Object.keys(tutorPlayground.tools).filter((id) =>
+                id.startsWith('generate_exercise_'),
+            ),
+        ).toHaveLength(19);
+
+        for (const definition of namedExerciseToolDefinitions) {
+            expect(tutorPlayground.toolInputs[definition.id]).toBe(
+                definition.inputSchema,
+            );
+
+            expect(
+                development.getTool(definition.id).requestContextSchema,
+            ).toBe(tutorPlayground.requestContextSchema);
+        }
 
         expect(Object.keys(development.listWorkflows())).toEqual(
             expect.arrayContaining([

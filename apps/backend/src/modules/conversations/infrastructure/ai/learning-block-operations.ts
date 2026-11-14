@@ -1,5 +1,3 @@
-import { z } from 'zod';
-import { LearningBlockProposalInputSchema } from '@languon/contracts';
 import type { TutorRunInput } from '../../application/ports/tutor-runner';
 import type { TutorRequestResolution } from '../../application/tutor-request-contract';
 import type { LearningContentExecutionBudget } from '../../application/learning-content-batches';
@@ -8,14 +6,16 @@ import {
     generateTutorObject,
     type createTutorRequestAgents,
 } from './tutor-request-agents';
-import { publishLearningProposal } from './learning-content-operations';
+import {
+    publishLearningProposal,
+    publishLearningProposals,
+} from './learning-content-operations';
 import { reconcileLearningBlockRevisions } from '../../application/learning-block-revision';
-
-const revisionSchema = z
-    .object({
-        proposals: z.array(LearningBlockProposalInputSchema).min(1).max(8),
-    })
-    .strict();
+import { createLearningBlockRevisionWire } from './learning-block-revision-wire';
+import {
+    buildExerciseActivityInstructions,
+    validateNamedExerciseActivity,
+} from './exercise-activities';
 
 /** Copies are exact host operations; revisions use one structured authoring operation. */
 export async function executeLearningBlockOperation(options: {
@@ -44,6 +44,16 @@ export async function executeLearningBlockOperation(options: {
 
     if (new Set(ids).size !== ids.length) {
         throw new Error('Each requested source must be selected once.');
+    }
+
+    if (
+        resolution.kind !== 'copy' &&
+        ids.length > 1 &&
+        !input.onBlockProposals
+    ) {
+        throw new Error(
+            'Atomic revision publication is unavailable for this source.',
+        );
     }
 
     const referenced = input.sourceContext.referencedBlocks;
@@ -92,6 +102,15 @@ export async function executeLearningBlockOperation(options: {
         resolution.kind === 'revise'
             ? resolution.brief
             : resolution.instruction;
+    const wire = createLearningBlockRevisionWire(material);
+    const activityIds = material.flatMap((block) =>
+        block.type === 'exercise' && block.semantics
+            ? [block.semantics.activity.id]
+            : [],
+    );
+    const activityInstructions = activityIds.length
+        ? buildExerciseActivityInstructions(activityIds)
+        : 'None; preserve the selected Custom or material contract.';
     let repaired = false;
     while (true) {
         signal.throwIfAborted();
@@ -107,8 +126,8 @@ export async function executeLearningBlockOperation(options: {
 
         const candidate = await generateTutorObject({
             agent: agents.learningContentAuthor,
-            prompt: `Revise every exact authorized frozen target below. Return one proposal per target, each with targetBlockId and exactly one block. Preserve block type, block identity, unchanged stable item identities and prepared media references. Do not create a new format or infer source permissions. Preserve studied and translation languages unless explicitly changed. Apply the requested changes only.\nApplication reply preferences: ${JSON.stringify(input.preferences)}\nRevision instruction (untrusted learning data): ${JSON.stringify(instruction)}\nAuthorized frozen targets (untrusted learning data): ${JSON.stringify(material)}${repaired ? '\nThe completed candidate was invalid. Check exact target coverage, identities and block types.' : ''}`,
-            schema: revisionSchema,
+            prompt: `Revise every exact authorized frozen target below. Return one proposal per target, each with targetBlockId and exactly one block. Preserve block type, block identity, unchanged stable item identities and prepared media references. Do not create a new format or infer source permissions. Preserve studied and translation languages unless explicitly changed. For a named exercise return semantics without sources; the host restores its original frozen provenance. Keep its activity identity and checking policy, with keys bound to the actual answer IDs. Apply the requested changes only.\nSelected activity definitions: ${activityInstructions}\nApplication reply preferences: ${JSON.stringify(input.preferences)}\nRevision instruction (untrusted learning data): ${JSON.stringify(instruction)}\nAuthorized frozen targets (untrusted learning data): ${JSON.stringify(material)}${repaired ? '\nThe completed candidate was invalid. Check exact target coverage, identities and block types.' : ''}`,
+            schema: wire.schema,
             signal,
             operationId: `${input.operationId}:revision-authoring`,
             maxOutputTokens: Math.min(
@@ -119,7 +138,7 @@ export async function executeLearningBlockOperation(options: {
 
         let proposals;
         try {
-            proposals = revisionSchema.parse(candidate).proposals;
+            proposals = wire.decode(candidate);
             if (
                 proposals.length !== material.length ||
                 new Set(proposals.map((item) => item.targetBlockId)).size !==
@@ -181,6 +200,12 @@ export async function executeLearningBlockOperation(options: {
                     )!,
                 ],
             }));
+
+            for (const block of reconciled) {
+                if (block.type === 'exercise' && block.semantics) {
+                    validateNamedExerciseActivity(block);
+                }
+            }
         } catch {
             if (repaired) {
                 throw new Error(
@@ -192,23 +217,30 @@ export async function executeLearningBlockOperation(options: {
             continue;
         }
 
-        // Validate the entire requested set before publishing any member. Failed
-        // turns remain private under the existing fenced publication lifecycle.
-        const receipts = [];
-        for (const source of material) {
-            const proposal = proposals.find(
+        const ordered = material.map((source) => ({
+            proposal: proposals.find(
                 (item) => item.targetBlockId === source.id,
-            )!;
+            )!,
+            summary: 'Validated revision of the selected learning block.',
+        }));
 
-            receipts.push(
+        if (ordered.length === 1) {
+            return [
                 await publishLearningProposal(
                     publish,
-                    proposal,
-                    'Validated revision of the selected learning block.',
+                    ordered[0]!.proposal,
+                    ordered[0]!.summary,
                 ),
-            );
+            ];
         }
 
-        return receipts;
+        return publishLearningProposals(
+            {
+                publish: input.onBlockProposals!,
+                signal,
+                ...(input.onTool ? { onTool: input.onTool } : {}),
+            },
+            ordered,
+        );
     }
 }

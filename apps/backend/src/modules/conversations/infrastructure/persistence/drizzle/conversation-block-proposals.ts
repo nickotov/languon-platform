@@ -36,6 +36,7 @@ import {
     replaceProposalBlock,
 } from './block-proposal-content';
 import { insertProposalBlocks } from './block-proposal-insertion';
+import type { ConversationsTransaction } from './conversation-source';
 
 function view(row: typeof proposals.$inferSelect, currentDocument?: unknown) {
     const captured = [...row.dependencySnapshots];
@@ -96,89 +97,141 @@ async function ownerContext(
     return authorized;
 }
 
+/** Every caller, including a revision cohort, keeps the canonical privileged guards. */
+async function proposeBlocksInTransaction(
+    tx: ConversationsTransaction,
+    turn: ClaimedConversationTurn,
+    input: LearningBlockProposalInput,
+    signal?: AbortSignal,
+) {
+    signal?.throwIfAborted();
+    const target = turn.sourceSnapshot.blockTarget;
+    if (
+        turn.source.kind !== 'knowledge' ||
+        isReadOnlyKnowledgeSource(turn.source) ||
+        turn.authority.sourceOwnerId !== turn.ownerId ||
+        !target
+    ) {
+        throw conflict(
+            'This conversation has no authorized block proposal target.',
+        );
+    }
+
+    const [branch] = await tx
+        .select({ id: branches.id, version: branches.version })
+        .from(branches)
+        .where(
+            and(
+                eq(branches.id, target.branchId),
+                eq(branches.noteId, turn.source.id),
+            ),
+        )
+        .for('update');
+
+    if (!branch || branch.version !== target.version) {
+        throw conflict(
+            'The working document changed during generation. Request a new proposal.',
+        );
+    }
+
+    const parsed = LearningBlockProposalInputSchema.parse(input);
+    assertReferencedProposalTarget(turn.sourceSnapshot, parsed.targetBlockId);
+
+    const blocks = parsed.targetBlockId
+        ? parsed.blocks.map((block) => ({
+              ...block,
+              id: parsed.targetBlockId!,
+          }))
+        : freshProposalBlocks(parsed.blocks);
+    // A worker can propose only against its active admitted turn. It never
+    // reads private branch bodies or other conversations' proposals.
+    const result = await tx
+        .execute(
+            sql`
+        select public.languon_propose_learning_block_change(
+            ${turn.id}::uuid, ${turn.leaseToken}::uuid,
+            ${JSON.stringify(blocks)}::jsonb, ${parsed.targetBlockId ?? null}::uuid
+        ) as id
+    `,
+        )
+        .catch((error: unknown) => {
+            const cause = error instanceof Error ? error.cause : undefined;
+            const duplicate = [error, cause].some(
+                (value) =>
+                    value !== null &&
+                    typeof value === 'object' &&
+                    'code' in value &&
+                    value.code === '23505',
+            );
+
+            // Drizzle errors include SQL parameters: never expose draft blocks
+            // or private turn leases to model/tool messages or application logs.
+            throw conflict(
+                duplicate
+                    ? 'A block proposal was already generated for this response.'
+                    : 'The proposal target is unavailable. Reload the note and request a new proposal.',
+            );
+        });
+    const id = result[0]?.['id'];
+    if (typeof id !== 'string') {
+        throw conflict('The proposal was not created.');
+    }
+
+    return { id };
+}
+
+export async function conversationProposeBlockBatch(
+    persistence: ConversationPersistenceContext,
+    turn: ClaimedConversationTurn,
+    inputs: LearningBlockProposalInput[],
+    signal?: AbortSignal,
+) {
+    signal?.throwIfAborted();
+    const parsed = LearningBlockProposalInputSchema.array()
+        .min(1)
+        .max(8)
+        .parse(inputs);
+
+    if (
+        new Set(parsed.map((input) => input.targetBlockId ?? 'append')).size !==
+        parsed.length
+    ) {
+        throw conflict(
+            'Each proposal target must appear exactly once in a publication.',
+        );
+    }
+
+    return conversationWithOperation(persistence, turn, async (tx) => {
+        const receipts: { id: string }[] = [];
+        for (const input of parsed) {
+            signal?.throwIfAborted();
+            receipts.push(
+                await proposeBlocksInTransaction(tx, turn, input, signal),
+            );
+        }
+
+        // This check remains inside the transaction: cancellation after any
+        // successful member rolls the complete unpublished cohort back.
+        signal?.throwIfAborted();
+
+        return receipts;
+    });
+}
+
 export async function conversationProposeBlocks(
     persistence: ConversationPersistenceContext,
     turn: ClaimedConversationTurn,
     input: LearningBlockProposalInput,
+    signal?: AbortSignal,
 ) {
-    return conversationWithOperation(persistence, turn, async (tx) => {
-        const target = turn.sourceSnapshot.blockTarget;
-        if (
-            turn.source.kind !== 'knowledge' ||
-            isReadOnlyKnowledgeSource(turn.source) ||
-            turn.authority.sourceOwnerId !== turn.ownerId ||
-            !target
-        ) {
-            throw conflict(
-                'This conversation has no authorized block proposal target.',
-            );
-        }
+    const [receipt] = await conversationProposeBlockBatch(
+        persistence,
+        turn,
+        [input],
+        signal,
+    );
 
-        const [branch] = await tx
-            .select({ id: branches.id, version: branches.version })
-            .from(branches)
-            .where(
-                and(
-                    eq(branches.id, target.branchId),
-                    eq(branches.noteId, turn.source.id),
-                ),
-            )
-            .for('update');
-
-        if (!branch || branch.version !== target.version) {
-            throw conflict(
-                'The working document changed during generation. Request a new proposal.',
-            );
-        }
-
-        const parsed = LearningBlockProposalInputSchema.parse(input);
-        assertReferencedProposalTarget(
-            turn.sourceSnapshot,
-            parsed.targetBlockId,
-        );
-
-        const blocks = parsed.targetBlockId
-            ? parsed.blocks.map((block) => ({
-                  ...block,
-                  id: parsed.targetBlockId!,
-              }))
-            : freshProposalBlocks(parsed.blocks);
-        // A worker can propose only against its active admitted turn. It never
-        // reads private branch bodies or other conversations' proposals.
-        const result = await tx
-            .execute(
-                sql`
-            select public.languon_propose_learning_block_change(
-                ${turn.id}::uuid, ${turn.leaseToken}::uuid,
-                ${JSON.stringify(blocks)}::jsonb, ${parsed.targetBlockId ?? null}::uuid
-            ) as id
-        `,
-            )
-            .catch((error: unknown) => {
-                const cause = error instanceof Error ? error.cause : undefined;
-                const duplicate = [error, cause].some(
-                    (value) =>
-                        value !== null &&
-                        typeof value === 'object' &&
-                        'code' in value &&
-                        value.code === '23505',
-                );
-
-                // Drizzle errors include SQL parameters: never expose draft blocks
-                // or private turn leases to model/tool messages or application logs.
-                throw conflict(
-                    duplicate
-                        ? 'A block proposal was already generated for this response.'
-                        : 'The proposal target is unavailable. Reload the note and request a new proposal.',
-                );
-            });
-        const id = result[0]?.['id'];
-        if (typeof id !== 'string') {
-            throw conflict('The proposal was not created.');
-        }
-
-        return { id };
-    });
+    return receipt!;
 }
 
 export async function conversationListBlockProposals(

@@ -12,7 +12,7 @@ import type {
     WorkbookLearningState,
 } from '@languon/contracts';
 
-// @user-flow-revision interactive-workbooks sha256:031bff1bdbb49194
+// @user-flow-revision interactive-workbooks sha256:e5643808f2529a64
 const origin = 'http://localhost:3336';
 const tokens = new WeakMap<Page, string>();
 async function signup(page: Page, info: TestInfo, suffix: string) {
@@ -1836,6 +1836,389 @@ test('ordered workbook shares saved content, isolates reader progress, copies in
     } finally {
         await context.close();
     }
+
+    healthy();
+});
+
+// @user-flow interactive-workbooks/named-exercise-ai-feedback
+test('keeps named V07 partial and unable AI feedback private across reloads', async ({
+    page,
+}, info) => {
+    const healthy = runtime(page);
+    await signup(page, info, 'named-feedback');
+    const preference = await api<{ version: number }>(
+        page,
+        '/users/me/ai-model-preference',
+    );
+
+    await api(
+        page,
+        '/users/me/ai-model-preference',
+        {
+            mode: 'auto',
+            expectedVersion: preference.version,
+            maxCreditsPerAction: '100',
+        },
+        'PUT',
+    );
+
+    const sourceId = randomUUID(),
+        entryId = randomUUID(),
+        exerciseId = randomUUID();
+    const { note } = await api<{ note: KnowledgeNote }>(
+        page,
+        '/knowledge',
+        {
+            operationId: randomUUID(),
+            content: {
+                title: 'Named feedback',
+                summary: '',
+                categories: [],
+                studiedLanguage: 'fr',
+                explanationLanguage: 'en',
+                body: {
+                    schemaVersion: 2,
+                    document: {
+                        type: 'doc',
+                        content: [
+                            {
+                                type: 'learningBlock',
+                                attrs: {
+                                    block: {
+                                        id: sourceId,
+                                        type: 'vocabulary',
+                                        language: 'fr',
+                                        translationLanguage: 'en',
+                                        entries: [
+                                            {
+                                                id: entryId,
+                                                term: 'travail',
+                                                translation: 'work',
+                                            },
+                                        ],
+                                    },
+                                },
+                            },
+                            {
+                                type: 'learningBlock',
+                                attrs: {
+                                    block: {
+                                        id: exerciseId,
+                                        type: 'exercise',
+                                        format: 'free-text',
+                                        title: 'Use these words',
+                                        question:
+                                            'Write one French sentence using travail.',
+                                        referenceAnswer:
+                                            'Le travail est important.',
+                                        explanation: 'Use travail for work.',
+                                        semantics: {
+                                            activity: { id: 'V07', version: 1 },
+                                            objective:
+                                                'Use the selected word in a meaningful sentence.',
+                                            language: 'fr',
+                                            explanationLanguage: 'en',
+                                            format: 'free-text',
+                                            checking: {
+                                                policy: 'ai-rubric',
+                                                rubric: {
+                                                    criteria: [
+                                                        {
+                                                            dimension:
+                                                                'task-completion',
+                                                            requirement:
+                                                                'Write one sentence.',
+                                                        },
+                                                        {
+                                                            dimension:
+                                                                'meaning',
+                                                            requirement:
+                                                                'Keep the intended meaning.',
+                                                        },
+                                                        {
+                                                            dimension:
+                                                                'target-use',
+                                                            requirement:
+                                                                'Use travail with its selected sense.',
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            sources: [
+                                                {
+                                                    kind: 'vocabulary',
+                                                    origin: {
+                                                        kind: 'block',
+                                                        blockId: sourceId,
+                                                    },
+                                                    entries: [
+                                                        {
+                                                            entryId,
+                                                            term: 'travail',
+                                                            sense: 'work',
+                                                        },
+                                                    ],
+                                                },
+                                            ],
+                                        },
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+        },
+        'POST',
+    );
+
+    await page.goto(`${origin}/knowledge/${note.id}/practice`);
+    await page
+        .getByRole('button', { name: /Write one French sentence/u })
+        .click();
+
+    const answer = page.getByRole('textbox', {
+        name: 'Your answer',
+        exact: true,
+    });
+
+    await answer.fill('partial');
+    await aiAction(
+        page,
+        page.getByRole('button', { name: 'Check with AI', exact: true }),
+        /\/learning\/evaluations$/u,
+    );
+
+    await expect(
+        page.getByRole('status', { name: 'Partially correct', exact: true }),
+    ).toBeVisible({ timeout: 30_000 });
+
+    await capture(page, info, 'named-exercise-partial-desktop');
+    await page.reload();
+    await page
+        .getByRole('button', { name: /Write one French sentence/u })
+        .click();
+
+    await expect(
+        page.getByRole('status', { name: 'Partially correct', exact: true }),
+    ).toBeVisible();
+
+    await answer.fill('unknown');
+    await aiAction(
+        page,
+        page.getByRole('button', { name: 'Check with AI', exact: true }),
+        /\/learning\/evaluations$/u,
+    );
+
+    await expect(
+        page.getByRole('status', { name: 'Unable to assess', exact: true }),
+    ).toBeVisible({ timeout: 30_000 });
+
+    await expect(
+        page.getByText(
+            'The response cannot be assessed reliably. <img src=x onerror=alert(1)>',
+            { exact: true },
+        ),
+    ).toBeVisible();
+
+    await expect(page.locator('img[onerror]')).toHaveCount(0);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page
+        .getByRole('status', { name: 'Unable to assess', exact: true })
+        .scrollIntoViewIfNeeded();
+
+    await capture(page, info, 'named-exercise-unable-mobile');
+    healthy();
+});
+
+// @user-flow interactive-workbooks/named-exercise-picker-authoring
+test('authors a selected named exercise through review, insert, save, reload and explicit Custom conversion', async ({
+    page,
+}, info) => {
+    const healthy = runtime(page);
+    await signup(page, info, 'named-exercise');
+    await page.getByRole('button', { name: 'New note', exact: true }).click();
+    await page.waitForURL(/\/knowledge\/[0-9a-f-]{36}$/u);
+    const namedNoteId = new URL(page.url()).pathname.split('/').at(-1)!;
+    await addBlock(page, 'vocabulary', {
+        Title: 'Named source words',
+        'Content language': 'fr',
+        'Translation language': 'en',
+        'Word or phrase': 'travail',
+        Translation: 'work',
+    });
+
+    const preference = await api<{ version: number }>(
+        page,
+        '/users/me/ai-model-preference',
+    );
+
+    await api(
+        page,
+        '/users/me/ai-model-preference',
+        {
+            mode: 'auto',
+            expectedVersion: preference.version,
+            maxCreditsPerAction: '100',
+        },
+        'PUT',
+    );
+
+    const tutor = page.getByRole('region', {
+        name: 'Language tutor',
+        exact: true,
+    });
+
+    if (!(await tutor.isVisible())) {
+        await page.getByRole('tab', { name: 'Tutor', exact: true }).click();
+    }
+
+    await tutor
+        .getByRole('button', { name: 'Generate exercises', exact: true })
+        .click();
+
+    const picker = page.getByRole('dialog', {
+        name: 'Generate exercises',
+        exact: true,
+    });
+
+    await picker
+        .getByLabel('Source material', { exact: true })
+        .selectOption({ label: 'Named source words' });
+
+    await picker
+        .getByRole('radio', { name: 'Choose activities', exact: true })
+        .check();
+
+    await picker
+        .getByRole('checkbox', { name: 'Choose the meaning', exact: true })
+        .check();
+
+    await picker.getByLabel('Total questions', { exact: true }).fill('1');
+    await expect(
+        picker.getByRole('checkbox', { name: /1\. Choose the meaning/u }),
+    ).toBeChecked();
+
+    await capture(page, info, 'named-exercise-picker-desktop');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await picker.getByLabel('Source material', { exact: true }).focus();
+    await expect(
+        picker.getByLabel('Source material', { exact: true }),
+    ).toBeFocused();
+
+    await capture(page, info, 'named-exercise-picker-mobile');
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await picker
+        .getByRole('button', { name: 'Prepare request', exact: true })
+        .click();
+
+    await expect(picker).toHaveCount(0);
+    await expect(tutor.getByLabel('Your question')).toHaveValue(
+        /Generate 1 exercises/u,
+    );
+
+    const submitted = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            /\/conversations\/[^/]+\/turns$/.test(
+                new URL(response.url()).pathname,
+            ),
+    );
+
+    await tutor.getByRole('button', { name: 'Send', exact: true }).click();
+    const submittedResponse = await submitted;
+    if (submittedResponse.status() === 409) {
+        await page
+            .getByRole('dialog', { name: 'Review this action’s budget' })
+            .getByRole('button', { name: 'Send', exact: true })
+            .click();
+    }
+
+    const proposal = tutor.getByRole('article', {
+        name: 'Proposed learning blocks',
+        exact: true,
+    });
+
+    await expect(
+        proposal.getByRole('heading', { name: 'V02 fixture', exact: true }),
+    ).toBeVisible();
+
+    await proposal.getByRole('button', { name: 'Review', exact: true }).click();
+    const review = page.getByRole('dialog', {
+        name: 'Review proposed content',
+        exact: true,
+    });
+
+    await expect(
+        review.getByRole('heading', { name: 'V02 fixture', exact: true }),
+    ).toBeVisible();
+
+    await review.getByRole('button', { name: 'Insert', exact: true }).click();
+    await review
+        .getByRole('button', { name: 'Close dialog', exact: true })
+        .click();
+
+    await expect(review).toHaveCount(0);
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.reload();
+    await expect(
+        page.getByRole('button', {
+            name: '1. Use the selected source term travail for V02. Not answered',
+            exact: true,
+        }),
+    ).toBeVisible();
+
+    const persistedNamedExercise = (
+        await api<{ note: KnowledgeNote }>(page, `/knowledge/${namedNoteId}`)
+    ).note.body.document.content?.find(
+        (node) =>
+            node.type === 'learningBlock' &&
+            node.attrs?.block?.type === 'exercise' &&
+            node.attrs.block.title === 'V02 fixture',
+    )?.attrs?.block;
+
+    expect(persistedNamedExercise?.semantics?.activity.id).toBe('V02');
+
+    await page
+        .getByRole('button', {
+            name: '1. Use the selected source term travail for V02. Not answered',
+            exact: true,
+        })
+        .click();
+
+    await expect(
+        page.getByText('Choose the meaning · Instant check', { exact: true }),
+    ).toBeVisible();
+
+    await capture(page, info, 'named-exercise-card-desktop');
+
+    await page
+        .getByRole('button', {
+            name: 'Block settings: V02 fixture',
+            exact: true,
+        })
+        .click();
+
+    await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
+    const editor = page.getByRole('dialog');
+    await editor
+        .getByRole('combobox', { name: /^Keep named activity/u })
+        .selectOption({ label: 'Custom exercise' });
+
+    await editor.getByRole('button', { name: 'Apply', exact: true }).click();
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.reload();
+    expect(
+        JSON.stringify(
+            (
+                await api<{ note: KnowledgeNote }>(
+                    page,
+                    `/knowledge/${namedNoteId}`,
+                )
+            ).note.body,
+        ),
+    ).not.toContain('"semantics"');
 
     healthy();
 });

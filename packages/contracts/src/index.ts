@@ -53,3 +53,8 @@ export * from './knowledge-exercise-evaluation';
 export * from './dictionary-chat-snippets';
 
 export * from './ai-catalog';
+
+export * from './exercise-activity';
+export * from './exercise-activity-catalog';
+export * from './named-exercises';
+export * from './exercise-generation';

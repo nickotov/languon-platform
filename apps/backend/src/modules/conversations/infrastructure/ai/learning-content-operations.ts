@@ -160,6 +160,31 @@ export async function publishLearningProposal(
     proposal: Parameters<NonNullable<TutorRunInput['onBlockProposal']>>[0],
     summary: string,
 ): Promise<LearningContentReceipt> {
+    const receipts = await publishLearningProposals(
+        {
+            ...options,
+            publish: async (proposals) => [
+                await options.publish(proposals[0]!),
+            ],
+        },
+        [{ proposal, summary }],
+    );
+
+    return receipts[0]!;
+}
+
+/** One publication boundary owns the entire validated revision cohort. */
+export async function publishLearningProposals(
+    options: {
+        publish: NonNullable<TutorRunInput['onBlockProposals']>;
+        signal: AbortSignal;
+        onTool?: TutorRunInput['onTool'];
+    },
+    entries: {
+        proposal: Parameters<NonNullable<TutorRunInput['onBlockProposal']>>[0];
+        summary: string;
+    }[],
+): Promise<LearningContentReceipt[]> {
     options.signal.throwIfAborted();
     const callId = randomUUID();
     await options.onTool?.({
@@ -169,14 +194,25 @@ export async function publishLearningProposal(
     });
 
     try {
-        const persisted = await options.publish(proposal);
+        const persisted = await options.publish(
+            entries.map((entry) => entry.proposal),
+        );
+
         options.signal.throwIfAborted();
-        const receipt = LearningContentReceiptSchema.parse({
-            proposalId: persisted.id,
-            summary,
-            content: proposal.blocks.map(describeBlock),
-            requiresLearnerApply: true,
-        });
+        if (persisted.length !== entries.length) {
+            throw new Error(
+                'Atomic publication did not return the complete proposal set.',
+            );
+        }
+
+        const receipts = entries.map((entry, index) =>
+            LearningContentReceiptSchema.parse({
+                proposalId: persisted[index]!.id,
+                summary: entry.summary,
+                content: entry.proposal.blocks.map(describeBlock),
+                requiresLearnerApply: true,
+            }),
+        );
 
         await options.onTool?.({
             id: callId,
@@ -184,7 +220,7 @@ export async function publishLearningProposal(
             state: 'succeeded',
         });
 
-        return receipt;
+        return receipts;
     } catch (error) {
         await options.onTool?.({
             id: callId,

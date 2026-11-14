@@ -9,8 +9,9 @@ source_paths:
 
 # Running the tutor and learning-tool playground
 
-Use Mastra Studio to test the tutor's complete request pipeline and the four
-learning-content tools with isolated synthetic material. Tutor sessions and
+Use Mastra Studio to test the tutor's complete request pipeline, the four
+production actor learning-content tools, and 19 standalone named-exercise
+development tools with isolated synthetic material. Tutor sessions and
 generated proposals persist in the dedicated playground database. The normal
 Languon application does not need to be running.
 
@@ -35,11 +36,12 @@ Stop with `Ctrl+C`. Restarting preserves playground sessions and proposals.
 
 ## Choose the Studio entry point
 
-| What to test                                                        | Studio entry                                                                                                  | Request context                                | Model behavior                                   |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------ |
-| Provider connectivity and principal verification                    | **Agents → Development verification agent**                                                                   | **synthetic-principal** preset                 | Real model; requires its configured credentials. |
-| Complete learning tutor, including planning and proposal generation | **Workflows → run-tutor-turn**                                                                                | Empty or a matching **tutor-*** preset         | Controlled by `MASTRA_TUTOR_MODE`.               |
-| A particular content generator                                      | **Tools → generate_vocabulary**, **generate_grammar**, **generate_bilingual_text**, or **generate_exercises** | Empty or a matching **tutor-*** preset/session | Controlled by `MASTRA_TUTOR_MODE`.               |
+| What to test                                                        | Studio entry                                                                                                  | Request context                                | Model behavior                                                 |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------- |
+| Provider connectivity and principal verification                    | **Agents → Development verification agent**                                                                   | **synthetic-principal** preset                 | Real model; requires its configured credentials.               |
+| Complete learning tutor, including planning and proposal generation | **Workflows → run-tutor-turn**                                                                                | Empty or a matching **tutor-*** preset         | Controlled by `MASTRA_TUTOR_MODE`.                             |
+| A particular content generator                                      | **Tools → generate_vocabulary**, **generate_grammar**, **generate_bilingual_text**, or **generate_exercises** | Empty or a matching **tutor-*** preset/session | Controlled by `MASTRA_TUTOR_MODE`.                             |
+| A fixed named exercise activity                                     | **Tools → generate_exercise_v01** through **generate_exercise_w01**                                           | Empty or a matching **tutor-*** preset/session | Controlled by `MASTRA_TUTOR_MODE`; development discovery only. |
 
 Request-context presets are not interchangeable. The verification agent requires
 `syntheticPrincipalId`; the tutor workflow and generators use `scenarioId` and
@@ -189,6 +191,13 @@ path. The **Agents** page's verification agent is a separate connectivity and
 principal check, not the complete learning tutor.
 
 ## Test individual tools
+
+The four production actor tools remain exactly `generate_vocabulary`,
+`generate_grammar`, `generate_bilingual_text`, and `generate_exercises`.
+The 19 `generate_exercise_<catalog-id>` tools are standalone development
+entries: each fixes one catalog activity, format and checking policy. They do
+not add a second production actor path or grant source authority from Studio
+input; the host still resolves the selected synthetic source.
 
 In **Tools**, select a generator. Use empty request context for a fresh
 `empty-owned` session, or set context to an existing session:

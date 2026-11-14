@@ -9,11 +9,20 @@ import {
     frozenTutorTextSources,
     groundLearningContentBrief,
 } from '../../application/tutor-request-sources';
+import type { ExerciseAuthoringSource } from './exercise-authoring-context';
+import {
+    resolveExerciseSourceContexts,
+    exerciseGroundingSources,
+} from './exercise-source-resolution';
 
 /** Source-bearing tool input is resolved from this operation's authority, never its supplied text. */
 export async function resolveLearningToolSources(
-    input: Pick<TutorRunInput, 'message' | 'memory' | 'readBlockProposal'>,
+    input: Pick<TutorRunInput, 'message' | 'memory' | 'readBlockProposal'> &
+        Partial<
+            Pick<TutorRunInput, 'sourceContext' | 'readContext' | 'sourceNote'>
+        >,
     brief: LearningContentBrief,
+    taskSources?: Map<string, ExerciseAuthoringSource>,
 ): Promise<LearningContentBrief> {
     const sources = new Map<string, readonly LearningBlock[]>();
     const proposalIds = [
@@ -49,6 +58,13 @@ export async function resolveLearningToolSources(
         }
     }
 
+    const captured = await resolveExerciseSourceContexts(
+        input,
+        brief,
+        sources,
+        taskSources,
+    );
+
     return groundLearningContentBrief(
         {
             tasks: brief.tasks.map((task) => {
@@ -63,5 +79,7 @@ export async function resolveLearningToolSources(
         },
         frozenTutorTextSources(input),
         sources,
+        [],
+        exerciseGroundingSources(captured),
     );
 }

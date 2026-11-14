@@ -50,10 +50,98 @@ export const SubmitWorkbookAttemptRequestSchema = z
         answer: WorkbookAttemptAnswerSchema,
     })
     .strict();
+const feedbackText = z
+    .string()
+    .min(1)
+    .max(2_000)
+    .refine(
+        (value) =>
+            value.trim().length > 0 &&
+            !/[\uD800-\uDFFF]/u.test(value) &&
+            !value.includes('\u0000'),
+        'Feedback must contain nonempty valid Unicode text.',
+    );
+
+export const WorkbookFeedbackCriterionSchema = z
+    .object({
+        dimension: z.enum([
+            'task-completion',
+            'meaning',
+            'target-use',
+            'evidence',
+        ]),
+        status: z.enum(['met', 'partially-met', 'not-met', 'unable-to-assess']),
+        feedback: feedbackText,
+    })
+    .strict();
+
+/** Optional for Custom exercises; named evaluation validates its exact rubric dimensions. */
+export const WorkbookEvaluationDetailsSchema = z
+    .object({
+        criteria: z
+            .array(WorkbookFeedbackCriterionSchema)
+            .min(2)
+            .max(4)
+            .refine(
+                (items) =>
+                    new Set(items.map((item) => item.dimension)).size ===
+                        items.length &&
+                    ['task-completion', 'meaning'].every((dimension) =>
+                        items.some((item) => item.dimension === dimension),
+                    ),
+                'Structured feedback needs distinct task-completion and meaning criteria.',
+            )
+            .optional(),
+        corrections: z.array(feedbackText).max(2).optional(),
+        suggestedAnswer: feedbackText.optional(),
+    })
+    .strict();
+
+export const WorkbookAiEvaluationStatusSchema = z.enum([
+    'correct',
+    'partially-correct',
+    'incorrect',
+    'unable-to-assess',
+]);
+
+/** A summary cannot contradict its structured criterion outcomes. */
+export function workbookEvaluationCriteriaAgree(value: {
+    status: z.infer<typeof WorkbookAiEvaluationStatusSchema>;
+    criteria?: z.infer<typeof WorkbookFeedbackCriterionSchema>[] | undefined;
+}): boolean {
+    if (!value.criteria) {
+        return true;
+    }
+
+    const statuses = value.criteria.map((item) => item.status);
+    if (value.status === 'unable-to-assess') {
+        return statuses.includes('unable-to-assess');
+    }
+
+    if (statuses.includes('unable-to-assess')) {
+        return false;
+    }
+
+    if (value.status === 'correct') {
+        return statuses.every((status) => status === 'met');
+    }
+
+    if (value.status === 'incorrect') {
+        return statuses.includes('not-met');
+    }
+
+    return (
+        statuses.some(
+            (status) => status === 'met' || status === 'partially-met',
+        ) && statuses.some((status) => status !== 'met')
+    );
+}
+
 export const WorkbookAttemptEvaluationSchema = z.discriminatedUnion('status', [
     z.object({ status: z.literal('unchecked') }).strict(),
     z
         .object({
+            ...WorkbookEvaluationDetailsSchema.shape,
             status: z.enum(['correct', 'incorrect']),
             method: z.enum(['deterministic', 'ai']),
             feedback: z.string().max(8_000).optional(),
@@ -65,6 +153,30 @@ export const WorkbookAttemptEvaluationSchema = z.discriminatedUnion('status', [
                 value.validAlternative === undefined ||
                 (value.method === 'ai' && value.status === 'correct'),
             'Alternative-answer feedback belongs to correct AI evaluations.',
+        )
+        .refine(
+            (value) =>
+                value.method === 'ai' ||
+                (value.criteria === undefined &&
+                    value.corrections === undefined &&
+                    value.suggestedAnswer === undefined),
+            'Structured model feedback requires AI evaluation.',
+        )
+        .refine(
+            workbookEvaluationCriteriaAgree,
+            'Feedback criteria contradict the result.',
+        ),
+    z
+        .object({
+            ...WorkbookEvaluationDetailsSchema.shape,
+            status: z.enum(['partially-correct', 'unable-to-assess']),
+            method: z.literal('ai'),
+            feedback: feedbackText,
+        })
+        .strict()
+        .refine(
+            workbookEvaluationCriteriaAgree,
+            'Feedback criteria contradict the result.',
         ),
 ]);
 export const WorkbookLearnerAttemptSchema =
@@ -159,6 +271,9 @@ export type SubmitWorkbookAttemptRequest = z.infer<
 >;
 export type WorkbookAttemptEvaluation = z.infer<
     typeof WorkbookAttemptEvaluationSchema
+>;
+export type WorkbookFeedbackCriterion = z.infer<
+    typeof WorkbookFeedbackCriterionSchema
 >;
 export type WorkbookLearnerAttempt = z.infer<
     typeof WorkbookLearnerAttemptSchema

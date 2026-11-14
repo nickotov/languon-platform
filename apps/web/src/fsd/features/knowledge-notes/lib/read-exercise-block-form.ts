@@ -1,11 +1,29 @@
 import type { BlockFormReadContext } from './block-form-read-context';
 
+function meaningFields(value: Record<string, unknown>) {
+    return Object.fromEntries(
+        [
+            'format',
+            'question',
+            'referenceAnswer',
+            'evaluationCriteria',
+            'source',
+            'choices',
+            'correctChoiceId',
+            'parts',
+            'acceptedAnswers',
+        ].map((field) => [field, value[field]]),
+    );
+}
+
 export function readExerciseBlock(context: BlockFormReadContext): unknown {
     const { data, value, optional, rows, common, previous } = context;
     const kind = 'exercise';
     let candidate: unknown;
 
     const old = previous?.type === kind ? previous : undefined;
+    const semantics =
+        value('exerciseKind') === 'custom' ? undefined : old?.semantics;
     let source = old?.source;
     if (data.has('sourceBlockId')) {
         source = undefined;
@@ -30,6 +48,7 @@ export function readExerciseBlock(context: BlockFormReadContext): unknown {
             ? { evaluationCriteria: value('evaluationCriteria') }
             : {}),
         ...(source ? { source } : {}),
+        ...(semantics ? { semantics } : {}),
     };
     const format = value('format');
     if (format === 'multiple-choice') {
@@ -79,6 +98,19 @@ export function readExerciseBlock(context: BlockFormReadContext): unknown {
                   }
                 : {}),
         };
+    }
+
+    // Generic manual fields cannot revalidate an activity's pedagogical rules.
+    // Cosmetic edits retain the name; substantive edits require explicit Custom.
+    if (
+        semantics &&
+        old &&
+        JSON.stringify(meaningFields(old)) !==
+            JSON.stringify(meaningFields(candidate as Record<string, unknown>))
+    ) {
+        throw new Error(
+            'Switch this exercise to Custom before changing its question, answer or interaction.',
+        );
     }
 
     return candidate;

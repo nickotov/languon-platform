@@ -44,12 +44,13 @@ it('allows the default mixed request and additional components through bounded b
                 id: 'exercises',
                 kind: 'exercises',
                 instruction: 'Travel practice.',
+                source: { kind: 'task', taskId: 'vocabulary' },
                 language: 'en',
             },
         ],
     };
 
-    expect(estimateLearningContentOutput(brief)).toBe(3_320);
+    expect(estimateLearningContentOutput(brief)).toBe(4_570);
     expect(learningContentRequirements(brief)).toBeNull();
     brief.tasks.push({
         id: 'extra',
@@ -150,10 +151,22 @@ it('reserves required word coverage even for one exercise without echoing the wh
         ],
     };
     const generate = vi.fn();
-    const result = await createLearningContentAuthoring({ generate }).generate(
-        brief,
-        new AbortController().signal,
-    );
+    const result = await createLearningContentAuthoring({
+        generate,
+        authorizedSources: [
+            {
+                id: '11111111-1111-4111-8111-111111111111',
+                type: 'vocabulary',
+                language: 'en',
+                translationLanguage: 'ru',
+                entries: brief.tasks[0]!.words!.map((term, index) => ({
+                    id: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+                    term,
+                    translation: 'translation',
+                })),
+            },
+        ],
+    }).generate(brief, new AbortController().signal);
 
     expect(result).toMatchObject({
         status: 'unsupported',
@@ -184,7 +197,7 @@ it('does not reserve echo output for long grammar and exercise input sources', (
         ],
     };
 
-    expect(estimateLearningContentOutput(brief)).toBe(2_100);
+    expect(estimateLearningContentOutput(brief)).toBe(3_350);
     expect(learningContentRequirements(brief)).toBeNull();
 });
 

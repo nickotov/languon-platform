@@ -19,6 +19,7 @@ type Submission = {
     blockReferences?: string[] | undefined;
     draftContext?: string | undefined;
     editorContext?: SubmitConversationTurnRequest['editorContext'];
+    exerciseRequest?: SubmitConversationTurnRequest['exerciseRequest'];
     copiedAttachments?: CopiedAttachment[];
     retryOf?: string | undefined;
     confirmedQuoteId?: string | undefined;
@@ -50,6 +51,7 @@ export function useConversationAdmission({
             content,
             draftContext,
             editorContext,
+            exerciseRequest,
             blockReferences,
             copiedAttachments,
             retryOf,
@@ -66,6 +68,7 @@ export function useConversationAdmission({
                     ? { content: draftContext }
                     : undefined,
                 editorContext,
+                exerciseRequest,
                 blockReferences: blockReferences ?? [],
                 retryOf,
             };
@@ -146,6 +149,7 @@ export function useConversationAdmission({
             copiedAttachments: input.attachments,
             draftContext: input.draftContext?.content,
             editorContext: input.editorContext,
+            exerciseRequest: input.exerciseRequest,
             blockReferences: input.blockReferences,
             retryOf: input.retryOf,
             confirmedQuoteId: quote.id,

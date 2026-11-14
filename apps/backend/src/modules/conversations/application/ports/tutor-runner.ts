@@ -79,6 +79,8 @@ export interface TutorContextMaterial {
 
 export interface TutorRunInput {
     conversationId: string;
+    /** Current authorized Knowledge identity/version for freezing selected prose. */
+    sourceNote?: { noteId: string; noteVersion: number };
     /** Server-resolved source capability; never inferred from model instructions. */
     readOnlySource?: boolean;
     canProposeDictionarySnippet?: boolean;
@@ -90,6 +92,10 @@ export interface TutorRunInput {
     onBlockProposal?(
         input: LearningBlockProposalInput,
     ): Promise<{ id: string }>;
+    /** One publication transaction for a complete multi-target revision. */
+    onBlockProposals?(
+        inputs: LearningBlockProposalInput[],
+    ): Promise<{ id: string }[]>;
     readBlockProposal?(
         id: string,
     ): Promise<{ id: string; blocks: LearningBlock[] }>;

@@ -1,5 +1,6 @@
 import { learningContentReplyLanguageSchema } from './learning-content-presentation';
 import { z } from 'zod';
+import { LearningBlockSchema } from '@languon/contracts';
 import { AssistantLanguageSchema } from '@languon/contracts';
 import { LearningContentBriefSchema } from './learning-content-contract';
 
@@ -90,6 +91,48 @@ export const tutorRequestStateKey = 'learning-request:v1';
 export const TutorRequestStateSchema = z
     .object({
         pending: LearningContentBriefSchema.nullable(),
+        pendingProposalIds: z.array(z.uuid()).max(8).optional(),
+        pendingSources: z
+            .object({
+                blocks: z.array(LearningBlockSchema).max(25),
+                tasks: z
+                    .array(
+                        z
+                            .object({
+                                taskId: z.string().min(1).max(80),
+                                blockIds: z.array(z.uuid()).max(25),
+                                proposalOrigins: z
+                                    .array(
+                                        z
+                                            .object({
+                                                blockId: z.uuid(),
+                                                proposalId: z.uuid(),
+                                            })
+                                            .strict(),
+                                    )
+                                    .max(25)
+                                    .optional(),
+                                selectionOrigin: z
+                                    .object({
+                                        noteId: z.uuid(),
+                                        noteVersion: z
+                                            .number()
+                                            .int()
+                                            .nonnegative(),
+                                    })
+                                    .strict()
+                                    .optional(),
+                            })
+                            .strict(),
+                    )
+                    .max(8),
+            })
+            .strict()
+            .refine(
+                (value) => JSON.stringify(value).length <= 60_000,
+                'Pending source snapshots exceed the bounded state allowance.',
+            )
+            .optional(),
         proposals: z
             .array(
                 z

@@ -26,6 +26,19 @@ import {
 } from '../../../../lib/positioned-learning-blocks';
 import styles from '../../../styles/learning-block-authoring-common.module.css';
 
+function requiresServerCopy(block: LearningBlock) {
+    return Boolean(
+        block.type === 'audio' ||
+        (block.type === 'exercise' &&
+            (Boolean(block.source) ||
+                block.semantics?.sources.some(
+                    (source) =>
+                        source.kind !== 'text-selection' &&
+                        source.origin.kind === 'block',
+                ))),
+    );
+}
+
 export function BlockActions({
     item,
     index,
@@ -114,13 +127,7 @@ export function BlockActions({
         }
 
         const group = currentGroup();
-        if (
-            group.some(
-                ({ block }) =>
-                    block.type === 'audio' ||
-                    (block.type === 'exercise' && block.source),
-            )
-        ) {
+        if (group.some(({ block }) => requiresServerCopy(block))) {
             onServerDuplicate?.(found.block);
 
             return;
@@ -185,15 +192,10 @@ export function BlockActions({
     }
 
     const groupSize = currentGroup().length;
-    const duplicateUnavailable = currentGroup().some(
-        ({ block }) =>
-            block.type === 'audio' ||
-            (block.type === 'exercise' && Boolean(block.source)),
+    const duplicateUnavailable = currentGroup().some(({ block }) =>
+        requiresServerCopy(block),
     );
-    const copyUnavailable =
-        groupSize > 1 ||
-        item.block.type === 'audio' ||
-        (item.block.type === 'exercise' && Boolean(item.block.source));
+    const copyUnavailable = groupSize > 1 || requiresServerCopy(item.block);
     const title =
         (item.block.type === 'exercise'
             ? item.block.group?.title

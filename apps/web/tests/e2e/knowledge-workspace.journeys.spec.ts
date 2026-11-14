@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision knowledge-workspace sha256:e6621242a1235d99
+// @user-flow-revision knowledge-workspace sha256:763c25a24b27ea85
 
 type Share = { locator: string; key: string };
 

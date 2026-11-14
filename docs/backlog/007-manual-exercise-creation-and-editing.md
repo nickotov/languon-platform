@@ -4,10 +4,11 @@ id: BL-007
 title: 'Manual exercise creation and editing'
 status: in-progress
 created: 2026-10-01
-updated: 2026-10-30
+updated: 2026-11-14
 original_tasks: '11'
 evidence:
     - .agent/features/059-interactive-workbooks/EVIDENCE.md
+    - .agent/features/067-named-text-exercises/EVIDENCE.md
 ---
 
 # BL-007 — Manual exercise creation and editing
@@ -73,3 +74,23 @@ and its [fidelity observations](../../.agent/features/059-interactive-workbooks/
 The full critical gate passes14 flows /812 tests with no skips. Parent F059 and
 this broader backlog task remain **in progress**; this is partial-delivery evidence,
 not a terminal task disposition.
+
+## Named activity groundwork — 2026-11-13
+
+The user authorized [Feature067](../../.agent/features/067-named-text-exercises/FEATURE.md)
+for the 19 priority named text activities, beginning step by step with E1. Its
+first checkpoint supplies catalog and standalone semantic contracts. Active block
+writers, manual editing/Custom conversion, copying and private practice integration
+remain later milestones; no new learner journey or completion of this task is
+claimed. Existing F059 evidence and this task's In progress status remain valid.
+
+## Named activity implementation — 2026-11-14
+
+Feature067 implements all19 priority text activities, localized source picker,
+protected named editing and explicit Custom conversion, independent copying and
+private deterministic/AI practice with structured feedback. The
+[feature evidence](../../.agent/features/067-named-text-exercises/EVIDENCE.md)
+records passing runtime gates, independent completion approval and operational
+follow-ups. This expands the
+delivered authoring slice; BL-003/006/007 retain their broader In progress scope.
+Additional text activities, answer-aware chat and audio remain deferred.

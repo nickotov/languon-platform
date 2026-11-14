@@ -20,7 +20,11 @@ export function privateExerciseView({
     labels: LearningLabels;
 }): Pick<
     LearningBlockViewProps,
-    'feedback' | 'feedbackKind' | 'learnerState' | 'exerciseRevision'
+    | 'feedback'
+    | 'feedbackKind'
+    | 'learnerState'
+    | 'exerciseRevision'
+    | 'evaluation'
 > {
     if (!revision) {
         return {};
@@ -46,10 +50,14 @@ export function privateExerciseView({
         if (latest.evaluation.status === 'unchecked') {
             feedback = labels.unchecked;
         } else {
-            feedback =
-                latest.evaluation.status === 'correct'
-                    ? labels.correct
-                    : labels.incorrect;
+            const outcomes = {
+                correct: labels.correct,
+                incorrect: labels.incorrect,
+                'partially-correct': labels.partial,
+                'unable-to-assess': labels.unassessed,
+            };
+
+            feedback = outcomes[latest.evaluation.status];
 
             if (latest.evaluation.feedback) {
                 feedback += `: ${latest.evaluation.feedback}`;
@@ -65,6 +73,7 @@ export function privateExerciseView({
         exerciseRevision: revision,
         feedback,
         feedbackKind,
+        evaluation: latest?.evaluation,
         learnerState: {
             answer: latest ? learnerAnswer(latest.answer) : undefined,
             attempted: Boolean(latest),
@@ -85,7 +94,9 @@ export function privateExerciseView({
                 ),
             ),
             correct:
-                latest && latest.evaluation.status !== 'unchecked'
+                latest &&
+                (latest.evaluation.status === 'correct' ||
+                    latest.evaluation.status === 'incorrect')
                     ? latest.evaluation.status === 'correct'
                     : undefined,
             validAlternative:

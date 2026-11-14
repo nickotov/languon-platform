@@ -78,12 +78,21 @@ export const KnowledgeNoteForm = forwardRef<
             ) => KnowledgeWorkingContent,
         ): void;
         workspace?: KnowledgeWorkspaceEditorOptions;
+        getBlockActions?: ((block: LearningBlock) => MenuItem[]) | undefined;
         disabled?: boolean;
         error?: string | undefined;
         onValidityChange?: ((valid: boolean) => void) | undefined;
     }
 >(function KnowledgeNoteForm(
-    { value, onChange, disabled = false, error, onValidityChange, workspace },
+    {
+        value,
+        onChange,
+        disabled = false,
+        error,
+        onValidityChange,
+        workspace,
+        getBlockActions,
+    },
     ref,
 ) {
     const { t } = useI18n();
@@ -188,6 +197,7 @@ export const KnowledgeNoteForm = forwardRef<
                     <KnowledgeEditor
                         ref={ref}
                         workspace={workspace}
+                        getBlockActions={getBlockActions}
                         value={value.body}
                         onChange={changeBody}
                         disabled={disabled}

@@ -2,6 +2,7 @@ import { Hono, type MiddlewareHandler } from 'hono';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+import { namedExerciseToolDefinitions } from '../../../src/modules/conversations/infrastructure/ai/learning-content-tools';
 import { createDevelopmentServerMiddleware } from '../../../src/mastra/development-server-policy';
 
 const workflowPath = '/api/workflows/run-tutor-turn/stream';
@@ -13,6 +14,12 @@ const contextSchema = z
 const policy = {
     toolInputs: {
         generate_vocabulary: z.object({ instruction: z.string() }).strict(),
+        ...Object.fromEntries(
+            namedExerciseToolDefinitions.map((definition) => [
+                definition.id,
+                definition.inputSchema,
+            ]),
+        ),
     },
     workflowInputSchema: z
         .object({
@@ -169,6 +176,45 @@ describe('tutor playground execution boundary', () => {
                 )
             ).status,
         ).toBe(413);
+    });
+
+    it('allows each registered named tool through the same strict Studio boundary', async () => {
+        for (const definition of namedExerciseToolDefinitions) {
+            const response = await app().request(
+                `/api/tools/${definition.id}/execute`,
+                request({ data: { language: 'en', count: 1 } }),
+            );
+
+            expect(response.status, definition.id).toBe(200);
+            await response.text();
+        }
+
+        expect(
+            (
+                await app().request(
+                    '/api/tools/generate_exercise_v04/execute',
+                    request({ data: { language: 'en' } }),
+                )
+            ).status,
+        ).toBe(403);
+    });
+
+    it('rejects named activity and execution-policy overrides before execution', async () => {
+        for (const override of [
+            { activityId: 'G03' },
+            { activities: [{ activityId: 'G03', count: 1 }] },
+            { formats: ['free-text'] },
+            { checkingPolicy: 'ai-rubric' },
+            { model: 'arbitrary' },
+            { ownerId: 'foreign' },
+        ]) {
+            const response = await app().request(
+                '/api/tools/generate_exercise_v01/execute',
+                request({ data: { language: 'en', count: 1, ...override } }),
+            );
+
+            expect(response.status).toBe(400);
+        }
     });
 
     it('serializes workflows and tools while allowing cancellation, then releases the response lease', async () => {

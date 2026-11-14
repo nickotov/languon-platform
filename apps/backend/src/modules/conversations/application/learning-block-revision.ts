@@ -99,6 +99,19 @@ export function reconcileLearningBlockRevision(
             };
         }
     } else if (source.type === 'exercise' && candidate.type === 'exercise') {
+        if (
+            source.semantics &&
+            (!candidate.semantics ||
+                source.semantics.activity.id !==
+                    candidate.semantics.activity.id ||
+                source.semantics.activity.version !==
+                    candidate.semantics.activity.version)
+        ) {
+            throw new Error(
+                'Named activity identity must survive AI revision; convert to Custom explicitly in the editor.',
+            );
+        }
+
         let group = candidate.group;
         if (group) {
             const id = source.group?.id ?? ids.get(group.id) ?? randomUUID();
@@ -106,10 +119,21 @@ export function reconcileLearningBlockRevision(
             group = { ...group, id };
         }
 
-        revised = { ...candidate, ...(group ? { group } : {}) };
+        const namedSemantics =
+            source.semantics && candidate.semantics
+                ? { ...candidate.semantics, sources: source.semantics.sources }
+                : candidate.semantics;
+
+        revised = {
+            ...candidate,
+            ...(namedSemantics ? { semantics: namedSemantics } : {}),
+            ...(group ? { group } : {}),
+        };
+
         if (candidate.format === 'multiple-choice') {
             revised = {
                 ...candidate,
+                ...(namedSemantics ? { semantics: namedSemantics } : {}),
                 ...(group ? { group } : {}),
                 choices: reconcileItems(
                     source.format === 'multiple-choice' ? source.choices : [],
@@ -130,6 +154,7 @@ export function reconcileLearningBlockRevision(
             let index = 0;
             revised = {
                 ...candidate,
+                ...(namedSemantics ? { semantics: namedSemantics } : {}),
                 ...(group ? { group } : {}),
                 parts: candidate.parts.map((part) =>
                     part.kind === 'gap' ? gaps[index++]! : part,
@@ -155,7 +180,16 @@ function remapReferences(
     if (
         typeof value === 'string' &&
         key &&
-        ['sourceSegmentId', 'segmentIds', 'correctChoiceId'].includes(key)
+        [
+            'sourceSegmentId',
+            'segmentIds',
+            'correctChoiceId',
+            'choiceId',
+            'gapId',
+            'entryId',
+            'segmentId',
+            'blockId',
+        ].includes(key)
     ) {
         return ids.get(value) ?? value;
     }

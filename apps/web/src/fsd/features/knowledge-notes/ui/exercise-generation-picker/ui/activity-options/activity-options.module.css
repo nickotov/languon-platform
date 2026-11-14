@@ -1,0 +1,39 @@
+.options {
+    display: grid;
+    gap: var(--space-12);
+}
+
+.group {
+    display: grid;
+    gap: var(--space-12);
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.group legend {
+    margin-block-end: var(--space-8);
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+    font-weight: 600;
+}
+
+.option {
+    display: grid;
+    gap: var(--space-4);
+}
+
+.example {
+    padding-inline-start: var(--space-32);
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+}
+
+.example summary {
+    cursor: pointer;
+}
+
+.example p {
+    margin: var(--space-4) 0 0;
+    white-space: pre-wrap;
+}

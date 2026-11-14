@@ -52,7 +52,7 @@ it('retains aggregate rejection when genuinely distinct passages exceed the exis
     expect(LearningContentBriefSchema.safeParse(original).success).toBe(false);
 });
 
-it('sends one exact source passage to authoring for several requested components', async () => {
+it('sends one near-40k exact source passage to authoring for several grammar components', async () => {
     const generate = vi.fn(async ({ prompt }: { prompt: string }) => {
         expect(prompt.split(source)).toHaveLength(2);
 
@@ -70,15 +70,13 @@ it('sends one exact source passage to authoring for several requested components
                     ],
                 },
                 {
-                    taskId: 'practice',
+                    taskId: 'other-rule',
                     blocks: [
                         {
                             id: randomUUID(),
-                            type: 'exercise',
-                            format: 'free-text',
-                            question: 'What did you read?',
-                            referenceAnswer: 'A passage.',
-                            explanation: 'The passage supplies context.',
+                            type: 'grammar',
+                            language: 'en',
+                            rule: 'Another supplied rule.',
                         },
                     ],
                 },
@@ -86,7 +84,12 @@ it('sends one exact source passage to authoring for several requested components
         };
     });
     const result = await createLearningContentAuthoring({ generate }).generate(
-        brief(),
+        {
+            tasks: [
+                brief().tasks[0]!,
+                { ...brief().tasks[0]!, id: 'other-rule' },
+            ],
+        },
         new AbortController().signal,
     );
 
@@ -111,6 +114,99 @@ it.each(['missing', 'duplicate', 'unknown', 'unused'] as const)(
         expect(() => deserializeLearningContentBrief(compact)).toThrow();
     },
 );
+
+it('deduplicates an exact authorized selection while preserving its named exercise provenance', async () => {
+    const selection = {
+        noteId: randomUUID(),
+        noteVersion: 1,
+        text: 'Mira borrowed a book. '.repeat(300),
+    };
+    const generate = vi.fn(async ({ prompt }: { prompt: string }) => {
+        expect(prompt.split(selection.text)).toHaveLength(2);
+
+        return {
+            tasks: [
+                {
+                    taskId: 'practice',
+                    blocks: [
+                        {
+                            id: randomUUID(),
+                            type: 'exercise',
+                            format: 'free-text',
+                            question: 'What did Mira borrow?',
+                            referenceAnswer: 'A book.',
+                            explanation:
+                                'The selected text states that Mira borrowed a book.',
+                            semantics: {
+                                activity: { id: 'R04', version: 1 },
+                                objective: 'Find the stated object.',
+                                language: 'en',
+                                explanationLanguage: 'en',
+                                format: 'free-text',
+                                checking: {
+                                    policy: 'ai-rubric',
+                                    rubric: {
+                                        criteria: [
+                                            {
+                                                dimension: 'task-completion',
+                                                requirement:
+                                                    'Answer the question.',
+                                            },
+                                            {
+                                                dimension: 'meaning',
+                                                requirement:
+                                                    'Identify a book as the borrowed object.',
+                                            },
+                                            {
+                                                dimension: 'evidence',
+                                                requirement:
+                                                    'Use the statement: Mira borrowed a book.',
+                                            },
+                                        ],
+                                    },
+                                },
+                            },
+                            sourceBindings: [{ kind: 'text-selection' }],
+                        },
+                    ],
+                },
+            ],
+        };
+    });
+    const result = await createLearningContentAuthoring({
+        generate,
+        taskSources: new Map([['practice', { blocks: [], selection }]]),
+    }).generate(
+        {
+            tasks: [
+                {
+                    id: 'practice',
+                    kind: 'exercises',
+                    language: 'en',
+                    explanationLanguage: 'en',
+                    source: { kind: 'selection' },
+                    instruction: 'Ask about what Mira borrowed.',
+                    count: 1,
+                    activities: [{ activityId: 'R04', count: 1 }],
+                },
+            ],
+        },
+        new AbortController().signal,
+    );
+
+    expect(result.status).toBe('ready');
+    expect(generate).toHaveBeenCalledOnce();
+    if (result.status === 'ready') {
+        const block = result.proposal.blocks[0];
+        expect(block?.type === 'exercise' && block.semantics?.sources).toEqual([
+            {
+                kind: 'text-selection',
+                origin: { noteId: selection.noteId, noteVersion: 1 },
+                text: selection.text,
+            },
+        ]);
+    }
+});
 
 it('requires host-resolved source content in standalone tools before any model dispatch', async () => {
     const generate = vi.fn();

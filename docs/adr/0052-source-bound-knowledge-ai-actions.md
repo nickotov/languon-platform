@@ -5,6 +5,7 @@ title: Source-bound knowledge AI authoring and evaluation
 status: accepted
 date: 2026-10-29
 supersedes: None
+partially_superseded_by: ADR-0058
 ---
 
 # ADR-0052: Source-bound knowledge AI authoring and evaluation

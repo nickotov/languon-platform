@@ -423,7 +423,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             return { outgoing, result };
         }
 
-        async function evaluationFixture(actorId = owner) {
+        async function evaluationFixture(actorId = owner, named = false) {
             const crypto = new KnowledgeShareCrypto(
                 'synthetic-block-field-source',
             );
@@ -432,6 +432,9 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 { beforeNoteDeletion: async () => {} },
                 crypto,
             );
+            const sourceId = randomUUID();
+            const entryId = randomUUID();
+            const exerciseId = randomUUID();
             const note = await notes.create(owner, {
                 operationId: randomUUID(),
                 content: KnowledgeNoteContentSchema.parse({
@@ -445,11 +448,34 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         document: {
                             type: 'doc',
                             content: [
+                                ...(named
+                                    ? [
+                                          {
+                                              type: 'learningBlock',
+                                              attrs: {
+                                                  block: {
+                                                      id: sourceId,
+                                                      type: 'vocabulary',
+                                                      language: 'fr',
+                                                      translationLanguage: 'en',
+                                                      entries: [
+                                                          {
+                                                              id: entryId,
+                                                              term: 'travail',
+                                                              translation:
+                                                                  'work',
+                                                          },
+                                                      ],
+                                                  },
+                                              },
+                                          },
+                                      ]
+                                    : []),
                                 {
                                     type: 'learningBlock',
                                     attrs: {
                                         block: {
-                                            id: randomUUID(),
+                                            id: exerciseId,
                                             type: 'exercise',
                                             format: 'free-text',
                                             question:
@@ -458,6 +484,65 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                                 'Je fais le ménage.',
                                             explanation:
                                                 'Faire le ménage means cleaning the house.',
+                                            ...(named
+                                                ? {
+                                                      title: 'Vocabulary writing',
+                                                      semantics: {
+                                                          activity: {
+                                                              id: 'V07',
+                                                              version: 1,
+                                                          },
+                                                          objective:
+                                                              'Use the selected word in a meaningful sentence.',
+                                                          language: 'fr',
+                                                          explanationLanguage:
+                                                              'en',
+                                                          format: 'free-text',
+                                                          checking: {
+                                                              policy: 'ai-rubric',
+                                                              rubric: {
+                                                                  criteria: [
+                                                                      {
+                                                                          dimension:
+                                                                              'task-completion',
+                                                                          requirement:
+                                                                              'Write one complete sentence.',
+                                                                      },
+                                                                      {
+                                                                          dimension:
+                                                                              'meaning',
+                                                                          requirement:
+                                                                              'Keep the intended meaning.',
+                                                                      },
+                                                                      {
+                                                                          dimension:
+                                                                              'target-use',
+                                                                          requirement:
+                                                                              'Use travail with its selected sense.',
+                                                                      },
+                                                                  ],
+                                                              },
+                                                          },
+                                                          sources: [
+                                                              {
+                                                                  kind: 'vocabulary',
+                                                                  origin: {
+                                                                      kind: 'block',
+                                                                      blockId:
+                                                                          sourceId,
+                                                                  },
+                                                                  entries: [
+                                                                      {
+                                                                          entryId,
+                                                                          term: 'travail',
+                                                                          sense: 'work',
+                                                                      },
+                                                                  ],
+                                                              },
+                                                          ],
+                                                      },
+                                                  }
+                                                : {}),
                                         },
                                     },
                                 },
@@ -542,6 +627,31 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 attempt,
             };
         }
+
+        const namedCorrectEvaluation = {
+            status: 'correct' as const,
+            feedback:
+                'The sentence completes the task and uses travail naturally.',
+            validAlternative: false,
+            corrections: [],
+            criteria: [
+                {
+                    dimension: 'task-completion' as const,
+                    status: 'met' as const,
+                    feedback: 'The response is a complete sentence.',
+                },
+                {
+                    dimension: 'meaning' as const,
+                    status: 'met' as const,
+                    feedback: 'The intended meaning is preserved.',
+                },
+                {
+                    dimension: 'target-use' as const,
+                    status: 'met' as const,
+                    feedback: 'Travail is used with the selected sense.',
+                },
+            ],
+        };
 
         it.each([false, true])(
             'evaluates a private saved attempt through the real SDK and fenced publication (restricted=%s)',
@@ -628,15 +738,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             );
 
-            const fixture = await evaluationFixture(reader);
+            const fixture = await evaluationFixture(reader, true);
             const job = await fixture.requestEvaluation();
             const { outgoing } = await executeWorker(
                 job.id,
-                {
-                    status: 'correct',
-                    feedback: 'Valid alternative.',
-                    validAlternative: true,
-                },
+                namedCorrectEvaluation,
                 true,
             );
             const result = await fixture.evaluations.get(
@@ -671,6 +777,130 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).rejects.toBeDefined();
         }, 30_000);
+
+        it('persists named partial and unable-to-assess feedback through the real worker', async () => {
+            const partial = await evaluationFixture(owner, true);
+            const partialJob = await partial.requestEvaluation();
+            const partialResult = {
+                status: 'partially-correct' as const,
+                feedback:
+                    'The response is understandable but does not use the selected word.',
+                validAlternative: false,
+                criteria: [
+                    {
+                        dimension: 'task-completion' as const,
+                        status: 'met' as const,
+                        feedback: 'A complete sentence was provided.',
+                    },
+                    {
+                        dimension: 'meaning' as const,
+                        status: 'partially-met' as const,
+                        feedback: 'The meaning is only partly preserved.',
+                    },
+                    {
+                        dimension: 'target-use' as const,
+                        status: 'not-met' as const,
+                        feedback: 'Use travail for work in the revision.',
+                    },
+                ],
+                corrections: ['Replace the unrelated verb with travail.'],
+                suggestedAnswer: 'Le travail est important.',
+            };
+
+            await executeWorker(partialJob.id, partialResult, true);
+            const persistedPartial = await partial.evaluations.get(
+                owner,
+                noteId,
+                partialJob.id,
+                context(),
+            );
+
+            expect(persistedPartial.result).toEqual(partialResult);
+            expect(persistedPartial.attempt?.evaluation).toMatchObject({
+                status: partialResult.status,
+                method: 'ai',
+                feedback: partialResult.feedback,
+                criteria: partialResult.criteria,
+                corrections: partialResult.corrections,
+                suggestedAnswer: partialResult.suggestedAnswer,
+            });
+
+            expect(persistedPartial.attempt?.evaluation).not.toHaveProperty(
+                'validAlternative',
+            );
+
+            expect(
+                await partial.evaluations.get(
+                    owner,
+                    noteId,
+                    partialJob.id,
+                    context(),
+                ),
+            ).toEqual(persistedPartial);
+
+            const unable = await evaluationFixture(owner, true);
+            const unableJob = await unable.requestEvaluation();
+            const unableResult = {
+                status: 'unable-to-assess' as const,
+                feedback: 'The response is too incomplete to assess reliably.',
+                validAlternative: false,
+                criteria: [
+                    {
+                        dimension: 'task-completion' as const,
+                        status: 'unable-to-assess' as const,
+                        feedback: 'No complete sentence is available.',
+                    },
+                    {
+                        dimension: 'meaning' as const,
+                        status: 'unable-to-assess' as const,
+                        feedback: 'The intended meaning cannot be established.',
+                    },
+                    {
+                        dimension: 'target-use' as const,
+                        status: 'unable-to-assess' as const,
+                        feedback: 'There is no usable target-word evidence.',
+                    },
+                ],
+                corrections: [],
+            };
+
+            await executeWorker(unableJob.id, unableResult, true);
+            const persistedUnable = await unable.evaluations.get(
+                owner,
+                noteId,
+                unableJob.id,
+                context(),
+            );
+
+            expect(persistedUnable.result).toEqual(unableResult);
+            expect(persistedUnable.attempt?.evaluation).toMatchObject({
+                status: unableResult.status,
+                method: 'ai',
+                feedback: unableResult.feedback,
+                criteria: unableResult.criteria,
+                corrections: [],
+            });
+
+            const unableEvaluation = persistedUnable.attempt?.evaluation;
+            if (unableEvaluation?.status !== 'unable-to-assess') {
+                throw new Error('Expected persisted unassessed AI feedback.');
+            }
+
+            expect(unableEvaluation).toEqual({
+                status: unableResult.status,
+                method: 'ai',
+                feedback: unableResult.feedback,
+                criteria: unableResult.criteria,
+                corrections: [],
+            });
+
+            expect(unableEvaluation.corrections).toEqual([]);
+            expect(unableEvaluation.suggestedAnswer).toBeUndefined();
+
+            expect(persistedUnable.attempt?.evaluation).not.toHaveProperty(
+                'validAlternative',
+            );
+        }, 60_000);
 
         it('cancels queued exercise checking without modifying the saved private answer or charging a provider', async () => {
             const fixture = await evaluationFixture();
@@ -827,15 +1057,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     );
                 }
 
-                const fixture = await evaluationFixture(actorId);
+                const fixture = await evaluationFixture(actorId, true);
                 const job = await fixture.requestEvaluation();
                 const { outgoing } = await executeWorker(
                     job.id,
-                    {
-                        status: 'correct',
-                        feedback: 'Would otherwise accept this answer.',
-                        validAlternative: true,
-                    },
+                    namedCorrectEvaluation,
                     true,
                     false,
                     async () => {

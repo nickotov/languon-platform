@@ -1,5 +1,7 @@
 import { projectTutorUserMessage } from '../../application/tutor-message-context';
-import type { LearningBlock } from '@languon/contracts';
+import { LearningBlockSchema, type LearningBlock } from '@languon/contracts';
+import { namedExerciseFixture } from '../../../../../tests/support/named-exercise-fixture';
+import { applyExercisePickerChoices } from '../../application/exercise-picker-resolution';
 import { LearningContentBriefSchema } from '../../application/learning-content-contract';
 import {
     serializeLearningContentBrief,
@@ -186,6 +188,1290 @@ async function run(input: TutorRunInput, responses: string[]) {
 }
 
 describe('Knowledge request planning with real pinned Mastra execution', () => {
+    it('freezes the initial host editor excerpt when implicit-source clarification is continued', async () => {
+        const { input, memory } = fixture();
+        const passage = 'Lucie visite Lyon chaque samedi pour voir sa sœur.';
+        const capturedOrigin = {
+            noteId: randomUUID(),
+            noteVersion: 4,
+        };
+        const practice = {
+            id: 'practice',
+            kind: 'exercises',
+            instruction: 'Answer a question about the current passage.',
+            language: 'fr',
+            explanationLanguage: 'en',
+            count: 1,
+            activities: [{ activityId: 'R04', count: 1 }],
+            sourceText: 'Invented planner passage.',
+        };
+
+        input.sourceNote = capturedOrigin;
+        input.message.content = 'Make one French reading question.';
+        input.message.modelContent = projectTutorUserMessage({
+            content: input.message.content,
+            editorContext: { content: passage },
+        });
+
+        const first = await run(input, [
+            JSON.stringify({
+                kind: 'clarify',
+                question: 'Should the answer be brief?',
+                brief: { tasks: [practice] },
+            }),
+        ]);
+
+        expect(first.provider.requests).toHaveLength(1);
+        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        const saved = memory.state.get(tutorRequestStateKey)!;
+        const pending = deserializeLearningContentBrief(saved.pending);
+        expect(pending.tasks[0]).toMatchObject({
+            id: 'practice',
+            sourceText: passage,
+            language: 'fr',
+            count: 1,
+            activities: [{ activityId: 'R04', count: 1 }],
+        });
+
+        expect(pending.tasks[0]?.source).toBeUndefined();
+        expect(saved.pendingSources).toMatchObject({
+            blocks: [],
+            tasks: [{ taskId: 'practice', selectionOrigin: capturedOrigin }],
+        });
+
+        input.operationId = 'implicit-reading-followup';
+        input.sourceNote = { ...capturedOrigin, noteVersion: 5 };
+        input.message = {
+            ...input.message,
+            id: 'implicit-reading-followup',
+            content: 'Yes, keep it brief.',
+            createdAt: '2026-10-19T00:11:00.000Z',
+            modelContent: projectTutorUserMessage({
+                content: 'Yes, keep it brief.',
+                editorContext: { content: 'CURRENT_EDITOR_REPLACEMENT' },
+            }),
+        };
+
+        memory.messages.set(input.message.id, input.message);
+        const { sourceBindings: _fixtureBindings, ...wire } =
+            namedExerciseFixture({
+                activityId: 'R04',
+                language: 'fr',
+                explanationLanguage: 'en',
+                sources: [
+                    {
+                        id: randomUUID(),
+                        type: 'bilingual-text',
+                        language: 'fr',
+                        translations: [],
+                        segments: [{ id: randomUUID(), text: passage }],
+                    },
+                ],
+            });
+        const exercise = {
+            ...wire,
+            question: 'Pourquoi Lucie visite-t-elle Lyon ?',
+            referenceAnswer: 'Pour voir sa sœur.',
+            explanation:
+                'The passage explicitly gives the reason for her visit.',
+            sourceBindings: [{ kind: 'text-selection' }],
+        };
+        const second = await run(input, [
+            JSON.stringify({
+                kind: 'generate',
+                replyLanguage: 'en',
+                continuesPending: true,
+                brief: {
+                    tasks: [
+                        { ...practice, sourceText: 'A new model paraphrase.' },
+                    ],
+                },
+            }),
+            JSON.stringify({
+                tasks: [{ taskId: 'practice', blocks: [exercise] }],
+            }),
+        ]);
+
+        expect(second.provider.requests).toHaveLength(2);
+        expect(
+            second.accounting.admit.mock.calls.map(([call]) => call.purpose),
+        ).toEqual(['planning', 'authoring']);
+
+        const authorPrompt = JSON.stringify(
+            second.provider.requests[1]?.prompt,
+        );
+
+        expect(authorPrompt).not.toContain('Invented planner passage.');
+        expect(authorPrompt).not.toContain('A new model paraphrase.');
+        expect(authorPrompt).not.toContain('CURRENT_EDITOR_REPLACEMENT');
+        const { sourceBindings: _bindings, ...published } = exercise;
+        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
+            blocks: [
+                {
+                    ...published,
+                    semantics: {
+                        ...exercise.semantics,
+                        sources: [
+                            {
+                                kind: 'text-selection',
+                                origin: capturedOrigin,
+                                text: passage,
+                            },
+                        ],
+                    },
+                },
+            ],
+        });
+
+        expect(memory.state.get(tutorRequestStateKey)?.pending).toBeNull();
+        expect(input.onDraft).not.toHaveBeenCalled();
+    });
+
+    it('retains a changed global proposal selector through clarification without reusing old captured words', async () => {
+        const { input, memory } = fixture();
+        const sourceA = randomUUID();
+        const sourceB = randomUUID();
+        const entryBId = randomUUID();
+        const bankA = LearningBlockSchema.parse({
+            id: randomUUID(),
+            type: 'vocabulary',
+            language: 'fr',
+            translationLanguage: 'en',
+            entries: [{ id: randomUUID(), term: 'chat', translation: 'cat' }],
+        });
+        const bankB = LearningBlockSchema.parse({
+            id: randomUUID(),
+            type: 'vocabulary',
+            language: 'fr',
+            translationLanguage: 'en',
+            entries: [{ id: entryBId, term: 'chien', translation: 'dog' }],
+        });
+        const practice = {
+            id: 'practice',
+            kind: 'exercises',
+            instruction: 'Recall one French word from the chosen proposal.',
+            language: 'fr',
+            explanationLanguage: 'en',
+            count: 1,
+            activities: [{ activityId: 'V01', count: 1 }],
+        };
+        const previousTask = {
+            ...practice,
+            words: ['chat'],
+            sourceText: 'chat means cat.',
+        };
+
+        await memory.port.writeState({
+            [tutorRequestStateKey]: {
+                pending: JSON.parse(
+                    serializeLearningContentBrief({
+                        tasks: [previousTask],
+                    }),
+                ),
+                pendingProposalIds: [sourceA],
+                pendingSources: {
+                    blocks: [bankA],
+                    tasks: [
+                        {
+                            taskId: 'practice',
+                            blockIds: [bankA.id],
+                            proposalOrigins: [
+                                { blockId: bankA.id, proposalId: sourceA },
+                            ],
+                        },
+                    ],
+                },
+                proposals: [
+                    { id: sourceA, summary: 'First word bank.' },
+                    { id: sourceB, summary: 'Second word bank.' },
+                ],
+            },
+        });
+
+        input.readBlockProposal = vi.fn(async (id) => ({
+            id,
+            blocks: id === sourceA ? [bankA] : [bankB],
+        }));
+
+        input.message.content = 'Continue using the other word bank.';
+        const first = await run(input, [
+            JSON.stringify({
+                kind: 'generate',
+                replyLanguage: 'en',
+                continuesPending: true,
+                sourceProposalIds: [sourceB],
+                brief: { tasks: [practice] },
+            }),
+            JSON.stringify({
+                kind: 'clarify',
+                question: 'Which of the two word banks should I use?',
+                brief: { tasks: [practice] },
+            }),
+        ]);
+
+        expect(first.provider.requests).toHaveLength(2);
+        expect(
+            first.accounting.admit.mock.calls.map(([call]) => call.purpose),
+        ).toEqual(['planning', 'planning']);
+
+        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        const saved = memory.state.get(tutorRequestStateKey)!;
+        expect(saved.pendingProposalIds).toEqual([sourceB]);
+        const pending = deserializeLearningContentBrief(saved.pending);
+        expect(pending.tasks[0]).toMatchObject(practice);
+        expect(pending.tasks[0]?.source).toBeUndefined();
+        expect(pending.tasks[0]?.words).toBeUndefined();
+        expect(pending.tasks[0]?.sourceText).toBeUndefined();
+        expect(JSON.stringify(saved.pendingSources ?? {})).not.toContain(
+            bankA.id,
+        );
+
+        input.operationId = 'global-source-followup';
+        input.message = {
+            ...input.message,
+            id: 'global-source-followup',
+            content: `Use proposal ${sourceB}.`,
+            createdAt: '2026-10-19T00:11:00.000Z',
+        };
+
+        memory.messages.set(input.message.id, input.message);
+        const wire = namedExerciseFixture({
+            activityId: 'V01',
+            sources: [bankB],
+            language: 'fr',
+            explanationLanguage: 'en',
+        });
+        const second = await run(input, [
+            JSON.stringify({
+                kind: 'generate',
+                replyLanguage: 'en',
+                continuesPending: true,
+                brief: { tasks: [practice] },
+            }),
+            JSON.stringify({ tasks: [{ taskId: 'practice', blocks: [wire] }] }),
+        ]);
+
+        expect(second.provider.requests).toHaveLength(2);
+        const authorPrompt = JSON.stringify(
+            second.provider.requests[1]?.prompt,
+        );
+
+        expect(authorPrompt).toContain('chien');
+        expect(authorPrompt).not.toContain('chat');
+        expect(authorPrompt).not.toContain(bankA.id);
+        expect(authorPrompt).not.toContain(sourceA);
+        const { sourceBindings: _bindings, ...published } = wire;
+        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
+            blocks: [
+                {
+                    ...published,
+                    semantics: {
+                        ...wire.semantics,
+                        sources: [
+                            {
+                                kind: 'vocabulary',
+                                origin: {
+                                    kind: 'proposal',
+                                    proposalId: sourceB,
+                                    blockId: bankB.id,
+                                },
+                                entries: [
+                                    {
+                                        entryId: entryBId,
+                                        term: 'chien',
+                                        sense: 'dog',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            ],
+        });
+
+        expect(memory.state.get(tutorRequestStateKey)?.pending).toBeNull();
+        expect(input.onDraft).not.toHaveBeenCalled();
+    });
+
+    it('does not reassign an old captured source when a new unavailable selector is clarified and later continued', async () => {
+        const { input, memory } = fixture();
+        const bankA = LearningBlockSchema.parse({
+            id: randomUUID(),
+            type: 'vocabulary',
+            language: 'fr',
+            translationLanguage: 'en',
+            entries: [{ id: randomUUID(), term: 'chat', translation: 'cat' }],
+        });
+        const bankB = LearningBlockSchema.parse({
+            id: randomUUID(),
+            type: 'vocabulary',
+            language: 'fr',
+            translationLanguage: 'en',
+            entries: [{ id: randomUUID(), term: 'chien', translation: 'dog' }],
+        });
+        const oldTask = {
+            id: 'practice',
+            kind: 'exercises',
+            instruction: 'Recall one French word from bank A.',
+            language: 'fr',
+            explanationLanguage: 'en',
+            count: 1,
+            activities: [{ activityId: 'V01', count: 1 }],
+            source: { kind: 'editor', blockId: bankA.id },
+            sourceText: 'chat',
+        };
+        const nextTask = {
+            id: 'practice',
+            kind: 'exercises',
+            instruction: 'Recall one French word from bank B.',
+            language: 'fr',
+            explanationLanguage: 'en',
+            count: 1,
+            activities: [{ activityId: 'V01', count: 1 }],
+            source: { kind: 'editor', blockId: bankB.id },
+        };
+
+        await memory.port.writeState({
+            [tutorRequestStateKey]: {
+                pending: JSON.parse(
+                    serializeLearningContentBrief({ tasks: [oldTask] }),
+                ),
+                pendingSources: {
+                    blocks: [bankA],
+                    tasks: [{ taskId: 'practice', blockIds: [bankA.id] }],
+                },
+                proposals: [],
+            },
+        });
+
+        input.sourceNote = {
+            noteId: '01900000-0000-4000-8000-000000000095',
+            noteVersion: 3,
+        };
+
+        input.sourceContext = {
+            ...input.sourceContext,
+            availableBlocks: [bankA, bankB].map((bank) => ({
+                id: bank.id,
+                type: bank.type,
+            })),
+            availableMaterialCount: 2,
+            blockCatalogComplete: true,
+        };
+
+        input.message.content = 'Start a new recall exercise using bank B.';
+        input.message.modelContent = projectTutorUserMessage({
+            content: input.message.content,
+            blockReferences: [bankB.id],
+            editorContext: { content: 'The current note contains bank B.' },
+        });
+
+        let bankBAvailable = false;
+        input.readContext = vi.fn(async ({ blockIds }) => {
+            const selected = [bankA, ...(bankBAvailable ? [bankB] : [])].filter(
+                (bank) => blockIds?.includes(bank.id),
+            );
+
+            return {
+                material: selected.map((bank) => ({
+                    id: bank.id,
+                    label: 'Exact word bank',
+                    content: JSON.stringify(bank),
+                })),
+                total: selected.length,
+            };
+        });
+
+        const first = await run(input, [
+            JSON.stringify({
+                kind: 'generate',
+                replyLanguage: 'en',
+                continuesPending: false,
+                brief: { tasks: [nextTask] },
+            }),
+            JSON.stringify({
+                kind: 'clarify',
+                replyLanguage: 'en',
+                question:
+                    'Bank B is unavailable. Select that bank again when it is ready.',
+                brief: { tasks: [nextTask] },
+            }),
+        ]);
+
+        expect(first.provider.requests).toHaveLength(2);
+        expect(
+            first.accounting.admit.mock.calls.map(([call]) => call.purpose),
+        ).toEqual(['planning', 'planning']);
+
+        expect(first.result.text).toContain('Bank B is unavailable');
+        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        const pending = memory.state.get(tutorRequestStateKey)!;
+        expect(pending.pending).toMatchObject({
+            tasks: [
+                {
+                    id: 'practice',
+                    count: 1,
+                    language: 'fr',
+                    explanationLanguage: 'en',
+                    activities: [{ activityId: 'V01', count: 1 }],
+                    source: { kind: 'editor', blockId: bankB.id },
+                },
+            ],
+        });
+
+        const captured = pending.pendingSources as
+            { blocks: LearningBlock[]; tasks: unknown[] } | undefined;
+
+        expect(captured?.blocks ?? []).toEqual([]);
+        expect(captured?.tasks ?? []).toEqual([]);
+
+        bankBAvailable = true;
+        input.operationId = 'bank-b-followup';
+        input.message = {
+            ...input.message,
+            id: 'bank-b-followup',
+            content: 'Bank B is now available; continue with that bank.',
+            createdAt: '2026-10-19T00:11:00.000Z',
+            modelContent: projectTutorUserMessage({
+                content: 'Bank B is now available; continue with that bank.',
+                blockReferences: [bankB.id],
+                editorContext: { content: 'Bank B contains chien — dog.' },
+            }),
+        };
+
+        memory.messages.set(input.message.id, input.message);
+        const wire = namedExerciseFixture({
+            activityId: 'V01',
+            sources: [bankB],
+            language: 'fr',
+            explanationLanguage: 'en',
+        });
+        const second = await run(input, [
+            JSON.stringify({
+                kind: 'generate',
+                replyLanguage: 'en',
+                continuesPending: true,
+                brief: { tasks: [nextTask] },
+            }),
+            JSON.stringify({ tasks: [{ taskId: 'practice', blocks: [wire] }] }),
+        ]);
+
+        expect(second.provider.requests).toHaveLength(2);
+        expect(
+            second.accounting.admit.mock.calls.map(([call]) => call.purpose),
+        ).toEqual(['planning', 'authoring']);
+
+        expect(
+            vi
+                .mocked(input.readContext)
+                .mock.calls.map(([query]) => query.blockIds),
+        ).toEqual([[bankB.id], [bankB.id]]);
+
+        const authorPrompt = JSON.stringify(
+            second.provider.requests[1]!.prompt,
+        );
+
+        expect(authorPrompt).toContain(bankB.id);
+        expect(authorPrompt).not.toContain(bankA.id);
+        const { sourceBindings: _bindings, ...exercise } = wire;
+        if (bankB.type !== 'vocabulary') {
+            throw new Error('Expected canonical vocabulary fixture.');
+        }
+
+        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
+            blocks: [
+                {
+                    ...exercise,
+                    semantics: {
+                        ...exercise.semantics,
+                        sources: [
+                            {
+                                kind: 'vocabulary',
+                                origin: { kind: 'block', blockId: bankB.id },
+                                entries: [
+                                    {
+                                        entryId: bankB.entries[0]!.id,
+                                        term: 'chien',
+                                        sense: 'dog',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            ],
+        });
+
+        expect(input.onDraft).not.toHaveBeenCalled();
+        expect(memory.state.get(tutorRequestStateKey)?.pending).toBeNull();
+    });
+
+    it.each(['generate', 'clarify'] as const)(
+        'handles the aggregate pending-source bound during %s without an authoring dispatch or invalid saved state',
+        async (kind) => {
+            const { input, memory } = fixture();
+            const sources = Array.from({ length: 3 }, (_, bank) =>
+                LearningBlockSchema.parse({
+                    id: randomUUID(),
+                    type: 'vocabulary',
+                    language: 'fr',
+                    translationLanguage: 'en',
+                    title: `Word bank ${bank + 1}`,
+                    entries: Array.from({ length: 3 }, (_, index) => ({
+                        id: randomUUID(),
+                        term: `word-${bank}-${index}`,
+                        translation: 't'.repeat(1_000),
+                        definition: 'BOUND_BANK_MARKER ' + 'd'.repeat(1_780),
+                        example: 'e'.repeat(1_800),
+                        exampleTranslation: 'x'.repeat(1_800),
+                        pronunciation: 'p'.repeat(400),
+                    })),
+                }),
+            );
+            const sourceBytes = sources.map((source) =>
+                Buffer.byteLength(JSON.stringify(source), 'utf8'),
+            );
+
+            expect(
+                sourceBytes.every((bytes) => bytes > 20_000 && bytes < 23_000),
+            ).toBe(true);
+
+            expect(sourceBytes.every((bytes) => bytes < 80_000)).toBe(true);
+            expect(
+                Buffer.byteLength(JSON.stringify(sources), 'utf8'),
+            ).toBeGreaterThan(60_000);
+
+            input.sourceNote = {
+                noteId: '01900000-0000-4000-8000-000000000095',
+                noteVersion: 3,
+            };
+
+            input.sourceContext = {
+                ...input.sourceContext,
+                availableBlocks: sources.map((source) => ({
+                    id: source.id,
+                    type: source.type,
+                })),
+                availableMaterialCount: sources.length,
+                blockCatalogComplete: true,
+            };
+
+            input.message.content =
+                'Prepare one recall exercise from each of these three word banks.';
+
+            input.message.modelContent = projectTutorUserMessage({
+                content: input.message.content,
+                editorContext: { content: 'Three selected French word banks.' },
+            });
+
+            input.readContext = vi.fn(async ({ blockIds }) => {
+                const selected = sources.filter((source) =>
+                    blockIds?.includes(source.id),
+                );
+
+                return {
+                    material: selected.map((source) => ({
+                        id: source.id,
+                        label: source.title!,
+                        content: JSON.stringify(source),
+                    })),
+                    total: selected.length,
+                };
+            });
+
+            input.onBlockProposals = vi.fn(async () => []);
+            const tasks = sources.map((source, index) => ({
+                id: `bank-${index}`,
+                kind: 'exercises',
+                instruction: 'Recall one selected word from this bank.',
+                language: 'fr',
+                explanationLanguage: 'en',
+                count: 1,
+                activities: [{ activityId: 'V01', count: 1 }],
+                source: { kind: 'editor', blockId: source.id },
+            }));
+            const planned =
+                kind === 'generate'
+                    ? { kind, replyLanguage: 'en', brief: { tasks } }
+                    : {
+                          kind,
+                          replyLanguage: 'en',
+                          question: 'Which bank should we start with?',
+                          brief: { tasks },
+                      };
+            const provider = scriptedTutorModel([JSON.stringify(planned)]);
+            const accounting = tutorAccountingFixture();
+            const result = await createContextualTutorRunner({
+                model: provider.model,
+                accounting,
+                maxInputTokens: 64_000,
+            }).run(input);
+
+            expect(provider.requests).toHaveLength(1);
+            expect(
+                accounting.admit.mock.calls.map(([call]) => call.purpose),
+            ).toEqual(['planning']);
+
+            expect(
+                accounting.admit.mock.calls[0]![0].inputTokenEstimate,
+            ).toBeLessThan(64_000);
+
+            expect(input.readContext).toHaveBeenCalledTimes(3);
+            expect(
+                vi
+                    .mocked(input.readContext)
+                    .mock.calls.map(([query]) => query.blockIds),
+            ).toEqual(sources.map((source) => [source.id]));
+
+            expect(input.onBlockProposal).not.toHaveBeenCalled();
+            expect(input.onBlockProposals).not.toHaveBeenCalled();
+            expect(result.text).toMatch(/smaller|shorter|fewer/iu);
+            expect(result.text).toMatch(/vocabulary|passage|source/iu);
+            expect(input.onResponseMetadata).toHaveBeenLastCalledWith({
+                kind: 'clarification',
+                documentUse: false,
+            });
+
+            const saved = memory.state.get(tutorRequestStateKey);
+            expect(saved?.pending).toBeNull();
+            expect(saved?.pendingSources).toBeUndefined();
+            expect(JSON.stringify(saved)).not.toContain('BOUND_BANK_MARKER');
+            expect(JSON.stringify(saved).length).toBeLessThan(60_000);
+        },
+    );
+
+    it('retains an automatic production allocation and its objective while clarifying a missing prerequisite', () => {
+        const planned = TutorRequestResolutionSchema.parse({
+            kind: 'clarify',
+            question: 'Which vocabulary source should the sentence tasks use?',
+            brief: {
+                tasks: [
+                    {
+                        id: 'planner-practice',
+                        kind: 'exercises',
+                        instruction:
+                            'Use the selected words in complete French sentences.',
+                        count: 2,
+                        language: 'fr',
+                        activities: [{ activityId: 'V07', count: 2 }],
+                    },
+                ],
+            },
+        });
+        const result = applyExercisePickerChoices(
+            {
+                mode: 'automatic',
+                count: 2,
+                language: 'fr',
+                explanationLanguage: 'en',
+                difficulty: 'beginner',
+            },
+            planned,
+            false,
+        );
+
+        expect(result).toMatchObject({
+            kind: 'clarify',
+            question: 'Which vocabulary source should the sentence tasks use?',
+            brief: {
+                tasks: [
+                    {
+                        instruction:
+                            'Use the selected words in complete French sentences.',
+                        count: 2,
+                        activities: [{ activityId: 'V07', count: 2 }],
+                    },
+                ],
+            },
+        });
+    });
+
+    it.each([
+        {
+            activities: [{ activityId: 'V07' }],
+            valid: true,
+            expected: [{ activityId: 'V07', count: 2 }],
+        },
+        {
+            activities: [
+                { activityId: 'V01', count: 1 },
+                { activityId: 'V07', count: 1 },
+            ],
+            valid: true,
+            expected: [
+                { activityId: 'V01', count: 1 },
+                { activityId: 'V07', count: 1 },
+            ],
+        },
+        {
+            activities: [
+                { activityId: 'V01' },
+                { activityId: 'V07', count: 1 },
+            ],
+            valid: false,
+        },
+        {
+            activities: [
+                { activityId: 'V01', count: 2 },
+                { activityId: 'V07', count: 1 },
+            ],
+            valid: false,
+        },
+        {
+            activities: [
+                { activityId: 'V01', count: 1 },
+                { activityId: 'V01', count: 1 },
+            ],
+            valid: false,
+        },
+    ])(
+        'validates automatic planner allocations without discarding the production goal: %j',
+        ({ activities, valid, expected }) => {
+            const planned = TutorRequestResolutionSchema.parse({
+                kind: 'generate',
+                replyLanguage: 'en',
+                brief: {
+                    tasks: [
+                        {
+                            id: 'planner-practice',
+                            kind: 'exercises',
+                            instruction: 'Use the words in original sentences.',
+                            language: 'fr',
+                            count: 2,
+                            activities,
+                        },
+                    ],
+                },
+            });
+            const result = applyExercisePickerChoices(
+                {
+                    mode: 'automatic',
+                    count: 2,
+                    language: 'fr',
+                    explanationLanguage: 'en',
+                    difficulty: 'beginner',
+                },
+                planned,
+                false,
+            );
+
+            expect(result.kind).toBe(valid ? 'generate' : 'clarify');
+            if (valid && result.kind === 'generate') {
+                expect(result.brief.tasks[0]).toMatchObject({
+                    instruction: 'Use the words in original sentences.',
+                    count: 2,
+                    activities: expected,
+                });
+            }
+        },
+    );
+
+    it('keeps automatic-mode sentence production selected by the planner instead of replacing it with a default recognition activity', async () => {
+        const { input } = fixture();
+        const source: LearningBlock = {
+            id: blockId,
+            type: 'vocabulary',
+            language: 'fr',
+            translationLanguage: 'en',
+            entries: [
+                {
+                    id: '01900000-0000-4000-8000-000000000003',
+                    term: 'chat',
+                    translation: 'cat',
+                },
+            ],
+        };
+        const goal =
+            'Write one complete French sentence using chat with its selected meaning.';
+        const request = {
+            mode: 'automatic' as const,
+            count: 1,
+            language: 'fr',
+            explanationLanguage: 'en',
+            difficulty: 'beginner' as const,
+        };
+
+        input.sourceNote = {
+            noteId: '01900000-0000-4000-8000-000000000095',
+            noteVersion: 3,
+        };
+
+        input.sourceContext = {
+            ...input.sourceContext,
+            availableBlocks: [{ id: source.id, type: source.type }],
+            availableMaterialCount: 1,
+            blockCatalogComplete: true,
+        };
+
+        input.message.content = goal;
+        input.message.modelContent = projectTutorUserMessage({
+            content: goal,
+            exerciseRequest: request,
+            blockReferences: [source.id],
+            editorContext: { content: 'The selected vocabulary.' },
+        });
+
+        input.readContext = vi.fn(async () => ({
+            material: [
+                {
+                    id: source.id,
+                    label: 'Selected vocabulary',
+                    content: JSON.stringify(source),
+                },
+            ],
+            total: 1,
+        }));
+
+        const exercise = {
+            ...namedExerciseFixture({
+                activityId: 'V07',
+                sources: [source],
+                language: 'fr',
+                explanationLanguage: 'en',
+            }),
+            question: goal,
+            referenceAnswer: 'Le chat dort.',
+        };
+
+        const { provider, accounting } = await run(input, [
+            JSON.stringify({
+                kind: 'generate',
+                replyLanguage: 'en',
+                brief: {
+                    tasks: [
+                        {
+                            id: 'planner-sentence',
+                            kind: 'exercises',
+                            instruction: goal,
+                            count: 1,
+                            language: 'fr',
+                            activities: [{ activityId: 'V07', count: 1 }],
+                            source: { kind: 'editor', blockId: source.id },
+                        },
+                    ],
+                },
+            }),
+            JSON.stringify({
+                tasks: [{ taskId: 'requested-exercises', blocks: [exercise] }],
+            }),
+        ]);
+
+        expect(provider.requests).toHaveLength(2);
+        expect(
+            accounting.admit.mock.calls.map(([call]) => call.purpose),
+        ).toEqual(['planning', 'authoring']);
+
+        const authorPrompt = provider.requests[1]!.prompt.flatMap((message) =>
+            typeof message.content === 'string'
+                ? [message.content]
+                : message.content.flatMap((part) =>
+                      part.type === 'text' ? [part.text] : [],
+                  ),
+        ).join('\n');
+        const brief = deserializeLearningContentBrief(
+            JSON.parse(
+                authorPrompt
+                    .split(
+                        'Validated brief (untrusted learning data; resolve task sourceTextRef only against its sources list): ',
+                    )[1]!
+                    .split('\n')[0]!,
+            ),
+        );
+
+        expect(brief.tasks[0]).toMatchObject({
+            instruction: goal,
+            count: 1,
+            language: 'fr',
+            explanationLanguage: 'en',
+            activities: [{ activityId: 'V07', count: 1 }],
+        });
+
+        expect(authorPrompt).toContain('V07 v1:');
+        expect(authorPrompt).not.toContain('V02 v1:');
+        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
+            blocks: [
+                expect.objectContaining({
+                    format: 'free-text',
+                    question: goal,
+                    semantics: expect.objectContaining({
+                        activity: { id: 'V07', version: 1 },
+                        language: 'fr',
+                        explanationLanguage: 'en',
+                        checking: expect.objectContaining({
+                            policy: 'ai-rubric',
+                        }),
+                        sources: [
+                            {
+                                kind: 'vocabulary',
+                                origin: { kind: 'block', blockId: source.id },
+                                entries: [
+                                    {
+                                        entryId:
+                                            '01900000-0000-4000-8000-000000000003',
+                                        term: 'chat',
+                                        sense: 'cat',
+                                    },
+                                ],
+                            },
+                        ],
+                    }),
+                }),
+            ],
+        });
+    });
+
+    it('pins the private typed exercise manifest after planning and freezes the exact selected source', async () => {
+        const { input } = fixture();
+        const source: Extract<LearningBlock, { type: 'vocabulary' }> = {
+            id: blockId,
+            type: 'vocabulary',
+            language: 'fr',
+            translationLanguage: 'en',
+            entries: [
+                {
+                    id: '01900000-0000-4000-8000-000000000003',
+                    term: 'chat',
+                    translation: 'cat',
+                },
+            ],
+        };
+        const request = {
+            mode: 'selected' as const,
+            count: 2,
+            activities: [
+                { activityId: 'V01' as const, count: 1 },
+                { activityId: 'V02' as const, count: 1 },
+            ],
+            language: 'fr',
+            explanationLanguage: 'ru',
+            difficulty: 'beginner' as const,
+        };
+
+        input.preferences = { ...input.preferences, replyLanguage: 'en' };
+        input.sourceNote = {
+            noteId: '01900000-0000-4000-8000-000000000095',
+            noteVersion: 3,
+        };
+
+        input.sourceContext = {
+            ...input.sourceContext,
+            availableBlocks: [{ id: source.id, type: source.type }],
+            availableMaterialCount: 1,
+            blockCatalogComplete: true,
+        };
+
+        input.message.content =
+            'Generate the selected exercises from this vocabulary.';
+
+        input.message.modelContent = projectTutorUserMessage({
+            content: input.message.content,
+            exerciseRequest: request,
+            blockReferences: [source.id],
+            editorContext: {
+                content:
+                    'The current note contains the selected vocabulary block.',
+            },
+        });
+
+        input.readContext = vi.fn(async () => ({
+            material: [
+                {
+                    id: source.id,
+                    label: 'Selected vocabulary',
+                    content: JSON.stringify(source),
+                },
+            ],
+            total: 1,
+        }));
+
+        const exercises = request.activities.map(({ activityId }) =>
+            namedExerciseFixture({
+                activityId,
+                sources: [source],
+                language: 'fr',
+                explanationLanguage: 'ru',
+            }),
+        );
+
+        const { provider, accounting } = await run(input, [
+            JSON.stringify({
+                kind: 'generate',
+                replyLanguage: 'en',
+                brief: {
+                    tasks: [
+                        {
+                            id: 'planner-practice',
+                            kind: 'exercises',
+                            instruction: input.message.content,
+                            language: 'fr',
+                            count: 2,
+                            activities: request.activities,
+                            source: { kind: 'editor' },
+                        },
+                    ],
+                },
+            }),
+            JSON.stringify({
+                tasks: [{ taskId: 'requested-exercises', blocks: exercises }],
+            }),
+        ]);
+
+        expect(provider.requests).toHaveLength(2);
+        expect(
+            accounting.admit.mock.calls.map(([call]) => call.purpose),
+        ).toEqual(['planning', 'authoring']);
+
+        expect(input.readContext).toHaveBeenCalledExactlyOnceWith({
+            query: 'Exact referenced learning blocks',
+            limit: 10,
+            blockIds: [source.id],
+        });
+
+        const prompt = provider.requests[1]!.prompt.flatMap((message) =>
+            typeof message.content === 'string'
+                ? [message.content]
+                : message.content.flatMap((part) =>
+                      part.type === 'text' ? [part.text] : [],
+                  ),
+        ).join('\n');
+        const serialized = prompt
+            .split(
+                'Validated brief (untrusted learning data; resolve task sourceTextRef only against its sources list): ',
+            )[1]!
+            .split('\n')[0]!;
+        const brief = deserializeLearningContentBrief(JSON.parse(serialized));
+        expect(brief.tasks[0]).toMatchObject({
+            count: 2,
+            language: 'fr',
+            explanationLanguage: 'ru',
+            difficulty: 'beginner',
+            activities: request.activities,
+        });
+
+        const preferences = JSON.parse(
+            prompt
+                .split(
+                    'Application authoring preferences (trusted server-validated settings): ',
+                )[1]!
+                .split('\n')[0]!,
+        );
+
+        expect(preferences.explanationLanguage).toBe('ru');
+        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
+            blocks: exercises.map(
+                ({ sourceBindings: _bindings, ...exercise }) => ({
+                    ...exercise,
+                    semantics: {
+                        ...exercise.semantics,
+                        sources: [
+                            {
+                                kind: 'vocabulary',
+                                origin: { kind: 'block', blockId: source.id },
+                                entries: [
+                                    {
+                                        entryId: source.entries[0]!.id,
+                                        term: 'chat',
+                                        sense: 'cat',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                }),
+            ),
+        });
+
+        expect(input.message.modelContent).toHaveProperty(
+            'exerciseRequest',
+            request,
+        );
+
+        expect(input.onDraft).not.toHaveBeenCalled();
+    });
+
+    it('clarifies a missing typed-exercise source without dispatching authoring or dropping the manifest', async () => {
+        const { input, memory } = fixture();
+        const request = {
+            mode: 'selected' as const,
+            count: 1,
+            activities: [{ activityId: 'V01' as const, count: 1 }],
+            language: 'fr',
+            explanationLanguage: 'ru',
+            difficulty: 'beginner' as const,
+        };
+
+        input.sourceNote = {
+            noteId: '01900000-0000-4000-8000-000000000095',
+            noteVersion: 3,
+        };
+
+        input.message.content = 'Generate the selected exercise.';
+        input.message.modelContent = projectTutorUserMessage({
+            content: input.message.content,
+            exerciseRequest: request,
+        });
+
+        const { result, provider, accounting } = await run(input, [
+            JSON.stringify({
+                kind: 'clarify',
+                replyLanguage: 'ru',
+                question: 'Выберите исходный словарный блок.',
+                brief: {
+                    tasks: [
+                        {
+                            id: 'requested-exercises',
+                            kind: 'exercises',
+                            instruction: input.message.content,
+                            language: 'fr',
+                            count: 1,
+                            activities: request.activities,
+                            source: { kind: 'editor' },
+                        },
+                    ],
+                },
+            }),
+        ]);
+
+        expect(result.text).toBe('Выберите исходный словарный блок.');
+        expect(provider.requests).toHaveLength(1);
+        expect(
+            accounting.admit.mock.calls.map(([call]) => call.purpose),
+        ).toEqual(['planning']);
+
+        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(input.onDraft).not.toHaveBeenCalled();
+        expect(memory.state.get(tutorRequestStateKey)?.pending).toMatchObject({
+            tasks: [
+                {
+                    id: 'requested-exercises',
+                    count: 1,
+                    language: 'fr',
+                    explanationLanguage: 'ru',
+                    activities: request.activities,
+                },
+            ],
+        });
+    });
+
+    it.each(['count', 'source'] as const)(
+        'clarifies a planner %s that contradicts the selected manifest without replacing its activity allocation or source',
+        async (conflict) => {
+            const { input, memory } = fixture();
+            const source: LearningBlock = {
+                id: blockId,
+                type: 'vocabulary',
+                language: 'fr',
+                translationLanguage: 'en',
+                entries: [
+                    { id: randomUUID(), term: 'chat', translation: 'cat' },
+                ],
+            };
+            const request = {
+                mode: 'selected' as const,
+                count: 1,
+                activities: [{ activityId: 'V01' as const, count: 1 }],
+                language: 'fr',
+                explanationLanguage: 'ru',
+                difficulty: 'beginner' as const,
+            };
+
+            input.sourceNote = {
+                noteId: '01900000-0000-4000-8000-000000000095',
+                noteVersion: 3,
+            };
+
+            input.sourceContext = {
+                ...input.sourceContext,
+                availableBlocks: [{ id: source.id, type: source.type }],
+                availableMaterialCount: 1,
+                blockCatalogComplete: true,
+            };
+
+            input.message.content =
+                conflict === 'count'
+                    ? 'Generate three exercises from this vocabulary.'
+                    : 'Generate an exercise from the other vocabulary block.';
+
+            input.message.modelContent = projectTutorUserMessage({
+                content: input.message.content,
+                exerciseRequest: request,
+                blockReferences: [source.id],
+                editorContext: { content: 'The selected vocabulary.' },
+            });
+
+            input.readContext = vi.fn(async () => ({
+                material: [
+                    {
+                        id: source.id,
+                        label: 'Selected vocabulary',
+                        content: JSON.stringify(source),
+                    },
+                ],
+                total: 1,
+            }));
+
+            const { result, provider, accounting } = await run(input, [
+                JSON.stringify({
+                    kind: 'generate',
+                    replyLanguage: 'en',
+                    brief: {
+                        tasks: [
+                            {
+                                id: 'planner-practice',
+                                kind: 'exercises',
+                                instruction: input.message.content,
+                                language: 'fr',
+                                count: conflict === 'count' ? 3 : 1,
+                                activities: [
+                                    {
+                                        activityId: 'V01',
+                                        count: conflict === 'count' ? 3 : 1,
+                                    },
+                                ],
+                                source: {
+                                    kind: 'editor',
+                                    ...(conflict === 'source'
+                                        ? {
+                                              blockId:
+                                                  '01900000-0000-4000-8000-000000000096',
+                                          }
+                                        : {}),
+                                },
+                            },
+                        ],
+                    },
+                }),
+            ]);
+
+            expect(provider.requests).toHaveLength(1);
+            expect(
+                accounting.admit.mock.calls.map(([call]) => call.purpose),
+            ).toEqual(['planning']);
+
+            expect(result.text.length).toBeGreaterThan(0);
+            expect(input.onResponseMetadata).toHaveBeenLastCalledWith({
+                kind: 'clarification',
+                documentUse: false,
+            });
+
+            expect(input.onBlockProposal).not.toHaveBeenCalled();
+            expect(input.onDraft).not.toHaveBeenCalled();
+            expect(
+                memory.state.get(tutorRequestStateKey)?.pending,
+            ).toMatchObject({
+                tasks: [
+                    {
+                        count: 1,
+                        language: 'fr',
+                        explanationLanguage: 'ru',
+                        activities: request.activities,
+                        source: { kind: 'editor', blockId: source.id },
+                    },
+                ],
+            });
+        },
+    );
+
     it('grounds planner source descriptors before storing clarification or authoring later', async () => {
         const { input, memory } = fixture();
         input.message.modelContent = projectTutorUserMessage({
@@ -406,6 +1692,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
 
     it('normalizes unchanged vocabulary identities before publishing a canonical revision', async () => {
         const { input } = fixture();
+        input.onBlockProposals = vi.fn(async () => []);
         const entryId = randomUUID();
         const vocabulary = {
             id: blockId,
@@ -470,10 +1757,14 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                 },
             ],
         });
+
+        expect(input.onBlockProposals).not.toHaveBeenCalled();
     });
 
     it('validates the entire canonical revision set before any proposal publication', async () => {
-        const { input } = fixture();
+        const { input, memory } = fixture();
+        const receipts = [{ id: proposalId }, { id: randomUUID() }];
+        input.onBlockProposals = vi.fn(async () => receipts);
         const second = {
             ...grammar,
             id: '01900000-0000-4000-8000-000000000091',
@@ -509,10 +1800,107 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         ]);
 
         expect(provider.requests).toHaveLength(3);
-        expect(input.onBlockProposal).toHaveBeenCalledTimes(2);
-        expect(input.onBlockProposal).toHaveBeenNthCalledWith(1, first);
-        expect(input.onBlockProposal).toHaveBeenNthCalledWith(2, last);
+        expect(input.onBlockProposals).toHaveBeenCalledExactlyOnceWith([
+            first,
+            last,
+        ]);
+
+        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(memory.state.get(tutorRequestStateKey)?.proposals).toEqual(
+            receipts.map(({ id }) => expect.objectContaining({ id })),
+        );
     });
+
+    it.each(['reject', 'abort', 'incomplete-receipts'] as const)(
+        'does not fall back to single writes or expose partial revision receipts when batch publication %s occurs',
+        async (failure) => {
+            const { input, memory } = fixture();
+            const second = {
+                ...grammar,
+                id: '01900000-0000-4000-8000-000000000091',
+                rule: 'Second frozen rule.',
+            };
+            const proposals = [
+                {
+                    targetBlockId: grammar.id,
+                    blocks: [{ ...grammar, rule: 'First revised rule.' }],
+                },
+                {
+                    targetBlockId: second.id,
+                    blocks: [{ ...second, rule: 'Second revised rule.' }],
+                },
+            ];
+
+            input.sourceContext.availableBlocks = [grammar, second];
+            input.readContext = vi.fn(async () => ({
+                material: [grammar, second].map((block) => ({
+                    id: block.id,
+                    label: 'Frozen grammar',
+                    content: JSON.stringify(block),
+                })),
+                total: 2,
+            }));
+
+            const controller = new AbortController();
+            input.signal = controller.signal;
+            input.onTool = vi.fn(async () => undefined);
+            input.onBlockProposals = vi.fn(async () => {
+                if (failure === 'reject') {
+                    throw new Error('Atomic publication rejected.');
+                }
+
+                if (failure === 'abort') {
+                    controller.abort(new Error('Atomic revision cancelled.'));
+                }
+
+                return failure === 'incomplete-receipts'
+                    ? [{ id: proposalId }]
+                    : [{ id: proposalId }, { id: randomUUID() }];
+            });
+
+            const provider = scriptedTutorModel([
+                JSON.stringify({
+                    kind: 'revise-blocks',
+                    sourceBlockIds: [grammar.id, second.id],
+                    instruction: 'Clarify both rules.',
+                }),
+                JSON.stringify({ proposals }),
+            ]);
+            const accounting = tutorAccountingFixture();
+            const runner = createContextualTutorRunner({
+                model: provider.model,
+                accounting,
+                maxInputTokens: 100_000,
+            });
+            const expectedFailure =
+                failure === 'reject'
+                    ? 'Atomic publication rejected'
+                    : failure === 'abort'
+                      ? 'Atomic revision cancelled'
+                      : 'complete proposal set';
+
+            await expect(runner.run(input)).rejects.toThrow(expectedFailure);
+
+            expect(provider.requests).toHaveLength(2);
+            expect(
+                accounting.admit.mock.calls.map(([call]) => call.purpose),
+            ).toEqual(['planning', 'authoring']);
+
+            expect(input.onBlockProposals).toHaveBeenCalledExactlyOnceWith(
+                proposals,
+            );
+
+            expect(input.onBlockProposal).not.toHaveBeenCalled();
+            expect(input.onTool).not.toHaveBeenCalledWith(
+                expect.objectContaining({ state: 'succeeded' }),
+            );
+
+            expect(input.onDelta).not.toHaveBeenCalled();
+            expect(
+                memory.state.get(tutorRequestStateKey)?.proposals ?? [],
+            ).toEqual([]);
+        },
+    );
 
     it.each([
         { remainingCalls: 1, remainingOutputTokens: 10_000 },
@@ -769,14 +2157,16 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             instruction: 'Practise those words.',
             language: 'fr',
             count: 1,
-            formats: ['free-text'],
+            activities: [{ activityId: 'V01', count: 1 }],
         };
         const exercise = {
-            id: '01900000-0000-4000-8000-000000000004',
-            type: 'exercise',
-            format: 'free-text',
+            ...namedExerciseFixture({
+                activityId: 'V01',
+                sources: [vocabulary],
+                language: 'fr',
+                explanationLanguage: 'en',
+            }),
             question: 'Translate cat into French.',
-            referenceAnswer: 'chat',
             explanation: 'Chat means cat.',
         };
         const { provider } = await run(input, [
@@ -830,11 +2220,15 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         const proposals = new Map<string, LearningBlock[]>();
         const groupId = randomUUID();
         const exercises = words.map((word, index) => ({
-            id: randomUUID(),
-            type: 'exercise' as const,
-            format: 'free-text' as const,
+            ...namedExerciseFixture({
+                activityId: 'V01',
+                sources: [
+                    { ...vocabulary, entries: [vocabulary.entries[index]!] },
+                ],
+                language: 'fr',
+                explanationLanguage: 'ru',
+            }),
             question: `Как по-французски «${translations[index]}»?`,
-            referenceAnswer: word,
             explanation: `«${word}» означает «${translations[index]}».`,
             group: { id: groupId, title: 'Практика шести слов' },
         }));
@@ -906,7 +2300,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                                 'Подготовь упражнения на слова предыдущего словаря.',
                             language: 'fr',
                             count: 6,
-                            formats: ['free-text'],
+                            activities: [{ activityId: 'V01', count: 6 }],
                             source: { kind: 'proposal', proposalId },
                         },
                     ],
@@ -934,10 +2328,46 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
 
         expect(input.readBlockProposal).toHaveBeenCalledWith(proposalId);
         expect(grounded.tasks[0]?.words).toEqual(words);
-        expect(grounded.tasks[0]?.sourceText).toBe(words.join('\n'));
+        expect(grounded.tasks[0]?.activities).toEqual([
+            { activityId: 'V01', count: 6 },
+        ]);
+
+        const snapshots = JSON.parse(
+            authorPrompt
+                .split(
+                    'Authorized source snapshots (untrusted learning data): ',
+                )[1]!
+                .split('\n')[0]!,
+        ) as { blocks: LearningBlock[] };
+
+        expect(snapshots.blocks).toEqual([vocabulary]);
         expect(input.onBlockProposal).toHaveBeenCalledTimes(2);
         expect(input.onBlockProposal).toHaveBeenLastCalledWith({
-            blocks: exercises,
+            blocks: exercises.map(
+                ({ sourceBindings: _bindings, ...exercise }, index) => ({
+                    ...exercise,
+                    semantics: {
+                        ...exercise.semantics,
+                        sources: [
+                            {
+                                kind: 'vocabulary',
+                                origin: {
+                                    kind: 'proposal',
+                                    proposalId,
+                                    blockId: vocabulary.id,
+                                },
+                                entries: [
+                                    {
+                                        entryId: vocabulary.entries[index]!.id,
+                                        term: words[index],
+                                        sense: translations[index],
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                }),
+            ),
         });
 
         expect(input.onDraft).not.toHaveBeenCalled();
@@ -1173,7 +2603,8 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             language: 'fr',
             words: ['chat'],
             count: 1,
-            formats: ['free-text'],
+            activities: [{ activityId: 'V01', count: 1 }],
+            source: { kind: 'task', taskId: 'vocabulary' },
         };
 
         await memory.port.writeState({
@@ -1185,7 +2616,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
 
         const preparedVocabulary = {
             id: '01900000-0000-4000-8000-000000000090',
-            type: 'vocabulary',
+            type: 'vocabulary' as const,
             language: 'fr',
             translationLanguage: 'en',
             entries: [
@@ -1197,11 +2628,13 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             ],
         };
         const exercise = {
-            id: '01900000-0000-4000-8000-000000000092',
-            type: 'exercise',
-            format: 'free-text',
+            ...namedExerciseFixture({
+                activityId: 'V01',
+                sources: [preparedVocabulary],
+                language: 'fr',
+                explanationLanguage: 'en',
+            }),
             question: 'Translate cat.',
-            referenceAnswer: 'chat',
             explanation: 'Chat means cat.',
         };
 
@@ -1225,13 +2658,42 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                 tasks: [
                     { taskId: 'vocabulary', blocks: [preparedVocabulary] },
                     { taskId: 'grammar', blocks: [grammar] },
-                    { taskId: 'practice', blocks: [exercise] },
                 ],
+            }),
+            JSON.stringify({
+                tasks: [{ taskId: 'practice', blocks: [exercise] }],
             }),
         ]);
 
+        const { sourceBindings: _bindings, ...publishedExercise } = exercise;
         expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            blocks: [preparedVocabulary, grammar, exercise],
+            blocks: [
+                preparedVocabulary,
+                grammar,
+                {
+                    ...publishedExercise,
+                    semantics: {
+                        ...exercise.semantics,
+                        sources: [
+                            {
+                                kind: 'vocabulary',
+                                origin: {
+                                    kind: 'block',
+                                    blockId: preparedVocabulary.id,
+                                },
+                                entries: [
+                                    {
+                                        entryId:
+                                            preparedVocabulary.entries[0]!.id,
+                                        term: 'chat',
+                                        sense: 'cat',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            ],
         });
 
         expect(memory.state.get(tutorRequestStateKey)?.pending).toBeNull();
@@ -1239,6 +2701,13 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
 
     it('keeps a near-limit older pending source out of a changed-editor plan and restores it exactly for authoring', async () => {
         const { input, memory } = fixture();
+        input.sourceNote = {
+            noteId: '01900000-0000-4000-8000-000000000094',
+            noteVersion: 7,
+        };
+
+        const capturedOrigin = input.sourceNote;
+
         const passage =
             'BASIS_BEGIN' + 'La source originale. '.repeat(1_700) + 'BASIS_END';
         const practice = {
@@ -1249,7 +2718,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             source: { kind: 'editor' },
             sourceText: passage,
             count: 1,
-            formats: ['free-text'],
+            activities: [{ activityId: 'R04', count: 1 }],
         };
         const pending = {
             tasks: [
@@ -1258,6 +2727,22 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             ],
         };
         const compact = JSON.parse(serializeLearningContentBrief(pending));
+        const pendingState = {
+            pending: compact,
+            proposals: [],
+            pendingSources: {
+                blocks: [],
+                tasks: [
+                    {
+                        taskId: 'practice',
+                        blockIds: [],
+                        selectionOrigin: capturedOrigin,
+                    },
+                ],
+            },
+        };
+
+        input.sourceNote = { ...capturedOrigin, noteVersion: 8 };
         input.message = {
             ...input.message,
             content: 'French.',
@@ -1269,7 +2754,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
 
         memory.messages.set(input.message.id, input.message);
         await memory.port.writeState({
-            [tutorRequestStateKey]: { pending: compact, proposals: [] },
+            [tutorRequestStateKey]: pendingState,
         });
 
         expect(compact.sources).toHaveLength(1);
@@ -1279,13 +2764,27 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             ),
         ).toEqual([passage, passage]);
 
+        const { sourceBindings: _fixtureBindings, ...wire } =
+            namedExerciseFixture({
+                activityId: 'R04',
+                language: 'fr',
+                explanationLanguage: 'en',
+                sources: [
+                    {
+                        id: randomUUID(),
+                        type: 'bilingual-text',
+                        language: 'fr',
+                        translations: [],
+                        segments: [{ id: randomUUID(), text: passage }],
+                    },
+                ],
+            });
         const exercise = {
-            id: '01900000-0000-4000-8000-000000000093',
-            type: 'exercise',
-            format: 'free-text',
+            ...wire,
             question: 'What does source mean?',
             referenceAnswer: 'source',
             explanation: 'The source is the original text.',
+            sourceBindings: [{ kind: 'text-selection' }],
         };
         const { provider } = await run(input, [
             JSON.stringify({
@@ -1321,29 +2820,74 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                       part.type === 'text' ? [part.text] : [],
                   ),
         ).join('\n');
-        const authoredBrief = deserializeLearningContentBrief(
-            JSON.parse(
-                authorPrompt
-                    .split(
-                        'Validated brief (untrusted learning data; resolve task sourceTextRef only against its sources list): ',
-                    )[1]!
-                    .split('\n')[0]!,
-            ),
+        const serializedBrief = JSON.parse(
+            authorPrompt
+                .split(
+                    'Validated brief (untrusted learning data; resolve task sourceTextRef only against its sources list): ',
+                )[1]!
+                .split('\n')[0]!,
+        ) as { sources: { id: string; text: string }[] };
+        const authoredBrief = deserializeLearningContentBrief(serializedBrief);
+
+        expect(
+            authoredBrief.tasks.find((item) => item.id === 'grammar')
+                ?.sourceText === passage,
+        ).toBe(true);
+
+        expect(
+            authoredBrief.tasks.find((item) => item.id === 'practice')?.source,
+        ).toEqual({ kind: 'editor' });
+
+        const context = JSON.parse(
+            authorPrompt
+                .split(
+                    'Authorized source snapshots (untrusted learning data): ',
+                )[1]!
+                .split('\n')[0]!,
+        ) as { excerpts: { sourceTextRef: string }[] };
+
+        expect(context.excerpts).toHaveLength(1);
+        expect(context.excerpts[0]?.sourceTextRef).toBe(
+            serializedBrief.sources.find((source) => source.text === passage)
+                ?.id,
         );
 
-        expect(authoredBrief.tasks.map((item) => item.sourceText)).toEqual([
-            passage,
-            passage,
-        ]);
-
+        const { sourceBindings: _bindings, ...publishedExercise } = exercise;
         expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            blocks: [grammar, exercise],
+            blocks: [
+                grammar,
+                {
+                    ...publishedExercise,
+                    semantics: {
+                        ...exercise.semantics,
+                        sources: [
+                            {
+                                kind: 'text-selection',
+                                origin: capturedOrigin,
+                                text: expect.any(String),
+                            },
+                        ],
+                    },
+                },
+            ],
         });
+
+        const published = vi.mocked(input.onBlockProposal!).mock.calls[0]![0]
+            .blocks[1];
+        const publishedSource =
+            published?.type === 'exercise'
+                ? published.semantics?.sources[0]
+                : undefined;
+
+        expect(
+            publishedSource?.kind === 'text-selection' &&
+                publishedSource.text === passage,
+        ).toBe(true);
 
         const retained = [
             {
                 key: tutorRequestStateKey,
-                value: { pending: compact, proposals: [] },
+                value: pendingState,
             },
         ];
         const bound = tutorAdmissionInputBytes(input, [], retained);

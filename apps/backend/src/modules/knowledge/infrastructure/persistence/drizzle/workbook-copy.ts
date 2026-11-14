@@ -1,9 +1,24 @@
 import { randomUUID } from 'node:crypto';
 import {
+    LearningBlockIdSchema,
     KnowledgeNoteContentSchema,
     type KnowledgeBody,
 } from '@languon/contracts';
 import { KnowledgeDomainError } from '../../../domain/knowledge';
+
+function historicalExerciseSource(value: Record<string, unknown>): boolean {
+    const origin = value.origin;
+
+    return (
+        value.kind === 'text-selection' ||
+        ((value.kind === 'vocabulary' ||
+            value.kind === 'grammar' ||
+            value.kind === 'text') &&
+            typeof origin === 'object' &&
+            origin !== null &&
+            (origin as Record<string, unknown>).kind === 'proposal')
+    );
+}
 
 /** Remap only structural identities; literal learner text is never rewritten. */
 export function copyWorkbookBody(
@@ -23,6 +38,10 @@ export function copyWorkbookBody(
         }
 
         const object = value as Record<string, unknown>;
+        if (historicalExerciseSource(object)) {
+            return;
+        }
+
         if (
             object.type === 'audio' &&
             typeof object.assetId === 'string' &&
@@ -34,7 +53,11 @@ export function copyWorkbookBody(
             );
         }
 
-        if (typeof object.id === 'string' && !ids.has(object.id)) {
+        if (
+            typeof object.id === 'string' &&
+            LearningBlockIdSchema.safeParse(object.id).success &&
+            !ids.has(object.id)
+        ) {
             ids.set(object.id, randomUUID());
         }
 
@@ -61,12 +84,21 @@ export function copyWorkbookBody(
                 'sourceSegmentId',
                 'correctChoiceId',
                 'segmentIds',
+                'choiceId',
+                'gapId',
+                'entryId',
+                'segmentId',
             ].includes(key)
         ) {
             return ids.get(value) ?? value;
         }
 
         if (!value || typeof value !== 'object') {
+            return value;
+        }
+
+        // A copied document owns the frozen content, not a rewritten history.
+        if (historicalExerciseSource(value as Record<string, unknown>)) {
             return value;
         }
 

@@ -9,29 +9,34 @@ source_paths:
     - apps/web/src/fsd/entities/learning-blocks/**
     - packages/contracts/src/learning-blocks.ts
     - packages/contracts/src/workbook-learning.ts
+    - packages/contracts/src/exercise-activity*.ts
+    - packages/contracts/src/named-exercises.ts
+    - packages/contracts/src/exercise-generation.ts
 ---
 
 # Named exercise tools, verification, and Mastra playground
 
-This plan records the decisions agreed on 2026-11-12. The user authorized saving
-the plan and implementing **Feature 1, Tutor and learning-tool playground —
-BL-014**, first. After its verified delivery and operating instructions, the user
-will check the playground before exercise implementation continues. Features 2
-and 3 and the later extensions remain deferred; this document does not authorize
-starting them. Actual delivery state and evidence belong in the corresponding
-feature records and backlog, not this roadmap.
+This plan records the decisions agreed on 2026-11-12. **Feature 1, Tutor and
+learning-tool playground — BL-014**, is complete. On 2026-11-13 the user approved
+moving past the playground checkpoint and starting **Feature 2, Named text
+exercises**, step by step from E1. [Feature067](../.agent/features/067-named-text-exercises/FEATURE.md)
+records completed delivery, including catalog, active consumer integration, source
+grounding, Studio tools, checking and the activity picker; its evidence and reviews
+record verified results and remaining operational follow-ups. Feature 3 and later extensions remain deferred.
+Actual delivery state and evidence belong in feature records and backlog, not
+this roadmap; authorization is not completion evidence.
 
 ## 1. Delivery order and architectural decisions
 
 Deliver this as separate features:
 
-| Order                                     | Feature                                         | Result                                                                                                            |
-| ----------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| 1 — completed; awaiting user check        | **Tutor and learning-tool playground — BL-014** | Test current tools and complete tutor turns in isolated Mastra Studio sessions.                                   |
-| 2 — deferred until user checks playground | **Named text exercises**                        | Deliver 19 priority activities through chat, an activity picker, interactive blocks, answer checking, and Studio. |
-| 3 — deferred                              | **Additional text activities**                  | Add the remaining nine text activities and their required interactions.                                           |
-| Later — deferred                          | **Answer-aware chat references**                | Attach specific attempts to chat and compare answers across exercises.                                            |
-| Later — deferred                          | **Listening and speaking**                      | Separate work covering audio prerequisites, recording, transcription, and assessment.                             |
+| Order            | Feature                                         | Result                                                                                                            |
+| ---------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 1 — completed    | **Tutor and learning-tool playground — BL-014** | Test current tools and complete tutor turns in isolated Mastra Studio sessions.                                   |
+| 2 — completed    | **Named text exercises**                        | Deliver 19 priority activities through chat, an activity picker, interactive blocks, answer checking, and Studio. |
+| 3 — deferred     | **Additional text activities**                  | Add the remaining nine text activities and their required interactions.                                           |
+| Later — deferred | **Answer-aware chat references**                | Attach specific attempts to chat and compare answers across exercises.                                            |
+| Later — deferred | **Listening and speaking**                      | Separate work covering audio prerequisites, recording, transcription, and assessment.                             |
 
 Use the [exercise research](surveys/language-learning-exercise-catalog.md) as the
 pedagogical specification.
@@ -441,4 +446,9 @@ answer-aware chat UI remain separate deliveries.
 
 ## Playground delivery status
 
-BL-014 is complete as feature065. See [playground usage](tutor-playground.md) and [verified evidence](../.agent/features/065-tutor-learning-tool-playground/EVIDENCE.md). The user will inspect the playground before exercise implementation starts. Live model testing still requires reviewed isolated routing/pricing/funding configuration; deterministic fixtures are immediately available.
+BL-014 is complete as feature065. See [playground usage](tutor-playground.md) and
+[verified evidence](../.agent/features/065-tutor-learning-tool-playground/EVIDENCE.md).
+The user approved moving to Feature 2 on 2026-11-13. Live model testing still
+requires reviewed isolated routing/pricing/funding configuration; deterministic
+fixtures are immediately available. Feature067 records exercise implementation
+progress independently of the completed playground.

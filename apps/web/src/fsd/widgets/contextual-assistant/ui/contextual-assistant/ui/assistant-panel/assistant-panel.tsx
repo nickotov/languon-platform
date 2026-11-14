@@ -9,6 +9,7 @@ import type { KnowledgeBlockProposal } from '@languon/contracts';
 import {
     KnowledgeBlockProposals,
     blockProposalCompletionKey,
+    ExerciseGenerationPicker,
 } from '@/fsd/features/knowledge-notes';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -86,6 +87,11 @@ export function AssistantPanel(
     const historyDeleting = panel.history ? panel.deleting : null;
     const canSelect = Boolean(props.selectionRootId) && !workspace;
     const selectionAction = canSelect ? props.onSelectFromPage : undefined;
+    function openExercisePicker() {
+        placement?.setMobileTab('tutor');
+        panel.exercises.show();
+    }
+
     function foldMobileForReview() {
         if (workspace && placement && !placement.detached) {
             if (placement.mobile) {
@@ -414,6 +420,11 @@ export function AssistantPanel(
                                 onRemoveWorkspacePassage={
                                     panel.removeWorkspacePassage
                                 }
+                                onGenerateExercises={
+                                    workspace ? openExercisePicker : undefined
+                                }
+                                exerciseRequest={panel.exercises.request}
+                                onClearExerciseRequest={panel.exercises.clear}
                             />
                         )}
                     </div>
@@ -430,6 +441,25 @@ export function AssistantPanel(
                 onCancelDelete={panel.cancelDelete}
                 onConfirmDelete={panel.confirmDelete}
             />
+            {workspace && panel.exercises.open && (
+                <ExerciseGenerationPicker
+                    sources={props.blocks ?? []}
+                    selectedIds={panel.blockReferences.selected.map(
+                        (block) => block.id,
+                    )}
+                    passage={panel.workspacePassage?.content}
+                    explanationLanguage={
+                        preferences?.replyLanguage === 'auto'
+                            ? locale
+                            : (preferences?.replyLanguage ?? locale)
+                    }
+                    locale={locale}
+                    busy={busy}
+                    initialRequest={panel.exercises.request}
+                    onClose={panel.exercises.close}
+                    onPrepare={panel.exercises.prepare}
+                />
+            )}
         </TutorShell>
     );
 }

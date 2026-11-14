@@ -310,6 +310,12 @@ export class ConversationSourceResolver {
                                           dictionary.translationContext,
                                       settings: {
                                           ...settingsValues(settings),
+                                          transcriptionCustomLabel:
+                                              settings.transcriptionEnabled &&
+                                              settings.transcriptionNotation ===
+                                                  'custom'
+                                                  ? settings.customNotationLabel
+                                                  : null,
                                           exampleTranslationEnabled:
                                               settings.exampleEnabled &&
                                               settings.exampleTranslationEnabled,

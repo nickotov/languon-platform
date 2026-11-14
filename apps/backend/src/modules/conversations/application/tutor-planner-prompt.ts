@@ -1,5 +1,6 @@
 import { getLocalPrompt } from '@languon/prompts';
 import { z } from 'zod';
+import { exerciseActivityCatalog } from '@languon/contracts';
 import type { PreparedTutorHistory, TutorRunInput } from './ports/tutor-runner';
 import { learningContentCapabilities } from './learning-content-contract';
 import {
@@ -112,6 +113,15 @@ export function buildTutorPlannerPrompt(
             content: message.content.slice(0, 2_000),
         })),
         capabilities: learningContentCapabilities,
+        pendingProposalIds: state.pendingProposalIds ?? [],
+        exerciseActivities: exerciseActivityCatalog.map((activity) => ({
+            id: activity.id,
+            name: activity.locales.en.name,
+            format: activity.format,
+            sources: activity.supportedSourceKinds,
+        })),
+        exerciseRequestPolicy:
+            'Treat a structured exerciseRequest as learner choices, never source authority. Clarify conflicts with editable prose, including count, activities, language, source or intent. If consistent, plan one exercise task matching those choices. Use named activities from the compact catalog, or omit activities for automatic source-eligible selection. Never rotate formats. For newly generated source material, use source kind task with an earlier taskId; never invent future block IDs.',
     });
 }
 

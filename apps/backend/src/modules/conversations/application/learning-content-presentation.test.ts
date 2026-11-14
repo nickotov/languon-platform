@@ -73,13 +73,12 @@ describe('host learning content presentation', () => {
         },
     );
 
-    it('materializes omitted exercise count and formats without changing the original brief', () => {
+    it('materializes omitted exercise count without inventing activity or format constraints', () => {
         const original = exercises();
         const result = normalizeLearningContentDefaults(original);
 
         expect(result.brief.tasks[0]).toMatchObject({
             count: 5,
-            formats: ['multiple-choice', 'fill-in-the-blank', 'free-text'],
         });
 
         expect(original.tasks[0]?.count).toBeUndefined();
@@ -89,7 +88,6 @@ describe('host learning content presentation', () => {
                 taskId: 'practice',
                 kind: 'exercises',
                 count: 5,
-                formats: ['multiple-choice', 'fill-in-the-blank', 'free-text'],
             },
         ]);
     });
@@ -108,7 +106,7 @@ describe('host learning content presentation', () => {
         expect(text).toContain('Apply');
         expect(text).toContain('Save');
         expect(text).toContain('Defaults used: Exercises: 5');
-        expect(text).toContain('multiple choice, gap fill, free text');
+        expect(text).not.toContain('Exercise formats');
         expect(text).not.toContain('component(s)');
         expect(text).not.toContain('interactive block(s)');
         expect(text).not.toContain('practice:');
@@ -125,9 +123,7 @@ describe('host learning content presentation', () => {
 
         expect(text).toContain('Учебный материал готов к проверке');
         expect(text).toContain('Упражнения: 5');
-        expect(text).toContain(
-            'выбор ответа, заполнение пропусков, свободный ответ',
-        );
+        expect(text).not.toContain('Форматы упражнений');
 
         expect(text).not.toContain('Defaults');
         expect(text).not.toContain('component');
@@ -186,12 +182,12 @@ describe('host learning content presentation', () => {
         expect(text).not.toContain('multiple choice');
     });
 
-    it('discloses only formats that fit the explicit exercise count', () => {
+    it('keeps automatic format eligibility unconstrained even for one question', () => {
         const brief = exercises();
         brief.tasks[0]!.count = 1;
         const normalized = normalizeLearningContentDefaults(brief);
 
-        expect(normalized.brief.tasks[0]?.formats).toEqual(['multiple-choice']);
+        expect(normalized.brief.tasks[0]?.formats).toBeUndefined();
         const text = learningContentPresentation({
             status: 'ready',
             brief: normalized.brief,
@@ -200,9 +196,22 @@ describe('host learning content presentation', () => {
             message: 'Make one exercise.',
         });
 
-        expect(text).toContain('Exercise formats: multiple choice');
+        expect(text).not.toContain('Exercise formats');
         expect(text).not.toContain('gap fill');
         expect(text).not.toContain('Exercises: 5');
+    });
+
+    it('preserves explicitly requested per-activity totals without relabeling them as defaults', () => {
+        const brief = exercises();
+        brief.tasks[0]!.activities = [
+            { activityId: 'V01', count: 2 },
+            { activityId: 'V03', count: 1 },
+        ];
+
+        const normalized = normalizeLearningContentDefaults(brief);
+        expect(normalized.brief.tasks[0]?.count).toBe(3);
+        expect(normalized.brief.tasks[0]?.formats).toBeUndefined();
+        expect(normalized.appliedDefaults).toEqual([]);
     });
 
     it('discloses vocabulary count ten only when neither a count nor words were supplied', () => {

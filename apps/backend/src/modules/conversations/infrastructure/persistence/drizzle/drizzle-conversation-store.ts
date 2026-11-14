@@ -8,6 +8,7 @@ import { conversationReadBlockProposal } from './conversation-proposal-readback'
 import { conversationRecordResponseMetadata } from './conversation-response-metadata';
 import {
     conversationProposeBlocks,
+    conversationProposeBlockBatch,
     conversationListBlockProposals,
     conversationApplyBlockProposal,
 } from './conversation-block-proposals';
@@ -134,8 +135,22 @@ export class DrizzleConversationStore implements ConversationStore {
     proposeBlocks(
         turn: ClaimedConversationTurn,
         input: LearningBlockProposalInput,
+        signal?: AbortSignal,
     ) {
-        return conversationProposeBlocks(this.persistence, turn, input);
+        return conversationProposeBlocks(this.persistence, turn, input, signal);
+    }
+
+    proposeBlockBatch(
+        turn: ClaimedConversationTurn,
+        inputs: LearningBlockProposalInput[],
+        signal?: AbortSignal,
+    ) {
+        return conversationProposeBlockBatch(
+            this.persistence,
+            turn,
+            inputs,
+            signal,
+        );
     }
 
     readBlockProposal(turn: ClaimedConversationTurn, proposalId: string) {

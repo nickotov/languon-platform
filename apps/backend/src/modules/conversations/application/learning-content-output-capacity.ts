@@ -1,3 +1,4 @@
+import { getExerciseActivity } from '@languon/contracts';
 import type { LearningContentBrief } from './learning-content-contract';
 
 export const learningContentAuthoringOutputTokenLimit = 4096;
@@ -51,6 +52,24 @@ export function estimateLearningContentOutput(
             0,
         );
 
-        return total + (task.count ?? 5) * 300 + requiredWords;
+        // Named keys, prepared variants, rubric criteria and evidence are part
+        // of the provider output. Exact source snapshots are host-filled, not
+        // echoed by the model for each exercise.
+        const exerciseAllowance = task.activities?.length
+            ? task.activities.reduce(
+                  (sum, activity) =>
+                      sum +
+                      (activity.count ?? task.count ?? 5) *
+                          (activity.activityId === 'R03'
+                              ? 650
+                              : getExerciseActivity(activity.activityId)
+                                      .checkingPolicy === 'prepared-key'
+                                ? 450
+                                : 550),
+                  0,
+              )
+            : (task.count ?? 5) * 550;
+
+        return total + exerciseAllowance + requiredWords;
     }, 0);
 }

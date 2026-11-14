@@ -22,12 +22,23 @@ import {
     learningContentPresentation,
 } from '../../application/learning-content-presentation';
 import { randomUUID } from 'node:crypto';
+import { z } from 'zod';
+import { ExerciseGenerationRequestSchema } from '@languon/contracts';
+import { tutorMessageModelContent } from '../../application/tutor-message-context';
+import { applyExercisePickerChoices } from '../../application/exercise-picker-resolution';
+import {
+    resolveExerciseSourceContexts,
+    restorePendingExerciseSources,
+    storePendingExerciseSources,
+    exerciseGroundingSources,
+} from './exercise-source-resolution';
 import {
     learningContentCapabilities,
     type LearningContentBrief,
 } from '../../application/learning-content-contract';
 import {
     TutorRequestResolutionSchema,
+    TutorRequestStateSchema,
     tutorRequestStateKey,
 } from '../../application/tutor-request-contract';
 import {
@@ -51,7 +62,7 @@ function sanitizeSourcePatch(
     return {
         tasks: brief.tasks.map((task) => {
             const previous = pending?.tasks.find((item) => item.id === task.id);
-            if (!task.source && !previous?.source) {
+            if (!task.source && !previous?.source && !previous?.sourceText) {
                 return task;
             }
 
@@ -75,7 +86,12 @@ export async function executeTutorRequest(
     const loaded = await loadLearningProposalCatalog(input, state);
     state.proposals = loaded.catalog;
     const frozenSources = frozenTutorTextSources(input);
-    const resolution = TutorRequestResolutionSchema.parse(
+    const choices = tutorMessageModelContent(input.message).exerciseRequest;
+    const exerciseRequest =
+        choices === undefined
+            ? undefined
+            : ExerciseGenerationRequestSchema.parse(choices);
+    const planned = TutorRequestResolutionSchema.parse(
         await generateTutorObject({
             agent: agents.tutorRequestResolver,
             prompt: buildTutorPlannerPrompt(input, state, history),
@@ -85,11 +101,30 @@ export async function executeTutorRequest(
             maxOutputTokens: 2048,
         }),
     );
+    const resolution = exerciseRequest
+        ? applyExercisePickerChoices(
+              exerciseRequest,
+              planned,
+              Boolean(frozenSources.selection),
+              z
+                  .array(z.uuid())
+                  .parse(
+                      tutorMessageModelContent(input.message).blockReferences ??
+                          [],
+                  ),
+          )
+        : planned;
 
     const saveState = () =>
         input.memory.writeState({
             [tutorRequestStateKey]: {
                 ...state,
+                ...(!state.pending
+                    ? {
+                          pendingSources: undefined,
+                          pendingProposalIds: undefined,
+                      }
+                    : {}),
                 pending: state.pending
                     ? JSON.parse(serializeLearningContentBrief(state.pending))
                     : null,
@@ -118,6 +153,26 @@ export async function executeTutorRequest(
         ]);
 
         return { text };
+    };
+    const clarifySourceSize = async () => {
+        const questions = {
+            en: 'Please choose a smaller vocabulary set, a shorter passage, or fewer source blocks, then send the exercise request again.',
+            ru: 'Выберите меньший набор слов, более короткий отрывок или меньше исходных блоков, затем отправьте запрос упражнений заново.',
+            fr: 'Choisissez un ensemble de mots plus petit, un passage plus court ou moins de blocs sources, puis renvoyez la demande d’exercices.',
+            es: 'Elige un conjunto de palabras más pequeño, un pasaje más corto o menos bloques de origen y vuelve a enviar la solicitud.',
+        };
+        const replyLanguage =
+            exerciseRequest?.explanationLanguage ??
+            ('replyLanguage' in resolution
+                ? resolution.replyLanguage
+                : undefined) ??
+            input.preferences.replyLanguage;
+        const locale = replyLanguage.split('-')[0] as keyof typeof questions;
+        state.pending = null;
+        delete state.pendingSources;
+        await saveState();
+
+        return finishText(questions[locale] ?? questions.en, 'clarification');
     };
 
     async function rememberReceipt(
@@ -200,16 +255,56 @@ export async function executeTutorRequest(
             ? mergePendingLearningContentBrief(state.pending, extracted)
             : extracted;
 
+        let preserved:
+            ReturnType<typeof restorePendingExerciseSources> | undefined;
+
         try {
+            preserved = resolution.continuesPending
+                ? restorePendingExerciseSources(state, pending)
+                : new Map();
+
+            const contexts = new Map(preserved);
+
+            await resolveExerciseSourceContexts(
+                input,
+                pending,
+                loaded.blocks,
+                contexts,
+            );
+
             state.pending = groundLearningContentBrief(
                 pending,
                 frozenSources,
                 loaded.blocks,
+                [],
+                exerciseGroundingSources(contexts),
             );
+
+            const captured =
+                TutorRequestStateSchema.shape.pendingSources.safeParse(
+                    storePendingExerciseSources(contexts),
+                );
+
+            if (!captured.success) {
+                return clarifySourceSize();
+            }
+
+            state.pendingSources = captured.data;
         } catch {
             // Unavailable sources stay unresolved rather than storing model-invented text.
             state.pending = pending;
+            state.pendingSources = preserved?.size
+                ? TutorRequestStateSchema.shape.pendingSources.parse(
+                      storePendingExerciseSources(preserved),
+                  )
+                : undefined;
         }
+
+        state.pendingProposalIds =
+            resolution.continuesPending &&
+            pending.tasks.some((task) => !task.source)
+                ? state.pendingProposalIds
+                : undefined;
 
         await saveState();
 
@@ -232,12 +327,51 @@ export async function executeTutorRequest(
         resolution.brief,
         resolution.continuesPending ? state.pending : null,
     );
+    const requestedProposalIds = resolution.sourceProposalIds?.length
+        ? resolution.sourceProposalIds
+        : resolution.continuesPending
+          ? (state.pendingProposalIds ?? [])
+          : [];
+    const changedGlobalSource = Boolean(
+        resolution.continuesPending &&
+        resolution.sourceProposalIds?.length &&
+        JSON.stringify([...requestedProposalIds].sort()) !==
+            JSON.stringify([...(state.pendingProposalIds ?? [])].sort()),
+    );
+    const changedGlobalTasks = new Set(
+        changedGlobalSource
+            ? state.pending?.tasks
+                  .filter((task) => !task.source)
+                  .map((task) => task.id)
+            : [],
+    );
+    const pendingForMerge =
+        state.pending && changedGlobalSource
+            ? {
+                  tasks: state.pending.tasks.map((task) => {
+                      if (!changedGlobalTasks.has(task.id)) {
+                          return task;
+                      }
+
+                      const {
+                          sourceText: _previousText,
+                          words: _previousWords,
+                          ...requirements
+                      } = task;
+
+                      return requirements;
+                  }),
+              }
+            : state.pending;
     const requestedBrief = resolution.continuesPending
-        ? mergePendingLearningContentBrief(state.pending, extractedBrief)
+        ? mergePendingLearningContentBrief(pendingForMerge, extractedBrief)
         : extractedBrief;
+    const globalProposalIds = requestedBrief.tasks.some((task) => !task.source)
+        ? requestedProposalIds
+        : [];
     const sourceIds = [
         ...new Set([
-            ...(resolution.sourceProposalIds ?? []),
+            ...globalProposalIds,
             ...requestedBrief.tasks.flatMap((task) =>
                 task.source?.kind === 'proposal'
                     ? [task.source.proposalId]
@@ -273,7 +407,28 @@ export async function executeTutorRequest(
             throw new Error('Specify which learning source to use.');
         }
 
+        // Match snapshots against their original selector before replacing the
+        // pending brief; otherwise a failed new source could inherit old material.
+        let preserved;
+        try {
+            const retained = resolution.continuesPending
+                ? restorePendingExerciseSources(state, requestedBrief)
+                : new Map();
+
+            changedGlobalTasks.forEach((taskId) => retained.delete(taskId));
+            preserved = TutorRequestStateSchema.shape.pendingSources.parse(
+                storePendingExerciseSources(retained),
+            );
+        } catch {
+            preserved = undefined;
+        }
+
         state.pending = requestedBrief;
+        state.pendingSources = preserved;
+        state.pendingProposalIds = globalProposalIds.length
+            ? [...globalProposalIds]
+            : undefined;
+
         await saveState();
 
         return finishText(clarification.question, 'clarification');
@@ -296,34 +451,106 @@ export async function executeTutorRequest(
     }
 
     let brief;
+    let taskSources;
     try {
+        const retained = resolution.continuesPending
+            ? restorePendingExerciseSources(state, requestedBrief)
+            : new Map();
+
+        changedGlobalTasks.forEach((taskId) => retained.delete(taskId));
+
+        if (
+            resolution.continuesPending &&
+            requestedBrief.tasks.some(
+                (task) =>
+                    task.kind === 'exercises' &&
+                    task.sourceText &&
+                    !retained.has(task.id) &&
+                    task.source?.kind !== 'task' &&
+                    state.pending?.tasks.some(
+                        (original) =>
+                            original.id === task.id &&
+                            original.sourceText === task.sourceText,
+                    ),
+            )
+        ) {
+            throw new Error(
+                'The pending source origin is unavailable. Select it again.',
+            );
+        }
+
+        taskSources = await resolveExerciseSourceContexts(
+            input,
+            requestedBrief,
+            loaded.blocks,
+            retained,
+            sourceIds,
+        );
+
         brief = groundLearningContentBrief(
             requestedBrief,
             frozenSources,
             loaded.blocks,
             sources,
+            exerciseGroundingSources(taskSources),
         );
     } catch {
         return clarifySource();
     }
 
+    let captured;
+    try {
+        captured = TutorRequestStateSchema.shape.pendingSources.safeParse(
+            storePendingExerciseSources(taskSources),
+        );
+    } catch {
+        return clarifySource();
+    }
+
+    if (!captured.success) {
+        return clarifySourceSize();
+    }
+
     state.pending = brief;
+    state.pendingSources = captured.data;
+    state.pendingProposalIds = globalProposalIds.length
+        ? [...globalProposalIds]
+        : undefined;
+
     await saveState();
-    const normalized = normalizeLearningContentDefaults(brief);
     const authorPreferences = {
         explanationLanguage:
-            input.preferences.replyLanguage === 'auto'
+            exerciseRequest?.explanationLanguage ??
+            (input.preferences.replyLanguage === 'auto'
                 ? resolution.replyLanguage
-                : input.preferences.replyLanguage,
+                : input.preferences.replyLanguage),
         tone: input.preferences.tone,
         explanationLevel: input.preferences.explanationLevel,
         detail: input.preferences.detail,
         wording: input.preferences.wording,
         approach: input.preferences.approach,
     };
+    const normalized = normalizeLearningContentDefaults({
+        tasks: brief.tasks.map((task) =>
+            task.kind === 'exercises'
+                ? {
+                      ...task,
+                      explanationLanguage:
+                          task.explanationLanguage ??
+                          authorPreferences.explanationLanguage,
+                  }
+                : task,
+        ),
+    });
     const authoring = createLearningContentAuthoring({
         // Prior unapplied proposals are grounding material, not current-document reference authority.
-        authorizedSources: [],
+        authorizedSources: [...taskSources.values()].flatMap((context) =>
+            context.blocks.filter(
+                (block) =>
+                    !context.proposalId && !context.proposalIds?.has(block.id),
+            ),
+        ),
+        taskSources,
         ...(readBudget ? { readBudget } : {}),
         generate: ({
             prompt,
@@ -333,7 +560,7 @@ export async function executeTutorRequest(
         }) =>
             generateTutorObject({
                 agent: agents.learningContentAuthor,
-                prompt: `${prompt}\nApplication authoring preferences (trusted server-validated settings): ${JSON.stringify(authorPreferences)}\nUse explanationLanguage for explanatory prose fields such as grammar rules, commentary and exercise explanations, applying detail, wording and approach independently. Keep every task's studied language and translation language unchanged. Preserve verbatim source passages, vocabulary terms, grammatical patterns, questions and prepared answers in their designated task languages.`,
+                prompt: `${prompt}\nApplication authoring preferences (trusted server-validated settings): ${JSON.stringify(authorPreferences)}\nEach task's explicit explanationLanguage takes precedence over these default settings. Use explanationLanguage for explanatory prose fields such as grammar rules, commentary and exercise explanations, applying detail, wording and approach independently. Keep every task's studied language and translation language unchanged. Preserve verbatim source passages, vocabulary terms, grammatical patterns, questions and prepared answers in their designated task languages.`,
                 schema,
                 signal: authoringSignal,
                 operationId: `${input.operationId}:authoring`,

@@ -481,6 +481,7 @@ export function localizedBlockLabels(locale: Locale): BlockAuthoringLabels {
         field: translate,
         view: {
             ...view,
+            locale,
             kinds,
             exerciseKinds: Object.fromEntries(
                 Object.entries(

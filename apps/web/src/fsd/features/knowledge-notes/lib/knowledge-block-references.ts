@@ -6,6 +6,7 @@ export type KnowledgeBlockReference = {
     id: string;
     type: LearningBlock['type'];
     title: string;
+    language?: string | undefined;
 };
 
 /** Descriptors for UI discovery; authoritative material is resolved by the server. */
@@ -22,6 +23,9 @@ export function knowledgeBlockReferences(
                 id: block.id,
                 type: block.type,
                 title: blockReferenceTitle(block, references.length + 1),
+                ...('language' in block && block.language
+                    ? { language: block.language }
+                    : {}),
             });
         }
 

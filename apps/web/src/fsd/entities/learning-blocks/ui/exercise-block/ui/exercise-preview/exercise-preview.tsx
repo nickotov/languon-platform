@@ -1,4 +1,13 @@
-import type { ExerciseLearningBlock } from '@languon/contracts';
+import {
+    getExerciseActivity,
+    type ExerciseLearningBlock,
+} from '@languon/contracts';
+import { isLocale } from '@/fsd/shared/i18n';
+import {
+    exerciseCheckingLabel,
+    exerciseChoiceText,
+    exerciseReferenceText,
+} from '../../../../lib/named-exercise-labels';
 import type { LearningBlockViewProps } from '../../../../types';
 import { ExerciseHint } from '../exercise-hint/exercise-hint';
 import { LearningNarrative } from '../../../learning-narrative/learning-narrative';
@@ -9,20 +18,38 @@ export function ExercisePreview(
 ) {
     const { block, labels } = props;
     const compact = props.variant === 'compact';
+    const labelLocale = labels.locale ?? 'en';
+    const locale = isLocale(labelLocale) ? labelLocale : 'en';
+    const activity = block.semantics
+        ? getExerciseActivity(block.semantics.activity.id)
+        : undefined;
+    const activityLabel = activity
+        ? `${activity.locales[locale].name} · ${exerciseCheckingLabel(activity.checkingPolicy, locale)}`
+        : undefined;
+    const referenceText = exerciseReferenceText(block, locale);
 
     return (
         <div className={styles.preview}>
+            {activityLabel && (
+                <p className={styles.secondary}>{activityLabel}</p>
+            )}
             <p className={styles.question}>{block.question}</p>
             {!compact && block.format === 'multiple-choice' ? (
                 <ul>
-                    {block.choices.map((choice) => (
-                        <li key={choice.id}>{choice.text}</li>
-                    ))}
+                    {block.choices.map((choice) => {
+                        const choiceText = exerciseChoiceText(
+                            block,
+                            choice,
+                            locale,
+                        );
+
+                        return <li key={choice.id}>{choiceText}</li>;
+                    })}
                 </ul>
             ) : null}
             <p className={styles.reference}>
                 <span>{labels.answer}: </span>
-                {block.referenceAnswer}
+                {referenceText}
             </p>
             {!compact ? (
                 <>

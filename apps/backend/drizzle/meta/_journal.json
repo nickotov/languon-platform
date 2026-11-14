@@ -1184,6 +1184,20 @@
       "when": 1794505494431,
       "tag": "0168_faulty_thunderbird",
       "breakpoints": true
+    },
+    {
+      "idx": 169,
+      "version": "7",
+      "when": 1794602916286,
+      "tag": "0169_named-exercise-feedback",
+      "breakpoints": true
+    },
+    {
+      "idx": 170,
+      "version": "7",
+      "when": 1794612336647,
+      "tag": "0170_named-exercise-source-dependencies",
+      "breakpoints": true
     }
   ]
 }

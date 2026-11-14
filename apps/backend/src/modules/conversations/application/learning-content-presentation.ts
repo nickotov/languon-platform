@@ -14,7 +14,6 @@ export interface LearningContentAppliedDefault {
     taskId: string;
     kind: 'vocabulary' | 'exercises';
     count?: number;
-    formats?: string[];
 }
 
 /** Normalize once at the host boundary while retaining which choices were omitted. */
@@ -33,36 +32,36 @@ export function normalizeLearningContentDefaults(
                 return task;
             }
 
+            const explicitActivityCount =
+                task.kind === 'exercises' &&
+                task.activities?.every(
+                    (activity) => activity.count !== undefined,
+                )
+                    ? task.activities.reduce(
+                          (sum, activity) => sum + activity.count!,
+                          0,
+                      )
+                    : undefined;
             const count =
                 task.count ??
+                explicitActivityCount ??
                 (task.kind === 'vocabulary' && task.words
                     ? task.words.length
                     : capability.defaultCount);
-            const formats =
-                task.kind === 'exercises'
-                    ? (task.formats ??
-                      [
-                          ...learningContentCapabilities.find(
-                              (capability) => capability.kind === 'exercises',
-                          )!.formats,
-                      ].slice(0, count))
-                    : undefined;
             const defaultCount =
                 task.count === undefined &&
+                explicitActivityCount === undefined &&
                 !(task.kind === 'vocabulary' && task.words);
-            const defaultFormats =
-                task.kind === 'exercises' && task.formats === undefined;
 
-            if (defaultCount || defaultFormats) {
+            if (defaultCount) {
                 appliedDefaults.push({
                     taskId: task.id,
                     kind: task.kind,
-                    ...(defaultCount ? { count } : {}),
-                    ...(defaultFormats && formats ? { formats } : {}),
+                    count,
                 });
             }
 
-            return { ...task, count, ...(formats ? { formats } : {}) };
+            return { ...task, count };
         }),
     });
 
@@ -75,8 +74,6 @@ interface PresentationCopy {
     defaults: string;
     vocabularyCount: string;
     exerciseCount: string;
-    formats: string;
-    formatNames: readonly [string, string, string];
 }
 
 const copy: Record<string, PresentationCopy> = {
@@ -87,8 +84,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: 'Defaults used',
         vocabularyCount: 'Vocabulary entries',
         exerciseCount: 'Exercises',
-        formats: 'Exercise formats',
-        formatNames: ['multiple choice', 'gap fill', 'free text'],
     },
     ru: {
         ready: 'Учебный материал готов к проверке. Применение предложения изменит черновик; сохранение опубликует его.',
@@ -97,12 +92,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: 'Использованы настройки по умолчанию',
         vocabularyCount: 'Словарные статьи',
         exerciseCount: 'Упражнения',
-        formats: 'Форматы упражнений',
-        formatNames: [
-            'выбор ответа',
-            'заполнение пропусков',
-            'свободный ответ',
-        ],
     },
     es: {
         ready: 'El material está listo para revisar. Aplicar la propuesta modifica el borrador; guardarlo lo publica.',
@@ -111,8 +100,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: 'Valores predeterminados utilizados',
         vocabularyCount: 'Entradas de vocabulario',
         exerciseCount: 'Ejercicios',
-        formats: 'Formatos de ejercicios',
-        formatNames: ['opción múltiple', 'completar huecos', 'respuesta libre'],
     },
     fr: {
         ready: 'Le contenu est prêt à être relu. Appliquer la proposition modifie le brouillon ; enregistrer le publie.',
@@ -121,8 +108,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: 'Valeurs par défaut utilisées',
         vocabularyCount: 'Entrées de vocabulaire',
         exerciseCount: 'Exercices',
-        formats: 'Formats des exercices',
-        formatNames: ['choix multiple', 'texte à trous', 'réponse libre'],
     },
     de: {
         ready: 'Das Lernmaterial ist zur Prüfung bereit. Das Übernehmen ändert den Entwurf; Speichern veröffentlicht ihn.',
@@ -131,8 +116,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: 'Verwendete Standardwerte',
         vocabularyCount: 'Wortschatzeinträge',
         exerciseCount: 'Übungen',
-        formats: 'Übungsformate',
-        formatNames: ['Auswahlantwort', 'Lückentext', 'freie Antwort'],
     },
     ar: {
         ready: 'المادة التعليمية جاهزة للمراجعة. تطبيق الاقتراح يغيّر المسودة، وحفظها ينشرها.',
@@ -141,8 +124,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: 'الإعدادات الافتراضية المستخدمة',
         vocabularyCount: 'مفردات',
         exerciseCount: 'تمارين',
-        formats: 'أنواع التمارين',
-        formatNames: ['اختيار متعدد', 'ملء الفراغات', 'إجابة حرة'],
     },
     he: {
         ready: 'חומר הלימוד מוכן לבדיקה. החלת ההצעה משנה את הטיוטה; שמירה מפרסמת אותה.',
@@ -151,8 +132,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: 'ברירות המחדל שנבחרו',
         vocabularyCount: 'ערכי אוצר מילים',
         exerciseCount: 'תרגילים',
-        formats: 'סוגי תרגילים',
-        formatNames: ['בחירה מרובה', 'השלמת חסרים', 'תשובה חופשית'],
     },
     hi: {
         ready: 'अध्ययन सामग्री समीक्षा के लिए तैयार है। प्रस्ताव लागू करने से मसौदा बदलेगा; सहेजने से वह प्रकाशित होगा।',
@@ -161,8 +140,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: 'इस्तेमाल किए गए डिफ़ॉल्ट',
         vocabularyCount: 'शब्दावली प्रविष्टियाँ',
         exerciseCount: 'अभ्यास',
-        formats: 'अभ्यास के प्रकार',
-        formatNames: ['बहुविकल्पीय', 'रिक्त स्थान', 'मुक्त उत्तर'],
     },
     it: {
         ready: 'Il materiale è pronto per la revisione. Applicare la proposta modifica la bozza; salvarla la pubblica.',
@@ -171,8 +148,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: 'Valori predefiniti utilizzati',
         vocabularyCount: 'Voci di vocabolario',
         exerciseCount: 'Esercizi',
-        formats: 'Formati degli esercizi',
-        formatNames: ['scelta multipla', 'completamento', 'risposta libera'],
     },
     ja: {
         ready: '学習教材を確認できます。提案を適用すると下書きが変更され、保存すると公開されます。',
@@ -181,8 +156,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: '使用した既定値',
         vocabularyCount: '語彙項目数',
         exerciseCount: '練習問題数',
-        formats: '練習形式',
-        formatNames: ['選択式', '穴埋め', '自由記述'],
     },
     ko: {
         ready: '학습 자료를 검토할 수 있습니다. 제안을 적용하면 초안이 바뀌고, 저장하면 게시됩니다.',
@@ -191,8 +164,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: '적용된 기본값',
         vocabularyCount: '어휘 항목 수',
         exerciseCount: '연습 문제 수',
-        formats: '연습 형식',
-        formatNames: ['객관식', '빈칸 채우기', '자유 응답'],
     },
     pl: {
         ready: 'Materiał jest gotowy do sprawdzenia. Zastosowanie propozycji zmienia szkic; zapisanie go publikuje.',
@@ -201,12 +172,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: 'Użyte ustawienia domyślne',
         vocabularyCount: 'Hasła słownictwa',
         exerciseCount: 'Ćwiczenia',
-        formats: 'Formaty ćwiczeń',
-        formatNames: [
-            'wybór odpowiedzi',
-            'uzupełnianie luk',
-            'odpowiedź otwarta',
-        ],
     },
     pt: {
         ready: 'O material está pronto para revisão. Aplicar a proposta altera o rascunho; salvar publica o conteúdo.',
@@ -215,12 +180,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: 'Padrões utilizados',
         vocabularyCount: 'Entradas de vocabulário',
         exerciseCount: 'Exercícios',
-        formats: 'Formatos dos exercícios',
-        formatNames: [
-            'múltipla escolha',
-            'preenchimento de lacunas',
-            'resposta livre',
-        ],
     },
     tr: {
         ready: 'Öğrenme materyali incelemeye hazır. Öneriyi uygulamak taslağı değiştirir; kaydetmek yayımlar.',
@@ -229,8 +188,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: 'Kullanılan varsayılanlar',
         vocabularyCount: 'Sözcük sayısı',
         exerciseCount: 'Alıştırma sayısı',
-        formats: 'Alıştırma biçimleri',
-        formatNames: ['çoktan seçmeli', 'boşluk doldurma', 'serbest yanıt'],
     },
     uk: {
         ready: 'Навчальний матеріал готовий до перевірки. Застосування пропозиції змінить чернетку; збереження опублікує її.',
@@ -239,12 +196,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: 'Використано типові налаштування',
         vocabularyCount: 'Словникові статті',
         exerciseCount: 'Вправи',
-        formats: 'Формати вправ',
-        formatNames: [
-            'вибір відповіді',
-            'заповнення пропусків',
-            'вільна відповідь',
-        ],
     },
     zh: {
         ready: '学习材料已准备好，请先查看。应用建议会修改草稿，保存后才会发布。',
@@ -253,8 +204,6 @@ const copy: Record<string, PresentationCopy> = {
         defaults: '采用的默认设置',
         vocabularyCount: '词汇条目数',
         exerciseCount: '练习题数',
-        formats: '练习形式',
-        formatNames: ['选择题', '填空题', '自由作答'],
     },
 };
 
@@ -313,16 +262,6 @@ export function learningContentPresentation(input: {
         if (defaults.count !== undefined) {
             values.push(
                 `${defaults.kind === 'vocabulary' ? labels.vocabularyCount : labels.exerciseCount}: ${defaults.count}`,
-            );
-        }
-
-        if (defaults.formats) {
-            const supported = learningContentCapabilities.find(
-                (capability) => capability.kind === 'exercises',
-            )!.formats;
-
-            values.push(
-                `${labels.formats}: ${defaults.formats.map((format) => labels.formatNames[supported.indexOf(format as (typeof supported)[number])] ?? format).join(', ')}`,
             );
         }
 

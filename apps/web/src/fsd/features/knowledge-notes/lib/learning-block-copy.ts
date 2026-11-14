@@ -1,8 +1,26 @@
-import { LearningBlockSchema, type LearningBlock } from '@languon/contracts';
+import {
+    LearningBlockIdSchema,
+    LearningBlockSchema,
+    type LearningBlock,
+} from '@languon/contracts';
 
 export const learningBlockClipboardType =
     'application/x-languon-learning-block+json';
 export const learningBlockClipboardPrefix = 'LANGUON_BLOCK_V1\n';
+
+function historicalExerciseSource(value: Record<string, unknown>): boolean {
+    const origin = value.origin;
+
+    return (
+        value.kind === 'text-selection' ||
+        ((value.kind === 'vocabulary' ||
+            value.kind === 'grammar' ||
+            value.kind === 'text') &&
+            typeof origin === 'object' &&
+            origin !== null &&
+            (origin as Record<string, unknown>).kind === 'proposal')
+    );
+}
 
 /** Copy content identities, never learner history or media access authority. */
 export function copyLearningBlock(value: unknown): LearningBlock {
@@ -30,6 +48,7 @@ export function copyLearningBlocks(values: unknown[]): LearningBlock[] {
 
         return { ...block, group };
     });
+    const includedBlockIds = new Set(blocks.map((block) => block.id));
 
     for (const block of blocks) {
         if (block.type === 'audio') {
@@ -43,6 +62,20 @@ export function copyLearningBlocks(values: unknown[]): LearningBlock[] {
                 'Copy the exercise together with its source passages.',
             );
         }
+
+        if (
+            block.type === 'exercise' &&
+            block.semantics?.sources.some(
+                (source) =>
+                    source.kind !== 'text-selection' &&
+                    source.origin.kind === 'block' &&
+                    !includedBlockIds.has(source.origin.blockId),
+            )
+        ) {
+            throw new Error(
+                'Copy the named exercise together with its source material.',
+            );
+        }
     }
 
     const ids = new Map<string, string>();
@@ -53,6 +86,32 @@ export function copyLearningBlocks(values: unknown[]): LearningBlock[] {
         return result;
     }
 
+    function collect(value: unknown): void {
+        if (Array.isArray(value)) {
+            value.forEach(collect);
+
+            return;
+        }
+
+        if (!value || typeof value !== 'object') {
+            return;
+        }
+
+        if (historicalExerciseSource(value as Record<string, unknown>)) {
+            return;
+        }
+
+        for (const [key, item] of Object.entries(value)) {
+            if (key === 'id' && LearningBlockIdSchema.safeParse(item).success) {
+                fresh(item as string);
+            }
+
+            collect(item);
+        }
+    }
+
+    blocks.forEach(collect);
+
     function remap(value: unknown): unknown {
         if (Array.isArray(value)) {
             return value.map(remap);
@@ -62,21 +121,28 @@ export function copyLearningBlocks(values: unknown[]): LearningBlock[] {
             return value;
         }
 
+        // Preserve historical source identities even when copied local IDs collide.
+        if (historicalExerciseSource(value as Record<string, unknown>)) {
+            return value;
+        }
+
         return Object.fromEntries(
             Object.entries(value).map(([key, item]) => {
-                if (key === 'id' && typeof item === 'string') {
-                    return [key, fresh(item)];
-                }
-
                 if (
                     [
+                        'id',
+                        'blockId',
                         'sourceSegmentId',
                         'correctChoiceId',
                         'parentBlockId',
+                        'choiceId',
+                        'gapId',
+                        'entryId',
+                        'segmentId',
                     ].includes(key) &&
                     typeof item === 'string'
                 ) {
-                    return [key, fresh(item)];
+                    return [key, ids.get(item) ?? item];
                 }
 
                 return [key, remap(item)];

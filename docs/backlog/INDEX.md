@@ -84,4 +84,11 @@ records the verified custom-block/editor/chat slice and its full critical gate.
 BL-003, BL-006 and BL-007 retain their broader in-progress scope; this milestone
 does not activate unapproved transcription providers or complete guided lessons.
 
-BL-014 completed on 2026-11-12 in feature065: canonical isolated Studio workflow/tools, persistence, strict policy, SDK/native-expense fixture and real-browser evidence pass. See its completion record and playground usage guide. Exercise catalog implementation awaits user inspection.
+BL-014 completed on 2026-11-12 in feature065: canonical isolated Studio workflow/tools, persistence, strict policy, SDK/native-expense fixture and real-browser evidence pass. See its completion record and playground usage guide.
+
+On 2026-11-13 the user approved moving past that checkpoint and starting
+[Feature067 — Named text exercises](../../.agent/features/067-named-text-exercises/FEATURE.md)
+step by step from E1. Its implementation now includes the19priority activities,
+source picker, protected editing/Custom conversion, independent copies and private
+structured feedback. Final delivery proof is in its linked EVIDENCE/REVIEW records.
+BL-003/006/007 retain their broader In progress statuses.

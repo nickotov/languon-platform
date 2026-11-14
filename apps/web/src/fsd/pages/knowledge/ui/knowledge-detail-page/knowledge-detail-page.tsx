@@ -1,8 +1,11 @@
 'use client';
-import { knowledgeBlockReferences } from '@/fsd/features/knowledge-notes';
+import {
+    knowledgeBlockReferences,
+    exerciseGenerationCopy,
+} from '@/fsd/features/knowledge-notes';
 
 import { useState, type ReactNode } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ListChecks } from 'lucide-react';
 import { ActionConsentDialog } from '@/fsd/entities/ai-action';
 import { KnowledgeApiError } from '@/fsd/entities/knowledge';
 import { useSessionStore } from '@/fsd/entities/session';
@@ -46,7 +49,7 @@ export function KnowledgeDetailPage({ noteId }: { noteId: string }) {
 }
 
 function DetailContent({ noteId }: { noteId: string }) {
-    const { t, href } = useI18n();
+    const { t, href, locale } = useI18n();
     const actorId = useSessionStore((state) => state.user?.id);
     const [blockAccents, setBlockAccents] = useState(true);
     const learnerPreview = useWorkspaceLearnerPreview();
@@ -143,6 +146,29 @@ function DetailContent({ noteId }: { noteId: string }) {
                 />
             </>
         );
+    }
+
+    function generationBlockActions(block: LearningBlock): MenuItem[] {
+        const eligible = ['vocabulary', 'grammar', 'bilingual-text'].includes(
+            block.type,
+        );
+
+        if (!eligible) {
+            return [];
+        }
+
+        function generate() {
+            view.generateExercises(block.id);
+        }
+
+        return [
+            {
+                label: exerciseGenerationCopy(locale).title,
+                icon: <ListChecks size={16} aria-hidden />,
+                onSelect: generate,
+                disabled: busy !== null || view.tutorBusy,
+            },
+        ];
     }
 
     function renderBlockMenu(block: LearningBlock, items: MenuItem[]) {
@@ -305,6 +331,7 @@ function DetailContent({ noteId }: { noteId: string }) {
                         )}
                         <div hidden={learnerPreview.active}>
                             <KnowledgeNoteForm
+                                getBlockActions={generationBlockActions}
                                 ref={actions.editor}
                                 value={draft.content}
                                 onChange={state.change}

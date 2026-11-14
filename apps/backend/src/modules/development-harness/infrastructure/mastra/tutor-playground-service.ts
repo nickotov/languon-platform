@@ -34,6 +34,11 @@ import {
 } from '../../../conversations/infrastructure/ai/tutor-request-agents';
 import {
     createLearningContentTools,
+    createNamedExerciseTools,
+    namedExerciseActivityForToolId,
+    namedExerciseToolDefinition,
+    type LearningContentToolOptions,
+    type NamedExerciseToolId,
     resolveLearningToolSources,
 } from '../../../conversations/infrastructure/ai/learning-content-tools';
 import {
@@ -45,6 +50,7 @@ import { readTutorPlannerState } from '../../../conversations/application/tutor-
 import { tutorRequestStateKey } from '../../../conversations/application/tutor-request-contract';
 import { describeLearningProposal } from '../../../conversations/infrastructure/ai/tutor-request-proposals';
 import { learningContentRegistry } from '../../../conversations/application/learning-content-registry';
+import type { ExerciseAuthoringSource } from '../../../conversations/infrastructure/ai/exercise-authoring-context';
 import { createPlaygroundModel } from './tutor-playground-model';
 import { capturePlaygroundModel } from './tutor-playground-diagnostics';
 import {
@@ -65,7 +71,8 @@ type ToolId =
     | 'generate_vocabulary'
     | 'generate_grammar'
     | 'generate_bilingual_text'
-    | 'generate_exercises';
+    | 'generate_exercises'
+    | NamedExerciseToolId;
 const access = playgroundAccess;
 
 /** Real source, turn leases and proposals; sandbox accounting never claims customer settlement proof. */
@@ -453,10 +460,13 @@ export function createTutorPlaygroundService(options: TutorPlaygroundOptions) {
             planningModel: gate.wrap(model, 'planning'),
             authoringModel: gate.wrap(model, 'authoring'),
         });
-        const tools = createLearningContentTools({
+        const taskSources = new Map<string, ExerciseAuthoringSource>();
+        const toolOptions: LearningContentToolOptions = {
             signal: gate.signal,
             publish: input.onBlockProposal!,
-            resolveSources: (brief) => resolveLearningToolSources(input, brief),
+            taskSources,
+            resolveSources: (brief) =>
+                resolveLearningToolSources(input, brief, taskSources),
             readBudget: () => gate.remainingBudget,
             generate: (call) =>
                 generateTutorObject({
@@ -467,15 +477,31 @@ export function createTutorPlaygroundService(options: TutorPlaygroundOptions) {
                     operationId: input.operationId,
                     maxOutputTokens: call.maxOutputTokens,
                 }),
-        });
+        };
+        const activityId = namedExerciseActivityForToolId(direct.id);
         const capability = learningContentRegistry.find(
             (item) => item.toolId === direct.id,
-        )!;
-        const data = capability.inputSchema.parse(direct.data);
-        const tool = tools[direct.id];
-        const result = await tool.execute!(data, {
-            abortSignal: gate.signal,
-        } as never);
+        );
+
+        if (!activityId && !capability) {
+            throw new Error('The requested playground tool is not registered.');
+        }
+
+        let result: unknown;
+        if (activityId) {
+            const definition = namedExerciseToolDefinition(activityId);
+            const tools = createNamedExerciseTools(toolOptions);
+            result = await tools[definition.id].execute!(
+                definition.inputSchema.parse(direct.data),
+                { abortSignal: gate.signal } as never,
+            );
+        } else {
+            const tools = createLearningContentTools(toolOptions);
+            result = await tools[capability!.toolId].execute!(
+                capability!.inputSchema.parse(direct.data),
+                { abortSignal: gate.signal } as never,
+            );
+        }
 
         if (
             result &&

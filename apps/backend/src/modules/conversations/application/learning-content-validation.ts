@@ -24,6 +24,7 @@ function validateTask(task: LearningContentTask, blocks: LearningBlock[]) {
 function validateReferences(
     blocks: LearningBlock[],
     authorizedSources: readonly LearningBlock[],
+    reservedIdentities: readonly LearningBlock[],
 ) {
     const sources = new Map(
         [...authorizedSources, ...blocks].map((block) => [block.id, block]),
@@ -47,7 +48,7 @@ function validateReferences(
         }
 
         Object.entries(value).forEach(([key, child]) => {
-            if (key !== 'group') {
+            if (key !== 'group' && key !== 'semantics') {
                 visit(child);
             }
         });
@@ -89,6 +90,7 @@ function validateReferences(
     };
 
     collectSourceIds(authorizedSources);
+    collectSourceIds(reservedIdentities);
 
     if ([...ids, ...groups.keys()].some((id) => sourceIds.has(id))) {
         throw new Error(
@@ -103,7 +105,9 @@ function validateReferences(
 
         if (
             block.group?.parentBlockId &&
-            !sources.has(block.group.parentBlockId)
+            !['audio', 'video'].includes(
+                sources.get(block.group.parentBlockId)?.type ?? '',
+            )
         ) {
             throw new Error(
                 'Exercise parent does not identify available content.',
@@ -140,6 +144,7 @@ export function validateLearningContent(
     brief: LearningContentBrief,
     tasks: { taskId: string; blocks: LearningBlock[] }[],
     authorizedSources: readonly LearningBlock[] = [],
+    reservedIdentities: readonly LearningBlock[] = [],
 ): LearningBlockProposalInput {
     if (
         tasks.length !== brief.tasks.length ||
@@ -164,7 +169,7 @@ export function validateLearningContent(
     });
 
     const proposal = LearningBlockProposalInputSchema.parse({ blocks });
-    validateReferences(proposal.blocks, authorizedSources);
+    validateReferences(proposal.blocks, authorizedSources, reservedIdentities);
 
     return proposal;
 }

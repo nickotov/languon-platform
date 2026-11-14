@@ -106,9 +106,47 @@ export function groundLearningContentBrief(
     sources: { editor?: string | undefined; selection?: string | undefined },
     proposals: ReadonlyMap<string, readonly LearningBlock[]>,
     fallbackBlocks: readonly LearningBlock[] = [],
+    capturedSources: ReadonlyMap<
+        string,
+        { blocks: readonly LearningBlock[]; text?: string }
+    > = new Map(),
 ) {
     return LearningContentBriefSchema.parse({
         tasks: brief.tasks.map((task) => {
+            const captured = capturedSources.get(task.id);
+            if (captured) {
+                const words = captured.blocks.flatMap((block) =>
+                    block.type === 'vocabulary'
+                        ? block.entries.map((entry) =>
+                              entry.term.normalize('NFKC'),
+                          )
+                        : [],
+                );
+
+                if (
+                    words.length &&
+                    task.words?.some(
+                        (word) => !words.includes(word.normalize('NFKC')),
+                    )
+                ) {
+                    throw new Error(
+                        'Requested words do not belong to the exact captured source.',
+                    );
+                }
+
+                const { sourceText: _modelSourceText, ...selected } = task;
+
+                return groundLearningContentTask(
+                    selected,
+                    [...captured.blocks],
+                    captured.text,
+                );
+            }
+
+            if (task.source?.kind === 'task') {
+                return task;
+            }
+
             if (
                 task.source?.kind === 'editor' ||
                 task.source?.kind === 'selection'
@@ -165,7 +203,7 @@ export function groundLearningContentBrief(
 
 /** Retrieve exactly the mentioned frozen block, never a newer live editor version. */
 export async function readFrozenLearningBlocks(
-    input: TutorRunInput,
+    input: Pick<TutorRunInput, 'readContext'>,
     ids: string[],
     query?: string,
 ): Promise<LearningBlock[]> {

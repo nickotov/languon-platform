@@ -2,7 +2,7 @@
 feature: admin-ai-catalog
 title: Admin AI catalog
 status: current
-last_verified: 2026-11-13
+last_verified: 2026-11-14
 surfaces:
     - admin
     - browser

@@ -20,6 +20,7 @@ import { useConversationDeletion } from './use-conversation-deletion';
 import { useBlockReferences } from './use-block-references';
 import { useWorkspacePassage } from './use-workspace-passage';
 import { useWorkspaceAutoSend } from './use-workspace-auto-send';
+import { useExerciseComposer } from './use-exercise-composer';
 import { workspaceCopy } from '../lib/workspace-copy';
 import type { ContextualAssistantProps } from '../types';
 import {
@@ -133,6 +134,13 @@ export function useAssistantPanel(
         props.blocks,
     );
     const composerRequest = props.request ?? workspaceRequest;
+    const exercises = useExerciseComposer({
+        conversationId: chat.id,
+        externalRequest: composerRequest,
+        setQuestion: chat.setQuestion,
+        replaceReferences: blockReferences.replace,
+    });
+
     useEffect(() => {
         if (!composerRequest || composerRequest.id === lastRequest.current) {
             return;
@@ -352,6 +360,7 @@ export function useAssistantPanel(
 
             const targetId = snapshot.targetId;
             const question = chat.question;
+            const exerciseRequest = exercises.request;
             const copiedAttachments = [...chat.attachments];
             const selectedPassage = workspaceSelection.passage;
             const referencedIds = blockReferences.selected.map(
@@ -406,6 +415,7 @@ export function useAssistantPanel(
                         content: question,
                         copiedAttachments,
                         blockReferences: referencedIds,
+                        exerciseRequest,
                         editorContext: {
                             ...(workingBranch ? { workingBranch } : {}),
                             content: snapshot.content,
@@ -422,6 +432,7 @@ export function useAssistantPanel(
                             props.workspace?.onSent?.(firstMessage);
                             workspaceSelection.sent(selectedPassage?.id);
                             blockReferences.sent(referencedIds);
+                            exercises.accepted(exerciseRequest);
                         },
                     });
                 } catch {
@@ -437,8 +448,10 @@ export function useAssistantPanel(
 
         chat.submit.mutate({
             content: chat.question,
+            exerciseRequest: exercises.request,
             blockReferences: blockReferences.selected.map((item) => item.id),
             onAccepted() {
+                exercises.accepted(exercises.request);
                 blockReferences.sent(
                     blockReferences.selected.map((item) => item.id),
                 );
@@ -668,6 +681,7 @@ export function useAssistantPanel(
         updatePreferences,
         attachmentError,
         blockReferences,
+        exercises,
         workspacePassage: workspaceSelection.passage,
         removeWorkspacePassage,
         requestWithSession,

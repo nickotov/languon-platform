@@ -1,3 +1,4 @@
+import { exerciseActivitySequence } from './exercise-activity-allocation';
 import type { LearningBlock } from '@languon/contracts';
 import type {
     LearningContentBrief,
@@ -46,6 +47,29 @@ function prefixTask(
     task: LearningContentTask,
     result: LearningContentTaskResult,
 ): LearningContentTask {
+    if (task.kind === 'exercises') {
+        const count = result.blocks.length;
+        const total =
+            task.count ??
+            (task.activities ? exerciseActivitySequence(task).length : 5);
+
+        if (count > total) {
+            throw new Error('Exercise fragments exceed the requested count.');
+        }
+
+        const activities: NonNullable<LearningContentTask['activities']> = [];
+        for (const item of exerciseActivitySequence(task).slice(0, count)) {
+            const previous = activities.at(-1);
+            if (previous?.activityId === item.activityId) {
+                previous.count = (previous.count ?? 0) + 1;
+            } else {
+                activities.push({ activityId: item.activityId, count: 1 });
+            }
+        }
+
+        return { ...task, count, ...(activities.length ? { activities } : {}) };
+    }
+
     if (task.kind !== 'vocabulary') {
         return task;
     }
@@ -98,13 +122,26 @@ export function mergeLearningContentBatchResults(
         incomingIds.add(result.taskId);
 
         const previous = merged.get(result.taskId);
-        if (previous && task.kind !== 'vocabulary') {
-            throw new Error('Only vocabulary tasks may span multiple batches.');
+        if (
+            previous &&
+            task.kind !== 'vocabulary' &&
+            task.kind !== 'exercises'
+        ) {
+            throw new Error(
+                'Only vocabulary and exercise tasks may span multiple batches.',
+            );
         }
 
         merged.set(
             result.taskId,
-            previous ? appendVocabulary(previous, result) : result,
+            previous
+                ? task.kind === 'exercises'
+                    ? {
+                          taskId: previous.taskId,
+                          blocks: [...previous.blocks, ...result.blocks],
+                      }
+                    : appendVocabulary(previous, result)
+                : result,
         );
     }
 

@@ -12,6 +12,7 @@ export type AssistantRequest = {
     prompt?: string | undefined;
     passage?: string | undefined;
     blockIds?: string[] | undefined;
+    exercisePicker?: boolean | undefined;
 };
 
 export type ContextualAssistantProps = {
@@ -66,6 +67,7 @@ export type WorkspaceAssistantProps = {
               autoSend?: boolean;
               blockIds?: string[];
               targetId?: string;
+              exercisePicker?: boolean;
           }
         | undefined;
     proposalRootId?: string | undefined;

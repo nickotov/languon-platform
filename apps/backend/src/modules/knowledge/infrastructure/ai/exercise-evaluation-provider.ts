@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
     KnowledgeExerciseEvaluationResultSchema,
+    getExerciseActivity,
     type KnowledgeExerciseEvaluationResult,
 } from '@languon/contracts';
 import { getLocalPrompt } from '@languon/prompts';
@@ -62,10 +63,47 @@ export function validateKnowledgeExerciseEvaluationResult(
     input: KnowledgeExerciseEvaluationInput,
     value: unknown,
 ): KnowledgeExerciseEvaluationResult {
-    // The canonical result schema rejects claims that an incorrect answer is a valid alternative.
-    void input;
+    const result = KnowledgeExerciseEvaluationResultSchema.parse(value);
+    const semantics = input.exercise.semantics;
+    if (!semantics) {
+        return result;
+    }
 
-    return KnowledgeExerciseEvaluationResultSchema.parse(value);
+    const activity = getExerciseActivity(semantics.activity.id);
+    const dimensions =
+        'rubric' in semantics.checking
+            ? semantics.checking.rubric.criteria.map(
+                  (criterion) => criterion.dimension,
+              )
+            : [
+                  'task-completion',
+                  'meaning',
+                  ...(activity.category === 'reading' ? ['evidence'] : []),
+                  ...(['vocabulary', 'grammar'].includes(activity.category)
+                      ? ['target-use']
+                      : []),
+              ];
+    const completeCriteria =
+        result.criteria?.length === dimensions.length &&
+        dimensions.every((dimension) =>
+            result.criteria?.some(
+                (criterion) => criterion.dimension === dimension,
+            ),
+        );
+    const needsCorrection =
+        result.status === 'incorrect' || result.status === 'partially-correct';
+
+    if (
+        !completeCriteria ||
+        result.corrections === undefined ||
+        (needsCorrection && result.corrections.length === 0)
+    ) {
+        throw new Error(
+            'Named exercise feedback must cover its rubric and actionable corrections.',
+        );
+    }
+
+    return result;
 }
 
 type ProviderOptions = Parameters<typeof resolveTextAiProviderOptions>[0];

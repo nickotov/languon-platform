@@ -1,7 +1,7 @@
 import type { LearningBlock } from '@languon/contracts';
+import { exerciseActivitySequence } from './exercise-activity-allocation';
 import {
     learningContentCapabilities,
-    supportedLearningExerciseFormats,
     type LearningContentTask,
 } from './learning-content-contract';
 
@@ -44,8 +44,14 @@ export function validateExercises(
     task: LearningContentTask,
     blocks: LearningBlock[],
 ) {
-    const count = task.count ?? 5;
-    const formats = task.formats ?? supportedLearningExerciseFormats;
+    const sequence = exerciseActivitySequence(task);
+    const count = task.count ?? sequence.length;
+    if (!sequence.length || sequence.length !== count) {
+        throw new Error(
+            'Exercise tasks require exact resolved activity allocations.',
+        );
+    }
+
     if (
         blocks.length !== count ||
         blocks.some((block) => block.type !== 'exercise')
@@ -68,10 +74,16 @@ export function validateExercises(
     blocks.forEach((block, index) => {
         if (
             block.type === 'exercise' &&
-            block.format !== formats[index % formats.length]
+            (block.format !== sequence[index]!.format ||
+                !block.semantics ||
+                block.semantics.activity.id !== sequence[index]!.activityId ||
+                block.semantics.language !== task.language ||
+                (task.explanationLanguage !== undefined &&
+                    block.semantics.explanationLanguage !==
+                        task.explanationLanguage))
         ) {
             throw new Error(
-                'Exercise formats must follow the requested balanced distribution.',
+                'Exercises must preserve the exact named activity allocation, order, format and languages.',
             );
         }
 

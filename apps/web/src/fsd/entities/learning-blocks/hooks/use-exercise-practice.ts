@@ -15,6 +15,7 @@ export function useExercisePractice(
     const [revealed, setRevealed] = useState(saved?.revealed ?? false);
     const [hintVisible, setHintVisible] = useState(saved?.hintUsed ?? false);
     const [preparedResult, setPreparedResult] = useState<boolean>();
+    const [preparedChecked, setPreparedChecked] = useState(false);
     const [attempted, setAttempted] = useState(saved?.attempted ?? false);
 
     useEffect(() => {
@@ -35,12 +36,14 @@ export function useExercisePractice(
         edited.current = true;
         setAnswer(event.target.value);
         setPreparedResult(undefined);
+        setPreparedChecked(false);
     }
 
     function handleGap(event: ChangeEvent<HTMLInputElement>) {
         edited.current = true;
         setGaps({ ...gaps, [event.target.name]: event.target.value });
         setPreparedResult(undefined);
+        setPreparedChecked(false);
     }
 
     function reveal() {
@@ -60,6 +63,7 @@ export function useExercisePractice(
         setRevealed(false);
         setHintVisible(false);
         setPreparedResult(undefined);
+        setPreparedChecked(false);
         setAttempted(
             (previous) => saved !== undefined && (previous || saved.attempted),
         );
@@ -70,15 +74,21 @@ export function useExercisePractice(
         setAttempted(true);
     }
 
+    function completePreparedCheck(result: boolean | undefined) {
+        setPreparedResult(result);
+        setPreparedChecked(true);
+    }
+
     return {
         answer,
         gaps,
         revealed,
         hintVisible,
         preparedResult,
+        preparedChecked,
         attempted,
         markAttempted,
-        setPreparedResult,
+        completePreparedCheck,
         handleAnswer,
         handleGap,
         reveal,

@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import { exerciseActivityCatalog } from '@languon/contracts';
 import {
     ReadSourceContextDefinition,
     ProposeKnowledgeNoteDefinition,
@@ -8,11 +9,15 @@ import {
     ReadDictionarySnippetDefinition,
 } from '../../../conversations/infrastructure/ai/dictionary-snippet-tools';
 import { RecallDefinition } from '../../../conversations/infrastructure/ai/tutor-history-tool';
-import { learningContentToolDefinition } from '../../../conversations/infrastructure/ai/learning-content-tools';
+import {
+    learningContentToolDefinition,
+    namedExerciseToolDefinition,
+} from '../../../conversations/infrastructure/ai/learning-content-tools';
 import { DevelopmentPrincipalVerificationDefinition } from '../../../development-harness/infrastructure/mastra/development-harness-primitives';
 import {
     ReadPlaygroundProposalDefinition,
     playgroundContentToolDefinition,
+    playgroundNamedExerciseToolDefinition,
 } from '../../../development-harness/infrastructure/mastra/tutor-playground-primitives';
 
 export interface CatalogToolRegistration {
@@ -31,6 +36,12 @@ export interface CatalogToolRegistration {
 }
 const authority =
     'Execution is operation-bound and conditional on server authorization. Catalog visibility does not make this tool executable.';
+
+const studioLimitations = [
+    authority,
+    'Studio adapter around the canonical generation operation; its return envelope additionally exposes synthetic diagnostics and proposal readback.',
+    'Deterministic mode supplies fixture model responses; live mode requires reviewed playground configuration.',
+] as const;
 
 export const catalogToolRegistrations: readonly CatalogToolRegistration[] = [
     ...[
@@ -72,12 +83,20 @@ export const catalogToolRegistrations: readonly CatalogToolRegistration[] = [
             module: 'development-harness',
             scope: 'development' as const,
             promptIds: ['learning-content-authoring'],
-            limitations: [
-                'Studio adapter around the canonical generation operation; its return envelope additionally exposes synthetic diagnostics and proposal readback.',
-                'Deterministic mode supplies fixture model responses; live mode requires reviewed playground configuration.',
-            ],
+            limitations: studioLimitations,
         }),
     ),
+    ...exerciseActivityCatalog.map((activity) => ({
+        definition: playgroundNamedExerciseToolDefinition(activity.id),
+        catalogId: `playground.${namedExerciseToolDefinition(activity.id).id}`,
+        module: 'development-harness',
+        scope: 'development' as const,
+        promptIds: ['learning-content-authoring'],
+        limitations: [
+            ...studioLimitations,
+            'Activity identity, format and checking policy are fixed by the named adapter. These standalone tools are not attached to the tutor actor.',
+        ],
+    })),
     {
         definition: ReadPlaygroundProposalDefinition,
         module: 'development-harness',

@@ -2,8 +2,21 @@ import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
 import { BlockReferenceChips } from '../block-reference-controls';
 import { blockReferenceCopy } from '../../../../lib/block-reference-copy';
 import type { ReactNode } from 'react';
-import { ArrowUp, FileText, Plus, Square, TextSelect } from 'lucide-react';
-import type { ChatPreferences, CopiedAttachment } from '@languon/contracts';
+import {
+    ArrowUp,
+    FileText,
+    ListChecks,
+    Plus,
+    Square,
+    TextSelect,
+    X,
+} from 'lucide-react';
+import type {
+    ChatPreferences,
+    CopiedAttachment,
+    SubmitConversationTurnRequest,
+} from '@languon/contracts';
+import { exerciseGenerationCopy } from '@/fsd/features/knowledge-notes';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Tooltip } from '@/fsd/shared/ui';
@@ -44,6 +57,9 @@ export function ConversationComposer({
     missingBlockReference = false,
     workspacePassage,
     onRemoveWorkspacePassage,
+    onGenerateExercises,
+    exerciseRequest,
+    onClearExerciseRequest,
 }: {
     question: string;
     onQuestion(value: string): void;
@@ -75,11 +91,15 @@ export function ConversationComposer({
     missingBlockReference?: boolean | undefined;
     workspacePassage?: WorkspacePendingPassage | null | undefined;
     onRemoveWorkspacePassage?: (() => void) | undefined;
+    onGenerateExercises?: (() => void) | undefined;
+    exerciseRequest?: SubmitConversationTurnRequest['exerciseRequest'];
+    onClearExerciseRequest?: (() => void) | undefined;
 }) {
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
     const text = composerCopy(locale);
     const workspaceText = workspaceCopy(locale);
+    const exerciseText = exerciseGenerationCopy(locale);
     let placeholder = text.placeholder;
     const hasPassage =
         Boolean(workspacePassage) ||
@@ -127,6 +147,21 @@ export function ConversationComposer({
             )}
             {missingBlockReference && (
                 <p role='alert'>{blockReferenceCopy(locale).missing}</p>
+            )}
+            {exerciseRequest && (
+                <div className={styles.documentChip} role='status'>
+                    <ListChecks size={14} aria-hidden='true' />
+                    <span>
+                        {exerciseText.title} · {exerciseRequest.count}
+                    </span>
+                    <button
+                        type='button'
+                        onClick={onClearExerciseRequest}
+                        aria-label={copy.remove}
+                    >
+                        <X size={14} aria-hidden='true' />
+                    </button>
+                </div>
             )}
             {overLimit && (
                 <p role='alert' className={styles.limitError}>
@@ -224,6 +259,17 @@ export function ConversationComposer({
                             disabled={busy}
                             workspace={workspace}
                         />
+                        {onGenerateExercises && (
+                            <button
+                                type='button'
+                                onClick={onGenerateExercises}
+                                className={styles.exerciseButton}
+                                disabled={busy || active}
+                            >
+                                <ListChecks size={16} aria-hidden='true' />
+                                {exerciseText.title}
+                            </button>
+                        )}
                         {onSelectFromPage && (
                             <button
                                 type='button'

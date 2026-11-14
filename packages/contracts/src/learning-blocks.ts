@@ -1,4 +1,8 @@
 import { z } from 'zod';
+import {
+    NamedExerciseSemanticsSchema,
+    type NamedExerciseSemantics,
+} from './named-exercises';
 
 /** Content only: identities are not authorization grants and text is never HTML. */
 export const LearningBlockIdSchema = z.string().uuid();
@@ -282,6 +286,8 @@ const exerciseBase = {
         .strict()
         .optional(),
     evaluationCriteria: text().optional(),
+    /** Absence represents a genuine Custom exercise, never inferred named content. */
+    semantics: NamedExerciseSemanticsSchema.optional(),
     source: z
         .object({
             blockId: LearningBlockIdSchema,
@@ -294,6 +300,128 @@ const exerciseBase = {
         .strict()
         .optional(),
 };
+
+type NamedExerciseBinding = {
+    semantics?: NamedExerciseSemantics | undefined;
+    referenceAnswer: string;
+} & (
+    | {
+          format: 'multiple-choice';
+          choices: { id: string; text: string }[];
+          correctChoiceId: string;
+      }
+    | {
+          format: 'fill-in-the-blank';
+          parts: (
+              | { kind: 'text'; text: string }
+              | { kind: 'gap'; id: string; acceptedAnswers: string[] }
+          )[];
+      }
+    | { format: 'free-text'; acceptedAnswers?: string[] | undefined }
+);
+
+function samePreparedAnswers(left: string[], right: string[]): boolean {
+    const normalized = (values: string[]) =>
+        values
+            .map((value) => value.normalize('NFC').trim().replace(/\s+/gu, ' '))
+            .sort();
+
+    return (
+        JSON.stringify(normalized(left)) === JSON.stringify(normalized(right))
+    );
+}
+
+/** A named key describes this exact interaction, rather than a second independent answer. */
+function validateNamedExerciseBinding(
+    block: NamedExerciseBinding,
+    ctx: z.RefinementCtx,
+): void {
+    const semantics = block.semantics;
+    if (!semantics) {
+        return;
+    }
+
+    if (semantics.format !== block.format) {
+        ctx.addIssue({
+            code: 'custom',
+            path: ['semantics', 'format'],
+            message:
+                'Named activity format must match the exercise interaction.',
+        });
+
+        return;
+    }
+
+    if (!('key' in semantics.checking)) {
+        if (block.format === 'free-text' && block.acceptedAnswers?.length) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['acceptedAnswers'],
+                message:
+                    'Rubric-only activities do not define prepared accepted answers.',
+            });
+        }
+
+        return;
+    }
+
+    const key = semantics.checking.key;
+    let matches = false;
+    if (block.format === 'multiple-choice' && key.kind === 'choice') {
+        matches =
+            key.correctChoiceId === block.correctChoiceId &&
+            key.explanations.length === block.choices.length &&
+            block.choices.every((choice) =>
+                key.explanations.some((item) => item.choiceId === choice.id),
+            );
+
+        if (semantics.activity.id === 'R03') {
+            const labels = ['True', 'False', 'Not stated'];
+            matches =
+                matches &&
+                block.choices.length === 3 &&
+                key.classification !== undefined &&
+                block.choices.every(
+                    (choice, index) =>
+                        key.classification!.roles[index]?.choiceId ===
+                            choice.id && choice.text === labels[index],
+                ) &&
+                block.referenceAnswer ===
+                    block.choices.find(
+                        (choice) => choice.id === block.correctChoiceId,
+                    )?.text;
+        }
+    } else if (block.format === 'fill-in-the-blank' && key.kind === 'gaps') {
+        const gaps = block.parts.filter((part) => part.kind === 'gap');
+        matches =
+            key.gaps.length === gaps.length &&
+            gaps.every((gap) => {
+                const prepared = key.gaps.find((item) => item.gapId === gap.id);
+
+                return (
+                    prepared !== undefined &&
+                    samePreparedAnswers(
+                        prepared.acceptedAnswers,
+                        gap.acceptedAnswers,
+                    )
+                );
+            });
+    } else if (block.format === 'free-text' && key.kind === 'text') {
+        matches = samePreparedAnswers(
+            key.acceptedAnswers,
+            block.acceptedAnswers ?? [],
+        );
+    }
+
+    if (!matches) {
+        ctx.addIssue({
+            code: 'custom',
+            path: ['semantics', 'checking', 'key'],
+            message:
+                'Named prepared key must match every exercise answer identity and value.',
+        });
+    }
+}
 
 export const ExerciseLearningBlockSchema = z.discriminatedUnion('format', [
     z
@@ -321,7 +449,8 @@ export const ExerciseLearningBlockSchema = z.discriminatedUnion('format', [
                     (choice) => choice.id === value.correctChoiceId,
                 ),
             'Correct choice must exist.',
-        ),
+        )
+        .superRefine(validateNamedExerciseBinding),
     z
         .object({
             ...exerciseBase,
@@ -352,14 +481,16 @@ export const ExerciseLearningBlockSchema = z.discriminatedUnion('format', [
             const gaps = value.parts.filter((part) => part.kind === 'gap');
 
             return gaps.length > 0 && uniqueIds(gaps);
-        }, 'A gap exercise needs unique gaps.'),
+        }, 'A gap exercise needs unique gaps.')
+        .superRefine(validateNamedExerciseBinding),
     z
         .object({
             ...exerciseBase,
             format: z.literal('free-text'),
             acceptedAnswers: z.array(text()).max(20).optional(),
         })
-        .strict(),
+        .strict()
+        .superRefine(validateNamedExerciseBinding),
 ]);
 
 const StructuredLearningBlockSchema = z.discriminatedUnion('type', [

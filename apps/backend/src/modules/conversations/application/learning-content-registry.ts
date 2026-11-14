@@ -32,7 +32,7 @@ export const learningContentRegistry = learningContentCapabilities.map(
         inputSchema:
             capability.kind === 'exercises'
                 ? briefInput
-                : briefInput.omit({ formats: true }),
+                : briefInput.omit({ formats: true, activities: true }),
         outputSchema: outputSchemas[capability.kind],
         sourcePolicy: 'authorized-frozen-source' as const,
         authority: 'owned-knowledge-proposal' as const,
@@ -54,9 +54,15 @@ export function learningContentCapability(kind: LearningContentTask['kind']) {
 }
 
 /** Only requested block families join a provider response schema. */
-export function learningContentSchemaForBrief(brief: LearningContentBrief) {
+export function learningContentSchemaForBrief(
+    brief: LearningContentBrief,
+    exerciseSchema?: z.ZodType,
+) {
     const schemas = [...new Set(brief.tasks.map((task) => task.kind))].map(
-        (kind) => learningContentCapability(kind).outputSchema,
+        (kind) =>
+            kind === 'exercises' && exerciseSchema
+                ? exerciseSchema
+                : learningContentCapability(kind).outputSchema,
     );
     const [first, second, ...remaining] = schemas;
     const blockSchema = second

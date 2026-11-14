@@ -7,6 +7,7 @@ import { getLocalPrompt, listLocalPrompts } from '@languon/prompts';
 import {
     AdminAiCatalogDetailResponseSchema,
     AdminAiCatalogListResponseSchema,
+    exerciseActivityCatalog,
     type AdminAiCatalogEntry,
 } from '@languon/contracts';
 import {
@@ -16,6 +17,7 @@ import {
 import { createAiCatalog } from '../../../../src/modules/administration/infrastructure/ai-catalog/registry';
 import { ReadSourceContextDefinition } from '../../../../src/modules/conversations/infrastructure/ai/contextual-tutor-tools';
 import { dictionaryCardAuthoringInstructions } from '../../../../src/modules/dictionaries/infrastructure/ai/dictionary-card-authoring-agent';
+import { playgroundNamedExerciseToolDefinition } from '../../../../src/modules/development-harness/infrastructure/mastra/tutor-playground-primitives';
 
 describe('read-only AI catalog composition', () => {
     it('requires factory metadata to participate in the catalog when a new agent or tool is added', () => {
@@ -208,6 +210,98 @@ describe('read-only AI catalog composition', () => {
         );
 
         expect(getAiCatalogEntry('agent', 'not-an-agent')).toBeUndefined();
+    });
+
+    it('reflects all fixed named Studio tools as guarded development metadata without attaching them to the actor', () => {
+        const entries = getAiCatalogSummaries().filter(
+            (entry) =>
+                entry.kind === 'tool' &&
+                entry.name.startsWith('generate_exercise_'),
+        );
+
+        expect(entries).toHaveLength(19);
+        const actor = getAiCatalogEntry('agent', 'contextual-language-tutor');
+        expect(
+            actor?.references.filter(
+                (ref) =>
+                    ref.kind === 'tool' &&
+                    ref.id.includes('generate_exercise_'),
+            ),
+        ).toEqual([]);
+
+        for (const activity of exerciseActivityCatalog) {
+            const definition = playgroundNamedExerciseToolDefinition(
+                activity.id,
+            );
+            const detail = getAiCatalogEntry(
+                'tool',
+                `playground.${definition.id}`,
+            );
+
+            if (detail?.kind !== 'tool') {
+                throw new Error(
+                    'Named playground tool is absent from the catalog.',
+                );
+            }
+
+            expect(detail).toMatchObject({
+                scope: 'development',
+                module: 'development-harness',
+                name: definition.id,
+                references: expect.arrayContaining([
+                    { kind: 'prompt', id: 'learning-content-authoring' },
+                ]),
+            });
+
+            expect(detail?.limitations.join(' ')).toContain(
+                'Catalog visibility does not make this tool executable',
+            );
+
+            expect(detail?.limitations.join(' ')).toContain(
+                'not attached to the tutor actor',
+            );
+
+            expect(detail?.inputSchema).toEqual(
+                z.toJSONSchema(definition.inputSchema, {
+                    unrepresentable: 'any',
+                    io: 'input',
+                }),
+            );
+
+            expect(detail?.outputSchema).toEqual(
+                z.toJSONSchema(definition.outputSchema, {
+                    unrepresentable: 'any',
+                    io: 'output',
+                }),
+            );
+
+            expect(detail?.requestContextSchema).toEqual(
+                z.toJSONSchema(definition.requestContextSchema, {
+                    unrepresentable: 'any',
+                    io: 'input',
+                }),
+            );
+
+            expect(detail?.inputSchema).toMatchObject({
+                additionalProperties: false,
+                properties: { count: { default: 5 } },
+            });
+
+            for (const field of [
+                'activityId',
+                'activities',
+                'formats',
+                'checkingPolicy',
+                'ownerId',
+                'model',
+            ]) {
+                expect(detail?.inputSchema).not.toHaveProperty(
+                    `properties.${field}`,
+                );
+            }
+
+            expect(getAiCatalogEntry('tool', definition.id)).toBeUndefined();
+        }
     });
 
     it('accepts future registrations without changing query or UI code and rejects broken registration', () => {

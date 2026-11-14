@@ -1,7 +1,12 @@
 import type { ReactNode } from 'react';
-import type { LearningBlock, LearningTranscript } from '@languon/contracts';
+import type {
+    LearningBlock,
+    LearningTranscript,
+    WorkbookAttemptEvaluation,
+} from '@languon/contracts';
 
 export interface LearningBlockLabels {
+    locale?: string | undefined;
     kinds: Record<LearningBlock['type'], string>;
     exerciseKinds?: Record<
         'multiple-choice' | 'fill-in-the-blank' | 'free-text',
@@ -156,5 +161,6 @@ export interface LearningBlockViewProps {
         | undefined;
     feedback?: string | undefined;
     feedbackKind?: 'prepared' | 'ai' | undefined;
+    evaluation?: WorkbookAttemptEvaluation | undefined;
     error?: string | undefined;
 }

@@ -24,6 +24,40 @@ describe('CSS-only styling contract', () => {
         );
     });
 
+    it('does not treat domain conditions as class content while retaining class branches', () => {
+        expect(
+            inspectMarkup(
+                'const format = "fill-in-the-blank"; const classes = format === "fill-in-the-blank" ? styles.gaps : styles.text; <div className={classes} />;',
+            ),
+        ).toEqual([]);
+
+        expect(
+            inspectMarkup(
+                'const source = "text-selection"; const classes = source === "text-selection" ? "flex" : "hidden"; <div className={classes} />;',
+            ),
+        ).toEqual(
+            expect.arrayContaining([
+                'Tailwind utility: flex',
+                'Tailwind utility: hidden',
+            ]),
+        );
+    });
+
+    it('checks both class-valued sides of fallback expressions', () => {
+        for (const operator of ['||', '??']) {
+            expect(
+                inspectMarkup(
+                    `<div className={"flex" ${operator} "hidden"} />`,
+                ),
+            ).toEqual(
+                expect.arrayContaining([
+                    'Tailwind utility: flex',
+                    'Tailwind utility: hidden',
+                ]),
+            );
+        }
+    });
+
     it('permits AI SDK protocol literals while still rejecting alignment utilities in class attributes', () => {
         expect(
             inspectMarkup(
@@ -100,6 +134,11 @@ describe('CSS-only styling contract', () => {
         expect(inspectMarkup('const kind = "text-reference";')).toEqual([]);
         expect(inspectMarkup('<div className="text-reference" />')).toEqual([
             'Tailwind utility: text-reference',
+        ]);
+
+        expect(inspectMarkup('const kind = "text-selection";')).toEqual([]);
+        expect(inspectMarkup('<div className="text-selection" />')).toEqual([
+            'Tailwind utility: text-selection',
         ]);
     });
 

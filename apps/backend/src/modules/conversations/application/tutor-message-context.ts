@@ -1,4 +1,8 @@
-import type { CopiedAttachment, ConversationSource } from '@languon/contracts';
+import type {
+    CopiedAttachment,
+    ConversationSource,
+    ExerciseGenerationRequest,
+} from '@languon/contracts';
 import {
     ConversationError,
     type ConversationSourceSnapshot,
@@ -11,6 +15,8 @@ const transportEnvelopeBytes = 1_024;
 export type TutorUserModelContent = {
     format: 2;
     parts: { type: 'text'; text: string }[];
+    exerciseRequest?: ExerciseGenerationRequest;
+    blockReferences?: readonly string[];
 };
 
 export function tutorSourceProvenance(
@@ -30,6 +36,7 @@ export function projectTutorUserMessage(input: {
     content: string;
     attachments?: readonly CopiedAttachment[];
     blockReferences?: readonly string[] | undefined;
+    exerciseRequest?: ExerciseGenerationRequest | undefined;
     editorContext?: { content: string; selectedText?: string | undefined };
     source?: Pick<
         ConversationSourceSnapshot,
@@ -61,6 +68,12 @@ export function projectTutorUserMessage(input: {
 
     return {
         format: 2,
+        ...(input.exerciseRequest
+            ? { exerciseRequest: input.exerciseRequest }
+            : {}),
+        ...(input.blockReferences?.length
+            ? { blockReferences: input.blockReferences }
+            : {}),
         parts: [
             { type: 'text', text: input.content },
             ...(input.blockReferences?.length
@@ -114,7 +127,11 @@ export function tutorCurrentMessageBytes(
     // envelope covers IDs, timestamps, per-part token metadata and role framing.
     return (
         Buffer.byteLength(
-            JSON.stringify({ role: 'user', content: modelContent.parts }),
+            JSON.stringify({
+                role: 'user',
+                content: modelContent.parts,
+                exerciseRequest: modelContent.exerciseRequest,
+            }),
             'utf8',
         ) + transportEnvelopeBytes
     );

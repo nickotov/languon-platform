@@ -38,3 +38,6 @@ export {
 export type { KnowledgeBlockReference } from './lib/knowledge-block-references';
 
 export { blockProposalCompletionKey } from './lib/proposal-completions';
+export { ExerciseGenerationPicker } from './ui/exercise-generation-picker/exercise-generation-picker';
+export { exerciseGenerationCopy } from './lib/exercise-generation-copy';
+export type { PreparedExerciseRequest } from './hooks/use-exercise-generation';

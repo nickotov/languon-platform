@@ -1,12 +1,78 @@
 import type { LearningContentLimitationCode } from './learning-content-contract';
 
-const messageIndex: Record<LearningContentLimitationCode, number> = {
+type ActivityLimitationCode =
+    'activity-count-conflict' | 'activity-prerequisite' | 'task-dependency';
+
+const messageIndex: Record<
+    Exclude<LearningContentLimitationCode, ActivityLimitationCode>,
+    number
+> = {
     'single-block-task': 0,
     'exercise-format-only': 1,
     'unsupported-exercise-format': 2,
     'block-limit': 3,
     'word-count-conflict': 4,
     'output-capacity': 5,
+};
+
+const activityMessages: Record<
+    ActivityLimitationCode,
+    Record<string, string>
+> = {
+    'activity-count-conflict': {
+        en: 'Selected activity counts do not match the total. Set a count for each activity and keep their sum equal to the total.',
+        ru: 'Число вопросов по выбранным заданиям не совпадает с общим количеством. Укажите число для каждого задания так, чтобы сумма совпадала с общим количеством.',
+        fr: 'Le nombre de questions par activité ne correspond pas au total. Précisez chaque nombre pour que leur somme soit égale au total.',
+        es: 'Las cantidades de las actividades no coinciden con el total. Indica una cantidad por actividad cuya suma sea igual al total.',
+        de: 'Die Anzahl je Aktivität stimmt nicht mit der Gesamtzahl überein. Gib für jede Aktivität eine Anzahl an, deren Summe der Gesamtzahl entspricht.',
+        ar: 'أعداد الأسئلة للأنشطة لا تطابق المجموع. حدد عددًا لكل نشاط بحيث يساوي مجموعها العدد الكلي.',
+        he: 'מספר השאלות בפעילויות אינו תואם לסך הכול. הגדירו מספר לכל פעילות כך שסכומם יתאים לסך הכול.',
+        hi: 'गतिविधियों के प्रश्नों की संख्या कुल से मेल नहीं खाती। हर गतिविधि की संख्या तय करें ताकि उनका योग कुल के बराबर हो।',
+        it: 'I conteggi delle attività non corrispondono al totale. Indica un numero per ogni attività la cui somma corrisponda al totale.',
+        ja: '選択した活動の問題数と合計が一致しません。各活動の問題数を指定し、その和を合計に合わせてください。',
+        ko: '선택한 활동의 문항 수가 전체 수와 다릅니다. 각 활동의 수를 지정하고 합계가 전체 수와 같도록 하세요.',
+        pl: 'Liczby pytań w aktywnościach nie zgadzają się z sumą. Podaj liczbę dla każdej aktywności, aby ich suma odpowiadała całości.',
+        pt: 'As quantidades das atividades não correspondem ao total. Defina uma quantidade por atividade cuja soma seja igual ao total.',
+        tr: 'Etkinliklerin soru sayıları toplamla eşleşmiyor. Her etkinlik için bir sayı belirleyip toplamlarını genel toplamla eşitleyin.',
+        uk: 'Кількість запитань за завданнями не збігається із загальною кількістю. Укажіть число для кожного завдання, щоб сума дорівнювала загальній кількості.',
+        zh: '所选活动的题数与总数不一致。请设置每项活动的题数，使其总和等于总数。',
+    },
+    'activity-prerequisite': {
+        en: 'This activity needs different source material or conflicts with the requested format. Select suitable material or clarify the activity choice.',
+        ru: 'Для этого задания нужен другой исходный материал или оно несовместимо с выбранным форматом. Выберите подходящий материал или уточните задание.',
+        fr: 'Cette activité nécessite une autre source ou contredit le format demandé. Choisissez une source adaptée ou précisez l’activité.',
+        es: 'Esta actividad requiere otro material o contradice el formato solicitado. Elige un material adecuado o aclara la actividad.',
+        de: 'Diese Aktivität benötigt anderes Ausgangsmaterial oder widerspricht dem gewünschten Format. Wähle geeignetes Material oder präzisiere die Aktivität.',
+        ar: 'يتطلب هذا النشاط مادة مصدر مختلفة أو يتعارض مع التنسيق المطلوب. اختر مادة مناسبة أو وضح النشاط.',
+        he: 'הפעילות דורשת חומר מקור אחר או סותרת את הפורמט המבוקש. בחרו חומר מתאים או הבהירו את הפעילות.',
+        hi: 'इस गतिविधि के लिए दूसरी स्रोत सामग्री चाहिए या यह माँगे गए प्रारूप से मेल नहीं खाती। उपयुक्त सामग्री चुनें या गतिविधि स्पष्ट करें।',
+        it: 'Questa attività richiede un altro materiale o contrasta con il formato richiesto. Scegli un materiale adatto o chiarisci l’attività.',
+        ja: 'この活動には別の資料が必要か、指定された形式と一致しません。適切な資料を選ぶか、活動の指定を明確にしてください。',
+        ko: '이 활동에는 다른 자료가 필요하거나 요청한 형식과 맞지 않습니다. 적절한 자료를 선택하거나 활동을 명확히 해 주세요.',
+        pl: 'Ta aktywność wymaga innego materiału lub koliduje z wybranym formatem. Wybierz odpowiedni materiał lub doprecyzuj aktywność.',
+        pt: 'Esta atividade precisa de outro material ou contradiz o formato solicitado. Escolha um material adequado ou esclareça a atividade.',
+        tr: 'Bu etkinlik farklı kaynak materyal gerektiriyor veya istenen biçimle çelişiyor. Uygun materyal seçin ya da etkinliği netleştirin.',
+        uk: 'Для цього завдання потрібен інший вихідний матеріал або воно несумісне з вибраним форматом. Виберіть придатний матеріал або уточніть завдання.',
+        zh: '此活动需要其他来源材料，或与所选题型冲突。请选择合适的材料或明确活动选择。',
+    },
+    'task-dependency': {
+        en: 'The exercise source must be an earlier vocabulary, grammar or reading task. Choose that source before generation.',
+        ru: 'Источником упражнений должна быть предшествующая задача со словами, грамматикой или текстом. Выберите источник до генерации.',
+        fr: 'La source doit être une tâche précédente de vocabulaire, de grammaire ou de lecture. Choisissez-la avant la génération.',
+        es: 'La fuente debe ser una tarea anterior de vocabulario, gramática o lectura. Elígela antes de generar.',
+        de: 'Die Quelle muss eine vorherige Wortschatz-, Grammatik- oder Leseaufgabe sein. Wähle diese Quelle vor der Generierung.',
+        ar: 'يجب أن يكون المصدر مهمة سابقة للمفردات أو القواعد أو القراءة. اختر المصدر قبل التوليد.',
+        he: 'המקור חייב להיות משימת אוצר מילים, דקדוק או קריאה קודמת. בחרו את המקור לפני היצירה.',
+        hi: 'स्रोत पहले का शब्दावली, व्याकरण या पठन कार्य होना चाहिए। सामग्री बनाने से पहले वह स्रोत चुनें।',
+        it: 'La fonte deve essere un’attività precedente di vocabolario, grammatica o lettura. Sceglila prima della generazione.',
+        ja: '出典には先行する語彙・文法・読解のタスクを指定してください。生成前に出典を選んでください。',
+        ko: '출처는 앞선 어휘, 문법 또는 읽기 작업이어야 합니다. 생성하기 전에 출처를 선택하세요.',
+        pl: 'Źródłem musi być wcześniejsze zadanie słownictwa, gramatyki lub czytania. Wybierz je przed generowaniem.',
+        pt: 'A fonte deve ser uma tarefa anterior de vocabulário, gramática ou leitura. Escolha-a antes de gerar.',
+        tr: 'Kaynak, önceki bir sözcük, dil bilgisi veya okuma görevi olmalıdır. Üretimden önce bu kaynağı seçin.',
+        uk: 'Джерелом вправ має бути попереднє завдання зі словами, граматикою або текстом. Виберіть джерело перед генерацією.',
+        zh: '练习来源必须是之前的词汇、语法或阅读任务。请在生成前选择该来源。',
+    },
 };
 
 const messages: Record<
@@ -147,5 +213,16 @@ export function learningContentLimitationCopy(
     language: string,
     code: LearningContentLimitationCode,
 ): string {
-    return (messages[language] ?? messages.en!)[messageIndex[code]]!;
+    const baseLanguage = language.toLowerCase().split('-')[0]!;
+    if (
+        code === 'activity-count-conflict' ||
+        code === 'activity-prerequisite' ||
+        code === 'task-dependency'
+    ) {
+        return (
+            activityMessages[code][baseLanguage] ?? activityMessages[code].en!
+        );
+    }
+
+    return (messages[baseLanguage] ?? messages.en!)[messageIndex[code]]!;
 }

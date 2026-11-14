@@ -2,7 +2,7 @@
 feature: interactive-workbooks
 title: Interactive workbooks
 status: current
-last_verified: 2026-11-04
+last_verified: 2026-11-14
 surfaces:
     - browser
     - api
@@ -10,6 +10,7 @@ source_paths:
     - .agent/features/059-interactive-workbooks/**
     - .agent/features/060-intent-aware-learning-content/**
     - .agent/features/061-reliable-learning-content-pipeline/**
+    - .agent/features/067-named-text-exercises/**
     - apps/web/src/app/workbooks/**
     - apps/web/src/app/shared/workbooks/**
     - apps/web/src/fsd/features/workbooks/**
@@ -33,6 +34,9 @@ source_paths:
     - packages/contracts/src/contextual-assistant.ts
     - packages/contracts/src/knowledge*.ts
     - packages/contracts/src/learning-blocks.ts
+    - packages/contracts/src/named-exercises.ts
+    - packages/contracts/src/exercise-activity*.ts
+    - packages/contracts/src/exercise-generation.ts
     - packages/contracts/src/workbook-learning.ts
     - packages/contracts/src/workbooks.ts
     - packages/contracts/src/learning/sentences.ts
@@ -49,6 +53,8 @@ e2e_scenarios:
     - author-blocks-publish-practice
     - workbook-share-private-copy-revoke
     - block-review-atomic-edit-inline-feedback
+    - named-exercise-picker-authoring
+    - named-exercise-ai-feedback
 related_features:
     - reliable-learning-content-pipeline
     - intent-aware-learning-content
@@ -295,6 +301,13 @@ synthetic accounts. API health must succeed before browser interaction.
   update identities despite unrelated edits, grouped inline prepared checking and
   AI recognition of a private valid alternative, and rendered screenshots with
   console/server-error checks. Only external provider responses are deterministic.
+- `named-exercise-picker-authoring`: selects a frozen vocabulary source and a
+  named activity in the real picker, sends the structured request through the
+  deterministic tutor boundary, reviews/inserts/saves/reloads its named block,
+  then explicitly converts it to Custom before editing its author-owned fields.
+- `named-exercise-ai-feedback`: a named V07 response is explicitly checked
+  through the admitted AI route; structured partial and unable-to-assess
+  feedback stays private and survives reload.
 - `workbook-share-private-copy-revoke`: ordered membership and shared-add consent,
   anonymous saved reading, private attempts, paid actor-private translation and
   completed-note counts, independent full copy, live revocation and inert hostile

@@ -1,4 +1,6 @@
 import { DrizzleWorkbookStore } from '../../../../src/modules/knowledge/infrastructure/persistence/drizzle/workbook-store';
+import { completeNamedExerciseSources } from '../../../../src/modules/conversations/infrastructure/ai/exercise-authoring-context';
+import { namedExerciseFixture } from '../../../support/named-exercise-fixture';
 import { createHash, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { sql } from 'drizzle-orm';
@@ -540,6 +542,199 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ).toEqual([first.id]);
 
             await store.finish(turn, 'succeeded');
+        });
+
+        it.each(['target', 'media'] as const)(
+            'rolls back a complete revision publication when a later %s guard rejects a member',
+            async (failure) => {
+                const knowledge = new DrizzleKnowledgeStore(
+                    db,
+                    { beforeNoteDeletion: async () => undefined },
+                    new KnowledgeShareCrypto(
+                        'conversation-knowledge-test-secret-47',
+                    ),
+                );
+                const first = {
+                    id: randomUUID(),
+                    type: 'grammar' as const,
+                    language: 'fr',
+                    rule: 'First rule.',
+                };
+                const second = {
+                    id: randomUUID(),
+                    type: 'audio' as const,
+                    title: 'Unprepared listening material',
+                };
+                const note = await knowledge.create(owner, {
+                    operationId: randomUUID(),
+                    content: {
+                        ...content,
+                        body: {
+                            schemaVersion: 2,
+                            document: {
+                                type: 'doc',
+                                content: [first, second].map((block) => ({
+                                    type: 'learningBlock',
+                                    attrs: { block },
+                                })),
+                            },
+                        },
+                    },
+                });
+                const workspace = await knowledge.getWorkspace(owner, note.id);
+                const branch = workspace.branches.find(
+                    (item) => item.id === workspace.preferredBranchId,
+                )!;
+                const chat = await store.create(access(), {
+                    source: { kind: 'knowledge', id: note.id },
+                });
+
+                await store.submit(access(), chat.id, {
+                    ...submit('Revise the selected learning blocks together.'),
+                    blockReferences:
+                        failure === 'target'
+                            ? [first.id]
+                            : [first.id, second.id],
+                    editorContext: {
+                        ...workspaceContext('Rules.'),
+                        workingBranch: {
+                            id: branch.id,
+                            version: branch.version,
+                        },
+                    },
+                });
+
+                const turn = (await store.claim())!;
+                await expect(
+                    store.proposeBlockBatch(turn, [
+                        {
+                            targetBlockId: first.id,
+                            blocks: [{ ...first, rule: 'Updated first rule.' }],
+                        },
+                        {
+                            targetBlockId: second.id,
+                            blocks: [
+                                failure === 'media'
+                                    ? { ...second, assetId: randomUUID() }
+                                    : second,
+                            ],
+                        },
+                    ]),
+                ).rejects.toMatchObject({
+                    code:
+                        failure === 'target'
+                            ? 'invalid_block_reference'
+                            : 'version_conflict',
+                });
+
+                const [row] =
+                    await client`select count(*)::integer as count from conversation_block_proposals where turn_id=${turn.id}::uuid`;
+
+                expect(row?.['count']).toBe(0);
+                await store.finish(turn, 'succeeded');
+                expect(
+                    (await store.listBlockProposals(access(), chat.id))
+                        .proposals,
+                ).toEqual([]);
+
+                const current = await knowledge.getWorkspace(owner, note.id);
+
+                expect(
+                    current.branches.find((item) => item.id === branch.id)
+                        ?.version,
+                ).toBe(branch.version);
+            },
+        );
+
+        it('commits all revision previews together while retaining their separate application identities', async () => {
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const first = {
+                id: randomUUID(),
+                type: 'grammar' as const,
+                language: 'fr',
+                rule: 'First rule.',
+            };
+            const second = { ...first, id: randomUUID(), rule: 'Second rule.' };
+            const note = await knowledge.create(owner, {
+                operationId: randomUUID(),
+                content: {
+                    ...content,
+                    body: {
+                        schemaVersion: 2,
+                        document: {
+                            type: 'doc',
+                            content: [first, second].map((block) => ({
+                                type: 'learningBlock',
+                                attrs: { block },
+                            })),
+                        },
+                    },
+                },
+            });
+            const workspace = await knowledge.getWorkspace(owner, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+
+            await store.submit(access(), chat.id, {
+                ...submit('Revise both selected rules.'),
+                blockReferences: [first.id, second.id],
+                editorContext: {
+                    ...workspaceContext('Rules.'),
+                    workingBranch: { id: branch.id, version: branch.version },
+                },
+            });
+
+            const turn = (await store.claim())!;
+            const inputs = [first, second].map((block) => ({
+                targetBlockId: block.id,
+                blocks: [{ ...block, rule: `Updated ${block.rule}` }],
+            }));
+            const aborted = new AbortController();
+            aborted.abort();
+            await expect(
+                store.proposeBlockBatch(turn, inputs, aborted.signal),
+            ).rejects.toThrow();
+
+            const receipts = await store.proposeBlockBatch(turn, inputs);
+
+            expect(receipts).toHaveLength(2);
+            expect(new Set(receipts.map((item) => item.id)).size).toBe(2);
+            await store.finish(turn, 'succeeded');
+            const listed = (await store.listBlockProposals(access(), chat.id))
+                .proposals;
+
+            expect(listed.map((item) => item.id).sort()).toEqual(
+                receipts.map((item) => item.id).sort(),
+            );
+
+            const applied = await store.applyBlockProposal(
+                access(),
+                chat.id,
+                receipts[0]!.id,
+                branch.version,
+            );
+            const current =
+                applied.branch.content.body.document.content?.flatMap((node) =>
+                    node.attrs?.block ? [node.attrs.block] : [],
+                ) ?? [];
+
+            expect(
+                current.find((block) => block.id === first.id),
+            ).toMatchObject({ rule: 'Updated First rule.' });
+
+            expect(
+                current.find((block) => block.id === second.id),
+            ).toMatchObject({ rule: 'Second rule.' });
         });
 
         it.each(['succeeded', 'failed', 'cancelled'] as const)(
@@ -1298,6 +1493,359 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
             expect(replay.branch.content.body.document.content).toHaveLength(4);
             expect(replay.proposal.blocks).toHaveLength(1);
+        });
+
+        async function namedProposalFixture() {
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const vocabulary = {
+                id: randomUUID(),
+                type: 'vocabulary' as const,
+                language: 'fr',
+                translationLanguage: 'en',
+                entries: [
+                    {
+                        id: randomUUID(),
+                        term: 'livre',
+                        translation: 'book',
+                        definition: 'A bound collection of pages.',
+                    },
+                ],
+            };
+            const grammar = {
+                id: randomUUID(),
+                type: 'grammar' as const,
+                language: 'fr',
+                rule: 'Use a noun for an object.',
+            };
+            const note = await knowledge.create(owner, {
+                operationId: randomUUID(),
+                content: {
+                    ...content,
+                    body: {
+                        schemaVersion: 2,
+                        document: {
+                            type: 'doc',
+                            content: [vocabulary, grammar].map((block) => ({
+                                type: 'learningBlock',
+                                attrs: { block },
+                            })),
+                        },
+                    },
+                },
+            });
+            const workspace = await knowledge.getWorkspace(owner, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+
+            await store.submit(access(), chat.id, {
+                ...submit('Create recall practice from this wordbank.'),
+                editorContext: {
+                    ...workspaceContext('Wordbank and grammar.'),
+                    workingBranch: { id: branch.id, version: branch.version },
+                },
+            });
+
+            const turn = (await store.claim())!;
+            const exercise = completeNamedExerciseSources(
+                namedExerciseFixture({
+                    activityId: 'V01',
+                    sources: [vocabulary],
+                }),
+                { blocks: [vocabulary] },
+            );
+
+            if (exercise.type !== 'exercise' || !exercise.semantics) {
+                throw new Error('Expected a named exercise fixture.');
+            }
+
+            return {
+                knowledge,
+                vocabulary,
+                grammar,
+                note,
+                branch,
+                chat,
+                turn,
+                exercise,
+            };
+        }
+
+        it('captures named wordbank dependencies and independently copies stale grounding with remapped identities', async () => {
+            const fixture = await namedProposalFixture();
+            const proposed = await store.proposeBlocks(fixture.turn, {
+                blocks: [fixture.exercise],
+            });
+
+            await store.finish(fixture.turn, 'succeeded');
+            const listed = (
+                await store.listBlockProposals(access(), fixture.chat.id)
+            ).proposals[0]!;
+
+            expect(listed.dependencies).toEqual([fixture.vocabulary]);
+            expect(listed.targetStale).toBe(false);
+            const changedVocabulary = {
+                ...fixture.vocabulary,
+                entries: [
+                    {
+                        ...fixture.vocabulary.entries[0]!,
+                        term: 'parc',
+                        translation: 'park',
+                        definition: 'A public green space.',
+                    },
+                ],
+            };
+            const manual = await fixture.knowledge.updateWorking(
+                owner,
+                fixture.note.id,
+                {
+                    operationId: randomUUID(),
+                    branchId: fixture.branch.id,
+                    expectedVersion: fixture.branch.version,
+                    content: {
+                        ...fixture.branch.content,
+                        body: {
+                            schemaVersion: 2,
+                            document: {
+                                type: 'doc',
+                                content: [
+                                    changedVocabulary,
+                                    fixture.grammar,
+                                ].map((block) => ({
+                                    type: 'learningBlock',
+                                    attrs: { block },
+                                })),
+                            },
+                        },
+                    },
+                },
+            );
+
+            expect(
+                (await store.listBlockProposals(access(), fixture.chat.id))
+                    .proposals[0]?.targetStale,
+            ).toBe(true);
+
+            await expect(
+                store.applyBlockProposal(
+                    access(),
+                    fixture.chat.id,
+                    proposed.id,
+                    manual.branch.version,
+                ),
+            ).rejects.toThrow('source passage changed');
+
+            const applied = await store.applyBlockProposal(
+                access(),
+                fixture.chat.id,
+                proposed.id,
+                manual.branch.version,
+                'add-separately',
+            );
+            const blocks =
+                applied.branch.content.body.document.content?.flatMap((node) =>
+                    node.attrs?.block ? [node.attrs.block] : [],
+                ) ?? [];
+            const copiedSource = blocks[2];
+            const copiedExercise = blocks[3];
+
+            expect(copiedSource?.type).toBe('vocabulary');
+            expect(copiedExercise?.type).toBe('exercise');
+            if (
+                copiedSource?.type !== 'vocabulary' ||
+                copiedExercise?.type !== 'exercise'
+            ) {
+                throw new Error('Expected copied source and exercise.');
+            }
+
+            expect(blocks[0]).toEqual(changedVocabulary);
+            expect(copiedSource.id).not.toBe(fixture.vocabulary.id);
+            expect(copiedSource.entries[0]?.id).not.toBe(
+                fixture.vocabulary.entries[0]?.id,
+            );
+
+            expect(copiedSource.entries[0]?.term).toBe('livre');
+            expect(copiedExercise.semantics?.activity.id).toBe('V01');
+            expect(copiedExercise.semantics?.sources).toEqual([
+                {
+                    kind: 'vocabulary',
+                    origin: { kind: 'block', blockId: copiedSource.id },
+                    entries: [
+                        {
+                            entryId: copiedSource.entries[0]!.id,
+                            term: 'livre',
+                            sense: fixture.vocabulary.entries[0]!.definition,
+                        },
+                    ],
+                },
+            ]);
+        });
+
+        it.each(['wrong-kind', 'foreign-note', 'missing'] as const)(
+            'rejects named local source %s at repository and privileged SQL boundaries',
+            async (failure) => {
+                const fixture = await namedProposalFixture();
+                let blockId =
+                    failure === 'wrong-kind'
+                        ? fixture.grammar.id
+                        : randomUUID();
+
+                if (failure === 'foreign-note') {
+                    const foreignVocabulary = {
+                        ...fixture.vocabulary,
+                        id: randomUUID(),
+                    };
+
+                    await fixture.knowledge.create(owner, {
+                        operationId: randomUUID(),
+                        content: {
+                            ...content,
+                            body: {
+                                schemaVersion: 2,
+                                document: {
+                                    type: 'doc',
+                                    content: [
+                                        {
+                                            type: 'learningBlock',
+                                            attrs: { block: foreignVocabulary },
+                                        },
+                                    ],
+                                },
+                            },
+                        },
+                    });
+
+                    blockId = foreignVocabulary.id;
+                }
+
+                const exercise = {
+                    ...fixture.exercise,
+                    semantics: {
+                        ...fixture.exercise.semantics!,
+                        sources: [
+                            {
+                                kind: 'vocabulary' as const,
+                                origin: { kind: 'block' as const, blockId },
+                                entries: [
+                                    {
+                                        entryId:
+                                            fixture.vocabulary.entries[0]!.id,
+                                        term: 'livre',
+                                        sense: fixture.vocabulary.entries[0]!
+                                            .definition,
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                };
+
+                await expect(
+                    store.proposeBlocks(fixture.turn, { blocks: [exercise] }),
+                ).rejects.toMatchObject({ code: 'version_conflict' });
+
+                await expect(
+                    client`select public.languon_propose_learning_block_change(${fixture.turn.id}::uuid,${fixture.turn.leaseToken}::uuid,${JSON.stringify([exercise])}::jsonb,null::uuid)`,
+                ).rejects.toMatchObject({ code: '23514' });
+
+                const [row] =
+                    await client`select count(*)::integer as count from conversation_block_proposals where turn_id=${fixture.turn.id}::uuid`;
+
+                expect(row?.['count']).toBe(0);
+            },
+        );
+
+        it('does not turn historical proposal or selected-text provenance into local dependencies', async () => {
+            const fixture = await namedProposalFixture();
+            const historical = completeNamedExerciseSources(
+                namedExerciseFixture({
+                    activityId: 'V01',
+                    sources: [fixture.vocabulary],
+                }),
+                { blocks: [fixture.vocabulary], proposalId: randomUUID() },
+            );
+            const text = {
+                id: randomUUID(),
+                type: 'bilingual-text' as const,
+                language: 'fr',
+                segments: [{ id: randomUUID(), text: 'Ana lit un livre.' }],
+                translations: [],
+            };
+            const selected = completeNamedExerciseSources(
+                {
+                    ...namedExerciseFixture({
+                        activityId: 'R04',
+                        sources: [text],
+                    }),
+                    sourceBindings: [{ kind: 'text-selection' }],
+                },
+                {
+                    blocks: [],
+                    selection: {
+                        noteId: fixture.note.id,
+                        noteVersion: fixture.note.version,
+                        text: 'Ana lit un livre.',
+                    },
+                },
+            );
+
+            await store.proposeBlocks(fixture.turn, {
+                blocks: [historical, selected],
+            });
+
+            await store.finish(fixture.turn, 'succeeded');
+            const proposal = (
+                await store.listBlockProposals(access(), fixture.chat.id)
+            ).proposals[0]!;
+
+            expect(proposal.dependencies).toEqual([]);
+            expect(proposal.targetStale).toBe(false);
+            expect(proposal.blocks).toHaveLength(2);
+        });
+
+        it('uses included new named sources without capturing existing dependencies while enforcing material kind', async () => {
+            const fixture = await namedProposalFixture();
+            const source = {
+                ...fixture.vocabulary,
+                id: randomUUID(),
+                entries: [
+                    { ...fixture.vocabulary.entries[0]!, id: randomUUID() },
+                ],
+            };
+            const exercise = completeNamedExerciseSources(
+                namedExerciseFixture({ activityId: 'V01', sources: [source] }),
+                { blocks: [source] },
+            );
+            const wrong = { ...fixture.grammar, id: source.id };
+            await expect(
+                store.proposeBlocks(fixture.turn, {
+                    blocks: [wrong, exercise],
+                }),
+            ).rejects.toMatchObject({ code: 'version_conflict' });
+
+            await store.proposeBlocks(fixture.turn, {
+                blocks: [source, exercise],
+            });
+
+            await store.finish(fixture.turn, 'succeeded');
+            const proposal = (
+                await store.listBlockProposals(access(), fixture.chat.id)
+            ).proposals[0]!;
+
+            expect(proposal.dependencies).toEqual([]);
+            expect(proposal.blocks.map((block) => block.type)).toEqual([
+                'vocabulary',
+                'exercise',
+            ]);
         });
 
         it('freezes approved portrait at admission, applies next-message changes and removes terminal snapshots', async () => {

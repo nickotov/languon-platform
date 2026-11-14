@@ -19,6 +19,7 @@ import { ConversationSourceResolver } from '../../src/modules/conversations/infr
 import { DrizzleConversationStore } from '../../src/modules/conversations/infrastructure/persistence/drizzle/drizzle-conversation-store';
 import { DrizzleKnowledgeTransactionParticipant } from '../../src/modules/knowledge/infrastructure/persistence/drizzle/knowledge-transaction';
 import { textAiModelCatalog } from '../../src/modules/text-ai/application/text-ai-provider-catalog';
+import { exerciseActivityCatalog } from '@languon/contracts';
 import { dictionaryAiWorkerObservationsTable } from '../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { conversationExecutionObservationId } from '../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
 import { seedContextualAssistantAccountingFixture } from '../support/contextual-assistant-accounting-fixture';
@@ -61,7 +62,7 @@ async function editorContextForSession(
     };
 }
 
-// @user-flow-revision mastra-agent-development-harness sha256:3e6da1ea942114b9
+// @user-flow-revision mastra-agent-development-harness sha256:3ae53b7530a4c6ba
 describe.runIf(enabled)('Mastra development harness journey', () => {
     // @user-flow mastra-agent-development-harness/playground-provision-run-persist-reset
     it('provisions, runs, persists, isolates, and safely resets the playground', async () => {
@@ -174,6 +175,17 @@ describe.runIf(enabled)('Mastra development harness journey', () => {
         const tutorPlayground = createTutorPlaygroundPrimitives({
             database: createDrizzleDatabase(target, databaseSchema),
         });
+
+        expect(
+            Object.keys(tutorPlayground.tools).filter((id) =>
+                id.startsWith('generate_exercise_'),
+            ),
+        ).toEqual(
+            exerciseActivityCatalog.map(
+                (activity) => `generate_exercise_${activity.id.toLowerCase()}`,
+            ),
+        );
+
         const tutorWorkflow = tutorPlayground.workflows.runTutorTurn;
         const vocabularyRun = await (
             await tutorWorkflow.createRun()

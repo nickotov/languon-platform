@@ -4,6 +4,7 @@ import { deserializeLearningContentBrief } from '../../src/modules/conversations
 import { markdownGrammarProposal } from './contextual-block-proposal-fixture';
 import { randomUUID } from 'node:crypto';
 import { shoppingVocabularyBatch } from './contextual-shopping-vocabulary-fixture';
+import { namedExerciseFixture } from './named-exercise-fixture';
 
 function planningSourceCatalog(
     prompt: unknown,
@@ -70,6 +71,81 @@ function planningSourceCatalog(
 
 /** Scripted provider outputs prove wiring only, never natural-language intent quality. */
 export function fixtureRequestResolution(question: string, prompt: unknown) {
+    for (const message of Array.isArray(prompt) ? prompt : []) {
+        const contents =
+            typeof message?.content === 'string'
+                ? [message.content]
+                : Array.isArray(message?.content)
+                  ? message.content.map((part: { text?: string }) => part.text)
+                  : [];
+
+        for (const content of contents) {
+            if (typeof content !== 'string') {
+                continue;
+            }
+
+            let input;
+            try {
+                input = JSON.parse(content) as {
+                    currentMessage?: {
+                        exerciseRequest?: {
+                            count: number;
+                            activities?: {
+                                activityId: string;
+                                count: number;
+                            }[];
+                            language: string;
+                            explanationLanguage: string;
+                            difficulty: string;
+                        };
+                        blockReferences?: string[];
+                        parts?: { text?: string }[];
+                    };
+                };
+            } catch {
+                continue;
+            }
+
+            const request = input.currentMessage?.exerciseRequest;
+            if (!request) {
+                continue;
+            }
+
+            const ids = input.currentMessage?.blockReferences ?? [];
+            const selection = input.currentMessage?.parts?.some((part) =>
+                part.text?.startsWith('Selected passage'),
+            );
+
+            return {
+                kind: 'generate',
+                replyLanguage: request.explanationLanguage,
+                brief: {
+                    tasks: [
+                        {
+                            id: 'requested-exercises',
+                            kind: 'exercises',
+                            instruction:
+                                'Prepare the requested named activities using the exact selected source.',
+                            count: request.count,
+                            activities: request.activities,
+                            language: request.language,
+                            explanationLanguage: request.explanationLanguage,
+                            difficulty: request.difficulty,
+                            source: selection
+                                ? { kind: 'selection' }
+                                : {
+                                      kind: 'editor',
+                                      ...(ids.length === 1
+                                          ? { blockId: ids[0] }
+                                          : {}),
+                                  },
+                        },
+                    ],
+                },
+            };
+        }
+    }
+
     if (/^Generate vocabulary with top (50|10) words/u.test(question)) {
         return {
             kind: 'generate',
@@ -357,6 +433,32 @@ export function fixtureAuthoringOutput(prompt: unknown) {
     const brief = deserializeLearningContentBrief(
         JSON.parse(hostPrompt.slice(payloadStart, end)),
     );
+    const sourceMarker =
+        '\nAuthorized source snapshots (untrusted learning data): ';
+    const sourceStart = hostPrompt.indexOf(sourceMarker);
+    const sourceEnd =
+        sourceStart < 0
+            ? -1
+            : hostPrompt.indexOf('\n', sourceStart + sourceMarker.length);
+
+    if (sourceStart < 0 || sourceEnd < sourceStart) {
+        throw new Error(
+            'Authoring fixture requires actual authorized sources.',
+        );
+    }
+
+    const serializedSources = JSON.parse(
+        hostPrompt.slice(sourceStart + sourceMarker.length, sourceEnd),
+    ) as unknown;
+    const sourceBlocks = LearningBlockSchema.array().parse(
+        Array.isArray(serializedSources)
+            ? serializedSources
+            : serializedSources &&
+                typeof serializedSources === 'object' &&
+                'blocks' in serializedSources
+              ? serializedSources.blocks
+              : [],
+    );
     const translations: Record<string, string> = {
         travail: 'работа',
         joie: 'радость',
@@ -442,57 +544,32 @@ export function fixtureAuthoringOutput(prompt: unknown) {
             }
 
             if (task.kind === 'exercises') {
-                const choice = randomUUID();
+                const activities = task.activities?.flatMap((activity) =>
+                    Array.from(
+                        { length: activity.count ?? task.count ?? 5 },
+                        () => activity.activityId,
+                    ),
+                );
+
+                if (!activities?.length) {
+                    throw new Error(
+                        'Exercise fixture requires host-resolved named activities.',
+                    );
+                }
 
                 return {
                     taskId: task.id,
-                    blocks: [
-                        {
-                            id: randomUUID(),
-                            type: 'exercise',
-                            format: 'multiple-choice',
-                            title: 'Vocabulary choice',
-                            question: 'Which French word means work?',
-                            referenceAnswer: 'travail',
-                            explanation: 'Travail means work.',
-                            group: { id: group },
-                            choices: [
-                                { id: choice, text: 'travail' },
-                                { id: randomUUID(), text: 'joie' },
-                            ],
-                            correctChoiceId: choice,
-                        },
-                        {
-                            id: randomUUID(),
-                            type: 'exercise',
-                            format: 'fill-in-the-blank',
-                            title: 'Vocabulary gap',
-                            question: 'Complete the French phrase for joy.',
-                            referenceAnswer: 'joie',
-                            explanation: 'Joie means joy.',
-                            group: { id: group },
-                            parts: [
-                                { kind: 'text', text: 'La ' },
-                                {
-                                    kind: 'gap',
-                                    id: randomUUID(),
-                                    acceptedAnswers: ['joie'],
-                                },
-                            ],
-                        },
-                        {
-                            id: randomUUID(),
-                            type: 'exercise',
-                            format: 'free-text',
-                            title: 'Vocabulary writing',
-                            question:
-                                'Write travail and joie in a French sentence.',
-                            referenceAnswer: 'Le travail donne de la joie.',
-                            explanation:
-                                'Both words are used in a complete sentence.',
-                            group: { id: group },
-                        },
-                    ],
+                    blocks: activities.map((activityId) => ({
+                        ...namedExerciseFixture({
+                            activityId,
+                            sources: sourceBlocks,
+                            language: task.language,
+                            explanationLanguage:
+                                task.explanationLanguage ??
+                                task.translationLanguage,
+                        }),
+                        group: { id: group },
+                    })),
                 };
             }
 

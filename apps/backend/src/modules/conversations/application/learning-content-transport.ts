@@ -49,7 +49,7 @@ export function serializeLearningContentBrief(
     return JSON.stringify({ tasks, sources });
 }
 
-/** Decode only the bounded host format; old native briefs remain readable. */
+/** Decode bounded transport records or the current native application brief. */
 export function deserializeLearningContentBrief(
     value: unknown,
 ): LearningContentBrief {

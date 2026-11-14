@@ -6,8 +6,17 @@ type Action =
     | { type: 'addMany'; items: KnowledgeBlockReference[] }
     | { type: 'add'; item: KnowledgeBlockReference }
     | { type: 'remove'; ids: string[] }
+    | { type: 'replace'; items: KnowledgeBlockReference[] }
     | { type: 'clear' };
 function reduce(state: State, action: Action): State {
+    if (action.type === 'replace') {
+        if (action.items.length > 8) {
+            return { ...state, limitReached: true };
+        }
+
+        return { selected: action.items, limitReached: false };
+    }
+
     if (action.type === 'addMany') {
         const additions = action.items.filter(
             (item) => !state.selected.some((current) => current.id === item.id),
@@ -49,7 +58,13 @@ function reduce(state: State, action: Action): State {
 
 export function useBlockReferences(
     conversationId: string | null,
-    request: { id: string; blockIds?: string[] | undefined } | undefined,
+    request:
+        | {
+              id: string;
+              blockIds?: string[] | undefined;
+              exercisePicker?: boolean | undefined;
+          }
+        | undefined,
     available: KnowledgeBlockReference[] = [],
 ) {
     const [state, dispatch] = useReducer(reduce, {
@@ -88,7 +103,10 @@ export function useBlockReferences(
             return item ? [item] : [];
         });
 
-        dispatch({ type: 'addMany', items });
+        dispatch({
+            type: request.exercisePicker ? 'replace' : 'addMany',
+            items,
+        });
     }, [request, available]);
 
     function remove(id: string) {
@@ -99,11 +117,23 @@ export function useBlockReferences(
         dispatch({ type: 'remove', ids });
     }
 
+    function replace(ids: string[]) {
+        dispatch({
+            type: 'replace',
+            items: [...new Set(ids)].flatMap((id) => {
+                const item = available.find((candidate) => candidate.id === id);
+
+                return item ? [item] : [];
+            }),
+        });
+    }
+
     return {
         ...state,
         add,
         remove,
         sent,
+        replace,
         missing: state.selected.some(
             (item) => !available.some((current) => current.id === item.id),
         ),

@@ -1,6 +1,10 @@
 import { useRef, type FormEvent } from 'react';
 import { ChevronDown } from 'lucide-react';
-import type { ExerciseLearningBlock } from '@languon/contracts';
+import {
+    getExerciseActivity,
+    type ExerciseLearningBlock,
+} from '@languon/contracts';
+import { isLocale } from '@/fsd/shared/i18n';
 import type { LearningAnswer, LearningBlockViewProps } from '../../types';
 import { useBlockExpansion } from '../../hooks/use-block-expansion';
 import { useExercisePractice } from '../../hooks/use-exercise-practice';
@@ -10,12 +14,22 @@ import { ExerciseAnswerFields } from './ui/exercise-answer-fields/exercise-answe
 import { ExerciseResults } from './ui/exercise-results/exercise-results';
 import { ExercisePreview } from './ui/exercise-preview/exercise-preview';
 import { ExerciseActions } from './ui/exercise-actions/exercise-actions';
+import { exerciseCheckingLabel } from '../../lib/named-exercise-labels';
+import { exerciseStatusLabel } from '../../lib/exercise-status-label';
 import styles from '../styles/exercise-block-common.module.css';
 
 export function ExerciseBlock(
     props: LearningBlockViewProps & { block: ExerciseLearningBlock },
 ) {
     const { block, labels } = props;
+    const labelLocale = labels.locale ?? 'en';
+    const locale = isLocale(labelLocale) ? labelLocale : 'en';
+    const activity = block.semantics
+        ? getExerciseActivity(block.semantics.activity.id)
+        : undefined;
+    const checkingLabel = block.semantics
+        ? exerciseCheckingLabel(block.semantics.checking.policy, locale)
+        : undefined;
     const form = useRef<HTMLFormElement>(null);
     const expansion = useBlockExpansion(
         props.expandAll,
@@ -76,7 +90,11 @@ export function ExerciseBlock(
             return;
         }
 
-        if (!props.onSubmitAttempt && block.format === 'free-text') {
+        if (
+            !props.onSubmitAttempt &&
+            block.format === 'free-text' &&
+            !block.semantics
+        ) {
             return;
         }
 
@@ -85,7 +103,9 @@ export function ExerciseBlock(
         if (props.onSubmitAttempt) {
             props.onSubmitAttempt(block.id, response);
         } else {
-            practice.setPreparedResult(checkPreparedAnswer(block, response));
+            practice.completePreparedCheck(
+                checkPreparedAnswer(block, response),
+            );
         }
     }
 
@@ -107,6 +127,7 @@ export function ExerciseBlock(
 
     const canSubmit =
         block.format !== 'free-text' ||
+        block.semantics?.checking.policy === 'hybrid' ||
         (props.variant === undefined && props.onSubmitAttempt !== undefined);
     const submitLabel =
         props.submitAttemptLabel ?? labels.check ?? labels.answer;
@@ -121,7 +142,9 @@ export function ExerciseBlock(
     const panelId = `${props.scope ?? block.id}-exercise`;
     const chevronClass = expansion.open ? styles.chevronOpen : styles.chevron;
     const summaryLabel = expansion.open
-        ? (labels.exerciseKinds?.[block.format] ?? labels.kinds.exercise)
+        ? (activity?.locales[locale].name ??
+          labels.exerciseKinds?.[block.format] ??
+          labels.kinds.exercise)
         : block.question;
     const questionClass = expansion.open
         ? styles.summaryQuestion
@@ -134,33 +157,20 @@ export function ExerciseBlock(
         props.feedbackKind === 'ai'
             ? labels.checkWithAi
             : (labels.check ?? labels.answer);
-    let status = practice.attempted
-        ? (labels.attempted ?? labels.answer)
-        : (labels.notAnswered ?? '');
-
-    if (hintVisible) {
-        status = labels.hint;
-    }
-
-    if (revealed) {
-        status = labels.showAnswer;
-    }
-
-    if (preparedResult !== undefined) {
-        status = preparedResult ? labels.correct : labels.incorrect;
-    }
-
-    if (matchesSaved && props.learnerState?.attempted) {
-        status = labels.answer;
-    }
-
-    if (matchesSaved && props.learnerState?.correct !== undefined) {
-        status = props.learnerState.correct ? labels.correct : labels.incorrect;
-    }
-
-    if (visibleFeedback) {
-        status = visibleFeedback.split(':')[0] ?? '';
-    }
+    const preparedUnchecked =
+        practice.preparedChecked &&
+        preparedResult === undefined &&
+        block.semantics?.checking.policy === 'hybrid';
+    const status = exerciseStatusLabel({
+        labels,
+        attempted: practice.attempted,
+        hintVisible,
+        revealed,
+        preparedResult,
+        preparedUnchecked,
+        saved: matchesSaved ? props.learnerState : undefined,
+        feedback: visibleFeedback,
+    });
 
     if (preview) {
         return <ExercisePreview {...props} />;
@@ -192,6 +202,9 @@ export function ExerciseBlock(
                     className={styles.form}
                     onSubmit={handleSubmit}
                 >
+                    {checkingLabel && (
+                        <p className={styles.secondary}>{checkingLabel}</p>
+                    )}
                     <p className={styles.question} dir='auto'>
                         {block.question}
                     </p>
@@ -226,6 +239,8 @@ export function ExerciseBlock(
                         revealed={revealed}
                         hintOptions={props}
                         error={props.error}
+                        evaluation={matchesSaved ? props.evaluation : undefined}
+                        preparedUnchecked={preparedUnchecked}
                     />
                 </form>
             </div>

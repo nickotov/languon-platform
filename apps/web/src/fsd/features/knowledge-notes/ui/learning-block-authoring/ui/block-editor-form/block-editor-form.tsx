@@ -1,5 +1,6 @@
 'use client';
 import type { LearningBlock } from '@languon/contracts';
+import { exerciseGenerationCopy } from '../../../../lib/exercise-generation-copy';
 import { Button, InlineAlert } from '@/fsd/shared/ui';
 import { blockFieldTarget } from '../../../../lib/block-field-target';
 import type { BlockKind } from '../../../../lib/learning-block-form';
@@ -119,6 +120,9 @@ export function BlockEditorForm({
         (field) =>
             !['title', 'language', 'translationLanguage'].includes(field.name),
     );
+    const exerciseText = exerciseGenerationCopy(labels.view.locale ?? 'en');
+    const namedExercise =
+        block?.type === 'exercise' && Boolean(block.semantics);
 
     return (
         <form
@@ -129,6 +133,16 @@ export function BlockEditorForm({
             className={styles.form}
         >
             <input type='hidden' name='blockId' value={blockId.current} />
+            {namedExercise && (
+                <label className={styles.field}>
+                    {exerciseText.named}
+                    <select name='exerciseKind' defaultValue='named'>
+                        <option value='named'>{exerciseText.named}</option>
+                        <option value='custom'>{exerciseText.custom}</option>
+                    </select>
+                    <span>{exerciseText.customNotice}</span>
+                </label>
+            )}
             {hideTitle && (
                 <input type='hidden' name='title' value={block?.title ?? ''} />
             )}

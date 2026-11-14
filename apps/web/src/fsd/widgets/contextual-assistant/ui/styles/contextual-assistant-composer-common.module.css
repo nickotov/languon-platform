@@ -143,6 +143,7 @@
 
 .contextButton,
 .selectButton,
+.exerciseButton,
 .stop,
 .send,
 .chip,
@@ -161,7 +162,8 @@
 }
 
 .contextButton,
-.selectButton {
+.selectButton,
+.exerciseButton {
     height: var(--size-32);
     padding: 0 var(--space-8);
     border-radius: var(--radius-8);
@@ -237,6 +239,7 @@
 
 .contextButton:hover,
 .selectButton:hover,
+.exerciseButton:hover,
 .stop:hover,
 .chip:hover,
 .attachmentToggle:hover,
@@ -520,6 +523,7 @@
 
     .contextButton,
     .selectButton,
+    .exerciseButton,
     .stop,
     .send,
     .attachmentToggle,

@@ -1,6 +1,7 @@
 import type { ChangeEvent } from 'react';
 import type { ExerciseLearningBlock } from '@languon/contracts';
 import type { LearningBlockLabels } from '../../../../types';
+import { exerciseChoiceText } from '../../../../lib/named-exercise-labels';
 import styles from '../../../styles/exercise-block-common.module.css';
 
 export function ExerciseAnswerFields({
@@ -24,23 +25,31 @@ export function ExerciseAnswerFields({
         return (
             <fieldset className={styles.choices}>
                 <legend className={styles.srOnly}>{labels.answer}</legend>
-                {block.choices.map((choice) => (
-                    <label
-                        className={styles.choice}
-                        key={choice.id}
-                        data-selected={answer === choice.id || undefined}
-                    >
-                        <input
-                            type='radio'
-                            name={`exercise-${block.id}`}
-                            value={choice.id}
-                            checked={answer === choice.id}
-                            onChange={onAnswer}
-                            required
-                        />
-                        <span dir='auto'>{choice.text}</span>
-                    </label>
-                ))}
+                {block.choices.map((choice) => {
+                    const choiceText = exerciseChoiceText(
+                        block,
+                        choice,
+                        labels.locale,
+                    );
+
+                    return (
+                        <label
+                            className={styles.choice}
+                            key={choice.id}
+                            data-selected={answer === choice.id || undefined}
+                        >
+                            <input
+                                type='radio'
+                                name={`exercise-${block.id}`}
+                                value={choice.id}
+                                checked={answer === choice.id}
+                                onChange={onAnswer}
+                                required
+                            />
+                            <span dir='auto'>{choiceText}</span>
+                        </label>
+                    );
+                })}
             </fieldset>
         );
     }

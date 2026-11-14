@@ -151,4 +151,93 @@ describe('private inline exercise evaluation contracts', () => {
             }).success,
         ).toBe(false);
     });
+
+    it.each(['partially-correct', 'unable-to-assess'] as const)(
+        'roundtrips %s as a completed job while binding all feedback to the exact attempt',
+        (status) => {
+            const criteria = [
+                {
+                    dimension: 'task-completion',
+                    status:
+                        status === 'unable-to-assess'
+                            ? 'unable-to-assess'
+                            : 'met',
+                    feedback: 'Task feedback.',
+                },
+                {
+                    dimension: 'meaning',
+                    status:
+                        status === 'unable-to-assess'
+                            ? 'unable-to-assess'
+                            : 'partially-met',
+                    feedback: 'Meaning feedback.',
+                },
+            ];
+            const result = {
+                status,
+                feedback: 'The result is bounded.',
+                validAlternative: false,
+                criteria,
+                corrections: ['Use the supported reason.'],
+            };
+
+            expect(
+                KnowledgeExerciseEvaluationResultSchema.parse(result),
+            ).toEqual(result);
+
+            const attempt = {
+                id: otherId,
+                noteId: id,
+                noteVersion: 1,
+                exerciseId: id,
+                exerciseRevision: revision,
+                answer: { format: 'free-text', text: 'My answer' },
+                evaluation: {
+                    status,
+                    method: 'ai',
+                    feedback: result.feedback,
+                    criteria,
+                    corrections: result.corrections,
+                },
+                createdAt: '2026-10-29T00:00:00Z',
+            };
+            const completed = {
+                id,
+                noteId: id,
+                attemptId: otherId,
+                exerciseId: id,
+                exerciseRevision: revision,
+                status: 'completed',
+                result,
+                attempt,
+                failureCode: null,
+                createdAt: '2026-10-29T00:00:00Z',
+                completedAt: '2026-10-29T00:00:01Z',
+            };
+
+            expect(
+                KnowledgeExerciseEvaluationJobSchema.parse(completed),
+            ).toEqual(completed);
+
+            expect(
+                KnowledgeExerciseEvaluationJobSchema.safeParse({
+                    ...completed,
+                    attempt: {
+                        ...attempt,
+                        evaluation: {
+                            ...attempt.evaluation,
+                            corrections: ['An unrelated correction.'],
+                        },
+                    },
+                }).success,
+            ).toBe(false);
+
+            expect(
+                KnowledgeExerciseEvaluationResultSchema.safeParse({
+                    ...result,
+                    validAlternative: true,
+                }).success,
+            ).toBe(false);
+        },
+    );
 });

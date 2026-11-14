@@ -140,14 +140,20 @@ export function createContextualTutorRunner(options: {
                 ),
                 recall: createTutorHistoryTool(input.memory, modelGate.signal),
             };
+            const exerciseTaskSources = new Map();
             const learningContentTools =
                 input.canProposeBlocks &&
                 !input.readOnlySource &&
                 input.onBlockProposal
                     ? createLearningContentTools({
                           signal: modelGate.signal,
+                          taskSources: exerciseTaskSources,
                           resolveSources: (brief) =>
-                              resolveLearningToolSources(input, brief),
+                              resolveLearningToolSources(
+                                  input,
+                                  brief,
+                                  exerciseTaskSources,
+                              ),
                           publish: (proposal) => {
                               if (!input.onBlockProposal) {
                                   throw new Error(

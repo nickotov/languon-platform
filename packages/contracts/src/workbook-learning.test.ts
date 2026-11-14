@@ -7,6 +7,7 @@ import {
     WorkbookLearningShareAccessSchema,
     WorkbookLearningStateSchema,
     WorkbookProgressSchema,
+    WorkbookAttemptEvaluationSchema,
 } from './workbook-learning';
 const id = '00000000-0000-4000-8000-000000000001';
 const revision = 'a'.repeat(64);
@@ -204,6 +205,109 @@ describe('private workbook learning contracts', () => {
                 noteVersion: 2,
                 completed: true,
                 score: 10,
+            }).success,
+        ).toBe(false);
+    });
+});
+
+describe('learning outcomes and structured feedback', () => {
+    const criteria = [
+        {
+            dimension: 'task-completion',
+            status: 'met',
+            feedback: 'The task is addressed.',
+        },
+        {
+            dimension: 'meaning',
+            status: 'partially-met',
+            feedback: 'The reason needs one correction.',
+        },
+    ];
+
+    it('keeps partial and unassessed AI outcomes distinct from execution state and correctness', () => {
+        const partial = {
+            status: 'partially-correct',
+            method: 'ai',
+            feedback: 'Partly supported.',
+            criteria,
+            corrections: ['Preserve the stated reason.'],
+        };
+
+        expect(WorkbookAttemptEvaluationSchema.parse(partial)).toEqual(partial);
+        const unassessed = {
+            ...partial,
+            status: 'unable-to-assess',
+            criteria: criteria.map((criterion) => ({
+                ...criterion,
+                status: 'unable-to-assess',
+            })),
+            corrections: [],
+        };
+
+        expect(WorkbookAttemptEvaluationSchema.parse(unassessed)).toEqual(
+            unassessed,
+        );
+
+        for (const status of ['queued', 'running', 'failed', 'cancelled']) {
+            expect(
+                WorkbookAttemptEvaluationSchema.safeParse({
+                    ...partial,
+                    status,
+                }).success,
+            ).toBe(false);
+        }
+
+        expect(
+            WorkbookAttemptEvaluationSchema.safeParse({
+                ...partial,
+                method: 'deterministic',
+            }).success,
+        ).toBe(false);
+
+        expect(
+            WorkbookAttemptEvaluationSchema.safeParse({
+                ...partial,
+                validAlternative: true,
+            }).success,
+        ).toBe(false);
+    });
+
+    it('rejects contradictory summaries, duplicate dimensions and excessive corrections', () => {
+        const partial = {
+            status: 'partially-correct',
+            method: 'ai',
+            feedback: 'Partly supported.',
+            criteria,
+            corrections: ['Preserve the stated reason.'],
+        };
+
+        for (const patch of [
+            { status: 'correct' },
+            { status: 'incorrect' },
+            { status: 'unable-to-assess' },
+            { criteria: [criteria[0], criteria[0]] },
+            { corrections: ['One', 'Two', 'Three'] },
+            { corrections: ['\u0000'] },
+            {
+                criteria: [
+                    { ...criteria[0], status: 'unable-to-assess' },
+                    criteria[1],
+                ],
+            },
+        ]) {
+            expect(
+                WorkbookAttemptEvaluationSchema.safeParse({
+                    ...partial,
+                    ...patch,
+                }).success,
+            ).toBe(false);
+        }
+
+        expect(
+            WorkbookAttemptEvaluationSchema.safeParse({
+                status: 'correct',
+                method: 'deterministic',
+                criteria,
             }).success,
         ).toBe(false);
     });

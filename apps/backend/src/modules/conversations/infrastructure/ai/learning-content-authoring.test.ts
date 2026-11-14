@@ -1,10 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import type { LearningBlock } from '@languon/contracts';
+import {
+    exerciseActivityCatalog,
+    type LearningBlock,
+} from '@languon/contracts';
+import { namedExerciseFixture } from '../../../../../tests/support/named-exercise-fixture';
 import {
     createLearningContentAuthoring,
     learningContentOutputSchema,
+    type LearningContentModelCall,
 } from './learning-content-authoring';
 import { createLearningContentTools } from './learning-content-tools';
 import {
@@ -24,7 +29,7 @@ const vocabulary = (terms = ['apple', 'pear']): LearningBlock => ({
         translation: `French ${term}`,
     })),
 });
-const grammar = (): LearningBlock => ({
+const grammar = (): Extract<LearningBlock, { type: 'grammar' }> => ({
     id: randomUUID(),
     type: 'grammar',
     language: 'en',
@@ -42,20 +47,162 @@ const vocabularyBrief = (): LearningContentBrief => ({
         },
     ],
 });
-const output = (blocks: LearningBlock[], taskId = 'words') => ({
+const output = (blocks: unknown[], taskId = 'words') => ({
     tasks: [{ taskId, blocks }],
 });
-const exercise = (question: string, groupId?: string): LearningBlock => ({
-    id: randomUUID(),
-    type: 'exercise',
-    format: 'free-text',
-    question,
-    referenceAnswer: 'apple',
-    explanation: 'An example.',
-    ...(groupId ? { group: { id: groupId, title: 'Words' } } : {}),
-});
+
+function exercise(
+    question: string,
+    source: LearningBlock,
+    groupId?: string,
+    entryIndex = 0,
+) {
+    const selected =
+        source.type === 'vocabulary'
+            ? { ...source, entries: [source.entries[entryIndex]!] }
+            : source;
+    const block = namedExerciseFixture({
+        activityId: source.type === 'vocabulary' ? 'V07' : 'R04',
+        sources: [selected],
+        language: 'en',
+        explanationLanguage: 'en',
+    });
+
+    return {
+        ...block,
+        question,
+        referenceAnswer:
+            selected.type === 'vocabulary'
+                ? `I use ${selected.entries[0]!.term} in this context.`
+                : 'The apple is red.',
+        ...(groupId ? { group: { id: groupId, title: 'Words' } } : {}),
+    };
+}
+
+function sourceOptions(source: LearningBlock) {
+    return {
+        authorizedSources: [source],
+        taskSources: new Map([['practice', { blocks: [source] }]]),
+    };
+}
 
 describe('dedicated content authoring', () => {
+    it('repairs an incomplete producer before exposing it to a dependent activity', async () => {
+        const producer = grammar();
+        const good = {
+            ...producer,
+            rule: 'Use the verb be in the present simple for singular subjects.',
+        };
+        const { rule: _missingRule, ...rest } = producer;
+        const incomplete = {
+            ...rest,
+            examples: [{ id: randomUUID(), text: 'She is ready.' }],
+        };
+        const exercise = namedExerciseFixture({
+            activityId: 'G02',
+            sources: [good],
+            language: 'en',
+            explanationLanguage: 'en',
+        });
+        const generate = vi
+            .fn()
+            .mockResolvedValueOnce({
+                tasks: [{ taskId: 'rule', blocks: [incomplete] }],
+            })
+            .mockResolvedValueOnce({
+                tasks: [{ taskId: 'rule', blocks: [good] }],
+            })
+            .mockResolvedValueOnce({
+                tasks: [{ taskId: 'practice', blocks: [exercise] }],
+            });
+        const result = await createLearningContentAuthoring({
+            generate,
+        }).generate(
+            {
+                tasks: [
+                    {
+                        id: 'rule',
+                        kind: 'grammar',
+                        instruction: 'Explain the present simple of be.',
+                        language: 'en',
+                    },
+                    {
+                        id: 'practice',
+                        kind: 'exercises',
+                        instruction: 'Supply the correct verb form.',
+                        count: 1,
+                        activities: [{ activityId: 'G02', count: 1 }],
+                        language: 'en',
+                        explanationLanguage: 'en',
+                        source: { kind: 'task', taskId: 'rule' },
+                    },
+                ],
+            },
+            signal(),
+        );
+
+        expect(result.status).toBe('ready');
+        expect(generate).toHaveBeenCalledTimes(3);
+        if (result.status === 'ready') {
+            expect(result.proposal.blocks[0]).toEqual(good);
+            expect(result.proposal.blocks[1]?.type).toBe('exercise');
+        }
+    });
+
+    it('repairs generated identities that collide with an exact external task source', async () => {
+        const source = vocabulary(['apple']);
+        const bad = {
+            ...namedExerciseFixture({
+                activityId: 'V07',
+                sources: [source],
+                language: 'en',
+                explanationLanguage: 'en',
+            }),
+            id: source.id,
+        };
+        const good = namedExerciseFixture({
+            activityId: 'V07',
+            sources: [source],
+            language: 'en',
+            explanationLanguage: 'en',
+        });
+        const generate = vi
+            .fn()
+            .mockResolvedValueOnce({
+                tasks: [{ taskId: 'practice', blocks: [bad] }],
+            })
+            .mockResolvedValueOnce({
+                tasks: [{ taskId: 'practice', blocks: [good] }],
+            });
+        const result = await createLearningContentAuthoring({
+            generate,
+            taskSources: new Map([['practice', { blocks: [source] }]]),
+        }).generate(
+            {
+                tasks: [
+                    {
+                        id: 'practice',
+                        kind: 'exercises',
+                        instruction:
+                            'Write one contextual sentence with the word.',
+                        count: 1,
+                        activities: [{ activityId: 'V07', count: 1 }],
+                        language: 'en',
+                        explanationLanguage: 'en',
+                        source: { kind: 'editor', blockId: source.id },
+                    },
+                ],
+            },
+            signal(),
+        );
+
+        expect(result.status).toBe('ready');
+        expect(generate).toHaveBeenCalledTimes(2);
+        if (result.status === 'ready') {
+            expect(result.proposal.blocks[0]?.id).not.toBe(source.id);
+        }
+    });
+
     it('returns exact validated vocabulary without a persistence dependency', async () => {
         const generate = vi.fn(async () => output([vocabulary()]));
         const result = await createLearningContentAuthoring({
@@ -90,7 +237,7 @@ describe('dedicated content authoring', () => {
         expect(generate).not.toHaveBeenCalled();
     });
 
-    it('coordinates all requested types in brief order in one model call', async () => {
+    it('coordinates all requested types in brief order across the validated prerequisite boundary', async () => {
         const brief = vocabularyBrief();
         brief.tasks.push({
             id: 'rule',
@@ -106,19 +253,25 @@ describe('dedicated content authoring', () => {
             language: 'en',
             words: ['apple'],
             count: 1,
-            formats: ['free-text'],
+            activities: [{ activityId: 'V07', count: 1 }],
+            source: { kind: 'task', taskId: 'words' },
         });
 
-        const generate = vi.fn(async () => ({
-            tasks: [
-                {
-                    taskId: 'practice',
-                    blocks: [exercise('Write a sentence with apple.')],
-                },
-                { taskId: 'rule', blocks: [grammar()] },
-                { taskId: 'words', blocks: [vocabulary()] },
-            ],
-        }));
+        const words = vocabulary();
+        const generate = vi
+            .fn()
+            .mockResolvedValueOnce({
+                tasks: [
+                    { taskId: 'rule', blocks: [grammar()] },
+                    { taskId: 'words', blocks: [words] },
+                ],
+            })
+            .mockResolvedValueOnce(
+                output(
+                    [exercise('Write a sentence with apple.', words)],
+                    'practice',
+                ),
+            );
         const result = await createLearningContentAuthoring({
             generate,
         }).generate(brief, signal());
@@ -132,7 +285,8 @@ describe('dedicated content authoring', () => {
             ]);
         }
 
-        expect(generate).toHaveBeenCalledOnce();
+        expect(generate).toHaveBeenCalledTimes(2);
+        expect(generate.mock.calls[1]?.[0].prompt).toContain(words.id);
     });
 
     it('repairs a completed invalid candidate once and accepts only a complete result', async () => {
@@ -181,7 +335,10 @@ describe('dedicated content authoring', () => {
                 },
             ],
         };
-        const authoring = createLearningContentAuthoring({ generate });
+        const authoring = createLearningContentAuthoring({
+            generate,
+            ...sourceOptions(vocabulary()),
+        });
 
         expect((await authoring.generate(brief, signal())).status).toBe(
             'unsupported',
@@ -268,6 +425,7 @@ describe('dedicated content authoring', () => {
     });
 
     it('permits a consistent shared exercise group and rejects repeated questions', async () => {
+        const source = vocabulary();
         const brief = {
             tasks: [
                 {
@@ -276,7 +434,7 @@ describe('dedicated content authoring', () => {
                     instruction: 'Practise words.',
                     language: 'en',
                     count: 2,
-                    formats: ['free-text'],
+                    activities: [{ activityId: 'V07' as const, count: 2 }],
                 },
             ],
         };
@@ -284,8 +442,8 @@ describe('dedicated content authoring', () => {
         const generate = vi.fn(async () =>
             output(
                 [
-                    exercise('Use apple.', groupId),
-                    exercise('Use pear.', groupId),
+                    exercise('Use apple.', source, groupId),
+                    exercise('Use pear.', source, groupId, 1),
                 ],
                 'practice',
             ),
@@ -293,16 +451,19 @@ describe('dedicated content authoring', () => {
 
         expect(
             (
-                await createLearningContentAuthoring({ generate }).generate(
-                    brief,
-                    signal(),
-                )
+                await createLearningContentAuthoring({
+                    generate,
+                    ...sourceOptions(source),
+                }).generate(brief, signal())
             ).status,
         ).toBe('ready');
 
         const duplicate = vi.fn(async () =>
             output(
-                [exercise('Use apple.'), exercise('Use apple.')],
+                [
+                    exercise('Use apple.', source),
+                    exercise('Use apple.', source),
+                ],
                 'practice',
             ),
         );
@@ -311,21 +472,92 @@ describe('dedicated content authoring', () => {
             (
                 await createLearningContentAuthoring({
                     generate: duplicate,
+                    ...sourceOptions(source),
                 }).generate(brief, signal())
             ).status,
         ).toBe('failed');
     });
 
-    it('rejects invented source identities even when the block schema is valid', async () => {
-        const block = exercise('Use apple.');
-        if (block.type !== 'exercise') {
-            throw new Error('Expected fixture exercise.');
+    it('sends only selected activity instructions and checking schemas, then fills exact provenance on the host', async () => {
+        const source = vocabulary(['apple']);
+        const wire = exercise(
+            'Write one sentence using apple with its selected meaning.',
+            source,
+        );
+        const generate = vi.fn(async (_call: LearningContentModelCall) =>
+            output([wire], 'practice'),
+        );
+        const result = await createLearningContentAuthoring({
+            generate,
+            ...sourceOptions(source),
+        }).generate(
+            {
+                tasks: [
+                    {
+                        id: 'practice',
+                        kind: 'exercises',
+                        instruction: 'Use apple.',
+                        language: 'en',
+                        explanationLanguage: 'en',
+                        count: 1,
+                        activities: [{ activityId: 'V07', count: 1 }],
+                    },
+                ],
+            },
+            signal(),
+        );
+
+        expect(result.status).toBe('ready');
+        expect(generate).toHaveBeenCalledOnce();
+        const call = generate.mock.calls[0]![0];
+        const schema = JSON.stringify(z.toJSONSchema(call.schema));
+        expect(call.prompt).toContain('V07 v1:');
+        expect(schema).toContain('V07');
+        for (const { id } of exerciseActivityCatalog) {
+            if (id !== 'V07') {
+                expect(call.prompt).not.toContain(`${id} v1:`);
+                expect(schema).not.toContain(`"${id}"`);
+            }
         }
 
-        block.source = { blockId: randomUUID(), segmentIds: [randomUUID()] };
+        expect(schema).not.toContain('prepared-key');
+        expect(schema).not.toContain('correctChoiceId');
+        expect(schema).not.toContain('gapId');
+        expect(wire.semantics).not.toHaveProperty('sources');
+        if (result.status !== 'ready' || source.type !== 'vocabulary') {
+            throw new Error('Expected complete named exercise fixture.');
+        }
+
+        expect(result.proposal.blocks[0]).not.toHaveProperty('sourceBindings');
+        expect(result.proposal.blocks[0]).toMatchObject({
+            semantics: {
+                sources: [
+                    {
+                        kind: 'vocabulary',
+                        origin: { kind: 'block', blockId: source.id },
+                        entries: [
+                            {
+                                entryId: source.entries[0]!.id,
+                                term: 'apple',
+                                sense: 'French apple',
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
+    });
+
+    it('rejects invented source identities even when the block schema is valid', async () => {
+        const source = vocabulary();
+        const block = {
+            ...exercise('Use apple.', source),
+            source: { blockId: randomUUID(), segmentIds: [randomUUID()] },
+        };
         const generate = vi.fn(async () => output([block], 'practice'));
         const result = await createLearningContentAuthoring({
             generate,
+            ...sourceOptions(source),
         }).generate(
             {
                 tasks: [
@@ -335,7 +567,7 @@ describe('dedicated content authoring', () => {
                         instruction: 'Practise.',
                         language: 'en',
                         count: 1,
-                        formats: ['free-text'],
+                        activities: [{ activityId: 'V07', count: 1 }],
                     },
                 ],
             },
@@ -445,18 +677,13 @@ describe('dedicated content authoring', () => {
 
         expect(result.status).toBe('ready');
 
-        const question = exercise('Describe the apple.');
-        if (question.type !== 'exercise') {
-            throw new Error('Expected fixture exercise.');
-        }
-
-        question.source = {
-            blockId: block.id,
-            segmentIds: [block.segments[0]!.id],
+        const question = {
+            ...exercise('Describe the apple.', block),
+            source: { blockId: block.id, segmentIds: [block.segments[0]!.id] },
         };
 
         const grounded = createLearningContentAuthoring({
-            authorizedSources: [block],
+            ...sourceOptions(block),
             generate: async () => output([question], 'practice'),
         });
 
@@ -471,7 +698,7 @@ describe('dedicated content authoring', () => {
                                 instruction: 'Practise.',
                                 language: 'en',
                                 count: 1,
-                                formats: ['free-text'],
+                                activities: [{ activityId: 'R04', count: 1 }],
                             },
                         ],
                     },
@@ -482,22 +709,18 @@ describe('dedicated content authoring', () => {
     });
 
     it('rejects conflicting multiple-choice answers and duplicate choice text', async () => {
-        const firstId = randomUUID();
-        const block: LearningBlock = {
-            id: randomUUID(),
-            type: 'exercise',
-            format: 'multiple-choice',
-            question: 'Choose a fruit.',
-            choices: [
-                { id: firstId, text: 'apple' },
-                { id: randomUUID(), text: 'pear' },
-            ],
-            correctChoiceId: firstId,
-            referenceAnswer: 'pear',
-            explanation: 'A fruit.',
-        };
+        const source = vocabulary();
+        const block = namedExerciseFixture({
+            activityId: 'V02',
+            sources: [source],
+            language: 'en',
+            explanationLanguage: 'en',
+        });
+
+        block.referenceAnswer = block.choices![1]!.text;
         const authoring = createLearningContentAuthoring({
             generate: async () => output([block], 'practice'),
+            ...sourceOptions(source),
         });
         const brief = {
             tasks: [
@@ -507,7 +730,7 @@ describe('dedicated content authoring', () => {
                     instruction: 'Practise.',
                     language: 'en',
                     count: 1,
-                    formats: ['multiple-choice'],
+                    activities: [{ activityId: 'V02', count: 1 }],
                 },
             ],
         };
@@ -515,17 +738,21 @@ describe('dedicated content authoring', () => {
         expect((await authoring.generate(brief, signal())).status).toBe(
             'failed',
         );
+
+        block.referenceAnswer = block.choices![0]!.text;
+        block.choices![1]!.text = block.choices![0]!.text;
+        expect((await authoring.generate(brief, signal())).status).toBe(
+            'failed',
+        );
     });
 
     it('does not count a requested word mentioned only in explanatory metadata as exercise coverage', async () => {
-        const block = exercise('Write a sentence.');
-        if (block.type !== 'exercise') {
-            throw new Error('Expected fixture exercise.');
-        }
-
+        const source = vocabulary();
+        const block = exercise('Write a sentence.', source);
         block.explanation = 'This mentions pear without using it in practice.';
         const authoring = createLearningContentAuthoring({
             generate: async () => output([block], 'practice'),
+            ...sourceOptions(source),
         });
 
         expect(
@@ -540,7 +767,7 @@ describe('dedicated content authoring', () => {
                                 language: 'en',
                                 words: ['pear'],
                                 count: 1,
-                                formats: ['free-text'],
+                                activities: [{ activityId: 'V07', count: 1 }],
                             },
                         ],
                     },
@@ -556,10 +783,10 @@ describe('dedicated content authoring', () => {
             throw new Error('Expected vocabulary fixture.');
         }
 
-        const block = exercise('Use apple.');
+        const block = exercise('Use apple.', source);
         block.id = source.entries[0]!.id;
         const authoring = createLearningContentAuthoring({
-            authorizedSources: [source],
+            ...sourceOptions(source),
             generate: async () => output([block], 'practice'),
         });
 
@@ -572,7 +799,7 @@ describe('dedicated content authoring', () => {
                         instruction: 'Practise.',
                         language: 'en',
                         count: 1,
-                        formats: ['free-text'],
+                        activities: [{ activityId: 'V07', count: 1 }],
                     },
                 ],
             },

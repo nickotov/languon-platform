@@ -86,7 +86,13 @@ export interface ConversationStore {
     proposeBlocks?(
         turn: ClaimedConversationTurn,
         input: LearningBlockProposalInput,
+        signal?: AbortSignal,
     ): Promise<{ id: string }>;
+    proposeBlockBatch?(
+        turn: ClaimedConversationTurn,
+        inputs: LearningBlockProposalInput[],
+        signal?: AbortSignal,
+    ): Promise<{ id: string }[]>;
     list(
         access: ConversationAccess,
         source: ConversationSource,

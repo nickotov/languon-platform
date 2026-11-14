@@ -91,6 +91,17 @@ export function prepareReferencedTutorMessage(input: {
     content: string;
     attachments: CopiedAttachment[];
 }) {
+    if (
+        !input.request.retryOf &&
+        input.request.exerciseRequest &&
+        (input.sourceKind !== 'knowledge' || !input.snapshot.blockTarget)
+    ) {
+        throw new ConversationError(
+            'invalid_exercise_source',
+            'Create exercises from an owned Knowledge editing context.',
+        );
+    }
+
     if (!input.request.retryOf) {
         captureBlockReferences(
             input.snapshot,
@@ -103,6 +114,9 @@ export function prepareReferencedTutorMessage(input: {
         content: input.content,
         attachments: input.attachments,
         blockReferences: input.snapshot.blockReferences,
+        ...(!input.request.retryOf && input.request.exerciseRequest
+            ? { exerciseRequest: input.request.exerciseRequest }
+            : {}),
         ...(input.request.editorContext && !input.request.retryOf
             ? { editorContext: input.request.editorContext }
             : {}),

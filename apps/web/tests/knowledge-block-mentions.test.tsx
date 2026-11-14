@@ -6,6 +6,7 @@ import {
     waitFor,
 } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useBlockReferences } from '../src/fsd/widgets/contextual-assistant/hooks/use-block-references';
 import {
     BlockReferencePicker,
@@ -14,6 +15,7 @@ import {
 import {
     knowledgeBlockReferences,
     KnowledgeEditor,
+    KnowledgeNoteForm,
 } from '../src/fsd/features/knowledge-notes';
 import { KnowledgeBodySchema } from '@languon/contracts';
 import type { KnowledgeBlockReference } from '../src/fsd/features/knowledge-notes';
@@ -26,6 +28,60 @@ const blocks: KnowledgeBlockReference[] = Array.from({ length: 9 }, (_, i) => ({
 }));
 
 describe('current note block references', () => {
+    it('exposes host generation actions through the standard block settings menu without changing content', async () => {
+        const source = {
+            id: blocks[0]!.id,
+            type: 'grammar' as const,
+            title: 'Rule B',
+            language: 'en',
+            rule: 'Prepared rule.',
+        };
+        const body = KnowledgeBodySchema.parse({
+            schemaVersion: 2,
+            document: {
+                type: 'doc',
+                content: [{ type: 'learningBlock', attrs: { block: source } }],
+            },
+        });
+        const generate = vi.fn();
+        const change = vi.fn();
+        const client = new QueryClient();
+        client.setQueryData(['dictionary-languages'], { languages: [] });
+        function actions() {
+            return [{ label: 'Generate exercises', onSelect: generate }];
+        }
+
+        render(
+            <QueryClientProvider client={client}>
+                <KnowledgeNoteForm
+                    value={{
+                        title: 'Generation source',
+                        summary: '',
+                        categories: [],
+                        studiedLanguage: 'en',
+                        explanationLanguage: 'en',
+                        body,
+                    }}
+                    onChange={change}
+                    getBlockActions={actions}
+                />
+            </QueryClientProvider>,
+        );
+
+        fireEvent.click(
+            await screen.findByRole('button', {
+                name: 'Block settings: Rule B',
+            }),
+        );
+
+        fireEvent.click(
+            await screen.findByRole('menuitem', { name: 'Generate exercises' }),
+        );
+
+        expect(generate).toHaveBeenCalledOnce();
+        expect(change).not.toHaveBeenCalled();
+    });
+
     it('keeps multiple unique IDs, bounds selection and clears only accepted references', () => {
         const { result } = renderHook(() =>
             useBlockReferences('chat', undefined, blocks),
@@ -174,7 +230,9 @@ describe('current note block references', () => {
 
         expect(mention).toHaveBeenCalledWith(blocks[0]!.id);
         expect(change).not.toHaveBeenCalled();
-        expect(knowledgeBlockReferences(value.document)).toEqual([blocks[0]]);
+        expect(knowledgeBlockReferences(value.document)).toEqual([
+            { ...blocks[0], language: 'en' },
+        ]);
     });
 });
 

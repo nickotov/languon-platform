@@ -40,6 +40,24 @@ export function selectKnowledgeBlocksForCopy(
             selected.add(block.source.blockId);
         }
 
+        if (block?.type === 'exercise' && block.semantics) {
+            for (const source of block.semantics.sources) {
+                if (
+                    source.kind !== 'text-selection' &&
+                    source.origin.kind === 'block'
+                ) {
+                    if (!byId.has(source.origin.blockId)) {
+                        throw new KnowledgeDomainError(
+                            'version_conflict',
+                            'The named exercise source changed. Refresh before copying.',
+                        );
+                    }
+
+                    selected.add(source.origin.blockId);
+                }
+            }
+        }
+
         if (selected.size > 50) {
             throw new KnowledgeDomainError(
                 'invalid_request',

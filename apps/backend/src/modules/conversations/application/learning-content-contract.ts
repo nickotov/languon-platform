@@ -1,13 +1,25 @@
 import { z } from 'zod';
-import type { LearningBlockProposalInput } from '@languon/contracts';
+import {
+    ExerciseActivityIdSchema,
+    getExerciseActivity,
+    type LearningBlockProposalInput,
+} from '@languon/contracts';
 import { serializeLearningContentBrief } from './learning-content-transport';
 import { planLearningContentBatches } from './learning-content-batches';
 
 const language = z.string().regex(/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/u);
 
 export const LearningContentSourceSchema = z.discriminatedUnion('kind', [
-    z.object({ kind: z.literal('editor') }).strict(),
+    z
+        .object({ kind: z.literal('editor'), blockId: z.uuid().optional() })
+        .strict(),
     z.object({ kind: z.literal('selection') }).strict(),
+    z
+        .object({
+            kind: z.literal('task'),
+            taskId: z.string().trim().min(1).max(80),
+        })
+        .strict(),
     z
         .object({
             kind: z.literal('proposal'),
@@ -25,6 +37,19 @@ export const LearningContentTaskSchema = z
         instruction: z.string().trim().min(1).max(4_000),
         language: language.optional(),
         translationLanguage: language.optional(),
+        explanationLanguage: language.optional(),
+        activities: z
+            .array(
+                z
+                    .object({
+                        activityId: ExerciseActivityIdSchema,
+                        count: z.number().int().min(1).max(25).optional(),
+                    })
+                    .strict(),
+            )
+            .min(1)
+            .max(19)
+            .optional(),
         words: z
             .array(z.string().trim().min(1).max(500))
             .min(1)
@@ -71,6 +96,9 @@ export const LearningContentLimitationCodeSchema = z.enum([
     'block-limit',
     'word-count-conflict',
     'output-capacity',
+    'activity-count-conflict',
+    'activity-prerequisite',
+    'task-dependency',
 ]);
 export type LearningContentLimitationCode = z.infer<
     typeof LearningContentLimitationCodeSchema
@@ -133,7 +161,7 @@ export const learningContentCapabilities = [
         defaultCount: 5,
         formats: supportedLearningExerciseFormats,
         instruction:
-            'Create individual exercise blocks with a shared group, reference answers, short explanations and useful hints. Cover the supplied words and source material. Distribute the requested count evenly across requested formats in the supplied order. Keep answers out of questions and hints.',
+            'Create individual exercise blocks with a shared group, reference answers, short explanations and useful hints. Cover the supplied words and source material. Preserve exact activity allocations, count and order. Every generated exercise must retain its named activity semantics, checking policy and exact source provenance. Keep answers out of questions and hints.',
     },
 ] as const;
 
@@ -144,7 +172,7 @@ export function learningContentRequirements(
     let blockCount = 0;
     let hasWordConflict = false;
 
-    for (const task of brief.tasks) {
+    for (const [taskIndex, task] of brief.tasks.entries()) {
         const capability = learningContentCapabilities.find(
             (item) => item.kind === task.kind,
         )!;
@@ -153,7 +181,34 @@ export function learningContentRequirements(
             missing.push({ taskId: task.id, fields: [...fields] });
         }
 
-        if (task.source && !task.sourceText) {
+        if (task.source?.kind === 'task') {
+            const sourceId = task.source.taskId;
+            const sourceTask = brief.tasks.find(
+                (candidate) => candidate.id === sourceId,
+            );
+            const sourceIndex = brief.tasks.findIndex(
+                (candidate) => candidate.id === sourceId,
+            );
+
+            if (
+                !sourceTask ||
+                sourceIndex >= taskIndex ||
+                sourceTask.kind === 'exercises'
+            ) {
+                return {
+                    status: 'needs-clarification',
+                    code: 'task-dependency',
+                    missing: [{ taskId: task.id, fields: ['source'] }],
+                };
+            }
+        }
+
+        if (
+            task.source &&
+            task.source.kind !== 'task' &&
+            task.kind !== 'exercises' &&
+            !task.sourceText
+        ) {
             missing.push({ taskId: task.id, fields: ['sourceText'] });
         }
 
@@ -184,15 +239,71 @@ export function learningContentRequirements(
             };
         }
 
-        if (task.kind !== 'exercises' && task.formats) {
+        if (task.kind !== 'exercises' && (task.formats || task.activities)) {
             return {
                 status: 'unsupported',
                 code: 'exercise-format-only',
-                reason: 'Exercise formats apply only to exercise tasks.',
+                reason: 'Exercise activities and formats apply only to exercise tasks.',
             };
         }
 
         if (task.kind === 'exercises') {
+            const activities = task.activities;
+            if (activities) {
+                const total = activities.reduce(
+                    (sum, activity) => sum + (activity.count ?? 0),
+                    0,
+                );
+                const hasMissingCounts =
+                    activities.length > 1 &&
+                    activities.some((activity) => activity.count === undefined);
+
+                if (
+                    new Set(activities.map((activity) => activity.activityId))
+                        .size !== activities.length ||
+                    hasMissingCounts ||
+                    (task.count !== undefined &&
+                        total > 0 &&
+                        total !== task.count)
+                ) {
+                    return {
+                        status: 'needs-clarification',
+                        code: 'activity-count-conflict',
+                        missing: [
+                            {
+                                taskId: task.id,
+                                fields: ['activities', 'count'],
+                            },
+                        ],
+                    };
+                }
+            } else if (
+                !task.source &&
+                !task.sourceText &&
+                !task.words?.length
+            ) {
+                missing.push({ taskId: task.id, fields: ['source'] });
+            }
+
+            if (
+                activities &&
+                task.formats &&
+                activities.some(
+                    (activity) =>
+                        !task.formats!.includes(
+                            getExerciseActivity(activity.activityId).format,
+                        ),
+                )
+            ) {
+                return {
+                    status: 'needs-clarification',
+                    code: 'activity-prerequisite',
+                    missing: [
+                        { taskId: task.id, fields: ['activities', 'formats'] },
+                    ],
+                };
+            }
+
             const formats = task.formats ?? supportedLearningExerciseFormats;
             if (
                 formats.some(
@@ -213,7 +324,15 @@ export function learningContentRequirements(
 
         blockCount +=
             task.kind === 'exercises'
-                ? (task.count ?? capability.defaultCount)
+                ? (task.count ??
+                  (task.activities?.every(
+                      (activity) => activity.count !== undefined,
+                  )
+                      ? task.activities.reduce(
+                            (sum, activity) => sum + activity.count!,
+                            0,
+                        )
+                      : capability.defaultCount))
                 : 1;
     }
 

@@ -126,7 +126,7 @@
     color: var(--text-secondary);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) {
     .settingsTrigger {
         min-width: var(--size-44);
         min-height: var(--size-44);

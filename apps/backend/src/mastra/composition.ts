@@ -4,7 +4,7 @@ import type { Agent } from '@mastra/core/agent';
 import type { createContextualTutorTools } from '../modules/conversations/infrastructure/ai/contextual-tutor-tools';
 import { createTextsAgents } from '../modules/texts/infrastructure/ai/texts-agents';
 import { Mastra } from '@mastra/core/mastra';
-import type { createTutorPlaygroundPrimitives } from '../modules/development-harness/infrastructure/mastra/tutor-playground-primitives';
+import type { TutorPlaygroundPrimitives } from '../modules/development-harness/infrastructure/mastra/tutor-playground-primitives';
 
 import type { DevelopmentVerificationService } from '../modules/development-harness/application/development-verification-service';
 import { createDevelopmentHarnessPrimitives } from '../modules/development-harness/infrastructure/mastra/development-harness-primitives';
@@ -50,7 +50,7 @@ export interface CanonicalMastraOptions {
         fallbackModelId: `${string}/${string}`;
         modelId: `${string}/${string}`;
         service: DevelopmentVerificationService;
-        tutorPlayground?: ReturnType<typeof createTutorPlaygroundPrimitives>;
+        tutorPlayground?: TutorPlaygroundPrimitives;
     };
 }
 
@@ -58,7 +58,7 @@ export interface CanonicalMastraOptions {
  * Default Studio has no authenticated learner/source and receives none of these tools. */
 function contextualTools(
     contextualTutor: CanonicalMastraOptions['contextualTutor'],
-    playground?: ReturnType<typeof createTutorPlaygroundPrimitives>,
+    playground?: TutorPlaygroundPrimitives,
 ) {
     const registered: NonNullable<
         NonNullable<ConstructorParameters<typeof Mastra>[0]>['tools']
@@ -233,7 +233,7 @@ function createDevelopmentMastra(options: {
     contextualTutor?: NonNullable<CanonicalMastraOptions['contextualTutor']>;
     textsAgents: ReturnType<typeof createTextsAgents> | undefined;
     development: ReturnType<typeof createDevelopmentHarnessPrimitives>;
-    tutorPlayground?: ReturnType<typeof createTutorPlaygroundPrimitives>;
+    tutorPlayground?: TutorPlaygroundPrimitives;
     dictionaryCardGenerationAgent:
         ReturnType<typeof createDictionaryCardGenerationAgent> | undefined;
     dictionaryCardAuthoringAgent:

@@ -12,6 +12,7 @@ type TutorRequest = {
     targetId?: string;
     autoSend?: boolean;
     blockIds?: string[];
+    exercisePicker?: boolean;
 };
 
 /** Local presentation state; publication and recovery remain in page actions. */
@@ -38,6 +39,14 @@ export function useWorkspacePresentation(
                       blockId,
                   )
                 : [blockId],
+        });
+    }
+
+    function generateExercises(blockId: string) {
+        setRequest({
+            id: crypto.randomUUID(),
+            blockIds: [blockId],
+            exercisePicker: true,
         });
     }
 
@@ -118,6 +127,7 @@ export function useWorkspacePresentation(
         setTitleVisible,
         tutorAction,
         mentionBlock,
+        generateExercises,
         askTutor,
         askOutline,
         preview,

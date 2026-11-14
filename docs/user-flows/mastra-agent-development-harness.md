@@ -2,7 +2,7 @@
 feature: mastra-agent-development-harness
 title: Mastra Agent Development Harness
 status: current
-last_verified: 2026-11-12
+last_verified: 2026-11-14
 surfaces:
     - browser
     - api
@@ -12,6 +12,7 @@ source_paths:
     - .agent/features/011-mastra-agent-development-harness/**
     - .agent/features/012-mastra-deepseek-model/**
     - .agent/features/065-tutor-learning-tool-playground/**
+    - .agent/features/067-named-text-exercises/**
     - .env.example
     - README.md
     - docs/development.md
@@ -26,6 +27,7 @@ source_paths:
     - apps/backend/src/mastra/**
     - apps/backend/src/modules/dictionaries/infrastructure/ai/**
     - apps/backend/src/modules/development-harness/**
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-content-tools.ts
     - apps/backend/src/modules/users/**
     - apps/backend/tests/e2e/mastra-development-harness.journey.test.ts
     - packages/prompts/**
@@ -59,7 +61,11 @@ sessions, application memory, and proposals persist in the isolated application
 tables; global Mastra thread/workflow storage, datasets, experiments, and trace
 archives remain unavailable. Use only the checked-in `example.test` fixture.
 
-The tutor workflow and four generation tools extend the verification harness.
+The tutor workflow, four production actor generation tools, and 19 standalone
+named-exercise development tools extend the verification harness. The actor
+tool set remains the four original generators; each named tool fixes one
+catalog activity and is discoverable in Studio without creating a second
+production actor path.
 Their operating examples are in [Running the tutor playground](../tutor-playground.md).
 They reuse production generation and runner factories with synthetic authority,
 bounded execution, and playground persistence. Studio execution does not prove
@@ -197,6 +203,9 @@ off.
    examples in the operating guide. Inspect their compact ready receipts and
    full validated proposals. Use `read-playground-proposal` with the returned
    session/proposal IDs for exact persisted readback.
+   Confirm all 19 `generate_exercise_<catalog-id>` development tools are also
+   discoverable. They retain their fixed activity/checking contracts and do
+   not replace the four actor tools.
 4. Exercise the `missing-language` scenario using “Generate vocabulary without
    a language,” then answer the clarification in the same session. In the
    `read-only` scenario, explanation remains available but generation cannot

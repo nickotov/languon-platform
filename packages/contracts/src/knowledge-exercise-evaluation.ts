@@ -4,6 +4,9 @@ import { ActionAllowanceQuoteSchema, ActionBillingSchema } from './ai-action';
 import {
     WorkbookExerciseRevisionSchema,
     WorkbookLearnerAttemptSchema,
+    WorkbookAiEvaluationStatusSchema,
+    WorkbookEvaluationDetailsSchema,
+    workbookEvaluationCriteriaAgree,
 } from './workbook-learning';
 
 const feedback = z
@@ -26,7 +29,8 @@ export const RequestKnowledgeExerciseEvaluationSchema = z
     .strict();
 export const KnowledgeExerciseEvaluationResultSchema = z
     .object({
-        status: z.enum(['correct', 'incorrect']),
+        ...WorkbookEvaluationDetailsSchema.shape,
+        status: WorkbookAiEvaluationStatusSchema,
         feedback,
         validAlternative: z.boolean(),
     })
@@ -34,6 +38,10 @@ export const KnowledgeExerciseEvaluationResultSchema = z
     .refine(
         (value) => !value.validAlternative || value.status === 'correct',
         'A valid alternative must be correct.',
+    )
+    .refine(
+        workbookEvaluationCriteriaAgree,
+        'Feedback criteria contradict the result.',
     );
 export const KnowledgeExerciseEvaluationJobSchema = z
     .object({
@@ -70,6 +78,11 @@ export const KnowledgeExerciseEvaluationJobSchema = z
                 evaluation.method !== 'ai' ||
                 evaluation.status !== value.result.status ||
                 evaluation.feedback !== value.result.feedback ||
+                JSON.stringify(evaluation.criteria) !==
+                    JSON.stringify(value.result.criteria) ||
+                JSON.stringify(evaluation.corrections) !==
+                    JSON.stringify(value.result.corrections) ||
+                evaluation.suggestedAnswer !== value.result.suggestedAnswer ||
                 (evaluation.status === 'correct' &&
                     evaluation.validAlternative !==
                         value.result.validAlternative));

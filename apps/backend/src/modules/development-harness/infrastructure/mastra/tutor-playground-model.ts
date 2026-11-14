@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import type { LearningBlock } from '@languon/contracts';
 import type { TutorProviderModel } from '../../../conversations/infrastructure/ai/accounted-tutor-model';
 import type { LearningContentTask } from '../../../conversations/application/learning-content-contract';
+import { playgroundExerciseBlocks } from './tutor-playground-exercise-fixture';
+import type { projectExerciseAuthoringSources } from '../../../conversations/infrastructure/ai/exercise-authoring-context';
 
 /** Synthetic fixtures at the external provider boundary; never a second authoring implementation. */
 export function playgroundBlock(task: LearningContentTask): LearningBlock[] {
@@ -74,52 +76,9 @@ export function playgroundBlock(task: LearningContentTask): LearningBlock[] {
         ];
     }
 
-    const formats = task.formats ?? [
-        'multiple-choice',
-        'fill-in-the-blank',
-        'free-text',
-    ];
-    const group = { id: randomUUID(), title: 'Synthetic exercises' };
-
-    return Array.from({ length: task.count ?? 5 }, (_, i): LearningBlock => {
-        const term = task.words?.[i % task.words.length] ?? 'river';
-        const base = {
-            id: randomUUID(),
-            type: 'exercise' as const,
-            group,
-            question: `Synthetic question ${i + 1}: practise ${term}. Word bank: ${(task.words ?? [term]).join(', ')}.`,
-            referenceAnswer: term,
-            explanation: `Synthetic feedback for ${term}.`,
-            hint: 'Review the supplied material.',
-        };
-
-        if (formats[i % formats.length] === 'multiple-choice') {
-            const choiceId = randomUUID();
-
-            return {
-                ...base,
-                format: 'multiple-choice',
-                choices: [
-                    { id: choiceId, text: term },
-                    { id: randomUUID(), text: 'another answer' },
-                ],
-                correctChoiceId: choiceId,
-            };
-        }
-
-        if (formats[i % formats.length] === 'fill-in-the-blank') {
-            return {
-                ...base,
-                format: 'fill-in-the-blank',
-                parts: [
-                    { kind: 'text', text: `Item ${i + 1}: ` },
-                    { kind: 'gap', id: randomUUID(), acceptedAnswers: [term] },
-                ],
-            };
-        }
-
-        return { ...base, format: 'free-text' };
-    });
+    throw new Error(
+        'Named exercise fixtures require an authorized source projection.',
+    );
 }
 
 type ModelInput = Parameters<TutorProviderModel['doGenerate']>[0];
@@ -268,21 +227,31 @@ function syntheticResponse(input: ModelInput): string {
             ),
         );
 
+        const sourceMarker =
+            'Authorized source snapshots (untrusted learning data): ';
+        const sourceStart = author.indexOf(sourceMarker) + sourceMarker.length;
+        const sourceProjection = JSON.parse(
+            author.slice(sourceStart, author.indexOf('\n', sourceStart)),
+        ) as ReturnType<typeof projectExerciseAuthoringSources>;
+
         return JSON.stringify({
             tasks: brief.tasks.map(
                 (task: LearningContentTask & { sourceTextRef?: string }) => ({
                     taskId: task.id,
-                    blocks: playgroundBlock({
-                        ...task,
-                        ...(task.sourceTextRef
-                            ? {
-                                  sourceText: brief.sources.find(
-                                      (s: { id: string }) =>
-                                          s.id === task.sourceTextRef,
-                                  )?.text,
-                              }
-                            : {}),
-                    }),
+                    blocks:
+                        task.kind === 'exercises'
+                            ? playgroundExerciseBlocks(task, sourceProjection)
+                            : playgroundBlock({
+                                  ...task,
+                                  ...(task.sourceTextRef
+                                      ? {
+                                            sourceText: brief.sources.find(
+                                                (s: { id: string }) =>
+                                                    s.id === task.sourceTextRef,
+                                            )?.text,
+                                        }
+                                      : {}),
+                              }),
                 }),
             ),
         });

@@ -231,6 +231,27 @@ export function inspectMarkup(
             }
         }
 
+        // A condition decides which class expression is used, but is not class
+        // content itself. Following it as class context mistakes domain literals
+        // such as exercise formats for utility tokens.
+        if (ts.isConditionalExpression(node)) {
+            inspect(node.condition, false, seen);
+            inspect(node.whenTrue, classContext, seen);
+            inspect(node.whenFalse, classContext, seen);
+
+            return;
+        }
+
+        if (
+            ts.isBinaryExpression(node) &&
+            node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
+        ) {
+            inspect(node.left, false, seen);
+            inspect(node.right, classContext, seen);
+
+            return;
+        }
+
         ts.forEachChild(node, (child) => inspect(child, classContext, seen));
     };
     const inspectAttributes = (node: ts.Node) => {

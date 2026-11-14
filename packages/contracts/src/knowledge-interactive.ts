@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { LearningBlockSchema, type LearningBlock } from './learning-blocks';
+import type { NamedExerciseSource } from './named-exercises';
 import type { KnowledgeNode } from './contextual-assistant';
 
 export const KnowledgeLearningBlockNodeSchema = z
@@ -70,6 +71,34 @@ function sourceSegments(block: LearningBlock): string[] {
     }
 
     return [];
+}
+
+function namedSourceExists(
+    source: NamedExerciseSource,
+    blocks: ReadonlyMap<string, LearningBlock>,
+) {
+    if (source.kind === 'text-selection' || source.origin.kind !== 'block') {
+        return true;
+    }
+
+    const block = blocks.get(source.origin.blockId);
+    if (source.kind === 'vocabulary' && block?.type === 'vocabulary') {
+        return source.entries.every((entry) =>
+            block.entries.some((current) => current.id === entry.entryId),
+        );
+    }
+
+    if (source.kind === 'grammar') {
+        return block?.type === 'grammar';
+    }
+
+    if (source.kind === 'text' && block?.type === 'bilingual-text') {
+        return source.passages.every((passage) =>
+            block.segments.some((segment) => segment.id === passage.segmentId),
+        );
+    }
+
+    return false;
 }
 
 /**
@@ -151,6 +180,19 @@ export function createInteractiveKnowledgeBodySchema(
 
             const exerciseGroups = new Map<string, string>();
             for (const block of blocks.values()) {
+                if (
+                    block.type === 'exercise' &&
+                    block.semantics?.sources.some(
+                        (source) => !namedSourceExists(source, blocks),
+                    )
+                ) {
+                    ctx.addIssue({
+                        code: 'custom',
+                        message:
+                            'Named exercise references must retain their matching source blocks and items in this document.',
+                    });
+                }
+
                 if (block.type === 'exercise' && block.group) {
                     if (
                         exerciseGroups.has(block.group.id) &&

@@ -215,6 +215,7 @@ test('an owner inspects the read-only AI catalog without executing definitions',
     expect(catalogListResponse.status()).toBe(200);
     const catalogEntries = (await catalogListResponse.json()).entries as Array<{
         kind: 'agent' | 'tool' | 'prompt';
+        id: string;
     }>;
     const catalogCounts = Object.fromEntries(
         (['agent', 'tool', 'prompt'] as const).map((kind) => [
@@ -222,6 +223,13 @@ test('an owner inspects the read-only AI catalog without executing definitions',
             catalogEntries.filter((entry) => entry.kind === kind).length,
         ]),
     ) as Record<'agent' | 'tool' | 'prompt', number>;
+    const namedExerciseTools = catalogEntries.filter(
+        (entry) =>
+            entry.kind === 'tool' &&
+            /^playground\.generate_exercise_[vgrw][0-9]{2}$/u.test(entry.id),
+    );
+
+    expect(namedExerciseTools).toHaveLength(19);
 
     await signIn(page, ownerEmail);
     const assertReadOnlyBrowser = observeReadOnlyBrowser(page);
@@ -328,12 +336,24 @@ test('an owner inspects the read-only AI catalog without executing definitions',
     await expect(outputSchema).toContainText('needs-clarification');
     await expect(outputSchema).toContainText('invalid-output');
     await settleDrawer(page);
+
     const schemaPath = testInfo.outputPath('admin-ai-catalog-schemas.png');
     await page.screenshot({ path: schemaPath });
     await testInfo.attach('admin-ai-catalog-schemas', {
         path: schemaPath,
         contentType: 'image/png',
     });
+
+    await page.keyboard.press('Escape');
+    await page.getByLabel('Search definitions').fill('generate_exercise_v01');
+    const namedTool = page.getByRole('button', {
+        name: 'Inspect generate_exercise_v01',
+        exact: true,
+    });
+
+    await expect(namedTool).toBeVisible();
+    await namedTool.click();
+    await settleDrawer(page);
 
     await drawer
         .getByRole('button', { name: 'Prompt: learning-content-authoring' })

@@ -162,7 +162,7 @@ describe('learning content batch planning', () => {
             id: 'practice',
             kind: 'exercises',
             instruction: 'Practice.',
-            count: 12,
+            count: 18,
         },
     ])('does not split unsupported oversized $kind tasks', (task) => {
         expect(planLearningContentBatches({ tasks: [task] })).toBeNull();
