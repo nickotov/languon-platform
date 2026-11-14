@@ -78,8 +78,15 @@ source_paths:
     - apps/web/src/fsd/features/knowledge-notes/lib/read-media-block-form.ts
     - apps/web/src/fsd/features/knowledge-notes/lib/read-text-block-form.ts
     - apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts
-source_fingerprint: sha256:faa17cc20c76179106b6ac291eb30af42f2bd13e77bc108ad988af00963ef077
-reviewed: 2026-11-12
+    - docs/adr/0058-named-activity-content-and-source-provenance.md
+    - packages/contracts/src/contextual-assistant.ts
+    - packages/contracts/src/exercise-generation.ts
+    - packages/contracts/src/named-exercises.ts
+    - apps/backend/src/modules/conversations/application/exercise-picker-resolution.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/exercise-source-resolution.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposals.ts
+source_fingerprint: sha256:b3878f9382fb55f6a2085420c9117dbdd6e517597b9b757b67a498d3e8aa10c0
+reviewed: 2026-11-14
 ---
 
 # Conversations and Knowledge workspace
@@ -100,7 +107,7 @@ CAS preserves stale edits as alternative"]
 explicitly resolve alternatives"]
     Workspace --> WSend["Send complete current editor snapshot
 persist validated target anchor
-optional focus + copied Text bodies"]
+optional focus, activity choices + copied Text bodies"]
     WSend --> Limit["Character limits + irreducible first-phase budget
 compactable history stays eligible"]
     Limit -->|"Too large"| Reject["Explain limit; keep composer
@@ -123,15 +130,15 @@ persistence-only Memory saves current output"]
     Intent -->|"Yes"| Planner["Knowledge request planner
 prepared history + observations + frozen sources"]
     Planner -->|"Conversation or explanation"| Tutor
-    Planner -->|"Missing or ambiguous requirements"| Clarify["Clarify and retain the pending brief
+    Planner -->|"Missing or ambiguous requirements"| Clarify["Clarify; retain bounded brief and exact sources
 no applicable partial material"]
     Planner -->|"New components"| Author["Shared authoring and validation
-single or ordered mixed request"]
+selected schemas + ordered task dependencies"]
     Planner -->|"Exact copy or revision"| BlockOps["Authorized frozen target operation
 host copy or validated replacements"]
-    Author --> Propose["Canonical block publication operation
-all components ready before publication
-compact proposal receipt"]
+    Author --> Propose["Canonical block publication
+one complete generation proposal
+atomic revision cohort; compact receipts"]
     BlockOps --> Propose
     Tutor --> Read["read_source_context
 bounded authorized material"]
@@ -281,6 +288,22 @@ reconcile that cache. Queued/running/failed status updates do not poll it. Durab
 events own conversation detail after Send; ordinary sends do not reload an unchanged
 workspace. The first eligible Untitled-note admission still synchronizes automatic
 naming and its resulting branch version.
+
+## Named exercise extension
+
+The [named-exercise view](named-exercises.md) follows the 19 activity identities,
+picker choices, host-captured vocabulary/grammar/passage sources and private
+checking policies. The planner still evaluates typed picker choices against
+editable prose. Source bindings restore exact captured material; missing sources
+or conflicting requirements clarify rather than inventing replacements. Pending
+source versions survive clarification, and retry reuses the original private
+request instead of accepting new client selectors. One generation result stores
+one complete proposal; multi-target revision previews commit as one transaction.
+
+Custom content has no named semantics. Named identity survives insertion and
+copying, with fresh local IDs and unchanged historical origins. Prepared checking
+is model-free; explicit private AI feedback never rewrites published keys. Neither
+partial nor unassessed learning results count as correct progress.
 
 ## Sources
 

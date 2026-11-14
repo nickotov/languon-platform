@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { loadCatalog } from '../../catalog.mjs';
 import { createDiagramServer } from '../../server.mjs';
 
-// @user-flow-revision development-cleanup-and-architecture-diagrams sha256:6633b46af7d06664
+// @user-flow-revision development-cleanup-and-architecture-diagrams sha256:33be549d7f1e925a
 
 // @user-flow development-cleanup-and-architecture-diagrams/explore-current-architecture
 test('browse every real diagram, inspect sources and use navigation at desktop and mobile widths', async ({
@@ -41,7 +41,7 @@ test('browse every real diagram, inspect sources and use navigation at desktop a
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto('/');
     const navigation = page.getByRole('navigation', { name: 'Diagrams' });
-    await expect(navigation.getByRole('link')).toHaveCount(9);
+    await expect(navigation.getByRole('link')).toHaveCount(10);
     const titles = await navigation.getByRole('link').allTextContents();
     for (const title of titles) {
         await navigation
@@ -98,7 +98,7 @@ test('browse every real diagram, inspect sources and use navigation at desktop a
         }),
     ).toBeVisible();
 
-    expect(await navigation.getByRole('link').count()).toBeLessThan(9);
+    expect(await navigation.getByRole('link').count()).toBeLessThan(10);
     await page.getByLabel('Find a diagram').fill('');
     await page.getByRole('button', { name: 'Refresh sources' }).click();
     await expect(page.locator('#canvas svg')).toHaveAttribute(

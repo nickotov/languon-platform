@@ -28,8 +28,8 @@ source_paths:
     - apps/backend/src/modules/knowledge/infrastructure/transcription-job-composition.ts
     - apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts
     - infra/deploy/lib/worker-database-privileges.mjs
-source_fingerprint: sha256:80f10695edf49cf4bbd0cab04ced3aeee534d9d0b06d9de9170c31d4c95e22e3
-reviewed: 2026-11-01
+source_fingerprint: sha256:11bbb0ff5a9d330359649386f13c6bf7e2a6bd7e32db4f36b130e892f9d817ba
+reviewed: 2026-11-14
 ---
 
 # Development and deployment tooling

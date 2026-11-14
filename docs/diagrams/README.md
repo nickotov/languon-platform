@@ -7,8 +7,7 @@ summary: Source-backed views of implemented behavior, with explicit scope and fr
 # Architecture diagrams
 
 Open the local viewer with `pnpm diagrams`; validate the maintained catalog with
-`pnpm diagrams:check`. These diagrams describe repository implementation as reviewed
-on 2026-11-01. They do not assert that optional providers, flags or deployment hosts
+`pnpm diagrams:check`. These diagrams describe repository implementation as reviewed on 2026-11-14. They do not assert that optional providers, flags or deployment hosts
 are active. Start with the system view and follow a narrower flow.
 
 | View                                                                    | Question                                                                                                                              |
@@ -20,6 +19,7 @@ are active. Start with the system view and follow a narrower flow.
 | [Dictionaries and learning](dictionaries-and-learning.md)               | Authored vocabulary, review-first AI generation and personal practice use distinct ownership and revision rules.                      |
 | [Texts and contextual vocabulary](texts-and-vocabulary.md)              | Translation becomes saved aligned text only on Save; selected-phrase Add authorizes atomic dictionary publication.                    |
 | [Conversations and Knowledge workspace](conversations-and-knowledge.md) | Source chat and note workspaces share durable tutor turns; working drafts, publication and unlisted sharing have separate boundaries. |
+| [Named text exercises](named-exercises.md)                              | Host-grounded generation, explicit publication and deterministic versus private AI checking.                                          |
 | [Speech reuse, generation and pricing](speech-and-pricing.md)           | Saved-source authorization precedes shared recording reuse or confirmed generation with success-only settlement.                      |
 | [Development and deployment tooling](development-and-deployment.md)     | Local process topology and implemented release mechanics are distinct from an actually deployed environment.                          |
 
@@ -41,9 +41,9 @@ changes, reconcile diagrams and only then stamp with
 
 ## Reconciliation and limits
 
-- `docs/architecture.md` still marks document storage/scanning/parser execution as
-  planned in its opening paragraphs; composition already contains gated real
-  adapters. The system/development views distinguish existence from activation.
+- Document storage, scanner and parser adapters are implemented behind
+  configuration gates. Their existence does not establish current activation,
+  external-service health or production deployment.
 - ADR-0035's context and older backend-first guides describe an earlier Texts UI
   phase; current Next route/workspace code provides that UI.
 - ADR histories record earlier models and rollout floors. The current catalog and

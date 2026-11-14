@@ -47,8 +47,13 @@ source_paths:
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts
     - docs/adr/0049-native-provider-pricing-and-accounting.md
     - docs/adr/0051-duration-based-transcription-accounting.md
-source_fingerprint: sha256:ceb1b69d9732813140a90839086c3a20d6408162882a325c53982267f0f9f055
-reviewed: 2026-11-01
+    - docs/adr/0058-named-activity-content-and-source-provenance.md
+    - packages/contracts/src/workbook-learning.ts
+    - apps/backend/src/modules/knowledge/infrastructure/ai/exercise-evaluation-provider.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source.sql
+source_fingerprint: sha256:75d8c5ea65eed85cde23fd322989e0f6bda13ee26f89057c63e85f6f553badef
+reviewed: 2026-11-14
 ---
 
 # AI job lifecycle and accounting
@@ -153,6 +158,17 @@ fail closed rather than being rewritten. Earlier ADR failure-charge rules are su
 new action accounting; the fresh-development-ledger cutover does not reinterpret old
 whole-credit rows in place. These relationships are source evidence, not a measured
 performance or production activation claim.
+
+## Named exercise checks within existing execution
+
+Ordinary prepared checking makes no provider call; unknown hybrid/rubric responses
+remain unchecked. Explicit Check with AI uses the existing source-bound Texts job
+lane and actor-private attempt, with current source/share/revision/epoch and settled
+worker publication fences. A successful job may produce a partially-correct or
+unable-to-assess learning result; neither counts as correct progress. The shared
+catalog and host-grounded authoring path add no provider or independent allowance.
+Conversation planning/authoring are recorded under the existing answer accounting
+category. See the [named-exercise view](named-exercises.md).
 
 ## Sources
 

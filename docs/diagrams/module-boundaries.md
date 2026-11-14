@@ -31,8 +31,15 @@ source_paths:
     - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
     - infra/deploy/lib/deployment.mjs
     - infra/deploy/lib/worker-database-privileges.mjs
-source_fingerprint: sha256:b4886cfdec4516adde7fff3c241bbfff1b3e2e1ead39e1fd39b7412efd9614ff
-reviewed: 2026-11-01
+    - docs/adr/0058-named-activity-content-and-source-provenance.md
+    - packages/contracts/src/exercise-activity.ts
+    - packages/contracts/src/named-exercises.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-content-tools.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-runner.ts
+    - apps/backend/src/modules/knowledge/domain/named-exercise-semantics.ts
+    - apps/backend/src/modules/administration/infrastructure/ai-catalog/tool-definitions.ts
+source_fingerprint: sha256:2c595a8e05958e37c245fccd3f84d3bfe2d791438ec62f0a42664fc25f9fc154
+reviewed: 2026-11-14
 ---
 
 # Module and layer boundaries
@@ -48,7 +55,8 @@ flowchart TB
         AdminApp["app routes/providers"] --> AdminPages["pages"] --> AdminWidgets["widgets"] --> AdminShared["shared auth/API/UI"]
     end
     Shared --> Contracts["@languon/contracts
-Zod wire schemas"]
+Zod wire schemas
+named activity metadata and semantics"]
     AdminShared --> Contracts
     subgraph Backend["Backend process composition"]
         Root["index.ts + createApp"] --> HTTP["Hono interface routes"]
@@ -100,6 +108,15 @@ application services SQL or deployment authority. The accounting participant
 keeps observation construction private to its existing transaction boundary.
 Frontend panel, field-policy and presentation extractions remain inside their
 owning slices; they introduce no new app, layer or cross-slice relationship.
+
+Named exercise display/semantic contracts remain SDK-independent public exports.
+Conversations owns planning, exact host grounding and complete reviewable proposals;
+Knowledge owns published revisions, local source consistency and private attempts.
+They reuse the existing typed transaction participants. Backend-only authoring
+instructions never become client catalog metadata. Nineteen standalone Studio
+activity tools are development-harness registrations; the ordinary tutor actor
+retains four high-level learning-content tools. Admin catalog inspection grants
+no execution authority. See the [named-exercise flow](named-exercises.md).
 
 ## Sources
 

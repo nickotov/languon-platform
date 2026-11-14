@@ -12,7 +12,7 @@ source_paths:
     - docs/adr/0001-user-authentication-and-session-strategy.md
     - apps/backend/src/modules/authentication/infrastructure/rate-limit/redis-rate-limiter.ts
 source_fingerprint: sha256:88a203c3a004336d45ca9064c108a5a1eff9620d2a2e3cfadaa5c81d44729779
-reviewed: 2026-11-01
+reviewed: 2026-11-14
 ---
 
 # Authentication and session refresh

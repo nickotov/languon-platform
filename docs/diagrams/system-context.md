@@ -22,8 +22,15 @@ source_paths:
     - apps/backend/src/modules/knowledge/interface/http/workbook.routes.ts
     - apps/backend/src/modules/knowledge/interface/http/transcription-job-routes.ts
     - apps/backend/src/modules/knowledge/application/private-translation-service.ts
-source_fingerprint: sha256:1e520f027a4af27194beafb9bbc5ebb21023f23557502bf8d583a518aa024914
-reviewed: 2026-11-01
+    - docs/adr/0058-named-activity-content-and-source-provenance.md
+    - packages/contracts/src/exercise-activity.ts
+    - packages/contracts/src/named-exercises.ts
+    - apps/admin/src/app/admin-app.tsx
+    - apps/web/src/fsd/features/knowledge-notes/hooks/use-exercise-generation.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/tutor-request-execution.ts
+    - apps/backend/src/modules/knowledge/domain/named-exercise-semantics.ts
+source_fingerprint: sha256:fc3bccb02c50ba13af3d99c94e682adf7a7bd01075f36faf2b57dd6048b6ce4b
+reviewed: 2026-11-14
 ---
 
 # System context
@@ -34,10 +41,10 @@ Applications, durable state and external services in the implemented development
 flowchart LR
     Learner["Learner browser"] --> Web["Next.js web
 Dictionaries, Texts, Knowledge workbooks,
-private practice and learning blocks"]
+typed blocks, named exercises and private practice"]
     Reader["Unlisted Knowledge reader"] -->|"Read saved note; sign in to copy"| Web
     Operator["Operator browser"] --> Admin["Vite / Refine admin
-Users, AI settings, accounting, audit, recordings"]
+Users, AI routing/catalog, accounting, audit, recordings"]
     Web -->|"/api proxy: typed JSON and event replay"| API["Hono HTTP backend"]
     Admin -->|"/api proxy: admin-authorized requests"| API
     API -->|"Content, workbook order, private learner state,
@@ -74,10 +81,9 @@ transcription lane is present only when its configuration, processing approval,
 worker observation and credentials all admit it; a provider key by itself does
 not enable processing. Remote video remains browser playback only.
 
-**Reconciliation:** the opening sketch and backend paragraph in `docs/architecture.md`
-still call document storage/scanning/parsing planned. The worker command already
-composes S3 storage, ClamAV and a sandbox parser when document mode is configured.
-Those adapters exist; activation and external-service health remain separate facts.
+**Reconciliation:** document storage, scanner and sandbox parser adapters are
+implemented and configuration gated, as described in `docs/architecture.md`.
+Adapter existence does not establish activation or external-service health.
 The mobile source renders a static home screen and does not implement the browser
 journeys shown here.
 
@@ -90,6 +96,12 @@ production adapter selection; it adds no process, storage service or external
 provider. Knowledge HTTP error mapping remains within the same authenticated
 and capability-aware router. These local readability changes leave the system
 relationships shown above unchanged.
+
+Named text exercises are Knowledge content, not another service or AI provider.
+The shared catalog supplies 19 identities and policies; host-grounded generation
+and actor-private checking reuse the existing Conversations, Knowledge and Texts
+AI execution boundaries. The admin AI catalog is read only. See the
+[named-exercise flow](named-exercises.md) for explicit publication and checking.
 
 ## Sources
 

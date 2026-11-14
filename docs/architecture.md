@@ -16,7 +16,7 @@ source_paths:
 
 Browse the [source-backed diagram atlas](diagrams/README.md) with `pnpm diagrams`
 for system boundaries and authentication, AI/accounting, learning, Texts,
-Knowledge, audio and operational flows. Each diagram records its implementation
+Knowledge, named exercises, audio and operational flows. Each diagram records its implementation
 and ADR inputs and reports changes since review.
 
 ## System boundaries
@@ -33,7 +33,7 @@ web / admin / mobile
    HTTP contracts
         |
         v
-     backend --------> (planned) private product object storage
+     backend --------> private product object storage (gated)
         |                            |
         |                            v
         |                     scanner quarantine
@@ -41,7 +41,7 @@ web / admin / mobile
    PostgreSQL <--------------- dictionary worker
         |                    |
         +--> Redis           +--> credentialless parser child process
-                             +--> Mastra / model and OCR providers
+                             +--> Mastra / model adapters; OCR port
                              +--> Langfuse
 ```
 
@@ -63,17 +63,23 @@ interface/infrastructure --> application --> domain
 - Interface code owns Hono routes, authentication boundaries, request/response
   mapping, and OpenAPI declarations.
 
-The dictionary worker is a separate process built from the backend image;
-private product storage, scanning, parser sandboxing, and OCR remain planned for
-the document milestone. Root worker composition owns timers, process signals,
-concurrency, and readiness, then calls a dictionary application worker service
-that owns the job/lease state machine. Dictionary infrastructure implements
-PostgreSQL and provider ports. HTTP handlers will enqueue bounded work and return without
-waiting for providers. Model, OCR, scanner, and object-storage SDKs will remain
-behind application ports. Native document parsing will run in a separate
-credentialless, egress-denied child-process sandbox inside the worker service;
-the worker will validate its bounded IPC output before use. No additional
-service/image topology is authorized by this sandbox boundary.
+The root job worker is a separate process built from the backend image. It
+rotates dictionary, shared speech, conversation, sentence, Texts and selection
+work within bounded slots, with configuration-gated transcription. Root
+composition owns timers, process signals, concurrency and readiness; each
+application service owns its typed job/lease state machine. HTTP handlers enqueue
+bounded work without waiting for providers.
+
+Dictionary document storage, scanner quarantine and native parser adapters are
+implemented behind application ports and document-mode configuration gates. The
+production document composition currently uses UnavailableDocumentOcrProvider;
+deterministic OCR fixtures do not establish live OCR execution.
+Native parsing uses a separate credentialless, egress-denied child-process
+sandbox inside the worker service; the parent validates bounded IPC output.
+Adapter composition does not establish service health or activate optional
+provider processing. This parser boundary introduces no additional product
+service/image topology. See the [development view](diagrams/development-and-deployment.md)
+for the implemented local and release topology.
 
 Validate all external data with Zod at its system boundary. Keep transport and
 persistence representations out of domain objects.
@@ -468,8 +474,8 @@ Web chat uses Vercel AI SDK UI with a custom transport projecting durable events
 into typed message/tool parts. Disconnecting a subscription leaves worker work
 running; explicit Stop requests cancellation. Knowledge editing uses Tiptap with
 a restricted, versioned ProseMirror contract and fixed safe rendering. Knowledge
-prose supports H1/H2/H3 and atomic thematic breaks in both existing document body
-versions; editor/Markdown/static-reader paths coordinate that additive allowlist
+prose supports H1/H2/H3 and atomic thematic breaks in both prose and block-document
+body variants; editor/Markdown/static-reader paths coordinate that additive allowlist
 and retain explicit apply, undo and Save. Rules have node size1 but no meaningful
 publication text. See [ADR-0053](adr/0053-knowledge-prose-headings-and-thematic-breaks.md).
 Chat
@@ -488,10 +494,38 @@ The version-2 Knowledge body embeds bounded, typed learning blocks alongside
 existing rich text. Shared contracts define video, vocabulary, bilingual text,
 audio, grammar and exercise content; fixed React renderers supply independent
 presentation and interaction ports without importing the editor. Tiptap adapts
-those blocks to manual authoring. Legacy prose proposals retain their version-1
-writer contract. The separate typed block proposal tool requires owner authority,
+those blocks to manual authoring. Prose and block documents use the current
+version-2 body contract; there is no old-version application decoder. The separate typed block proposal tool requires owner authority,
 captures its target branch/version, and applies reviewed blocks only to the
 working branch. Explicit Save publishes them.
+
+Named exercises optionally carry versioned activity semantics: one of 19 catalog
+identities, objective, language, fixed format/checking policy, prepared key or rubric,
+and frozen sources. Their absence deliberately means Custom. Display metadata is
+SDK-independent; detailed authoring instructions remain backend-only. The picker
+prepares explicit source/activity/count choices, and the existing request planner
+checks them against editable prose. Only selected definitions/schemas enter each
+bounded authoring call. The host restores exact authorized vocabulary senses,
+grammar rules, passages or selected prose from ID bindings; validated earlier task
+outputs can ground dependent exercises. Generation publishes one complete proposal,
+revision cohorts commit atomically, and Review, Insert/Update and Save remain
+explicit. Local source references remap on independent copies; frozen historical
+origins never grant source access. Substantive manual edits require explicit Custom
+conversion, while AI revisions preserve named identity and host provenance.
+
+Ordinary prepared checks make no model call. Unknown hybrid answers and rubric
+responses remain unchecked until explicit evaluation; Check with AI remains
+available for every format. The existing private attempt/job path publishes
+structured criteria, corrections and optional suggested answers under source,
+share, revision, epoch, worker-lease and settlement fences. Partial/unassessed
+learning outcomes are separate from execution success and do not count as correct
+progress. Studio exposes 19 standalone named tools under isolated development
+session authority, while the production tutor retains four high-level learning
+tools. The admin AI catalog only describes these definitions; inspection grants no
+execution authority. See [ADR-0058](adr/0058-named-activity-content-and-source-provenance.md),
+[the named-exercise flow](diagrams/named-exercises.md) and the
+[playground guide](tutor-playground.md). Provider quality/activation is separate
+from the deterministic implementation evidence.
 
 Workbooks order existing notes with a unique note membership constraint.
 Standalone notes remain possible. Note and workbook unlisted grants are separate;

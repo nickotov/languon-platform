@@ -29,7 +29,7 @@ source_paths:
     - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-lifecycle.ts
     - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-transaction.ts
 source_fingerprint: sha256:e2fc7c46c3e92c8c9695ce78274b2d20df6d683bd5f39e9904e9ad748b84c10e
-reviewed: 2026-11-01
+reviewed: 2026-11-14
 ---
 
 # Texts and contextual vocabulary

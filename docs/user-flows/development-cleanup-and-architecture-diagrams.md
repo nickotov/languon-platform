@@ -2,7 +2,7 @@
 feature: development-cleanup-and-architecture-diagrams
 title: Development cleanup and architecture diagrams
 status: current
-last_verified: 2026-10-19
+last_verified: 2026-11-14
 surfaces:
     - browser
     - cli
@@ -53,7 +53,7 @@ is never replaced. `GET /health` responds `ok` while the viewer is running.
 
 ## Browser verification
 
-1. Open the local URL. Expect System context and a navigation list of nine views.
+1. Open the local URL. Expect System context and a navigation list of ten views.
 2. Select Authentication, AI job lifecycle, Texts, Conversations and the remaining
    flows. Each selection renders a labeled SVG and updates its title and summary.
 3. Search for `knowledge`, then enter a string with no match. Expect filtered links
@@ -68,7 +68,7 @@ is never replaced. `GET /health` responds `ok` while the viewer is running.
 
 ## CLI verification
 
-1. Run `pnpm diagrams:check`. Expect all nine documents current with valid Mermaid.
+1. Run `pnpm diagrams:check`. Expect all ten documents current with valid Mermaid.
    Invalid/missing sources, malformed metadata, syntax errors or drift exit nonzero.
 2. Invoke `$architecture-diagrams` to reconcile changed implementation and accepted
    decisions. After reviewing every affected input and updating the diagrams, run
@@ -80,7 +80,7 @@ is never replaced. `GET /health` responds `ok` while the viewer is running.
 ## E2E coverage
 
 `explore-current-architecture` loads the real native server and real repository
-catalog in Chromium, renders all nine views, inspects notes/sources, searches,
+catalog in Chromium, renders all ten views, inspects notes/sources, searches,
 zooms/fits, retains hash selection, checks narrow layout and keyboard navigation,
 and rejects unexpected browser/console/network failures or external requests.
 

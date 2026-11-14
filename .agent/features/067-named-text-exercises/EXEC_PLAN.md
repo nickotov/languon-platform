@@ -279,3 +279,12 @@ Ordinary local DB migration0169/0170, paid-provider language-quality proof and
 production rollout remain explicitly outside this verification result. The local
 database was not reset. Retrospective follows later user acceptance and does not
 delay technical delivery.
+
+### Documentation follow-up — 2026-11-14
+
+The user's follow-up audit found that the feature guides were updated but the
+architecture overview and atlas still needed reconciliation. The completed
+[documentation improvement](../../improvements/named-exercises-documentation-sync.md)
+owns that correction: current contracts and worker/adaptor boundaries, a focused
+named-exercise view, all ten fresh diagrams, reviewed source inventories, and
+passing real-viewer/browser checks. Historical ADRs/plans remain history.

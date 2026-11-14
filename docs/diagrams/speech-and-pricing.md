@@ -36,8 +36,8 @@ source_paths:
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts
     - docs/adr/0049-native-provider-pricing-and-accounting.md
     - docs/adr/0051-duration-based-transcription-accounting.md
-source_fingerprint: sha256:8bacdea083e3357c87f7a0b15b10a75f77b24b544a18ca55a9da15eb4720aa3e
-reviewed: 2026-11-01
+source_fingerprint: sha256:47710ece901e4f0658f35c0f44a6e54cf57b69418226729beaf8ddb5f6be56e0
+reviewed: 2026-11-14
 ---
 
 # Speech reuse, generation and pricing

@@ -31,8 +31,8 @@ source_paths:
     - apps/web/src/fsd/features/sentence-training/model/sentence-session-state.ts
     - apps/web/src/fsd/features/sentence-training/model/sentence-preparation.ts
     - apps/web/src/fsd/features/sentence-training/model/sentence-preparation-recovery.ts
-source_fingerprint: sha256:1220fc5e90bff672c4d9b959b5688c977c13113eebe0c6acd269d8ea1a736372
-reviewed: 2026-11-01
+source_fingerprint: sha256:92792c6cb40c1654a90c6e08499c745fba7868da7a4c8f5a288dccb27e395f86
+reviewed: 2026-11-14
 ---
 
 # Dictionaries and learning
@@ -126,6 +126,10 @@ parses stored operation identities before reuse, and sentence round projection
 updates synchronously before notifying subscribers. These helpers preserve
 private client session queues, durable preparation authorization and the explicit
 Accept and reference-review boundaries shown above.
+
+[Named text exercises](named-exercises.md) are separate Knowledge/workbook content.
+Their catalog, prepared checks and explicit private AI evaluation do not turn
+Dictionary flashcards or the sentence worker into a second named-exercise store.
 
 ## Sources
 
