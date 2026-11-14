@@ -14,7 +14,7 @@ const env = Object.fromEntries(
 export default defineConfig({
     testDir: '..',
     testMatch:
-        /(?:contextual-assistant|knowledge-workspace|interactive-workbooks|ai-accounting)\.journeys\.spec\.ts/,
+        /(?:contextual-assistant|knowledge-workspace|interactive-workbooks|workbook-guide|ai-accounting)\.journeys\.spec\.ts/,
     workers: 1,
     fullyParallel: false,
     timeout: 120_000,

@@ -167,6 +167,23 @@ Typed companion-layout visibility lets narrow desktop editors temporarily yield
 the sidebar to the rail without replacing user preferences. See
 [ADR-0043](adr/0043-sidebar-navigation-and-optional-text-folders.md).
 
+## Public workbook guide
+
+The public `/workbook` overview and `/workbook/exercises` chapter teach the
+material → request → review → insert/save → practice workflow. A static Workbook
+guide sidebar item is available to guests and members, separate from saved
+`/workbooks` and persisted Library navigation. The guide uses the existing app
+shell, locale infrastructure and learning-block renderers.
+
+A canonical, source-grounded synthetic corpus covers all nineteen named activities.
+Only one interactive example mounts at a time. Prepared checking runs locally;
+illustrative feedback belongs to explicitly displayed sample responses, never the
+visitor's arbitrary typed answer. Guide interactions create no content, attempts,
+evaluation jobs or model requests. Recipes copy text and link to Knowledge's
+existing authorization boundary rather than creating drafts or submitting work.
+English A2 source examples include an explicitly labelled English-to-French
+translation activity. See the [Workbook guide journey](user-flows/workbook-guide.md).
+
 ## Mobile
 
 The Expo application groups user-facing screens separately from reusable

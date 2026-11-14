@@ -11,6 +11,8 @@ evidence with a repeatable manual/browser/API/device recipe.
 
 ## Guide index
 
+- [Workbook guide](./workbook-guide.md) — public instructions, nineteen local exercise examples and copyable generation recipes.
+
 - [Interactive workbooks](./interactive-workbooks.md) — typed learning blocks, ordered saved sharing, private practice and independent copies (verification in progress).
 
 - [Native provider pricing coverage and onboarding](./model-price-coverage-and-onboarding.md) —

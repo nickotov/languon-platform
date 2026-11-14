@@ -1,6 +1,7 @@
 export const navigationEn = {
     'shell.createAction': 'Create',
     'shell.home': 'Home',
+    'shell.workbookGuide': 'Workbook guide',
     'shell.library': 'Library',
     'shell.search': 'Search',
     'shell.create': 'Create new',
@@ -58,6 +59,7 @@ export const navigationEn = {
 export const navigationRu = {
     'shell.createAction': 'Создать',
     'shell.home': 'Главная',
+    'shell.workbookGuide': 'Руководство по практике',
     'shell.library': 'Библиотека',
     'shell.search': 'Поиск',
     'shell.create': 'Создать',
@@ -115,6 +117,7 @@ export const navigationRu = {
 export const navigationEs = {
     'shell.createAction': 'Crear',
     'shell.home': 'Inicio',
+    'shell.workbookGuide': 'Guía de práctica',
     'shell.library': 'Biblioteca',
     'shell.search': 'Buscar',
     'shell.create': 'Crear nuevo',
@@ -172,6 +175,7 @@ export const navigationEs = {
 export const navigationFr = {
     'shell.createAction': 'Créer',
     'shell.home': 'Accueil',
+    'shell.workbookGuide': 'Guide de pratique',
     'shell.library': 'Bibliothèque',
     'shell.search': 'Rechercher',
     'shell.create': 'Créer',

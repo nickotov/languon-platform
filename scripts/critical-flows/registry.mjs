@@ -506,6 +506,14 @@ export const flows = [
         dependsOn: ['setup-to-generation'],
     },
     {
+        id: 'workbook-guide',
+        minimumTests: 3,
+        app: 'assistant',
+        file: 'workbook-guide.journeys.spec.ts',
+        grep: '.',
+        prerequisite: 'deterministic-assistant',
+    },
+    {
         id: 'interactive-workbooks',
         minimumTests: 5,
         app: 'assistant',

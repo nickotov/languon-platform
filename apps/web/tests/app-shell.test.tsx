@@ -158,6 +158,67 @@ describe('session-aware contextual sidebar', () => {
         });
     });
 
+    it.each([
+        ['/workbook', true],
+        ['/workbook/exercises', true],
+        ['/workbook/space', true],
+        ['/workbooks', false],
+        ['/workbooks/example', false],
+    ])(
+        'marks the guide active only within its route on %s',
+        (route, active) => {
+            pathname = route;
+            renderChrome();
+            const guide = screen.getByRole('link', { name: 'Workbook guide' });
+
+            expect(guide).toHaveAttribute('href', '/workbook');
+            expect(guide.getAttribute('aria-current')).toBe(
+                active ? 'page' : null,
+            );
+
+            expect(guide.closest('ul')).toBeNull();
+        },
+    );
+
+    it('keeps the member guide accessible in the desktop rail', async () => {
+        const interaction = userEvent.setup();
+        pathname = '/workbook/exercises';
+        renderChrome();
+        await interaction.click(
+            screen.getByRole('button', { name: 'Collapse sidebar' }),
+        );
+
+        expect(
+            screen.getByRole('link', { name: 'Workbook guide' }),
+        ).toHaveAttribute('aria-current', 'page');
+    });
+
+    it('offers guests the guide and closes its drawer when selected', async () => {
+        const interaction = userEvent.setup();
+        useSessionStore.setState({
+            status: 'signed-out',
+            user: null,
+            accessToken: null,
+        });
+
+        renderChrome();
+        expect(
+            screen.getByRole('link', { name: 'Workbook guide' }),
+        ).toHaveAttribute('href', '/workbook');
+
+        await interaction.click(
+            screen.getByRole('button', { name: 'Open navigation' }),
+        );
+
+        const drawer = screen.getByRole('dialog', { name: 'Main navigation' });
+        await interaction.click(
+            within(drawer).getByRole('link', { name: 'Workbook guide' }),
+        );
+
+        await waitFor(() => expect(drawer).not.toHaveAttribute('open'));
+        expect(navigationApi.resources).not.toHaveBeenCalled();
+    });
+
     it('uses bounded quick access and persists the desktop rail per user', async () => {
         const interaction = userEvent.setup();
         renderChrome();

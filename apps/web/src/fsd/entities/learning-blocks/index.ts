@@ -1,4 +1,5 @@
 export { LearningBlockView } from './ui/learning-block-view/learning-block-view';
+export { ExerciseEvaluation } from './ui/exercise-block/ui/exercise-evaluation/exercise-evaluation';
 export type {
     LearningBlockLabels,
     LearningBlockViewProps,

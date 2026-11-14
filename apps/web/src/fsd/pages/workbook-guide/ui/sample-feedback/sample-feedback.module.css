@@ -1,0 +1,29 @@
+.root {
+    display: grid;
+    gap: var(--space-16);
+    padding: var(--space-20);
+    background: var(--background-subtle);
+    border-radius: var(--radius-12);
+    justify-items: start;
+}
+
+.root h3,
+.root p,
+.root blockquote {
+    margin: 0;
+}
+
+.root h3 {
+    font-size: var(--size-18);
+}
+
+.root p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.root blockquote {
+    padding-inline-start: var(--space-16);
+    border-inline-start: var(--size-2) solid var(--border-strong);
+    line-height: 1.6;
+}

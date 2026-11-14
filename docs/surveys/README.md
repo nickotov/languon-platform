@@ -34,3 +34,5 @@ Use descriptive kebab-case filenames and follow
 frontmatter before reading existing surveys. Preserve the original research date
 when merely saving prior findings; recheck time-sensitive claims before making
 a provider or implementation commitment.
+
+- [Workbook guide and interactive examples](workbook-guide-and-interactive-examples.md) — 2026-11-14; native examples, tutorial/recipe structure and truthful simulated feedback.

@@ -38,7 +38,7 @@ source_paths:
     - apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-runner.ts
     - apps/backend/src/modules/knowledge/domain/named-exercise-semantics.ts
     - apps/backend/src/modules/administration/infrastructure/ai-catalog/tool-definitions.ts
-source_fingerprint: sha256:2c595a8e05958e37c245fccd3f84d3bfe2d791438ec62f0a42664fc25f9fc154
+source_fingerprint: sha256:b916918f7b191b50c214e665774120074f510065ec0e22c1187016e8ad9c7823
 reviewed: 2026-11-14
 ---
 

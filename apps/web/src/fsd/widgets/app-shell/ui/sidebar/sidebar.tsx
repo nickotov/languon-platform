@@ -1,5 +1,12 @@
 'use client';
-import { House, PanelLeftClose, PanelLeftOpen, Search, X } from 'lucide-react';
+import {
+    BookOpen,
+    House,
+    PanelLeftClose,
+    PanelLeftOpen,
+    Search,
+    X,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -61,6 +68,29 @@ export function Sidebar({
         >
             <House aria-hidden size={rail ? 20 : 18} strokeWidth={1.75} />
             {rail ? null : t('shell.home')}
+        </Link>
+    );
+
+    const guideActive =
+        pathname === '/workbook' || pathname.startsWith('/workbook/');
+    const guideClass = [
+        styles.home,
+        guideActive ? styles.homeActive : '',
+        rail ? styles.railHome : '',
+        touch ? styles.touchHome : '',
+    ]
+        .filter(Boolean)
+        .join(' ');
+    const guideLink = (
+        <Link
+            aria-current={guideActive ? 'page' : undefined}
+            aria-label={rail ? t('shell.workbookGuide') : undefined}
+            className={guideClass}
+            href={href('/workbook')}
+            {...(onNavigate ? { onClick: onNavigate } : {})}
+        >
+            <BookOpen aria-hidden size={rail ? 20 : 18} strokeWidth={1.75} />
+            {rail ? null : t('shell.workbookGuide')}
         </Link>
     );
 
@@ -147,6 +177,22 @@ export function Sidebar({
                         ) : (
                             homeLink
                         )}
+                    </>
+                ) : null}
+                {rail ? (
+                    <div className={styles.railHomeSlot}>
+                        <Tooltip
+                            content={t('shell.workbookGuide')}
+                            placement='right'
+                        >
+                            {guideLink}
+                        </Tooltip>
+                    </div>
+                ) : (
+                    guideLink
+                )}
+                {authenticated ? (
+                    <>
                         <div
                             className={
                                 rail ? styles.railDivider : styles.groupHeading

@@ -27,9 +27,10 @@ export function ExerciseBlock(
     const activity = block.semantics
         ? getExerciseActivity(block.semantics.activity.id)
         : undefined;
-    const checkingLabel = block.semantics
+    const defaultCheckingLabel = block.semantics
         ? exerciseCheckingLabel(block.semantics.checking.policy, locale)
         : undefined;
+    const checkingLabel = props.checkingLabelOverride ?? defaultCheckingLabel;
     const form = useRef<HTMLFormElement>(null);
     const expansion = useBlockExpansion(
         props.expandAll,

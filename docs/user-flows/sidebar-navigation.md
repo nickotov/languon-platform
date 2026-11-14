@@ -21,6 +21,7 @@ e2e_scenarios:
     - owned-title-search-and-synced-navigation
     - responsive-sidebar-and-keyboard-flyouts
 related_features:
+    - workbook-guide
     - global-app-shell
     - texts
     - contextual-language-assistant-and-knowledge
@@ -114,6 +115,15 @@ assertions; a passing test alone does not establish design fidelity.
   retain sign-in and preference controls without private-library requests.
 - Navigation respects unsaved text edits, including search and browser history;
   [Texts](texts.md) owns that regression scenario.
+
+## Related public guide coverage
+
+The static **Workbook guide** utility links to public `/workbook` for guests and
+members in expanded, rail and drawer navigation, outside the private Library.
+It selects `/workbook` and its child routes, independently of saved `/workbooks`.
+The [Workbook guide](workbook-guide.md) owns its discovery, interactive examples,
+copy recipes and guest/member browser coverage. Existing scenarios here retain
+their current session, resource and navigation responsibilities.
 
 ## Automated regression checks
 

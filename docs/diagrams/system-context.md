@@ -29,7 +29,10 @@ source_paths:
     - apps/web/src/fsd/features/knowledge-notes/hooks/use-exercise-generation.ts
     - apps/backend/src/modules/conversations/infrastructure/ai/tutor-request-execution.ts
     - apps/backend/src/modules/knowledge/domain/named-exercise-semantics.ts
-source_fingerprint: sha256:fc3bccb02c50ba13af3d99c94e682adf7a7bd01075f36faf2b57dd6048b6ce4b
+    - apps/web/src/app/workbook/page.tsx
+    - apps/web/src/app/workbook/exercises/page.tsx
+    - apps/web/src/fsd/widgets/app-shell/ui/sidebar/sidebar.tsx
+source_fingerprint: sha256:099a3493091f68ad0e2c6010b97d577026602cc406aee778a9352a49c855fa4a
 reviewed: 2026-11-14
 ---
 
@@ -41,7 +44,7 @@ Applications, durable state and external services in the implemented development
 flowchart LR
     Learner["Learner browser"] --> Web["Next.js web
 Dictionaries, Texts, Knowledge workbooks,
-typed blocks, named exercises and private practice"]
+typed blocks, named exercises, public guide and private practice"]
     Reader["Unlisted Knowledge reader"] -->|"Read saved note; sign in to copy"| Web
     Operator["Operator browser"] --> Admin["Vite / Refine admin
 Users, AI routing/catalog, accounting, audit, recordings"]
@@ -102,6 +105,11 @@ The shared catalog supplies 19 identities and policies; host-grounded generation
 and actor-private checking reuse the existing Conversations, Knowledge and Texts
 AI execution boundaries. The admin AI catalog is read only. See the
 [named-exercise flow](named-exercises.md) for explicit publication and checking.
+
+The public Workbook guide uses the same web app shell and existing exercise
+renderers. Its synthetic examples and illustrative feedback are local only;
+copying a recipe does not create a note, attempt or AI job. Its static navigation
+entry is separate from authenticated persisted Library resources.
 
 ## Sources
 

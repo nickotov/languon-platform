@@ -23,6 +23,7 @@ e2e_scenarios:
     - guest-settings-persistence
     - session-aware-global-navigation
 related_features:
+    - workbook-guide
     - learner-portrait
     - sidebar-navigation
     - contextual-language-assistant-and-knowledge
@@ -143,6 +144,15 @@ source conversations and publication journey are owned by the
 [Contextual Language Assistant and Knowledge guide](contextual-language-assistant-and-knowledge.md).
 The shell scenarios here retain their guest settings, identity isolation,
 dictionary navigation and drawer assertions; they do not claim to test notes.
+
+## Related public guide coverage
+
+The static **Workbook guide** utility links to public `/workbook` for guests and
+members in expanded, rail and drawer navigation, outside the private Library.
+It selects `/workbook` and its child routes, independently of saved `/workbooks`.
+The [Workbook guide](workbook-guide.md) owns its discovery, interactive examples,
+copy recipes and guest/member browser coverage. Existing scenarios here retain
+their current session, resource and navigation responsibilities.
 
 ## Automated regression checks
 

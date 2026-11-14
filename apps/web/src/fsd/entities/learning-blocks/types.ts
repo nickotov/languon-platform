@@ -144,6 +144,8 @@ export interface LearningBlockViewProps {
     onSubmitAttempt?:
         ((blockId: string, answer: LearningAnswer) => void) | undefined;
     submitAttemptLabel?: string | undefined;
+    /** Presentation-only label for hosts that explain a local practice preview. */
+    checkingLabelOverride?: string | undefined;
     /** Hosts can wait for private persistence before enabling disclosures. */
     interactionsDisabled?: boolean | undefined;
     attemptPending?: boolean | undefined;
