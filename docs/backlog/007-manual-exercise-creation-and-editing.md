@@ -4,9 +4,10 @@ id: BL-007
 title: 'Manual exercise creation and editing'
 status: in-progress
 created: 2026-10-01
-updated: 2026-11-14
+updated: 2026-11-15
 original_tasks: '11'
 evidence:
+    - .agent/features/069-contextual-exercise-discovery/EVIDENCE.md
     - .agent/features/059-interactive-workbooks/EVIDENCE.md
     - .agent/features/067-named-text-exercises/EVIDENCE.md
 ---
@@ -94,3 +95,13 @@ records passing runtime gates, independent completion approval and operational
 follow-ups. This expands the
 delivered authoring slice; BL-003/006/007 retain their broader In progress scope.
 Additional text activities, answer-aware chat and audio remain deferred.
+
+## Contextual exercise discovery — 2026-11-15
+
+[Feature069](../../.agent/features/069-contextual-exercise-discovery/FEATURE.md)
+adds in-place exercise discovery and local previews, editor slash insertion with
+manual Custom or AI preparation actions, and inline typed exercise/source chips
+in workspace chat. Explicit Send, proposal review, Insert and Save remain separate.
+[Evidence](../../.agent/features/069-contextual-exercise-discovery/EVIDENCE.md)
+records actual verification and readiness; this slice does not complete the
+broader backlog task, which remains in progress.

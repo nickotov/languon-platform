@@ -11,7 +11,8 @@ import {
     type SubmitConversationTurnRequest,
 } from '@languon/contracts';
 import { and, desc, eq, inArray } from 'drizzle-orm';
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
+import { conversationRequestFingerprint } from './conversation-request-fingerprint';
 import { formatCreditMilli } from '../../../../ai-credits/domain/exact-credit-amount';
 import { projectConversationSource } from '../../../application/conversation-source-context';
 import { resolveConversationPortrait } from '../../../application/portrait-context';
@@ -99,11 +100,7 @@ export async function conversationSubmit(
                 true,
                 prepared?.chat.source,
             );
-            const fingerprint = createHash('sha256')
-                .update(
-                    JSON.stringify({ ...input, confirmedQuoteId: undefined }),
-                )
-                .digest('hex');
+            const fingerprint = conversationRequestFingerprint(input);
             const [existing] = await tx
                 .select()
                 .from(turns)
@@ -184,6 +181,7 @@ export async function conversationSubmit(
             }
 
             let learnerContent = input.content;
+            let promptMentions = input.promptMentions ?? [];
             let learnerAttachments = input.attachments;
             let retryModelContent: Record<string, unknown> | undefined;
             let retryEditorTarget: MessageRow['editorTarget'] = null;
@@ -222,6 +220,7 @@ export async function conversationSubmit(
                 }
 
                 learnerContent = original.content;
+                promptMentions = original.promptMentions;
                 learnerAttachments = original.attachments;
                 retryModelContent = original.modelContent?.[0]?.modelContent;
                 retryEditorTarget = original.editorTarget;
@@ -472,6 +471,7 @@ export async function conversationSubmit(
                         attachments: learnerAttachments,
                         modelContent: [modelUserMessage],
                         blockReferences: snapshot.blockReferences ?? [],
+                        promptMentions,
                         editorTarget,
                         status: 'complete',
                         sourceVersion: snapshot.version,

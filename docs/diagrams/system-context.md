@@ -32,8 +32,8 @@ source_paths:
     - apps/web/src/app/workbook/page.tsx
     - apps/web/src/app/workbook/exercises/page.tsx
     - apps/web/src/fsd/widgets/app-shell/ui/sidebar/sidebar.tsx
-source_fingerprint: sha256:099a3493091f68ad0e2c6010b97d577026602cc406aee778a9352a49c855fa4a
-reviewed: 2026-11-14
+source_fingerprint: sha256:4fb5166f0961476dfd6c81487491920a82bbf381e3b3262d8dfdfa032c6a565b
+reviewed: 2026-11-15
 ---
 
 # System context

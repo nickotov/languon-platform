@@ -6,11 +6,11 @@ import type { Transaction } from '@tiptap/pm/state';
 import {
     type LearningBlock,
     type ExerciseLearningBlock,
+    type ExerciseActivityId,
 } from '@languon/contracts';
 import { InlineAlert } from '@/fsd/shared/ui';
 import { blocks } from '../../lib/positioned-learning-blocks';
 import { applyLearningBlockEdit } from '../../lib/apply-learning-block-edit';
-import type { BlockKind } from '../../lib/learning-block-form';
 import type { KnowledgeBlockCopyContext } from '../../api/block-copy-api';
 import { BlockCopyDialog } from '../block-copy/copy-blocks-to-note';
 import { LibrarySaveDialog } from '../library-copy/library-save-dialog/library-save-dialog';
@@ -20,7 +20,8 @@ import type { KnowledgeLibraryContext } from '../../api/library-copy-api';
 import { InsertLibraryBlock } from '../library-copy/insert-library-block/insert-library-block';
 import { type UploadBlockAudio } from './ui/audio-block-upload/audio-block-upload';
 import { useBlockAuthoring } from './ui/block-authoring-context/block-authoring-context';
-import { BlockInsertMenu } from './ui/block-insert-menu/block-insert-menu';
+import { EditorInsertPicker } from '../editor-insert-picker/editor-insert-picker';
+import { insertBlocksAtTarget } from '../../lib/editor-insertion-target';
 import { ExerciseSetDialog } from './ui/exercise-set-dialog/exercise-set-dialog';
 import { BlockFormDialog } from './ui/block-form-dialog/block-form-dialog';
 import {
@@ -36,7 +37,9 @@ export function LearningBlockAuthoring({
     uploadAudio,
     library,
     blockCopy,
+    onGenerateExercise,
 }: {
+    onGenerateExercise?: ((activityId: ExerciseActivityId) => void) | undefined;
     editor: Editor;
     disabled: boolean;
     labels?: BlockAuthoringLabels;
@@ -74,15 +77,10 @@ export function LearningBlockAuthoring({
         };
     }, [editor]);
 
-    function add(kind: BlockKind) {
-        if (disabled) {
-            return;
-        }
-
-        setEditing({ kind });
-    }
+    useEffect(() => () => editing?.insertion?.release(), [editing]);
 
     function close() {
+        editing?.insertion?.release();
         setEditing(null);
     }
 
@@ -93,7 +91,10 @@ export function LearningBlockAuthoring({
 
         const previous =
             editing?.existing && editing.block ? [editing.block] : [];
-        const applied = applyLearningBlockEdit(editor, previous, [block]);
+        const applied = editing?.insertion
+            ? insertBlocksAtTarget(editor, editing.insertion, [block])
+            : applyLearningBlockEdit(editor, previous, [block]);
+
         setError(!applied);
         if (applied) {
             close();
@@ -110,7 +111,10 @@ export function LearningBlockAuthoring({
         const previous =
             editing?.members ??
             (editing?.existing && editing.block ? [editing.block] : []);
-        const applied = applyLearningBlockEdit(editor, previous, next);
+        const applied = editing?.insertion
+            ? insertBlocksAtTarget(editor, editing.insertion, next)
+            : applyLearningBlockEdit(editor, previous, next);
+
         setError(!applied);
         if (applied) {
             close();
@@ -141,10 +145,10 @@ export function LearningBlockAuthoring({
                     : {}),
             },
         }));
-        const applied = applyLearningBlockEdit(editor, previous, [
-            audio,
-            ...nextQuestions,
-        ]);
+        const next = [audio, ...nextQuestions];
+        const applied = editing?.insertion
+            ? insertBlocksAtTarget(editor, editing.insertion, next)
+            : applyLearningBlockEdit(editor, previous, next);
 
         setError(!applied);
         if (applied) {
@@ -187,13 +191,24 @@ export function LearningBlockAuthoring({
           : [];
     const sourceBlocks = items.map((item) => item.block);
 
+    const groupedExerciseEditing =
+        editing?.kind === 'exercise' &&
+        (editing.exerciseSet ||
+            (!editing.insertion &&
+                (Boolean(
+                    editing.block?.type === 'exercise' && editing.block.group,
+                ) ||
+                    (editing.members?.length ?? 0) > 1)));
+
     return (
         <div className={styles.root}>
             <div className={styles.actions}>
-                <BlockInsertMenu
-                    labels={labels}
+                <EditorInsertPicker
+                    editor={editor}
                     disabled={disabled}
-                    onChoose={add}
+                    labels={labels}
+                    onGenerateExercise={onGenerateExercise}
+                    library={library}
                 />
                 {library && (
                     <InsertLibraryBlock
@@ -222,7 +237,7 @@ export function LearningBlockAuthoring({
                 />
             )}
             {error && <InlineAlert tone='error'>{labels.error}</InlineAlert>}
-            {editing?.kind === 'exercise' && (
+            {groupedExerciseEditing && editing && (
                 <ExerciseSetDialog
                     exercises={(
                         editing.members ??
@@ -237,10 +252,11 @@ export function LearningBlockAuthoring({
                     onApply={applyExercises}
                 />
             )}
-            {editing !== null && editing.kind !== 'exercise' && (
+            {editing !== null && !groupedExerciseEditing && (
                 <BlockFormDialog
                     key={editing.block?.id ?? editing.kind}
                     kind={editing.kind}
+                    initialFormat={editing.initialFormat}
                     block={editing.block}
                     labels={labels}
                     onClose={close}

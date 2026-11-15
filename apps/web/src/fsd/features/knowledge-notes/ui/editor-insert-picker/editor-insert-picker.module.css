@@ -1,0 +1,30 @@
+.contents {
+    display: grid;
+    gap: var(--space-8);
+}
+
+.panel {
+    width: var(--size-400);
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: var(--space-16);
+}
+
+.contents > button {
+    justify-content: start;
+}
+.contents h3 {
+    margin: var(--space-12) 0 var(--space-4);
+    font-size: var(--size-12);
+    color: var(--text-secondary);
+}
+
+@media (max-width: 767px) {
+    .panel {
+        width: calc(100vw - var(--space-32));
+        max-height: 60dvh;
+        padding-block-end: calc(
+            var(--space-16) + env(safe-area-inset-bottom, 0px)
+        );
+    }
+}

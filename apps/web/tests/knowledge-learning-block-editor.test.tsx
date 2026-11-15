@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event';
 import { I18nProvider } from '../src/fsd/shared/i18n';
 import { en } from '../src/fsd/shared/i18n/messages/en';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
@@ -220,10 +221,10 @@ describe('learning block editor', () => {
         await waitFor(() => expect(ref.current).not.toBeNull());
         fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
         fireEvent.click(
-            await screen.findByRole('menuitem', { name: 'Grammar' }),
+            await screen.findByRole('button', { name: 'Grammar', exact: true }),
         );
 
-        fireEvent.change(screen.getByLabelText('Rule'), {
+        fireEvent.change(await screen.findByLabelText('Rule'), {
             target: { value: 'Use the past tense.' },
         });
 
@@ -235,15 +236,18 @@ describe('learning block editor', () => {
             'Use the past tense.',
         );
 
-        fireEvent.click(
-            screen.getByRole('button', { name: 'Block settings: Grammar' }),
-        );
+        await act(async () => {});
+        await act(async () => {
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Block settings: Grammar' }),
+            );
+        });
 
         fireEvent.click(
             await screen.findByRole('menuitem', { name: 'Edit', exact: true }),
         );
 
-        fireEvent.change(screen.getByLabelText('Rule'), {
+        fireEvent.change(await screen.findByLabelText('Rule'), {
             target: { value: 'Use the present tense.' },
         });
 
@@ -314,7 +318,10 @@ describe('learning block editor', () => {
 
         await waitFor(() => expect(ref.current).not.toBeNull());
         fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
-        fireEvent.click(await screen.findByRole('menuitem', { name: 'Audio' }));
+        fireEvent.click(
+            await screen.findByRole('button', { name: 'Audio', exact: true }),
+        );
+
         const file = new File(['synthetic audio'], 'sample.wav', {
             type: 'audio/wav',
         });
@@ -336,6 +343,7 @@ describe('learning block editor', () => {
 });
 
 it('authors a manual exercise with selected source passages and retains them on edit', async () => {
+    const user = userEvent.setup();
     const sourceId = '22222222-2222-4222-8222-222222222222';
     const segmentId = '33333333-3333-4333-8333-333333333333';
     const source = {
@@ -363,8 +371,18 @@ it('authors a manual exercise with selected source passages and retains them on 
     );
 
     await waitFor(() => expect(editor.current).not.toBeNull());
-    fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Exercise' }));
+    await user.click(screen.getByRole('button', { name: 'Add block' }));
+    await user.click(
+        await screen.findByRole('button', { name: 'Exercises', exact: true }),
+    );
+
+    await user.click(
+        await screen.findByRole('button', {
+            name: 'Custom exercise',
+            exact: true,
+        }),
+    );
+
     fireEvent.change(screen.getByLabelText('Question'), {
         target: { value: 'When does the train leave?' },
     });
@@ -381,11 +399,11 @@ it('authors a manual exercise with selected source passages and retains them on 
         target: { value: sourceId },
     });
 
-    fireEvent.click(
+    await user.click(
         screen.getByRole('checkbox', { name: 'The train leaves at noon.' }),
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await user.click(screen.getByRole('button', { name: 'Apply' }));
     await waitFor(() => expect(onChange).toHaveBeenCalled());
     expect(JSON.stringify(onChange.mock.lastCall?.[0])).toContain(
         '"source":{"blockId":"' +
@@ -395,17 +413,27 @@ it('authors a manual exercise with selected source passages and retains them on 
             '"]}',
     );
 
-    fireEvent.click(
+    await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+
+    await user.click(
         screen.getByRole('button', { name: 'Block settings: Exercise' }),
     );
 
-    fireEvent.click(
+    const edit = await screen.findByRole('menuitem', {
+        name: 'Edit',
+        exact: true,
+    });
+
+    await waitFor(() => expect(edit).toBeEnabled());
+    await user.click(
         await screen.findByRole('menuitem', { name: 'Edit', exact: true }),
     );
 
-    expect(screen.getByRole('combobox', { name: 'Hint source' })).toHaveValue(
-        sourceId,
-    );
+    expect(
+        await screen.findByRole('combobox', { name: 'Hint source' }),
+    ).toHaveValue(sourceId);
 
     expect(
         screen.getByRole('checkbox', { name: 'The train leaves at noon.' }),
@@ -643,4 +671,225 @@ it('edits exactly one video description control and preserves that value on Appl
             description: 'A flower opens in the morning.',
         }),
     );
+});
+
+it('opens a named-activity manual action as Custom with the matching answer format', async () => {
+    render(
+        <BlockFormDialog
+            kind='exercise'
+            initialFormat='multiple-choice'
+            labels={defaultAuthoringLabels}
+            onApply={vi.fn(() => true)}
+            onClose={vi.fn()}
+            sources={[]}
+        />,
+    );
+
+    expect(await screen.findByLabelText('Answer format')).toHaveValue(
+        'multiple-choice',
+    );
+
+    expect(screen.getByText('Custom exercise')).toBeInTheDocument();
+    expect(screen.getByLabelText('Question')).toHaveValue('');
+    expect(screen.queryByText('Keep named activity')).not.toBeInTheDocument();
+});
+
+it('filters the nested exercise list through one editable search input', async () => {
+    const empty = KnowledgeBodySchema.parse({
+        schemaVersion: 2,
+        document: { type: 'doc', content: [{ type: 'paragraph' }] },
+    });
+    const editor = createRef<KnowledgeEditorHandle>();
+    render(<KnowledgeEditor ref={editor} value={empty} onChange={vi.fn()} />);
+    await waitFor(() => expect(editor.current).not.toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
+    fireEvent.click(
+        await screen.findByRole('button', { name: 'Exercises', exact: true }),
+    );
+
+    expect(screen.getAllByRole('textbox', { name: /^Search/u })).toHaveLength(
+        1,
+    );
+
+    expect(
+        screen.queryByRole('searchbox', { name: 'Search exercises' }),
+    ).not.toBeInTheDocument();
+
+    const search = screen.getByRole('textbox', {
+        name: 'Search blocks and exercises',
+    });
+
+    fireEvent.change(search, { target: { value: 'V02' } });
+    expect(screen.getByRole('button', { name: /^V02\s/u })).toBeInTheDocument();
+    expect(
+        screen.queryByRole('button', { name: /^V03\s/u }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(search, { target: { value: 'V03' } });
+    expect(screen.getByRole('button', { name: /^V03\s/u })).toBeInTheDocument();
+    expect(
+        screen.queryByRole('button', { name: /^V02\s/u }),
+    ).not.toBeInTheDocument();
+});
+
+it('returns focus to the insertion button when its picker is dismissed with Escape', async () => {
+    const user = userEvent.setup();
+    const empty = KnowledgeBodySchema.parse({
+        schemaVersion: 2,
+        document: { type: 'doc', content: [{ type: 'paragraph' }] },
+    });
+    const editor = createRef<KnowledgeEditorHandle>();
+    render(<KnowledgeEditor ref={editor} value={empty} onChange={vi.fn()} />);
+    await waitFor(() => expect(editor.current).not.toBeNull());
+    const trigger = screen.getByRole('button', {
+        name: 'Add block',
+        exact: true,
+    });
+
+    await user.click(trigger);
+    await screen.findByRole('textbox', { name: 'Search blocks and exercises' });
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(
+        screen.queryByRole('textbox', { name: 'Search blocks and exercises' }),
+    ).not.toBeInTheDocument();
+});
+
+it('creates a Custom exercise set at the cursor without replacing prose and undoes the whole set once', async () => {
+    const user = userEvent.setup();
+    // JSDOM has no text-range geometry; ProseMirror scrolls the restored text cursor on undo.
+    const geometry = ['getClientRects', 'getBoundingClientRect'] as const;
+    const previousGeometry = geometry.map((name) =>
+        Object.getOwnPropertyDescriptor(Range.prototype, name),
+    );
+
+    Object.defineProperty(Range.prototype, 'getClientRects', {
+        configurable: true,
+        value: () => [],
+    });
+
+    Object.defineProperty(Range.prototype, 'getBoundingClientRect', {
+        configurable: true,
+        value: () => new DOMRect(),
+    });
+
+    try {
+        const original = KnowledgeBodySchema.parse({
+            schemaVersion: 2,
+            document: {
+                type: 'doc',
+                content: [
+                    {
+                        type: 'paragraph',
+                        content: [
+                            { type: 'text', text: 'Keep earlier material.' },
+                        ],
+                    },
+                ],
+            },
+        });
+        const editor = createRef<KnowledgeEditorHandle>();
+        const onChange = vi.fn();
+        render(
+            <KnowledgeEditor
+                ref={editor}
+                value={original}
+                onChange={onChange}
+            />,
+        );
+
+        await waitFor(() => expect(editor.current).not.toBeNull());
+        await user.click(
+            screen.getByRole('button', { name: 'Add block', exact: true }),
+        );
+
+        await user.click(
+            await screen.findByRole('button', {
+                name: 'Exercises',
+                exact: true,
+            }),
+        );
+
+        await user.click(
+            await screen.findByRole('button', {
+                name: 'Custom exercise set',
+                exact: true,
+            }),
+        );
+
+        await user.click(
+            await screen.findByRole('button', {
+                name: 'Add question',
+                exact: true,
+            }),
+        );
+
+        const questions = screen.getAllByLabelText('Question', { exact: true });
+        const answers = screen.getAllByLabelText('Reference answer', {
+            exact: true,
+        });
+        const explanations = screen.getAllByLabelText(
+            'Why the answer is correct',
+            {
+                exact: true,
+            },
+        );
+
+        expect(questions).toHaveLength(2);
+        questions.forEach((question, index) => {
+            fireEvent.change(question, {
+                target: { value: `Question ${index + 1}?` },
+            });
+
+            fireEvent.change(answers[index]!, {
+                target: { value: `Answer ${index + 1}.` },
+            });
+
+            fireEvent.change(explanations[index]!, {
+                target: { value: `Explanation ${index + 1}.` },
+            });
+        });
+
+        await user.click(
+            screen.getByRole('button', { name: 'Apply', exact: true }),
+        );
+
+        await waitFor(() =>
+            expect(editor.current?.getSnapshot().content).toContain(
+                'Question 2?',
+            ),
+        );
+
+        const inserted = KnowledgeBodySchema.parse(onChange.mock.lastCall![0]);
+        const exercises = inserted.document.content!.flatMap((node) =>
+            node.attrs?.block?.type === 'exercise' ? [node.attrs.block] : [],
+        );
+
+        expect(exercises).toHaveLength(2);
+        expect(exercises[0]!.group?.id).toBe(exercises[1]!.group?.id);
+        expect(exercises.every((exercise) => !exercise.semantics)).toBe(true);
+        expect(inserted.document.content![0]!.type).toBe('learningBlock');
+        expect(editor.current?.getSnapshot().content).toContain(
+            'Keep earlier material.',
+        );
+
+        await user.click(
+            screen.getByRole('button', { name: 'Undo', exact: true }),
+        );
+
+        await waitFor(() =>
+            expect(
+                KnowledgeBodySchema.parse(onChange.mock.lastCall![0]),
+            ).toEqual(original),
+        );
+    } finally {
+        geometry.forEach((name, index) => {
+            const previous = previousGeometry[index];
+            if (previous) {
+                Object.defineProperty(Range.prototype, name, previous);
+            } else {
+                Reflect.deleteProperty(Range.prototype, name);
+            }
+        });
+    }
 });

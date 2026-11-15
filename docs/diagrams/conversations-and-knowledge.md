@@ -3,6 +3,8 @@ type: diagram
 title: Conversations and Knowledge workspace
 summary: Source chat and note workspaces share durable tutor turns while working drafts, publication and unlisted sharing have separate boundaries.
 source_paths:
+    - apps/web/src/fsd/widgets/contextual-assistant/hooks/use-conversation.ts
+    - apps/web/src/fsd/widgets/contextual-assistant/hooks/use-conversation-admission.ts
     - docs/adr/0042-knowledge-workspace-document-and-context-boundaries.md
     - docs/adr/0050-interactive-workbook-content-and-learning-boundaries.md
     - docs/adr/0055-learning-content-context-and-publication.md
@@ -85,8 +87,8 @@ source_paths:
     - apps/backend/src/modules/conversations/application/exercise-picker-resolution.ts
     - apps/backend/src/modules/conversations/infrastructure/ai/exercise-source-resolution.ts
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposals.ts
-source_fingerprint: sha256:b3878f9382fb55f6a2085420c9117dbdd6e517597b9b757b67a498d3e8aa10c0
-reviewed: 2026-11-14
+source_fingerprint: sha256:77115cc01fa01a12b95a2cfcdf4f48b034b3180f5042502285c816d97cd800ef
+reviewed: 2026-11-15
 ---
 
 # Conversations and Knowledge workspace

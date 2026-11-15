@@ -1,4 +1,4 @@
-// @user-flow-revision contextual-language-assistant-and-knowledge sha256:f0af9a8b479478e6
+// @user-flow-revision contextual-language-assistant-and-knowledge sha256:e7e84d6fe5cecdba
 // @user-flow-revision dictionary-chat-snippets sha256:8ad3091aa2f1a02c
 import { mkdir, copyFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';

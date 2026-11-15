@@ -5,6 +5,8 @@ import {
     LearningBlockView,
     type LearningBlockViewProps,
 } from '@/fsd/entities/learning-blocks';
+import { InlineAlert } from '@/fsd/shared/ui';
+import { exerciseGenerationCopy } from '../../../../lib/exercise-generation-copy';
 import { ActionConsentDialog } from '@/fsd/entities/ai-action';
 import type {
     BlockKind,
@@ -24,6 +26,7 @@ import { BlockEditorForm } from '../block-editor-form/block-editor-form';
 import type { UploadBlockAudio } from '../audio-block-upload/audio-block-upload';
 import styles from '../../../styles/learning-block-authoring-common.module.css';
 export function BlockFormDialog(props: {
+    initialFormat?: string | undefined;
     kind: BlockKind;
     block?: LearningBlock | undefined;
     labels: BlockAuthoringLabels;
@@ -99,6 +102,14 @@ export function BlockFormDialog(props: {
                 onClose={draft.requestClose}
                 footer={footer}
             >
+                {props.initialFormat && (
+                    <InlineAlert>
+                        {
+                            exerciseGenerationCopy(labels.view.locale ?? 'en')
+                                .custom
+                        }
+                    </InlineAlert>
+                )}
                 <BlockEditorForm
                     draft={draft}
                     kind={kind}

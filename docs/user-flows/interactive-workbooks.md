@@ -2,11 +2,13 @@
 feature: interactive-workbooks
 title: Interactive workbooks
 status: current
-last_verified: 2026-11-14
+last_verified: 2026-11-15
 surfaces:
     - browser
     - api
 source_paths:
+    - .agent/features/069-contextual-exercise-discovery/**
+    - packages/contracts/src/conversation-prompt-mentions.ts
     - .agent/features/059-interactive-workbooks/**
     - .agent/features/060-intent-aware-learning-content/**
     - .agent/features/061-reliable-learning-content-pipeline/**
@@ -50,6 +52,7 @@ e2e_command: contextual-assistant
 e2e_tests:
     - apps/web/tests/e2e/interactive-workbooks.journeys.spec.ts
 e2e_scenarios:
+    - contextual-exercise-discovery
     - author-blocks-publish-practice
     - workbook-share-private-copy-revoke
     - block-review-atomic-edit-inline-feedback
@@ -105,6 +108,36 @@ shared database. For ordinary manual development use the root README setup and
 synthetic accounts. API health must succeed before browser interaction.
 
 ## Browser verification
+
+### Contextual exercise discovery
+
+In an editable space, type `/` in ordinary text or use **Add block**. Browse Basic
+blocks, Learning blocks, Exercises and Library. Search exercise names or IDs;
+all19 activities are grouped by category. Preview opens a local interactive
+example without selecting it, changing the document or generating AI work.
+Closing returns to the picker. On narrow screens the preview uses a sheet.
+
+Choose **Create manually · Custom** to open the matching answer format. This
+creates Custom content rather than assigning named-exercise semantics. Choose
+**Generate with AI** to prepare an editable chat draft; existing prose is retained.
+Sending and later inserting/saving generated material remain explicit.
+
+**Exercises → Custom exercise set** retains multi-question manual authoring.
+Add questions in the existing set editor; **Apply** inserts the complete group at
+the captured position as one undoable edit. Explicit document **Save** publishes it.
+
+In workspace chat, `/` or the context button can insert exercise and current-note
+block chips at the cursor. For example: “Generate [Choose meaning] for words in
+[At the library].” Exercise chips select types; the prompt specifies count, or
+one per selected type is used. Multiple types share the referenced source set.
+The advanced picker retains its explicit count/settings contract. Missing or
+incompatible sources require clarification instead of silent substitution.
+
+Exercise-chip preview is local and does not send the prompt. Copied Text materials
+remain attachments outside the input. Inline chips can be navigated/deleted with
+the keyboard; Enter sends and Shift+Enter adds a line outside an open picker.
+Historical chips retain their displayed text; their IDs never grant cross-note
+access. Cancelling insertion/preview leaves the draft editable.
 
 1. Sign up with a synthetic account and create a Knowledge note. Add grammar,
    vocabulary and an exercise through the **Add block** menu below the document.
@@ -281,6 +314,10 @@ synthetic accounts. API health must succeed before browser interaction.
    media in the saved version to a shared reader.
 
 ## E2E coverage
+
+- `contextual-exercise-discovery`: slash discovery, isolated local preview,
+  matching-format Custom authoring, mixed inline activity/source tokens, explicit
+  generation, proposal insertion and published reload with historical chips.
 
 - `author-blocks-publish-practice`: real chat-generated vocabulary preview/follow-up/explicit Insert and
   UI authoring, whole-block selection, drag reordering, inline settings

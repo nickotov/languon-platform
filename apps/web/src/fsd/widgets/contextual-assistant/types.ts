@@ -5,6 +5,7 @@ import type {
 import type {
     ConversationEditorTarget,
     ConversationSource,
+    ExerciseActivityId,
 } from '@languon/contracts';
 
 export type AssistantRequest = {
@@ -13,6 +14,7 @@ export type AssistantRequest = {
     passage?: string | undefined;
     blockIds?: string[] | undefined;
     exercisePicker?: boolean | undefined;
+    exerciseActivityId?: ExerciseActivityId | undefined;
 };
 
 export type ContextualAssistantProps = {
@@ -68,6 +70,7 @@ export type WorkspaceAssistantProps = {
               blockIds?: string[];
               targetId?: string;
               exercisePicker?: boolean;
+              exerciseActivityId?: ExerciseActivityId;
           }
         | undefined;
     proposalRootId?: string | undefined;

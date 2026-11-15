@@ -522,6 +522,14 @@ export const flows = [
         prerequisite: 'deterministic-assistant',
     },
     {
+        id: 'contextual-exercise-discovery',
+        minimumTests: 1,
+        app: 'assistant',
+        file: 'interactive-workbooks.journeys.spec.ts',
+        grep: 'discovers a local exercise preview and submits typed exercise and source mentions',
+        prerequisite: 'deterministic-assistant',
+    },
+    {
         id: 'knowledge-large-vocabulary-generation',
         minimumTests: 1,
         app: 'assistant',

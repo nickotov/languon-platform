@@ -53,6 +53,8 @@ function fixture() {
         question: '',
         attachments: [],
         setQuestion: vi.fn(),
+        setPromptMentions: vi.fn(),
+        promptMentions: [],
         setAttachments: vi.fn(),
         list: { isSuccess: true, isError: false },
         detail: { data: { conversation: { preferences: {} } }, isError: false },
@@ -61,8 +63,12 @@ function fixture() {
         stream: { unavailable: false },
     };
 
+    const withReplacement = Object.assign(chat, {
+        replaceQuestion: chat.setQuestion,
+    });
+
     vi.mocked(useConversation).mockReturnValue(
-        chat as unknown as ReturnType<typeof useConversation>,
+        withReplacement as unknown as ReturnType<typeof useConversation>,
     );
 
     return chat;

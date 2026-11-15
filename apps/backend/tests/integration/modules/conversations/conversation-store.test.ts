@@ -1921,6 +1921,71 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await store.finish(updated, 'succeeded');
         });
 
+        it('persists typed prompt identity through history, idempotency and retry', async () => {
+            const chat = await create();
+            const request = SubmitConversationTurnRequestSchema.parse({
+                requestId: randomUUID(),
+                content: 'Explain meaning',
+                promptMentions: [
+                    {
+                        kind: 'exercise',
+                        activityId: 'V02',
+                        catalogVersion: 1,
+                        start: 8,
+                        end: 15,
+                    },
+                ],
+            });
+            const admittedTurn = await store.submit(access(), chat.id, request);
+            expect(await store.submit(access(), chat.id, request)).toEqual(
+                admittedTurn,
+            );
+
+            await expect(
+                store.submit(access(), chat.id, {
+                    ...request,
+                    promptMentions: [
+                        {
+                            kind: 'exercise',
+                            activityId: 'V03',
+                            catalogVersion: 1,
+                            start: 8,
+                            end: 15,
+                        },
+                    ],
+                }),
+            ).rejects.toThrow('already been used');
+
+            const detail = ConversationDetailSchema.parse(
+                await store.detail(access(), chat.id),
+            );
+
+            expect(
+                detail.messages.find((message) => message.role === 'user')
+                    ?.promptMentions,
+            ).toEqual(request.promptMentions);
+
+            const claimed = (await store.claim())!;
+            await store.finish(claimed, 'failed');
+            await store.submit(access(), chat.id, {
+                ...submit('Retry'),
+                retryOf: admittedTurn.id,
+            });
+
+            const retried = await store.detail(access(), chat.id);
+            expect(
+                retried.messages
+                    .filter((message) => message.role === 'user')
+                    .at(-1)?.promptMentions,
+            ).toEqual(request.promptMentions);
+
+            const [column] =
+                await client`select column_default,is_nullable from information_schema.columns where table_name='conversation_messages' and column_name='prompt_mentions'`;
+
+            expect(column?.is_nullable).toBe('NO');
+            expect(column?.column_default).toContain('[]');
+        });
+
         it('keeps legacy chats manual until explicit adoption and honors per-chat exclusion', async () => {
             portraitPolicy = {
                 enabled: true,

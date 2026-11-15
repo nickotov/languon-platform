@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+    type SetStateAction,
+} from 'react';
 import type {
     ChatPreferences,
     ConversationEditorTarget,
@@ -20,6 +26,11 @@ import { useConversationDeletion } from './use-conversation-deletion';
 import { useBlockReferences } from './use-block-references';
 import { useWorkspacePassage } from './use-workspace-passage';
 import { useWorkspaceAutoSend } from './use-workspace-auto-send';
+import {
+    replacePreparedInstruction,
+    stripPromptSelections,
+} from '../lib/prompt-selection';
+import type { PromptValue } from '../lib/prompt-document';
 import { useExerciseComposer } from './use-exercise-composer';
 import { workspaceCopy } from '../lib/workspace-copy';
 import type { ContextualAssistantProps } from '../types';
@@ -134,11 +145,31 @@ export function useAssistantPanel(
         props.blocks,
     );
     const composerRequest = props.request ?? workspaceRequest;
+    function prepareQuestion(value: SetStateAction<string>) {
+        chat.setPromptMentions([]);
+        chat.setQuestion(value);
+    }
+
+    function preparePrompt(previous: string | null, next: string) {
+        const value = replacePreparedInstruction(
+            stripPromptSelections({
+                content: chat.question,
+                promptMentions: chat.promptMentions ?? [],
+            }),
+            previous,
+            next,
+        );
+
+        chat.setQuestion(value.content);
+        chat.setPromptMentions(value.promptMentions);
+    }
+
     const exercises = useExerciseComposer({
         conversationId: chat.id,
         externalRequest: composerRequest,
-        setQuestion: chat.setQuestion,
+        setQuestion: prepareQuestion,
         replaceReferences: blockReferences.replace,
+        preparePrompt,
     });
 
     useEffect(() => {
@@ -148,7 +179,7 @@ export function useAssistantPanel(
 
         lastRequest.current = composerRequest.id;
         if (composerRequest.prompt !== undefined) {
-            chat.setQuestion(composerRequest.prompt);
+            chat.replaceQuestion(composerRequest.prompt);
         }
 
         setAttachmentError((current) =>
@@ -309,8 +340,49 @@ export function useAssistantPanel(
         }
     }
 
+    function changePrompt(value: PromptValue) {
+        const mentionedActivities = [
+            ...new Set(
+                value.promptMentions.flatMap((item) =>
+                    item.kind === 'exercise' ? [item.activityId] : [],
+                ),
+            ),
+        ];
+        const explicitActivities = exercises.request?.activities?.map(
+            (item) => item.activityId,
+        );
+        const mismatch =
+            exercises.request?.mode === 'automatic'
+                ? mentionedActivities.length > 0
+                : explicitActivities &&
+                  JSON.stringify(mentionedActivities) !==
+                      JSON.stringify(explicitActivities);
+
+        if (!value.synchronize && mismatch) {
+            exercises.clear();
+        }
+
+        chat.setQuestion(value.content);
+        chat.setPromptMentions(value.promptMentions);
+        blockReferences.replace([
+            ...new Set(
+                value.promptMentions.flatMap((mention) =>
+                    mention.kind === 'block' ? [mention.blockId] : [],
+                ),
+            ),
+        ]);
+    }
+
+    const missingPromptSource = (chat.promptMentions ?? []).some(
+        (mention) =>
+            mention.kind === 'block' &&
+            !props.blocks?.some((block) => block.id === mention.blockId),
+    );
+    const missingBlockReference =
+        blockReferences.missing || missingPromptSource;
+
     function send() {
-        if (blockReferences.missing) {
+        if (missingBlockReference) {
             return;
         }
 
@@ -413,6 +485,7 @@ export function useAssistantPanel(
                 try {
                     await chat.submit.mutateAsync({
                         content: question,
+                        promptMentions: chat.promptMentions,
                         copiedAttachments,
                         blockReferences: referencedIds,
                         exerciseRequest,
@@ -448,6 +521,7 @@ export function useAssistantPanel(
 
         chat.submit.mutate({
             content: chat.question,
+            promptMentions: chat.promptMentions,
             exerciseRequest: exercises.request,
             blockReferences: blockReferences.selected.map((item) => item.id),
             onAccepted() {
@@ -550,6 +624,7 @@ export function useAssistantPanel(
         if (message) {
             chat.submit.mutate({
                 content: message.content,
+                promptMentions: message.promptMentions,
                 retryOf: turn.id,
                 blockReferences: message.blockReferences ?? [],
             });
@@ -662,6 +737,8 @@ export function useAssistantPanel(
 
     return {
         chat,
+        changePrompt,
+        composerRequest,
         detail,
         busy,
         active,
@@ -681,6 +758,7 @@ export function useAssistantPanel(
         updatePreferences,
         attachmentError,
         blockReferences,
+        missingBlockReference,
         exercises,
         workspacePassage: workspaceSelection.passage,
         removeWorkspacePassage,

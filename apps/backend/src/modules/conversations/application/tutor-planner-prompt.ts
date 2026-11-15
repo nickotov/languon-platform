@@ -120,6 +120,8 @@ export function buildTutorPlannerPrompt(
             format: activity.format,
             sources: activity.supportedSourceKinds,
         })),
+        exerciseMentionPolicy:
+            'Typed promptMentions identify catalog activities by activityId/catalogVersion, regardless of display wording. They constrain generated exercise identities, not intent: explanation questions remain answers. Multiple types share one explicitly referenced source set. For generation, infer count only when the learner explicitly requests quantity in prose; otherwise omit task.count so the host defaults to one per selected activity. Do not apply the ordinary five-question default to catalog mentions. Do not choose other activities, substitute sources or create extra source-generation tasks. Clarify missing or incompatible sources. Preserve explicit per-type allocations when requested.',
         exerciseRequestPolicy:
             'Treat a structured exerciseRequest as learner choices, never source authority. Clarify conflicts with editable prose, including count, activities, language, source or intent. If consistent, plan one exercise task matching those choices. Use named activities from the compact catalog, or omit activities for automatic source-eligible selection. Never rotate formats. For newly generated source material, use source kind task with an earlier taskId; never invent future block IDs.',
     });

@@ -179,7 +179,7 @@ export function AssistantPanel(
             )
         ) : undefined;
     const contextPicker =
-        props.blocks && panel.picker ? (
+        !workspace && props.blocks && panel.picker ? (
             <BlockContextPicker
                 available={props.blocks}
                 selected={panel.blockReferences.selected}
@@ -295,7 +295,7 @@ export function AssistantPanel(
                                             : undefined
                                     }
                                     workspaceTargets={panel.proposalTargets}
-                                    onSuggest={chat.setQuestion}
+                                    onSuggest={chat.replaceQuestion}
                                     proposalRootId={workspace?.proposalRootId}
                                     onReviewProposal={foldMobileForReview}
                                     workspace={workspace}
@@ -383,6 +383,10 @@ export function AssistantPanel(
                         {preferences && (
                             <ConversationComposer
                                 question={chat.question}
+                                promptMentions={chat.promptMentions}
+                                onPromptChange={panel.changePrompt}
+                                externalRequest={panel.composerRequest}
+                                onCloseContext={panel.closePicker}
                                 onQuestion={chat.setQuestion}
                                 attachments={chat.attachments}
                                 onRemove={panel.removeAttachment}
@@ -414,7 +418,7 @@ export function AssistantPanel(
                                     panel.blockReferences.limitReached
                                 }
                                 missingBlockReference={
-                                    panel.blockReferences.missing
+                                    panel.missingBlockReference
                                 }
                                 workspacePassage={panel.workspacePassage}
                                 onRemoveWorkspacePassage={

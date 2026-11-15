@@ -1,4 +1,8 @@
-import { LearningBlockSchema } from '@languon/contracts';
+import {
+    ConversationPromptMentionsSchema,
+    LearningBlockSchema,
+    validConversationPromptMentions,
+} from '@languon/contracts';
 import { getLocalPrompt } from '@languon/prompts';
 import { deserializeLearningContentBrief } from '../../src/modules/conversations/application/learning-content-transport';
 import { markdownGrammarProposal } from './contextual-block-proposal-fixture';
@@ -71,6 +75,7 @@ function planningSourceCatalog(
 
 /** Scripted provider outputs prove wiring only, never natural-language intent quality. */
 export function fixtureRequestResolution(question: string, prompt: unknown) {
+    let fixtureQuestion = question;
     for (const message of Array.isArray(prompt) ? prompt : []) {
         const contents =
             typeof message?.content === 'string'
@@ -88,6 +93,7 @@ export function fixtureRequestResolution(question: string, prompt: unknown) {
             try {
                 input = JSON.parse(content) as {
                     currentMessage?: {
+                        promptMentions?: unknown;
                         exerciseRequest?: {
                             count: number;
                             activities?: {
@@ -106,15 +112,104 @@ export function fixtureRequestResolution(question: string, prompt: unknown) {
                 continue;
             }
 
-            const request = input.currentMessage?.exerciseRequest;
-            if (!request) {
-                continue;
+            let request = input.currentMessage?.exerciseRequest;
+            const mentions = ConversationPromptMentionsSchema.safeParse(
+                input.currentMessage?.promptMentions ?? [],
+            );
+
+            if (
+                mentions.success &&
+                mentions.data.length > 0 &&
+                validConversationPromptMentions(question, mentions.data)
+            ) {
+                let cursor = 0;
+                const prose: string[] = [];
+                for (const mention of mentions.data) {
+                    prose.push(question.slice(cursor, mention.start));
+                    cursor = mention.end;
+                }
+
+                prose.push(question.slice(cursor));
+                fixtureQuestion = prose.join('').trim();
             }
 
+            const activityIds = mentions.success
+                ? [
+                      ...new Set(
+                          mentions.data.flatMap((mention) =>
+                              mention.kind === 'exercise'
+                                  ? [mention.activityId]
+                                  : [],
+                          ),
+                      ),
+                  ]
+                : [];
             const ids = input.currentMessage?.blockReferences ?? [];
             const selection = input.currentMessage?.parts?.some((part) =>
                 part.text?.startsWith('Selected passage'),
             );
+
+            // Script only the fixture's explicit generation wording, not exercise explanations.
+            if (
+                !request &&
+                activityIds.length &&
+                /^Generate\b/iu.test(fixtureQuestion)
+            ) {
+                const catalog = planningSourceCatalog(prompt, true);
+                const authorizedSources =
+                    ids.length > 0 &&
+                    ids.every((id) => catalog.some((block) => block.id === id));
+
+                if (!selection && !authorizedSources) {
+                    return {
+                        kind: 'clarify',
+                        replyLanguage: 'en',
+                        question:
+                            'Choose the document source blocks or a passage for the selected exercise.',
+                        brief: {
+                            tasks: [
+                                {
+                                    id: 'requested-exercises',
+                                    kind: 'exercises',
+                                    instruction:
+                                        'Prepare the selected named activities.',
+                                    activities: activityIds.map(
+                                        (activityId) => ({
+                                            activityId,
+                                            count: 1,
+                                        }),
+                                    ),
+                                    count: activityIds.length,
+                                },
+                            ],
+                        },
+                    };
+                }
+
+                const explicitCount = /^Generate\s+(\d+)\b/iu.exec(
+                    fixtureQuestion,
+                )?.[1];
+                const count = explicitCount
+                    ? Number(explicitCount)
+                    : activityIds.length;
+
+                request = {
+                    count,
+                    activities: activityIds.map((activityId, index) => ({
+                        activityId,
+                        count:
+                            Math.floor(count / activityIds.length) +
+                            (index < count % activityIds.length ? 1 : 0),
+                    })),
+                    language: 'en',
+                    explanationLanguage: 'en',
+                    difficulty: 'beginner',
+                };
+            }
+
+            if (!request) {
+                continue;
+            }
 
             return {
                 kind: 'generate',
@@ -216,7 +311,7 @@ export function fixtureRequestResolution(question: string, prompt: unknown) {
         };
     }
 
-    if (/^Mentioned blocks update/u.test(question)) {
+    if (/^Mentioned blocks update/u.test(fixtureQuestion)) {
         const referenced = planningSourceCatalog(prompt, true);
 
         return {
@@ -254,6 +349,7 @@ export function fixtureRequestResolution(question: string, prompt: unknown) {
                         instruction: 'Practise travail and joie',
                         language: 'fr',
                         words: ['travail', 'joie'],
+                        source: { kind: 'task', taskId: 'vocabulary' },
                         count: 3,
                     },
                 ],
@@ -559,10 +655,21 @@ export function fixtureAuthoringOutput(prompt: unknown) {
 
                 return {
                     taskId: task.id,
-                    blocks: activities.map((activityId) => ({
+                    blocks: activities.map((activityId, index) => ({
                         ...namedExerciseFixture({
                             activityId,
-                            sources: sourceBlocks,
+                            sources: sourceBlocks.map((block) =>
+                                block.type === 'vocabulary'
+                                    ? {
+                                          ...block,
+                                          entries: [
+                                              block.entries[
+                                                  index % block.entries.length
+                                              ]!,
+                                          ],
+                                      }
+                                    : block,
+                            ),
                             language: task.language,
                             explanationLanguage:
                                 task.explanationLanguage ??

@@ -1,7 +1,8 @@
 'use client';
 
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import type { LearningBlock } from '@languon/contracts';
+import type { EditorInsertionTarget } from '../../../../lib/editor-insertion-target';
+import type { LearningBlock, ExerciseLearningBlock } from '@languon/contracts';
 import type { LearningBlockViewProps } from '@/fsd/entities/learning-blocks';
 import type { KnowledgeBlockFieldAiContext } from '../../../../api/block-field-ai-api';
 import type { KnowledgeLibraryContext } from '../../../../api/library-copy-api';
@@ -22,6 +23,9 @@ export type BlockEditingTarget = {
     block?: LearningBlock;
     existing?: boolean;
     members?: LearningBlock[];
+    insertion?: EditorInsertionTarget;
+    exerciseSet?: boolean;
+    initialFormat?: ExerciseLearningBlock['format'];
 };
 
 type BlockAuthoringContextValue = {

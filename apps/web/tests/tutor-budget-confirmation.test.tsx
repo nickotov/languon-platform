@@ -113,7 +113,11 @@ it('preserves the original request/content across explicit confirmations and req
                     attachments,
                     pendingRequest,
                     submitTurn,
-                    setQuestion,
+                    clearSubmittedPrompt(snapshot) {
+                        setQuestion((current) =>
+                            current === snapshot.content ? '' : current,
+                        );
+                    },
                     setAttachments,
                     refresh,
                 }),

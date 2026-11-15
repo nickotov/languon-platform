@@ -16,12 +16,15 @@ export function useExerciseComposer({
     externalRequest,
     setQuestion,
     replaceReferences,
+    preparePrompt,
 }: {
     conversationId: string | null;
     externalRequest?:
         { id: string; exercisePicker?: boolean | undefined } | undefined;
     setQuestion: Dispatch<SetStateAction<string>>;
     replaceReferences(ids: string[]): void;
+    preparePrompt?:
+        ((previous: string | null, next: string) => void) | undefined;
 }) {
     const [open, setOpen] = useState(false);
     const [request, setRequest] = useState<ExerciseRequest>();
@@ -74,19 +77,23 @@ export function useExerciseComposer({
         setRequest(value.request);
         replaceReferences(value.blockIds);
         const previous = previousPrompt.current;
-        setQuestion((current) => {
-            const content = current.trimEnd();
-            if (!content.trim() || content === previous) {
-                return value.prompt;
-            }
+        if (preparePrompt) {
+            preparePrompt(previous, value.prompt);
+        } else {
+            setQuestion((current) => {
+                const content = current.trimEnd();
+                if (!content.trim() || content === previous) {
+                    return value.prompt;
+                }
 
-            const previousSuffix = previous ? `\n\n${previous}` : undefined;
-            if (previousSuffix && content.endsWith(previousSuffix)) {
-                return `${content.slice(0, -previousSuffix.length)}\n\n${value.prompt}`;
-            }
+                const previousSuffix = previous ? `\n\n${previous}` : undefined;
+                if (previousSuffix && content.endsWith(previousSuffix)) {
+                    return `${content.slice(0, -previousSuffix.length)}\n\n${value.prompt}`;
+                }
 
-            return `${content}\n\n${value.prompt}`;
-        });
+                return `${content}\n\n${value.prompt}`;
+            });
+        }
 
         previousPrompt.current = value.prompt;
         setOpen(false);

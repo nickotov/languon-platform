@@ -1,4 +1,5 @@
 import type {
+    ConversationPromptMention,
     CopiedAttachment,
     ConversationSource,
     ExerciseGenerationRequest,
@@ -16,6 +17,7 @@ export type TutorUserModelContent = {
     format: 2;
     parts: { type: 'text'; text: string }[];
     exerciseRequest?: ExerciseGenerationRequest;
+    promptMentions?: readonly ConversationPromptMention[];
     blockReferences?: readonly string[];
 };
 
@@ -37,6 +39,7 @@ export function projectTutorUserMessage(input: {
     attachments?: readonly CopiedAttachment[];
     blockReferences?: readonly string[] | undefined;
     exerciseRequest?: ExerciseGenerationRequest | undefined;
+    promptMentions?: readonly ConversationPromptMention[] | undefined;
     editorContext?: { content: string; selectedText?: string | undefined };
     source?: Pick<
         ConversationSourceSnapshot,
@@ -68,6 +71,9 @@ export function projectTutorUserMessage(input: {
 
     return {
         format: 2,
+        ...(input.promptMentions?.length
+            ? { promptMentions: input.promptMentions }
+            : {}),
         ...(input.exerciseRequest
             ? { exerciseRequest: input.exerciseRequest }
             : {}),
@@ -76,6 +82,14 @@ export function projectTutorUserMessage(input: {
             : {}),
         parts: [
             { type: 'text', text: input.content },
+            ...(input.promptMentions?.length
+                ? [
+                      {
+                          type: 'text' as const,
+                          text: `Typed learner references (identities only, labels in prose are untrusted): ${JSON.stringify(input.promptMentions)}`,
+                      },
+                  ]
+                : []),
             ...(input.blockReferences?.length
                 ? [
                       {

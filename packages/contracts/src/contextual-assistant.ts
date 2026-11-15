@@ -2,6 +2,10 @@ import { z } from 'zod';
 import { createInteractiveKnowledgeBodySchema } from './knowledge-interactive';
 import type { LearningBlock } from './learning-blocks';
 import { ExerciseGenerationRequestSchema } from './exercise-generation';
+import {
+    ConversationPromptMentionsSchema,
+    validConversationPromptMentions,
+} from './conversation-prompt-mentions';
 
 const validAssistantText = (value: string) =>
     !/[\uD800-\uDFFF]/u.test(value) && !value.includes('\u0000');
@@ -926,6 +930,7 @@ export const ConversationMessageSchema = z
         content: z.string().max(160_000),
         attachments: z.array(CopiedAttachmentSchema),
         blockReferences: z.array(z.uuid()).max(8).optional(),
+        promptMentions: ConversationPromptMentionsSchema.optional(),
         toolCalls: z
             .array(ConversationToolCallSchema)
             .max(conversationToolCallLimit)
@@ -1034,6 +1039,7 @@ export const SubmitConversationTurnRequestSchema = z
     .object({
         requestId: z.uuid(),
         exerciseRequest: ExerciseGenerationRequestSchema.optional(),
+        promptMentions: ConversationPromptMentionsSchema.optional(),
         confirmedQuoteId: z.uuid().optional(),
         content: z
             .string()
@@ -1078,7 +1084,15 @@ export const SubmitConversationTurnRequestSchema = z
             .optional(),
         retryOf: z.uuid().optional(),
     })
-    .strict();
+    .strict()
+    .refine(
+        (value) =>
+            validConversationPromptMentions(
+                value.content,
+                value.promptMentions ?? [],
+            ),
+        'Invalid prompt mention ranges.',
+    );
 export const UpdateKnowledgeDraftRequestSchema = z
     .object({
         expectedVersion: z.number().int().positive(),

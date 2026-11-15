@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision knowledge-workspace sha256:763c25a24b27ea85
+// @user-flow-revision knowledge-workspace sha256:9163b757c01e6b0b
 
 type Share = { locator: string; key: string };
 
@@ -468,17 +468,30 @@ async function attachFullTextReference(page: Page, title: string) {
     await picker
         .getByRole('button', { name: 'Attach to message', exact: true })
         .click();
+
+    const promptPicker = page.getByRole('dialog', {
+        name: 'Add to prompt',
+        exact: true,
+    });
+
+    if (await promptPicker.isVisible()) {
+        await promptPicker
+            .getByRole('button', { name: 'Close picker', exact: true })
+            .click();
+    }
+
+    await expect(promptPicker).toHaveCount(0);
 }
 
 async function openTextReferencePicker(page: Page) {
     await page.getByLabel('Add context /').click();
     const blockPicker = page.getByRole('dialog', {
-        name: 'Blocks in this note',
+        name: 'Add to prompt',
         exact: true,
     });
 
     await blockPicker
-        .getByRole('button', { name: 'Your Texts', exact: true })
+        .getByRole('button', { name: 'Texts', exact: true })
         .click();
 
     return page.getByRole('dialog', {
@@ -922,7 +935,16 @@ test('the workspace Text picker accepts exactly the reference limit and rejects 
     ).toBeVisible();
 
     await expect(material.getByText('Rejected extra reference')).toHaveCount(0);
-    await page.keyboard.press('Escape');
+    const promptPicker = tutor.getByRole('dialog', {
+        name: 'Add to prompt',
+        exact: true,
+    });
+
+    await promptPicker
+        .getByRole('button', { name: 'Close picker', exact: true })
+        .click();
+
+    await expect(promptPicker).toBeHidden();
     await tutor
         .getByLabel('Your question')
         .fill('Explain this focused passage');
@@ -982,7 +1004,7 @@ test('the workspace Text picker accepts exactly the reference limit and rejects 
 
     expect(rejectedDetail.turns).toHaveLength(0);
     expect(rejectedDetail.messages).toHaveLength(0);
-    await expect(tutor.getByLabel('Your question')).toHaveValue(
+    await expect(tutor.getByLabel('Your question')).toContainText(
         'Explain this focused passage',
     );
 
@@ -1623,7 +1645,7 @@ test('the workspace switches between mobile document and tutor tabs and uses a t
     await tutorTab.focus();
     await tutorTab.press('ArrowRight');
     await expect(tutorTab).toHaveAttribute('aria-selected', 'true');
-    await expect(tutor.getByLabel('Your question')).toHaveValue(
+    await expect(tutor.getByLabel('Your question')).toContainText(
         'Explain how to outline',
     );
 

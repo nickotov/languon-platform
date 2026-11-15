@@ -25,6 +25,8 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { ExerciseGenerationRequestSchema } from '@languon/contracts';
 import { tutorMessageModelContent } from '../../application/tutor-message-context';
+import { applyExerciseMentionChoices } from '../../application/exercise-mention-resolution';
+import { ConversationPromptMentionsSchema } from '@languon/contracts';
 import { applyExercisePickerChoices } from '../../application/exercise-picker-resolution';
 import {
     resolveExerciseSourceContexts,
@@ -101,10 +103,22 @@ export async function executeTutorRequest(
             maxOutputTokens: 2048,
         }),
     );
+    const mentionChoices = ConversationPromptMentionsSchema.parse(
+        tutorMessageModelContent(input.message).promptMentions ?? [],
+    );
+    const mentionedSourceIds = z
+        .array(z.uuid())
+        .parse(tutorMessageModelContent(input.message).blockReferences ?? []);
+    const resolvedMentions = applyExerciseMentionChoices(
+        mentionChoices,
+        planned,
+        Boolean(frozenSources.selection) || mentionedSourceIds.length > 0,
+        exerciseRequest,
+    );
     const resolution = exerciseRequest
         ? applyExercisePickerChoices(
               exerciseRequest,
-              planned,
+              resolvedMentions,
               Boolean(frozenSources.selection),
               z
                   .array(z.uuid())
@@ -113,7 +127,7 @@ export async function executeTutorRequest(
                           [],
                   ),
           )
-        : planned;
+        : resolvedMentions;
 
     const saveState = () =>
         input.memory.writeState({

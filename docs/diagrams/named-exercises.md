@@ -3,6 +3,13 @@ type: diagram
 title: Named text exercises
 summary: Knowledge sources become reviewed named questions; deterministic practice and explicit private AI feedback remain separate from published content.
 source_paths:
+    - apps/web/src/fsd/features/knowledge-notes/lib/editor-insertion-target.ts
+    - docs/adr/0059-typed-conversation-prompt-mentions.md
+    - packages/contracts/src/conversation-prompt-mentions.ts
+    - apps/web/src/fsd/features/knowledge-notes/hooks/use-editor-insert-picker.ts
+    - apps/web/src/fsd/widgets/contextual-assistant/lib/prompt-document.ts
+    - apps/web/src/fsd/entities/learning-blocks/ui/exercise-activity-preview/exercise-activity-preview.tsx
+    - apps/backend/src/modules/conversations/application/exercise-mention-resolution.ts
     - docs/adr/0058-named-activity-content-and-source-provenance.md
     - docs/adr/0055-learning-content-context-and-publication.md
     - packages/contracts/src/exercise-activity.ts
@@ -29,8 +36,8 @@ source_paths:
     - apps/backend/src/modules/administration/infrastructure/ai-catalog/tool-definitions.ts
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source.ts
     - apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts
-source_fingerprint: sha256:3329631f2c467d3c69a14072478bea047fc85b5e62064de2fd9c4a2a40dc79df
-reviewed: 2026-11-14
+source_fingerprint: sha256:2156f30dcd6ed1176aa12303363428994ca84c0f333b7c16faee2d2cda3b4932
+reviewed: 2026-11-15
 ---
 
 # Named text exercises
@@ -44,11 +51,19 @@ flowchart TB
     Catalog["19 versioned activity identities
 localized metadata and fixed checking policies"] --> Picker["Owner source menu or tutor picker
 Automatic or selected activities; count and languages"]
-    Picker --> Send["Prepare request; learner explicitly sends
+    Picker --> Send
+    Catalog --> Discovery["Space slash menu or inline chat picker"]
+    Discovery --> Preview["Local synthetic interactive preview
+no model, mutation or saved progress"]
+    Discovery --> Custom["Manual Custom forms
+single or grouped questions; no named semantics"]
+    Discovery --> Send["Prepare request; learner explicitly sends
 typed choices plus editable prose"]
     Prose["Owner free-form exercise request"] --> Plan["Existing request planner
 activity allocation and source requirements"]
-    Send --> Plan
+    Send --> Mentions["Validate typed activity/source ranges
+persist canonical text plus identity metadata"]
+    Mentions --> Plan
     Plan --> Ground["Host resolves exact authorized material
 vocabulary, grammar, passage or frozen selection"]
     Studio["19 standalone Studio tools

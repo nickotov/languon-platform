@@ -1198,6 +1198,13 @@
       "when": 1794612336647,
       "tag": "0170_named-exercise-source-dependencies",
       "breakpoints": true
+    },
+    {
+      "idx": 171,
+      "version": "7",
+      "when": 1794755427050,
+      "tag": "0171_daily_deadpool",
+      "breakpoints": true
     }
   ]
 }

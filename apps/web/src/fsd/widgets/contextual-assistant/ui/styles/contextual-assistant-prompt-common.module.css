@@ -1,0 +1,62 @@
+.root {
+    min-width: 0;
+}
+.input {
+    min-height: var(--size-44);
+    max-height: var(--size-160);
+    overflow-y: auto;
+    padding: var(--space-8);
+    outline: none;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: var(--text-primary);
+}
+.input p {
+    margin: 0;
+}
+.input :global([data-prompt-mention]) {
+    display: inline;
+    padding: var(--space-2) var(--space-6);
+    border-radius: var(--radius-6);
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+    box-decoration-break: clone;
+}
+.picker {
+    display: grid;
+    gap: var(--space-12);
+    padding: var(--space-16);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-12);
+    background: var(--background-surface);
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.actions {
+    display: flex;
+    gap: var(--space-8);
+    flex-wrap: wrap;
+}
+.list {
+    display: grid;
+    gap: var(--space-8);
+}
+.row {
+    padding: var(--space-12);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-8);
+    background: var(--background-surface);
+    color: var(--text-primary);
+    text-align: start;
+    font: inherit;
+    cursor: pointer;
+}
+.input :global([data-prompt-mention]) button,
+.message :global([data-prompt-mention]) {
+    border: 0;
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+    font: inherit;
+    cursor: pointer;
+    border-radius: var(--radius-6);
+}

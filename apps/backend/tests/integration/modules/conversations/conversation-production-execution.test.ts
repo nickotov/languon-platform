@@ -493,6 +493,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 );
                 const submissionInput = {
                     requestId: randomUUID(),
+                    ...(operation !== 'append'
+                        ? {
+                              promptMentions: [
+                                  {
+                                      kind: 'block' as const,
+                                      blockId: targetBlockId,
+                                      start: 0,
+                                      end: 7,
+                                  },
+                              ],
+                          }
+                        : {}),
                     content:
                         'Propose a French to Russian vocabulary block for work, joy, cleaning, tile, fish and animal feed, with definitions and example translations.',
                     attachments: [],

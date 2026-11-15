@@ -1,3 +1,4 @@
+import type { ExerciseActivityId } from '@languon/contracts';
 import { knowledgeBlockMentionIds } from '@/fsd/features/knowledge-notes';
 import { useEffect, useState } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -13,6 +14,7 @@ type TutorRequest = {
     autoSend?: boolean;
     blockIds?: string[];
     exercisePicker?: boolean;
+    exerciseActivityId?: ExerciseActivityId;
 };
 
 /** Local presentation state; publication and recovery remain in page actions. */
@@ -47,6 +49,13 @@ export function useWorkspacePresentation(
             id: crypto.randomUUID(),
             blockIds: [blockId],
             exercisePicker: true,
+        });
+    }
+
+    function generateExercise(activityId: ExerciseActivityId) {
+        setRequest({
+            id: crypto.randomUUID(),
+            exerciseActivityId: activityId,
         });
     }
 
@@ -128,6 +137,7 @@ export function useWorkspacePresentation(
         tutorAction,
         mentionBlock,
         generateExercises,
+        generateExercise,
         askTutor,
         askOutline,
         preview,

@@ -12,7 +12,7 @@ import type {
     WorkbookLearningState,
 } from '@languon/contracts';
 
-// @user-flow-revision interactive-workbooks sha256:e5643808f2529a64
+// @user-flow-revision interactive-workbooks sha256:56d5775506c382b6
 const origin = 'http://localhost:3336';
 const tokens = new WeakMap<Page, string>();
 async function signup(page: Page, info: TestInfo, suffix: string) {
@@ -153,9 +153,19 @@ async function addBlock(
     };
 
     await page.getByRole('button', { name: 'Add block', exact: true }).click();
-    await page
-        .getByRole('menuitem', { name: kinds[kind]!, exact: true })
-        .click();
+    if (kind === 'exercise') {
+        await page
+            .getByRole('button', { name: 'Exercises', exact: true })
+            .click();
+
+        await page
+            .getByRole('button', { name: 'Custom exercise', exact: true })
+            .click();
+    } else {
+        await page
+            .getByRole('button', { name: kinds[kind]!, exact: true })
+            .click();
+    }
 
     const dialog = page.getByRole('dialog');
     for (const [label, value] of Object.entries(values)) {
@@ -396,7 +406,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
 
     await page.getByRole('button', { name: 'Add block', exact: true }).click();
     await expect(
-        page.getByRole('menuitem', { name: 'Grammar', exact: true }),
+        page.getByRole('button', { name: 'Grammar', exact: true }),
     ).toBeVisible();
 
     await capture(page, info, 'editor-block-menu');
@@ -837,7 +847,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     await page.keyboard.press('Escape');
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.getByRole('button', { name: 'Add block', exact: true }).click();
-    await page.getByRole('menuitem', { name: 'Audio', exact: true }).click();
+    await page.getByRole('button', { name: 'Audio', exact: true }).click();
     await page
         .getByLabel('Upload audio (WAV or MP3, up to 5 MiB)')
         .setInputFiles({
@@ -2114,7 +2124,7 @@ test('authors a selected named exercise through review, insert, save, reload and
         .click();
 
     await expect(picker).toHaveCount(0);
-    await expect(tutor.getByLabel('Your question')).toHaveValue(
+    await expect(tutor.getByLabel('Your question')).toContainText(
         /Generate 1 exercises/u,
     );
 
@@ -2219,6 +2229,413 @@ test('authors a selected named exercise through review, insert, save, reload and
             ).note.body,
         ),
     ).not.toContain('"semantics"');
+
+    healthy();
+});
+
+// @user-flow interactive-workbooks/contextual-exercise-discovery
+test('discovers a local exercise preview and submits typed exercise and source mentions', async ({
+    page,
+}, info) => {
+    const healthy = runtime(page);
+    await signup(page, info, 'contextual-exercise');
+    await page.getByRole('button', { name: 'New note', exact: true }).click();
+    await page.waitForURL(/\/knowledge\/[0-9a-f-]{36}$/u);
+
+    await addBlock(page, 'vocabulary', {
+        Title: 'Context source words',
+        'Content language': 'fr',
+        'Translation language': 'en',
+        'Word or phrase': 'travail',
+        Translation: 'work',
+    });
+
+    const sourceId = await page
+        .locator('[data-learning-block-id]')
+        .filter({ hasText: 'Context source words' })
+        .getAttribute('data-learning-block-id');
+
+    expect(sourceId).not.toBeNull();
+    if (!sourceId) {
+        throw new Error('The source block did not expose its stable ID.');
+    }
+
+    expect(sourceId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u,
+    );
+
+    const editor = page.locator('[data-workspace-editor] [role="textbox"]');
+    let turnRequests = 0;
+    const previewErrors: string[] = [];
+
+    page.on('pageerror', (error) => previewErrors.push(error.message));
+    page.on('console', (message) => {
+        if (message.type() === 'error') {
+            previewErrors.push(message.text());
+        }
+    });
+
+    page.on('request', (request) => {
+        if (
+            request.method() === 'POST' &&
+            /\/conversations\/[^/]+\/turns$/u.test(
+                new URL(request.url()).pathname,
+            )
+        ) {
+            turnRequests += 1;
+        }
+    });
+
+    await editor.focus();
+    await editor.press('Meta+End');
+    await editor.press('Enter');
+    await editor.press('/');
+    const documentAfterOpeningPicker = await editor.innerText();
+    const insertPicker = page.locator('[aria-label="Insert block"]');
+    await expect(insertPicker).toBeVisible();
+    await insertPicker
+        .getByRole('button', { name: 'Exercises', exact: true })
+        .click();
+
+    const exerciseSearch = insertPicker.getByLabel(
+        'Search blocks and exercises',
+        { exact: true },
+    );
+    const v02Preview = insertPicker.getByRole('button', {
+        name: 'Preview exercise: Choose the meaning',
+        exact: true,
+    });
+
+    await exerciseSearch.fill('choose');
+    await insertPicker.evaluate((element) => {
+        element.scrollTop = 1;
+    });
+
+    const scrollBeforePreview = await insertPicker.evaluate(
+        (element) => element.scrollTop,
+    );
+
+    await v02Preview.focus();
+    await capture(page, info, 'contextual-exercise-picker-desktop');
+    await v02Preview.click();
+
+    const preview = page.getByRole('dialog', {
+        name: 'V02 · Choose the meaning',
+        exact: true,
+    });
+
+    await expect(preview).toContainText(
+        'Local example · no AI or credits · answers and progress are not saved',
+    );
+
+    await capture(page, info, 'contextual-exercise-preview-desktop');
+
+    await preview.getByRole('button', { name: 'Reset example' }).click();
+    await preview
+        .getByRole('button', { name: 'Close exercise preview', exact: true })
+        .click();
+
+    await expect(insertPicker).toBeVisible();
+    await expect(exerciseSearch).toHaveValue('choose');
+    await expect(v02Preview).toBeFocused();
+    await expect
+        .poll(() => insertPicker.evaluate((element) => element.scrollTop))
+        .toBe(scrollBeforePreview);
+
+    expect(documentAfterOpeningPicker).toContain('/');
+    expect(await editor.innerText()).toBe(documentAfterOpeningPicker);
+    expect(turnRequests).toBe(0);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await insertPicker
+        .getByRole('button', { name: 'Back', exact: true })
+        .click();
+
+    await expect(insertPicker).toContainText('Basic blocks');
+    await insertPicker
+        .getByRole('button', { name: 'Exercises', exact: true })
+        .click();
+
+    await capture(page, info, 'contextual-exercise-picker-mobile');
+    await insertPicker
+        .getByRole('button', {
+            name: 'Preview exercise: Choose the meaning',
+            exact: true,
+        })
+        .click();
+
+    await expect(preview).toBeVisible();
+    await capture(page, info, 'contextual-exercise-preview-mobile');
+    await preview
+        .getByRole('button', { name: 'Close exercise preview', exact: true })
+        .click();
+
+    await page.setViewportSize({ width: 1440, height: 1000 });
+
+    await insertPicker
+        .getByRole('button', { name: 'Custom exercise set', exact: true })
+        .click();
+
+    const customSet = page.getByRole('dialog', {
+        name: 'Exercise',
+        exact: true,
+    });
+
+    await expect(customSet).toBeVisible();
+    await customSet
+        .getByRole('button', { name: 'Add question', exact: true })
+        .click();
+
+    await customSet
+        .getByRole('button', { name: 'Cancel', exact: true })
+        .last()
+        .click();
+
+    await customSet
+        .getByRole('alertdialog', { name: 'Discard changes?', exact: true })
+        .getByRole('button', { name: 'Discard', exact: true })
+        .click();
+
+    await expect(customSet).toHaveCount(0);
+    await page.getByRole('button', { name: 'Add block', exact: true }).click();
+    await insertPicker
+        .getByRole('button', { name: 'Exercises', exact: true })
+        .click();
+
+    await insertPicker
+        .getByRole('button', { name: /^V02\s+Choose the meaning/u })
+        .click();
+
+    await insertPicker
+        .getByRole('button', { name: 'Create manually · Custom', exact: true })
+        .click();
+
+    const custom = page.getByRole('dialog').filter({
+        hasText: 'Custom exercise',
+    });
+
+    await expect(custom).toBeVisible();
+    await expect(
+        custom.getByRole('combobox', {
+            name: 'Answer format',
+            exact: true,
+        }),
+    ).toHaveValue('multiple-choice');
+
+    await custom
+        .getByRole('button', { name: 'Cancel', exact: true })
+        .last()
+        .click();
+
+    const discard = custom.getByRole('alertdialog', {
+        name: 'Discard changes?',
+        exact: true,
+    });
+
+    if (await discard.isVisible()) {
+        await discard
+            .getByRole('button', { name: 'Discard', exact: true })
+            .click();
+    }
+
+    await expect(custom).toHaveCount(0);
+    expect(turnRequests).toBe(0);
+
+    const tutor = page.getByRole('region', {
+        name: 'Language tutor',
+        exact: true,
+    });
+
+    if (!(await tutor.isVisible())) {
+        await page.getByRole('tab', { name: 'Tutor', exact: true }).click();
+    }
+
+    const question = tutor.getByRole('textbox', {
+        name: 'Your question',
+        exact: true,
+    });
+
+    await question.fill('Keep this draft');
+    await page.getByRole('button', { name: 'Add block', exact: true }).click();
+    await insertPicker
+        .getByRole('button', { name: 'Exercises', exact: true })
+        .click();
+
+    await insertPicker
+        .getByRole('button', { name: /^V02\s+Choose the meaning/u })
+        .click();
+
+    await insertPicker
+        .getByRole('button', { name: 'Generate with AI', exact: true })
+        .click();
+
+    await expect(question).toContainText('Keep this draft');
+    await expect(
+        question.locator('[data-prompt-mention="exercise"]'),
+    ).toHaveText(/Choose the meaning/u);
+
+    expect(turnRequests).toBe(0);
+
+    await question.fill('Generate ');
+    await question.press('/');
+    const promptPicker = page.getByRole('dialog', {
+        name: 'Add to prompt',
+        exact: true,
+    });
+
+    await promptPicker
+        .getByRole('button', { name: 'Exercises', exact: true })
+        .click();
+
+    await promptPicker
+        .getByRole('button', { name: /^V02\s+Choose the meaning/u })
+        .click();
+
+    await expect(
+        question.locator('[data-prompt-mention="exercise"]'),
+    ).toHaveText(/Choose the meaning/u);
+
+    await question.press('End');
+    await question.type('for ');
+    await question.press('/');
+    await promptPicker
+        .getByRole('button', { name: 'Document blocks', exact: true })
+        .click();
+
+    const blockSearch = promptPicker.getByLabel('Search document blocks', {
+        exact: true,
+    });
+
+    await blockSearch.fill('Context source words');
+    await blockSearch.press('Enter');
+    await expect(promptPicker).toBeVisible();
+    expect(turnRequests).toBe(0);
+
+    await promptPicker
+        .getByRole('button', { name: 'Document blocks', exact: true })
+        .click();
+
+    await promptPicker
+        .getByRole('button', { name: 'Context source words', exact: true })
+        .click();
+
+    await expect(question.locator('[data-prompt-mention="block"]')).toHaveText(
+        /Context source words/u,
+    );
+
+    await capture(page, info, 'contextual-exercise-composer-desktop');
+
+    await question
+        .getByRole('button', {
+            name: 'Preview exercise: Choose the meaning',
+            exact: true,
+        })
+        .click();
+
+    await expect(preview).toBeVisible();
+    await expect(
+        tutor.getByRole('button', { name: 'Send', exact: true }),
+    ).toBeEnabled();
+
+    await preview.getByText('Give something back', { exact: true }).click();
+
+    await preview
+        .getByRole('button', { name: 'Check answer', exact: true })
+        .click();
+
+    await expect(
+        preview.getByRole('button', {
+            name: 'Choose the meaning Correct',
+            exact: true,
+        }),
+    ).toBeVisible();
+
+    await preview
+        .getByRole('button', { name: 'Close exercise preview', exact: true })
+        .click();
+
+    expect(turnRequests).toBe(0);
+    expect(previewErrors).toEqual([]);
+
+    const canonicalContent =
+        'Generate Choose the meaning for Context source words';
+    const exerciseStart = canonicalContent.indexOf('Choose the meaning');
+    const sourceStart = canonicalContent.indexOf('Context source words');
+    const submitted = page.waitForRequest(
+        (request) =>
+            request.method() === 'POST' &&
+            /\/conversations\/[^/]+\/turns$/u.test(
+                new URL(request.url()).pathname,
+            ),
+    );
+    const response = page.waitForResponse(
+        (item) =>
+            item.request().method() === 'POST' &&
+            /\/conversations\/[^/]+\/turns$/u.test(
+                new URL(item.url()).pathname,
+            ),
+    );
+
+    await tutor.getByRole('button', { name: 'Send', exact: true }).click();
+    const request = await submitted;
+    expect(request.postDataJSON()).toMatchObject({
+        content: canonicalContent,
+        promptMentions: [
+            {
+                kind: 'exercise',
+                activityId: 'V02',
+                catalogVersion: 1,
+                start: exerciseStart,
+                end: exerciseStart + 'Choose the meaning'.length,
+            },
+            {
+                kind: 'block',
+                blockId: sourceId,
+                start: sourceStart,
+                end: sourceStart + 'Context source words'.length,
+            },
+        ],
+    });
+
+    const accepted = await response;
+    if (accepted.status() === 409) {
+        await page
+            .getByRole('dialog', { name: 'Review this action’s budget' })
+            .getByRole('button', { name: 'Send', exact: true })
+            .click();
+    } else {
+        expect(accepted.ok(), await accepted.text()).toBe(true);
+    }
+
+    const proposal = tutor.getByRole('article', {
+        name: 'Proposed learning blocks',
+        exact: true,
+    });
+
+    await expect(
+        proposal.getByRole('heading', { name: 'V02 fixture', exact: true }),
+    ).toBeVisible({ timeout: 30_000 });
+
+    await proposal.getByRole('button', { name: 'Review', exact: true }).click();
+    const review = page.getByRole('dialog', {
+        name: 'Review proposed content',
+        exact: true,
+    });
+
+    await review.getByRole('button', { name: 'Insert', exact: true }).click();
+    await review
+        .getByRole('button', { name: 'Close dialog', exact: true })
+        .click();
+
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.reload();
+    await expect(tutor.locator('[data-prompt-mention="exercise"]')).toHaveText(
+        /Choose the meaning/u,
+    );
+
+    await expect(tutor.locator('[data-prompt-mention="block"]')).toHaveText(
+        /Context source words/u,
+    );
 
     healthy();
 });
@@ -2737,7 +3154,7 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
 
     await expect(
         tutor.getByRole('button', {
-            name: 'Remove block reference: Review vocabulary',
+            name: 'Remove: Review vocabulary',
             exact: true,
         }),
     ).toBeVisible();
@@ -2746,27 +3163,28 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
     await question.focus();
     await question.press('/');
     const blockPicker = page.getByRole('dialog', {
-        name: 'Blocks in this note',
+        name: 'Add to prompt',
         exact: true,
     });
 
     await expect(blockPicker).toBeVisible();
     await blockPicker
-        .getByRole('button', { name: /^Reading to translate/u })
+        .getByRole('button', { name: 'Document blocks', exact: true })
         .click();
 
     await blockPicker
-        .getByRole('button', { name: 'Done', exact: true })
+        .getByRole('button', { name: /^Reading to translate/u })
         .click();
 
     await expect(
         tutor.getByRole('button', {
-            name: 'Remove block reference: Reading to translate',
+            name: 'Remove: Reading to translate',
             exact: true,
         }),
     ).toBeVisible();
 
-    await question.fill('Mentioned blocks update fixture');
+    await question.press('End');
+    await question.type('Mentioned blocks update fixture');
     await aiAction(
         page,
         tutor.getByRole('button', { name: 'Send', exact: true }),

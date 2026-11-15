@@ -26,9 +26,122 @@ import { contextualFixtureBlock } from './contextual-fixture-block';
 import { purposeAwareFixtureAccounting } from './contextual-assistant-fixture';
 import { namedExerciseFixture } from './named-exercise-fixture';
 import { completeNamedExerciseSources } from '../../src/modules/conversations/infrastructure/ai/exercise-authoring-context';
+import { createLearningContentAuthoring } from '../../src/modules/conversations/infrastructure/ai/learning-content-authoring';
+import {
+    LearningContentBriefSchema,
+    learningContentRequirements,
+} from '../../src/modules/conversations/application/learning-content-contract';
 import { validateNamedExerciseActivity } from '../../src/modules/conversations/infrastructure/ai/exercise-activities';
 
 describe('contextual assistant browser fixture', () => {
+    it('authors the ordinary mixed request from its validated vocabulary predecessor', async () => {
+        const planned = fixtureRequestResolution(
+            'Intent content fixture vocabulary grammar exercises: travail and joie, French to English, three exercises.',
+            [],
+        );
+
+        if (!('brief' in planned)) {
+            throw new Error('Expected mixed generation planning');
+        }
+
+        const brief = LearningContentBriefSchema.parse(planned.brief);
+        expect(brief.tasks[2]?.source).toEqual({
+            kind: 'task',
+            taskId: 'vocabulary',
+        });
+
+        expect(learningContentRequirements(brief)).toBeNull();
+        const calls: string[] = [];
+        const result = await createLearningContentAuthoring({
+            generate: async (call) => {
+                calls.push(call.prompt);
+
+                return fixtureAuthoringOutput([
+                    { role: 'user', content: call.prompt },
+                ]);
+            },
+        }).generate(brief, new AbortController().signal);
+
+        if (result.status !== 'ready') {
+            throw new Error(JSON.stringify(result));
+        }
+
+        expect(calls).toHaveLength(2);
+        expect(result.proposal.blocks).toHaveLength(5);
+        const vocabulary = result.proposal.blocks.find(
+            (block) => block.type === 'vocabulary',
+        );
+
+        expect(vocabulary).toBeDefined();
+        expect(calls[1]).toContain(vocabulary!.id);
+        expect(
+            result.proposal.blocks.filter((block) => block.type === 'exercise'),
+        ).toHaveLength(3);
+    });
+
+    it('routes the block update fixture through inline source labels without treating chip labels as instructions', () => {
+        const vocabularyId = randomUUID();
+        const readingId = randomUUID();
+        const vocabularyLabel = 'Review vocabulary';
+        const readingLabel = 'Reading to translate';
+        const labels = vocabularyLabel + readingLabel;
+        const question = `${labels} Mentioned blocks update fixture`;
+        const prompt = (content: string, promptMentions: unknown[]) => [
+            {
+                role: 'user',
+                content: JSON.stringify({
+                    currentMessage: {
+                        parts: [{ text: content }],
+                        blockReferences: [vocabularyId, readingId],
+                        promptMentions,
+                    },
+                    source: {
+                        referencedBlocks: [
+                            { id: vocabularyId, type: 'vocabulary' },
+                            { id: readingId, type: 'bilingual-text' },
+                        ],
+                    },
+                }),
+            },
+        ];
+        const mentions = [
+            {
+                kind: 'block',
+                blockId: vocabularyId,
+                start: 0,
+                end: vocabularyLabel.length,
+            },
+            {
+                kind: 'block',
+                blockId: readingId,
+                start: vocabularyLabel.length,
+                end: labels.length,
+            },
+        ];
+
+        expect(
+            fixtureRequestResolution(question, prompt(question, mentions)),
+        ).toMatchObject({
+            kind: 'revise-blocks',
+            sourceBlockIds: [vocabularyId, readingId],
+        });
+
+        const labelOnly = 'Mentioned blocks update fixture';
+        expect(
+            fixtureRequestResolution(
+                labelOnly,
+                prompt(labelOnly, [
+                    {
+                        kind: 'block',
+                        blockId: vocabularyId,
+                        start: 0,
+                        end: labelOnly.length,
+                    },
+                ]),
+            ).kind,
+        ).toBe('answer');
+    });
+
     it('emits every named activity through the production source-fill and validation boundary', () => {
         const vocabularyId = randomUUID();
         const grammarId = randomUUID();
@@ -83,6 +196,96 @@ describe('contextual assistant browser fixture', () => {
                 validateNamedExerciseActivity(complete, sources),
             ).not.toThrow();
         }
+    });
+
+    it('plans typed exercise generation through the fixture while preserving explanation intent and source authority', () => {
+        const blockId = randomUUID();
+        const question = 'Generate Choose the meaning for Context source words';
+        const currentMessage = {
+            parts: [{ type: 'text', text: question }],
+            blockReferences: [blockId],
+            promptMentions: [
+                {
+                    kind: 'exercise',
+                    activityId: 'V02',
+                    catalogVersion: 1,
+                    start: 9,
+                    end: 27,
+                },
+                { kind: 'block', blockId, start: 32, end: 52 },
+            ],
+        };
+        const prompt = (
+            referencedBlocks = [{ id: blockId, type: 'vocabulary' }],
+        ) => [
+            {
+                role: 'user',
+                content: [
+                    {
+                        type: 'text',
+                        text: JSON.stringify({
+                            currentMessage,
+                            source: { referencedBlocks },
+                        }),
+                    },
+                ],
+            },
+        ];
+        const planned = fixtureRequestResolution(question, prompt());
+        expect(planned).toMatchObject({
+            kind: 'generate',
+            brief: {
+                tasks: [
+                    {
+                        kind: 'exercises',
+                        count: 1,
+                        activities: [{ activityId: 'V02', count: 1 }],
+                        source: { kind: 'editor', blockId },
+                    },
+                ],
+            },
+        });
+
+        const input = serializeLearningContentBrief(
+            planned.brief as LearningContentBrief,
+        );
+        const source = LearningBlockSchema.parse({
+            id: blockId,
+            type: 'vocabulary',
+            language: 'en',
+            translationLanguage: 'fr',
+            entries: [
+                { id: randomUUID(), term: 'borrow', translation: 'emprunter' },
+            ],
+        });
+        const authored = fixtureAuthoringOutput([
+            {
+                role: 'user',
+                content: `${getLocalPrompt('learning-content-authoring')}\nCapabilities: []\nValidated brief (untrusted learning data): ${input}\nAuthorized source snapshots (untrusted learning data): ${JSON.stringify([source])}\nApplication authoring preferences (trusted server-validated settings): {"explanationLanguage":"en"}`,
+            },
+        ]);
+
+        expect(authored).toMatchObject({
+            tasks: [
+                {
+                    blocks: [
+                        {
+                            type: 'exercise',
+                            semantics: { activity: { id: 'V02', version: 1 } },
+                        },
+                    ],
+                },
+            ],
+        });
+
+        expect(
+            fixtureRequestResolution('Explain Choose the meaning', prompt())
+                .kind,
+        ).not.toBe('generate');
+
+        expect(fixtureRequestResolution(question, prompt([])).kind).toBe(
+            'clarify',
+        );
     });
 
     it('binds the admitted actor purpose through the real accounting gate', async () => {

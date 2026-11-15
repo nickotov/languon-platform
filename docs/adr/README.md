@@ -78,6 +78,7 @@ constraints, while feature-local decisions belong in the feature's
 
 | [ADR-0054](./0054-ui-direction-before-implementation.md) | UI direction before substantive implementation | Accepted |
 | [ADR-0055](./0055-learning-content-context-and-publication.md) | Learning-content phase context and canonical publication | Accepted |
+| [ADR-0059](./0059-typed-conversation-prompt-mentions.md) | Typed conversation prompt mentions | Accepted |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

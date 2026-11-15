@@ -4,9 +4,10 @@ id: BL-006
 title: 'Grammar conversations and learning documents'
 status: in-progress
 created: 2026-10-01
-updated: 2026-10-31
+updated: 2026-11-15
 original_tasks: '9'
 evidence:
+    - .agent/features/069-contextual-exercise-discovery/EVIDENCE.md
     - .agent/features/059-interactive-workbooks/EVIDENCE.md
     - .agent/features/044-contextual-language-assistant-and-knowledge/EVIDENCE.md
     - docs/user-flows/contextual-language-assistant-and-knowledge.md
@@ -588,3 +589,13 @@ outside this slice. Status remains in-progress.
 The F059 DOC follow-up adds native H1/H2/H3 and thematic breaks, preserves them through proposals, recovery, Save, copying and shared readers, and shows formatted proposal cards with a responsive read-only document preview. The complete mapped Knowledge workspace journey file is verified. Scoped implementation, final gate state and review evidence are recorded in [F059 evidence](../../.agent/features/059-interactive-workbooks/EVIDENCE.md).
 
 This partial delivery leaves BL-006 in progress; it does not complete the wider workbook or deferred transcription/course scope.
+
+## Contextual exercise discovery — 2026-11-15
+
+[Feature069](../../.agent/features/069-contextual-exercise-discovery/FEATURE.md)
+adds in-place exercise discovery and local previews, editor slash insertion with
+manual Custom or AI preparation actions, and inline typed exercise/source chips
+in workspace chat. Explicit Send, proposal review, Insert and Save remain separate.
+[Evidence](../../.agent/features/069-contextual-exercise-discovery/EVIDENCE.md)
+records actual verification and readiness; this slice does not complete the
+broader backlog task, which remains in progress.

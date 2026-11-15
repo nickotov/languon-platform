@@ -2,6 +2,12 @@ import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
 import { BlockReferenceChips } from '../block-reference-controls';
 import { blockReferenceCopy } from '../../../../lib/block-reference-copy';
 import type { ReactNode } from 'react';
+import type {
+    ConversationPromptMention,
+    ExerciseActivityId,
+} from '@languon/contracts';
+import type { PromptValue } from '../../../../lib/prompt-document';
+import { WorkspacePromptInput } from '../workspace-prompt-input/workspace-prompt-input';
 import {
     ArrowUp,
     FileText,
@@ -31,6 +37,10 @@ import styles from '../../../styles/contextual-assistant-composer-common.module.
 
 export function ConversationComposer({
     question,
+    promptMentions = [],
+    onPromptChange,
+    externalRequest,
+    onCloseContext,
     onQuestion,
     attachments,
     onRemove,
@@ -62,6 +72,12 @@ export function ConversationComposer({
     onClearExerciseRequest,
 }: {
     question: string;
+    promptMentions?: ConversationPromptMention[];
+    onPromptChange?: ((value: PromptValue) => void) | undefined;
+    externalRequest?:
+        | { id: string; exerciseActivityId?: ExerciseActivityId | undefined }
+        | undefined;
+    onCloseContext?: (() => void) | undefined;
     onQuestion(value: string): void;
     attachments: CopiedAttachment[];
     onRemove(id: string): void;
@@ -141,7 +157,7 @@ export function ConversationComposer({
             onSubmit={submit}
             data-workspace={workspace}
         >
-            {contextPicker}
+            {!workspace && contextPicker}
             {blockReferenceLimitReached && (
                 <p role='alert'>{blockReferenceCopy(locale).limit}</p>
             )}
@@ -197,27 +213,48 @@ export function ConversationComposer({
                         workspace
                     />
                 )}
-                {onRemoveBlockReference && (
+                {!workspace && onRemoveBlockReference && (
                     <BlockReferenceChips
                         selected={blockReferences}
                         available={availableBlocks}
                         onRemove={onRemoveBlockReference}
                     />
                 )}
-                <textarea
-                    ref={input}
-                    id={id}
-                    aria-label={copy.question}
-                    aria-describedby={active ? hintId : undefined}
-                    placeholder={placeholder}
-                    className={styles.input}
-                    value={question}
-                    onChange={change}
-                    onKeyDown={key}
-                    rows={1}
-                    maxLength={20000}
-                    dir='auto'
-                />
+                {workspace && onPromptChange && onCloseContext ? (
+                    <WorkspacePromptInput
+                        content={question}
+                        mentions={promptMentions}
+                        onChange={onPromptChange}
+                        label={copy.question}
+                        locale={locale}
+                        canSend={canSend}
+                        onSend={onSend}
+                        contextOpen={contextOpen}
+                        contextDisabled={busy}
+                        onContext={onContext}
+                        onClose={onCloseContext}
+                        texts={contextPicker}
+                        blocks={availableBlocks}
+                        selectedBlocks={blockReferences}
+                        externalRequest={externalRequest}
+                        exerciseRequest={exerciseRequest}
+                    />
+                ) : (
+                    <textarea
+                        ref={input}
+                        id={id}
+                        aria-label={copy.question}
+                        aria-describedby={active ? hintId : undefined}
+                        placeholder={placeholder}
+                        className={styles.input}
+                        value={question}
+                        onChange={change}
+                        onKeyDown={key}
+                        rows={1}
+                        maxLength={20000}
+                        dir='auto'
+                    />
+                )}
                 <div className={styles.inputActions}>
                     <div className={styles.contextActions}>
                         <Tooltip

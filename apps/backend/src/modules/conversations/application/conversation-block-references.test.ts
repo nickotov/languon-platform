@@ -76,6 +76,40 @@ function exerciseTurn(): SubmitConversationTurnRequest {
 }
 
 describe('authorized block references', () => {
+    it('derives document references from typed mentions and denies foreign identities', () => {
+        const frozen = snapshot();
+        const request: SubmitConversationTurnRequest = {
+            requestId: foreign,
+            content: 'Explain this block',
+            attachments: [],
+            promptMentions: [{ kind: 'block', blockId: id, start: 8, end: 12 }],
+        };
+
+        prepareReferencedTutorMessage({
+            snapshot: frozen,
+            sourceKind: 'knowledge',
+            request,
+            content: request.content,
+            attachments: [],
+        });
+
+        expect(frozen.blockReferences).toEqual([id]);
+        expect(() =>
+            prepareReferencedTutorMessage({
+                snapshot: snapshot(),
+                sourceKind: 'knowledge',
+                request: {
+                    ...request,
+                    promptMentions: [
+                        { kind: 'block', blockId: foreign, start: 8, end: 12 },
+                    ],
+                },
+                content: request.content,
+                attachments: [],
+            }),
+        ).toThrow('no longer available');
+    });
+
     it('restricts explicit-reference update targets while preserving legacy turns and append proposals', () => {
         const frozen = snapshot();
         expect(() =>

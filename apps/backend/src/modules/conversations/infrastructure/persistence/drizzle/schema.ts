@@ -13,6 +13,7 @@ import {
     bigserial,
 } from 'drizzle-orm/pg-core';
 import type {
+    ConversationPromptMention,
     ChatPreferences,
     ConversationResponseMetadata,
     ConversationBilling,
@@ -148,6 +149,10 @@ export const conversationMessagesTable = pgTable(
         modelContent: jsonb('model_content').$type<TutorMemoryMessage[]>(),
         responseMetadata:
             jsonb('response_metadata').$type<ConversationResponseMetadata>(),
+        promptMentions: jsonb('prompt_mentions')
+            .$type<ConversationPromptMention[]>()
+            .notNull()
+            .default(sql`'[]'::jsonb`),
         blockReferences: jsonb('block_references')
             .$type<string[]>()
             .notNull()

@@ -40,7 +40,7 @@ export function useWorkspacePassage(
                 content: request.passage,
                 targetId: request.targetId,
             });
-        } else {
+        } else if (!request.exerciseActivityId) {
             setPassage(null);
         }
     }, [request]);

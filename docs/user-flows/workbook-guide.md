@@ -114,6 +114,13 @@ tests cover all synthetic examples against real schemas and checking rules; shel
 unit tests cover guest/member, expanded/rail/drawer labels and exact active-route
 matching. Those exhaustive matrices are not duplicated in browser journeys.
 
+## Preview inside a space
+
+The same19 synthetic examples are also available from an editable space's `/`
+exercise menu and workspace chat's exercise picker. Local preview does not select
+an exercise or create model work. The guide remains the place for the complete
+recipes; learners can inspect an activity in place without leaving their draft.
+
 ## Expected failure and edge cases
 
 An unknown `activity` value falls back to V02. Hybrid answers outside prepared keys

@@ -41,6 +41,8 @@ function fixture() {
         question: 'Explain the selected passage',
         attachments: [] as CopiedAttachment[],
         setQuestion: vi.fn(),
+        setPromptMentions: vi.fn(),
+        promptMentions: [],
         setAttachments: vi.fn<(attachments: CopiedAttachment[]) => void>(),
         select: vi.fn(),
         remove: vi.fn(),
@@ -71,8 +73,12 @@ function fixture() {
         chat.attachments = attachments;
     });
 
+    const withReplacement = Object.assign(chat, {
+        replaceQuestion: chat.setQuestion,
+    });
+
     vi.mocked(useConversation).mockReturnValue(
-        chat as unknown as ReturnType<typeof useConversation>,
+        withReplacement as unknown as ReturnType<typeof useConversation>,
     );
 
     const snapshot = vi.fn(() => ({
@@ -435,3 +441,59 @@ it.each([
         );
     },
 );
+
+it('retains the selected passage when an editor action only prepares an exercise', async () => {
+    const { props } = fixture();
+    const { result, rerender } = renderHook(
+        (value) => useAssistantPanel(value),
+        {
+            initialProps: props,
+            wrapper: Wrapper,
+        },
+    );
+
+    await waitFor(() =>
+        expect(result.current.workspacePassage?.targetId).toBe('target-a'),
+    );
+
+    rerender({
+        ...props,
+        workspace: {
+            ...props.workspace,
+            request: { id: 'exercise-choice', exerciseActivityId: 'V02' },
+        },
+    });
+
+    expect(result.current.workspacePassage?.targetId).toBe('target-a');
+});
+
+it('blocks sending a deleted inline source even after available-reference selection is empty', async () => {
+    const { chat, props } = fixture();
+    const source = {
+        id: '00000000-0000-4000-8000-000000000001',
+        type: 'vocabulary' as const,
+        title: 'Words',
+    };
+
+    Object.assign(chat, {
+        question: 'Use Words',
+        promptMentions: [
+            { kind: 'block', blockId: source.id, start: 4, end: 9 },
+        ],
+    });
+
+    const { result, rerender } = renderHook(
+        (value) => useAssistantPanel(value),
+        { initialProps: { ...props, blocks: [source] }, wrapper: Wrapper },
+    );
+
+    expect(result.current.missingBlockReference).toBe(false);
+    rerender({ ...props, blocks: [] });
+    expect(result.current.blockReferences.selected).toEqual([]);
+    expect(result.current.missingBlockReference).toBe(true);
+    act(() => result.current.send());
+    expect(chat.submit.mutateAsync).not.toHaveBeenCalled();
+    Object.assign(chat, { promptMentions: [] });
+    rerender({ ...props, blocks: [] });
+    expect(result.current.missingBlockReference).toBe(false);
+});

@@ -2,11 +2,13 @@
 feature: contextual-language-assistant-and-knowledge
 title: Contextual Language Assistant and Knowledge
 status: current
-last_verified: 2026-10-20
+last_verified: 2026-11-15
 surfaces:
     - browser
     - api
 source_paths:
+    - .agent/features/069-contextual-exercise-discovery/**
+    - packages/contracts/src/conversation-prompt-mentions.ts
     - .agent/features/051-learner-portrait/**
     - apps/backend/src/modules/learner-portraits/**
     - packages/contracts/src/learner-portrait.ts
@@ -130,6 +132,32 @@ on success or failure. Use the registered runner; direct dedicated Playwright
 configuration startup requires its guard and does not own this cleanup.
 
 ## Browser verification
+
+### Contextual exercise discovery
+
+In an editable space, type `/` in ordinary text or use **Add block**. Browse Basic
+blocks, Learning blocks, Exercises and Library. Search exercise names or IDs;
+all19 activities are grouped by category. Preview opens a local interactive
+example without selecting it, changing the document or generating AI work.
+Closing returns to the picker. On narrow screens the preview uses a sheet.
+
+Choose **Create manually · Custom** to open the matching answer format. This
+creates Custom content rather than assigning named-exercise semantics. Choose
+**Generate with AI** to prepare an editable chat draft; existing prose is retained.
+Sending and later inserting/saving generated material remain explicit.
+
+In workspace chat, `/` or the context button can insert exercise and current-note
+block chips at the cursor. For example: “Generate [Choose meaning] for words in
+[At the library].” Exercise chips select types; the prompt specifies count, or
+one per selected type is used. Multiple types share the referenced source set.
+The advanced picker retains its explicit count/settings contract. Missing or
+incompatible sources require clarification instead of silent substitution.
+
+Exercise-chip preview is local and does not send the prompt. Copied Text materials
+remain attachments outside the input. Inline chips can be navigated/deleted with
+the keyboard; Enter sends and Shift+Enter adds a line outside an open picker.
+Historical chips retain their displayed text; their IDs never grant cross-note
+access. Cancelling insertion/preview leaves the draft editable.
 
 1. Sign in and open an owned dictionary or text. The circular AI tutor launcher is visible
    at the lower right. It does not load conversation history or subscribe to events

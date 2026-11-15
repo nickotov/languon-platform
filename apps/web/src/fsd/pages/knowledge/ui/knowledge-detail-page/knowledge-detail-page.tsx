@@ -338,6 +338,7 @@ function DetailContent({ noteId }: { noteId: string }) {
                                 onValidityChange={actions.setValid}
                                 disabled={busy !== null}
                                 workspace={{
+                                    onGenerateExercise: view.generateExercise,
                                     toolbarRootId:
                                         'knowledge-workspace-toolbar',
                                     editorId: 'knowledge-workspace-editor',

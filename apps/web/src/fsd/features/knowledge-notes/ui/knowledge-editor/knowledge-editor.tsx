@@ -281,6 +281,7 @@ export const KnowledgeEditor = forwardRef<
                 uploadAudio={uploadAudio ?? workspace?.uploadAudio}
                 library={workspace?.library}
                 blockCopy={workspace?.blockCopy}
+                onGenerateExercise={workspace?.onGenerateExercise}
             />
         ) : null;
 

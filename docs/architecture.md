@@ -516,6 +516,15 @@ version-2 body contract; there is no old-version application decoder. The separa
 captures its target branch/version, and applies reviewed blocks only to the
 working branch. Explicit Save publishes them.
 
+Space editor insertion and workspace chat share local exercise previews. The
+editor slash picker prepares generation in chat or creates clearly Custom manual
+content. Workspace chat serializes atomic exercise/source tokens into plain text
+plus validated typed mention ranges. Message history and admitted execution retain
+metadata; source IDs resolve only against the authorized snapshot. Activity IDs
+constrain generation without turning explanation-only messages into generation;
+prose controls count unless explicit advanced settings are present. See
+[ADR-0059](adr/0059-typed-conversation-prompt-mentions.md).
+
 Named exercises optionally carry versioned activity semantics: one of 19 catalog
 identities, objective, language, fixed format/checking policy, prepared key or rubric,
 and frozen sources. Their absence deliberately means Custom. Display metadata is

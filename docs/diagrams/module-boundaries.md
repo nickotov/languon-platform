@@ -38,8 +38,8 @@ source_paths:
     - apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-runner.ts
     - apps/backend/src/modules/knowledge/domain/named-exercise-semantics.ts
     - apps/backend/src/modules/administration/infrastructure/ai-catalog/tool-definitions.ts
-source_fingerprint: sha256:b916918f7b191b50c214e665774120074f510065ec0e22c1187016e8ad9c7823
-reviewed: 2026-11-14
+source_fingerprint: sha256:b1caf6418a5cf705a42daf7714099f628f0bb6f3e166651baff6edba8cacdb86
+reviewed: 2026-11-15
 ---
 
 # Module and layer boundaries

@@ -91,6 +91,15 @@ it('retains the initial selected passage through delayed creation and restores e
     act(() => {
         result.current.setAttachments([attachment]);
         result.current.setQuestion('Explain this phrase');
+        result.current.setPromptMentions([
+            {
+                start: 8,
+                end: 19,
+                kind: 'exercise',
+                activityId: 'R04',
+                catalogVersion: 1,
+            },
+        ]);
     });
 
     await act(async () => resolveCreate({ conversation: detail.conversation }));
@@ -100,9 +109,22 @@ it('retains the initial selected passage through delayed creation and restores e
     act(() => result.current.select(otherId));
     expect(result.current.attachments).toEqual([]);
     expect(result.current.question).toBe('');
+    expect(result.current.promptMentions).toEqual([]);
     act(() => result.current.setQuestion('A separate question'));
     act(() => result.current.select(id));
     expect(result.current.attachments).toEqual([attachment]);
     expect(result.current.question).toBe('Explain this phrase');
+    expect(result.current.promptMentions).toEqual([
+        {
+            start: 8,
+            end: 19,
+            kind: 'exercise',
+            activityId: 'R04',
+            catalogVersion: 1,
+        },
+    ]);
+
+    act(() => result.current.replaceQuestion('A plain replacement'));
+    expect(result.current.promptMentions).toEqual([]);
     client.clear();
 });

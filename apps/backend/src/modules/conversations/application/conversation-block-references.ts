@@ -105,13 +105,22 @@ export function prepareReferencedTutorMessage(input: {
     if (!input.request.retryOf) {
         captureBlockReferences(
             input.snapshot,
-            input.request.blockReferences ?? [],
+            [
+                ...new Set([
+                    ...(input.request.blockReferences ?? []),
+                    ...(input.request.promptMentions ?? []).flatMap(
+                        (mention) =>
+                            mention.kind === 'block' ? [mention.blockId] : [],
+                    ),
+                ]),
+            ],
             input.sourceKind,
         );
     }
 
     return projectTutorUserMessage({
         content: input.content,
+        promptMentions: input.request.promptMentions,
         attachments: input.attachments,
         blockReferences: input.snapshot.blockReferences,
         ...(!input.request.retryOf && input.request.exerciseRequest

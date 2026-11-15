@@ -19,6 +19,7 @@ import { ResponseLimitNotice } from '../response-limit-notice/response-limit-not
 import { ResponseActions } from '../response-actions/response-actions';
 import { messagesCopy } from '../../../../lib/messages-copy';
 import { ConversationErrorNotice } from '../conversation-error-notice/conversation-error-notice';
+import { PromptMessage } from '../prompt-message/prompt-message';
 import { ChatMarkdown } from '../chat-markdown/chat-markdown';
 import { useStreamingText } from '../../../../hooks/use-streaming-text';
 import type {
@@ -146,12 +147,14 @@ export function TutorMessage({
         <article className={styles.message}>
             {changed && <div className={styles.divider}>{copy.changed}</div>}
             <div className={isUser ? styles.userGroup : styles.answer}>
-                {isUser && (canonical.blockReferences?.length ?? 0) > 0 && (
-                    <MessageBlockReferences
-                        ids={canonical.blockReferences!}
-                        available={blocks}
-                    />
-                )}
+                {isUser &&
+                    !canonical.promptMentions?.length &&
+                    (canonical.blockReferences?.length ?? 0) > 0 && (
+                        <MessageBlockReferences
+                            ids={canonical.blockReferences!}
+                            available={blocks}
+                        />
+                    )}
                 {selectedPassage && (
                     <WorkspaceMessagePassage content={selectedPassage} />
                 )}
@@ -212,7 +215,11 @@ export function TutorMessage({
                     })}
                 {isUser ? (
                     <p className={styles.user} dir='auto'>
-                        {text}
+                        <PromptMessage
+                            content={canonical.content}
+                            mentions={canonical.promptMentions ?? []}
+                            locale={locale}
+                        />
                     </p>
                 ) : (
                     <ChatMarkdown

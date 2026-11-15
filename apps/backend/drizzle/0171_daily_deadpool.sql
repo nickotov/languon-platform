@@ -1,0 +1,1 @@
+ALTER TABLE "conversation_messages" ADD COLUMN "prompt_mentions" jsonb DEFAULT '[]'::jsonb NOT NULL;

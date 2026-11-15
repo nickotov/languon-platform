@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
     ChatPreferences,
+    ConversationPromptMention,
     ConversationSource,
     CopiedAttachment,
     SubmitConversationTurnRequest,
@@ -22,6 +23,37 @@ type ActionFailure =
       }
     | { kind: 'stop'; conversationId: string; turnId: string; error: unknown };
 
+function samePromptMentions(
+    left: ConversationPromptMention[],
+    right: ConversationPromptMention[],
+) {
+    return (
+        left.length === right.length &&
+        left.every((mention, index) => {
+            const other = right[index];
+            if (
+                !other ||
+                mention.start !== other.start ||
+                mention.end !== other.end
+            ) {
+                return false;
+            }
+
+            if (mention.kind === 'block') {
+                return (
+                    other.kind === 'block' && mention.blockId === other.blockId
+                );
+            }
+
+            return (
+                other.kind === 'exercise' &&
+                mention.activityId === other.activityId &&
+                mention.catalogVersion === other.catalogVersion
+            );
+        })
+    );
+}
+
 export function useConversation(
     actorId: string,
     source: ConversationSource,
@@ -31,6 +63,9 @@ export function useConversation(
     const client = useQueryClient();
     const [selected, setSelected] = useState<string | null>(null);
     const [question, setQuestion] = useState('');
+    const [promptMentions, setPromptMentions] = useState<
+        ConversationPromptMention[]
+    >([]);
     const [attachments, setAttachments] = useState<CopiedAttachment[]>([]);
     const [useDraft, setUseDraft] = useState(false);
     const [lastActionFailure, setLastActionFailure] =
@@ -42,6 +77,7 @@ export function useConversation(
             string,
             {
                 question: string;
+                promptMentions: ConversationPromptMention[];
                 attachments: CopiedAttachment[];
                 useDraft: boolean;
             }
@@ -62,6 +98,8 @@ export function useConversation(
     const id = selected ?? list.data?.conversations[0]?.id ?? null;
     const currentConversationId = useRef(id);
     currentConversationId.current = id;
+    const promptSnapshot = useRef({ id, question, promptMentions });
+    promptSnapshot.current = { id, question, promptMentions };
     useEffect(() => setLastActionFailure(null), [id]);
     const actionFailure =
         lastActionFailure?.conversationId === id ? lastActionFailure : null;
@@ -87,6 +125,7 @@ export function useConversation(
     useEffect(() => {
         setSelected(null);
         setQuestion('');
+        setPromptMentions([]);
         setAttachments([]);
         setUseDraft(false);
         pendingRequest.current = null;
@@ -107,13 +146,19 @@ export function useConversation(
 
     function rememberComposer() {
         if (id) {
-            composerDrafts.current.set(id, { question, attachments, useDraft });
+            composerDrafts.current.set(id, {
+                question,
+                promptMentions,
+                attachments,
+                useDraft,
+            });
         }
     }
 
     function restoreComposer(next: string) {
         const saved = composerDrafts.current.get(next);
         setQuestion(saved?.question ?? '');
+        setPromptMentions(saved?.promptMentions ?? []);
         setAttachments(saved?.attachments ?? []);
         setUseDraft(saved?.useDraft ?? false);
         pendingRequest.current = null;
@@ -135,12 +180,35 @@ export function useConversation(
             await refresh(conversation.id);
         },
     });
+
+    function clearSubmittedPrompt(
+        snapshot: {
+            content: string;
+            promptMentions: SubmitConversationTurnRequest['promptMentions'];
+        },
+        conversationId: string,
+    ) {
+        const current = promptSnapshot.current;
+        const samePair =
+            current.id === conversationId &&
+            current.question === snapshot.content &&
+            samePromptMentions(
+                current.promptMentions,
+                snapshot.promptMentions ?? [],
+            );
+
+        if (samePair) {
+            setQuestion('');
+            setPromptMentions([]);
+        }
+    }
+
     const admission = useConversationAdmission({
         id,
         attachments,
         pendingRequest,
         submitTurn: stream.submit,
-        setQuestion,
+        clearSubmittedPrompt,
         setAttachments,
         refresh: async () => {
             await client.invalidateQueries({ queryKey: listKey });
@@ -262,6 +330,7 @@ export function useConversation(
         if (conversationId === id) {
             setSelected(null);
             setQuestion('');
+            setPromptMentions([]);
             setAttachments([]);
             setUseDraft(false);
             pendingRequest.current = null;
@@ -276,6 +345,11 @@ export function useConversation(
         setSelected(next);
     }
 
+    function replaceQuestion(value: string) {
+        setQuestion(value);
+        setPromptMentions([]);
+    }
+
     return {
         id,
         list,
@@ -286,6 +360,9 @@ export function useConversation(
         ...admission,
         question,
         setQuestion,
+        replaceQuestion,
+        promptMentions,
+        setPromptMentions,
         attachments,
         setAttachments,
         useDraft,

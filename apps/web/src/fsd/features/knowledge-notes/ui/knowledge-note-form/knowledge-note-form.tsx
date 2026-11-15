@@ -13,6 +13,7 @@ import {
     KnowledgeNoteContentSchema,
     type KnowledgeWorkingContent,
     type LearningBlock,
+    type ExerciseActivityId,
 } from '@languon/contracts';
 import type { LearningBlockViewProps } from '@/fsd/entities/learning-blocks';
 import type { KnowledgeBlockFieldAiContext } from '../../api/block-field-ai-api';
@@ -60,6 +61,7 @@ export type KnowledgeWorkspaceEditorOptions = {
     editorId: string;
     proposalRootId: string;
     inlineProposalRootId?: string;
+    onGenerateExercise?: ((activityId: ExerciseActivityId) => void) | undefined;
     onMentionBlock?: ((blockId: string) => void) | undefined;
     onAskTutor(passage: string): void;
     onAskOutline(): void;

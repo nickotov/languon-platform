@@ -58,3 +58,5 @@ export * from './exercise-activity';
 export * from './exercise-activity-catalog';
 export * from './named-exercises';
 export * from './exercise-generation';
+
+export * from './conversation-prompt-mentions';

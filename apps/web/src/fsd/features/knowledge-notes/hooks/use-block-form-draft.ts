@@ -28,7 +28,9 @@ export function useBlockFormDraft({
     onApply,
     fieldAi,
     languageDefaults,
+    initialFormat,
 }: {
+    initialFormat?: string | undefined;
     kind: BlockKind;
     block?: LearningBlock | undefined;
     labels: BlockAuthoringLabels;
@@ -44,15 +46,26 @@ export function useBlockFormDraft({
     }, []);
 
     const [format, setFormat] = useState(
-        block?.type === 'exercise' ? block.format : 'free-text',
+        block?.type === 'exercise'
+            ? block.format
+            : (initialFormat ?? 'free-text'),
     );
     const [error, setError] = useState(false);
     const [dirty, setDirty] = useState(!block);
     const [confirming, setConfirming] = useState(false);
     const [preview, setPreview] = useState<LearningBlock | null>(null);
-    const [definition, setDefinition] = useState(() =>
-        blockForm(kind, block, languageDefaults),
-    );
+    const [definition, setDefinition] = useState(() => {
+        const definition = blockForm(kind, block, languageDefaults);
+        if (kind === 'exercise' && initialFormat && !block) {
+            definition.fields = definition.fields.map((field) =>
+                field.name === 'format'
+                    ? { ...field, value: initialFormat }
+                    : field,
+            );
+        }
+
+        return definition;
+    });
     const [translationKey, setTranslationKey] = useState(0);
     const [title, setTitle] = useState(block?.title ?? labels.view.kinds[kind]);
     const form = useRef<HTMLFormElement>(null);

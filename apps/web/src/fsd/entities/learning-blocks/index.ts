@@ -27,3 +27,12 @@ export {
     namedExerciseLabels,
     exerciseCheckingLabel,
 } from './lib/named-exercise-labels';
+
+export {
+    exerciseActivityExamples,
+    exerciseExampleSources,
+} from './lib/activity-examples/activity-examples';
+export type { ExerciseActivityExample } from './lib/activity-examples/activity-examples';
+export { exerciseExampleLabels } from './lib/activity-examples/example-labels';
+export { ExerciseActivityPreview } from './ui/exercise-activity-preview/exercise-activity-preview';
+export { ExerciseActivityBrowser } from './ui/exercise-activity-browser/exercise-activity-browser';

@@ -1165,6 +1165,22 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
 
         input.message.modelContent = projectTutorUserMessage({
             content: input.message.content,
+            promptMentions: [
+                {
+                    kind: 'exercise',
+                    activityId: 'V01',
+                    catalogVersion: 1,
+                    start: 0,
+                    end: 8,
+                },
+                {
+                    kind: 'exercise',
+                    activityId: 'V02',
+                    catalogVersion: 1,
+                    start: 9,
+                    end: 12,
+                },
+            ],
             exerciseRequest: request,
             blockReferences: [source.id],
             editorContext: {

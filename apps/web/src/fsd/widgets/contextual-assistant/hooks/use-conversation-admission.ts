@@ -16,6 +16,7 @@ import { ConversationApiError } from '@/fsd/entities/conversation';
 
 type Submission = {
     content: string;
+    promptMentions?: SubmitConversationTurnRequest['promptMentions'];
     blockReferences?: string[] | undefined;
     draftContext?: string | undefined;
     editorContext?: SubmitConversationTurnRequest['editorContext'];
@@ -31,7 +32,7 @@ export function useConversationAdmission({
     attachments,
     pendingRequest,
     submitTurn,
-    setQuestion,
+    clearSubmittedPrompt,
     setAttachments,
     refresh,
 }: {
@@ -41,7 +42,13 @@ export function useConversationAdmission({
     submitTurn(
         input: SubmitConversationTurnRequest,
     ): Promise<{ turn: ConversationTurn }>;
-    setQuestion: Dispatch<SetStateAction<string>>;
+    clearSubmittedPrompt(
+        snapshot: {
+            content: string;
+            promptMentions: SubmitConversationTurnRequest['promptMentions'];
+        },
+        conversationId: string,
+    ): void;
     setAttachments: Dispatch<SetStateAction<CopiedAttachment[]>>;
     refresh(id: string): Promise<void>;
 }) {
@@ -49,6 +56,7 @@ export function useConversationAdmission({
     const submit = useMutation({
         mutationFn: async ({
             content,
+            promptMentions,
             draftContext,
             editorContext,
             exerciseRequest,
@@ -63,6 +71,7 @@ export function useConversationAdmission({
 
             const candidate = {
                 content,
+                promptMentions,
                 attachments: copiedAttachments ?? attachments,
                 draftContext: draftContext
                     ? { content: draftContext }
@@ -101,8 +110,12 @@ export function useConversationAdmission({
             confirmationLock.current = false;
         },
         onSuccess: async ({ turn, sentAttachments }, variables) => {
-            setQuestion((current) =>
-                current === variables.content ? '' : current,
+            clearSubmittedPrompt(
+                {
+                    content: variables.content,
+                    promptMentions: variables.promptMentions,
+                },
+                turn.conversationId,
             );
 
             const sentIds = new Set(sentAttachments.map((item) => item.id));
@@ -146,6 +159,7 @@ export function useConversationAdmission({
         confirmationLock.current = true;
         submit.mutate({
             content: input.content,
+            promptMentions: input.promptMentions,
             copiedAttachments: input.attachments,
             draftContext: input.draftContext?.content,
             editorContext: input.editorContext,

@@ -66,7 +66,7 @@ export function useConversationComposerInput({
 
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
-            if (canSend) {
+            if (canSend && !contextOpen) {
                 onSend();
             }
         }
@@ -80,7 +80,7 @@ export function useConversationComposerInput({
 
     function submit(event: FormEvent) {
         event.preventDefault();
-        if (canSend) {
+        if (canSend && !contextOpen) {
             onSend();
         }
     }

@@ -1,5 +1,5 @@
 import type { ExerciseActivityId } from '@languon/contracts';
-import type { GuideLocale } from './content';
+import type { Locale } from '@/fsd/shared/i18n';
 
 /** Selection guidance explains when to request an activity, independently of its answer. */
 const guidance: Record<ExerciseActivityId, [string, string, string, string]> = {
@@ -121,7 +121,7 @@ const guidance: Record<ExerciseActivityId, [string, string, string, string]> = {
 
 export function activityUseCaseGuidance(
     id: ExerciseActivityId,
-    locale: GuideLocale,
+    locale: Locale,
 ): string {
     const index = ['en', 'ru', 'fr', 'es'].indexOf(locale);
 
