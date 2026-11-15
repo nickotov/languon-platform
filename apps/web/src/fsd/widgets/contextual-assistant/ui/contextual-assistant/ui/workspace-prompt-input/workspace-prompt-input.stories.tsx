@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { Popover, PopoverTrigger } from '@/fsd/shared/ui';
 import { WorkspacePromptInput } from './workspace-prompt-input';
 import type { PromptValue } from '../../../../lib/prompt-document';
 
@@ -23,6 +24,13 @@ function Example() {
         ],
     });
     const [open, setOpen] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
+    function changeOpen(next: boolean) {
+        if (next || !previewOpen) {
+            setOpen(next);
+        }
+    }
+
     function show() {
         setOpen(true);
     }
@@ -34,27 +42,35 @@ function Example() {
     function send() {}
 
     return (
-        <WorkspacePromptInput
-            content={value.content}
-            mentions={value.promptMentions}
-            onChange={setValue}
-            locale='en'
-            label='Your question'
-            canSend
-            onSend={send}
-            contextOpen={open}
-            onContext={show}
-            onClose={close}
-            texts={<p>Copied Text references</p>}
-            blocks={[
-                {
-                    id: '00000000-0000-4000-8000-000000000001',
-                    type: 'vocabulary',
-                    title: 'At the library',
-                },
-            ]}
-            selectedBlocks={[]}
-        />
+        <Popover open={open} onOpenChange={changeOpen}>
+            <form>
+                <PopoverTrigger asChild>
+                    <button type='button'>Add context</button>
+                </PopoverTrigger>
+                <WorkspacePromptInput
+                    content={value.content}
+                    mentions={value.promptMentions}
+                    onChange={setValue}
+                    locale='en'
+                    label='Your question'
+                    canSend
+                    onSend={send}
+                    contextOpen={open}
+                    onPreviewOpenChange={setPreviewOpen}
+                    onContext={show}
+                    onClose={close}
+                    texts={<p>Copied Text references</p>}
+                    blocks={[
+                        {
+                            id: '00000000-0000-4000-8000-000000000001',
+                            type: 'vocabulary',
+                            title: 'At the library',
+                        },
+                    ]}
+                    selectedBlocks={[]}
+                />
+            </form>
+        </Popover>
     );
 }
 

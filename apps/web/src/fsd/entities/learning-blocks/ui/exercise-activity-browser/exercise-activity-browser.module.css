@@ -1,6 +1,15 @@
 .root {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
     gap: var(--space-16);
+    min-width: 0;
+}
+
+.group,
+.group ul,
+.row {
+    width: 100%;
     min-width: 0;
 }
 
@@ -87,4 +96,68 @@
 .preview:focus-visible {
     outline: var(--size-2) solid var(--border-focus);
     outline-offset: var(--size-2);
+}
+
+.label {
+    min-width: 0;
+    flex: 1;
+}
+
+/* The compact text column shrinks before codes or preview controls do. */
+.compact .label {
+    overflow: hidden;
+}
+
+.compact {
+    gap: var(--space-8);
+}
+
+.compact .group h3 {
+    margin: var(--space-8) var(--space-12) var(--space-4);
+    font-size: var(--size-11);
+}
+
+.compact .choose {
+    align-items: center;
+    min-height: var(--size-56);
+    padding: var(--space-8) var(--space-12);
+    gap: var(--space-8);
+}
+
+.compact .code {
+    order: 2;
+    color: var(--text-tertiary);
+    font-size: var(--size-11);
+}
+
+.compact .label {
+    order: 1;
+}
+
+.compact .choose strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.compact .description {
+    margin-top: var(--space-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.compact .preview {
+    width: var(--size-36);
+    height: var(--size-36);
+    margin-inline-end: var(--space-4);
+}
+
+@media (pointer: coarse) {
+    .compact .preview {
+        width: var(--size-44);
+        height: var(--size-44);
+    }
 }

@@ -251,7 +251,8 @@
 }
 
 .composer :where(button):focus-visible,
-.picker :where(button):focus-visible {
+.picker :where(button):focus-visible,
+.referenceEditor :where(button):focus-visible {
     outline: var(--size-2) solid var(--border-focus);
     outline-offset: var(--size-2);
 }

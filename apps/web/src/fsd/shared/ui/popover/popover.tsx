@@ -70,6 +70,16 @@ export function Popover({
                         `${rects.reference.width}px`,
                     );
 
+                    elements.floating.style.setProperty(
+                        '--popover-available-height',
+                        `${Math.max(0, availableHeight)}px`,
+                    );
+
+                    elements.floating.style.setProperty(
+                        '--popover-available-width',
+                        `${Math.max(0, availableWidth)}px`,
+                    );
+
                     Object.assign(elements.floating.style, {
                         maxWidth: `${Math.max(0, availableWidth)}px`,
                         maxHeight: `${Math.max(0, availableHeight)}px`,

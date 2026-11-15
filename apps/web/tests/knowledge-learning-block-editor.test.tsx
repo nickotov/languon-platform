@@ -221,6 +221,13 @@ describe('learning block editor', () => {
         await waitFor(() => expect(ref.current).not.toBeNull());
         fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
         fireEvent.click(
+            await screen.findByRole('button', {
+                name: 'Learning blocks',
+                exact: true,
+            }),
+        );
+
+        fireEvent.click(
             await screen.findByRole('button', { name: 'Grammar', exact: true }),
         );
 
@@ -318,6 +325,13 @@ describe('learning block editor', () => {
 
         await waitFor(() => expect(ref.current).not.toBeNull());
         fireEvent.click(screen.getByRole('button', { name: 'Add block' }));
+        fireEvent.click(
+            await screen.findByRole('button', {
+                name: 'Learning blocks',
+                exact: true,
+            }),
+        );
+
         fireEvent.click(
             await screen.findByRole('button', { name: 'Audio', exact: true }),
         );
@@ -892,4 +906,49 @@ it('creates a Custom exercise set at the cursor without replacing prose and undo
             }
         });
     }
+});
+
+it('searches all command categories and restores query, scroll and selected exercise after Back', async () => {
+    const user = userEvent.setup();
+    const empty = KnowledgeBodySchema.parse({
+        schemaVersion: 2,
+        document: { type: 'doc', content: [{ type: 'paragraph' }] },
+    });
+    const editor = createRef<KnowledgeEditorHandle>();
+
+    render(<KnowledgeEditor ref={editor} value={empty} onChange={vi.fn()} />);
+    await waitFor(() => expect(editor.current).not.toBeNull());
+    await user.click(screen.getByRole('button', { name: 'Add block' }));
+    const search = screen.getByRole('textbox', {
+        name: 'Search blocks and exercises',
+    });
+
+    fireEvent.change(search, { target: { value: 'grammar' } });
+    expect(
+        screen.getByRole('button', { name: 'Grammar', exact: true }),
+    ).toBeInTheDocument();
+
+    fireEvent.change(search, { target: { value: 'V0' } });
+    const activity = screen.getByRole('button', {
+        name: /^V02 Choose the meaning/u,
+    });
+    const results = activity.closest('[data-command-results]')!;
+
+    results.scrollTop = 80;
+    await user.click(activity);
+    expect(
+        screen.queryByRole('textbox', { name: 'Search blocks and exercises' }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Back', exact: true }));
+    expect(
+        screen.getByRole('textbox', { name: 'Search blocks and exercises' }),
+    ).toHaveValue('V0');
+
+    const restored = screen.getByRole('button', {
+        name: /^V02 Choose the meaning/u,
+    });
+
+    expect(restored).toHaveFocus();
+    expect(restored.closest('[data-command-results]')!.scrollTop).toBe(80);
 });

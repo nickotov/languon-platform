@@ -27,6 +27,8 @@ export function useRichPromptEditor(
         contextDisabled?: boolean;
         canSend: boolean;
         onContext(): void;
+        onDismissContext?(): void;
+        onNavigateContext?(direction: 'ArrowDown' | 'ArrowUp'): void;
         onSend(): void;
     },
     selection: RefObject<{ from: number; to: number } | null>,
@@ -68,7 +70,51 @@ export function useRichPromptEditor(
             },
             handleKeyDown(view, event) {
                 if (event.isComposing) {
+                    if (latest.current.contextOpen) {
+                        latest.current.onDismissContext?.();
+                    }
+
                     return false;
+                }
+
+                const contextWasOpen = latest.current.contextOpen;
+                if (contextWasOpen) {
+                    if (event.key === 'Escape') {
+                        event.preventDefault();
+                        latest.current.onDismissContext?.();
+
+                        return true;
+                    }
+
+                    if (
+                        (event.key === 'ArrowDown' ||
+                            event.key === 'ArrowUp') &&
+                        !event.shiftKey &&
+                        !event.metaKey &&
+                        !event.ctrlKey &&
+                        !event.altKey
+                    ) {
+                        event.preventDefault();
+                        latest.current.onNavigateContext?.(event.key);
+
+                        return true;
+                    }
+
+                    const editsText =
+                        event.key.length === 1 ||
+                        [
+                            'Backspace',
+                            'Delete',
+                            'ArrowLeft',
+                            'ArrowRight',
+                            'Home',
+                            'End',
+                        ].includes(event.key) ||
+                        (event.key === 'Enter' && event.shiftKey);
+
+                    if (editsText) {
+                        latest.current.onDismissContext?.();
+                    }
                 }
 
                 if (navigatePromptMention(view, event)) {
@@ -76,6 +122,7 @@ export function useRichPromptEditor(
                 }
 
                 if (
+                    !contextWasOpen &&
                     !latest.current.contextDisabled &&
                     event.key === '/' &&
                     /(?:^|\s)$/u.test(
@@ -114,6 +161,22 @@ export function useRichPromptEditor(
 
                 return false;
             },
+            handleDOMEvents: {
+                pointerdown() {
+                    if (latest.current.contextOpen) {
+                        latest.current.onDismissContext?.();
+                    }
+
+                    return false;
+                },
+                compositionstart() {
+                    if (latest.current.contextOpen) {
+                        latest.current.onDismissContext?.();
+                    }
+
+                    return false;
+                },
+            },
             clipboardTextSerializer(slice) {
                 return slice.content.textBetween(
                     0,
@@ -126,6 +189,10 @@ export function useRichPromptEditor(
                 );
             },
             handlePaste(view, event) {
+                if (latest.current.contextOpen) {
+                    latest.current.onDismissContext?.();
+                }
+
                 const text = event.clipboardData?.getData('text/plain');
                 if (text === undefined) {
                     return false;

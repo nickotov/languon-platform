@@ -218,3 +218,9 @@ export {
     CompanionLayout,
     useCompanionLayout,
 } from './companion-layout/companion-layout';
+
+export {
+    CommandMenu,
+    type CommandMenuProps,
+} from './command-menu/command-menu';
+export { CommandMenuItem } from './command-menu/ui/command-menu-item/command-menu-item';

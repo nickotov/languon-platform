@@ -7,6 +7,7 @@ import {
     type ReactElement,
     type Ref,
     useLayoutEffect,
+    useRef,
 } from 'react';
 import { usePopover } from '../../../popover-context';
 import { assignRef } from '../../../popover-helpers';
@@ -18,6 +19,7 @@ export const PopoverAnchor = forwardRef<HTMLElement, PopoverAnchorProps>(
         forwardedRef,
     ) {
         const context = usePopover();
+        const ownedAnchor = useRef<HTMLElement | null>(null);
         const { setVirtualReference } = context;
         useLayoutEffect(() => {
             setVirtualReference(virtualRef);
@@ -26,7 +28,17 @@ export const PopoverAnchor = forwardRef<HTMLElement, PopoverAnchorProps>(
         }, [setVirtualReference, virtualRef]);
 
         const setRef = (node: HTMLElement | null) => {
-            context.triggerRef.current = node;
+            // A virtual position must not replace a real button's invoker identity.
+            // Standalone anchors still own and clean up their fallback reference.
+            if (
+                !virtualRef ||
+                !context.triggerRef.current ||
+                context.triggerRef.current === ownedAnchor.current
+            ) {
+                context.triggerRef.current = node;
+            }
+
+            ownedAnchor.current = node;
 
             if (typeof forwardedRef === 'function') {
                 forwardedRef(node);

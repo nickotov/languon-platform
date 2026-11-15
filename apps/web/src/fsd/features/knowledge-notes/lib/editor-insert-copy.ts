@@ -2,6 +2,8 @@ import type { Locale } from '@/fsd/shared/i18n';
 const labels = {
     en: {
         title: 'Insert block',
+        close: 'Close menu',
+        empty: 'No matching commands',
         search: 'Search blocks and exercises',
         basic: 'Basic blocks',
         learning: 'Learning blocks',
@@ -24,6 +26,8 @@ const labels = {
     },
     ru: {
         title: 'Вставить блок',
+        close: 'Закрыть меню',
+        empty: 'Команды не найдены',
         search: 'Поиск блоков и упражнений',
         basic: 'Основные блоки',
         learning: 'Учебные блоки',
@@ -46,6 +50,8 @@ const labels = {
     },
     fr: {
         title: 'Insérer un bloc',
+        close: 'Fermer le menu',
+        empty: 'Aucune commande correspondante',
         search: 'Rechercher des blocs et exercices',
         basic: 'Blocs de base',
         learning: 'Blocs pédagogiques',
@@ -68,6 +74,8 @@ const labels = {
     },
     es: {
         title: 'Insertar bloque',
+        close: 'Cerrar menú',
+        empty: 'No hay comandos coincidentes',
         search: 'Buscar bloques y ejercicios',
         basic: 'Bloques básicos',
         learning: 'Bloques de aprendizaje',

@@ -1,7 +1,7 @@
 import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
 import { BlockReferenceChips } from '../block-reference-controls';
 import { blockReferenceCopy } from '../../../../lib/block-reference-copy';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type {
     ConversationPromptMention,
     ExerciseActivityId,
@@ -25,7 +25,7 @@ import type {
 import { exerciseGenerationCopy } from '@/fsd/features/knowledge-notes';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Tooltip } from '@/fsd/shared/ui';
+import { Popover, PopoverTrigger, Tooltip } from '@/fsd/shared/ui';
 import { useConversationComposerInput } from '../../../../hooks/use-conversation-composer-input';
 import { ComposerAttachments } from '../composer-attachments/composer-attachments';
 import { ComposerPreferences } from '../composer-preferences/composer-preferences';
@@ -111,6 +111,7 @@ export function ConversationComposer({
     exerciseRequest?: SubmitConversationTurnRequest['exerciseRequest'];
     onClearExerciseRequest?: (() => void) | undefined;
 }) {
+    const [previewOpen, setPreviewOpen] = useState(false);
     const { locale } = useI18n();
     const copy = conversationCopy(locale);
     const text = composerCopy(locale);
@@ -151,7 +152,38 @@ export function ConversationComposer({
             onSend,
         });
 
-    return (
+    function changeContextOpen(next: boolean) {
+        if (next) {
+            onContext();
+        } else if (!previewOpen) {
+            if (onCloseContext) {
+                onCloseContext();
+            } else {
+                onContext();
+            }
+        }
+    }
+
+    const contextButton = (
+        <button
+            type='button'
+            className={styles.contextButton}
+            onClick={workspace ? undefined : onContext}
+            aria-label={copy.addContext}
+            aria-expanded={contextOpen}
+            aria-haspopup='dialog'
+            aria-keyshortcuts='/'
+            disabled={(!workspace && attachments.length >= 10) || busy}
+        >
+            <Plus size={16} aria-hidden='true' />
+            {!workspace && (
+                <span className={styles.desktopLabel}>{text.context}</span>
+            )}
+            {!workspace && <kbd className={styles.shortcut}>/</kbd>}
+        </button>
+    );
+
+    const composer = (
         <form
             className={styles.composer}
             onSubmit={submit}
@@ -230,6 +262,7 @@ export function ConversationComposer({
                         canSend={canSend}
                         onSend={onSend}
                         contextOpen={contextOpen}
+                        onPreviewOpenChange={setPreviewOpen}
                         contextDisabled={busy}
                         onContext={onContext}
                         onClose={onCloseContext}
@@ -263,29 +296,13 @@ export function ConversationComposer({
                             disabled={!workspace}
                             triggerClassName={styles.iconTooltipTrigger}
                         >
-                            <button
-                                type='button'
-                                className={styles.contextButton}
-                                onClick={onContext}
-                                aria-label={copy.addContext}
-                                aria-expanded={contextOpen}
-                                aria-haspopup='dialog'
-                                aria-keyshortcuts='/'
-                                disabled={
-                                    (!workspace && attachments.length >= 10) ||
-                                    busy
-                                }
-                            >
-                                <Plus size={16} aria-hidden='true' />
-                                {!workspace && (
-                                    <span className={styles.desktopLabel}>
-                                        {text.context}
-                                    </span>
-                                )}
-                                {!workspace && (
-                                    <kbd className={styles.shortcut}>/</kbd>
-                                )}
-                            </button>
+                            {workspace ? (
+                                <PopoverTrigger asChild>
+                                    {contextButton}
+                                </PopoverTrigger>
+                            ) : (
+                                contextButton
+                            )}
                         </Tooltip>
                         <ComposerPreferences
                             value={preferences}
@@ -364,5 +381,13 @@ export function ConversationComposer({
                 </p>
             )}
         </form>
+    );
+
+    return workspace ? (
+        <Popover open={contextOpen} onOpenChange={changeContextOpen}>
+            {composer}
+        </Popover>
+    ) : (
+        composer
     );
 }

@@ -12,7 +12,7 @@ import type {
     WorkbookLearningState,
 } from '@languon/contracts';
 
-// @user-flow-revision interactive-workbooks sha256:56d5775506c382b6
+// @user-flow-revision interactive-workbooks sha256:942518e8816f074d
 const origin = 'http://localhost:3336';
 const tokens = new WeakMap<Page, string>();
 async function signup(page: Page, info: TestInfo, suffix: string) {
@@ -139,6 +139,52 @@ async function capture(page: Page, info: TestInfo, name: string) {
     await info.attach(name, { path, contentType: 'image/png' });
 }
 
+async function expectCommandResultsFit(panel: Locator) {
+    const results = panel.locator('[data-command-results]:visible');
+    const horizontalOverflow = await results.evaluate(
+        (element) => element.scrollWidth - element.clientWidth,
+    );
+
+    expect(horizontalOverflow).toBeLessThanOrEqual(1);
+
+    const bounds = await results.evaluate((element) => {
+        const container = element.getBoundingClientRect();
+
+        return Array.from(element.querySelectorAll('button'))
+            .filter((button) => {
+                const style = getComputedStyle(button);
+
+                return (
+                    style.display !== 'none' && style.visibility !== 'hidden'
+                );
+            })
+            .map((button) => {
+                const box = button.getBoundingClientRect();
+
+                return {
+                    label: button.getAttribute('aria-label'),
+                    left: box.left,
+                    right: box.right,
+                    width: box.width,
+                    containerLeft: container.left,
+                    containerRight: container.right,
+                };
+            });
+    });
+
+    for (const item of bounds) {
+        expect(item.width, item.label ?? 'command button').toBeGreaterThan(0);
+        expect(
+            item.left,
+            item.label ?? 'command button',
+        ).toBeGreaterThanOrEqual(item.containerLeft - 1);
+
+        expect(item.right, item.label ?? 'command button').toBeLessThanOrEqual(
+            item.containerRight + 1,
+        );
+    }
+}
+
 async function addBlock(
     page: Page,
     kind: string,
@@ -162,6 +208,10 @@ async function addBlock(
             .getByRole('button', { name: 'Custom exercise', exact: true })
             .click();
     } else {
+        await page
+            .getByRole('button', { name: 'Learning blocks', exact: true })
+            .click();
+
         await page
             .getByRole('button', { name: kinds[kind]!, exact: true })
             .click();
@@ -2289,10 +2339,51 @@ test('discovers a local exercise preview and submits typed exercise and source m
     await editor.focus();
     await editor.press('Meta+End');
     await editor.press('Enter');
+    const editorBeforePicker = await editor.boundingBox();
+    expect(editorBeforePicker).not.toBeNull();
     await editor.press('/');
-    const documentAfterOpeningPicker = await editor.innerText();
     const insertPicker = page.locator('[aria-label="Insert block"]');
     await expect(insertPicker).toBeVisible();
+    await expect(editor).toBeFocused();
+
+    // The picker is a bounded floating surface: opening it must not grow the
+    // ProseMirror editor that triggered it.
+    const insertPickerBox = await insertPicker.boundingBox();
+    const editorWithPicker = await editor.boundingBox();
+    if (!editorBeforePicker || !insertPickerBox || !editorWithPicker) {
+        throw new Error('Expected editor and insert-picker geometry.');
+    }
+
+    expect(insertPickerBox.width).toBeLessThanOrEqual(384);
+    expect(insertPickerBox.height).toBeLessThanOrEqual(420);
+    // The literal slash can alter the empty paragraph's subpixel line box;
+    // a picker rendered in document flow would instead add hundreds of pixels.
+    expect(
+        Math.abs(editorWithPicker.height - editorBeforePicker.height),
+    ).toBeLessThanOrEqual(8);
+
+    await editor.press('ArrowDown');
+    await expect(
+        insertPicker.locator('[data-command-item]').first(),
+    ).toBeFocused();
+
+    await editor.press('Escape');
+    await expect(insertPicker).toBeHidden();
+    await expect(editor).toBeFocused();
+
+    // Continuing to write from the slash source must close the menu without
+    // swallowing the native text transaction.
+    await editor.press('/');
+    await editor.type('typed');
+    await expect(insertPicker).toBeHidden();
+    await expect(editor).toContainText('/typed');
+
+    await editor.press('Enter');
+    await editor.press('/');
+    const documentAfterOpeningPicker = await editor.innerText();
+    await expect(insertPicker).toBeVisible();
+    await expect(editor).toBeFocused();
+    await capture(page, info, 'contextual-exercise-picker-root-desktop');
     await insertPicker
         .getByRole('button', { name: 'Exercises', exact: true })
         .click();
@@ -2307,14 +2398,16 @@ test('discovers a local exercise preview and submits typed exercise and source m
     });
 
     await exerciseSearch.fill('choose');
-    await insertPicker.evaluate((element) => {
+    const exerciseResults = insertPicker.locator('[data-command-results]');
+    await exerciseResults.evaluate((element) => {
         element.scrollTop = 1;
     });
 
-    const scrollBeforePreview = await insertPicker.evaluate(
+    const scrollBeforePreview = await exerciseResults.evaluate(
         (element) => element.scrollTop,
     );
 
+    await expectCommandResultsFit(insertPicker);
     await v02Preview.focus();
     await capture(page, info, 'contextual-exercise-picker-desktop');
     await v02Preview.click();
@@ -2339,8 +2432,10 @@ test('discovers a local exercise preview and submits typed exercise and source m
     await expect(exerciseSearch).toHaveValue('choose');
     await expect(v02Preview).toBeFocused();
     await expect
-        .poll(() => insertPicker.evaluate((element) => element.scrollTop))
+        .poll(() => exerciseResults.evaluate((element) => element.scrollTop))
         .toBe(scrollBeforePreview);
+
+    await expectCommandResultsFit(insertPicker);
 
     expect(documentAfterOpeningPicker).toContain('/');
     expect(await editor.innerText()).toBe(documentAfterOpeningPicker);
@@ -2356,6 +2451,7 @@ test('discovers a local exercise preview and submits typed exercise and source m
         .getByRole('button', { name: 'Exercises', exact: true })
         .click();
 
+    await expectCommandResultsFit(insertPicker);
     await capture(page, info, 'contextual-exercise-picker-mobile');
     await insertPicker
         .getByRole('button', {
@@ -2455,6 +2551,64 @@ test('discovers a local exercise preview and submits typed exercise and source m
         exact: true,
     });
 
+    await question.fill('Keep this draft ');
+    const composerBeforePicker = await question.boundingBox();
+    expect(composerBeforePicker).not.toBeNull();
+    await question.press('/');
+    const promptPicker = page.getByRole('dialog', {
+        name: 'Add to prompt',
+        exact: true,
+    });
+
+    await expect(promptPicker).toBeVisible();
+    await expect(question).toBeFocused();
+    await capture(page, info, 'contextual-prompt-root-desktop');
+
+    // The prompt picker is portalled above the composer rather than becoming
+    // another row inside it.
+    const promptPickerBox = await promptPicker.boundingBox();
+    const composerWithPicker = await question.boundingBox();
+    if (!composerBeforePicker || !promptPickerBox || !composerWithPicker) {
+        throw new Error('Expected composer and prompt-picker geometry.');
+    }
+
+    expect(promptPickerBox.width).toBeLessThanOrEqual(384);
+    expect(promptPickerBox.height).toBeLessThanOrEqual(420);
+    expect(composerWithPicker.height).toBe(composerBeforePicker.height);
+    expect(promptPickerBox.y + promptPickerBox.height).toBeLessThanOrEqual(
+        composerWithPicker.y + 24,
+    );
+
+    await question.press('ArrowDown');
+    await expect(
+        promptPicker.locator('[data-command-item]').first(),
+    ).toBeFocused();
+
+    await question.press('Escape');
+    await expect(promptPicker).toBeHidden();
+    await expect(question).toBeFocused();
+
+    const contextToggle = tutor.getByLabel('Add context /', { exact: true });
+    await contextToggle.click();
+    await expect(promptPicker).toBeVisible();
+    await contextToggle.click();
+    await expect(promptPicker).toBeHidden();
+    await contextToggle.click();
+    await expect(promptPicker).toBeVisible();
+    expect(turnRequests).toBe(0);
+    await promptPicker
+        .getByRole('button', { name: 'Close picker', exact: true })
+        .click();
+
+    await expect(promptPicker).toBeHidden();
+
+    await question.fill('Keep this draft ');
+    await question.press('/');
+    await question.type('typed');
+    await expect(promptPicker).toBeHidden();
+    await expect(question).toContainText('Keep this draft /typed');
+    expect(turnRequests).toBe(0);
+
     await question.fill('Keep this draft');
     await page.getByRole('button', { name: 'Add block', exact: true }).click();
     await insertPicker
@@ -2478,14 +2632,53 @@ test('discovers a local exercise preview and submits typed exercise and source m
 
     await question.fill('Generate ');
     await question.press('/');
-    const promptPicker = page.getByRole('dialog', {
-        name: 'Add to prompt',
-        exact: true,
-    });
+    await expect(promptPicker).toBeVisible();
+
+    await promptPicker
+        .getByRole('button', { name: 'Texts', exact: true })
+        .click();
+
+    await expect(
+        promptPicker.getByRole('region', {
+            name: 'Search your Texts',
+            exact: true,
+        }),
+    ).toBeVisible();
+
+    await capture(page, info, 'contextual-prompt-texts-desktop');
+    await expect(
+        page.getByRole('dialog', { name: 'Search your Texts', exact: true }),
+    ).toHaveCount(0);
+
+    await promptPicker
+        .getByRole('button', { name: /Close (picker|menu|references)/u })
+        .click();
+
+    await expect(promptPicker).toBeHidden();
+
+    await question.fill('Generate ');
+    await question.press('/');
+    await expect(promptPicker).toBeVisible();
 
     await promptPicker
         .getByRole('button', { name: 'Exercises', exact: true })
         .click();
+
+    await capture(page, info, 'contextual-prompt-exercises-desktop');
+
+    const promptV02Preview = promptPicker.getByRole('button', {
+        name: 'Preview exercise: Choose the meaning',
+        exact: true,
+    });
+
+    await promptV02Preview.click();
+    await expect(preview).toBeVisible();
+    await preview
+        .getByRole('button', { name: 'Close exercise preview', exact: true })
+        .click();
+
+    await expect(promptPicker).toBeVisible();
+    await expect(promptV02Preview).toBeFocused();
 
     await promptPicker
         .getByRole('button', { name: /^V02\s+Choose the meaning/u })
@@ -2502,26 +2695,20 @@ test('discovers a local exercise preview and submits typed exercise and source m
         .getByRole('button', { name: 'Document blocks', exact: true })
         .click();
 
+    await capture(page, info, 'contextual-prompt-document-blocks-desktop');
+
     const blockSearch = promptPicker.getByLabel('Search document blocks', {
         exact: true,
     });
 
     await blockSearch.fill('Context source words');
     await blockSearch.press('Enter');
-    await expect(promptPicker).toBeVisible();
-    expect(turnRequests).toBe(0);
-
-    await promptPicker
-        .getByRole('button', { name: 'Document blocks', exact: true })
-        .click();
-
-    await promptPicker
-        .getByRole('button', { name: 'Context source words', exact: true })
-        .click();
-
+    await expect(promptPicker).toBeHidden();
     await expect(question.locator('[data-prompt-mention="block"]')).toHaveText(
         /Context source words/u,
     );
+
+    expect(turnRequests).toBe(0);
 
     await capture(page, info, 'contextual-exercise-composer-desktop');
 
@@ -2636,6 +2823,103 @@ test('discovers a local exercise preview and submits typed exercise and source m
     await expect(tutor.locator('[data-prompt-mention="block"]')).toHaveText(
         /Context source words/u,
     );
+
+    await page.context().addCookies([
+        { name: 'languon-locale', value: 'ru', url: origin },
+        { name: 'languon-theme', value: 'dark', url: origin },
+    ]);
+
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+    const russianEditor = page.locator(
+        '[data-workspace-editor] [role="textbox"]',
+    );
+
+    await russianEditor.focus();
+    await russianEditor.press('Meta+End');
+    await russianEditor.press('Enter');
+    await russianEditor.press('/');
+    const russianInsertPicker = page.getByRole('dialog', {
+        name: 'Вставить блок',
+        exact: true,
+    });
+
+    await expect(russianInsertPicker).toBeVisible();
+    await russianInsertPicker
+        .getByRole('button', { name: 'Упражнения', exact: true })
+        .click();
+
+    await expectCommandResultsFit(russianInsertPicker);
+    await capture(page, info, 'contextual-picker-russian-dark-desktop');
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expectCommandResultsFit(russianInsertPicker);
+    await capture(page, info, 'contextual-picker-russian-dark-mobile');
+
+    await russianInsertPicker
+        .getByRole('button', { name: 'Закрыть меню', exact: true })
+        .click();
+
+    await page.setViewportSize({ width: 1440, height: 1000 });
+
+    const russianQuestion = page.getByRole('textbox', {
+        name: 'Ваш вопрос',
+        exact: true,
+    });
+
+    await russianQuestion.fill('Создай ');
+    await russianQuestion.press('/');
+    const russianPromptPicker = page.getByRole('dialog', {
+        name: 'Добавить в запрос',
+        exact: true,
+    });
+
+    await expect(russianPromptPicker).toBeVisible();
+    await russianPromptPicker
+        .getByRole('button', { name: 'Упражнения', exact: true })
+        .click();
+
+    await expectCommandResultsFit(russianPromptPicker);
+    await capture(page, info, 'contextual-prompt-russian-dark-desktop');
+
+    await russianPromptPicker
+        .getByRole('button', { name: 'Закрыть меню', exact: true })
+        .click();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole('tab', { name: 'Репетитор', exact: true }).click();
+    await russianQuestion.fill('Создай ');
+    const mobileComposerBeforePicker = await russianQuestion.boundingBox();
+    await russianQuestion.press('/');
+    await expect(russianPromptPicker).toBeVisible();
+    const mobileComposerWithPicker = await russianQuestion.boundingBox();
+    const mobilePromptPickerBox = await russianPromptPicker.boundingBox();
+    if (
+        !mobileComposerBeforePicker ||
+        !mobileComposerWithPicker ||
+        !mobilePromptPickerBox
+    ) {
+        throw new Error('Expected mobile composer and prompt-picker geometry.');
+    }
+
+    expect(
+        Math.abs(
+            mobileComposerWithPicker.height - mobileComposerBeforePicker.height,
+        ),
+    ).toBeLessThanOrEqual(8);
+
+    expect(
+        mobilePromptPickerBox.y + mobilePromptPickerBox.height,
+    ).toBeLessThanOrEqual(mobileComposerWithPicker.y + 24);
+
+    await russianPromptPicker
+        .getByRole('button', { name: 'Упражнения', exact: true })
+        .click();
+
+    await expectCommandResultsFit(russianPromptPicker);
+    await capture(page, info, 'contextual-prompt-russian-dark-mobile');
 
     healthy();
 });

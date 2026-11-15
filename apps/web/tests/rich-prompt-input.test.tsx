@@ -30,6 +30,8 @@ function fixture() {
         contextDisabled: false,
         canSend: true,
         onContext: vi.fn(),
+        onDismissContext: vi.fn(),
+        onNavigateContext: vi.fn(),
         onSend: vi.fn(),
     };
     const hook = renderHook(
@@ -145,6 +147,51 @@ describe('real Tiptap workspace prompt input', () => {
         rerender({ ...props, contextOpen: true });
         fireEvent.keyDown(editor.view.dom, { key: 'Enter', code: 'Enter' });
         expect(props.onSend).toHaveBeenCalledTimes(1);
+    });
+
+    it('dismisses without consuming source typing, paste, pointer interaction or composition', async () => {
+        const { result, props, rerender } = fixture();
+        await waitFor(() => expect(result.current).not.toBeNull());
+        const editor = result.current!;
+        rerender({ ...props, contextOpen: true });
+
+        const allowed = fireEvent.keyDown(editor.view.dom, {
+            key: 'a',
+            code: 'KeyA',
+        });
+
+        expect(allowed).toBe(true);
+        expect(props.onDismissContext).toHaveBeenCalledTimes(1);
+        expect(props.onSend).not.toHaveBeenCalled();
+        props.onDismissContext.mockClear();
+        fireEvent.keyDown(editor.view.dom, { key: 'Tab', code: 'Tab' });
+        expect(props.onDismissContext).not.toHaveBeenCalled();
+        fireEvent.pointerDown(editor.view.dom);
+        expect(props.onDismissContext).toHaveBeenCalledTimes(1);
+        fireEvent.compositionStart(editor.view.dom);
+        expect(props.onDismissContext).toHaveBeenCalledTimes(2);
+        fireEvent.compositionEnd(editor.view.dom);
+        fireEvent.paste(editor.view.dom, {
+            clipboardData: { getData: () => 'copied passage' },
+        });
+
+        expect(props.onDismissContext).toHaveBeenCalledTimes(3);
+        expect(editor.getText()).toContain('copied passage');
+        expect(props.onSend).not.toHaveBeenCalled();
+    });
+
+    it('enters picker results with arrows and closes on Escape without sending', async () => {
+        const { result, props, rerender } = fixture();
+        await waitFor(() => expect(result.current).not.toBeNull());
+        rerender({ ...props, contextOpen: true });
+        const dom = result.current!.view.dom;
+        expect(fireEvent.keyDown(dom, { key: 'ArrowDown' })).toBe(false);
+        expect(props.onNavigateContext).toHaveBeenCalledWith('ArrowDown');
+        expect(fireEvent.keyDown(dom, { key: 'ArrowUp' })).toBe(false);
+        expect(props.onNavigateContext).toHaveBeenCalledWith('ArrowUp');
+        expect(fireEvent.keyDown(dom, { key: 'Escape' })).toBe(false);
+        expect(props.onDismissContext).toHaveBeenCalledTimes(1);
+        expect(props.onSend).not.toHaveBeenCalled();
     });
 
     it('copies readable labels and pastes external HTML only as unprivileged plain text', async () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ChangeEvent } from 'react';
+import { useId, useState, type ChangeEvent } from 'react';
 import { Eye } from 'lucide-react';
 import {
     exerciseActivityCatalog,
@@ -23,6 +23,7 @@ function ActivityRow({
     onChoose(id: ExerciseActivityId): void;
     onPreview(id: ExerciseActivityId): void;
 }) {
+    const descriptionId = useId();
     const display = activity.locales[locale];
     const previewLabel = `${exercisePreviewCopy(locale).preview}: ${display.name}`;
 
@@ -35,12 +36,19 @@ function ActivityRow({
     }
 
     return (
-        <li className={styles.row}>
-            <button type='button' className={styles.choose} onClick={choose}>
+        <li className={styles.row} data-command-row>
+            <button
+                type='button'
+                className={styles.choose}
+                onClick={choose}
+                data-command-item
+                aria-label={`${activity.id} ${display.name}`}
+                aria-describedby={descriptionId}
+            >
                 <span className={styles.code}>{activity.id}</span>{' '}
-                <span>
+                <span className={styles.label}>
                     <strong>{display.name}</strong>
-                    <span className={styles.description}>
+                    <span className={styles.description} id={descriptionId}>
                         {display.description}
                     </span>
                 </span>
@@ -63,6 +71,8 @@ export function ExerciseActivityBrowser({
     locale,
     query,
     hideSearch = false,
+    hideEmpty = false,
+    compact = false,
     onQueryChange,
     onChoose,
     onPreview,
@@ -70,6 +80,8 @@ export function ExerciseActivityBrowser({
     locale: Locale;
     query?: string;
     hideSearch?: boolean;
+    hideEmpty?: boolean;
+    compact?: boolean;
     onQueryChange?(value: string): void;
     onChoose(id: ExerciseActivityId): void;
     onPreview(id: ExerciseActivityId): void;
@@ -122,8 +134,12 @@ export function ExerciseActivityBrowser({
         );
     }
 
+    const rootClass = compact
+        ? `${styles.root} ${styles.compact}`
+        : styles.root;
+
     return (
-        <div className={styles.root}>
+        <div className={rootClass}>
             {!hideSearch && (
                 <Input
                     label={copy.search}
@@ -132,7 +148,9 @@ export function ExerciseActivityBrowser({
                     type='search'
                 />
             )}
-            {!activities.length && <p role='status'>{copy.empty}</p>}
+            {!hideEmpty && !activities.length && (
+                <p role='status'>{copy.empty}</p>
+            )}
             {categories.map(renderCategory)}
         </div>
     );

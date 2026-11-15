@@ -87,7 +87,7 @@ source_paths:
     - apps/backend/src/modules/conversations/application/exercise-picker-resolution.ts
     - apps/backend/src/modules/conversations/infrastructure/ai/exercise-source-resolution.ts
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposals.ts
-source_fingerprint: sha256:77115cc01fa01a12b95a2cfcdf4f48b034b3180f5042502285c816d97cd800ef
+source_fingerprint: sha256:489336c75ba5429f2e10304591ed15f53e27a46227392b5de825183f5292ed68
 reviewed: 2026-11-15
 ---
 

@@ -219,3 +219,106 @@ it('button insertion goes after selected prose instead of replacing it', () => {
     unmount();
     editor.destroy();
 });
+
+it('keeps slash invocation in the source and dismisses before native typing or composition', () => {
+    const editor = new Editor({ extensions: [StarterKit], content: '<p></p>' });
+    const { result, unmount } = renderHook(() =>
+        useEditorInsertPicker(editor, false),
+    );
+
+    document.body.append(editor.view.dom);
+    act(() => editor.view.dom.focus());
+    fireEvent.keyDown(editor.view.dom, { key: '/' });
+    expect(result.current.open).toBe(true);
+    expect(editor.view.hasFocus()).toBe(true);
+    const key = new KeyboardEvent('keydown', {
+        key: 'a',
+        bubbles: true,
+        cancelable: true,
+    });
+
+    act(() => editor.view.dom.dispatchEvent(key));
+    expect(key.defaultPrevented).toBe(false);
+    expect(result.current.open).toBe(false);
+    // JSDOM does not perform browser-native text insertion after a keydown.
+    act(() => editor.commands.insertContent('a '));
+    expect(editor.getText()).toBe('/a ');
+    fireEvent.keyDown(editor.view.dom, { key: '/' });
+    expect(result.current.open).toBe(true);
+    const composition = new CompositionEvent('compositionstart', {
+        bubbles: true,
+        cancelable: true,
+    });
+
+    act(() => editor.view.dom.dispatchEvent(composition));
+    expect(composition.defaultPrevented).toBe(false);
+    expect(result.current.open).toBe(false);
+    expect(editor.getText()).toBe('/a /');
+    editor.view.dom.remove();
+    unmount();
+    editor.destroy();
+});
+
+it('moves from the source to command choices with arrows and resumes typing at the captured caret', () => {
+    const editor = new Editor({
+        extensions: [StarterKit],
+        content: {
+            type: 'doc',
+            content: [
+                {
+                    type: 'paragraph',
+                    content: [{ type: 'text', text: 'Keep ' }],
+                },
+            ],
+        },
+    });
+    const { result, unmount } = renderHook(() =>
+        useEditorInsertPicker(editor, false),
+    );
+
+    document.body.append(editor.view.dom);
+    const panel = document.createElement('div');
+    const first = document.createElement('button');
+    const last = document.createElement('button');
+    first.dataset.commandItem = '';
+    last.dataset.commandItem = '';
+    panel.append(first, last);
+    document.body.append(panel);
+    result.current.panelRef.current = panel;
+    act(() => editor.commands.setTextSelection(6));
+    fireEvent.keyDown(editor.view.dom, { key: '/' });
+    fireEvent.keyDown(editor.view.dom, { key: 'ArrowDown' });
+    expect(first).toHaveFocus();
+    expect(result.current.open).toBe(true);
+    act(() => result.current.resumeTyping('x'));
+    expect(result.current.open).toBe(false);
+    expect(editor.getText()).toBe('Keep /x');
+    act(() => editor.view.dom.focus());
+    expect(editor.view.hasFocus()).toBe(true);
+    panel.remove();
+    editor.view.dom.remove();
+    unmount();
+    editor.destroy();
+});
+
+it('does not open a slash picker in a read-only editor', () => {
+    const editor = new Editor({
+        extensions: [StarterKit],
+        content: '<p></p>',
+        editable: false,
+    });
+    const { result, unmount } = renderHook(() =>
+        useEditorInsertPicker(editor, false),
+    );
+    const key = new KeyboardEvent('keydown', {
+        key: '/',
+        bubbles: true,
+        cancelable: true,
+    });
+
+    editor.view.dom.dispatchEvent(key);
+    expect(key.defaultPrevented).toBe(false);
+    expect(result.current.open).toBe(false);
+    unmount();
+    editor.destroy();
+});

@@ -7,6 +7,8 @@ surfaces:
     - browser
     - api
 source_paths:
+    - .agent/improvements/contextual-picker-polish.md
+    - apps/web/src/fsd/shared/ui/command-menu/command-menu.tsx
     - .agent/features/069-contextual-exercise-discovery/**
     - packages/contracts/src/conversation-prompt-mentions.ts
     - .agent/features/051-learner-portrait/**
@@ -134,6 +136,17 @@ configuration startup requires its guard and does not own this cleanup.
 ## Browser verification
 
 ### Contextual exercise discovery
+
+The editor and workspace chat use compact floating command menus. Chat opens above
+its composer; neither menu expands the writing area. Icon category rows lead to
+Basic/Learning blocks, exercises or references. Use the menu's search field to
+filter. `/` leaves focus in the writing area: continuing to type, paste or compose
+text dismisses the menu and preserves that input. Clicking back into the writing
+area also dismisses it. Arrow Down enters commands; Up/Down navigate, Enter
+activates a result, and Escape goes Back from a submenu or closes the root. Small
+Back/Close controls remain labelled for keyboard and screen-reader use. Preview
+returns to the same query, scroll position and control. Text search/details share
+this surface rather than opening a detached second popup.
 
 In an editable space, type `/` in ordinary text or use **Add block**. Browse Basic
 blocks, Learning blocks, Exercises and Library. Search exercise names or IDs;

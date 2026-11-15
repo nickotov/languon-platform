@@ -1,5 +1,8 @@
-import { Button } from '@/fsd/shared/ui';
-export function CommandRow<Value extends string>({
+import type { LucideIcon } from 'lucide-react';
+import { CommandMenuItem } from '@/fsd/shared/ui';
+import { editorCommandIcons } from '../../editor-command-icons';
+
+export function CommandRow<Value extends keyof typeof editorCommandIcons>({
     value,
     label,
     onSelect,
@@ -8,13 +11,16 @@ export function CommandRow<Value extends string>({
     label: string;
     onSelect(value: Value): void;
 }) {
+    const Icon: LucideIcon = editorCommandIcons[value];
     function select() {
         onSelect(value);
     }
 
     return (
-        <Button variant='ghost' onClick={select}>
-            {label}
-        </Button>
+        <CommandMenuItem
+            icon={<Icon size={17} aria-hidden='true' />}
+            label={label}
+            onSelect={select}
+        />
     );
 }

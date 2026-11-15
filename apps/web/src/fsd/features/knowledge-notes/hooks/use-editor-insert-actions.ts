@@ -1,10 +1,4 @@
-import {
-    useEffect,
-    useRef,
-    useState,
-    type ChangeEvent,
-    type KeyboardEvent,
-} from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import {
     getExerciseActivity,
@@ -12,6 +6,7 @@ import {
     type LearningBlock,
 } from '@languon/contracts';
 import { useI18n } from '@/fsd/shared/i18n';
+import { useEditorInsertNavigation } from './use-editor-insert-navigation';
 import { useEditorInsertPicker } from './use-editor-insert-picker';
 import { editorInsertCopy } from '../lib/editor-insert-copy';
 import type { BlockKind } from '../lib/learning-block-form';
@@ -27,10 +22,8 @@ export function useEditorInsertActions(
     const copy = editorInsertCopy(locale);
     const picker = useEditorInsertPicker(editor, disabled);
     const authoring = useBlockAuthoring()!;
-    const [level, setLevel] = useState<'root' | 'exercises' | 'activity'>(
-        'root',
-    );
-    const [query, setQuery] = useState('');
+    const navigation = useEditorInsertNavigation(picker.panelRef);
+    const { level, query, setQuery, enter, back, reset } = navigation;
     const [activityId, setActivityId] = useState<ExerciseActivityId>('V02');
     const [preview, setPreview] = useState<ExerciseActivityId | null>(null);
     const [error, setError] = useState(false);
@@ -38,37 +31,39 @@ export function useEditorInsertActions(
     const previewTrigger = useRef<HTMLElement | null>(null);
     useEffect(() => {
         if (picker.open) {
-            setLevel('root');
-            setQuery('');
+            reset();
             setError(false);
         }
     }, [picker.open]);
 
     function changeOpen(next: boolean) {
         if (next) {
-            setLevel('root');
-            setQuery('');
+            reset();
             picker.show();
         } else if (!preview && !libraryOpen) {
             picker.close();
         }
     }
 
-    function search(event: ChangeEvent<HTMLInputElement>) {
-        setQuery(event.target.value);
-    }
-
-    function back() {
-        setLevel(level === 'activity' ? 'exercises' : 'root');
+    function search(value: string) {
+        setQuery(value);
     }
 
     function exercises() {
-        setLevel('exercises');
+        enter('exercises');
+    }
+
+    function basics() {
+        enter('basic');
+    }
+
+    function learning() {
+        enter('learning');
     }
 
     function choose(id: ExerciseActivityId) {
         setActivityId(id);
-        setLevel('activity');
+        enter('activity');
     }
 
     function showPreview(id: ExerciseActivityId) {
@@ -79,7 +74,9 @@ export function useEditorInsertActions(
 
     function closePreview() {
         setPreview(null);
-        requestAnimationFrame(() => previewTrigger.current?.focus());
+        requestAnimationFrame(() =>
+            previewTrigger.current?.focus({ preventScroll: true }),
+        );
     }
 
     function showCurrentPreview() {
@@ -159,37 +156,6 @@ export function useEditorInsertActions(
         return true;
     }
 
-    function keyboard(event: KeyboardEvent<HTMLDivElement>) {
-        if (preview || libraryOpen || event.nativeEvent.isComposing) {
-            return;
-        }
-
-        if (event.key === 'ArrowLeft' && level !== 'root') {
-            event.preventDefault();
-            back();
-        }
-
-        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-            const buttons = Array.from(
-                event.currentTarget.querySelectorAll<HTMLButtonElement>(
-                    'button:not(:disabled)',
-                ),
-            );
-            const current = buttons.indexOf(
-                document.activeElement as HTMLButtonElement,
-            );
-            const next =
-                event.key === 'ArrowDown'
-                    ? (current + 1) % buttons.length
-                    : current <= 0
-                      ? buttons.length - 1
-                      : current - 1;
-
-            event.preventDefault();
-            buttons[next]?.focus();
-        }
-    }
-
     const normalized = query.trim().toLocaleLowerCase();
     const basic: Basic[] = [
         'paragraph',
@@ -255,10 +221,12 @@ export function useEditorInsertActions(
         openLibrary,
         closeLibrary,
         insertLibrary,
-        keyboard,
+        basics,
+        learning,
         basic,
         basicLabel,
         matches,
         applyBasic,
+        restoringFocus: navigation.restoringFocus,
     };
 }

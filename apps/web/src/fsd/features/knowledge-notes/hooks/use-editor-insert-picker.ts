@@ -9,30 +9,52 @@ import {
 /** Slash is actual user text until an insertion action is accepted. */
 export function useEditorInsertPicker(editor: Editor, disabled: boolean) {
     const [open, setOpen] = useState(false);
-    const [narrow, setNarrow] = useState(false);
-    useEffect(() => {
-        const media = window.matchMedia('(max-width: 767px)');
-        function update() {
-            setNarrow(media.matches);
-        }
-
-        update();
-        media.addEventListener('change', update);
-
-        return () => media.removeEventListener('change', update);
-    }, []);
-
     const target = useRef<EditorInsertionTarget | null>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const isOpen = useRef(open);
+    isOpen.current = open;
     const openedBySlash = useRef(false);
     function capture(from: number, to: number, slash: boolean) {
         openedBySlash.current = slash;
         target.current?.release();
         target.current = captureEditorInsertion(editor, from, to);
+        isOpen.current = true;
         setOpen(true);
     }
 
     useEffect(() => {
         function key(event: KeyboardEvent) {
+            if (isOpen.current) {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    close();
+
+                    return;
+                }
+
+                if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    const items =
+                        panelRef.current?.querySelectorAll<HTMLElement>(
+                            '[data-command-item]:not(:disabled)',
+                        );
+                    const item =
+                        event.key === 'ArrowDown'
+                            ? items?.[0]
+                            : items?.[items.length - 1];
+
+                    event.preventDefault();
+                    item?.focus();
+
+                    return;
+                }
+
+                // Ordinary typing stays in the source editor, including IME.
+                dismiss();
+
+                return;
+            }
+
             const target = event.target;
             if (
                 target instanceof HTMLElement &&
@@ -82,8 +104,31 @@ export function useEditorInsertPicker(editor: Editor, disabled: boolean) {
 
                         return event.defaultPrevented;
                     },
+                    handleTextInput() {
+                        dismiss();
+
+                        return false;
+                    },
+                    handleDOMEvents: {
+                        mousedown() {
+                            dismiss();
+
+                            return false;
+                        },
+                        compositionstart() {
+                            dismiss();
+
+                            return false;
+                        },
+                        paste() {
+                            dismiss();
+
+                            return false;
+                        },
+                    },
                 },
             }),
+            (plugin, plugins) => [plugin, ...plugins],
         );
 
         return () => {
@@ -95,7 +140,7 @@ export function useEditorInsertPicker(editor: Editor, disabled: boolean) {
 
     useEffect(() => () => target.current?.release(), []);
     function show() {
-        if (!disabled) {
+        if (!disabled && editor.isEditable) {
             capture(
                 editor.state.selection.to,
                 editor.state.selection.to,
@@ -104,20 +149,45 @@ export function useEditorInsertPicker(editor: Editor, disabled: boolean) {
         }
     }
 
-    function close() {
+    function dismiss() {
+        if (!isOpen.current) {
+            return;
+        }
+
+        isOpen.current = false;
         setOpen(false);
         target.current?.release();
         target.current = null;
+    }
+
+    function resumeTyping(text: string) {
+        const position =
+            target.current?.resolve()?.to ?? editor.state.selection.to;
+
+        dismiss();
+        editor
+            .chain()
+            .focus()
+            .setTextSelection(position)
+            .insertContent({ type: 'text', text })
+            .run();
+    }
+
+    function close() {
+        dismiss();
         // Button-invoked pickers delegate return focus to Popover/Dialog.
         // Slash has no DOM invoker, so return to the editor's preserved caret.
         if (openedBySlash.current) {
             editor.commands.focus();
+        } else if (!editor.view.hasFocus()) {
+            triggerRef.current?.focus({ preventScroll: true });
         }
     }
 
     function detach() {
         const value = target.current;
         target.current = null;
+        isOpen.current = false;
         setOpen(false);
 
         return value;
@@ -125,9 +195,11 @@ export function useEditorInsertPicker(editor: Editor, disabled: boolean) {
 
     return {
         open,
-        narrow,
         target,
         openedBySlash: openedBySlash.current,
+        panelRef,
+        triggerRef,
+        resumeTyping,
         show,
         close,
         detach,

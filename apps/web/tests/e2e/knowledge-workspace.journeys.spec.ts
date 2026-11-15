@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision knowledge-workspace sha256:9163b757c01e6b0b
+// @user-flow-revision knowledge-workspace sha256:4199c602e550087f
 
 type Share = { locator: string; key: string };
 
@@ -476,7 +476,7 @@ async function attachFullTextReference(page: Page, title: string) {
 
     if (await promptPicker.isVisible()) {
         await promptPicker
-            .getByRole('button', { name: 'Close picker', exact: true })
+            .getByRole('button', { name: 'Close menu', exact: true })
             .click();
     }
 
@@ -494,7 +494,7 @@ async function openTextReferencePicker(page: Page) {
         .getByRole('button', { name: 'Texts', exact: true })
         .click();
 
-    return page.getByRole('dialog', {
+    return blockPicker.getByRole('region', {
         name: 'Search your Texts',
         exact: true,
     });
@@ -935,13 +935,13 @@ test('the workspace Text picker accepts exactly the reference limit and rejects 
     ).toBeVisible();
 
     await expect(material.getByText('Rejected extra reference')).toHaveCount(0);
-    const promptPicker = tutor.getByRole('dialog', {
+    const promptPicker = page.getByRole('dialog', {
         name: 'Add to prompt',
         exact: true,
     });
 
     await promptPicker
-        .getByRole('button', { name: 'Close picker', exact: true })
+        .getByRole('button', { name: 'Close references', exact: true })
         .click();
 
     await expect(promptPicker).toBeHidden();

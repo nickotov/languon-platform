@@ -17,6 +17,7 @@ import styles from '../../../styles/popover-common.module.css';
 
 type PopoverSide = 'bottom' | 'left' | 'right' | 'top';
 export type PopoverContentProps = HTMLAttributes<HTMLDivElement> & {
+    dismissOnEscape?: boolean;
     autoFocus?: boolean;
     returnFocus?: boolean;
     closeOnFocusOut?: boolean;
@@ -29,6 +30,7 @@ export type PopoverContentProps = HTMLAttributes<HTMLDivElement> & {
 export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
     function PopoverContent(
         {
+            dismissOnEscape = true,
             autoFocus = true,
             returnFocus = true,
             closeOnFocusOut = true,
@@ -169,7 +171,7 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
                     return;
                 }
 
-                if (event.key !== 'Escape') {
+                if (event.key !== 'Escape' || !dismissOnEscape) {
                     return;
                 }
 
@@ -219,6 +221,7 @@ export const PopoverContent = forwardRef<HTMLDivElement, PopoverContentProps>(
             context.anchorElement,
             autoFocus,
             closeOnFocusOut,
+            dismissOnEscape,
             contentRef,
             isPositioned,
             mounted,

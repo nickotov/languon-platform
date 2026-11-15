@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import type { Editor } from '@tiptap/react';
 import { EditorContent } from '@tiptap/react';
 import {
     getExerciseActivity,
@@ -9,7 +10,7 @@ import {
 } from '@languon/contracts';
 import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
 import { ExerciseActivityPreview } from '@/fsd/entities/learning-blocks';
-import { Button } from '@/fsd/shared/ui';
+import { Button, PopoverAnchor, PopoverContent } from '@/fsd/shared/ui';
 import type { Locale } from '@/fsd/shared/i18n';
 import {
     serializePrompt,
@@ -19,6 +20,7 @@ import { promptCopy } from '../../../../lib/prompt-copy';
 import { usePromptSources } from '../../../../hooks/use-prompt-sources';
 import { usePromptExerciseRequest } from '../../../../hooks/use-prompt-exercise-request';
 import { useRichPromptEditor } from '../../../../hooks/use-rich-prompt-editor';
+import { usePromptPickerOverlay } from '../../../../hooks/use-prompt-picker-overlay';
 import { PromptPicker } from '../prompt-picker/prompt-picker';
 import styles from '../../../styles/contextual-assistant-prompt-common.module.css';
 
@@ -31,6 +33,7 @@ export function WorkspacePromptInput(props: {
     canSend: boolean;
     onSend(): void;
     contextOpen: boolean;
+    onPreviewOpenChange?: ((open: boolean) => void) | undefined;
     contextDisabled?: boolean;
     onContext(): void;
     onClose(): void;
@@ -42,13 +45,30 @@ export function WorkspacePromptInput(props: {
         | undefined;
     exerciseRequest?: SubmitConversationTurnRequest['exerciseRequest'];
 }) {
-    const [preview, setPreview] = useState<ExerciseActivityId | null>(null);
     const [limit, setLimit] = useState(false);
     const lastRequest = useRef<string | null>(null);
-    const previewTrigger = useRef<HTMLElement | null>(null);
     const selection = useRef<{ from: number; to: number } | null>(null);
     const copy = promptCopy(props.locale);
-    const editor = useRichPromptEditor(props, selection, showPreview);
+    const editorRef = useRef<Editor | null>(null);
+    const overlay = usePromptPickerOverlay({
+        editor: editorRef,
+        open: props.contextOpen,
+        onOpen: props.onContext,
+        onClose: props.onClose,
+        onPreviewOpenChange: props.onPreviewOpenChange,
+    });
+    const editor = useRichPromptEditor(
+        {
+            ...props,
+            onContext: overlay.openFromSlash,
+            onDismissContext: overlay.dismiss,
+            onNavigateContext: overlay.navigate,
+        },
+        selection,
+        overlay.showPreview,
+    );
+
+    editorRef.current = editor;
     function insertActivity(id: ExerciseActivityId, generate = false) {
         if (!editor) {
             return;
@@ -131,33 +151,12 @@ export function WorkspacePromptInput(props: {
         setLimit(false);
     }
 
-    function close() {
-        props.onClose();
-        editor?.commands.focus();
-    }
-
-    function showPreview(id: ExerciseActivityId) {
-        previewTrigger.current =
-            document.activeElement instanceof HTMLElement
-                ? document.activeElement
-                : null;
-
-        setPreview(id);
-    }
-
-    function closePreview() {
-        setPreview(null);
-        requestAnimationFrame(() =>
-            previewTrigger.current?.focus({ preventScroll: true }),
-        );
-    }
-
     function usePreview() {
-        if (preview) {
-            insertActivity(preview);
+        if (overlay.preview) {
+            insertActivity(overlay.preview);
         }
 
-        setPreview(null);
+        overlay.setPreview(null);
     }
 
     useEffect(() => {
@@ -193,28 +192,44 @@ export function WorkspacePromptInput(props: {
     const footer = <Button onClick={usePreview}>{copy.use}</Button>;
 
     return (
-        <div className={styles.root}>
-            {props.contextOpen && (
-                <div hidden={Boolean(preview)}>
-                    <PromptPicker
-                        locale={props.locale}
-                        blocks={props.blocks}
-                        texts={props.texts}
-                        onExercise={chooseExercise}
-                        onBlock={chooseBlock}
-                        onPreview={showPreview}
-                        onClose={close}
-                    />
-                </div>
-            )}
+        <div className={styles.root} ref={overlay.anchor}>
+            <PopoverAnchor
+                className={styles.anchor}
+                virtualRef={overlay.virtualAnchor}
+            />
+            <PopoverContent
+                ref={overlay.panel}
+                side='top'
+                align='start'
+                autoFocus={false}
+                returnFocus={false}
+                closeOnFocusOut={false}
+                dismissOnEscape={false}
+                className={styles.overlay}
+                aria-label={copy.title}
+                hidden={Boolean(overlay.preview)}
+            >
+                <PromptPicker
+                    locale={props.locale}
+                    blocks={props.blocks}
+                    texts={props.texts}
+                    keepSourceFocus={overlay.slash}
+                    onResumeTyping={overlay.resume}
+                    onExercise={chooseExercise}
+                    onBlock={chooseBlock}
+                    onPreview={overlay.showPreview}
+                    onClose={overlay.close}
+                />
+            </PopoverContent>
+
             {limit && <p role='alert'>{copy.limit}</p>}
             <EditorContent editor={editor} />
-            {preview && (
+            {overlay.preview && (
                 <ExerciseActivityPreview
-                    activityId={preview}
+                    activityId={overlay.preview}
                     locale={props.locale}
                     open
-                    onClose={closePreview}
+                    onClose={overlay.closePreview}
                     footer={footer}
                 />
             )}

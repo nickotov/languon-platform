@@ -36,7 +36,7 @@ source_paths:
     - apps/backend/src/modules/administration/infrastructure/ai-catalog/tool-definitions.ts
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source.ts
     - apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts
-source_fingerprint: sha256:2156f30dcd6ed1176aa12303363428994ca84c0f333b7c16faee2d2cda3b4932
+source_fingerprint: sha256:c42c9629d750ef8293e8a0cadbfc079e3fef9d111a28dda68eb30a90c8279514
 reviewed: 2026-11-15
 ---
 
