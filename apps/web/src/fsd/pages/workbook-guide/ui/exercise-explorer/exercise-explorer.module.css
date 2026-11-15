@@ -1,5 +1,10 @@
 .root {
     display: grid;
+    min-width: 0;
+}
+
+.content {
+    display: grid;
     gap: var(--space-24);
     min-width: 0;
 }
@@ -8,6 +13,9 @@
     display: flex;
     align-items: start;
     gap: var(--space-16);
+    scroll-margin-block-start: calc(
+        var(--app-topbar-height, 0px) + var(--space-24)
+    );
 }
 
 .identity h2 {
@@ -27,16 +35,26 @@
 .code {
     padding: var(--space-8) var(--space-12);
     border-radius: var(--radius-8);
-    background: var(--background-subtle);
+    background: var(--primary-subtle);
+    color: var(--primary-default);
     font-size: var(--size-14);
     font-weight: 600;
     flex-shrink: 0;
 }
 
+.category {
+    display: block;
+    margin-block-end: var(--space-8);
+    color: var(--primary-default);
+    font-size: var(--size-12);
+    font-weight: 600;
+}
+
 .source {
-    padding: var(--space-20);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-12);
+    padding: var(--space-16);
+    border-inline-start: var(--size-3) solid var(--primary-default);
+    border-radius: var(--radius-8);
+    background: var(--background-surface);
 }
 
 .demo,
@@ -56,6 +74,13 @@
     font-size: var(--size-18);
 }
 
+.explanation {
+    padding: var(--space-16) var(--space-20);
+    border-inline-start: var(--size-3) solid var(--primary-default);
+    border-radius: var(--radius-8);
+    background: var(--primary-subtle);
+}
+
 .recipes {
     display: grid;
     gap: var(--space-24);
@@ -70,4 +95,17 @@
 
 .recipes > div {
     scroll-margin-top: var(--space-24);
+}
+
+@container workbook-guide (min-width: 880px) {
+    .root {
+        grid-template-columns: minmax(0, 1fr) var(--size-240);
+        gap: var(--space-40);
+        align-items: start;
+    }
+
+    .content {
+        grid-column: 1;
+        grid-row: 1;
+    }
 }

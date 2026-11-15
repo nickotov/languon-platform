@@ -34,6 +34,37 @@ describe('workbook guide practice', () => {
         expect(
             demo.queryByRole('button', { name: 'Check with AI' }),
         ).not.toBeInTheDocument();
+
+        const navigation = within(
+            screen.getByRole('navigation', { name: 'Activities' }),
+        );
+
+        expect(navigation.getAllByRole('button')).toHaveLength(19);
+        for (const category of guideUiCopy('en').categories) {
+            expect(navigation.getByText(category)).toBeInTheDocument();
+        }
+
+        expect(
+            navigation.getByRole('button', { name: /^V07\s/u }),
+        ).toHaveAttribute('aria-pressed', 'true');
+
+        fireEvent.click(navigation.getByRole('button', { name: /^V02\s/u }));
+        expect(screen.getByLabelText('Activity')).toHaveValue('V02');
+        expect(
+            navigation.getByRole('button', { name: /^V02\s/u }),
+        ).toHaveAttribute('aria-pressed', 'true');
+
+        expect(
+            navigation.getByRole('button', { name: /^V07\s/u }),
+        ).toHaveAttribute('aria-pressed', 'false');
+
+        expect(
+            demo.getByRole('radio', { name: 'Give something back' }),
+        ).not.toBeChecked();
+
+        expect(new URL(window.location.href).searchParams.get('activity')).toBe(
+            'V02',
+        );
     });
 
     it('keeps arbitrary typed answers separate from preset feedback', () => {
@@ -63,6 +94,29 @@ describe('workbook guide practice', () => {
         ).not.toBeInTheDocument();
 
         expect(demo.getByRole('textbox')).toHaveValue('My arbitrary response');
+
+        const navigation = within(
+            screen.getByRole('navigation', { name: 'Activities' }),
+        );
+
+        fireEvent.click(navigation.getByRole('button', { name: /^V07\s/u }));
+        expect(screen.getByLabelText('Activity')).toHaveValue('V07');
+        expect(demo.getByRole('textbox')).toHaveValue('');
+        expect(
+            screen
+                .getByTestId('sample-feedback')
+                .querySelector('[data-outcome]'),
+        ).not.toBeInTheDocument();
+
+        fireEvent.change(screen.getByLabelText('Activity'), {
+            target: { value: 'R04' },
+        });
+
+        expect(
+            navigation.getByRole('button', { name: /^R04\s/u }),
+        ).toHaveAttribute('aria-pressed', 'true');
+
+        expect(demo.getByRole('textbox')).toHaveValue('');
     });
 
     it('preserves selectable content when clipboard is denied', async () => {

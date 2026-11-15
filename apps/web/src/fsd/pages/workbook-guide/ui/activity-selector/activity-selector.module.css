@@ -1,0 +1,123 @@
+.root {
+    min-width: 0;
+}
+
+.dock {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 20;
+    padding: var(--space-12) var(--space-16)
+        calc(var(--space-12) + env(safe-area-inset-bottom, 0px));
+    border-block-start: 1px solid var(--border-default);
+    background: var(--background-surface);
+}
+
+.navigation {
+    display: none;
+}
+
+.title {
+    margin: 0;
+    font-size: var(--size-14);
+    font-weight: 650;
+    color: var(--text-primary);
+}
+
+.subtitle {
+    margin: var(--space-4) 0 var(--space-20);
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+    line-height: 1.5;
+}
+
+.group + .group {
+    margin-block-start: var(--space-16);
+}
+
+.group h3 {
+    margin: 0 0 var(--space-8);
+    padding-inline: var(--space-12);
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+    font-weight: 600;
+}
+
+.list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.activity {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-8);
+    width: 100%;
+    min-height: var(--size-44);
+    padding: var(--space-12);
+    border: 0;
+    border-inline-start: var(--size-2) solid transparent;
+    border-radius: var(--radius-6);
+    background: transparent;
+    color: var(--text-secondary);
+    text-align: start;
+    font: inherit;
+    font-size: var(--size-13);
+    line-height: 1.5;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+}
+
+.activity:hover {
+    background: var(--background-subtle);
+    color: var(--text-primary);
+}
+
+.activity[aria-pressed='true'] {
+    border-inline-start-color: var(--primary-default);
+    background: var(--primary-subtle);
+    color: var(--primary-default);
+    font-weight: 600;
+}
+
+.activity:focus-visible {
+    outline: var(--size-2) solid var(--border-focus);
+    outline-offset: var(--size-2);
+}
+
+.code {
+    flex-shrink: 0;
+    font-size: var(--size-11);
+    font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 768px) {
+    .dock {
+        inset-inline-start: var(--app-sidebar-width, 0px);
+    }
+}
+
+@container workbook-guide (min-width: 880px) {
+    .root {
+        grid-column: 2;
+        grid-row: 1;
+        position: sticky;
+        top: var(--space-24);
+        align-self: start;
+        max-height: calc(100dvh - var(--space-48));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        padding: var(--space-4) var(--space-8) var(--space-4) var(--space-20);
+        border-inline-start: 1px solid var(--border-default);
+    }
+
+    .dock {
+        display: none;
+    }
+
+    .navigation {
+        display: block;
+    }
+}

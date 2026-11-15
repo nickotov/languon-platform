@@ -1,3 +1,4 @@
+import { Sparkles } from 'lucide-react';
 import type { Locale } from '@/fsd/shared/i18n';
 import { Breadcrumb, ButtonLink } from '@/fsd/shared/ui';
 import { guideActivities } from '../../lib/examples';
@@ -19,13 +20,17 @@ export function WorkbookExercisesPage({
     ];
 
     return (
-        <main className={styles.main}>
+        <main className={`${styles.main} ${styles.exercisesPage}`}>
             <Breadcrumb items={breadcrumbs} />
             <header className={styles.hero}>
+                <span className={styles.eyebrow}>
+                    <Sparkles size={16} aria-hidden='true' />
+                    {copy.formats}
+                </span>
                 <h1>{copy.chapter}</h1>
                 <p className={styles.lead}>{copy.chapterIntro}</p>
+                <p className={styles.notice}>{copy.notice}</p>
             </header>
-            <p className={styles.notice}>{copy.notice}</p>
             <ExerciseExplorer
                 locale={locale}
                 activities={guideActivities(locale)}

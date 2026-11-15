@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// @user-flow-revision workbook-guide sha256:5acc44d74c7aa08c
+// @user-flow-revision workbook-guide sha256:7d79ec5951084567
 const writes = new WeakMap<Page, string[]>();
 const errors = new WeakMap<Page, string[]>();
 
@@ -9,6 +9,19 @@ async function captureViewport(page: Page, name: string) {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png',
     });
+}
+
+function activityButton(page: Page, id: string) {
+    return page
+        .getByRole('navigation', { name: 'Activities', exact: true })
+        .getByRole('button', { name: new RegExp(`^${id}\\s`, 'u') });
+}
+
+async function selectDesktopActivity(page: Page, id: string) {
+    const button = activityButton(page, id);
+    await button.click();
+    await expect(button).toHaveAttribute('aria-pressed', 'true');
+    await expect(page).toHaveURL(new RegExp(`[?&]activity=${id}(?:&|$)`, 'u'));
 }
 
 test.beforeEach(async ({ page }) => {
@@ -59,28 +72,83 @@ test('guests discover the guide and use real prepared checks without saved attem
 
     await page.locator('main a[href="/workbook/exercises"]').first().click();
     await expect(page).toHaveURL(/\/workbook\/exercises$/u);
-    const activity = page.getByRole('combobox', {
-        name: 'Activity',
+    const navigation = page.getByRole('navigation', {
+        name: 'Activities',
         exact: true,
     });
 
-    await expect(activity).toHaveValue('V02');
-    const options = await activity
-        .locator('option')
+    await expect(navigation).toBeVisible();
+    await expect(
+        page.getByRole('combobox', { name: 'Activity', exact: true }),
+    ).toBeHidden();
+
+    await expect(activityButton(page, 'V02')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+    );
+
+    const navigationBounds = await navigation.boundingBox();
+    const exampleBounds = await page.getByTestId('workbook-demo').boundingBox();
+
+    expect(navigationBounds).not.toBeNull();
+    expect(exampleBounds).not.toBeNull();
+    expect(navigationBounds!.x).toBeGreaterThanOrEqual(
+        exampleBounds!.x + exampleBounds!.width,
+    );
+
+    const options = await navigation
+        .getByRole('button')
         .evaluateAll((items) =>
-            items.map((item) => (item as HTMLOptionElement).value),
+            items.map(
+                (item) => item.textContent!.trim().match(/^[A-Z]\d{2}/u)![0],
+            ),
         );
 
     expect(options).toHaveLength(19);
-    await expect(activity.locator('optgroup')).toHaveCount(4);
+    for (const category of ['Vocabulary', 'Grammar', 'Reading', 'Writing']) {
+        await expect(
+            navigation.getByText(category, { exact: true }),
+        ).toBeVisible();
+    }
 
     for (const id of options) {
-        await activity.selectOption(id);
-        await expect(activity).toHaveValue(id);
+        await selectDesktopActivity(page, id);
         await expect(page.getByTestId('workbook-demo')).toHaveCount(1);
     }
 
-    await activity.selectOption('V02');
+    // Native buttons remain keyboard operable, including after scrolling the TOC.
+    await activityButton(page, 'V02').focus();
+    await activityButton(page, 'V02').press('Enter');
+    await expect(activityButton(page, 'V02')).toBeFocused();
+    await expect(activityButton(page, 'V02')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+    );
+
+    await page.evaluate(() => window.scrollTo(0, 500));
+    const stickyNavigation = page
+        .getByTestId('workbook-activity-navigation')
+        .locator('..');
+    const firstScroll = await page.evaluate(() => window.scrollY);
+    const stickyTop = await stickyNavigation.evaluate(
+        (element) => element.getBoundingClientRect().top,
+    );
+
+    await page.evaluate(() => window.scrollBy(0, 350));
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(
+        firstScroll + 300,
+    );
+
+    await expect
+        .poll(() =>
+            stickyNavigation.evaluate(
+                (element) => element.getBoundingClientRect().top,
+            ),
+        )
+        .toBeCloseTo(stickyTop, 0);
+
+    await captureViewport(page, 'guide-sticky-navigation-desktop');
+
     const demo = page.getByTestId('workbook-demo');
     await demo.getByText('Buy something new', { exact: true }).click();
     await expect(
@@ -139,13 +207,54 @@ test('guests discover the guide and use real prepared checks without saved attem
 test('hybrid alternatives stay unchecked and AI feedback belongs to a preset response', async ({
     page,
 }) => {
-    await page.goto('/workbook/exercises?activity=V03');
-    const activity = page.getByRole('combobox', {
-        name: 'Activity',
-        exact: true,
-    });
+    await page.setViewportSize({ width: 1440, height: 620 });
+    await page.goto('/workbook/exercises?activity=W01');
+    const selectedTranslation = activityButton(page, 'W01');
 
-    await expect(activity).toHaveValue('V03');
+    await expect(selectedTranslation).toHaveAttribute('aria-pressed', 'true');
+    // Observe internal reveal before clicking or scrolling any activity button.
+    await expect
+        .poll(() =>
+            selectedTranslation.evaluate((element) => {
+                const bounds = element
+                    .closest('aside')!
+                    .getBoundingClientRect();
+                const active = element.getBoundingClientRect();
+
+                return Math.min(
+                    active.top - bounds.top,
+                    bounds.bottom - active.bottom,
+                );
+            }),
+        )
+        .toBeGreaterThanOrEqual(-1);
+
+    await expect
+        .poll(() =>
+            page
+                .getByTestId('workbook-activity-navigation')
+                .locator('..')
+                .evaluate((element) => element.scrollTop),
+        )
+        .toBeGreaterThan(0);
+
+    // Bring the sticky navigator into the viewport without changing its internal scroll.
+    await page
+        .getByTestId('workbook-activity-navigation')
+        .locator('..')
+        .evaluate((element) =>
+            window.scrollBy(0, element.getBoundingClientRect().top - 24),
+        );
+
+    await expect(selectedTranslation).toBeInViewport({ ratio: 1 });
+    await captureViewport(page, 'guide-deep-link-short-desktop');
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto('/workbook/exercises?activity=V03');
+    await expect(activityButton(page, 'V03')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+    );
+
     const demo = page.getByTestId('workbook-demo');
     const answer = demo.getByRole('textbox');
     await answer.fill('invented alternative');
@@ -165,7 +274,7 @@ test('hybrid alternatives stay unchecked and AI feedback belongs to a preset res
 
     await expect(demo.locator('[data-correct="true"]')).toBeVisible();
 
-    await activity.selectOption('V07');
+    await selectDesktopActivity(page, 'V07');
     const arbitrary = 'My own answer must never receive canned feedback.';
     await demo.getByRole('textbox').fill(arbitrary);
     await expect(
@@ -197,9 +306,9 @@ test('hybrid alternatives stay unchecked and AI feedback belongs to a preset res
         page.getByTestId('sample-feedback').locator('[data-outcome]'),
     ).toHaveCount(0);
 
-    await activity.selectOption('V03');
+    await selectDesktopActivity(page, 'V03');
     await expect(demo.getByRole('textbox')).toHaveValue('');
-    await activity.selectOption('R04');
+    await selectDesktopActivity(page, 'R04');
     const incorrectSample = page.getByTestId('sample-feedback');
     await incorrectSample
         .getByRole('combobox', { name: 'Sample response', exact: true })
@@ -218,7 +327,10 @@ test('hybrid alternatives stay unchecked and AI feedback belongs to a preset res
     ).toBeVisible();
 
     await page.goto('/workbook/exercises?activity=not-an-activity');
-    await expect(activity).toHaveValue('V02');
+    await expect(activityButton(page, 'V02')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+    );
 });
 
 // @user-flow workbook-guide/prompt-copy-and-responsive-guide
@@ -252,26 +364,166 @@ test('prompts copy useful source text and the guide works in dark narrow and mem
         ),
     ).toBe(true);
 
-    for (const viewport of [
-        { width: 390, height: 844 },
-        { width: 768, height: 1024 },
-    ]) {
-        await page.setViewportSize(viewport);
-        expect(
-            await page.evaluate(
-                () => document.documentElement.scrollWidth <= window.innerWidth,
-            ),
-        ).toBe(true);
+    for (const theme of ['dark', 'light']) {
+        await context.addCookies([
+            {
+                name: 'languon-theme',
+                value: theme,
+                url: 'http://localhost:3336',
+            },
+        ]);
 
-        await page.evaluate(() => window.scrollTo(0, 0));
-        await captureViewport(page, `guide-dark-top-${viewport.width}`);
-        await page
-            .getByRole('button', { name: 'Copy source', exact: true })
-            .scrollIntoViewIfNeeded();
+        for (const viewport of [
+            { width: 390, height: 844 },
+            { width: 768, height: 1024 },
+        ]) {
+            await page.setViewportSize(viewport);
+            await page.goto('/workbook/exercises?activity=V02');
+            await expect(page.locator('html')).toHaveAttribute(
+                'data-theme',
+                theme,
+            );
 
-        await captureViewport(page, `guide-dark-source-${viewport.width}`);
-        await page.locator('#recipe-specific').scrollIntoViewIfNeeded();
-        await captureViewport(page, `guide-dark-recipe-${viewport.width}`);
+            const activity = page.getByRole('combobox', {
+                name: 'Activity',
+                exact: true,
+            });
+            const dock = page.getByTestId('workbook-activity-dock');
+            await expect(activity).toBeVisible();
+            await expect(
+                page.getByTestId('workbook-activity-navigation'),
+            ).toBeHidden();
+
+            await expect(activity.locator('option')).toHaveCount(19);
+            await expect(activity.locator('optgroup')).toHaveCount(4);
+            await activity.focus();
+            await expect(activity).toBeFocused();
+            // Native type-ahead works without depending on the OS popup's arrow handling.
+            await activity.press('w');
+            await expect(activity).toHaveValue('W01');
+            await expect(page).toHaveURL(/[?&]activity=W01(?:&|$)/u);
+            await activity.press('Tab');
+            await expect(activity).not.toBeFocused();
+
+            await activity.selectOption('V02');
+            await expect(activity).toHaveValue('V02');
+            if (viewport.width === 390) {
+                const identity = page
+                    .getByRole('heading', {
+                        name: 'Choose the meaning',
+                        exact: true,
+                        level: 2,
+                    })
+                    .locator('xpath=ancestor::section[1]');
+
+                await identity.evaluate((element) =>
+                    window.scrollBy(
+                        0,
+                        element.getBoundingClientRect().top - 24,
+                    ),
+                );
+
+                await expect
+                    .poll(() =>
+                        identity.evaluate(
+                            (element) => element.getBoundingClientRect().top,
+                        ),
+                    )
+                    .toBeCloseTo(24, 0);
+
+                // Keep the identity partially behind the fixed header before switching.
+                await activity.selectOption('V03');
+                const nextIdentity = page
+                    .getByRole('heading', {
+                        name: 'Complete the sentence',
+                        exact: true,
+                        level: 2,
+                    })
+                    .locator('xpath=ancestor::section[1]');
+
+                await expect
+                    .poll(() =>
+                        nextIdentity.evaluate(
+                            (element) => element.getBoundingClientRect().top,
+                        ),
+                    )
+                    .toBeGreaterThanOrEqual(56);
+
+                await captureViewport(
+                    page,
+                    `guide-${theme}-switch-header-clearance-${viewport.width}`,
+                );
+
+                await activity.selectOption('V02');
+            }
+
+            expect(
+                await page.evaluate(
+                    () =>
+                        document.documentElement.scrollWidth <=
+                        window.innerWidth,
+                ),
+            ).toBe(true);
+
+            await page.evaluate(() => window.scrollTo(0, 0));
+            await captureViewport(page, `guide-${theme}-top-${viewport.width}`);
+            const dockTop = await dock.evaluate(
+                (element) => element.getBoundingClientRect().top,
+            );
+
+            await page
+                .getByRole('button', { name: 'Copy source', exact: true })
+                .scrollIntoViewIfNeeded();
+
+            await expect
+                .poll(() =>
+                    dock.evaluate(
+                        (element) => element.getBoundingClientRect().top,
+                    ),
+                )
+                .toBeCloseTo(dockTop, 0);
+
+            await captureViewport(
+                page,
+                `guide-${theme}-source-${viewport.width}`,
+            );
+
+            await page.locator('#recipe-specific').scrollIntoViewIfNeeded();
+            await captureViewport(
+                page,
+                `guide-${theme}-recipe-${viewport.width}`,
+            );
+
+            await page.evaluate(() =>
+                window.scrollTo(0, document.documentElement.scrollHeight),
+            );
+
+            const lastCopy = page
+                .getByRole('button', {
+                    name: 'Copy prompt and source',
+                    exact: true,
+                })
+                .last();
+
+            await expect(lastCopy).toBeInViewport();
+            const copyBounds = await lastCopy.boundingBox();
+            const dockBounds = await dock.boundingBox();
+            expect(copyBounds).not.toBeNull();
+            expect(dockBounds).not.toBeNull();
+            expect(copyBounds!.y + copyBounds!.height).toBeLessThanOrEqual(
+                dockBounds!.y,
+            );
+
+            expect(dockBounds!.y + dockBounds!.height).toBeLessThanOrEqual(
+                viewport.height + 1,
+            );
+
+            await lastCopy.click();
+            await captureViewport(
+                page,
+                `guide-${theme}-last-recipe-${viewport.width}`,
+            );
+        }
     }
 
     await page.setViewportSize({ width: 390, height: 844 });

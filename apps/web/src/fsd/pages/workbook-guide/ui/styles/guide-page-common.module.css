@@ -15,6 +15,33 @@
     gap: var(--space-12);
 }
 
+.exercisesPage {
+    container: workbook-guide / inline-size;
+    max-width: var(--size-1232);
+    padding-block-end: calc(var(--size-160) + env(safe-area-inset-bottom, 0px));
+    gap: var(--space-24);
+}
+
+.exercisesPage .hero {
+    max-width: var(--size-736);
+}
+
+.exercisesPage .eyebrow {
+    justify-self: start;
+    color: var(--primary-default);
+    background: var(--primary-subtle);
+    border-radius: var(--radius-999);
+    padding: var(--space-6) var(--space-12);
+    letter-spacing: normal;
+}
+
+.exercisesPage .notice {
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    font-size: var(--size-12);
+}
+
 .hero h1 {
     margin: 0;
     font-size: var(--size-36);
@@ -126,6 +153,12 @@
 @media (min-width: 640px) {
     .main {
         padding: var(--space-40) var(--space-32) var(--space-64);
+    }
+
+    .exercisesPage {
+        padding-block-end: calc(
+            var(--size-160) + env(safe-area-inset-bottom, 0px)
+        );
     }
 }
 

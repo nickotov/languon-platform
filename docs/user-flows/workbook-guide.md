@@ -2,7 +2,7 @@
 feature: workbook-guide
 title: Workbook guide
 status: current
-last_verified: 2026-11-14
+last_verified: 2026-11-15
 surfaces:
     - browser
 source_paths:
@@ -69,7 +69,9 @@ it must not create learning content or AI work.
    guide routes and inactive on `/workbooks`. Signed-in navigation retains the
    same static entry outside its private Library. Collapsing the desktop sidebar
    retains its accessible label; a narrow drawer closes after following it.
-2. Use the **Activity** selector. Its four groups contain 19 activities. Select
+2. On wide desktop layouts, use the grouped **Exercises** navigator on the right.
+   It stays available while scrolling and marks the selected exercise. On smaller
+   layouts, use the bottom **Activity** selector. Its four groups contain 19 activities. Select
    a prepared multiple-choice response and choose **Check answer**. Observe actual
    local correct/incorrect feedback. **Reset example** clears that example's
    current answer and feedback. Reloading does not restore a saved attempt.
@@ -85,10 +87,13 @@ it must not create learning content or AI work.
    recipes. Follow **Knowledge** only when ready to create your own material;
    this is an ordinary navigation link and creates no automatic draft. Review,
    insert and explicitly save generated material in the real workspace.
-6. Repeat the chapter at a 390px viewport and in dark theme. Labels, source,
-   controls, feedback and recipes remain readable with no horizontal overflow.
-   Keyboard focus reaches the selector, answer, check/reset and copy controls.
-   Observe browser console failures and all unexpected mutation/model requests.
+6. Repeat the chapter at 390px and 768px viewport widths in light and dark
+   themes. The bottom Activity selector stays visible while scrolling; source,
+   recipe and final copy controls remain above it. Switch exercises after scrolling
+   and confirm the selected heading clears the top bar. On a short desktop viewport,
+   open a direct W01 link and confirm its selected entry is visible in the right
+   navigator. Labels, answer and check/reset controls remain reachable. Observe the
+   browser console and all unexpected mutation/model requests.
 
 ## E2E coverage
 
