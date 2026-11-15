@@ -70,7 +70,9 @@ it must not create learning content or AI work.
    same static entry outside its private Library. Collapsing the desktop sidebar
    retains its accessible label; a narrow drawer closes after following it.
 2. On wide desktop layouts, use the grouped **Exercises** navigator on the right.
-   It stays available while scrolling and marks the selected exercise. On smaller
+   It aligns alongside the chapter header and exercise content, stays available
+   while scrolling, and marks the selected exercise. Its scrollable height is
+   capped at 70vh. On smaller
    layouts, use the bottom **Activity** selector. Its four groups contain 19 activities. Select
    a prepared multiple-choice response and choose **Check answer**. Observe actual
    local correct/incorrect feedback. **Reset example** clears that example's

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// @user-flow-revision workbook-guide sha256:7d79ec5951084567
+// @user-flow-revision workbook-guide sha256:5de6bfaafbfb1e8e
 const writes = new WeakMap<Page, string[]>();
 const errors = new WeakMap<Page, string[]>();
 
@@ -85,6 +85,19 @@ test('guests discover the guide and use real prepared checks without saved attem
     await expect(activityButton(page, 'V02')).toHaveAttribute(
         'aria-pressed',
         'true',
+    );
+
+    const asideBounds = await navigation.locator('..').boundingBox();
+    const heroBounds = await page
+        .getByRole('heading', { name: 'Exercises', level: 1, exact: true })
+        .locator('..')
+        .boundingBox();
+
+    expect(asideBounds).not.toBeNull();
+    expect(heroBounds).not.toBeNull();
+    expect(asideBounds!.y).toBeCloseTo(heroBounds!.y, 0);
+    expect(asideBounds!.height).toBeLessThanOrEqual(
+        page.viewportSize()!.height * 0.7 + 1,
     );
 
     const navigationBounds = await navigation.boundingBox();

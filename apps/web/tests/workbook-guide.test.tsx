@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
-import { ExerciseExplorer } from '../src/fsd/pages/workbook-guide/ui/exercise-explorer/exercise-explorer';
+import { WorkbookExercisesLayout } from '../src/fsd/pages/workbook-guide/ui/workbook-exercises-layout/workbook-exercises-layout';
 import { guideActivities } from '../src/fsd/pages/workbook-guide/lib/examples';
 import { PromptRecipe } from '../src/fsd/pages/workbook-guide/ui/prompt-recipe/prompt-recipe';
 import { guideUiCopy } from '../src/fsd/pages/workbook-guide/ui/copy';
@@ -10,17 +10,17 @@ afterEach(cleanup);
 const activities = guideActivities('en');
 describe('workbook guide practice', () => {
     it('checks a prepared answer locally and clears it on reset and switch', () => {
-        render(<ExerciseExplorer locale='en' activities={activities} />);
-        const demo = within(screen.getByTestId('workbook-demo'));
+        render(<WorkbookExercisesLayout locale='en' activities={activities} />);
+        const demo = () => within(screen.getByTestId('workbook-demo'));
         fireEvent.click(
-            demo.getByRole('radio', { name: 'Give something back' }),
+            demo().getByRole('radio', { name: 'Give something back' }),
         );
 
-        fireEvent.click(demo.getByRole('button', { name: 'Check answer' }));
-        expect(demo.getAllByText('Correct').length).toBeGreaterThan(0);
-        fireEvent.click(demo.getByRole('button', { name: 'Reset example' }));
+        fireEvent.click(demo().getByRole('button', { name: 'Check answer' }));
+        expect(demo().getAllByText('Correct').length).toBeGreaterThan(0);
+        fireEvent.click(demo().getByRole('button', { name: 'Reset example' }));
         expect(
-            demo.getByRole('radio', { name: 'Give something back' }),
+            demo().getByRole('radio', { name: 'Give something back' }),
         ).not.toBeChecked();
 
         fireEvent.change(screen.getByLabelText('Activity'), {
@@ -28,11 +28,11 @@ describe('workbook guide practice', () => {
         });
 
         expect(
-            demo.queryByRole('button', { name: 'Check answer' }),
+            demo().queryByRole('button', { name: 'Check answer' }),
         ).not.toBeInTheDocument();
 
         expect(
-            demo.queryByRole('button', { name: 'Check with AI' }),
+            demo().queryByRole('button', { name: 'Check with AI' }),
         ).not.toBeInTheDocument();
 
         const navigation = within(
@@ -59,7 +59,7 @@ describe('workbook guide practice', () => {
         ).toHaveAttribute('aria-pressed', 'false');
 
         expect(
-            demo.getByRole('radio', { name: 'Give something back' }),
+            demo().getByRole('radio', { name: 'Give something back' }),
         ).not.toBeChecked();
 
         expect(new URL(window.location.href).searchParams.get('activity')).toBe(
@@ -69,15 +69,15 @@ describe('workbook guide practice', () => {
 
     it('keeps arbitrary typed answers separate from preset feedback', () => {
         render(
-            <ExerciseExplorer
+            <WorkbookExercisesLayout
                 locale='en'
                 activities={activities}
                 initialActivity='R04'
             />,
         );
 
-        const demo = within(screen.getByTestId('workbook-demo'));
-        fireEvent.change(demo.getByRole('textbox'), {
+        const demo = () => within(screen.getByTestId('workbook-demo'));
+        fireEvent.change(demo().getByRole('textbox'), {
             target: { value: 'My arbitrary response' },
         });
 
@@ -88,12 +88,14 @@ describe('workbook guide practice', () => {
         const panel = within(screen.getByTestId('sample-feedback'));
         expect(panel.getByText(/This prepared feedback/)).toBeInTheDocument();
         expect(
-            demo.queryByText(
+            demo().queryByText(
                 'The response completes the task and preserves the source meaning.',
             ),
         ).not.toBeInTheDocument();
 
-        expect(demo.getByRole('textbox')).toHaveValue('My arbitrary response');
+        expect(demo().getByRole('textbox')).toHaveValue(
+            'My arbitrary response',
+        );
 
         const navigation = within(
             screen.getByRole('navigation', { name: 'Activities' }),
@@ -101,7 +103,7 @@ describe('workbook guide practice', () => {
 
         fireEvent.click(navigation.getByRole('button', { name: /^V07\s/u }));
         expect(screen.getByLabelText('Activity')).toHaveValue('V07');
-        expect(demo.getByRole('textbox')).toHaveValue('');
+        expect(demo().getByRole('textbox')).toHaveValue('');
         expect(
             screen
                 .getByTestId('sample-feedback')
@@ -116,7 +118,7 @@ describe('workbook guide practice', () => {
             navigation.getByRole('button', { name: /^R04\s/u }),
         ).toHaveAttribute('aria-pressed', 'true');
 
-        expect(demo.getByRole('textbox')).toHaveValue('');
+        expect(demo().getByRole('textbox')).toHaveValue('');
     });
 
     it('preserves selectable content when clipboard is denied', async () => {

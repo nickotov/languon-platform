@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState, type RefObject } from 'react';
 import { LearningBlockView } from '@/fsd/entities/learning-blocks';
 import type { Locale } from '@/fsd/shared/i18n';
 import { Button } from '@/fsd/shared/ui';
@@ -10,27 +10,19 @@ import { guideUiCopy } from '../copy';
 import { guideBlockLabels } from '../labels';
 import { PromptRecipe } from '../prompt-recipe/prompt-recipe';
 import { SampleFeedback } from '../sample-feedback/sample-feedback';
-import { ActivitySelector } from '../activity-selector/activity-selector';
 import styles from './exercise-explorer.module.css';
 
 export function ExerciseExplorer({
     locale,
-    activities,
-    initialActivity,
+    current,
+    identityRef,
 }: {
     locale: Locale;
-    activities: GuideActivity[];
-    initialActivity?: string | undefined;
+    current: GuideActivity;
+    identityRef: RefObject<HTMLElement | null>;
 }) {
-    const initial =
-        activities.find((item) => item.activity.id === initialActivity) ??
-        activities.find((item) => item.activity.id === 'V02') ??
-        activities[0]!;
-    const [selected, setSelected] = useState(initial.activity.id);
     const [revision, setRevision] = useState(0);
-    const identityRef = useRef<HTMLElement>(null);
-    const current =
-        activities.find((item) => item.activity.id === selected) ?? initial;
+    const selected = current.activity.id;
     const copy = guideUiCopy(locale);
     const labels = guideBlockLabels(locale);
     const content = guideCopy(locale);
@@ -60,120 +52,84 @@ export function ExerciseExplorer({
         (recipe) => recipe.id !== 'specific',
     );
 
-    function handleSelect(activityId: string) {
-        const activity = activities.find(
-            (item) => item.activity.id === activityId,
-        );
-
-        if (!activity) {
-            return;
-        }
-
-        setSelected(activity.activity.id);
-        setRevision(0);
-        const url = new URL(window.location.href);
-        url.searchParams.set('activity', activity.activity.id);
-        window.history.replaceState(null, '', url);
-
-        const identity = identityRef.current;
-        if (identity) {
-            const scrollMargin =
-                Number.parseFloat(
-                    window.getComputedStyle(identity).scrollMarginBlockStart,
-                ) || 0;
-
-            if (identity.getBoundingClientRect().top < scrollMargin) {
-                identity.scrollIntoView({ block: 'start' });
-            }
-        }
-    }
-
     function handleReset() {
         setRevision((value) => value + 1);
     }
 
     return (
-        <div className={styles.root}>
-            <ActivitySelector
-                locale={locale}
-                activities={activities}
-                selected={selected}
-                onSelect={handleSelect}
+        <div className={styles.content}>
+            <section
+                className={styles.identity}
+                aria-live='polite'
+                ref={identityRef}
+            >
+                <span className={styles.code}>{selected}</span>
+                <div>
+                    <span className={styles.category}>{categoryLabel}</span>
+                    <h2>{metadata.name}</h2>
+                    <p>{metadata.description}</p>
+                    {isTranslation && <p>{copy.translationTarget}</p>}
+                </div>
+            </section>
+            <section className={styles.source}>
+                <PromptRecipe
+                    key={`${demoKey}-source`}
+                    title={copy.source}
+                    text={current.sourceText}
+                    copyLabel={copy.copySource}
+                    copy={copy}
+                />
+            </section>
+            <section className={styles.demo} data-testid='workbook-demo'>
+                <LearningBlockView
+                    key={demoKey}
+                    block={current.block}
+                    labels={labels}
+                    scope={`guide-${demoKey}`}
+                    expandAll={expansion}
+                    checkingLabelOverride={checkingLabel}
+                />
+                <Button type='button' variant='ghost' onClick={handleReset}>
+                    {copy.reset}
+                </Button>
+            </section>
+            <section className={styles.explanation}>
+                <h3>{copy.why}</h3>
+                <p>{current.useCaseGuidance}</p>
+            </section>
+            <SampleFeedback
+                key={demoKey}
+                responses={current.sampleResponses}
+                copy={copy}
+                labels={labels}
             />
-            <div className={styles.content}>
-                <section
-                    className={styles.identity}
-                    aria-live='polite'
-                    ref={identityRef}
-                >
-                    <span className={styles.code}>{selected}</span>
-                    <div>
-                        <span className={styles.category}>{categoryLabel}</span>
-                        <h2>{metadata.name}</h2>
-                        <p>{metadata.description}</p>
-                        {isTranslation && <p>{copy.translationTarget}</p>}
-                    </div>
-                </section>
-                <section className={styles.source}>
+            <section className={styles.recipes} aria-label={copy.recipes}>
+                <h2>{copy.recipes}</h2>
+                <p>{copy.prerequisite}</p>
+                <div id='recipe-specific'>
                     <PromptRecipe
-                        key={`${demoKey}-source`}
-                        title={copy.source}
-                        text={current.sourceText}
-                        copyLabel={copy.copySource}
+                        key={demoKey}
+                        title={content.recipes[0]!.title}
+                        text={promptText}
+                        copyLabel={copy.copy}
                         copy={copy}
                     />
-                </section>
-                <section className={styles.demo} data-testid='workbook-demo'>
-                    <LearningBlockView
-                        key={demoKey}
-                        block={current.block}
-                        labels={labels}
-                        scope={`guide-${demoKey}`}
-                        expandAll={expansion}
-                        checkingLabelOverride={checkingLabel}
-                    />
-                    <Button type='button' variant='ghost' onClick={handleReset}>
-                        {copy.reset}
-                    </Button>
-                </section>
-                <section className={styles.explanation}>
-                    <h3>{copy.why}</h3>
-                    <p>{current.useCaseGuidance}</p>
-                </section>
-                <SampleFeedback
-                    key={demoKey}
-                    responses={current.sampleResponses}
-                    copy={copy}
-                    labels={labels}
-                />
-                <section className={styles.recipes} aria-label={copy.recipes}>
-                    <h2>{copy.recipes}</h2>
-                    <p>{copy.prerequisite}</p>
-                    <div id='recipe-specific'>
+                </div>
+                {otherRecipes.map((recipe) => (
+                    <div
+                        id={`recipe-${recipe.id}`}
+                        key={`${demoKey}-${recipe.id}`}
+                    >
                         <PromptRecipe
-                            key={demoKey}
-                            title={content.recipes[0]!.title}
-                            text={promptText}
+                            title={recipe.title}
+                            text={`${recipe.prompt}\n\n${current.sourceText}`}
                             copyLabel={copy.copy}
                             copy={copy}
                         />
                     </div>
-                    {otherRecipes.map((recipe) => (
-                        <div
-                            id={`recipe-${recipe.id}`}
-                            key={`${demoKey}-${recipe.id}`}
-                        >
-                            <PromptRecipe
-                                title={recipe.title}
-                                text={`${recipe.prompt}\n\n${current.sourceText}`}
-                                copyLabel={copy.copy}
-                                copy={copy}
-                            />
-                        </div>
-                    ))}
-                    <p>{copy.expected}</p>
-                </section>
-            </div>
+                ))}
+                <p>{copy.expected}</p>
+            </section>
         </div>
     );
 }

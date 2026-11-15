@@ -105,7 +105,7 @@
         position: sticky;
         top: var(--space-24);
         align-self: start;
-        max-height: calc(100dvh - var(--space-48));
+        max-height: 70vh;
         overflow-y: auto;
         overscroll-behavior: contain;
         scrollbar-width: thin;
