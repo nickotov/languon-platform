@@ -1,0 +1,2 @@
+ALTER TABLE "ai_credit_action_quotes" DROP CONSTRAINT "ai_credit_action_quote_allowance";--> statement-breakpoint
+ALTER TABLE "ai_credit_action_quotes" ADD CONSTRAINT "ai_credit_action_quote_allowance" CHECK ("ai_credit_action_quotes"."held_milli">=0 and "ai_credit_action_quotes"."output_allowance" between 1 and 10000);

@@ -283,6 +283,129 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
         }
 
+        it('quotes zero-credit operator-funded continuation before admitting a new action', async () => {
+            await readyOperatorRoute();
+            const note = await knowledge.create(ownerId, {
+                operationId: randomUUID(),
+                content,
+            });
+            const workspace = await knowledge.getWorkspace(ownerId, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(
+                { ownerId },
+                { source: { kind: 'knowledge', id: note.id } },
+            );
+
+            await store.submit(
+                { ownerId },
+                chat.id,
+                SubmitConversationTurnRequestSchema.parse({
+                    requestId: randomUUID(),
+                    content: 'Prepare a French lesson.',
+                    editorContext: {
+                        content: '',
+                        editorTarget: {
+                            from: 0,
+                            to: 0,
+                            originalText: '',
+                            documentHash: createHash('sha256')
+                                .update('')
+                                .digest('hex'),
+                        },
+                        workingBranch: {
+                            id: branch.id,
+                            version: branch.version,
+                        },
+                    },
+                }),
+            );
+
+            const first = (await store.claim())!;
+            const run = await store.startGeneration(
+                first,
+                GenerationPlanSchema.parse({
+                    schemaVersion: 1,
+                    replyLanguage: 'en',
+                    sources: [],
+                    tasks: [
+                        {
+                            id: 'intro',
+                            kind: 'prose',
+                            instruction: 'Introduce French grammar.',
+                            language: 'fr',
+                            inputs: [],
+                        },
+                        {
+                            id: 'grammar',
+                            kind: 'grammar',
+                            instruction: 'Explain COD and COI.',
+                            language: 'fr',
+                            explanationLanguage: 'fr',
+                            inputs: [],
+                        },
+                    ],
+                    outputOrder: ['intro', 'grammar'],
+                }),
+                [],
+            );
+
+            await store.stop({ ownerId }, chat.id, first.id);
+            await store.finish(first, 'cancelled');
+            const request = { requestId: randomUUID(), expectedRevision: 1 };
+            let quoteId = '';
+            await expect(
+                store.continueGenerationRun(
+                    { ownerId },
+                    chat.id,
+                    run.runId,
+                    request,
+                ),
+            ).rejects.toSatisfy(
+                (error: {
+                    code: string;
+                    quote: { id: string; maximumCredits: string };
+                }) => {
+                    expect(error.code).toBe('action_confirmation_required');
+                    expect(error.quote.maximumCredits).toBe('0');
+                    quoteId = error.quote.id;
+
+                    return true;
+                },
+            );
+
+            const [offered] =
+                await client`select held_milli, output_allowance from ai_credit_action_quotes where id=${quoteId}::uuid`;
+
+            expect(offered?.held_milli).toBe('0');
+            expect(offered?.output_allowance).toBeGreaterThan(0);
+            const [before] =
+                await client`select count(*)::integer as count from conversation_turns where conversation_id=${chat.id}::uuid`;
+
+            expect(before?.count).toBe(1);
+            const resumed = await store.continueGenerationRun(
+                { ownerId },
+                chat.id,
+                run.runId,
+                { ...request, confirmedQuoteId: quoteId },
+            );
+
+            expect(resumed.status).toBe('queued');
+            const [action] =
+                await client`select funding, held_milli from ai_credit_actions where id=${resumed.id}::uuid`;
+
+            expect(action).toMatchObject({
+                funding: 'operator',
+                held_milli: '0',
+            });
+
+            await store.stop({ ownerId }, chat.id, resumed.id);
+            await expect(
+                client`insert into ai_credit_action_quotes(id,owner_id,conversation_id,request_id,fingerprint,authorization_fingerprint,held_milli,output_allowance,expires_at) values (${randomUUID()},${ownerId},${chat.id},${randomUUID()},'negative','negative',-1,100,now())`,
+            ).rejects.toMatchObject({ code: '23514' });
+        });
+
         it('atomically transfers nonempty pending source snapshots to a run while preserving proposal history and unrelated memory', async () => {
             await readyOperatorRoute();
             const sourceSentinel = `private-source-${randomUUID()}`;

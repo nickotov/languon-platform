@@ -29,3 +29,7 @@ Final backend typecheck exits 0, local migrations are applied, the capability do
 ## Final frontend convention remediation
 
 The final style-contract gate identified component-folder ownership and token conventions. Commit `8103ee26` resolves them. Independent reviewer compared the relocated component/label/story bodies and CSS against `9df92432`: runtime bodies and used styles are unchanged, widths match existing tokens, removed selectors were unused, and the fallback correlation ID is diagnostic-only. Bounded remediation is approved; prior browser proof remains valid. Final style gate, focused UI tests, scoped lint and web production build pass; generated declarations are restored.
+
+## Zero-credit quote production remediation
+
+Independent security source review confirms `held_milli >= 0` is appropriate for operator/unlimited/zero-tariff quotes. Positive-tariff customer admission rejects zero allowance; confirmation fingerprints include funding policy and reserve rechecks it, so a zero-credit offer cannot authorize a paid customer action. Negative amounts remain constrained. Final real-DB quote/confirm regression passes 1/1; all 42 existing production/accounting cases passed in the combined run. Independent security reviewer approved the completed patch and evidence with no critical/high/medium finding. Original run replay is rollback-only, deliberately avoiding dispatch.

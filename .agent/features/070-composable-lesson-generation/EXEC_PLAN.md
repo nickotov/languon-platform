@@ -45,3 +45,11 @@ BL-013/015 remain Done. BL-016 remains In progress: Feature070 completes the own
 1. Final independent evidence approval confirmed against the committed source and updated records on 2026-11-17.
 2. Commit delivery docs, inspect clean scoped diff, squash-merge the feature locally into `main` as one commit.
 3. Report implementation, local readiness and absence of live paid proof separately. Do not push or delete the feature branch.
+
+## Production follow-up — zero-credit continuation quote (2026-11-17)
+
+Feature070 remediation on `feature/lesson-continuation-zero-credit-quote`: actual operator-funded Continue failed while inserting a required quote. Rollback-only reproduction validates both saved artifacts, then reaches PostgreSQL check `ai_credit_action_quote_allowance`: old `held_milli > 0` rejects the legitimate zero-credit quote. Fix the canonical constraint to `>= 0` using a generated forward migration; preserve positive bounded output allowance and all explicit-confirmation/admission/accounting rules. This is within already authorized AC-6/7, not a new product capability. Saved run content is preserved; no paid provider dispatch is needed for reproduction.
+
+Selected before implementation: real production admission regression operator quote→confirm→queued action with zero learner hold; negative quote constraint rejection; focused existing customer/accounting/production cases; schema/test lint and backend typecheck; migration + rollback-only original-run replay; independent security review. Estimated checks: seconds for focused tests, a few minutes for typecheck. No visible UX change; existing browser confirmation behavior is reused.
+
+Follow-up outcome: generated migration 0176 applied locally; original run replay now returns its valid zero-credit quote without dispatch. Real-DB quote/confirmation and negative-constraint regression passes; existing production/accounting cases, typecheck, lint and doctor pass. Independent security source/evidence review approved. No user content was modified.

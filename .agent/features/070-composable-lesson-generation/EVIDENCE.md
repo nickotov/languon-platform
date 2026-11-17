@@ -66,3 +66,11 @@ No paid live-provider proof is claimed. Feature scope excludes a paid smoke; det
 ## E6 — Independent review
 
 See [REVIEW.md](REVIEW.md). Source remediation findings are closed. Security evidence is approved. All selected gates now pass. Final completion reviewer approved the identified implementation commits on 2026-11-17; no implementation or verification gap remains pending.
+
+## E7 — Production follow-up: operator-funded continuation quote
+
+2026-11-17: a real paused run's Continue returned 500 before dispatch. A rollback-only local store reproduction verified both persisted checkpoint hashes and next-unit capacity, then failed PostgreSQL constraint `ai_credit_action_quote_allowance`: the explicit continuation quote had `held_milli=0`, while the old constraint required `>0`. The affected run context was 22,520 serialized characters; no source/result body is recorded here.
+
+The canonical constraint and generated migration 0176 permit nonnegative quoted credit amounts while retaining the 1..10000 output bound. Quotes still require explicit confirmation and authorization fingerprint checks; paid admission/hold protections are unchanged. Negative quote amounts remain rejected. Local `pnpm db:migrate` passed; rollback-only replay of the original run now returns a zero-credit quote with a 10000-token allowance. The replay intentionally rolled back after receiving the quote, preserving all user data and avoiding provider dispatch. Debug source was removed.
+
+Verification: backend typecheck exits 0 (`/tmp/lesson-quote-typecheck.log`), scoped ESLint passes (`/tmp/lesson-quote-lint.log`), local capability doctor returns ready:true (`/tmp/lesson-quote-doctor.json`). Full production/accounting selection ran 43 cases: 42 passed; the new test had an incorrect expected zero-credit string (`0.000` rather than canonical `0`), fixed before focused rerun. Final focused real-DB confirmation regression passes 1/1 (`/tmp/lesson-quote-confirm-final.log`): persisted zero quote before new turn, explicit confirmation, queued operator action with zero learner hold, and database rejection of negative quotes. Independent bounded security review approves the schema, generated migration, quote admission protections and evidence; no material finding remains. No paid provider call was made.

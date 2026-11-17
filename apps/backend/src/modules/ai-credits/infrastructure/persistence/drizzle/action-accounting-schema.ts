@@ -228,7 +228,7 @@ export const aiCreditActionQuotesTable = pgTable(
         index('ai_credit_action_quote_expiry').on(t.expiresAt),
         check(
             'ai_credit_action_quote_allowance',
-            sql`${t.heldMilli}>0 and ${t.outputAllowance} between 1 and 10000`,
+            sql`${t.heldMilli}>=0 and ${t.outputAllowance} between 1 and 10000`,
         ),
     ],
 );
