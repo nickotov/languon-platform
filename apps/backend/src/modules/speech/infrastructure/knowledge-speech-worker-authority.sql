@@ -10,7 +10,7 @@ DECLARE
     branch_value public.knowledge_working_branches%ROWTYPE;
     grant_value public.knowledge_workbook_shares%ROWTYPE;
     workbook_value public.knowledge_workbooks%ROWTYPE;
-    proposal_value public.conversation_block_proposals%ROWTYPE;
+    proposal_value public.conversation_content_proposals%ROWTYPE;
     chat_value public.conversation_chats%ROWTYPE;
 BEGIN
     SELECT * INTO b FROM public.speech_bindings WHERE id=binding_value;
@@ -81,9 +81,9 @@ BEGIN
             OR chat_value.source->>'view'='saved' THEN
             RETURN false;
         END IF;
-        SELECT * INTO proposal_value FROM public.conversation_block_proposals WHERE id=(origin_value->>'proposalId')::uuid AND conversation_id=chat_value.id AND note_id=note_value.id FOR SHARE;
+        SELECT * INTO proposal_value FROM public.conversation_content_proposals WHERE id=(origin_value->>'proposalId')::uuid AND conversation_id=chat_value.id AND note_id=note_value.id FOR SHARE;
         IF proposal_value.id IS NULL
-            OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(proposal_value.blocks) block WHERE block->>'id'=s->>'blockId') THEN
+            OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(proposal_value.body->'document'->'content') node WHERE node->>'type'='learningBlock' AND node->'attrs'->'block'->>'id'=s->>'blockId') THEN
             RETURN false;
         END IF;
     ELSE
@@ -164,12 +164,12 @@ DECLARE
 BEGIN
     DELETE FROM public.speech_quotes q WHERE q.source->>'noteId'=OLD.note_id::text AND (
         q.source->>'branchId'=OLD.id::text OR q.source->'origin'->>'branchId'=OLD.id::text OR
-        (q.source->'origin'->>'kind'='proposal' AND EXISTS(SELECT 1 FROM public.conversation_block_proposals p WHERE p.id::text=q.source->'origin'->>'proposalId' AND p.branch_id=OLD.id))
+        (q.source->'origin'->>'kind'='proposal' AND EXISTS(SELECT 1 FROM public.conversation_content_proposals p WHERE p.id::text=q.source->'origin'->>'proposalId' AND p.branch_id=OLD.id))
     );
     WITH erased AS (
         DELETE FROM public.speech_bindings b WHERE b.source->>'noteId'=OLD.note_id::text AND (
             b.source->>'branchId'=OLD.id::text OR b.source->'origin'->>'branchId'=OLD.id::text OR
-            (b.source->'origin'->>'kind'='proposal' AND EXISTS(SELECT 1 FROM public.conversation_block_proposals p WHERE p.id::text=b.source->'origin'->>'proposalId' AND p.branch_id=OLD.id))
+            (b.source->'origin'->>'kind'='proposal' AND EXISTS(SELECT 1 FROM public.conversation_content_proposals p WHERE p.id::text=b.source->'origin'->>'proposalId' AND p.branch_id=OLD.id))
         ) RETURNING recording_id
     ) SELECT array_agg(DISTINCT recording_id) INTO erased_values FROM erased;
     FOREACH recording_value IN ARRAY coalesce(erased_values,'{}'::uuid[]) LOOP
@@ -213,8 +213,8 @@ BEGIN
     RETURN OLD;
 END $$;
 REVOKE ALL ON FUNCTION languon_erase_proposal_speech() FROM PUBLIC;
-DROP TRIGGER IF EXISTS knowledge_proposal_speech_erasure ON public.conversation_block_proposals;
-CREATE TRIGGER knowledge_proposal_speech_erasure BEFORE DELETE ON public.conversation_block_proposals FOR EACH ROW EXECUTE FUNCTION languon_erase_proposal_speech();
+DROP TRIGGER IF EXISTS knowledge_proposal_speech_erasure ON public.conversation_content_proposals;
+CREATE TRIGGER knowledge_proposal_speech_erasure BEFORE DELETE ON public.conversation_content_proposals FOR EACH ROW EXECUTE FUNCTION languon_erase_proposal_speech();
 
 CREATE INDEX IF NOT EXISTS speech_quotes_proposal_source_idx ON public.speech_quotes ((source->'origin'->>'proposalId')) WHERE source->>'kind'='knowledge-snippet' AND source->'origin'->>'kind'='proposal';
 CREATE INDEX IF NOT EXISTS speech_bindings_proposal_source_idx ON public.speech_bindings ((source->'origin'->>'proposalId')) WHERE source->>'kind'='knowledge-snippet' AND source->'origin'->>'kind'='proposal';

@@ -331,7 +331,13 @@ export function mergePendingLearningContentBrief(
             (task) =>
                 !pending.tasks.some(
                     (original) =>
-                        original.id === task.id && original.kind === task.kind,
+                        original.id === task.id &&
+                        (original.kind === task.kind ||
+                            [original.kind, task.kind].every(
+                                (kind) =>
+                                    kind === 'prose' ||
+                                    kind === 'bilingual-text',
+                            )),
                 ),
         )
     ) {
@@ -341,6 +347,8 @@ export function mergePendingLearningContentBrief(
     }
 
     return LearningContentBriefSchema.parse({
+        ...pending,
+        ...(patch.outputOrder ? { outputOrder: patch.outputOrder } : {}),
         tasks: pending.tasks.map((original) => {
             const changed = patch.tasks.find((task) => task.id === original.id);
             if (!changed) {
@@ -355,6 +363,9 @@ export function mergePendingLearningContentBrief(
             return {
                 ...original,
                 ...changed,
+                ...(changed.kind === 'prose'
+                    ? { translationLanguage: undefined }
+                    : {}),
                 ...(sourceChanged && !changed.sourceText
                     ? { sourceText: undefined }
                     : {}),

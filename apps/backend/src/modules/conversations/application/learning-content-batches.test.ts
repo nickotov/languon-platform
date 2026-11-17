@@ -109,7 +109,13 @@ describe('learning content batch planning', () => {
             ['after', 'last'],
         ]);
 
-        expect(plan.requiredOutputTokens).toBeLessThanOrEqual(10_000);
+        expect(
+            plan.batches.every(
+                (batch) =>
+                    estimateLearningContentOutput(batch.brief) <=
+                    learningContentOutputEstimateLimit,
+            ),
+        ).toBe(true);
     });
 
     it('packs whole tasks that exceed one aggregate response without splitting them', () => {
@@ -120,20 +126,20 @@ describe('learning content batch planning', () => {
         })!;
 
         expect(plan.batches.map((batch) => batch.brief.tasks.length)).toEqual([
-            5, 3,
+            2, 2, 2, 2,
         ]);
 
         expect(plan.batches.every((batch) => !batch.vocabularyPart)).toBe(true);
     });
 
-    it('keeps both the total token budget and four-call limit bounded', () => {
+    it('permits a bounded run to span several admitted actions', () => {
         expect(
             planLearningContentBatches({ tasks: [vocabulary({ count: 80 })] }),
-        ).toBeNull();
+        ).not.toBeNull();
 
         expect(
             planLearningContentBatches({ tasks: [vocabulary({ count: 125 })] }),
-        ).toBeNull();
+        ).not.toBeNull();
 
         expect(
             planLearningContentBatches({
@@ -144,7 +150,7 @@ describe('learning content batch planning', () => {
                     vocabulary({ id: 'other' }),
                 ],
             }),
-        ).toBeNull();
+        ).not.toBeNull();
 
         expect(
             planLearningContentBatches({ tasks: [vocabulary({ count: 70 })] }),
@@ -157,12 +163,6 @@ describe('learning content batch planning', () => {
             kind: 'bilingual-text',
             instruction: 'Translate.',
             sourceText: 'x'.repeat(1_716),
-        },
-        {
-            id: 'practice',
-            kind: 'exercises',
-            instruction: 'Practice.',
-            count: 18,
         },
     ])('does not split unsupported oversized $kind tasks', (task) => {
         expect(planLearningContentBatches({ tasks: [task] })).toBeNull();

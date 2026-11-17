@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { KnowledgeBodySchema } from './contextual-assistant';
+import { KnowledgeContentProposalSchema } from './knowledge-content-proposals';
 import {
     type ExerciseActivityFormat,
     type ExerciseActivityId,
@@ -214,6 +216,108 @@ function namedBlock(
 }
 
 describe('standalone named exercise semantics', () => {
+    it.each(['V02', 'G01', 'R01'] as const)(
+        'keeps captured %s source evidence valid after the live block is removed or the exercise copied',
+        (activityId) => {
+            const block = namedBlock(activityId);
+            const source = block.semantics.sources[0]!;
+            const origin = {
+                kind: 'captured-block',
+                runId: id,
+                revision: 2,
+                sourceId: 'existing-material',
+                blockId: third,
+                contentHash: 'a'.repeat(64),
+            };
+            const captured = {
+                ...block,
+                semantics: {
+                    ...block.semantics,
+                    sources: [{ ...source, origin }],
+                },
+            };
+            const body = {
+                schemaVersion: 2,
+                document: {
+                    type: 'doc',
+                    content: [
+                        { type: 'learningBlock', attrs: { block: captured } },
+                    ],
+                },
+            };
+
+            expect(KnowledgeBodySchema.parse(body)).toEqual(body);
+            expect(
+                KnowledgeBodySchema.safeParse({
+                    ...body,
+                    document: {
+                        type: 'doc',
+                        content: [
+                            {
+                                type: 'learningBlock',
+                                attrs: { block: { ...captured, id: other } },
+                            },
+                        ],
+                    },
+                }).success,
+            ).toBe(true);
+
+            expect(
+                KnowledgeContentProposalSchema.safeParse({
+                    id,
+                    conversationId: id,
+                    noteId: other,
+                    branchId: third,
+                    baseBranchVersion: 1,
+                    body,
+                    createdAt: new Date().toISOString(),
+                    appliedAt: null,
+                    appliedBranchVersion: null,
+                }).success,
+            ).toBe(true);
+
+            for (const invalid of [
+                { ...origin, revision: 0 },
+                { ...origin, sourceId: 'not a source identity' },
+                { ...origin, contentHash: 'invented' },
+                { ...origin, ownerId: id },
+                { kind: 'captured-block', blockId: third },
+            ]) {
+                expect(
+                    NamedExerciseSourceSchema.safeParse({
+                        ...source,
+                        origin: invalid,
+                    }).success,
+                ).toBe(false);
+            }
+
+            const live = {
+                ...captured,
+                semantics: {
+                    ...captured.semantics,
+                    sources: [
+                        {
+                            ...source,
+                            origin: { kind: 'block', blockId: third },
+                        },
+                    ],
+                },
+            };
+
+            expect(
+                KnowledgeBodySchema.safeParse({
+                    ...body,
+                    document: {
+                        type: 'doc',
+                        content: [
+                            { type: 'learningBlock', attrs: { block: live } },
+                        ],
+                    },
+                }).success,
+            ).toBe(false);
+        },
+    );
+
     it.each(exerciseActivityCatalog)(
         'accepts a complete specification for $id',
         (activity) => {
@@ -313,6 +417,67 @@ describe('standalone named exercise semantics', () => {
             NamedExerciseSemanticsSchema.safeParse({
                 ...specification(),
                 sources: [selected],
+            }).success,
+        ).toBe(false);
+    });
+
+    it('keeps generated and provided text provenance truthful and independent of document access', () => {
+        const generated = {
+            kind: 'generated-text',
+            origin: {
+                kind: 'generated-artifact',
+                runId: id,
+                revision: 2,
+                taskId: 'reading',
+                artifactId: other,
+                contentHash: 'a'.repeat(64),
+            },
+            text: 'Mira borrowed a book.',
+        };
+        const provided = {
+            kind: 'provided-text',
+            origin: {
+                kind: 'provided-material',
+                materialId: third,
+                contentHash: 'b'.repeat(64),
+            },
+            text: 'Mira borrowed a book.',
+        };
+
+        for (const source of [generated, provided]) {
+            expect(
+                NamedExerciseSemanticsSchema.parse({
+                    ...specification('R01'),
+                    sources: [source],
+                }).sources,
+            ).toEqual([source]);
+
+            expect(
+                NamedExerciseSemanticsSchema.safeParse({
+                    ...specification('V01'),
+                    sources: [source],
+                }).success,
+            ).toBe(false);
+
+            expect(
+                NamedExerciseSourceSchema.safeParse({
+                    ...source,
+                    origin: { ...source.origin, noteId: id, ownerId: third },
+                }).success,
+            ).toBe(false);
+
+            expect(
+                NamedExerciseSourceSchema.safeParse({
+                    ...source,
+                    origin: { ...source.origin, contentHash: 'invented' },
+                }).success,
+            ).toBe(false);
+        }
+
+        expect(
+            NamedExerciseSourceSchema.safeParse({
+                ...generated,
+                origin: { noteId: id, noteVersion: 0 },
             }).success,
         ).toBe(false);
     });

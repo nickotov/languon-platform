@@ -40,7 +40,11 @@ export * from './knowledge-interactive';
 export * from './workbook-learning';
 
 export * from './knowledge-library-copy';
-export * from './knowledge-block-proposals';
+export * from './knowledge-content-proposals';
+export * from './generated-artifacts';
+export * from './generation-plans';
+export * from './generation-runs';
+export * from './conversation-editor-context';
 export * from './knowledge-transcription';
 export * from './knowledge-transcription-admin';
 

@@ -309,7 +309,11 @@ function validateFrozenBlockSource(
     source: NamedExerciseSource,
     blocks: readonly LearningBlock[],
 ) {
-    if (source.kind === 'text-selection') {
+    if (
+        source.kind === 'text-selection' ||
+        source.kind === 'generated-text' ||
+        source.kind === 'provided-text'
+    ) {
         // The application must compare this to the separately authorized frozen
         // document selection; block lookup cannot establish note/version access.
         return;

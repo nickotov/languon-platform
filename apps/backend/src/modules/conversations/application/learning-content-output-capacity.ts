@@ -20,6 +20,10 @@ export function estimateLearningContentOutput(
     brief: LearningContentBrief,
 ): number {
     return brief.tasks.reduce((total, task) => {
+        if (task.kind === 'prose') {
+            return total + 250 + (task.targetWords ?? 350) * 3;
+        }
+
         if (task.kind === 'vocabulary') {
             const count = task.words?.length ?? task.count ?? 10;
             const literalAllowance = task.words
@@ -37,12 +41,12 @@ export function estimateLearningContentOutput(
                 total +
                 (task.sourceText
                     ? 150 + 2 * encodedBytes(task.sourceText)
-                    : 1_000)
+                    : 350 + (task.targetWords ?? 350) * 5)
             );
         }
 
         if (task.kind === 'grammar') {
-            return total + 600;
+            return total + 1600;
         }
 
         // Exercise coverage requires each supplied word in learner-facing
@@ -61,14 +65,14 @@ export function estimateLearningContentOutput(
                       sum +
                       (activity.count ?? task.count ?? 5) *
                           (activity.activityId === 'R03'
-                              ? 650
+                              ? 1100
                               : getExerciseActivity(activity.activityId)
                                       .checkingPolicy === 'prepared-key'
-                                ? 450
-                                : 550),
+                                ? 800
+                                : 1000),
                   0,
               )
-            : (task.count ?? 5) * 550;
+            : (task.count ?? 5) * 1000;
 
         return total + exerciseAllowance + requiredWords;
     }, 0);

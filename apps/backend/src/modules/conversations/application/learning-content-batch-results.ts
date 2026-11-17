@@ -1,5 +1,9 @@
 import { exerciseActivitySequence } from './exercise-activity-allocation';
-import type { LearningBlock } from '@languon/contracts';
+import type {
+    LearningBlock,
+    KnowledgeBody,
+    GeneratedArtifactOrigin,
+} from '@languon/contracts';
 import type {
     LearningContentBrief,
     LearningContentTask,
@@ -8,6 +12,8 @@ import type {
 export interface LearningContentTaskResult {
     taskId: string;
     blocks: LearningBlock[];
+    prose?: KnowledgeBody | undefined;
+    generatedOrigin?: GeneratedArtifactOrigin;
 }
 
 export interface LearningContentBatchResults {
@@ -67,7 +73,19 @@ function prefixTask(
             }
         }
 
-        return { ...task, count, ...(activities.length ? { activities } : {}) };
+        return {
+            ...task,
+            count,
+            ...(task.words
+                ? {
+                      words: task.words.slice(
+                          0,
+                          Math.floor((count * task.words.length) / total),
+                      ),
+                  }
+                : {}),
+            ...(activities.length ? { activities } : {}),
+        };
     }
 
     if (task.kind !== 'vocabulary') {

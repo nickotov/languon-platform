@@ -25,7 +25,7 @@ export interface LearningContentExecutionBudget {
     readonly remainingOutputTokens: number;
 }
 
-export const learningContentAuthoringCallLimit = 4;
+export const learningContentAuthoringCallLimit = 5;
 export const learningContentActionOutputLimit = 10_000;
 const estimationHeadroom =
     learningContentAuthoringOutputTokenLimit -
@@ -66,10 +66,7 @@ function splitVocabulary(
             count += 1;
         }
 
-        if (
-            count === 0 ||
-            batches.length === learningContentAuthoringCallLimit
-        ) {
+        if (count === 0) {
             return null;
         }
 
@@ -105,7 +102,20 @@ function exercisePart(
         }
     }
 
-    return { ...task, count, ...(activities.length ? { activities } : {}) };
+    const total =
+        task.count ??
+        (task.activities ? exerciseActivitySequence(task).length : 5);
+    const words = task.words?.slice(
+        Math.floor((offset * task.words.length) / total),
+        Math.floor(((offset + count) * task.words.length) / total),
+    );
+
+    return {
+        ...task,
+        count,
+        ...(task.words ? { words: words?.length ? words : undefined } : {}),
+        ...(activities.length ? { activities } : {}),
+    };
 }
 
 function splitExercises(
@@ -127,7 +137,7 @@ function splitExercises(
             count += 1;
         }
 
-        if (!count || batches.length === learningContentAuthoringCallLimit) {
+        if (!count) {
             return null;
         }
 
@@ -142,7 +152,7 @@ function splitExercises(
     return batches;
 }
 
-/** Plans within the existing per-call and total authoring budget, without truncation. */
+/** Plan bounded homogeneous units; an action may execute only a prefix of the run. */
 export function planLearningContentBatches(
     brief: LearningContentBrief,
 ): LearningContentBatchPlan | null {
@@ -157,7 +167,32 @@ export function planLearningContentBatches(
         }
     }
 
-    for (const task of brief.tasks) {
+    const ordered: LearningContentTask[] = [];
+    const remaining = [...brief.tasks];
+    while (remaining.length) {
+        const index = remaining.findIndex((task) => {
+            const dependencies = [
+                ...(task.dependencies ?? []),
+                ...(task.source?.kind === 'task' ? [task.source.taskId] : []),
+            ];
+
+            return dependencies.every((id) =>
+                ordered.some((item) => item.id === id),
+            );
+        });
+
+        if (index < 0) {
+            return null;
+        }
+
+        ordered.push(remaining.splice(index, 1)[0]!);
+    }
+
+    for (const task of ordered) {
+        if (task.dependencies?.length) {
+            flushPending();
+        }
+
         if (task.source?.kind === 'task') {
             const dependencyId = task.source.taskId;
             const dependency = brief.tasks.find(
@@ -202,6 +237,11 @@ export function planLearningContentBatches(
             flushPending();
         }
 
+        // Different output families never compete for the same structured response.
+        if (pending.length && pending[0]!.kind !== task.kind) {
+            flushPending();
+        }
+
         pending.push(task);
     }
 
@@ -215,11 +255,7 @@ export function planLearningContentBatches(
         0,
     );
 
-    if (
-        !batches.length ||
-        batches.length > learningContentAuthoringCallLimit ||
-        requiredOutputTokens > learningContentActionOutputLimit
-    ) {
+    if (!batches.length) {
         return null;
     }
 

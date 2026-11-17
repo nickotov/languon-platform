@@ -138,7 +138,7 @@ export function ConversationMessages({
         (part) =>
             (part.type === 'tool-read_source_context' ||
                 part.type === 'tool-propose_knowledge_note' ||
-                part.type === 'tool-propose_learning_blocks' ||
+                part.type === 'tool-propose_learning_content' ||
                 part.type === 'tool-propose_dictionary_snippet' ||
                 part.type === 'tool-read_dictionary_snippet') &&
             part.state === 'input-available',
@@ -159,7 +159,7 @@ export function ConversationMessages({
         tool = 'preparing';
     }
 
-    if (currentTool?.type === 'tool-propose_learning_blocks') {
+    if (currentTool?.type === 'tool-propose_learning_content') {
         tool = 'preparingBlocks';
     }
 

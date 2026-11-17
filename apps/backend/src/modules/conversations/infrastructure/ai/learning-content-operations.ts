@@ -1,3 +1,4 @@
+import { bodyBlocks } from './learning-generation-plan';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { LearningBlock } from '@languon/contracts';
@@ -53,7 +54,7 @@ function describeBlock(block: LearningBlock) {
 /** One operation owns authoring and one publication; no singleton-tool loop can publish partial material. */
 export function createLearningContentOperations(options: {
     authoring: LearningContentAuthoring;
-    publish: NonNullable<TutorRunInput['onBlockProposal']>;
+    publish: NonNullable<TutorRunInput['onContentProposal']>;
     signal: AbortSignal;
     onTool?: TutorRunInput['onTool'];
     resolveSources?: (
@@ -112,6 +113,7 @@ export function createLearningContentOperations(options: {
             options,
             result.proposal,
             result.summary,
+            result.validatedCallIds,
         );
 
         return { status: 'ready', receipt };
@@ -153,21 +155,25 @@ export function createLearningContentOperations(options: {
 /** The sole lifecycle wrapper for validated canonical block-proposal writes. */
 export async function publishLearningProposal(
     options: {
-        publish: NonNullable<TutorRunInput['onBlockProposal']>;
+        publish: NonNullable<TutorRunInput['onContentProposal']>;
         signal: AbortSignal;
         onTool?: TutorRunInput['onTool'];
     },
-    proposal: Parameters<NonNullable<TutorRunInput['onBlockProposal']>>[0],
+    proposal: Parameters<NonNullable<TutorRunInput['onContentProposal']>>[0],
     summary: string,
+    validationIds?: string[],
 ): Promise<LearningContentReceipt> {
     const receipts = await publishLearningProposals(
         {
             ...options,
-            publish: async (proposals) => [
-                await options.publish(proposals[0]!),
+            publish: async (proposals, ids) => [
+                ...(ids?.length
+                    ? [await options.publish(proposals[0]!, ids)]
+                    : [await options.publish(proposals[0]!)]),
             ],
         },
         [{ proposal, summary }],
+        validationIds,
     );
 
     return receipts[0]!;
@@ -176,27 +182,31 @@ export async function publishLearningProposal(
 /** One publication boundary owns the entire validated revision cohort. */
 export async function publishLearningProposals(
     options: {
-        publish: NonNullable<TutorRunInput['onBlockProposals']>;
+        publish: NonNullable<TutorRunInput['onContentBatch']>;
         signal: AbortSignal;
         onTool?: TutorRunInput['onTool'];
     },
     entries: {
-        proposal: Parameters<NonNullable<TutorRunInput['onBlockProposal']>>[0];
+        proposal: Parameters<
+            NonNullable<TutorRunInput['onContentProposal']>
+        >[0];
         summary: string;
     }[],
+    validationIds?: string[],
 ): Promise<LearningContentReceipt[]> {
     options.signal.throwIfAborted();
     const callId = randomUUID();
     await options.onTool?.({
         id: callId,
-        name: 'propose_learning_blocks',
+        name: 'propose_learning_content',
         state: 'running',
     });
 
     try {
-        const persisted = await options.publish(
-            entries.map((entry) => entry.proposal),
-        );
+        const proposals = entries.map((entry) => entry.proposal);
+        const persisted = validationIds?.length
+            ? await options.publish(proposals, validationIds)
+            : await options.publish(proposals);
 
         options.signal.throwIfAborted();
         if (persisted.length !== entries.length) {
@@ -209,14 +219,21 @@ export async function publishLearningProposals(
             LearningContentReceiptSchema.parse({
                 proposalId: persisted[index]!.id,
                 summary: entry.summary,
-                content: entry.proposal.blocks.map(describeBlock),
+                content: [
+                    ...bodyBlocks(entry.proposal.body).map(describeBlock),
+                    ...((entry.proposal.body.document.content ?? []).some(
+                        (node) => node.type !== 'learningBlock',
+                    )
+                        ? [{ kind: 'prose', count: 1 }]
+                        : []),
+                ],
                 requiresLearnerApply: true,
             }),
         );
 
         await options.onTool?.({
             id: callId,
-            name: 'propose_learning_blocks',
+            name: 'propose_learning_content',
             state: 'succeeded',
         });
 
@@ -224,7 +241,7 @@ export async function publishLearningProposals(
     } catch (error) {
         await options.onTool?.({
             id: callId,
-            name: 'propose_learning_blocks',
+            name: 'propose_learning_content',
             state: 'failed',
         });
 

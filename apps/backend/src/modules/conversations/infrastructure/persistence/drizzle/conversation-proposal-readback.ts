@@ -1,6 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { LearningBlockSchema } from '@languon/contracts';
-import { z } from 'zod';
+import { KnowledgeContentProposalSchema } from '@languon/contracts';
 import type { ClaimedConversationTurn } from '../../../application/ports/conversation-store';
 import {
     conversationUnavailable,
@@ -9,12 +8,8 @@ import {
 import type { ConversationPersistenceContext } from './conversation-persistence-context';
 import { conversationWithOperation } from './conversation-worker-authority';
 
-const snapshotSchema = z
-    .object({ id: z.uuid(), blocks: z.array(LearningBlockSchema).max(25) })
-    .strict();
-
 /** Read immutable content without granting the worker access to unrelated proposals. */
-export function conversationReadBlockProposal(
+export function conversationReadContentProposal(
     persistence: ConversationPersistenceContext,
     turn: ClaimedConversationTurn,
     proposalId: string,
@@ -30,7 +25,7 @@ export function conversationReadBlockProposal(
 
         const result = await tx
             .execute(
-                sql`select public.languon_read_learning_block_proposal(
+                sql`select public.languon_read_learning_content_proposal(
             ${turn.id}::uuid, ${turn.leaseToken}::uuid, ${proposalId}::uuid
         ) as snapshot`,
             )
@@ -38,6 +33,10 @@ export function conversationReadBlockProposal(
                 throw conversationUnavailable();
             });
 
-        return snapshotSchema.parse(result[0]?.['snapshot']);
+        const proposal = KnowledgeContentProposalSchema.parse(
+            result[0]?.['snapshot'],
+        );
+
+        return { id: proposal.id, body: proposal.body };
     });
 }

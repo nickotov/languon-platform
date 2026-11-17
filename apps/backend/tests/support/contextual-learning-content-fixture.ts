@@ -75,6 +75,48 @@ function planningSourceCatalog(
 
 /** Scripted provider outputs prove wiring only, never natural-language intent quality. */
 export function fixtureRequestResolution(question: string, prompt: unknown) {
+    if (question === 'Composable lesson fixture') {
+        return {
+            kind: 'generate',
+            replyLanguage: 'en',
+            brief: {
+                tasks: [
+                    {
+                        id: 'composable-reading',
+                        kind: 'prose',
+                        instruction: 'Write a short French reading.',
+                        language: 'fr',
+                    },
+                    {
+                        id: 'composable-grammar',
+                        kind: 'grammar',
+                        instruction: 'Explain French grammar.',
+                        language: 'fr',
+                        explanationLanguage: 'fr',
+                    },
+                    {
+                        id: 'composable-grammar-exercises',
+                        kind: 'exercises',
+                        instruction: 'Check the grammar.',
+                        language: 'fr',
+                        explanationLanguage: 'fr',
+                        source: {
+                            kind: 'task',
+                            taskId: 'composable-grammar',
+                        },
+                        count: 3,
+                        activities: [{ activityId: 'G02', count: 3 }],
+                    },
+                ],
+                outputOrder: [
+                    'composable-reading',
+                    'composable-grammar',
+                    'composable-grammar-exercises',
+                ],
+            },
+        };
+    }
+
     let fixtureQuestion = question;
     for (const message of Array.isArray(prompt) ? prompt : []) {
         const contents =
@@ -567,6 +609,30 @@ export function fixtureAuthoringOutput(prompt: unknown) {
 
     return {
         tasks: brief.tasks.map((task) => {
+            if (task.kind === 'prose') {
+                return {
+                    taskId: task.id,
+                    blocks: [],
+                    prose: {
+                        schemaVersion: 2,
+                        document: {
+                            type: 'doc',
+                            content: [
+                                {
+                                    type: 'paragraph',
+                                    content: [
+                                        {
+                                            type: 'text',
+                                            text: 'La démocratie française repose sur le débat public.',
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    },
+                };
+            }
+
             if (task.kind === 'vocabulary') {
                 if (task.id === 'shopping-vocabulary') {
                     return {
@@ -675,6 +741,11 @@ export function fixtureAuthoringOutput(prompt: unknown) {
                                 task.explanationLanguage ??
                                 task.translationLanguage,
                         }),
+                        ...(task.id === 'composable-grammar-exercises'
+                            ? {
+                                  question: `Appliquez la règle de grammaire dans le cas ${index + 1}.`,
+                              }
+                            : {}),
                         group: { id: group },
                     })),
                 };

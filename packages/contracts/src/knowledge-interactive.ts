@@ -108,6 +108,7 @@ function namedSourceExists(
  */
 export function createInteractiveKnowledgeBodySchema(
     legacyDocument: z.ZodType<KnowledgeNode>,
+    referenceValidation: 'document' | 'proposal-fragment' = 'document',
 ) {
     const document = boundedPayload.pipe(
         z.custom<KnowledgeNode>().superRefine((value, ctx) => {
@@ -181,6 +182,7 @@ export function createInteractiveKnowledgeBodySchema(
             const exerciseGroups = new Map<string, string>();
             for (const block of blocks.values()) {
                 if (
+                    referenceValidation === 'document' &&
                     block.type === 'exercise' &&
                     block.semantics?.sources.some(
                         (source) => !namedSourceExists(source, blocks),
@@ -217,7 +219,10 @@ export function createInteractiveKnowledgeBodySchema(
                         }),
                     );
 
-                    if (block.group.parentBlockId) {
+                    if (
+                        referenceValidation === 'document' &&
+                        block.group.parentBlockId
+                    ) {
                         const parent = blocks.get(block.group.parentBlockId);
                         if (
                             !parent ||
@@ -232,7 +237,11 @@ export function createInteractiveKnowledgeBodySchema(
                     }
                 }
 
-                if (block.type !== 'exercise' || !block.source) {
+                if (
+                    referenceValidation !== 'document' ||
+                    block.type !== 'exercise' ||
+                    !block.source
+                ) {
                     continue;
                 }
 

@@ -2,7 +2,7 @@ import { canUseResponseInDocument } from '../../../../lib/response-document-use'
 import { MessageBlockReferences } from '../block-reference-controls';
 import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
 import { Check } from 'lucide-react';
-import { KnowledgeBlockProposalsForTurn } from '@/fsd/features/knowledge-notes';
+import { KnowledgeContentProposalsForTurn } from '@/fsd/features/knowledge-notes';
 import { DictionarySnippetsForTurn } from '@/fsd/features/dictionary-chat-snippets';
 import type {
     ConversationEditorTarget,
@@ -111,24 +111,28 @@ export function TutorMessage({
         (part) =>
             part.type === 'tool-read_source_context' ||
             part.type === 'tool-propose_knowledge_note' ||
-            part.type === 'tool-propose_learning_blocks' ||
+            part.type === 'tool-propose_learning_content' ||
             part.type === 'tool-propose_dictionary_snippet' ||
             part.type === 'tool-read_dictionary_snippet',
     );
     const complete = !isUser && canonical.status === 'complete';
-    const hasBlockProposal = canonical.toolCalls.some(
+    const hasContentProposal = canonical.toolCalls.some(
         (tool) =>
-            tool.name === 'propose_learning_blocks' &&
+            tool.name === 'propose_learning_content' &&
             tool.state === 'succeeded',
     );
-    const canUseInDocument = canUseResponseInDocument(canonical);
+    const generationRun = Boolean(turn?.generationRunId);
+    const canUseInDocument =
+        !generationRun && canUseResponseInDocument(canonical);
     const workspaceMaterials = isUser && Boolean(onAcceptWorkspaceProposal);
     const copiedAttachments = materials.map((material) => material.data);
     const selectedPassage = workspaceMaterials
         ? canonical.editorTarget?.originalText
         : undefined;
     const failed =
-        turn && (turn.status === 'failed' || turn.status === 'cancelled');
+        !generationRun &&
+        turn &&
+        (turn.status === 'failed' || turn.status === 'cancelled');
     const incomplete = !isUser && failed;
     const failedBeforeAnswer = isUser && failed && !hasAssistant;
     const failureLabel = `${copy.incomplete}: ${question}`;
@@ -190,7 +194,7 @@ export function TutorMessage({
                             name = copy.reading;
                         }
 
-                        if (tool.type === 'tool-propose_learning_blocks') {
+                        if (tool.type === 'tool-propose_learning_content') {
                             name = labels.preparingBlocks;
                         }
 
@@ -229,7 +233,9 @@ export function TutorMessage({
                     />
                 )}
                 {!isUser && (
-                    <KnowledgeBlockProposalsForTurn turnId={canonical.turnId} />
+                    <KnowledgeContentProposalsForTurn
+                        turnId={canonical.turnId}
+                    />
                 )}
                 {!isUser && (
                     <DictionarySnippetsForTurn turnId={canonical.turnId} />
@@ -260,15 +266,18 @@ export function TutorMessage({
                         )}
                     </section>
                 )}
-                {complete && turn?.outputLimitReached && onContinue && (
-                    <ResponseLimitNotice
-                        onContinue={onContinue}
-                        disabled={active}
-                    />
-                )}
+                {complete &&
+                    !generationRun &&
+                    turn?.outputLimitReached &&
+                    onContinue && (
+                        <ResponseLimitNotice
+                            onContinue={onContinue}
+                            disabled={active}
+                        />
+                    )}
                 {complete &&
                     onAcceptWorkspaceProposal &&
-                    !hasBlockProposal &&
+                    !hasContentProposal &&
                     canUseInDocument && (
                         <WorkspaceProposal
                             content={text}
@@ -289,7 +298,9 @@ export function TutorMessage({
                         <ResponseActions
                             text={text}
                             onPropose={proposalAction}
-                            canPropose={!onAcceptWorkspaceProposal}
+                            canPropose={
+                                !onAcceptWorkspaceProposal && !generationRun
+                            }
                             disabled={active}
                         />
                     </div>

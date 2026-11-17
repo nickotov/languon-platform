@@ -24,7 +24,11 @@ export class DurableMessageProjection {
         ];
 
         if (event.type !== 'message' || event.data.role !== 'assistant') {
-            if (this.detail && event.type !== 'turn') {
+            if (
+                this.detail &&
+                event.type !== 'turn' &&
+                event.type !== 'generation-run'
+            ) {
                 chunks.push({
                     type: 'data-reconcile',
                     data: this.detail,

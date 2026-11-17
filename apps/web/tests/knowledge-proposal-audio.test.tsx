@@ -1,8 +1,9 @@
+import { proposalBody } from './proposal-body-fixture';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { KnowledgeBlockProposalSchema } from '@languon/contracts';
-import { BlockProposalCard } from '../src/fsd/features/knowledge-notes/ui/block-proposals/block-proposal-card';
-import type { KnowledgeBlockProposalContext } from '../src/fsd/features/knowledge-notes';
+import { KnowledgeContentProposalSchema } from '@languon/contracts';
+import { ContentProposalCard } from '../src/fsd/features/knowledge-notes/ui/content-proposals/content-proposal-card/content-proposal-card';
+import type { KnowledgeContentProposalContext } from '../src/fsd/features/knowledge-notes';
 import { render } from './render';
 vi.mock('@/fsd/entities/session', () => ({
     useSessionStore: (select: (state: { user: { id: string } }) => unknown) =>
@@ -12,18 +13,20 @@ vi.mock('@/fsd/entities/session', () => ({
 const id = '11111111-1111-4111-8111-111111111111';
 const blobUrl = `blob:${location.origin}/authorized-proposal-audio`;
 const assetId = '22222222-2222-4222-8222-222222222222';
-const proposal = KnowledgeBlockProposalSchema.parse({
+const proposal = KnowledgeContentProposalSchema.parse({
     id,
     conversationId: id,
     noteId: id,
     branchId: id,
     baseBranchVersion: 1,
-    blocks: [{ id, type: 'audio', title: 'Prepared recording', assetId }],
+    body: proposalBody([
+        { id, type: 'audio', title: 'Prepared recording', assetId },
+    ]),
     createdAt: '2026-10-29T00:00:00.000Z',
     appliedAt: null,
     appliedBranchVersion: null,
 });
-const context: KnowledgeBlockProposalContext = {
+const context: KnowledgeContentProposalContext = {
     requestWithSession: (work) => work('synthetic-token'),
     conversationId: id,
     branchId: id,
@@ -54,7 +57,7 @@ it('loads authorized prepared bytes once for compact and full review and release
 
     vi.stubGlobal('fetch', fetch);
     const { container, unmount } = render(
-        <BlockProposalCard
+        <ContentProposalCard
             proposal={proposal}
             context={context}
             onApplied={vi.fn()}
@@ -117,7 +120,7 @@ it('does not preload offscreen conversation history until a proposal becomes vis
 
     vi.stubGlobal('fetch', fetch);
     const { container } = render(
-        <BlockProposalCard
+        <ContentProposalCard
             proposal={proposal}
             context={context}
             onApplied={vi.fn()}
@@ -145,7 +148,7 @@ it('keeps rejected media unavailable instead of substituting an external or secr
     );
 
     const { container } = render(
-        <BlockProposalCard
+        <ContentProposalCard
             proposal={proposal}
             context={context}
             onApplied={vi.fn()}

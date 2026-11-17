@@ -1,6 +1,10 @@
 import { Chat } from '@ai-sdk/react';
 import type { QueryClient } from '@tanstack/react-query';
-import type { ConversationDetail, ConversationTurn } from '@languon/contracts';
+import type {
+    ConversationDetail,
+    ConversationTurn,
+    GenerationRunSummary,
+} from '@languon/contracts';
 import {
     DurableChatTransport,
     ConversationApiError,
@@ -104,6 +108,43 @@ export function createConversationStreamSession({
                 part.type !== 'data-canonical' ||
                 part.data.conversationId !== id
             ) {
+                return;
+            }
+
+            if (part.data.type === 'generation-run') {
+                const run = part.data.data;
+                client.setQueryData<{ runs: GenerationRunSummary[] }>(
+                    ['lesson-runs', actorId, id],
+                    (current) => {
+                        const prior = current?.runs.find(
+                            (item) => item.id === run.id,
+                        );
+
+                        if (
+                            prior &&
+                            Date.parse(prior.updatedAt) >
+                                Date.parse(run.updatedAt)
+                        ) {
+                            return current;
+                        }
+
+                        return {
+                            runs: [
+                                ...(current?.runs.filter(
+                                    (item) => item.id !== run.id,
+                                ) ?? []),
+                                run,
+                            ],
+                        };
+                    },
+                );
+
+                if (run.state === 'completed') {
+                    void client.invalidateQueries({
+                        queryKey: ['knowledge-content-proposals', actorId, id],
+                    });
+                }
+
                 return;
             }
 

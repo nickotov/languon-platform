@@ -1,0 +1,3 @@
+.canvas {
+    width: min(100%, var(--size-768));
+}

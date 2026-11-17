@@ -1,13 +1,14 @@
+import { proposalBody } from './proposal-body-fixture';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode, type PropsWithChildren } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import {
     ConversationDetailSchema,
-    KnowledgeBlockProposalSchema,
+    KnowledgeContentProposalSchema,
 } from '@languon/contracts';
-import { blockProposalCompletionKey } from '../src/fsd/features/knowledge-notes/lib/proposal-completions';
-import { useBlockProposals } from '../src/fsd/features/knowledge-notes/hooks/use-block-proposals';
+import { contentProposalCompletionKey } from '../src/fsd/features/knowledge-notes/lib/proposal-completions';
+import { useContentProposals } from '../src/fsd/features/knowledge-notes/hooks/use-content-proposals';
 
 const id = '11111111-1111-4111-8111-111111111111';
 const request = <T,>(operation: (token: string) => Promise<T>) =>
@@ -40,7 +41,7 @@ it('coalesces initial reads and refreshes only successful publication, explicit 
     const { Wrapper } = fixture(true);
     const { result, rerender } = renderHook(
         ({ completionKey, reconciliationKey }) =>
-            useBlockProposals({
+            useContentProposals({
                 actorId: 'owner',
                 conversationId: id,
                 request,
@@ -91,7 +92,7 @@ it('waits for an earlier history snapshot before one completion reconciliation',
     const { Wrapper } = fixture();
     const { result, rerender } = renderHook(
         ({ completionKey }) =>
-            useBlockProposals({
+            useContentProposals({
                 actorId: 'owner',
                 conversationId: id,
                 request,
@@ -115,7 +116,7 @@ it('isolates proposal caches by actor even for the same conversation ID', async 
     const { Wrapper, client } = fixture();
     const { rerender } = renderHook(
         ({ actorId }) =>
-            useBlockProposals({
+            useContentProposals({
                 actorId,
                 conversationId: id,
                 request,
@@ -127,7 +128,11 @@ it('isolates proposal caches by actor even for the same conversation ID', async 
 
     await waitFor(() =>
         expect(
-            client.getQueryData(['knowledge-block-proposals', 'owner-one', id]),
+            client.getQueryData([
+                'knowledge-content-proposals',
+                'owner-one',
+                id,
+            ]),
         ).toEqual({ proposals: [] }),
     );
 
@@ -135,21 +140,27 @@ it('isolates proposal caches by actor even for the same conversation ID', async 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
     await waitFor(() =>
         expect(
-            client.getQueryData(['knowledge-block-proposals', 'owner-two', id]),
+            client.getQueryData([
+                'knowledge-content-proposals',
+                'owner-two',
+                id,
+            ]),
         ).toEqual({ proposals: [] }),
     );
 });
 
 it('uses one reconnect reconciliation when its snapshot already includes the completed publication', async () => {
     let resolveReconnect!: (response: Response) => void;
-    const proposal = KnowledgeBlockProposalSchema.parse({
+    const proposal = KnowledgeContentProposalSchema.parse({
         id,
         turnId: id,
         conversationId: id,
         noteId: id,
         branchId: id,
         baseBranchVersion: 1,
-        blocks: [{ id, type: 'grammar', language: 'en', rule: 'A rule.' }],
+        body: proposalBody([
+            { id, type: 'grammar', language: 'en', rule: 'A rule.' },
+        ]),
         createdAt: '2026-11-06T00:00:00.000Z',
         appliedAt: null,
         appliedBranchVersion: null,
@@ -168,7 +179,7 @@ it('uses one reconnect reconciliation when its snapshot already includes the com
     const { Wrapper } = fixture();
     const { result, rerender } = renderHook(
         ({ completionKey, reconciliationKey }) =>
-            useBlockProposals({
+            useContentProposals({
                 actorId: 'owner',
                 conversationId: id,
                 request,
@@ -251,21 +262,21 @@ it('only successful durable proposal outcomes alter publication identity', () =>
         'cancelled',
     ] as const) {
         detail.turns[0]!.status = status;
-        expect(blockProposalCompletionKey(detail)).toBe('');
+        expect(contentProposalCompletionKey(detail)).toBe('');
     }
 
     detail.turns[0]!.status = 'succeeded';
-    expect(blockProposalCompletionKey(detail)).toBe(id);
+    expect(contentProposalCompletionKey(detail)).toBe(id);
     detail.messages[0]!.responseMetadata = {
         kind: 'revision',
         documentUse: true,
     };
 
-    expect(blockProposalCompletionKey(detail)).toBe('');
+    expect(contentProposalCompletionKey(detail)).toBe('');
     detail.messages[0]!.responseMetadata = {
         kind: 'clarification',
         documentUse: false,
     };
 
-    expect(blockProposalCompletionKey(detail)).toBe('');
+    expect(contentProposalCompletionKey(detail)).toBe('');
 });

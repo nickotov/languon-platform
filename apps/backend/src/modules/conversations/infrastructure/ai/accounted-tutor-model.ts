@@ -4,6 +4,7 @@ import {
     type TextAiProviderAttemptWitness,
 } from '../../../text-ai/infrastructure/ai/text-ai-provider-attempt-context.js';
 import { randomUUID } from 'node:crypto';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { ConversationError } from '../../domain/conversation.js';
 import type { LanguageModel, MastraModelConfig } from '@mastra/core/llm';
 import type {
@@ -78,6 +79,8 @@ export function createTutorModelGate(options: {
         null;
     const maxCalls = options.maxCalls ?? 5;
     const maxMemoryCalls = options.maxMemoryCalls ?? 2;
+    const validationContext = new AsyncLocalStorage<string>();
+    const structuredCalls = new Map<string, TutorCallAdmission[]>();
 
     const wrap = <Model extends TutorExecutableModel>(
         model: Model,
@@ -138,8 +141,10 @@ export function createTutorModelGate(options: {
             }
 
             allocatedOutputTokens += maxOutputTokens;
+            const validationId = validationContext.getStore();
             const call: TutorCallAdmission = {
                 callId: randomUUID(),
+                ...(validationId ? { validationId } : {}),
                 purpose,
                 inputTokenEstimate,
                 maxOutputTokens,
@@ -152,6 +157,10 @@ export function createTutorModelGate(options: {
 
             try {
                 const admitted = await options.accounting.admit(call);
+                if (call.validationId) {
+                    structuredCalls.get(call.validationId)!.push(call);
+                }
+
                 if (admitted) {
                     if (
                         !Number.isSafeInteger(admitted.maxOutputTokens) ||
@@ -478,6 +487,45 @@ export function createTutorModelGate(options: {
 
     return {
         wrap,
+        withStructuredValidation<T>(
+            validationId: string,
+            work: () => PromiseLike<T>,
+        ): Promise<T> {
+            if (!validationId || structuredCalls.has(validationId)) {
+                throw new Error(
+                    'Structured validation identity must be unique.',
+                );
+            }
+
+            structuredCalls.set(validationId, []);
+
+            return Promise.resolve(validationContext.run(validationId, work));
+        },
+        async acceptStructuredCall(validationId: string) {
+            const admitted = structuredCalls.get(validationId);
+            if (!admitted?.length) {
+                throw new Error('Structured validation has no admitted call.');
+            }
+
+            if (admitted.some((call) => call.outputLimitReached)) {
+                throw new Error(
+                    'Incomplete provider output cannot be accepted.',
+                );
+            }
+
+            for (const call of admitted) {
+                await options.accounting.validateStructuredCall?.(call, {
+                    accepted: true,
+                });
+            }
+        },
+        async rejectStructuredCall(validationId: string) {
+            for (const call of structuredCalls.get(validationId) ?? []) {
+                await options.accounting.validateStructuredCall?.(call, {
+                    accepted: false,
+                });
+            }
+        },
         signal,
         abort: (reason?: unknown) => controller.abort(reason),
         get providerFailure() {

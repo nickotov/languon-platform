@@ -2,6 +2,11 @@ import { z } from 'zod';
 import { createInteractiveKnowledgeBodySchema } from './knowledge-interactive';
 import type { LearningBlock } from './learning-blocks';
 import { ExerciseGenerationRequestSchema } from './exercise-generation';
+import { GenerationRunSummarySchema } from './generation-runs';
+import {
+    ConversationEditorContextSchema,
+    ConversationEditorTargetSchema,
+} from './conversation-editor-context';
 import {
     ConversationPromptMentionsSchema,
     validConversationPromptMentions,
@@ -392,6 +397,12 @@ export const ProseKnowledgeBodySchema = z
 export const InteractiveKnowledgeBodySchema =
     createInteractiveKnowledgeBodySchema(BoundedDocumentSchema);
 export const KnowledgeBodySchema = InteractiveKnowledgeBodySchema;
+/** Proposal fragments bind references against captured dependencies at publication. */
+export const KnowledgeContentFragmentSchema =
+    createInteractiveKnowledgeBodySchema(
+        BoundedDocumentSchema,
+        'proposal-fragment',
+    );
 export type KnowledgeBody = z.infer<typeof KnowledgeBodySchema>;
 export const KnowledgeNoteContentSchema = z
     .object({
@@ -871,7 +882,7 @@ export const ConversationToolCallSchema = z
         name: z.enum([
             'read_source_context',
             'propose_knowledge_note',
-            'propose_learning_blocks',
+            'propose_learning_content',
             'propose_dictionary_snippet',
             'read_dictionary_snippet',
         ]),
@@ -879,22 +890,6 @@ export const ConversationToolCallSchema = z
     })
     .strict();
 export type ConversationToolCall = z.infer<typeof ConversationToolCallSchema>;
-/** UTF-16 offsets in the exact plain editor snapshot sent with a turn. */
-export const ConversationEditorAnchorSchema = z
-    .object({
-        from: z.number().int().nonnegative(),
-        to: z.number().int().nonnegative(),
-        originalText: longAssistantText(),
-        documentHash: z.string().regex(/^[a-f0-9]{64}$/u),
-    })
-    .strict();
-export const ConversationEditorTargetSchema =
-    ConversationEditorAnchorSchema.extend({
-        proposalMode: z.enum(['insert', 'append', 'replace']).optional(),
-    }).strict();
-export type ConversationEditorTarget = z.infer<
-    typeof ConversationEditorTargetSchema
->;
 /** Safe presentation metadata; private request plans and model output remain server-only. */
 export const ConversationResponseMetadataSchema = z
     .object({
@@ -970,6 +965,7 @@ export const ConversationTurnSchema = z
         modelId: z.null(),
         id: z.uuid(),
         conversationId: z.uuid(),
+        generationRunId: z.uuid().optional(),
         status: z.enum([
             'queued',
             'running',
@@ -1007,6 +1003,10 @@ export const ConversationEventSchema = z
             }),
             z.object({ type: z.literal('turn'), data: ConversationTurnSchema }),
             z.object({ type: z.literal('draft'), data: KnowledgeDraftSchema }),
+            z.object({
+                type: z.literal('generation-run'),
+                data: GenerationRunSummarySchema,
+            }),
             z.object({
                 type: z.literal('snapshot'),
                 data: ConversationDetailSchema,
@@ -1056,26 +1056,7 @@ export const SubmitConversationTurnRequestSchema = z
                 'Mention each learning block only once.',
             )
             .optional(),
-        editorContext: z
-            .object({
-                content: longAssistantText(),
-                selectedText: longAssistantText().optional(),
-                workingBranch: z
-                    .object({
-                        id: z.uuid(),
-                        version: z.number().int().positive(),
-                    })
-                    .strict()
-                    .optional(),
-                editorTarget: ConversationEditorAnchorSchema,
-                proposalTarget: ConversationEditorAnchorSchema.extend({
-                    mode: z.enum(['insert', 'append', 'replace']),
-                })
-                    .strict()
-                    .optional(),
-            })
-            .strict()
-            .optional(),
+        editorContext: ConversationEditorContextSchema.optional(),
         draftContext: z
             .object({
                 content: z.string().max(80_000).refine(validAssistantText),

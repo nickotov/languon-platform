@@ -1,3 +1,4 @@
+import { generationPlanRevisionPrompt } from './local/generation-plan-revision';
 import { dictionaryChatSnippetAuthoringPrompt } from './local/dictionary-chat-snippet-authoring';
 import { learningContentAuthoringPrompt } from './local/learning-content-authoring';
 import { tutorRequestResolutionPrompt } from './local/tutor-request-resolution';
@@ -18,6 +19,10 @@ import { dictionaryCardAuthoringPrompt } from './local/dictionary-card-authoring
 import { contextualLanguageTutorPrompt } from './local/contextual-language-tutor';
 
 const localPromptDefinitions = [
+    {
+        ...generationPlanRevisionPrompt,
+        sourcePath: 'packages/prompts/src/local/generation-plan-revision.ts',
+    },
     {
         ...dictionaryChatSnippetAuthoringPrompt,
         sourcePath:

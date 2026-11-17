@@ -1,3 +1,4 @@
+import { readTutorPlannerState } from '../../../../src/modules/conversations/application/tutor-planner-prompt';
 import { createHash, randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
@@ -16,6 +17,12 @@ import {
     type PostgresJsDatabase,
 } from '@languon/database';
 import { and, desc, eq, sql } from 'drizzle-orm';
+import {
+    GenerationPlanSchema,
+    SubmitConversationTurnRequestSchema,
+    type KnowledgeBody,
+    type LearningBlock,
+} from '@languon/contracts';
 import { databaseSchema } from '../../../../src/infrastructure/database/schema';
 import { createConversationWorkerComposition } from '../../../../src/modules/conversations/infrastructure/conversation-worker-composition';
 import {
@@ -42,6 +49,7 @@ import { textAiPreferencesTable } from '../../../../src/modules/text-ai/infrastr
 import { textAiProbesTable as probes } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/probe-schema';
 import { pinProviderPrice } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-provider-prices';
 import { seedLegacyActionFixture } from '../../../support/legacy-action-fixture';
+import { namedExerciseFixture } from '../../../support/named-exercise-fixture';
 import {
     fixtureRouteFingerprint,
     seedTextAiRoutingFixture,
@@ -80,6 +88,62 @@ const content = {
         },
     },
 };
+
+function proposalBlocks(body: unknown): LearningBlock[] {
+    const content =
+        body && typeof body === 'object' && 'document' in body
+            ? (body as { document?: { content?: unknown[] } }).document?.content
+            : undefined;
+
+    return (content ?? []).flatMap((node) => {
+        if (
+            node &&
+            typeof node === 'object' &&
+            (node as { type?: unknown }).type === 'learningBlock'
+        ) {
+            const block = (node as { attrs?: { block?: unknown } }).attrs
+                ?.block;
+
+            return block ? [block as LearningBlock] : [];
+        }
+
+        return [];
+    });
+}
+
+function contentBody(blocks: LearningBlock[]): KnowledgeBody {
+    return {
+        schemaVersion: 2,
+        document: {
+            type: 'doc',
+            content: blocks.map((block) => ({
+                type: 'learningBlock',
+                attrs: { block },
+            })),
+        },
+    };
+}
+
+async function listContentProposalsWithBlocks(
+    store: DrizzleConversationStore,
+    ...args: Parameters<DrizzleConversationStore['listContentProposals']>
+) {
+    const result = await store.listContentProposals(...args);
+
+    return {
+        proposals: result.proposals.map((proposal) => ({
+            ...proposal,
+            blocks: proposalBlocks(proposal.body),
+        })),
+    };
+}
+
+async function applyContentProposal(
+    store: DrizzleConversationStore,
+    ...args: Parameters<DrizzleConversationStore['applyContentProposal']>
+) {
+    return store.applyContentProposal(...args);
+}
 
 /** Keep real admission, the production worker, Mastra SDK and settlement; replace only external HTTP. */
 describe.runIf(isDatabaseIntegrationEnabled())(
@@ -218,6 +282,519 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 creditSettlementRevision: 1,
             });
         }
+
+        it('atomically transfers nonempty pending source snapshots to a run while preserving proposal history and unrelated memory', async () => {
+            await readyOperatorRoute();
+            const sourceSentinel = `private-source-${randomUUID()}`;
+            const grammar = {
+                id: randomUUID(),
+                type: 'grammar' as const,
+                language: 'fr',
+                rule: sourceSentinel,
+            };
+            const note = await knowledge.create(ownerId, {
+                operationId: randomUUID(),
+                content: { ...content, body: contentBody([grammar]) },
+            });
+            const workspace = await knowledge.getWorkspace(ownerId, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(
+                { ownerId },
+                { source: { kind: 'knowledge', id: note.id } },
+            );
+
+            await store.submit(
+                { ownerId },
+                chat.id,
+                SubmitConversationTurnRequestSchema.parse({
+                    requestId: randomUUID(),
+                    content: 'Practice this grammar.',
+                    editorContext: {
+                        content: '',
+                        editorTarget: {
+                            from: 0,
+                            to: 0,
+                            originalText: '',
+                            documentHash: createHash('sha256')
+                                .update('')
+                                .digest('hex'),
+                        },
+                        workingBranch: {
+                            id: branch.id,
+                            version: branch.version,
+                        },
+                    },
+                }),
+            );
+
+            const turn = (await store.claim())!;
+            const priorProposal = {
+                id: randomUUID(),
+                summary: 'Previously proposed vocabulary.',
+                kinds: ['vocabulary'],
+                ordinal: 1,
+            };
+            const pendingProposalId = randomUUID();
+            const pending = {
+                pending: {
+                    tasks: [
+                        {
+                            id: 'practice',
+                            kind: 'exercises',
+                            instruction: 'Practice the captured source.',
+                            language: 'fr',
+                            explanationLanguage: 'fr',
+                            source: { kind: 'editor' },
+                            count: 1,
+                            activities: [{ activityId: 'G02', count: 1 }],
+                        },
+                    ],
+                    outputOrder: ['practice'],
+                },
+                replyLanguage: 'en',
+                proposals: [priorProposal],
+                pendingProposalIds: [pendingProposalId],
+                pendingSources: {
+                    blocks: [grammar],
+                    tasks: [{ taskId: 'practice', blockIds: [grammar.id] }],
+                },
+            };
+
+            await store.memory(turn).writeState({
+                'learning-request:v1': pending,
+                'independent-state': { marker: 'retain-this-memory' },
+            });
+
+            const readMemory = async () => {
+                const rows =
+                    await client`select key,value from conversation_memory where conversation_id=${chat.id}::uuid`;
+
+                return Object.fromEntries(
+                    rows.map((row) => [row.key, row.value]),
+                );
+            };
+
+            expect((await readMemory())['learning-request:v1']).toEqual(
+                pending,
+            );
+
+            const plan = GenerationPlanSchema.parse({
+                schemaVersion: 1,
+                replyLanguage: 'en',
+                sources: [
+                    {
+                        id: 'rule',
+                        kind: 'grammar',
+                        reference: { kind: 'block', blockId: grammar.id },
+                    },
+                ],
+                tasks: [
+                    {
+                        id: 'practice',
+                        kind: 'exercises',
+                        instruction: 'Practice the captured source.',
+                        language: 'fr',
+                        explanationLanguage: 'fr',
+                        inputs: [{ kind: 'source', sourceId: 'rule' }],
+                        activities: [{ activityId: 'G02', count: 1 }],
+                    },
+                ],
+                outputOrder: ['practice'],
+            });
+            const run = await store.startGeneration(turn, plan, [
+                { sourceId: 'rule', blocks: [grammar] },
+            ]);
+            const transferred = await readMemory();
+            expect(transferred).toMatchObject({
+                'learning-request:v1': {
+                    pending: null,
+                    proposals: [priorProposal],
+                    replyLanguage: 'en',
+                },
+                'independent-state': { marker: 'retain-this-memory' },
+            });
+
+            expect(
+                transferred['learning-request:v1'].pendingSources,
+            ).toBeUndefined();
+
+            expect(
+                transferred['learning-request:v1'].pendingProposalIds,
+            ).toBeUndefined();
+
+            expect(JSON.stringify(transferred)).not.toContain(sourceSentinel);
+            expect(JSON.stringify(transferred)).not.toContain(
+                pendingProposalId,
+            );
+
+            expect(
+                (await store.generationContext(turn))?.sources[0]?.blocks,
+            ).toEqual([grammar]);
+
+            await store.stop({ ownerId }, chat.id, turn.id);
+            await store.finish(turn, 'cancelled');
+            await store.discardGenerationRun({ ownerId }, chat.id, run.runId, {
+                requestId: randomUUID(),
+                expectedRevision: 1,
+            });
+
+            expect(await readMemory()).toEqual(transferred);
+        });
+
+        it.each([false, true])(
+            'executes the retained French/Russian lesson through the real worker (pause and discard: %s)',
+            async (pauseAndDiscard) => {
+                const privatePlanMarker = `private-plan-${randomUUID()}`;
+                await readyOperatorRoute();
+                const note = await knowledge.create(ownerId, {
+                    operationId: randomUUID(),
+                    content,
+                });
+                const workspace = await knowledge.getWorkspace(
+                    ownerId,
+                    note.id,
+                );
+                const branch = workspace.branches.find(
+                    (item) => item.id === workspace.preferredBranchId,
+                )!;
+                const chat = await store.create(
+                    { ownerId },
+                    { source: { kind: 'knowledge', id: note.id } },
+                );
+                const reading = {
+                    id: randomUUID(),
+                    type: 'bilingual-text' as const,
+                    language: 'fr',
+                    segments: [
+                        {
+                            id: randomUUID(),
+                            text: 'Les habitants débattent de la démocratie locale.',
+                        },
+                    ],
+                    translations: [
+                        {
+                            language: 'ru',
+                            segments: [
+                                {
+                                    sourceSegmentId: '',
+                                    text: 'Жители обсуждают местную демократию.',
+                                },
+                            ],
+                        },
+                    ],
+                };
+
+                reading.translations[0]!.segments[0]!.sourceSegmentId =
+                    reading.segments[0]!.id;
+
+                const grammar = {
+                    id: randomUUID(),
+                    type: 'grammar' as const,
+                    language: 'fr',
+                    rule: 'Le COD devient sujet à la voix passive, alors que le COI ne le devient pas.',
+                };
+                const readingExercises = ['R01', 'R04', 'R08'].map(
+                    (activityId) =>
+                        namedExerciseFixture({
+                            activityId: activityId as 'R01' | 'R04' | 'R08',
+                            sources: [reading],
+                            language: 'fr',
+                            explanationLanguage: 'fr',
+                        }),
+                );
+                const grammarExercises = Array.from(
+                    { length: 4 },
+                    (_, index) => ({
+                        ...namedExerciseFixture({
+                            activityId: 'G02',
+                            sources: [grammar],
+                            language: 'fr',
+                            explanationLanguage: 'fr',
+                        }),
+                        question: `Appliquez la règle du COD ou du COI dans le cas ${index + 1}.`,
+                    }),
+                );
+                const authorResponses = [
+                    [{ taskId: 'reading', blocks: [reading] }],
+                    [{ taskId: 'reading-exercises', blocks: readingExercises }],
+                    [{ taskId: 'grammar', blocks: [grammar] }],
+                    [{ taskId: 'grammar-exercises', blocks: grammarExercises }],
+                ];
+                let requestCount = 0;
+                const outgoing: Record<string, unknown>[] = [];
+                vi.stubGlobal(
+                    'fetch',
+                    vi.fn(
+                        async (
+                            _url: string | URL | Request,
+                            request?: RequestInit,
+                        ) => {
+                            const body = JSON.parse(
+                                String(request?.body),
+                            ) as Record<string, unknown>;
+
+                            outgoing.push(body);
+                            requestCount += 1;
+                            if (pauseAndDiscard && requestCount === 2) {
+                                const [startedMemory] =
+                                    await client`select value from conversation_memory where conversation_id=${chat.id}::uuid and key='learning-request:v1'`;
+
+                                expect(startedMemory?.value).toMatchObject({
+                                    pending: null,
+                                });
+
+                                expect(
+                                    startedMemory?.value.pendingSources,
+                                ).toBeUndefined();
+
+                                expect(
+                                    JSON.stringify(startedMemory?.value),
+                                ).not.toContain(privatePlanMarker);
+                            }
+
+                            const value =
+                                requestCount === 1
+                                    ? {
+                                          kind: 'generate',
+                                          replyLanguage: 'en',
+                                          brief: {
+                                              tasks: [
+                                                  {
+                                                      id: 'reading',
+                                                      kind: 'bilingual-text',
+                                                      language: 'fr',
+                                                      translationLanguage: 'ru',
+                                                      instruction:
+                                                          'Write a French reading on democracy in France.',
+                                                  },
+                                                  {
+                                                      id: 'reading-exercises',
+                                                      kind: 'exercises',
+                                                      language: 'fr',
+                                                      explanationLanguage: 'fr',
+                                                      instruction:
+                                                          'Check comprehension.',
+                                                      source: {
+                                                          kind: 'task',
+                                                          taskId: 'reading',
+                                                      },
+                                                      count: 3,
+                                                      activities: [
+                                                          {
+                                                              activityId: 'R01',
+                                                              count: 1,
+                                                          },
+                                                          {
+                                                              activityId: 'R04',
+                                                              count: 1,
+                                                          },
+                                                          {
+                                                              activityId: 'R08',
+                                                              count: 1,
+                                                          },
+                                                      ],
+                                                  },
+                                                  {
+                                                      id: 'grammar',
+                                                      kind: 'grammar',
+                                                      language: 'fr',
+                                                      explanationLanguage: 'fr',
+                                                      instruction: `${privatePlanMarker}: Explain COD, COI and passive voice.`,
+                                                  },
+                                                  {
+                                                      id: 'grammar-exercises',
+                                                      kind: 'exercises',
+                                                      language: 'fr',
+                                                      explanationLanguage: 'fr',
+                                                      instruction:
+                                                          'Check grammar.',
+                                                      source: {
+                                                          kind: 'task',
+                                                          taskId: 'grammar',
+                                                      },
+                                                      count: 4,
+                                                      activities: [
+                                                          {
+                                                              activityId: 'G02',
+                                                              count: 4,
+                                                          },
+                                                      ],
+                                                  },
+                                              ],
+                                              outputOrder: [
+                                                  'reading',
+                                                  'reading-exercises',
+                                                  'grammar',
+                                                  'grammar-exercises',
+                                              ],
+                                          },
+                                      }
+                                    : {
+                                          tasks:
+                                              authorResponses[
+                                                  requestCount - 2
+                                              ] ?? [],
+                                      };
+
+                            return Response.json({
+                                id: `lesson-${requestCount}`,
+                                object: 'chat.completion',
+                                created: 1,
+                                model: model.id,
+                                provider: 'OpenAI',
+                                choices: [
+                                    {
+                                        index: 0,
+                                        message: {
+                                            role: 'assistant',
+                                            content: JSON.stringify(value),
+                                        },
+                                        finish_reason: 'stop',
+                                    },
+                                ],
+                                usage: {
+                                    prompt_tokens: 50,
+                                    completion_tokens: pauseAndDiscard
+                                        ? requestCount === 1
+                                            ? 300
+                                            : 3900
+                                        : 80,
+                                    total_tokens: pauseAndDiscard
+                                        ? requestCount === 1
+                                            ? 350
+                                            : 3950
+                                        : 130,
+                                    cost: 0.00001,
+                                },
+                            });
+                        },
+                    ),
+                );
+
+                const submitted = await store.submit({ ownerId }, chat.id, {
+                    requestId: randomUUID(),
+                    content:
+                        'Create the retained French/Russian democracy lesson with three reading exercises, COD/COI grammar and four grammar exercises.',
+                    attachments: [],
+                    editorContext: {
+                        content: 'French vocabulary.',
+                        editorTarget: {
+                            from: 18,
+                            to: 18,
+                            originalText: '',
+                            documentHash: createHash('sha256')
+                                .update('French vocabulary.')
+                                .digest('hex'),
+                        },
+                        workingBranch: {
+                            id: branch.id,
+                            version: branch.version,
+                        },
+                    },
+                });
+                const worker = createConversationWorkerComposition({
+                    database: db,
+                    dictionaryHmacSecret: secret,
+                    credentials: textAiFixtureCredentials,
+                });
+
+                expect(
+                    await worker.processNext(new AbortController().signal),
+                ).toBe(true);
+
+                const detail = await store.detail({ ownerId }, chat.id);
+                expect(
+                    detail.turns.find((turn) => turn.id === submitted.id),
+                ).toMatchObject({ status: 'succeeded', failureCode: null });
+
+                expect(outgoing).toHaveLength(pauseAndDiscard ? 3 : 5);
+                const runs = await store.listGenerationRuns(
+                    { ownerId },
+                    chat.id,
+                );
+
+                if (pauseAndDiscard) {
+                    const run = runs.runs[0]!;
+                    expect(run).toMatchObject({
+                        state: 'paused',
+                        pauseReason: 'budget',
+                        completedTaskCount: 2,
+                        totalTaskCount: 4,
+                    });
+
+                    const readPlannerState = async () => {
+                        const [row] =
+                            await client`select value from conversation_memory where conversation_id=${chat.id}::uuid and key='learning-request:v1'`;
+
+                        return row?.value as {
+                            pending: unknown;
+                            pendingSources?: unknown;
+                            proposals: unknown[];
+                        };
+                    };
+                    const pausedMemory = await readPlannerState();
+                    expect(pausedMemory.pending).toBeNull();
+                    expect(pausedMemory.pendingSources).toBeUndefined();
+                    expect(JSON.stringify(pausedMemory)).not.toContain(
+                        privatePlanMarker,
+                    );
+
+                    expect(
+                        await store.listContentProposals({ ownerId }, chat.id),
+                    ).toMatchObject({ proposals: [] });
+
+                    await store.discardGenerationRun(
+                        { ownerId },
+                        chat.id,
+                        run.id,
+                        {
+                            requestId: randomUUID(),
+                            expectedRevision: run.revision,
+                        },
+                    );
+
+                    const discardedMemory = await readPlannerState();
+                    expect(discardedMemory).toEqual(pausedMemory);
+                    expect(discardedMemory.pending).toBeNull();
+                    expect(
+                        readTutorPlannerState(discardedMemory),
+                    ).toMatchObject({ pending: null, proposals: [] });
+
+                    expect(discardedMemory.pendingSources).toBeUndefined();
+                    expect(JSON.stringify(discardedMemory)).not.toContain(
+                        privatePlanMarker,
+                    );
+
+                    const [privateRows] =
+                        await client`select (select count(*)::integer from conversation_generation_plan_revisions where run_id=${run.id}::uuid) as revisions, (select count(*)::integer from conversation_generation_run_artifacts where run_id=${run.id}::uuid) as artifacts`;
+
+                    expect(privateRows).toEqual({ revisions: 0, artifacts: 0 });
+
+                    return;
+                }
+
+                expect(runs.runs[0]).toMatchObject({
+                    state: 'completed',
+                    completedTaskCount: 4,
+                    totalTaskCount: 4,
+                });
+
+                const proposals = await listContentProposalsWithBlocks(
+                    store,
+                    { ownerId },
+                    chat.id,
+                );
+
+                expect(proposals.proposals).toHaveLength(1);
+                expect(
+                    proposals.proposals[0]!.blocks.filter(
+                        (block) => block.type === 'exercise',
+                    ),
+                ).toHaveLength(7);
+            },
+        );
 
         it.each([
             {
@@ -794,10 +1371,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                                     id: 'synthetic-second-target-tool',
                                                     type: 'function',
                                                     function: {
-                                                        name: 'propose_learning_blocks',
+                                                        name: 'propose_learning_content',
                                                         arguments:
                                                             JSON.stringify({
-                                                                blocks,
+                                                                body: contentBody(
+                                                                    blocks as LearningBlock[],
+                                                                ),
                                                                 targetBlockId:
                                                                     secondTargetBlockId,
                                                             }),
@@ -813,9 +1392,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                           id: 'synthetic-vocabulary-tool',
                                           type: 'function',
                                           function: {
-                                              name: 'propose_learning_blocks',
+                                              name: 'propose_learning_content',
                                               arguments: JSON.stringify({
-                                                  blocks,
+                                                  body: contentBody(
+                                                      blocks as LearningBlock[],
+                                                  ),
                                                   ...(operation !== 'append'
                                                       ? { targetBlockId }
                                                       : {}),
@@ -930,7 +1511,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         ),
                     ).toBe(true);
 
-                    const proposals = await store.listBlockProposals(
+                    const proposals = await listContentProposalsWithBlocks(
+                        store,
                         { ownerId },
                         chat.id,
                     );
@@ -975,7 +1557,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
                         let version = branch.version;
                         for (const proposal of proposals.proposals) {
-                            const applied = await store.applyBlockProposal(
+                            const applied = await applyContentProposal(
+                                store,
                                 { ownerId },
                                 chat.id,
                                 proposal.id,
@@ -987,7 +1570,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
                         expect(
                             (
-                                await store.listBlockProposals(
+                                await listContentProposalsWithBlocks(
+                                    store,
                                     { ownerId },
                                     chat.id,
                                 )
@@ -998,7 +1582,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             blockId: targetBlockId,
                         });
 
-                        const accepted = await store.applyBlockProposal(
+                        const accepted = await applyContentProposal(
+                            store,
                             { ownerId },
                             chat.id,
                             proposals.proposals[0]!.id,
@@ -1034,8 +1619,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
                     expect(result.usage.chargedCredits).toBe('0');
                     expect(
-                        (await store.listBlockProposals({ ownerId }, chat.id))
-                            .proposals,
+                        (
+                            await listContentProposalsWithBlocks(
+                                store,
+                                { ownerId },
+                                chat.id,
+                            )
+                        ).proposals,
                     ).toHaveLength(0);
                 }
 
@@ -1164,7 +1754,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
                     expect(
                         (
-                            await store.listBlockProposals(
+                            await listContentProposalsWithBlocks(
+                                store,
                                 { ownerId },
                                 recoveredChat.id,
                             )
@@ -1447,7 +2038,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
 
             const firstProposal = (
-                await store.listBlockProposals({ ownerId }, chat.id)
+                await listContentProposalsWithBlocks(
+                    store,
+                    { ownerId },
+                    chat.id,
+                )
             ).proposals[0];
 
             expect(firstProposal).toBeDefined();
@@ -1457,7 +2052,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 );
             }
 
-            const applied = await store.applyBlockProposal(
+            const applied = await applyContentProposal(
+                store,
                 { ownerId },
                 chat.id,
                 firstProposal.id,
@@ -1499,7 +2095,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             ).toBe('succeeded');
 
-            const proposals = await store.listBlockProposals(
+            const proposals = await listContentProposalsWithBlocks(
+                store,
                 { ownerId },
                 chat.id,
             );

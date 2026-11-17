@@ -1,3 +1,4 @@
+import { bodyBlocks } from '../infrastructure/ai/learning-generation-plan';
 import { randomUUID } from 'node:crypto';
 import { expect, it, vi } from 'vitest';
 import { LearningContentBriefSchema } from './learning-content-contract';
@@ -197,7 +198,7 @@ it('deduplicates an exact authorized selection while preserving its named exerci
     expect(result.status).toBe('ready');
     expect(generate).toHaveBeenCalledOnce();
     if (result.status === 'ready') {
-        const block = result.proposal.blocks[0];
+        const block = bodyBlocks(result.proposal.body)[0];
         expect(block?.type === 'exercise' && block.semantics?.sources).toEqual([
             {
                 kind: 'text-selection',

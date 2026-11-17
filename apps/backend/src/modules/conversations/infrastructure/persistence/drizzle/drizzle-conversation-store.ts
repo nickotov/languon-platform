@@ -1,17 +1,19 @@
+import type { GenerationRunStore } from '../../../application/ports/generation-run-store';
+import { createGenerationRunStore } from './generation-run-store';
 import {
     conversationProposeDictionarySnippet,
     conversationReadDictionarySnippet,
     conversationListDictionarySnippets,
     conversationApplyDictionarySnippet,
 } from './conversation-dictionary-snippets';
-import { conversationReadBlockProposal } from './conversation-proposal-readback';
+import { conversationReadContentProposal } from './conversation-proposal-readback';
 import { conversationRecordResponseMetadata } from './conversation-response-metadata';
 import {
-    conversationProposeBlocks,
-    conversationProposeBlockBatch,
-    conversationListBlockProposals,
-    conversationApplyBlockProposal,
-} from './conversation-block-proposals';
+    conversationProposeContent,
+    conversationProposeContentBatch,
+    conversationListContentProposals,
+    conversationApplyContentProposal,
+} from './conversation-content-proposals';
 import {
     type ApplyDictionaryChatSnippetRequest,
     type DictionaryChatSnippetInput,
@@ -22,7 +24,7 @@ import {
     type ConversationToolCall,
     type CreateConversationRequest,
     type KnowledgeNoteContent,
-    type LearningBlockProposalInput,
+    type LearningContentProposalInput,
     type PublishKnowledgeDraftRequest,
     type SubmitConversationTurnRequest,
     type UpdateConversationRequest,
@@ -82,12 +84,42 @@ export { type ConversationPersistenceDependencies } from './conversation-persist
 
 export class DrizzleConversationStore implements ConversationStore {
     private readonly persistence: ConversationPersistenceContext;
+    readonly assertGenerationProposal: Required<GenerationRunStore>['assertGenerationProposal'];
+    readonly linkGenerationProposal: Required<GenerationRunStore>['linkGenerationProposal'];
+    readonly generationContext: Required<GenerationRunStore>['generationContext'];
+    readonly startGeneration: Required<GenerationRunStore>['startGeneration'];
+    readonly checkpointGeneration: Required<GenerationRunStore>['checkpointGeneration'];
+    readonly pauseGeneration: Required<GenerationRunStore>['pauseGeneration'];
+    readonly proposeGenerationRevision: Required<GenerationRunStore>['proposeGenerationRevision'];
+    readonly listGenerationRuns: Required<GenerationRunStore>['listGenerationRuns'];
+    readonly getGenerationRun: Required<GenerationRunStore>['getGenerationRun'];
+    readonly continueGenerationRun: Required<GenerationRunStore>['continueGenerationRun'];
+    readonly reviseGenerationRun: Required<GenerationRunStore>['reviseGenerationRun'];
+    readonly applyGenerationRevision: Required<GenerationRunStore>['applyGenerationRevision'];
+    readonly resolveGenerationSource: Required<GenerationRunStore>['resolveGenerationSource'];
+    readonly discardGenerationRun: Required<GenerationRunStore>['discardGenerationRun'];
 
     constructor(dependencies: ConversationPersistenceDependencies) {
         this.persistence = {
             dependencies,
             now: dependencies.now ?? (() => new Date()),
         };
+
+        const generation = createGenerationRunStore(this.persistence);
+        this.assertGenerationProposal = generation.assertGenerationProposal;
+        this.linkGenerationProposal = generation.linkGenerationProposal;
+        this.generationContext = generation.generationContext;
+        this.startGeneration = generation.startGeneration;
+        this.checkpointGeneration = generation.checkpointGeneration;
+        this.pauseGeneration = generation.pauseGeneration;
+        this.proposeGenerationRevision = generation.proposeGenerationRevision;
+        this.listGenerationRuns = generation.listGenerationRuns;
+        this.getGenerationRun = generation.getGenerationRun;
+        this.continueGenerationRun = generation.continueGenerationRun;
+        this.reviseGenerationRun = generation.reviseGenerationRun;
+        this.applyGenerationRevision = generation.applyGenerationRevision;
+        this.resolveGenerationSource = generation.resolveGenerationSource;
+        this.discardGenerationRun = generation.discardGenerationRun;
     }
 
     proposeDictionarySnippet(
@@ -132,44 +164,53 @@ export class DrizzleConversationStore implements ConversationStore {
         );
     }
 
-    proposeBlocks(
+    proposeContent(
         turn: ClaimedConversationTurn,
-        input: LearningBlockProposalInput,
+        input: LearningContentProposalInput,
         signal?: AbortSignal,
+        validationIds?: string[],
     ) {
-        return conversationProposeBlocks(this.persistence, turn, input, signal);
+        return conversationProposeContent(
+            this.persistence,
+            turn,
+            input,
+            signal,
+            validationIds,
+        );
     }
 
-    proposeBlockBatch(
+    proposeContentBatch(
         turn: ClaimedConversationTurn,
-        inputs: LearningBlockProposalInput[],
+        inputs: LearningContentProposalInput[],
         signal?: AbortSignal,
+        validationIds?: string[],
     ) {
-        return conversationProposeBlockBatch(
+        return conversationProposeContentBatch(
             this.persistence,
             turn,
             inputs,
             signal,
+            validationIds,
         );
     }
 
-    readBlockProposal(turn: ClaimedConversationTurn, proposalId: string) {
-        return conversationReadBlockProposal(
+    readContentProposal(turn: ClaimedConversationTurn, proposalId: string) {
+        return conversationReadContentProposal(
             this.persistence,
             turn,
             proposalId,
         );
     }
 
-    listBlockProposals(access: ConversationAccess, conversationId: string) {
-        return conversationListBlockProposals(
+    listContentProposals(access: ConversationAccess, conversationId: string) {
+        return conversationListContentProposals(
             this.persistence,
             access,
             conversationId,
         );
     }
 
-    applyBlockProposal(
+    applyContentProposal(
         access: ConversationAccess,
         conversationId: string,
         proposalId: string,
@@ -177,7 +218,7 @@ export class DrizzleConversationStore implements ConversationStore {
         mode?: 'proposal' | 'add-separately',
         insertionPosition?: number,
     ) {
-        return conversationApplyBlockProposal(
+        return conversationApplyContentProposal(
             this.persistence,
             access,
             conversationId,

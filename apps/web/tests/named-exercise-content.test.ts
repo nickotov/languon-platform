@@ -30,6 +30,57 @@ const vocabulary = LearningBlockSchema.parse({
     ],
 });
 
+it('copies generated prose evidence without changing its immutable artifact identity', () => {
+    const original = namedExercise();
+    const source = {
+        kind: 'generated-text',
+        origin: {
+            kind: 'generated-artifact',
+            runId: exerciseId,
+            revision: 1,
+            taskId: 'reading',
+            artifactId: answerId,
+            contentHash: 'a'.repeat(64),
+        },
+        text: 'Mira borrowed a book.',
+    };
+    const block = LearningBlockSchema.parse({
+        ...original,
+        acceptedAnswers: undefined,
+        semantics: {
+            ...original.semantics,
+            activity: { id: 'R04', version: 1 },
+            sources: [source],
+            checking: {
+                policy: 'ai-rubric',
+                rubric: {
+                    criteria: [
+                        {
+                            dimension: 'task-completion',
+                            requirement: 'Answer the question.',
+                        },
+                        {
+                            dimension: 'meaning',
+                            requirement: 'Keep the meaning of the source.',
+                        },
+                        {
+                            dimension: 'evidence',
+                            requirement:
+                                'Support the answer with source details.',
+                        },
+                    ],
+                },
+            },
+        },
+    });
+    const copied = copyLearningBlock(block);
+
+    expect(copied.id).not.toBe(block.id);
+    expect(copied.type === 'exercise' && copied.semantics?.sources).toEqual([
+        source,
+    ]);
+});
+
 function namedExercise(
     format: ExerciseLearningBlock['format'] = 'free-text',
 ): ExerciseLearningBlock {

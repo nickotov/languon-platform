@@ -3,11 +3,11 @@ import type { Config } from '@mastra/core/mastra';
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
 import {
-    KnowledgeBlockProposalSchema,
+    KnowledgeContentProposalSchema,
     ConversationResponseMetadataSchema,
     exerciseActivityCatalog,
     type ExerciseActivityId,
-    type KnowledgeBlockProposal,
+    type KnowledgeContentProposal,
 } from '@languon/contracts';
 import {
     LearningContentToolResultSchema,
@@ -100,7 +100,7 @@ type TutorPlaygroundOutput = {
     status: 'succeeded' | 'failed' | 'cancelled';
     failureCode: string | null;
     response: string;
-    proposals: KnowledgeBlockProposal[];
+    proposals: KnowledgeContentProposal[];
     diagnostics: z.infer<typeof diagnosticsSchema>;
     result?: z.infer<typeof LearningContentToolResultSchema> | null | undefined;
 };
@@ -113,7 +113,7 @@ export const TutorPlaygroundOutputSchema: z.ZodType<TutorPlaygroundOutput> = z
         status: z.enum(['succeeded', 'failed', 'cancelled']),
         failureCode: z.string().max(100).nullable(),
         response: z.string(),
-        proposals: z.array(KnowledgeBlockProposalSchema).max(100),
+        proposals: z.array(KnowledgeContentProposalSchema).max(100),
         diagnostics: diagnosticsSchema,
         result: LearningContentToolResultSchema.nullable().optional(),
     })
@@ -124,7 +124,7 @@ export function playgroundContentToolDefinition(
     kind: LearningContentTask['kind'],
 ) {
     const capability = learningContentRegistry.find(
-        (item) => item.kind === kind,
+        (item) => item.kind !== 'prose' && item.kind === kind,
     )!;
 
     return {
@@ -156,11 +156,11 @@ export function playgroundNamedExerciseToolDefinition(
 /** Studio adapters select synthetic authority; production factories own all generation and publication. */
 const readProposalOutputSchema: z.ZodType<{
     sessionId: string;
-    proposal: KnowledgeBlockProposal;
+    proposal: KnowledgeContentProposal;
 }> = z
     .object({
         sessionId: z.uuid(),
-        proposal: KnowledgeBlockProposalSchema,
+        proposal: KnowledgeContentProposalSchema,
     })
     .strict();
 
@@ -204,17 +204,27 @@ export function createTutorPlaygroundPrimitives(
         activityId: activity.id,
         definition: playgroundNamedExerciseToolDefinition(activity.id),
     }));
-    const activityTool = (kind: LearningContentTask['kind']) => {
+    const activityTool = (
+        kind: Exclude<LearningContentTask['kind'], 'prose'>,
+    ) => {
         const capability = learningContentRegistry.find(
-            (item) => item.kind === kind,
+            (item) => item.kind !== 'prose' && item.kind === kind,
         )!;
+
+        if (capability.toolId === 'generate_prose') {
+            throw new Error(
+                'Prose is authored through complete generation plans.',
+            );
+        }
+
+        const toolId = capability.toolId;
 
         return createTool({
             ...playgroundContentToolDefinition(kind),
             execute: async (data, context) =>
                 TutorPlaygroundOutputSchema.parse(
                     await service.runTool(
-                        capability.toolId,
+                        toolId,
                         data,
                         TutorPlaygroundContextSchema.parse({
                             scenarioId:

@@ -7,6 +7,9 @@ surfaces:
     - browser
     - api
 source_paths:
+    - .agent/features/070-composable-lesson-generation/**
+    - packages/contracts/src/knowledge-content-proposals.ts
+    - packages/contracts/src/generation-runs.ts
     - .agent/improvements/contextual-picker-polish.md
     - apps/web/src/fsd/shared/ui/command-menu/command-menu.tsx
     - .agent/features/069-contextual-exercise-discovery/**
@@ -71,6 +74,7 @@ e2e_scenarios:
     - durable-close-reopen-stop-retry
     - dictionary-card-copies-preserve-visible-fields
 related_features:
+    - composable-lesson-generation
     - reliable-learning-content-pipeline
     - intent-aware-learning-content
     - ai-accounting
@@ -286,6 +290,10 @@ discarded. Compact history is not permission to read a different learner's data.
 The dedicated [AI accounting guide](./ai-accounting.md) owns the repeatable
 settings, quote, canonical billing and Continue scenarios. This guide retains
 source access, publication, modes and durable lifecycle coverage.
+
+## Composable lesson generation
+
+Owned Knowledge requests can prepare one ordered proposal containing prose and several learning blocks. Larger lessons retain validated parts across explicit, freshly quoted Continue actions. Paused plans can be revised with reuse; changed sources require an explicit captured/current choice. Stop preserves eligible usage charges, technical failure is free for the current stage, and earlier charges remain. Review, Insert into the working draft and Save are separate actions. Dictionary/text/shared-source authoring permissions remain unchanged. The [Knowledge workspace journey](knowledge-workspace.md#composable-lessons-and-continuation) owns the full continuation, revision, source choice and mixed insertion recipe.
 
 ## API verification
 

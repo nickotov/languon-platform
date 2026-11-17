@@ -13,6 +13,7 @@ interface SourceTextTask {
 export function serializeLearningContentBrief(
     brief: {
         tasks: readonly SourceTextTask[];
+        outputOrder?: readonly string[] | undefined;
     },
     externalSources?: Partial<
         Record<'editor' | 'selection', string | undefined>
@@ -46,7 +47,11 @@ export function serializeLearningContentBrief(
         return { ...task, sourceTextRef: id };
     });
 
-    return JSON.stringify({ tasks, sources });
+    return JSON.stringify({
+        tasks,
+        sources,
+        ...(brief.outputOrder ? { outputOrder: brief.outputOrder } : {}),
+    });
 }
 
 /** Decode bounded transport records or the current native application brief. */
@@ -72,6 +77,7 @@ export function deserializeLearningContentBrief(
                 )
                 .min(1)
                 .max(8),
+            outputOrder: z.array(z.string().min(1).max(80)).max(8).optional(),
             sources: z
                 .array(
                     z
@@ -119,5 +125,8 @@ export function deserializeLearningContentBrief(
         );
     }
 
-    return LearningContentBriefSchema.parse({ tasks });
+    return LearningContentBriefSchema.parse({
+        tasks,
+        ...(compact.outputOrder ? { outputOrder: compact.outputOrder } : {}),
+    });
 }

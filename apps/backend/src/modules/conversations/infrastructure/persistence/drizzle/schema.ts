@@ -69,6 +69,7 @@ export const conversationsTable = pgTable(
 export const conversationTurnsTable = pgTable(
     'conversation_turns',
     {
+        generationRunId: uuid('generation_run_id'),
         id: uuid('id').primaryKey(),
         conversationId: uuid('conversation_id')
             .notNull()
@@ -187,7 +188,12 @@ export const conversationEventsTable = pgTable(
         type: text('type')
             .notNull()
             .$type<
-                'message' | 'turn' | 'draft' | 'snapshot' | 'draft-deleted'
+                | 'message'
+                | 'turn'
+                | 'draft'
+                | 'snapshot'
+                | 'draft-deleted'
+                | 'generation-run'
             >(),
         data: jsonb('data').notNull().$type<Record<string, unknown>>(),
         createdAt: time('created_at'),

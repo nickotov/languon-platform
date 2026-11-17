@@ -22,7 +22,7 @@ export type ConversationUIMessage = UIMessage<
             input: Record<string, never>;
             output: { state: 'succeeded' };
         };
-        propose_learning_blocks: {
+        propose_learning_content: {
             input: Record<string, never>;
             output: { state: 'succeeded' };
         };

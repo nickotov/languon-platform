@@ -214,7 +214,7 @@ function DetailContent({ noteId }: { noteId: string }) {
             blocks={knowledgeBlockReferences(draft.content.body.document)}
             selectionRootId='knowledge-workspace-editor'
             workspace={{
-                blockProposalContext: integrations.blockProposalContext,
+                contentProposalContext: integrations.contentProposalContext,
                 getSnapshot: actions.getSnapshot,
                 onBusyChange: view.setTutorBusy,
                 onAcceptProposal: actions.acceptProposal,

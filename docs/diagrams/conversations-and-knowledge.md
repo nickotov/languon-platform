@@ -29,7 +29,7 @@ source_paths:
     - apps/backend/src/modules/conversations/infrastructure/ai/conversation-memory-config.ts
     - apps/backend/src/modules/conversations/infrastructure/ai/conversation-memory-records.ts
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-worker-completion.ts
-    - apps/web/src/fsd/features/knowledge-notes/hooks/use-block-proposals.ts
+    - apps/web/src/fsd/features/knowledge-notes/hooks/use-content-proposals.ts
     - apps/web/src/fsd/features/knowledge-notes/lib/proposal-completions.ts
     - docs/user-flows/knowledge-workspace.md
     - apps/backend/src/config/environment.ts
@@ -86,9 +86,25 @@ source_paths:
     - packages/contracts/src/named-exercises.ts
     - apps/backend/src/modules/conversations/application/exercise-picker-resolution.ts
     - apps/backend/src/modules/conversations/infrastructure/ai/exercise-source-resolution.ts
-    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposals.ts
-source_fingerprint: sha256:489336c75ba5429f2e10304591ed15f53e27a46227392b5de825183f5292ed68
-reviewed: 2026-11-15
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-content-proposals.ts
+    - docs/adr/0060-composable-generation-runs.md
+    - packages/contracts/src/generation-plans.ts
+    - packages/contracts/src/generation-runs.ts
+    - packages/contracts/src/knowledge-content-proposals.ts
+    - packages/contracts/src/generated-artifacts.ts
+    - apps/backend/src/modules/conversations/application/ports/generation-run.ts
+    - apps/backend/src/modules/conversations/application/generation-run-revisions.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-generation-execution.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-generation-plan.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-admission.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-worker.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-completion.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-mutations.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-source-refresh.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-capacity.ts
+    - apps/backend/src/modules/conversations/interface/http/conversation-generation.routes.ts
+source_fingerprint: sha256:585b2d7a54f14f476739ec0cf4b5024f23d4a0cdf13d337ff1471e4e481ad84d
+reviewed: 2026-11-17
 ---
 
 # Conversations and Knowledge workspace
@@ -120,7 +136,7 @@ Admin-owned model routing
 model, funding and independent rate snapshots
 bounded credit + operator USD allowance"]
     Admission --> Worker["Existing worker slot claims turn
-lease + latest source snapshot"]
+lease + authorized source snapshot"]
     Worker --> Memory["Prepare thread context once
 thread-scoped Drizzle storage + lease fences
 completed tool pairs become compact receipts
@@ -134,13 +150,31 @@ prepared history + observations + frozen sources"]
     Planner -->|"Conversation or explanation"| Tutor
     Planner -->|"Missing or ambiguous requirements"| Clarify["Clarify; retain bounded brief and exact sources
 no applicable partial material"]
-    Planner -->|"New components"| Author["Shared authoring and validation
-selected schemas + ordered task dependencies"]
+    Planner -->|"Clear content request"| Plan["Validated plan: up to 8 logical tasks
+explicit sources and dependency inputs; separate output order"]
+    Prepared["Authorized prepared-plan adapter
+transcript-independent execution"] --> Plan
+    Plan --> Run["Owner-scoped durable run + immutable revision
+existing worker, lease and action allowance"]
+    Run --> Author["Sequential ready tasks; homogeneous batches
+selected schemas + exact captured source projections"]
+    Author --> Checkpoint["Validate whole structured call
+atomically persist private artifacts + accepted receipts
+current lease and revision fence"]
+    Checkpoint -->|"Work remains; stage makes progress"| Pause["Paused run; settled action
+no insertable partial proposal"]
+    Pause --> Continue["Explicit Continue; expected revision + idempotency
+fresh quote/admission and minimum-progress capacity"]
+    Continue --> Run
+    Pause --> Revision["Review revision or changed source choice
+Keep snapshot / Refresh under current access"]
+    Revision -->|"Apply; reuse unchanged, invalidate descendants"| Pause
+    Worker -->|"Prepared continuation; skip history and OM"| Run
     Planner -->|"Exact copy or revision"| BlockOps["Authorized frozen target operation
 host copy or validated replacements"]
-    Author --> Propose["Canonical block publication
-one complete generation proposal
-atomic revision cohort; compact receipts"]
+    Checkpoint -->|"All tasks + aggregate valid"| Propose["Canonical mixed content proposal
+ordered Knowledge v2 body; prose + typed blocks
+one complete preview; successful turn fence"]
     BlockOps --> Propose
     Tutor --> Read["read_source_context
 bounded authorized material"]
@@ -152,8 +186,8 @@ reconnect without duplicate generation"]
 initial read; success / Apply / reconnect refresh
 no status polling"]
     Replay -->|"Reconnect reconciliation"| Query
-    Query --> BlockReview["Review exact stored learning blocks
-explicit Apply or Update block"] --> Auto
+    Query --> BlockReview["Review stored mixed content
+Insert; exact single-block Update remains narrow"] --> Auto
     Tutor --> ProseDraft["Owner-only standalone prose note draft
 validated current prose contract"]
     ProseDraft --> Review["Conversation-owned editable prose draft"]
@@ -200,8 +234,9 @@ fences. Batched streaming progress therefore does not serialize all admissions w
 retaining the same lifecycle authority checks.
 
 Navigation or disconnect does not cancel worker-owned generation; explicit Stop is
-a separate command. Failed partial output remains incomplete; learner retry starts
-new generation rather than automatically repeating an ambiguous provider request.
+a separate command. Failed partial chat output remains incomplete. Validated generation artifacts can
+be reused by an explicitly admitted Continue; ambiguous provider work is never
+automatically repeated.
 The action bounds aggregate output to 10,000 tokens and separately bounds operator
 cost. Reduced affordable output requires a reviewed quote; changed funding requires
 confirmation again. Successful answers and eligible explicit Stop usage are charged;
@@ -212,7 +247,9 @@ buffering and vector recall disabled. Full readable history remains canonical.
 
 Tools can read the current authorized source and prepare bounded prose drafts or
 typed learning proposals; they cannot publish, overwrite or delete a saved note.
-The block publication operation stores a reviewable proposal, not a saved document.
+The canonical content publication operation stores a reviewable Knowledge v2
+fragment, not a saved document. Mixed proposals insert only; exact single-block
+replacement retains its target hash checks and prose writers remain narrow.
 Store-backed Save delegates
 publication to the Knowledge transaction participant with ownership/version checks.
 The Knowledge service also supports independent manual create/edit, revisions and
@@ -230,8 +267,8 @@ Copied uploaded audio has an independent grant, so source deletion does not brea
 playback.
 
 Version-2 blocks use strict bounded schemas and fixed escaped renderers; arbitrary
-HTML and embed code are rejected. Typed AI block proposals capture the owner
-working target and require preview/Apply before a separate explicit Save.
+HTML and embed code are rejected. Mixed AI content proposals capture the owner
+working target and require preview/Insert before a separate explicit Save.
 Private learner state is stored separately from document content. Publication
 maintains monotonic semantic epochs; earlier wording restored later cannot revive
 old mastery. Workbook progress summarizes only the current learner's explicit
@@ -307,7 +344,39 @@ copying, with fresh local IDs and unchanged historical origins. Prepared checkin
 is model-free; explicit private AI feedback never rewrites published keys. Neither
 partial nor unassessed learning results count as correct progress.
 
+## Durable composition and recovery
+
+The validated-plan entry point is reusable without a chat transcript. Plans contain
+at most eight logical tasks and independent output order; assembly is limited to
+25 custom blocks and a 100,000-character serialized proposal including dependencies.
+Generated prose is ordinary safe document prose, with immutable artifact provenance
+for dependent exercises. Captured block origins freeze the selected values across
+local edits or removal; neither historical origin grants read access.
+
+A successful bounded stage saves progress and settles its newly eligible calls.
+Technical failure releases the current hold while earlier charges remain; Stop
+retains eligible partial charging. Whole-call validation, checkpoint and receipt
+acceptance share one fenced transaction. Cumulative customer rounding spans run
+stages without rebilling reused artifacts. Prepared continuation/revision actions
+skip history preparation and Observational Memory work.
+
+Paused revisions retain stable task identities and semantic/source/dependency
+fingerprints. Changed tasks invalidate descendants; output-order changes reuse
+content. Apply revision is free and stays paused; revision planning is ordinary
+chat-priced work. Continue performs fresh quote/admission and rejects impossible
+unchanged units before dispatch. Source refresh resolves the exact selected passage
+or requires a new owner/version/hash-bound editor selection. Keep snapshot still
+requires access. Completed proposals are immutable; Discard clears private plan,
+source and artifact content and fences late writes while retaining numeric audit.
+
 ## Sources
+
+- [Composable run decision](../../docs/adr/0060-composable-generation-runs.md).
+- [Transcript-independent execution](../../apps/backend/src/modules/conversations/infrastructure/ai/learning-generation-execution.ts).
+- [Atomic validated checkpoints](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-worker.ts).
+- [Explicit continuation admission](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-admission.ts).
+- [Revision and source mutations](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-mutations.ts).
+- [Canonical mixed proposal contract](../../packages/contracts/src/knowledge-content-proposals.ts).
 
 - [ADR-0055: learning-content context and publication](../adr/0055-learning-content-context-and-publication.md)
 - [Phase input budgets](../../apps/backend/src/modules/conversations/application/tutor-context-budget.ts)
@@ -325,7 +394,7 @@ partial nor unassessed learning results count as correct progress.
 - [Persisted memory configuration projection](../../apps/backend/src/modules/conversations/infrastructure/ai/conversation-memory-config.ts)
 - [Thread-scoped observational memory records](../../apps/backend/src/modules/conversations/infrastructure/ai/conversation-memory-records.ts)
 - [Worker completion authority](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-worker-completion.ts)
-- [Proposal query ownership](../../apps/web/src/fsd/features/knowledge-notes/hooks/use-block-proposals.ts)
+- [Proposal query ownership](../../apps/web/src/fsd/features/knowledge-notes/hooks/use-content-proposals.ts)
 - [Successful proposal completion identity](../../apps/web/src/fsd/features/knowledge-notes/lib/proposal-completions.ts)
 - [docs/adr/0042-knowledge-workspace-document-and-context-boundaries.md](../adr/0042-knowledge-workspace-document-and-context-boundaries.md)
 - [docs/user-flows/knowledge-workspace.md](../user-flows/knowledge-workspace.md)

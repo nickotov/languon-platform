@@ -1,3 +1,5 @@
+import { learningContentProseText } from '../../application/learning-content-prose';
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import {
     ExerciseActivityIdentitySchema,
@@ -8,6 +10,9 @@ import {
     ExerciseLearningBlockSchema,
     LearningBlockSchema,
     type LearningBlock,
+    type GeneratedArtifactOrigin,
+    type CapturedBlockOrigin,
+    type KnowledgeBody,
     type NamedExerciseSource,
     type ExerciseActivitySourceKind,
 } from '@languon/contracts';
@@ -26,7 +31,92 @@ export interface ExerciseAuthoringSource {
     blocks: readonly LearningBlock[];
     proposalId?: string;
     proposalIds?: ReadonlyMap<string, string>;
+    capturedOrigins?: ReadonlyMap<string, CapturedBlockOrigin>;
     selection?: { noteId: string; noteVersion: number; text: string };
+    generatedText?: { origin: GeneratedArtifactOrigin; text: string };
+    providedText?: { materialId: string; text: string };
+    passages?: readonly {
+        id: string;
+        source: Extract<
+            NamedExerciseSource,
+            { kind: 'text-selection' | 'generated-text' | 'provided-text' }
+        >;
+    }[];
+}
+
+function sourcePassages(context: ExerciseAuthoringSource) {
+    return [
+        ...(context.passages ?? []),
+        ...(context.selection
+            ? [
+                  {
+                      id: 'selection',
+                      source: {
+                          kind: 'text-selection' as const,
+                          origin: {
+                              noteId: context.selection.noteId,
+                              noteVersion: context.selection.noteVersion,
+                          },
+                          text: context.selection.text,
+                      },
+                  },
+              ]
+            : []),
+        ...(context.generatedText
+            ? [
+                  {
+                      id: context.generatedText.origin.artifactId,
+                      source: {
+                          kind: 'generated-text' as const,
+                          ...context.generatedText,
+                      },
+                  },
+              ]
+            : []),
+        ...(context.providedText
+            ? [
+                  {
+                      id: context.providedText.materialId,
+                      source: {
+                          kind: 'provided-text' as const,
+                          origin: {
+                              kind: 'provided-material' as const,
+                              materialId: context.providedText.materialId,
+                              contentHash: createHash('sha256')
+                                  .update(context.providedText.text)
+                                  .digest('hex'),
+                          },
+                          text: context.providedText.text,
+                      },
+                  },
+              ]
+            : []),
+    ];
+}
+
+function mergeSourceContexts(
+    contexts: ExerciseAuthoringSource[],
+): ExerciseAuthoringSource {
+    return {
+        blocks: contexts.flatMap((context) => context.blocks),
+        capturedOrigins: new Map(
+            contexts.flatMap((context) => [...(context.capturedOrigins ?? [])]),
+        ),
+        passages: contexts.flatMap(sourcePassages),
+        proposalIds: new Map(
+            contexts.flatMap((context) => [
+                ...(context.proposalIds ??
+                    new Map(
+                        context.proposalId
+                            ? context.blocks.map((block) => [
+                                  block.id,
+                                  context.proposalId!,
+                              ])
+                            : [],
+                    )),
+            ]),
+        ),
+    };
 }
 
 export function prepareNamedExerciseBrief(
@@ -44,16 +134,26 @@ export function prepareNamedExerciseBrief(
         }
 
         let kinds: ExerciseActivitySourceKind[];
-        if (task.source?.kind === 'task') {
-            const source = task.source;
-            const sourceIndex = brief.tasks.findIndex(
-                (item) => item.id === source.taskId,
+        if (task.source?.kind === 'task' || task.dependencies?.length) {
+            const ids = [
+                ...new Set([
+                    ...(task.source?.kind === 'task'
+                        ? [task.source.taskId]
+                        : []),
+                    ...(task.dependencies ?? []),
+                ]),
+            ];
+            const dependencies = ids.map((id) =>
+                brief.tasks.find((candidate) => candidate.id === id),
             );
-            const dependency = brief.tasks[sourceIndex];
+
             if (
-                !dependency ||
-                sourceIndex >= brief.tasks.indexOf(task) ||
-                dependency.kind === 'exercises'
+                dependencies.some(
+                    (dependency) =>
+                        !dependency ||
+                        dependency.id === task.id ||
+                        dependency.kind === 'exercises',
+                )
             ) {
                 return {
                     status: 'needs-clarification',
@@ -62,7 +162,19 @@ export function prepareNamedExerciseBrief(
             }
 
             kinds = [
-                dependency.kind === 'bilingual-text' ? 'text' : dependency.kind,
+                ...new Set([
+                    ...dependencies.map(
+                        (dependency): ExerciseActivitySourceKind =>
+                            dependency!.kind === 'bilingual-text' ||
+                            dependency!.kind === 'prose'
+                                ? 'text'
+                                : (dependency!.kind as
+                                      'grammar' | 'vocabulary'),
+                    ),
+                    ...exerciseSourceKinds(
+                        contexts.get(task.id) ?? { blocks: [] },
+                    ),
+                ]),
             ];
         } else {
             let context;
@@ -109,7 +221,7 @@ export function prepareNamedExerciseBrief(
         });
     }
 
-    return { status: 'ready', brief: { tasks } };
+    return { status: 'ready', brief: { ...brief, tasks } };
 }
 
 /** Deduplicate exact material across tasks; task bindings carry only references. */
@@ -137,24 +249,23 @@ export function projectExerciseAuthoringSources(
             blocks.set(block.id, block);
         });
 
-        let selectionId;
-        if (context.selection) {
-            const text = context.selection.text;
-            const known = excerpts.get(text) ?? {
-                id: `excerpt-${excerpts.size + 1}`,
+        const selections = sourcePassages(context).map((passage) => {
+            const text = passage.source.text;
+            const id = `${taskId}-${passage.id}`;
+            excerpts.set(id, {
+                id,
                 ...(knownSourceTexts.has(text)
                     ? { sourceTextRef: knownSourceTexts.get(text)! }
                     : { text }),
-            };
+            });
 
-            excerpts.set(text, known);
-            selectionId = known.id;
-        }
+            return { sourceId: passage.id, excerptId: id };
+        });
 
         return {
             taskId,
             blockIds: context.blocks.map((block) => block.id),
-            ...(selectionId ? { selectionId } : {}),
+            ...(selections.length ? { selections } : {}),
         };
     });
 
@@ -189,6 +300,7 @@ const sourceBinding = z.discriminatedUnion('kind', [
     z
         .object({
             kind: z.literal('text-selection'),
+            sourceId: z.string().min(1).max(100).optional(),
             from: z.number().int().min(0).max(40_000).optional(),
             to: z.number().int().min(1).max(40_000).optional(),
         })
@@ -346,30 +458,57 @@ export function exerciseSourceKinds(
     );
 
     return [
-        ...new Set([...kinds, ...(context.selection ? ['text' as const] : [])]),
+        ...new Set([
+            ...kinds,
+            ...(sourcePassages(context).length ? ['text' as const] : []),
+        ]),
     ];
 }
 
 /** Resolve only a fully validated predecessor; model task IDs never create a block identity. */
 export function exerciseTaskSource(
     task: LearningContentTask,
-    completed: readonly { taskId: string; blocks: LearningBlock[] }[],
+    completed: readonly {
+        taskId: string;
+        blocks: LearningBlock[];
+        prose?: KnowledgeBody | undefined;
+        generatedOrigin?: GeneratedArtifactOrigin;
+    }[],
     contexts: ReadonlyMap<string, ExerciseAuthoringSource>,
     fallback: readonly LearningBlock[],
 ): ExerciseAuthoringSource {
-    if (task.source?.kind === 'task') {
-        const source = task.source;
-        const dependency = completed.find(
-            (item) => item.taskId === source.taskId,
-        );
+    if (task.source?.kind === 'task' || task.dependencies?.length) {
+        const ids = [
+            ...new Set([
+                ...(task.source?.kind === 'task' ? [task.source.taskId] : []),
+                ...(task.dependencies ?? []),
+            ]),
+        ];
+        const dependencies = ids.map((id): ExerciseAuthoringSource => {
+            const dependency = completed.find((item) => item.taskId === id);
+            if (dependency?.prose && dependency.generatedOrigin) {
+                return {
+                    blocks: [],
+                    generatedText: {
+                        origin: dependency.generatedOrigin,
+                        text: learningContentProseText(dependency.prose),
+                    },
+                };
+            }
 
-        if (!dependency?.blocks.length) {
-            throw new Error(
-                'The completed exercise prerequisite is unavailable.',
-            );
-        }
+            if (!dependency?.blocks.length) {
+                throw new Error(
+                    'The completed exercise prerequisite is unavailable.',
+                );
+            }
 
-        return { blocks: dependency.blocks };
+            return { blocks: dependency.blocks };
+        });
+
+        return mergeSourceContexts([
+            ...dependencies,
+            ...(contexts.has(task.id) ? [contexts.get(task.id)!] : []),
+        ]);
     }
 
     const context = contexts.get(task.id);
@@ -400,13 +539,20 @@ export function completeNamedExerciseSources(
     const sources: NamedExerciseSource[] = wire.sourceBindings.map(
         (binding) => {
             if (binding.kind === 'text-selection') {
-                if (!context.selection) {
+                const passages = sourcePassages(context);
+                const passage = binding.sourceId
+                    ? passages.find((item) => item.id === binding.sourceId)
+                    : passages.length === 1
+                      ? passages[0]
+                      : undefined;
+
+                if (!passage) {
                     throw new Error(
-                        'The frozen selected passage is unavailable.',
+                        'The exact selected passage is unavailable or ambiguous.',
                     );
                 }
 
-                const { text, ...origin } = context.selection;
+                const text = passage.source.text;
                 const from = binding.from ?? 0;
                 const to = binding.to ?? text.length;
                 const splitSurrogate = (offset: number) =>
@@ -426,11 +572,7 @@ export function completeNamedExerciseSources(
                     );
                 }
 
-                return {
-                    kind: 'text-selection',
-                    origin,
-                    text: text.slice(from, to),
-                };
+                return { ...passage.source, text: text.slice(from, to) };
             }
 
             const block = context.blocks.find(
@@ -438,13 +580,15 @@ export function completeNamedExerciseSources(
             );
             const proposalId =
                 context.proposalIds?.get(binding.blockId) ?? context.proposalId;
-            const origin = proposalId
-                ? {
-                      kind: 'proposal' as const,
-                      proposalId,
-                      blockId: binding.blockId,
-                  }
-                : { kind: 'block' as const, blockId: binding.blockId };
+            const origin =
+                context.capturedOrigins?.get(binding.blockId) ??
+                (proposalId
+                    ? {
+                          kind: 'proposal' as const,
+                          proposalId,
+                          blockId: binding.blockId,
+                      }
+                    : { kind: 'block' as const, blockId: binding.blockId });
 
             if (binding.kind === 'vocabulary' && block?.type === 'vocabulary') {
                 return {

@@ -2,11 +2,16 @@
 feature: knowledge-workspace
 title: Knowledge workspace
 status: current
-last_verified: 2026-11-15
+last_verified: 2026-11-16
 surfaces:
     - browser
     - api
 source_paths:
+    - .agent/features/070-composable-lesson-generation/**
+    - packages/contracts/src/generation-plans.ts
+    - packages/contracts/src/generation-runs.ts
+    - packages/contracts/src/knowledge-content-proposals.ts
+    - apps/web/src/fsd/features/lesson-generation/**
     - .agent/improvements/contextual-picker-polish.md
     - apps/web/src/fsd/shared/ui/command-menu/command-menu.tsx
     - .agent/features/069-contextual-exercise-discovery/**
@@ -37,6 +42,7 @@ e2e_command: contextual-assistant
 e2e_tests:
     - apps/web/tests/e2e/knowledge-workspace.journeys.spec.ts
 e2e_scenarios:
+    - workspace-composable-lesson-continuation
     - workspace-draft-chat-save-reopen
     - workspace-two-tab-conflict-recovery
     - workspace-restore-preserves-unsaved-branch
@@ -48,6 +54,7 @@ e2e_scenarios:
     - workspace-intent-content-generation
     - workspace-large-vocabulary-generation
 related_features:
+    - composable-lesson-generation
     - reliable-learning-content-pipeline
     - intent-aware-learning-content
     - knowledge-markdown-insertion
@@ -283,7 +290,23 @@ access. Cancelling insertion/preview leaves the draft editable.
    automatic naming and reconnect recovery still synchronize the workspace when
    needed.
 
+### Composable lessons and continuation
+
+Ask for a lesson containing ordinary reading text, grammar and exercises in the desired order. Say which language each part should use; the language of lesson content does not silently become the chat reply language. “Up to three” is a bound the tutor can resolve, not a reason to repeatedly ask for an exact number. A clear request begins preparation immediately.
+
+The lesson card shows progress. **Plan and details** expands the task list and accumulated charges. Generated parts remain private until the complete proposal is ready. Leaving the page does not stop work; reopening recovers the current run without submitting it again.
+
+When a stage ends, select **Continue** and review the fresh maximum additional credits. Confirming authorizes only that stage. Completed content is reused. **Stop** retains completed parts and charges eligible usage from that stage. A technical failure leaves this action uncharged; earlier successful-stage charges remain. If a part cannot fit the limits, adjust its scope or the available AI budget before retrying; the server rejects impossible work before a new quote or hold.
+
+For an unfinished paused lesson, choose **Adjust plan**, describe the change in chat and review which parts will be kept, updated, added or removed. Preparing this proposed revision uses ordinary chat credits. **Apply plan** is free and leaves generation paused. Continue separately when ready. An order-only change reuses existing content; changed requirements or inputs invalidate dependent parts. Stop active preparation before adjusting it. Completed proposals remain immutable.
+
+If a referenced source changes, choose **Keep original sources** or **Use current sources**. The first preserves captured evidence, including a source block later edited or removed. The second invalidates affected generated parts. To refresh a selected passage, select its current text in the editor and choose **Use current sources** again. Both choices recheck current access. **Discard lesson** removes private prepared content, while retaining prior financial evidence and leaving the document unchanged.
+
+When ready, review the single ordered proposal containing prose and custom blocks. **Insert** changes the working draft; **Save** publishes it. There is no partial lesson insertion or automatic title replacement. Existing exact single-block update and independent-copy safeguards remain available for block-only proposals.
+
 ## API verification
+
+The owner-scoped `/conversations/:id/generation-runs` list and `/:runId` detail expose progress and plans, not private generated artifact bodies. Run actions are `/continue`, `/revise`, `/apply-revision`, `/resolve-source` and `/discard`. Continue and revision planning use the existing explicit action-quote flow. Completed mixed proposals use `/conversations/:id/content-proposals`; application checks the current working-branch version. Selection refresh includes the current editor range, hash and branch version. See [ADR-0060](../adr/0060-composable-generation-runs.md).
 
 1. Under owner authentication, create a Knowledge draft and read its workspace.
    Verify the stable note ID, status `draft`, empty working content, private
@@ -311,6 +334,8 @@ access. Cancelling insertion/preview leaves the draft editable.
    proposal to apply.
 
 ## E2E coverage
+
+- `workspace-composable-lesson-continuation` proves a real owned workspace request pauses with validated private parts, obtains a fresh Continue quote, resumes without repeating them, previews one mixed lesson, and inserts/saves/reloads it. Only the external model boundary uses synthetic content and usage. Financial races, revision reuse, source refresh/Keep and discard cleanup are separately verified through backend integration tests.
 
 - `workspace-draft-chat-save-reopen` proves empty draft chat, working recovery,
   explicit publication and reopening across the real web/backend boundary,
@@ -374,6 +399,8 @@ Character boundaries, concurrent branch races, proposal target mapping and
 model budget/compaction have focused contract, integration and editor tests.
 
 ## Expected failure and edge cases
+
+- Lesson actions include an idempotency key and expected plan revision. Stale revision/source conflicts require reconciliation; reconnect never dispatches another stage. Only unfinished owner-authorized runs can be continued or revised.
 
 - Unsupported exercise formats and missing material requirements require
   clarification. A request exceeding the admitted total call/output budget

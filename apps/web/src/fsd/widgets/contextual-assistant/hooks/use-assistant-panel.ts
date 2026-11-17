@@ -33,22 +33,12 @@ import {
 import type { PromptValue } from '../lib/prompt-document';
 import { useExerciseComposer } from './use-exercise-composer';
 import { workspaceCopy } from '../lib/workspace-copy';
+import { hashEditorContent } from '../lib/hash-editor-content';
 import type { ContextualAssistantProps } from '../types';
 import {
     appendAssistantAttachment,
     knowledgeProposalQuestion,
 } from '../lib/assistant-input';
-
-async function hashEditorContent(content: string): Promise<string> {
-    const digest = await crypto.subtle.digest(
-        'SHA-256',
-        new TextEncoder().encode(content),
-    );
-
-    return Array.from(new Uint8Array(digest), (byte) =>
-        byte.toString(16).padStart(2, '0'),
-    ).join('');
-}
 
 export function useAssistantPanel(
     props: ContextualAssistantProps & {

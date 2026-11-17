@@ -1,3 +1,4 @@
+import { bodyBlocks } from './learning-generation-plan';
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
@@ -144,8 +145,8 @@ describe('dedicated content authoring', () => {
         expect(result.status).toBe('ready');
         expect(generate).toHaveBeenCalledTimes(3);
         if (result.status === 'ready') {
-            expect(result.proposal.blocks[0]).toEqual(good);
-            expect(result.proposal.blocks[1]?.type).toBe('exercise');
+            expect(bodyBlocks(result.proposal.body)[0]).toEqual(good);
+            expect(bodyBlocks(result.proposal.body)[1]?.type).toBe('exercise');
         }
     });
 
@@ -199,7 +200,7 @@ describe('dedicated content authoring', () => {
         expect(result.status).toBe('ready');
         expect(generate).toHaveBeenCalledTimes(2);
         if (result.status === 'ready') {
-            expect(result.proposal.blocks[0]?.id).not.toBe(source.id);
+            expect(bodyBlocks(result.proposal.body)[0]?.id).not.toBe(source.id);
         }
     });
 
@@ -260,12 +261,8 @@ describe('dedicated content authoring', () => {
         const words = vocabulary();
         const generate = vi
             .fn()
-            .mockResolvedValueOnce({
-                tasks: [
-                    { taskId: 'rule', blocks: [grammar()] },
-                    { taskId: 'words', blocks: [words] },
-                ],
-            })
+            .mockResolvedValueOnce(output([words]))
+            .mockResolvedValueOnce(output([grammar()], 'rule'))
             .mockResolvedValueOnce(
                 output(
                     [exercise('Write a sentence with apple.', words)],
@@ -278,15 +275,13 @@ describe('dedicated content authoring', () => {
 
         expect(result.status).toBe('ready');
         if (result.status === 'ready') {
-            expect(result.proposal.blocks.map((block) => block.type)).toEqual([
-                'vocabulary',
-                'grammar',
-                'exercise',
-            ]);
+            expect(
+                bodyBlocks(result.proposal.body).map((block) => block.type),
+            ).toEqual(['vocabulary', 'grammar', 'exercise']);
         }
 
-        expect(generate).toHaveBeenCalledTimes(2);
-        expect(generate.mock.calls[1]?.[0].prompt).toContain(words.id);
+        expect(generate).toHaveBeenCalledTimes(3);
+        expect(generate.mock.calls[2]?.[0].prompt).toContain(words.id);
     });
 
     it('repairs a completed invalid candidate once and accepts only a complete result', async () => {
@@ -528,8 +523,11 @@ describe('dedicated content authoring', () => {
             throw new Error('Expected complete named exercise fixture.');
         }
 
-        expect(result.proposal.blocks[0]).not.toHaveProperty('sourceBindings');
-        expect(result.proposal.blocks[0]).toMatchObject({
+        expect(bodyBlocks(result.proposal.body)[0]).not.toHaveProperty(
+            'sourceBindings',
+        );
+
+        expect(bodyBlocks(result.proposal.body)[0]).toMatchObject({
             semantics: {
                 sources: [
                     {

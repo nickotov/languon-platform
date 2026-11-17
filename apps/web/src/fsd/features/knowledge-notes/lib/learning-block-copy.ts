@@ -13,6 +13,8 @@ function historicalExerciseSource(value: Record<string, unknown>): boolean {
 
     return (
         value.kind === 'text-selection' ||
+        value.kind === 'generated-text' ||
+        value.kind === 'provided-text' ||
         ((value.kind === 'vocabulary' ||
             value.kind === 'grammar' ||
             value.kind === 'text') &&

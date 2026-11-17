@@ -88,6 +88,9 @@ export function buildTutorPlannerPrompt(
     return JSON.stringify({
         hostExecutionPolicy: {
             capacityAuthority: 'host',
+            retainedReplyLanguage: state.replyLanguage ?? null,
+            clarificationLanguagePolicy:
+                'Retain the conversation reply language. An answer about content, translation or grammar language changes those content fields only. Set changesReplyLanguage only for an explicit instruction to change chat replies.',
             vocabularyBatching: 'automatic',
             vocabularyPublication: 'one-complete-block',
             priorAssistantCapacityClaimsAuthoritative: false,

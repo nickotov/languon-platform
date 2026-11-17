@@ -52,13 +52,25 @@ describe('contextual assistant browser fixture', () => {
 
         expect(learningContentRequirements(brief)).toBeNull();
         const calls: string[] = [];
+        let usedOutputTokens = 0;
         const result = await createLearningContentAuthoring({
+            readBudget: () => ({
+                remainingCalls: 5 - calls.length,
+                remainingOutputTokens: 10_000 - usedOutputTokens,
+            }),
             generate: async (call) => {
                 calls.push(call.prompt);
 
-                return fixtureAuthoringOutput([
+                const output = fixtureAuthoringOutput([
                     { role: 'user', content: call.prompt },
                 ]);
+
+                // Model-free unit fixture reports its synthetic usage to the parent budget.
+                usedOutputTokens += Math.ceil(
+                    JSON.stringify(output).length / 3,
+                );
+
+                return output;
             },
         }).generate(brief, new AbortController().signal);
 
@@ -66,16 +78,33 @@ describe('contextual assistant browser fixture', () => {
             throw new Error(JSON.stringify(result));
         }
 
-        expect(calls).toHaveLength(2);
-        expect(result.proposal.blocks).toHaveLength(5);
-        const vocabulary = result.proposal.blocks.find(
-            (block) => block.type === 'vocabulary',
-        );
+        expect(calls).toHaveLength(3);
+        expect(
+            (result.proposal.body.document.content ?? []).flatMap((node) =>
+                node.type === 'learningBlock'
+                    ? [LearningBlockSchema.parse(node.attrs?.block)]
+                    : [],
+            ),
+        ).toHaveLength(5);
+
+        const vocabulary = (result.proposal.body.document.content ?? [])
+            .flatMap((node) =>
+                node.type === 'learningBlock'
+                    ? [LearningBlockSchema.parse(node.attrs?.block)]
+                    : [],
+            )
+            .find((block) => block.type === 'vocabulary');
 
         expect(vocabulary).toBeDefined();
-        expect(calls[1]).toContain(vocabulary!.id);
+        expect(calls[2]).toContain(vocabulary!.id);
         expect(
-            result.proposal.blocks.filter((block) => block.type === 'exercise'),
+            (result.proposal.body.document.content ?? [])
+                .flatMap((node) =>
+                    node.type === 'learningBlock'
+                        ? [LearningBlockSchema.parse(node.attrs?.block)]
+                        : [],
+                )
+                .filter((block) => block.type === 'exercise'),
         ).toHaveLength(3);
     });
 

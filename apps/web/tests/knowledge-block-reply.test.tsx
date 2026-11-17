@@ -4,6 +4,7 @@ import { ConversationMessageSchema } from '@languon/contracts';
 import type { ConversationUIMessage } from '../src/fsd/entities/conversation';
 import { TutorMessage } from '../src/fsd/widgets/contextual-assistant/ui/contextual-assistant/ui/tutor-message/tutor-message';
 import { render } from './render';
+import { lessonTurn, runId } from './lesson-run-fixture';
 
 it.each(['succeeded', 'failed', 'none'] as const)(
     'uses the structured preview instead of offering its acknowledgement as prose (%s)',
@@ -13,6 +14,10 @@ it.each(['succeeded', 'failed', 'none'] as const)(
             conversationId: '22222222-2222-4222-8222-222222222222',
             turnId: '33333333-3333-4333-8333-333333333333',
             role: 'assistant',
+            responseMetadata: {
+                kind: 'learning-explanation',
+                documentUse: true,
+            },
             content: 'I prepared the vocabulary block. Review and apply it.',
             attachments: [],
             toolCalls:
@@ -20,8 +25,8 @@ it.each(['succeeded', 'failed', 'none'] as const)(
                     ? []
                     : [
                           {
-                              id: 'block-proposal',
-                              name: 'propose_learning_blocks',
+                              id: 'content-proposal',
+                              name: 'propose_learning_content',
                               state,
                           },
                       ],
@@ -83,7 +88,7 @@ it('labels a running block tool as block preparation without offering prose inse
         toolCalls: [
             {
                 id: 'block-tool',
-                name: 'propose_learning_blocks',
+                name: 'propose_learning_content',
                 state: 'running',
             },
         ],
@@ -98,7 +103,7 @@ it('labels a running block tool as block preparation without offering prose inse
         metadata,
         parts: [
             {
-                type: 'tool-propose_learning_blocks',
+                type: 'tool-propose_learning_content',
                 state: 'input-available',
                 toolCallId: 'block-tool',
                 input: {},
@@ -119,6 +124,60 @@ it('labels a running block tool as block preparation without offering prose inse
     );
 
     expect(screen.getByText(/Preparing learning blocks/u)).toBeVisible();
+    expect(
+        screen.queryByRole('button', { name: 'Use in document' }),
+    ).not.toBeInTheDocument();
+});
+
+it('routes a failed lesson stage through its run instead of ordinary chat Retry or prose insertion', () => {
+    const metadata = ConversationMessageSchema.parse({
+        id: runId,
+        conversationId: runId,
+        turnId: runId,
+        role: 'assistant',
+        content: 'Completed parts are saved.',
+        attachments: [],
+        toolCalls: [],
+        responseMetadata: { kind: 'learning-explanation', documentUse: true },
+        status: 'complete',
+        sourceVersion: 'draft:1',
+        sourceProvenance: 'draft',
+        createdAt: '2026-11-16T00:00:00.000Z',
+    });
+    const message: ConversationUIMessage = {
+        id: metadata.id,
+        role: 'assistant',
+        metadata,
+        parts: [{ type: 'text', text: metadata.content }],
+    };
+
+    render(
+        <TutorMessage
+            message={message}
+            changed={false}
+            turn={{
+                ...lessonTurn,
+                status: 'failed',
+                generationRunId: runId,
+                outputLimitReached: true,
+            }}
+            active={false}
+            hasAssistant
+            question='Prepare the lesson'
+            onRetry={vi.fn()}
+            onContinue={vi.fn()}
+            onAcceptWorkspaceProposal={vi.fn()}
+        />,
+    );
+
+    expect(
+        screen.queryByRole('button', { name: 'Retry' }),
+    ).not.toBeInTheDocument();
+
+    expect(
+        screen.queryByRole('button', { name: 'Continue' }),
+    ).not.toBeInTheDocument();
+
     expect(
         screen.queryByRole('button', { name: 'Use in document' }),
     ).not.toBeInTheDocument();

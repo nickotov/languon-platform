@@ -26,6 +26,53 @@ import {
 /** Shares the wallet lock and compact projection with every legacy participant. */
 export class DrizzleActionAccountingParticipant {
     constructor(private readonly tx: AiCreditTransaction) {}
+
+    async attachSettlementSeries(input: {
+        actionId: string;
+        ownerId: string;
+        seriesId: string;
+    }) {
+        await this.lock(input.ownerId);
+        await this.read(input.actionId, input.ownerId);
+        await this.tx.execute(
+            sql`select languon_attach_credit_action_series(${input.actionId}::uuid, ${input.seriesId}::uuid)`,
+        );
+    }
+
+    async registerStructuredCall(input: {
+        callId: string;
+        leaseToken: string;
+        validationId: string;
+    }) {
+        await this.tx.execute(
+            sql`select languon_register_structured_call(${input.callId}::uuid, ${input.leaseToken}::uuid, ${input.validationId})`,
+        );
+    }
+
+    async validateStructuredCall(input: {
+        callId: string;
+        leaseToken: string;
+        accepted: boolean;
+    }) {
+        await this.tx.execute(
+            sql`select languon_validate_structured_call(${input.callId}::uuid, ${input.leaseToken}::uuid, ${input.accepted})`,
+        );
+    }
+
+    /** Join the feature checkpoint transaction so Stop cannot split content from eligibility. */
+    async acceptStructuredValidation(input: {
+        actionId: string;
+        ownerId: string;
+        leaseToken: string;
+        validationId: string;
+    }) {
+        await this.lock(input.ownerId);
+        await this.read(input.actionId, input.ownerId);
+        await this.tx.execute(
+            sql`select languon_accept_structured_validation(${input.actionId}::uuid, ${input.leaseToken}::uuid, ${input.validationId})`,
+        );
+    }
+
     async lockForSettlement(ownerId: string) {
         await new DrizzleOperatorBudgetParticipant(this.tx).lockForSettlement(
             ownerId,

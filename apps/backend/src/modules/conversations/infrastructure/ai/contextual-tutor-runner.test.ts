@@ -101,7 +101,7 @@ describe('contextual tutor with the real pinned Mastra SDK', () => {
                 blockProposalsAvailable: true,
             };
 
-            input.onBlockProposal = vi.fn(async () => ({
+            input.onContentProposal = vi.fn(async () => ({
                 id: '01900000-0000-4000-8000-000000000093',
             }));
 
@@ -129,7 +129,7 @@ describe('contextual tutor with the real pinned Mastra SDK', () => {
                 },
             }).run(input);
 
-            expect(input.onBlockProposal).not.toHaveBeenCalled();
+            expect(input.onContentProposal).not.toHaveBeenCalled();
 
             expect(input.readContext).toHaveBeenCalledTimes(1);
             expect(
@@ -157,7 +157,7 @@ describe('contextual tutor with the real pinned Mastra SDK', () => {
     it('keeps model-authored block payload tools out of the actor tool registry', async () => {
         const input = runInput();
         input.canProposeBlocks = true;
-        input.onBlockProposal = vi.fn(async () => ({ id: 'unpublished' }));
+        input.onContentProposal = vi.fn(async () => ({ id: 'unpublished' }));
         input.sourceContext = {
             ...input.sourceContext,
             blockProposalsAvailable: true,
@@ -172,9 +172,9 @@ describe('contextual tutor with the real pinned Mastra SDK', () => {
 
         expect(
             provider.requests[0]?.tools?.map((tool) => tool.name),
-        ).not.toContain('propose_learning_blocks');
+        ).not.toContain('propose_learning_content');
 
-        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(input.onContentProposal).not.toHaveBeenCalled();
     });
 
     it('uses the same frozen escaped retrieval bound through the actual SDK read-tool continuation', async () => {

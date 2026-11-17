@@ -1,5 +1,6 @@
+import { registerConversationGenerationRoutes } from './conversation-generation.routes';
 import { registerConversationDictionarySnippetRoutes } from './conversation-dictionary-snippet.routes';
-import { registerConversationBlockProposalRoutes } from './conversation-block-proposal.routes';
+import { registerConversationContentProposalRoutes } from './conversation-content-proposal.routes';
 import { randomUUID } from 'node:crypto';
 import type { Context } from 'hono';
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
@@ -172,6 +173,9 @@ export function createConversationRoutes({
                           'action_confirmation_required',
                           'response_active',
                           'version_conflict',
+                          'source_changed',
+                          'source_selection_required',
+                          'generation_scope_change',
                           'idempotency_conflict',
                           'deletion_busy',
                       ].includes(code)
@@ -887,7 +891,8 @@ export function createConversationRoutes({
         },
     );
 
-    registerConversationBlockProposalRoutes(app, service.store, access);
+    registerConversationGenerationRoutes(app, service, access);
+    registerConversationContentProposalRoutes(app, service.store, access);
     registerConversationDictionarySnippetRoutes(app, service.store, access);
 
     return app;

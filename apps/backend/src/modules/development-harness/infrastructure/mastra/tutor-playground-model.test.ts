@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     exerciseActivityCatalog,
     LearningBlockSchema,
+    LearningContentProposalInputSchema,
 } from '@languon/contracts';
 import { randomUUID } from 'node:crypto';
 import {
@@ -99,7 +100,7 @@ describe('synthetic tutor playground provider boundary', () => {
     it.each(exerciseActivityCatalog)(
         'executes the fixed $id Studio activity through canonical authoring and publication',
         async (activity) => {
-            const published: { blocks: unknown[] }[] = [];
+            const published: unknown[] = [];
             const model = createPlaygroundModel(() => undefined);
             const source =
                 activity.category === 'vocabulary'
@@ -171,7 +172,11 @@ describe('synthetic tutor playground provider boundary', () => {
             });
 
             expect(published).toHaveLength(1);
-            const block = LearningBlockSchema.parse(published[0]!.blocks[0]);
+            const block = LearningBlockSchema.parse(
+                LearningContentProposalInputSchema.parse(published[0]).body
+                    .document.content?.[0]?.attrs?.block,
+            );
+
             expect(
                 block.type === 'exercise' && block.semantics?.activity.id,
             ).toBe(activity.id);

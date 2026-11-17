@@ -1,7 +1,11 @@
+import { learningContentProseText } from './learning-content-prose';
 import {
-    LearningBlockProposalInputSchema,
+    LearningContentProposalInputSchema,
+    LearningBlockSchema,
+    ProseKnowledgeBodySchema,
+    type KnowledgeBody,
     type LearningBlock,
-    type LearningBlockProposalInput,
+    type LearningContentProposalInput,
 } from '@languon/contracts';
 import type {
     LearningContentBrief,
@@ -142,10 +146,14 @@ function validateReferences(
 /** Provider task identities are matched to the brief; provider ordering cannot reorder the proposal. */
 export function validateLearningContent(
     brief: LearningContentBrief,
-    tasks: { taskId: string; blocks: LearningBlock[] }[],
+    tasks: {
+        taskId: string;
+        blocks: LearningBlock[];
+        prose?: KnowledgeBody | undefined;
+    }[],
     authorizedSources: readonly LearningBlock[] = [],
     reservedIdentities: readonly LearningBlock[] = [],
-): LearningBlockProposalInput {
+): LearningContentProposalInput {
     if (
         tasks.length !== brief.tasks.length ||
         new Set(tasks.map((task) => task.taskId)).size !== tasks.length
@@ -153,23 +161,60 @@ export function validateLearningContent(
         throw new Error('All requested tasks must appear exactly once.');
     }
 
-    const blocks = brief.tasks.flatMap((task) => {
-        const result = tasks.find((candidate) => candidate.taskId === task.id);
-        if (!result) {
-            throw new Error('A requested task is missing.');
-        }
+    const ordered = brief.outputOrder ?? brief.tasks.map((task) => task.id);
+    if (
+        new Set(ordered).size !== brief.tasks.length ||
+        ordered.some((id) => !brief.tasks.some((task) => task.id === id))
+    ) {
+        throw new Error('Output order must include every task exactly once.');
+    }
 
-        const parsed = LearningBlockProposalInputSchema.parse({
-            blocks: result.blocks,
-        });
+    const blocks: LearningBlock[] = [];
+    const content = ordered.flatMap(
+        (taskId): KnowledgeBody['document']['content'] => {
+            const task = brief.tasks.find((item) => item.id === taskId)!;
+            const result = tasks.find(
+                (candidate) => candidate.taskId === task.id,
+            );
 
-        validateTask(task, parsed.blocks);
+            if (!result) {
+                throw new Error('A requested task is missing.');
+            }
 
-        return parsed.blocks;
+            if (task.kind === 'prose') {
+                if (result.blocks.length) {
+                    throw new Error('Prose must not include custom blocks.');
+                }
+
+                const prose = ProseKnowledgeBodySchema.parse(result.prose);
+                if (!learningContentProseText(prose).trim()) {
+                    throw new Error('Generated prose is empty.');
+                }
+
+                return prose.document.content;
+            }
+
+            if (result.prose) {
+                throw new Error('Custom block tasks must not contain prose.');
+            }
+
+            const parsed = result.blocks.map((block) =>
+                LearningBlockSchema.parse(block),
+            );
+
+            validateTask(task, parsed);
+            blocks.push(...parsed);
+
+            return parsed.map((block) => ({
+                type: 'learningBlock' as const,
+                attrs: { block },
+            }));
+        },
+    );
+
+    validateReferences(blocks, authorizedSources, reservedIdentities);
+
+    return LearningContentProposalInputSchema.parse({
+        body: { schemaVersion: 2, document: { type: 'doc', content } },
     });
-
-    const proposal = LearningBlockProposalInputSchema.parse({ blocks });
-    validateReferences(proposal.blocks, authorizedSources, reservedIdentities);
-
-    return proposal;
 }

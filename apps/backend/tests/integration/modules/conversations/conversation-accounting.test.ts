@@ -113,6 +113,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 inputTokenBound: number;
                 minimumInputBound: number;
                 reserveToolContinuation: boolean;
+                minimumOutputTokens: number;
+                forceConfirmation: boolean;
             }> = {},
         ) =>
             db.transaction(async (tx) => {
@@ -127,6 +129,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     fingerprint: randomUUID(),
                     inputTokenBound: input.inputTokenBound ?? 1_000,
                     minimumInputBound: input.minimumInputBound ?? 1_000,
+                    ...(input.minimumOutputTokens !== undefined
+                        ? { minimumOutputTokens: input.minimumOutputTokens }
+                        : {}),
+                    ...(input.forceConfirmation !== undefined
+                        ? { forceConfirmation: input.forceConfirmation }
+                        : {}),
                     ...(input.reserveToolContinuation !== undefined
                         ? {
                               reserveToolContinuation:
@@ -209,6 +217,32 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await client`select count(*)::integer as count from ai_credit_actions`.then(
                 ([row]) => expect(row?.count).toBe(0),
             );
+        });
+
+        it('rejects a lesson allowance below the next checkpoint before creating a quote or hold', async () => {
+            await ready();
+            await db.insert(textAiPreferencesTable).values({
+                userId: ownerId,
+                mode: 'auto',
+                version: 1,
+                maxCreditsPerAction: '1.003',
+            });
+
+            await expect(
+                admit({ forceConfirmation: true, minimumOutputTokens: 1_000 }),
+            ).rejects.toMatchObject({ code: 'generation_scope_change' });
+
+            const [counts] =
+                await client`select (select count(*)::integer from ai_credit_action_quotes) as quotes, (select count(*)::integer from ai_credit_actions) as actions`;
+
+            expect(counts).toEqual({ quotes: 0, actions: 0 });
+
+            await expect(
+                admit({ forceConfirmation: true, minimumOutputTokens: 1 }),
+            ).resolves.toMatchObject({
+                confirmationRequired: true,
+                quote: { approximateOutputTokens: 1 },
+            });
         });
 
         it('preserves reduced quotes and minimum output admission when reserving block continuation', async () => {

@@ -130,7 +130,7 @@ BEGIN
  b:=b||jsonb_build_object('inputCostMicrosPerMillionTokens',input_rate::bigint,'outputCostMicrosPerMillionTokens',output_rate::bigint);
  END IF;
  IF NOT public.languon_text_dispatch_capacity_allows(owner_value,b) THEN RAISE EXCEPTION 'Provider operational capacity is unavailable' USING ERRCODE='23514'; END IF;
- SELECT count(*),count(*) FILTER(WHERE purpose<>'answer'),count(*) FILTER(WHERE purpose='answer'),coalesce(sum(coalesce(output_tokens,CASE WHEN EXISTS(SELECT 1 FROM public.text_ai_route_health_events rejection WHERE rejection.attempt_id=ai_credit_action_attempts.id AND rejection.reason IN ('authorization_failed','provider_credits_exhausted','rate_limited','model_retired','model_unavailable')) THEN 0 ELSE output_limit END)),0),coalesce(sum(coalesce(input_tokens,input_limit)),0),coalesce(sum(coalesce(actual_cost_micros,reserved_cost_micros)),0),coalesce(sum(CASE WHEN purpose='answer' AND (state='dispatched' OR (successful=1 AND (
+ SELECT count(*),count(*) FILTER(WHERE purpose<>'answer'),count(*) FILTER(WHERE purpose='answer'),coalesce(sum(coalesce(output_tokens,CASE WHEN EXISTS(SELECT 1 FROM public.text_ai_route_health_events rejection WHERE rejection.attempt_id=ai_credit_action_attempts.id AND rejection.reason IN ('authorization_failed','provider_credits_exhausted','rate_limited','model_retired','model_unavailable')) THEN 0 ELSE output_limit END)),0),coalesce(sum(coalesce(input_tokens,input_limit)),0),coalesce(sum(coalesce(actual_cost_micros,reserved_cost_micros)),0),coalesce(sum(CASE WHEN purpose='answer' AND (state='dispatched' OR (successful=1 AND NOT EXISTS(SELECT 1 FROM public.ai_credit_structured_call_validations v WHERE v.attempt_id=ai_credit_action_attempts.id AND v.accepted=false) AND (
    NOT EXISTS(SELECT 1 FROM public.sentence_preparation_actions WHERE action_id=action_value)
    OR EXISTS(SELECT 1 FROM public.sentence_ai_jobs j WHERE j.id=ai_credit_action_attempts.execution_job_id AND j.execution_state='completed' AND j.result_exercise_id IS NOT NULL)
   ))) THEN
@@ -182,7 +182,7 @@ REVOKE ALL ON FUNCTION languon_admit_text_provider_attempt(uuid,uuid,text,intege
 
 CREATE OR REPLACE FUNCTION languon_settle_credit_action(action_value uuid, outcome_value text, at_value timestamptz) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
-DECLARE a public.ai_credit_actions%ROWTYPE; owner_value uuid; numerator numeric; charge_value bigint; remaining bigint; consumed bigint; lot record; measurement_value text; kind_value text; feature_value jsonb; expected_value text; settled_value timestamptz:=clock_timestamp();
+DECLARE a public.ai_credit_actions%ROWTYPE; owner_value uuid; action_numerator numeric; charge_value bigint; remaining bigint; consumed bigint; lot record; measurement_value text; kind_value text; feature_value jsonb; expected_value text; settled_value timestamptz:=clock_timestamp(); series_value uuid; prior_numerator numeric; prior_charged bigint;
 BEGIN
  SELECT owner_id INTO owner_value FROM public.ai_credit_actions WHERE id=action_value;
  IF owner_value IS NULL THEN RAISE EXCEPTION 'Admitted action is missing' USING ERRCODE='23514'; END IF;
@@ -196,10 +196,12 @@ BEGIN
  -- Callers publish their validated terminal feature in this same transaction.
  -- Deferred mandatory feature authority rejects any missing/mismatched publication.
  IF kind_value='knowledge-transcription' THEN
-  SELECT CASE WHEN outcome_value='success' AND j.state='completed' AND j.result IS NOT NULL AND EXISTS(SELECT 1 FROM public.ai_credit_action_attempts t WHERE t.action_id=j.id AND t.usage_meter='audio-duration' AND t.state='settled' AND t.successful=1) THEN j.source_duration_ms::numeric*(a.tariff->>'audioCreditsPerMinute')::numeric*1000*1000000/60000 ELSE 0 END INTO numerator FROM public.knowledge_transcription_jobs j WHERE j.id=action_value;
-  IF numerator IS NULL THEN RAISE EXCEPTION 'Transcription settlement requires its typed duration job' USING ERRCODE='23514'; END IF;
+  SELECT CASE WHEN outcome_value='success' AND j.state='completed' AND j.result IS NOT NULL AND EXISTS(SELECT 1 FROM public.ai_credit_action_attempts t WHERE t.action_id=j.id AND t.usage_meter='audio-duration' AND t.state='settled' AND t.successful=1) THEN j.source_duration_ms::numeric*(a.tariff->>'audioCreditsPerMinute')::numeric*1000*1000000/60000 ELSE 0 END INTO action_numerator FROM public.knowledge_transcription_jobs j WHERE j.id=action_value;
+  IF action_numerator IS NULL THEN RAISE EXCEPTION 'Transcription settlement requires its typed duration job' USING ERRCODE='23514'; END IF;
  ELSE
- SELECT coalesce(sum((input_tokens-coalesce(cache_read_tokens,0))*(a.tariff->>'inputCreditsPerMillionTokens')::numeric+coalesce(cache_read_tokens,0)*coalesce((a.tariff->>'cachedInputCreditsPerMillionTokens')::numeric,(a.tariff->>'inputCreditsPerMillionTokens')::numeric)+output_tokens*(a.tariff->>'outputCreditsPerMillionTokens')::numeric),0)*1000 INTO numerator FROM public.ai_credit_action_attempts WHERE action_id=action_value AND purpose='answer' AND successful=1 AND input_tokens IS NOT NULL AND output_tokens IS NOT NULL AND outcome_value<>'failure' AND (
+ SELECT coalesce(sum((input_tokens-coalesce(cache_read_tokens,0))*(a.tariff->>'inputCreditsPerMillionTokens')::numeric+coalesce(cache_read_tokens,0)*coalesce((a.tariff->>'cachedInputCreditsPerMillionTokens')::numeric,(a.tariff->>'inputCreditsPerMillionTokens')::numeric)+output_tokens*(a.tariff->>'outputCreditsPerMillionTokens')::numeric),0)*1000 INTO action_numerator FROM public.ai_credit_action_attempts WHERE action_id=action_value AND purpose='answer' AND successful=1 AND input_tokens IS NOT NULL AND output_tokens IS NOT NULL AND outcome_value<>'failure' AND NOT EXISTS(
+   SELECT 1 FROM public.ai_credit_structured_call_validations v WHERE v.attempt_id=ai_credit_action_attempts.id AND v.accepted IS DISTINCT FROM true
+ ) AND (
    NOT EXISTS(SELECT 1 FROM public.sentence_preparation_actions WHERE action_id=action_value) OR EXISTS(
      SELECT 1 FROM public.sentence_ai_jobs j JOIN public.sentence_preparation_children c ON c.job_id=j.id
        JOIN public.sentence_preparation_actions m ON m.preparation_id=c.preparation_id AND m.action_id=action_value
@@ -208,7 +210,17 @@ BEGIN
          OR (outcome_value='stopped' AND j.execution_state='cancelled' AND j.cancellation_requested_at IS NOT NULL AND j.failure_category='explicit_stop'))
    ));
  END IF;
- charge_value:=CASE WHEN a.funding='customer' THEN least(a.held_milli,ceil(numerator/1000000)::bigint) ELSE 0 END;
+ charge_value:=CASE WHEN a.funding='customer' THEN least(a.held_milli,ceil(action_numerator/1000000)::bigint) ELSE 0 END;
+ -- Round across customer-funded stages, including explicit Stop; operator/free work
+ -- and technical failures never enter the customer's exact accumulator.
+ SELECT series_id INTO series_value FROM public.ai_credit_action_series WHERE action_id=action_value AND owner_id=owner_value;
+ IF series_value IS NOT NULL AND a.funding='customer' AND outcome_value<>'failure' THEN
+  SELECT s.numerator,s.charged_milli INTO prior_numerator,prior_charged FROM public.ai_credit_series_totals s WHERE s.series_id=series_value AND s.owner_id=owner_value FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Settlement series is missing' USING ERRCODE='23514'; END IF;
+  charge_value:=ceil((prior_numerator+action_numerator)/1000000)::bigint-prior_charged;
+  IF charge_value<0 OR charge_value>a.held_milli THEN RAISE EXCEPTION 'Cumulative settlement exceeds its admitted hold' USING ERRCODE='23514'; END IF;
+  UPDATE public.ai_credit_series_totals SET numerator=prior_numerator+action_numerator,charged_milli=prior_charged+charge_value WHERE series_id=series_value;
+ END IF;
  remaining:=charge_value;
  FOR lot IN SELECT * FROM public.ai_credit_action_allocations WHERE action_id=action_value ORDER BY grant_id FOR UPDATE LOOP
   consumed:=least(remaining,lot.allocated_milli); UPDATE public.ai_credit_action_allocations SET settled_milli=consumed WHERE action_id=action_value AND grant_id=lot.grant_id; remaining:=remaining-consumed;

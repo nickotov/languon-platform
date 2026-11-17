@@ -15,6 +15,7 @@ it('excludes private model and provider identity from the learner turn DTO witho
             estimated: false,
         },
         billing: null,
+        generationRunId: null,
         createdAt: new Date('2026-10-25T00:00:00.000Z'),
         updatedAt: new Date('2026-10-25T00:00:00.000Z'),
         execution: {

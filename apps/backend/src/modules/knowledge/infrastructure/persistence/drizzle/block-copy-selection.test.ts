@@ -315,7 +315,11 @@ describe('named exercise source selection for independent copies', () => {
     it('copies a frozen proposal snapshot without inventing a live dependency on its historical block', () => {
         const { exercise } = namedFixture('vocabulary');
         const source = exercise.semantics!.sources[0]!;
-        if (source.kind === 'text-selection') {
+        if (
+            source.kind === 'text-selection' ||
+            source.kind === 'generated-text' ||
+            source.kind === 'provided-text'
+        ) {
             throw new Error('Unexpected block source fixture.');
         }
 

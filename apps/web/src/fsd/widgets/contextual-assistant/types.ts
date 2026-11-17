@@ -1,6 +1,6 @@
 import type {
     KnowledgeBlockReference,
-    KnowledgeBlockProposalContext,
+    KnowledgeContentProposalContext,
 } from '@/fsd/features/knowledge-notes';
 import type {
     ConversationEditorTarget,
@@ -55,9 +55,9 @@ export type WorkspaceProposalPreview = {
 };
 
 export type WorkspaceAssistantProps = {
-    blockProposalContext?:
+    contentProposalContext?:
         | Omit<
-              KnowledgeBlockProposalContext,
+              KnowledgeContentProposalContext,
               'requestWithSession' | 'conversationId'
           >
         | undefined;

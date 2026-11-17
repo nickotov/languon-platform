@@ -42,6 +42,7 @@ type PublicTurnRow = Pick<
     TurnRow,
     | 'id'
     | 'conversationId'
+    | 'generationRunId'
     | 'status'
     | 'failureCode'
     | 'usage'
@@ -50,6 +51,7 @@ type PublicTurnRow = Pick<
     | 'updatedAt'
 >;
 export const turnView = (r: PublicTurnRow) => ({
+    ...(r.generationRunId ? { generationRunId: r.generationRunId } : {}),
     id: r.id,
     conversationId: r.conversationId,
     status: r.status,
@@ -136,6 +138,8 @@ export interface ConversationPersistenceDependencies {
             inputTokenBound?: number;
             minimumInputBound: number;
             reserveToolContinuation?: boolean;
+            forceConfirmation?: boolean;
+            minimumOutputTokens?: number;
         },
     ) => Promise<Record<string, unknown>>) & {
         prepare?: (tx: ConversationsTransaction) => Promise<void>;

@@ -7,6 +7,9 @@ surfaces:
     - browser
     - api
 source_paths:
+    - .agent/features/070-composable-lesson-generation/**
+    - packages/contracts/src/knowledge-content-proposals.ts
+    - packages/contracts/src/generation-runs.ts
     - .agent/improvements/contextual-picker-polish.md
     - apps/web/src/fsd/shared/ui/command-menu/command-menu.tsx
     - .agent/features/069-contextual-exercise-discovery/**
@@ -61,6 +64,7 @@ e2e_scenarios:
     - named-exercise-picker-authoring
     - named-exercise-ai-feedback
 related_features:
+    - composable-lesson-generation
     - reliable-learning-content-pipeline
     - intent-aware-learning-content
     - knowledge-workspace
@@ -312,6 +316,10 @@ access. Cancelling insertion/preview leaves the draft editable.
 9. Display literal hostile HTML in a grammar rule. It remains text and creates
    no executable element. Inspect desktop and narrow practice layouts, labels,
    console errors and unexpected server failures.
+
+## Composable lesson generation
+
+Owned Knowledge requests can prepare one ordered proposal containing prose and several learning blocks. Larger lessons retain validated parts across explicit, freshly quoted Continue actions. Paused plans can be revised with reuse; changed sources require an explicit captured/current choice. Stop preserves eligible usage charges, technical failure is free for the current stage, and earlier charges remain. Review, Insert into the working draft and Save are separate actions. Dictionary/text/shared-source authoring permissions remain unchanged. The [Knowledge workspace journey](knowledge-workspace.md#composable-lessons-and-continuation) owns the full continuation, revision, source choice and mixed insertion recipe.
 
 ## API verification
 

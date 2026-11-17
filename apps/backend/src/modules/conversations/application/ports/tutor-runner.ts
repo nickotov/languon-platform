@@ -1,3 +1,4 @@
+import type { GenerationRunCallbacks } from './generation-run';
 import type { TextAiProviderUsage } from '../../../text-ai/application/ports/text-ai-provider-usage';
 import type {
     ChatPreferences,
@@ -5,8 +6,8 @@ import type {
     DictionaryChatSnippet,
     ConversationResponseMetadata,
     KnowledgeNoteContent,
-    LearningBlockProposalInput,
-    LearningBlock,
+    LearningContentProposalInput,
+    KnowledgeBody,
     ConversationToolCall,
     ConversationEditorTarget,
 } from '@languon/contracts';
@@ -36,7 +37,10 @@ export interface TutorMemoryPort {
     saveMessages(messages: TutorMemoryMessage[]): Promise<void>;
     readState(key: string): Promise<Record<string, unknown> | null>;
     /** The supplied entries are written atomically under the operation fence. */
-    writeState(entries: Record<string, Record<string, unknown>>): Promise<void>;
+    writeState(
+        entries: Record<string, Record<string, unknown>>,
+        validationIds?: string[],
+    ): Promise<void>;
 }
 
 export type TutorCallPurpose =
@@ -44,6 +48,8 @@ export type TutorCallPurpose =
 
 export interface TutorCallAdmission {
     callId: string;
+    /** Host-owned validation group. Structured output is ineligible until accepted. */
+    validationId?: string;
     purpose: TutorCallPurpose;
     inputTokenEstimate: number;
     maxOutputTokens: number;
@@ -63,6 +69,10 @@ export interface TutorAccountingPort {
         call: TutorCallAdmission,
     ): Promise<void | { maxOutputTokens: number }>;
     settle(call: TutorCallAdmission, usage: TutorCallUsage): Promise<void>;
+    validateStructuredCall?(
+        call: TutorCallAdmission,
+        result: { accepted: boolean },
+    ): Promise<void>;
     /** Missing usage is unknown, never a fabricated zero. Must retain the admitted liability. */
     fail(
         call: TutorCallAdmission,
@@ -77,7 +87,7 @@ export interface TutorContextMaterial {
     content: string;
 }
 
-export interface TutorRunInput {
+export interface TutorRunInput extends GenerationRunCallbacks {
     conversationId: string;
     /** Current authorized Knowledge identity/version for freezing selected prose. */
     sourceNote?: { noteId: string; noteVersion: number };
@@ -89,16 +99,18 @@ export interface TutorRunInput {
     ): Promise<{ id: string }>;
     readDictionarySnippet?(id: string): Promise<DictionaryChatSnippet>;
     canProposeBlocks?: boolean;
-    onBlockProposal?(
-        input: LearningBlockProposalInput,
+    onContentProposal?(
+        input: LearningContentProposalInput,
+        validationIds?: string[],
     ): Promise<{ id: string }>;
     /** One publication transaction for a complete multi-target revision. */
-    onBlockProposals?(
-        inputs: LearningBlockProposalInput[],
+    onContentBatch?(
+        inputs: LearningContentProposalInput[],
+        validationIds?: string[],
     ): Promise<{ id: string }[]>;
-    readBlockProposal?(
+    readContentProposal?(
         id: string,
-    ): Promise<{ id: string; blocks: LearningBlock[] }>;
+    ): Promise<{ id: string; body: KnowledgeBody }>;
     ownerId: string;
     operationId: string;
     conversationCreatedAt: string;

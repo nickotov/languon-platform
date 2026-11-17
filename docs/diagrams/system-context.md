@@ -32,8 +32,11 @@ source_paths:
     - apps/web/src/app/workbook/page.tsx
     - apps/web/src/app/workbook/exercises/page.tsx
     - apps/web/src/fsd/widgets/app-shell/ui/sidebar/sidebar.tsx
-source_fingerprint: sha256:4fb5166f0961476dfd6c81487491920a82bbf381e3b3262d8dfdfa032c6a565b
-reviewed: 2026-11-15
+    - docs/adr/0060-composable-generation-runs.md
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-generation-schema.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-generation-execution.ts
+source_fingerprint: sha256:c9b561faecf8c55a6c27ecbd3887aee8f5e0fb9b86bae42d13b8424692dccc7f
+reviewed: 2026-11-16
 ---
 
 # System context
@@ -51,7 +54,7 @@ Users, AI routing/catalog, accounting, audit, recordings"]
     Web -->|"/api proxy: typed JSON and event replay"| API["Hono HTTP backend"]
     Admin -->|"/api proxy: admin-authorized requests"| API
     API -->|"Content, workbook order, private learner state,
-jobs and accounting"| PG[("PostgreSQL")]
+generation runs/artifacts, jobs and accounting"| PG[("PostgreSQL")]
     API -->|"Rate limits and WebAuthn challenges"| Redis[("Redis")]
     Worker["Separate backend worker process"] -->|"Lease typed work; persist results"| PG
     Worker -->|"Trusted adapters; configured execution"| Models["Text/speech providers, OpenAI transcription
@@ -111,7 +114,18 @@ renderers. Its synthetic examples and illustrative feedback are local only;
 copying a recipe does not create a note, attempt or AI job. Its static navigation
 entry is separate from authenticated persisted Library resources.
 
+Composable lesson generation persists private runs, immutable plan revisions and
+validated artifacts in the same PostgreSQL database, and executes through the
+existing conversation worker. Continue creates an explicitly admitted bounded
+action; reconnect only reads committed state. The canonical mixed content proposal
+still requires Review, Insert into the working branch and explicit Save. These
+changes add no deployed service, external provider or automatic web-research path;
+the reviewed system relationships above remain unchanged. See
+[ADR-0060](../adr/0060-composable-generation-runs.md).
+
 ## Sources
+
+- [Durable generation schema](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-generation-schema.ts).
 
 - [docs/adr/0042-knowledge-workspace-document-and-context-boundaries.md](../adr/0042-knowledge-workspace-document-and-context-boundaries.md)
 - [apps/web/src/fsd/pages/knowledge/ui/shared-knowledge-page/shared-knowledge-page.tsx](../../apps/web/src/fsd/pages/knowledge/ui/shared-knowledge-page/shared-knowledge-page.tsx)

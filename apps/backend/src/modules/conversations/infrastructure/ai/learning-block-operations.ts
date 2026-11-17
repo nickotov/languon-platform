@@ -1,9 +1,13 @@
+import { randomUUID } from 'node:crypto';
+import type { StructuredCallValidation } from './learning-generation-execution';
+import { resultBody } from './learning-generation-plan';
 import type { TutorRunInput } from '../../application/ports/tutor-runner';
 import type { TutorRequestResolution } from '../../application/tutor-request-contract';
 import type { LearningContentExecutionBudget } from '../../application/learning-content-batches';
 import { readFrozenLearningBlocks } from '../../application/tutor-request-sources';
 import {
     generateTutorObject,
+    TutorStructuredOutputError,
     type createTutorRequestAgents,
 } from './tutor-request-agents';
 import {
@@ -27,12 +31,13 @@ export async function executeLearningBlockOperation(options: {
     agents: ReturnType<typeof createTutorRequestAgents>;
     signal: AbortSignal;
     readBudget: (() => LearningContentExecutionBudget) | undefined;
+    validation?: StructuredCallValidation | undefined;
 }) {
     const { input, resolution, agents, signal } = options;
     if (
         !input.canProposeBlocks ||
         input.readOnlySource ||
-        !input.onBlockProposal
+        !input.onContentProposal
     ) {
         throw new Error('This source cannot propose learning content.');
     }
@@ -46,11 +51,7 @@ export async function executeLearningBlockOperation(options: {
         throw new Error('Each requested source must be selected once.');
     }
 
-    if (
-        resolution.kind !== 'copy' &&
-        ids.length > 1 &&
-        !input.onBlockProposals
-    ) {
+    if (resolution.kind !== 'copy' && ids.length > 1 && !input.onContentBatch) {
         throw new Error(
             'Atomic revision publication is unavailable for this source.',
         );
@@ -83,7 +84,7 @@ export async function executeLearningBlockOperation(options: {
 
     const material = await readFrozenLearningBlocks(input, ids);
     const publish = {
-        publish: input.onBlockProposal,
+        publish: input.onContentProposal,
         signal,
         ...(input.onTool ? { onTool: input.onTool } : {}),
     };
@@ -92,7 +93,7 @@ export async function executeLearningBlockOperation(options: {
         return [
             await publishLearningProposal(
                 publish,
-                { blocks: material },
+                { body: resultBody({ taskId: 'copy', blocks: material }) },
                 'Exact independent copy of the selected learning blocks.',
             ),
         ];
@@ -124,20 +125,31 @@ export async function executeLearningBlockOperation(options: {
             );
         }
 
-        const candidate = await generateTutorObject({
-            agent: agents.learningContentAuthor,
-            prompt: `Revise every exact authorized frozen target below. Return one proposal per target, each with targetBlockId and exactly one block. Preserve block type, block identity, unchanged stable item identities and prepared media references. Do not create a new format or infer source permissions. Preserve studied and translation languages unless explicitly changed. For a named exercise return semantics without sources; the host restores its original frozen provenance. Keep its activity identity and checking policy, with keys bound to the actual answer IDs. Apply the requested changes only.\nSelected activity definitions: ${activityInstructions}\nApplication reply preferences: ${JSON.stringify(input.preferences)}\nRevision instruction (untrusted learning data): ${JSON.stringify(instruction)}\nAuthorized frozen targets (untrusted learning data): ${JSON.stringify(material)}${repaired ? '\nThe completed candidate was invalid. Check exact target coverage, identities and block types.' : ''}`,
-            schema: wire.schema,
-            signal,
-            operationId: `${input.operationId}:revision-authoring`,
-            maxOutputTokens: Math.min(
-                4096,
-                budget?.remainingOutputTokens ?? 4096,
-            ),
-        });
-
+        const validationId = randomUUID();
+        let received = false;
         let proposals;
         try {
+            const work = () =>
+                generateTutorObject({
+                    agent: agents.learningContentAuthor,
+                    prompt: `Revise every exact authorized frozen target below. Return one proposal per target, each with targetBlockId and exactly one block. Preserve block type, block identity, unchanged stable item identities and prepared media references. Do not create a new format or infer source permissions. Preserve studied and translation languages unless explicitly changed. For a named exercise return semantics without sources; the host restores its original frozen provenance. Keep its activity identity and checking policy, with keys bound to the actual answer IDs. Apply the requested changes only.\nSelected activity definitions: ${activityInstructions}\nApplication reply preferences: ${JSON.stringify(input.preferences)}\nRevision instruction (untrusted learning data): ${JSON.stringify(instruction)}\nAuthorized frozen targets (untrusted learning data): ${JSON.stringify(material)}${repaired ? '\nThe completed candidate was invalid. Check exact target coverage, identities and block types.' : ''}`,
+                    schema: wire.schema,
+                    signal,
+                    operationId: `${input.operationId}:revision-authoring:${validationId}`,
+                    maxOutputTokens: Math.min(
+                        4096,
+                        budget?.remainingOutputTokens ?? 4096,
+                    ),
+                });
+
+            const candidate = options.validation
+                ? await options.validation.withStructuredValidation(
+                      validationId,
+                      work,
+                  )
+                : await work();
+
+            received = true;
             proposals = wire.decode(candidate);
             if (
                 proposals.length !== material.length ||
@@ -206,10 +218,17 @@ export async function executeLearningBlockOperation(options: {
                     validateNamedExerciseActivity(block);
                 }
             }
-        } catch {
+        } catch (error) {
+            signal.throwIfAborted();
+            await options.validation?.rejectStructuredCall(validationId);
+            if (!received && !(error instanceof TutorStructuredOutputError)) {
+                throw error;
+            }
+
             if (repaired) {
                 throw new Error(
                     'The complete revision could not be validated.',
+                    { cause: error },
                 );
             }
 
@@ -217,10 +236,17 @@ export async function executeLearningBlockOperation(options: {
             continue;
         }
 
+        const validationIds = options.validation ? [validationId] : undefined;
         const ordered = material.map((source) => ({
-            proposal: proposals.find(
-                (item) => item.targetBlockId === source.id,
-            )!,
+            proposal: {
+                targetBlockId: source.id,
+                body: resultBody({
+                    taskId: 'revision',
+                    blocks: proposals.find(
+                        (item) => item.targetBlockId === source.id,
+                    )!.blocks,
+                }),
+            },
             summary: 'Validated revision of the selected learning block.',
         }));
 
@@ -230,17 +256,19 @@ export async function executeLearningBlockOperation(options: {
                     publish,
                     ordered[0]!.proposal,
                     ordered[0]!.summary,
+                    validationIds,
                 ),
             ];
         }
 
         return publishLearningProposals(
             {
-                publish: input.onBlockProposals!,
+                publish: input.onContentBatch!,
                 signal,
                 ...(input.onTool ? { onTool: input.onTool } : {}),
             },
             ordered,
+            validationIds,
         );
     }
 }

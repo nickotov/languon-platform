@@ -1,3 +1,4 @@
+import { bodyBlocks } from './learning-generation-plan';
 import { randomUUID } from 'node:crypto';
 import { expect, it, vi } from 'vitest';
 import {
@@ -100,8 +101,8 @@ it('fulfills fifty topic words as one complete block with two bounded calls', as
 
     expect(result.status).toBe('ready');
     if (result.status === 'ready') {
-        expect(result.proposal.blocks).toHaveLength(1);
-        const block = result.proposal.blocks[0]!;
+        expect(bodyBlocks(result.proposal.body)).toHaveLength(1);
+        const block = bodyBlocks(result.proposal.body)[0]!;
         expect(
             block.type === 'vocabulary' &&
                 block.entries.map((entry) => entry.term),
@@ -134,7 +135,7 @@ it('preserves every supplied term and its exact order across vocabulary parts', 
 
     expect(result.status).toBe('ready');
     if (result.status === 'ready') {
-        const block = result.proposal.blocks[0]!;
+        const block = bodyBlocks(result.proposal.body)[0]!;
         expect(
             block.type === 'vocabulary' &&
                 block.entries.map((entry) => entry.term),
@@ -161,7 +162,7 @@ it('repairs only the current part when a later part repeats an earlier term', as
     ).toEqual([0, 31, 31]);
 
     if (result.status === 'ready') {
-        const block = result.proposal.blocks[0]!;
+        const block = bodyBlocks(result.proposal.body)[0]!;
         expect(
             block.type === 'vocabulary' &&
                 block.entries.map((entry) => entry.term),

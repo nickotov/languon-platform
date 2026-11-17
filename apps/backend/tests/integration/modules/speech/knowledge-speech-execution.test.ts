@@ -1006,29 +1006,41 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 throw new Error('Expected admitted conversation turn.');
             }
 
-            const proposal = await conversations.proposeBlocks(turn, {
-                blocks: [
-                    {
-                        id: randomUUID(),
-                        type: 'vocabulary',
-                        language: 'fr',
-                        translationLanguage: 'ru',
-                        entries: [
+            const proposal = await conversations.proposeContent(turn, {
+                body: {
+                    schemaVersion: 2,
+                    document: {
+                        type: 'doc',
+                        content: [
                             {
-                                id: randomUUID(),
-                                term: 'travail',
-                                translation: 'работа',
-                                example: 'Je travaille.',
+                                type: 'learningBlock',
+                                attrs: {
+                                    block: {
+                                        id: randomUUID(),
+                                        type: 'vocabulary',
+                                        language: 'fr',
+                                        translationLanguage: 'ru',
+                                        entries: [
+                                            {
+                                                id: randomUUID(),
+                                                term: 'travail',
+                                                translation: 'работа',
+                                                example: 'Je travaille.',
+                                            },
+                                        ],
+                                    },
+                                },
                             },
                         ],
                     },
-                ],
+                },
             });
 
             await conversations.finish(turn, 'succeeded');
             const preparedBlock = (
-                await conversations.listBlockProposals(access, chat.id)
-            ).proposals.find((item) => item.id === proposal.id)?.blocks[0];
+                await conversations.listContentProposals(access, chat.id)
+            ).proposals.find((item) => item.id === proposal.id)?.body.document
+                .content?.[0]?.attrs?.block;
 
             if (preparedBlock?.type !== 'vocabulary') {
                 throw new Error('Expected persisted vocabulary proposal.');

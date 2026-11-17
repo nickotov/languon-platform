@@ -14,9 +14,9 @@ import type {
     SubmitConversationTurnRequest,
     KnowledgeDraft,
     KnowledgeNoteContent,
-    LearningBlockProposalInput,
-    KnowledgeBlockProposal,
-    LearningBlock,
+    LearningContentProposalInput,
+    KnowledgeContentProposal,
+    KnowledgeBody,
     KnowledgeWorkingBranch,
     PublishKnowledgeDraftRequest,
     KnowledgeNote,
@@ -29,6 +29,7 @@ import type {
     SourceMaterial,
 } from '../../domain/conversation';
 import type { TutorMemoryPort, TutorMemoryMessage } from './tutor-runner';
+import type { GenerationRunStore } from './generation-run-store';
 export type ConversationAccess = { ownerId: string; shareKey?: string };
 export type ClaimedConversationTurn = {
     id: string;
@@ -44,7 +45,7 @@ export type ClaimedConversationTurn = {
     conversationCreatedAt: string;
     source: ConversationSource;
 };
-export interface ConversationStore {
+export interface ConversationStore extends GenerationRunStore {
     proposeDictionarySnippet?(
         turn: ClaimedConversationTurn,
         input: DictionaryChatSnippetInput,
@@ -63,15 +64,15 @@ export interface ConversationStore {
         snippetId: string,
         input: ApplyDictionaryChatSnippetRequest,
     ): Promise<ApplyDictionaryChatSnippetResponse>;
-    readBlockProposal?(
+    readContentProposal?(
         turn: ClaimedConversationTurn,
         proposalId: string,
-    ): Promise<{ id: string; blocks: LearningBlock[] }>;
-    listBlockProposals?(
+    ): Promise<{ id: string; body: KnowledgeBody }>;
+    listContentProposals?(
         access: ConversationAccess,
         conversationId: string,
-    ): Promise<{ proposals: KnowledgeBlockProposal[] }>;
-    applyBlockProposal?(
+    ): Promise<{ proposals: KnowledgeContentProposal[] }>;
+    applyContentProposal?(
         access: ConversationAccess,
         conversationId: string,
         proposalId: string,
@@ -79,19 +80,21 @@ export interface ConversationStore {
         mode?: 'proposal' | 'add-separately',
         insertionPosition?: number,
     ): Promise<{
-        proposal: KnowledgeBlockProposal;
+        proposal: KnowledgeContentProposal;
         branch: KnowledgeWorkingBranch;
     }>;
 
-    proposeBlocks?(
+    proposeContent?(
         turn: ClaimedConversationTurn,
-        input: LearningBlockProposalInput,
+        input: LearningContentProposalInput,
         signal?: AbortSignal,
+        validationIds?: string[],
     ): Promise<{ id: string }>;
-    proposeBlockBatch?(
+    proposeContentBatch?(
         turn: ClaimedConversationTurn,
-        inputs: LearningBlockProposalInput[],
+        inputs: LearningContentProposalInput[],
         signal?: AbortSignal,
+        validationIds?: string[],
     ): Promise<{ id: string }[]>;
     list(
         access: ConversationAccess,

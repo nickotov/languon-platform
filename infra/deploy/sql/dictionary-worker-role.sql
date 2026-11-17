@@ -182,6 +182,12 @@ GRANT SELECT, UPDATE ON TABLE conversation_chats, conversation_turns
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE conversation_messages,
     conversation_events, conversation_drafts, conversation_memory,
     conversation_provider_calls TO :"dictionary_worker_role";
+-- Generation checkpoints use the same conversation lease and actor fences.
+-- They grant no access to private document branches or published proposals.
+GRANT SELECT, INSERT, UPDATE ON TABLE conversation_generation_runs,
+    conversation_generation_plan_revisions, conversation_generation_run_actions,
+    conversation_generation_plan_candidates TO :"dictionary_worker_role";
+GRANT SELECT, INSERT ON TABLE conversation_generation_run_artifacts TO :"dictionary_worker_role";
 GRANT USAGE, SELECT ON SEQUENCE conversation_events_id_seq TO :"dictionary_worker_role";
 GRANT SELECT ON TABLE knowledge_notes, knowledge_note_revisions TO :"dictionary_worker_role";
 REVOKE SELECT ON TABLE knowledge_working_branches FROM :"dictionary_worker_role";
@@ -189,10 +195,9 @@ GRANT SELECT (id, note_id, version) ON TABLE knowledge_working_branches TO :"dic
 GRANT UPDATE (updated_at) ON TABLE knowledge_working_branches TO :"dictionary_worker_role";
 -- Private narration provenance is created only by authenticated admission.
 REVOKE SELECT, INSERT ON TABLE knowledge_speech_recordings FROM :"dictionary_worker_role";
-REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLE conversation_block_proposals FROM :"dictionary_worker_role";
-GRANT EXECUTE ON FUNCTION public.languon_propose_learning_blocks(uuid,uuid,jsonb) TO :"dictionary_worker_role";
-GRANT EXECUTE ON FUNCTION public.languon_read_learning_block_proposal(uuid,uuid,uuid) TO :"dictionary_worker_role";
-GRANT EXECUTE ON FUNCTION public.languon_propose_learning_block_change(uuid,uuid,jsonb,uuid) TO :"dictionary_worker_role";
+REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLE conversation_content_proposals FROM :"dictionary_worker_role";
+GRANT EXECUTE ON FUNCTION public.languon_read_learning_content_proposal(uuid,uuid,uuid) TO :"dictionary_worker_role";
+GRANT EXECUTE ON FUNCTION public.languon_propose_learning_content_change(uuid,uuid,jsonb,uuid) TO :"dictionary_worker_role";
 -- Transcription reads immutable admitted jobs and changes lifecycle only. Audio
 -- bytes require the exact live job lease; financial receipts use typed authority.
 -- Config revisions contain a private credential equality pin; only definer authority reads them.
@@ -247,6 +252,10 @@ GRANT UPDATE (grant_id) ON TABLE ai_credit_grant_balances TO :"dictionary_worker
 GRANT UPDATE (action_id) ON TABLE ai_operator_action_budgets TO :"dictionary_worker_role";
 GRANT EXECUTE ON FUNCTION languon_admit_text_provider_attempt(uuid,uuid,text,integer,integer,uuid,text,text,bigint,timestamptz),
     languon_settle_credit_action(uuid,text,timestamptz),
+    languon_register_structured_call(uuid,uuid,text),
+    languon_validate_structured_call(uuid,uuid,boolean),
+    languon_accept_structured_validation(uuid,uuid,text),
+    languon_attach_credit_action_series(uuid,uuid),
     languon_settle_text_provider_attempt(uuid,boolean,integer,integer,integer,integer,timestamptz),
     languon_settle_text_provider_attempt(uuid,boolean,integer,integer,integer,integer,timestamptz,jsonb),
     languon_authorize_native_text_call(uuid,integer,integer),

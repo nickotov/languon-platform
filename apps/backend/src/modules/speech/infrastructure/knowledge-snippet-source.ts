@@ -13,7 +13,7 @@ import {
 } from '../../knowledge/infrastructure/persistence/drizzle/workbook-schema';
 import { usersTable as users } from '../../users/infrastructure/persistence/drizzle/schema';
 import { conversationsTable as chats } from '../../conversations/infrastructure/persistence/drizzle/schema';
-import { conversationBlockProposalsTable as proposals } from '../../conversations/infrastructure/persistence/drizzle/conversation-block-proposal-schema';
+import { conversationContentProposalsTable as proposals } from '../../conversations/infrastructure/persistence/drizzle/conversation-content-proposal-schema';
 import {
     getOwnedKnowledgeRow,
     knowledgeFingerprint,
@@ -110,7 +110,14 @@ export async function resolveKnowledgeSnippetSource(
             throw unavailable();
         }
 
-        block = proposal.blocks.find((item) => item.id === source.blockId);
+        block = proposal.body.document.content
+            ?.flatMap((node) =>
+                node.type === 'learningBlock' && node.attrs?.block
+                    ? [node.attrs.block]
+                    : [],
+            )
+            .find((item) => item.id === source.blockId);
+
         revision = `${note.id}:proposal:${proposal.id}:${knowledgeFingerprint(block)}`;
     }
 

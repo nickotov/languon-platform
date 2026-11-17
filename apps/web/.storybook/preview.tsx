@@ -29,6 +29,15 @@ const preview: Preview = {
         ),
     ],
     globalTypes: {
+        locale: {
+            defaultValue: 'en',
+            toolbar: {
+                items: [
+                    { value: 'en', title: 'English' },
+                    { value: 'ru', title: 'Русский' },
+                ],
+            },
+        },
         theme: {
             defaultValue: 'light',
             toolbar: { items: ['light', 'dark', 'system'] },

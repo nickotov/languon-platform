@@ -1,19 +1,21 @@
 'use client';
+import { LessonRuns, lessonRunCopy } from '@/fsd/features/lesson-generation';
+import { useLessonComposer } from '../../../../hooks/use-lesson-composer';
 import { BlockContextPicker } from '../block-context-picker/block-context-picker';
 import {
     DictionarySnippets,
     dictionarySnippetCompletionKey,
     type DictionarySnippetContext,
 } from '@/fsd/features/dictionary-chat-snippets';
-import type { KnowledgeBlockProposal } from '@languon/contracts';
+import type { KnowledgeContentProposal } from '@languon/contracts';
 import {
-    KnowledgeBlockProposals,
-    blockProposalCompletionKey,
+    KnowledgeContentProposals,
+    contentProposalCompletionKey,
     ExerciseGenerationPicker,
 } from '@/fsd/features/knowledge-notes';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
-import { LoadingState, useCompanionLayout } from '@/fsd/shared/ui';
+import { Button, LoadingState, useCompanionLayout } from '@/fsd/shared/ui';
 import { usePublishedKnowledge } from '../../../../hooks/use-published-knowledge';
 import { ConversationDeleteConfirmation } from '../conversation-delete-confirmation/conversation-delete-confirmation';
 import { useAssistantPanel } from '../../../../hooks/use-assistant-panel';
@@ -52,6 +54,20 @@ export function AssistantPanel(
     const placement = useCompanionLayout();
     const panel = useAssistantPanel({ ...props, workspace, currentDraft });
     const { chat, detail } = panel;
+    const lesson = useLessonComposer({
+        actorId: props.actorId,
+        conversationId: chat.id,
+        request: panel.requestWithSession,
+        detail,
+        active: panel.active,
+        enabled: Boolean(workspace),
+        question: chat.question,
+        replaceQuestion: chat.replaceQuestion,
+        send: panel.send,
+        refresh: chat.refresh,
+        workspace,
+    });
+    const lessonCopy = lessonRunCopy(locale);
     const modeCopy = tutorModeCopy(locale);
     const actionRetryLabel =
         chat.actionFailure?.kind === 'preferences'
@@ -82,7 +98,8 @@ export function AssistantPanel(
         chat.list.isPending ||
         (chat.detail.isPending && Boolean(chat.id)) ||
         chat.create.isPending;
-    const busy = panel.busy || panel.deletingPending;
+    const busy =
+        panel.busy || panel.deletingPending || lesson.state.actions.pending;
     const deletePending = Boolean(panel.deleting) && !panel.history;
     const historyDeleting = panel.history ? panel.deleting : null;
     const canSelect = Boolean(props.selectionRootId) && !workspace;
@@ -108,7 +125,7 @@ export function AssistantPanel(
         }
     }
 
-    function askForBlocksAgain(proposal: KnowledgeBlockProposal) {
+    function askForBlocksAgain(proposal: KnowledgeContentProposal) {
         const question = detail?.messages.find(
             (message) =>
                 message.role === 'user' && message.turnId === proposal.turnId,
@@ -119,22 +136,22 @@ export function AssistantPanel(
         }
     }
 
-    const blockProposalContext =
-        workspace?.blockProposalContext && chat.id
+    const contentProposalContext =
+        workspace?.contentProposalContext && chat.id
             ? {
-                  ...workspace.blockProposalContext,
+                  ...workspace.contentProposalContext,
                   requestWithSession: panel.requestWithSession,
                   conversationId: chat.id,
                   onAskAgain: askForBlocksAgain,
                   getBlockLabel: (blockId: string) =>
-                      workspace.blockProposalContext?.getBlockLabel?.(
+                      workspace.contentProposalContext?.getBlockLabel?.(
                           blockId,
                       ) ??
                       props.blocks?.find((block) => block.id === blockId)
                           ?.title,
               }
             : undefined;
-    const proposalCompletionKey = blockProposalCompletionKey(detail);
+    const proposalCompletionKey = contentProposalCompletionKey(detail);
     const snippetCompletionKey = dictionarySnippetCompletionKey(detail);
     const canUseDictionarySnippets =
         props.source.kind === 'dictionary' &&
@@ -261,8 +278,8 @@ export function AssistantPanel(
                     hidden={panel.history || panel.unavailable}
                 >
                     {showContent && detail && (
-                        <KnowledgeBlockProposals
-                            context={blockProposalContext}
+                        <KnowledgeContentProposals
+                            context={contentProposalContext}
                             actorId={props.actorId}
                             completionKey={proposalCompletionKey}
                             reconciliationKey={chat.stream.reconciliations}
@@ -300,6 +317,22 @@ export function AssistantPanel(
                                     onReviewProposal={foldMobileForReview}
                                     workspace={workspace}
                                 >
+                                    {workspace && (
+                                        <LessonRuns
+                                            state={lesson.state}
+                                            actorId={props.actorId}
+                                            request={panel.requestWithSession}
+                                            busy={busy}
+                                            activeTurnId={chat.active?.id}
+                                            reconnecting={
+                                                chat.stream.reconnecting
+                                            }
+                                            onAdjust={lesson.adjust}
+                                            captureSourceContext={
+                                                lesson.captureSourceContext
+                                            }
+                                        />
+                                    )}
                                     {!readOnlyKnowledge &&
                                         detail.drafts.map((draft) => (
                                             <KnowledgeDraftCard
@@ -328,7 +361,7 @@ export function AssistantPanel(
                                     )}
                                 </ConversationMessages>
                             </DictionarySnippets>
-                        </KnowledgeBlockProposals>
+                        </KnowledgeContentProposals>
                     )}
                     {panel.error && !chat.quote && (
                         <div className={styles.notice}>
@@ -374,7 +407,23 @@ export function AssistantPanel(
                             {copy.reconnecting}
                         </p>
                     )}
-                    <div hidden={editing} className={styles.composer}>
+                    <div
+                        hidden={editing}
+                        className={styles.composer}
+                        ref={lesson.composer}
+                    >
+                        {lesson.selected && (
+                            <div className={styles.notice} role='status'>
+                                <span>{lessonCopy.adjusting}</span>
+                                <Button
+                                    size='compact'
+                                    variant='ghost'
+                                    onClick={lesson.cancelAdjustment}
+                                >
+                                    {lessonCopy.cancelAdjust}
+                                </Button>
+                            </div>
+                        )}
                         {panel.attachmentError && (
                             <p role='alert' className={styles.notice}>
                                 {panel.attachmentError}
@@ -396,10 +445,10 @@ export function AssistantPanel(
                                 onDefaults={panel.defaults}
                                 defaultsSaved={panel.defaultsSaved}
                                 onContext={panel.context}
-                                onSend={panel.send}
+                                onSend={lesson.submit}
                                 onStop={chat.stop}
                                 busy={busy}
-                                active={panel.active}
+                                active={panel.active || lesson.activeRun}
                                 hasDraft={Boolean(currentDraft)}
                                 useDraft={chat.useDraft}
                                 onUseDraft={chat.setUseDraft}

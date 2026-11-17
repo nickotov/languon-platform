@@ -1,3 +1,8 @@
+import {
+    restoreGenerationExecution,
+    resultBody,
+} from '../../../../src/modules/conversations/infrastructure/ai/learning-generation-plan';
+import { createLearningContentAuthoring } from '../../../../src/modules/conversations/infrastructure/ai/learning-content-authoring';
 import { DrizzleWorkbookStore } from '../../../../src/modules/knowledge/infrastructure/persistence/drizzle/workbook-store';
 import { completeNamedExerciseSources } from '../../../../src/modules/conversations/infrastructure/ai/exercise-authoring-context';
 import { namedExerciseFixture } from '../../../support/named-exercise-fixture';
@@ -11,11 +16,13 @@ import {
     type PostgresJsDatabase,
 } from '@languon/database';
 import {
+    GenerationPlanSchema,
     ChatPreferencesSchema,
     ConversationDetailSchema,
     ConversationEventSchema,
     SubmitConversationTurnRequestSchema,
     type KnowledgeNoteContent,
+    type LearningBlock,
 } from '@languon/contracts';
 import {
     beforeAll,
@@ -87,6 +94,123 @@ const workspaceContext = (
         documentHash: createHash('sha256').update(content).digest('hex'),
     },
 });
+
+/**
+ * The production store only exposes the canonical mixed-content proposal API.
+ * These fixtures still describe blocks because most historical regression cases
+ * exercise block identities and copying. Keep that fixture convenience here,
+ * while every call crosses the new body-based store boundary.
+ */
+function proposalBody(blocks: LearningBlock[]) {
+    return {
+        schemaVersion: 2 as const,
+        document: {
+            type: 'doc' as const,
+            content: blocks.map((block) => ({
+                type: 'learningBlock' as const,
+                attrs: { block },
+            })),
+        },
+    };
+}
+
+function blocksFromBody(body: unknown): LearningBlock[] {
+    const content =
+        body && typeof body === 'object' && 'document' in body
+            ? (body as { document?: { content?: unknown[] } }).document?.content
+            : undefined;
+
+    return (content ?? []).flatMap((node) => {
+        if (
+            node &&
+            typeof node === 'object' &&
+            'type' in node &&
+            (node as { type?: unknown }).type === 'learningBlock' &&
+            'attrs' in node
+        ) {
+            const block = (node as { attrs?: { block?: unknown } }).attrs
+                ?.block;
+
+            return block ? [block as LearningBlock] : [];
+        }
+
+        return [];
+    });
+}
+
+function proposalWithBlocks<T>(proposal: T): T & { blocks: LearningBlock[] } {
+    const body =
+        proposal && typeof proposal === 'object' && 'body' in proposal
+            ? (proposal as { body: unknown }).body
+            : undefined;
+
+    return { ...proposal, blocks: blocksFromBody(body) };
+}
+
+type BlockProposalInput = { blocks: LearningBlock[]; targetBlockId?: string };
+
+async function proposeBlocks(
+    store: DrizzleConversationStore,
+    turn: Parameters<DrizzleConversationStore['proposeContent']>[0],
+    input: BlockProposalInput,
+    signal?: AbortSignal,
+) {
+    return store.proposeContent(
+        turn,
+        {
+            body: proposalBody(input.blocks),
+            ...(input.targetBlockId
+                ? { targetBlockId: input.targetBlockId }
+                : {}),
+        },
+        signal,
+    );
+}
+
+async function proposeBlockBatch(
+    store: DrizzleConversationStore,
+    turn: Parameters<DrizzleConversationStore['proposeContent']>[0],
+    inputs: BlockProposalInput[],
+    signal?: AbortSignal,
+) {
+    return store.proposeContentBatch(
+        turn,
+        inputs.map((input) => ({
+            body: proposalBody(input.blocks),
+            ...(input.targetBlockId
+                ? { targetBlockId: input.targetBlockId }
+                : {}),
+        })),
+        signal,
+    );
+}
+
+async function listBlockProposals(
+    store: DrizzleConversationStore,
+    ...args: Parameters<DrizzleConversationStore['listContentProposals']>
+) {
+    const listed = await store.listContentProposals(...args);
+
+    return {
+        proposals: listed.proposals.map(proposalWithBlocks),
+    };
+}
+
+async function readBlockProposal(
+    store: DrizzleConversationStore,
+    ...args: Parameters<DrizzleConversationStore['readContentProposal']>
+) {
+    return proposalWithBlocks(await store.readContentProposal(...args));
+}
+
+async function applyBlockProposal(
+    store: DrizzleConversationStore,
+    ...args: Parameters<DrizzleConversationStore['applyContentProposal']>
+) {
+    const applied = await store.applyContentProposal(...args);
+
+    return { ...applied, proposal: proposalWithBlocks(applied.proposal) };
+}
 
 function latch() {
     let release!: () => void;
@@ -404,7 +528,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             );
 
             await expect(
-                store.proposeBlocks(turn, {
+                proposeBlocks(store, turn, {
                     blocks: [
                         {
                             id: randomUUID(),
@@ -517,22 +641,22 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
             const turn = (await store.claim())!;
             await expect(
-                store.proposeBlocks(turn, {
+                proposeBlocks(store, turn, {
                     targetBlockId: second.id,
                     blocks: [second],
                 }),
             ).rejects.toThrow('explicitly mentioned');
 
             await expect(
-                client`select public.languon_propose_learning_block_change(${turn.id}::uuid,${turn.leaseToken}::uuid,${JSON.stringify([second])}::jsonb,${second.id}::uuid)`,
+                client`select public.languon_propose_learning_content_change(${turn.id}::uuid,${turn.leaseToken}::uuid,${JSON.stringify(proposalBody([second]))}::jsonb,${second.id}::uuid)`,
             ).rejects.toThrow('explicitly mentioned');
 
-            const selected = await store.proposeBlocks(turn, {
+            const selected = await proposeBlocks(store, turn, {
                 targetBlockId: first.id,
                 blocks: [first],
             });
             const repeated =
-                await client`select public.languon_propose_learning_block_change(${turn.id}::uuid,${turn.leaseToken}::uuid,${JSON.stringify([first])}::jsonb,${first.id}::uuid) as id`;
+                await client`select public.languon_propose_learning_content_change(${turn.id}::uuid,${turn.leaseToken}::uuid,${JSON.stringify(proposalBody([first]))}::jsonb,${first.id}::uuid) as id`;
 
             expect(repeated[0]?.['id']).toBe(selected.id);
             const detail = await store.detail(access(), chat.id);
@@ -606,7 +730,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
                 const turn = (await store.claim())!;
                 await expect(
-                    store.proposeBlockBatch(turn, [
+                    proposeBlockBatch(store, turn, [
                         {
                             targetBlockId: first.id,
                             blocks: [{ ...first, rule: 'Updated first rule.' }],
@@ -628,12 +752,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 });
 
                 const [row] =
-                    await client`select count(*)::integer as count from conversation_block_proposals where turn_id=${turn.id}::uuid`;
+                    await client`select count(*)::integer as count from conversation_content_proposals where turn_id=${turn.id}::uuid`;
 
                 expect(row?.['count']).toBe(0);
                 await store.finish(turn, 'succeeded');
                 expect(
-                    (await store.listBlockProposals(access(), chat.id))
+                    (await listBlockProposals(store, access(), chat.id))
                         .proposals,
                 ).toEqual([]);
 
@@ -702,22 +826,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const aborted = new AbortController();
             aborted.abort();
             await expect(
-                store.proposeBlockBatch(turn, inputs, aborted.signal),
+                proposeBlockBatch(store, turn, inputs, aborted.signal),
             ).rejects.toThrow();
 
-            const receipts = await store.proposeBlockBatch(turn, inputs);
+            const receipts = await proposeBlockBatch(store, turn, inputs);
 
             expect(receipts).toHaveLength(2);
             expect(new Set(receipts.map((item) => item.id)).size).toBe(2);
             await store.finish(turn, 'succeeded');
-            const listed = (await store.listBlockProposals(access(), chat.id))
+            const listed = (await listBlockProposals(store, access(), chat.id))
                 .proposals;
 
             expect(listed.map((item) => item.id).sort()).toEqual(
                 receipts.map((item) => item.id).sort(),
             );
 
-            const applied = await store.applyBlockProposal(
+            const applied = await applyBlockProposal(
+                store,
                 access(),
                 chat.id,
                 receipts[0]!.id,
@@ -771,7 +896,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 });
 
                 const turn = (await store.claim())!;
-                const proposal = await store.proposeBlocks(turn, {
+                const proposal = await proposeBlocks(store, turn, {
                     blocks: [
                         {
                             id: randomUUID(),
@@ -783,12 +908,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 });
 
                 expect(
-                    (await store.listBlockProposals(access(), chat.id))
+                    (await listBlockProposals(store, access(), chat.id))
                         .proposals,
                 ).toEqual([]);
 
                 await expect(
-                    store.applyBlockProposal(
+                    applyBlockProposal(
+                        store,
                         access(),
                         chat.id,
                         proposal.id,
@@ -797,12 +923,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).rejects.toMatchObject({ code: 'conversation_not_found' });
 
                 expect(
-                    (await store.readBlockProposal(turn, proposal.id)).blocks,
+                    (await readBlockProposal(store, turn, proposal.id)).blocks,
                 ).toHaveLength(1);
 
                 await store.finish(turn, outcome);
                 const visible = (
-                    await store.listBlockProposals(access(), chat.id)
+                    await listBlockProposals(store, access(), chat.id)
                 ).proposals;
 
                 if (outcome === 'succeeded') {
@@ -810,7 +936,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         proposal.id,
                     ]);
 
-                    const applied = await store.applyBlockProposal(
+                    const applied = await applyBlockProposal(
+                        store,
                         access(),
                         chat.id,
                         proposal.id,
@@ -823,7 +950,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 } else {
                     expect(visible).toEqual([]);
                     await expect(
-                        store.applyBlockProposal(
+                        applyBlockProposal(
+                            store,
                             access(),
                             chat.id,
                             proposal.id,
@@ -863,12 +991,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 const followup = (await store.claim())!;
                 if (outcome === 'succeeded') {
                     expect(
-                        (await store.readBlockProposal(followup, proposal.id))
+                        (await readBlockProposal(store, followup, proposal.id))
                             .id,
                     ).toBe(proposal.id);
                 } else {
                     await expect(
-                        store.readBlockProposal(followup, proposal.id),
+                        readBlockProposal(store, followup, proposal.id),
                     ).rejects.toThrow();
                 }
 
@@ -949,7 +1077,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).rejects.toMatchObject({ code: '42501' });
 
                 await expect(
-                    workerClient`select * from conversation_block_proposals`,
+                    workerClient`select * from conversation_content_proposals`,
                 ).rejects.toMatchObject({ code: '42501' });
 
                 const validBlocks = JSON.stringify([
@@ -962,7 +1090,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ]);
 
                 await expect(
-                    workerClient`select public.languon_propose_learning_blocks(${turn.id}::uuid,${randomUUID()}::uuid,${validBlocks}::jsonb)`,
+                    workerClient`select public.languon_propose_learning_content_change(${turn.id}::uuid,${randomUUID()}::uuid,${validBlocks}::jsonb,null::uuid)`,
                 ).rejects.toMatchObject({ code: '23514' });
 
                 await expect(
@@ -977,7 +1105,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ),
                 });
 
-                proposal = await workerStore.proposeBlocks(turn, {
+                proposal = await proposeBlocks(workerStore, turn, {
                     blocks: [
                         {
                             id: originalId,
@@ -988,7 +1116,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     ],
                 });
 
-                const captured = await workerStore.readBlockProposal(
+                const captured = await readBlockProposal(
+                    workerStore,
                     turn,
                     proposal.id,
                 );
@@ -1001,14 +1130,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
                 expect(captured.blocks[0]?.id).not.toBe(originalId);
                 await expect(
-                    workerStore.readBlockProposal(
+                    readBlockProposal(
+                        workerStore,
                         { ...turn, leaseToken: randomUUID() },
                         proposal.id,
                     ),
                 ).rejects.toMatchObject({ code: 'operation_interrupted' });
 
                 await expect(
-                    workerStore.readBlockProposal(turn, randomUUID()),
+                    readBlockProposal(workerStore, turn, randomUUID()),
                 ).rejects.toMatchObject({ code: 'conversation_not_found' });
             } finally {
                 await workerClient.end();
@@ -1017,7 +1147,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             }
 
             await expect(
-                store.proposeBlocks(turn, {
+                proposeBlocks(store, turn, {
                     blocks: [
                         {
                             id: randomUUID(),
@@ -1030,14 +1160,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ).rejects.toThrow('already generated');
 
             await store.finish(turn, 'succeeded');
-            const listed = await store.listBlockProposals(access(), chat.id);
+            const listed = await listBlockProposals(store, access(), chat.id);
             expect(listed.proposals[0]?.id).toBe(proposal.id);
             expect(listed.proposals[0]?.blocks[0]?.id).not.toBe(originalId);
             expect(
                 (await knowledge.get(owner, note.id)).body.schemaVersion,
             ).toBe(2);
 
-            const applied = await store.applyBlockProposal(
+            const applied = await applyBlockProposal(
+                store,
                 access(),
                 chat.id,
                 proposal.id,
@@ -1053,7 +1184,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 (await knowledge.get(owner, note.id)).body.schemaVersion,
             ).toBe(2);
 
-            const replay = await store.applyBlockProposal(
+            const replay = await applyBlockProposal(
+                store,
                 access(),
                 chat.id,
                 proposal.id,
@@ -1062,7 +1194,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
             expect(replay.branch.content.body.document.content).toHaveLength(2);
             await expect(
-                store.listBlockProposals({ ownerId: learner }, chat.id),
+                listBlockProposals(store, { ownerId: learner }, chat.id),
             ).rejects.toMatchObject({ code: 'conversation_not_found' });
 
             await store.submit(access(), chat.id, {
@@ -1079,7 +1211,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
 
             const next = (await store.claim())!;
-            const retainedProposal = await store.readBlockProposal(
+            const retainedProposal = await readBlockProposal(
+                store,
                 next,
                 proposal.id,
             );
@@ -1090,7 +1223,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
 
             await expect(
-                store.readBlockProposal(
+                readBlockProposal(
+                    store,
                     { ...next, ownerId: learner },
                     proposal.id,
                 ),
@@ -1100,7 +1234,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 JSON.stringify(next.sourceSnapshot.blockTarget?.material),
             ).toContain('Use ser for identity.');
 
-            const stale = await store.proposeBlocks(next, {
+            const stale = await proposeBlocks(store, next, {
                 blocks: [
                     {
                         id: randomUUID(),
@@ -1152,7 +1286,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const changedBranch = refreshed.branches.find(
                 (item) => item.id === branch.id,
             )!;
-            const independentAppend = await store.applyBlockProposal(
+            const independentAppend = await applyBlockProposal(
+                store,
                 access(),
                 chat.id,
                 stale.id,
@@ -1167,6 +1302,1089 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 JSON.stringify(independentAppend.branch.content.body),
             ).toContain('Changed rule after admission.');
+        });
+
+        it('persists and applies an ordered mixed content proposal without widening prose writes', async () => {
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const note = await knowledge.create(owner, {
+                operationId: randomUUID(),
+                content,
+            });
+            const workspace = await knowledge.getWorkspace(owner, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+
+            await store.submit(access(), chat.id, {
+                ...submit('Add a reading and its grammar'),
+                editorContext: {
+                    ...workspaceContext('Ser describes identity.'),
+                    workingBranch: { id: branch.id, version: branch.version },
+                },
+            });
+
+            const turn = (await store.claim())!;
+            const grammarId = randomUUID();
+            const proposal = await store.proposeContent(turn, {
+                body: {
+                    schemaVersion: 2,
+                    document: {
+                        type: 'doc',
+                        content: [
+                            {
+                                type: 'paragraph',
+                                content: [
+                                    {
+                                        type: 'text',
+                                        text: 'Un court texte de lecture.',
+                                    },
+                                ],
+                            },
+                            {
+                                type: 'learningBlock',
+                                attrs: {
+                                    block: {
+                                        id: grammarId,
+                                        type: 'grammar',
+                                        language: 'fr',
+                                        rule: 'Le COD répond à qui ou quoi.',
+                                    },
+                                },
+                            },
+                            {
+                                type: 'paragraph',
+                                content: [
+                                    {
+                                        type: 'text',
+                                        text: 'Puis entraînez-vous.',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            });
+
+            await store.finish(turn, 'succeeded');
+
+            const listed = await store.listContentProposals(access(), chat.id);
+            const body = listed.proposals.find(
+                (item) => item.id === proposal.id,
+            )?.body;
+
+            expect(body?.document.content?.map((node) => node.type)).toEqual([
+                'paragraph',
+                'learningBlock',
+                'paragraph',
+            ]);
+
+            const applied = await store.applyContentProposal(
+                access(),
+                chat.id,
+                proposal.id,
+                branch.version,
+            );
+
+            expect(applied.branch.content.title).toBe(content.title);
+            expect(
+                applied.branch.content.body.document.content
+                    ?.slice(-3)
+                    .map((node) => node.type),
+            ).toEqual(['paragraph', 'learningBlock', 'paragraph']);
+
+            expect(
+                applied.branch.content.body.document.content?.at(-2)?.attrs
+                    ?.block,
+            ).toMatchObject({
+                type: 'grammar',
+                rule: 'Le COD répond à qui ou quoi.',
+            });
+        });
+
+        async function pausedGenerationWithDependencies() {
+            const grammar = {
+                id: randomUUID(),
+                type: 'grammar' as const,
+                language: 'fr',
+                rule: 'Le COD devient sujet à la voix passive.',
+            };
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const note = await knowledge.create(owner, {
+                operationId: randomUUID(),
+                content: { ...content, body: proposalBody([grammar]) },
+            });
+            const workspace = await knowledge.getWorkspace(owner, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+
+            await store.submit(access(), chat.id, {
+                ...submit(
+                    'Create a reading, a dependent summary, and an independent introduction.',
+                ),
+                editorContext: {
+                    ...workspaceContext(''),
+                    workingBranch: { id: branch.id, version: branch.version },
+                },
+            });
+
+            const turn = (await store.claim())!;
+            const plan = GenerationPlanSchema.parse({
+                schemaVersion: 1,
+                replyLanguage: 'en',
+                sources: [
+                    {
+                        id: 'rule',
+                        kind: 'grammar',
+                        reference: { kind: 'block', blockId: grammar.id },
+                    },
+                ],
+                tasks: [
+                    {
+                        id: 'reading',
+                        kind: 'prose',
+                        instruction: 'Explain the source rule.',
+                        language: 'fr',
+                        inputs: [{ kind: 'source', sourceId: 'rule' }],
+                    },
+                    {
+                        id: 'summary',
+                        kind: 'prose',
+                        instruction: 'Summarize the generated reading.',
+                        language: 'fr',
+                        inputs: [{ kind: 'task', taskId: 'reading' }],
+                    },
+                    {
+                        id: 'introduction',
+                        kind: 'prose',
+                        instruction: 'Introduce French grammar study.',
+                        language: 'fr',
+                        inputs: [],
+                    },
+                ],
+                outputOrder: ['reading', 'summary', 'introduction'],
+            });
+            const run = await store.startGeneration(turn, plan, [
+                { sourceId: 'rule', blocks: [grammar] },
+            ]);
+            const artifacts = new Map<string, string>();
+            for (const task of plan.tasks) {
+                const id = randomUUID();
+                artifacts.set(task.id, id);
+                await store.checkpointGeneration(
+                    turn,
+                    [
+                        {
+                            id,
+                            revision: 1,
+                            taskId: task.id,
+                            batchKey: `${task.id}:complete`,
+                            taskComplete: true,
+                            body: {
+                                schemaVersion: 2,
+                                document: {
+                                    type: 'doc',
+                                    content: [
+                                        {
+                                            type: 'paragraph',
+                                            content: [
+                                                {
+                                                    type: 'text',
+                                                    text: `Texte validé pour ${task.id}.`,
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                            },
+                            contentHash: '',
+                            requirementsHash: '',
+                            sourceHash: '',
+                            validationVersion: 'learning-content-v1',
+                        },
+                    ],
+                    randomUUID(),
+                );
+            }
+
+            await store.pauseGeneration(turn);
+            await store.finish(turn, 'succeeded');
+
+            return {
+                grammar,
+                knowledge,
+                note,
+                branch,
+                chat,
+                plan,
+                run,
+                artifacts,
+            };
+        }
+
+        async function generationMutationCounts(conversationId: string) {
+            const [counts] =
+                await client`select (select count(*)::integer from conversation_turns where conversation_id=${conversationId}::uuid) as turns, (select count(*)::integer from ai_credit_actions where owner_id=${owner}::uuid) as actions, (select count(*)::integer from ai_credit_action_quotes where conversation_id=${conversationId}::uuid) as quotes`;
+
+            return counts;
+        }
+
+        it('applies reviewed plan revisions with order-only reuse, dependent invalidation and optimistic concurrency without admitting execution', async () => {
+            const fixture = await pausedGenerationWithDependencies();
+            const { chat, run, plan, artifacts } = fixture;
+            const reordered = {
+                ...plan,
+                outputOrder: ['introduction', 'reading', 'summary'],
+            };
+
+            await store.reviseGenerationRun(access(), chat.id, run.runId, {
+                requestId: randomUUID(),
+                expectedRevision: 1,
+                instruction: 'Put the introduction first.',
+            });
+
+            const revisionTurn = (await store.claim())!;
+            expect((await store.generationContext(revisionTurn))?.purpose).toBe(
+                'revision',
+            );
+
+            const candidate = await store.proposeGenerationRevision(
+                revisionTurn,
+                reordered,
+            );
+
+            await store.finish(revisionTurn, 'succeeded');
+            expect(
+                (await store.getGenerationRun(access(), chat.id, run.runId))
+                    .revisionCandidate,
+            ).toMatchObject({
+                id: candidate.id,
+                keptTaskIds: ['reading', 'summary', 'introduction'],
+                changedTaskIds: [],
+            });
+
+            const beforeApply = await generationMutationCounts(chat.id);
+            const admissionsBeforeApply = admitted.mock.calls.length;
+            const applyRequest = {
+                requestId: randomUUID(),
+                expectedRevision: 1,
+                candidateId: candidate.id,
+            };
+            const applied = await store.applyGenerationRevision(
+                access(),
+                chat.id,
+                run.runId,
+                applyRequest,
+            );
+
+            expect(applied.run).toMatchObject({
+                revision: 2,
+                state: 'paused',
+                activeTurnId: null,
+                completedTaskCount: 3,
+            });
+
+            expect(applied.plan?.outputOrder).toEqual(reordered.outputOrder);
+            const [revisionTwo] =
+                await client`select artifact_ids from conversation_generation_plan_revisions where run_id=${run.runId}::uuid and revision=2`;
+
+            expect(revisionTwo?.artifact_ids).toEqual([...artifacts.values()]);
+            await expect(
+                store.applyGenerationRevision(
+                    access(),
+                    chat.id,
+                    run.runId,
+                    applyRequest,
+                ),
+            ).resolves.toEqual(applied);
+
+            await expect(
+                store.applyGenerationRevision(access(), chat.id, run.runId, {
+                    ...applyRequest,
+                    requestId: randomUUID(),
+                }),
+            ).rejects.toMatchObject({ code: 'version_conflict' });
+
+            expect(await generationMutationCounts(chat.id)).toEqual(
+                beforeApply,
+            );
+
+            expect(admitted.mock.calls.length).toBe(admissionsBeforeApply);
+
+            const revised = {
+                ...reordered,
+                tasks: reordered.tasks.map((task) =>
+                    task.id === 'reading'
+                        ? {
+                              ...task,
+                              instruction:
+                                  'Explain the rule using three new examples.',
+                          }
+                        : task,
+                ),
+            };
+
+            await store.reviseGenerationRun(access(), chat.id, run.runId, {
+                requestId: randomUUID(),
+                expectedRevision: 2,
+                instruction: 'Change the reading examples.',
+            });
+
+            const nextTurn = (await store.claim())!;
+            const nextCandidate = await store.proposeGenerationRevision(
+                nextTurn,
+                revised,
+            );
+
+            await store.finish(nextTurn, 'succeeded');
+            expect(
+                (await store.getGenerationRun(access(), chat.id, run.runId))
+                    .revisionCandidate,
+            ).toMatchObject({
+                id: nextCandidate.id,
+                keptTaskIds: ['introduction'],
+                changedTaskIds: ['reading', 'summary'],
+            });
+
+            const beforeChangedApply = await generationMutationCounts(chat.id);
+            const admissionsBeforeChangedApply = admitted.mock.calls.length;
+            const changed = await store.applyGenerationRevision(
+                access(),
+                chat.id,
+                run.runId,
+                {
+                    requestId: randomUUID(),
+                    expectedRevision: 2,
+                    candidateId: nextCandidate.id,
+                },
+            );
+
+            expect(changed.run).toMatchObject({
+                revision: 3,
+                state: 'paused',
+                activeTurnId: null,
+                completedTaskCount: 1,
+            });
+
+            expect(
+                changed.run.tasks.map(({ id, status }) => ({ id, status })),
+            ).toEqual([
+                { id: 'reading', status: 'pending' },
+                { id: 'summary', status: 'pending' },
+                { id: 'introduction', status: 'completed' },
+            ]);
+
+            const [revisionThree] =
+                await client`select artifact_ids from conversation_generation_plan_revisions where run_id=${run.runId}::uuid and revision=3`;
+
+            expect(revisionThree?.artifact_ids).toEqual([
+                artifacts.get('introduction'),
+            ]);
+
+            expect(await generationMutationCounts(chat.id)).toEqual(
+                beforeChangedApply,
+            );
+
+            expect(admitted.mock.calls.length).toBe(
+                admissionsBeforeChangedApply,
+            );
+        });
+
+        it('refreshes the exact captured source and invalidates dependent checkpoints while retaining independent progress without an AI action', async () => {
+            const { grammar, knowledge, note, branch, chat, run, artifacts } =
+                await pausedGenerationWithDependencies();
+            const updatedGrammar = {
+                ...grammar,
+                rule: 'Le COI reste introduit par une préposition à la voix passive.',
+            };
+            const edited = await knowledge.updateWorking(owner, note.id, {
+                operationId: randomUUID(),
+                branchId: branch.id,
+                expectedVersion: branch.version,
+                content: {
+                    ...branch.content,
+                    body: proposalBody([updatedGrammar]),
+                },
+            });
+            const beforeRefresh = await generationMutationCounts(chat.id);
+            const admissionsBeforeRefresh = admitted.mock.calls.length;
+            const request = {
+                requestId: randomUUID(),
+                expectedRevision: 1,
+                choice: 'refresh' as const,
+            };
+            const refreshed = await store.resolveGenerationSource(
+                access(),
+                chat.id,
+                run.runId,
+                request,
+            );
+
+            expect(refreshed.run).toMatchObject({
+                revision: 2,
+                state: 'paused',
+                activeTurnId: null,
+                completedTaskCount: 1,
+            });
+
+            expect(
+                refreshed.run.tasks.map(({ id, status }) => ({ id, status })),
+            ).toEqual([
+                { id: 'reading', status: 'pending' },
+                { id: 'summary', status: 'pending' },
+                { id: 'introduction', status: 'completed' },
+            ]);
+
+            const rows =
+                await client`select revision,sources,artifact_ids from conversation_generation_plan_revisions where run_id=${run.runId}::uuid order by revision`;
+
+            expect(rows).toHaveLength(2);
+            expect(rows[0]?.sources).toEqual([
+                { sourceId: 'rule', blocks: [grammar] },
+            ]);
+
+            expect(rows[0]?.artifact_ids).toEqual([...artifacts.values()]);
+            expect(rows[1]?.sources).toEqual([
+                { sourceId: 'rule', blocks: [updatedGrammar] },
+            ]);
+
+            expect(rows[1]?.artifact_ids).toEqual([
+                artifacts.get('introduction'),
+            ]);
+
+            const [runRow] =
+                await client`select source_snapshot from conversation_generation_runs where id=${run.runId}::uuid`;
+
+            expect(runRow?.source_snapshot.blockTarget).toMatchObject({
+                branchId: branch.id,
+                version: edited.branch.version,
+            });
+
+            await expect(
+                store.resolveGenerationSource(
+                    access(),
+                    chat.id,
+                    run.runId,
+                    request,
+                ),
+            ).resolves.toEqual(refreshed);
+
+            await expect(
+                store.resolveGenerationSource(access(), chat.id, run.runId, {
+                    ...request,
+                    requestId: randomUUID(),
+                }),
+            ).rejects.toMatchObject({ code: 'version_conflict' });
+
+            expect(await generationMutationCounts(chat.id)).toEqual(
+                beforeRefresh,
+            );
+
+            expect(admitted.mock.calls.length).toBe(admissionsBeforeRefresh);
+        });
+
+        it('keeps a checkpoint private until every task and the final proposal finish atomically', async () => {
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const note = await knowledge.create(owner, {
+                operationId: randomUUID(),
+                content,
+            });
+            const workspace = await knowledge.getWorkspace(owner, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+
+            await store.submit(access(), chat.id, {
+                ...submit('Create a short French reading.'),
+                editorContext: {
+                    ...workspaceContext('Ser describes identity.'),
+                    workingBranch: { id: branch.id, version: branch.version },
+                },
+            });
+
+            const turn = (await store.claim())!;
+            const plan = {
+                schemaVersion: 1 as const,
+                replyLanguage: 'en',
+                sources: [
+                    {
+                        id: 'selection',
+                        kind: 'text' as const,
+                        reference: { kind: 'selection' as const },
+                    },
+                ],
+                tasks: [
+                    {
+                        id: 'reading',
+                        kind: 'prose' as const,
+                        instruction: 'Write a short French reading.',
+                        language: 'fr',
+                        inputs: [
+                            { kind: 'source' as const, sourceId: 'selection' },
+                        ],
+                    },
+                ],
+                outputOrder: ['reading'],
+            };
+            const run = await store.startGeneration(turn, plan, [
+                {
+                    sourceId: 'selection',
+                    blocks: [],
+                    selection: {
+                        noteId: note.id,
+                        noteVersion: branch.version,
+                        text: 'Ser describes identity.',
+                    },
+                },
+            ]);
+
+            expect(run.runId).toEqual(expect.any(String));
+
+            await store.checkpointGeneration(
+                turn,
+                [
+                    {
+                        id: randomUUID(),
+                        taskId: 'reading',
+                        batchKey: 'reading:1',
+                        revision: 1,
+                        taskComplete: true,
+                        body: {
+                            schemaVersion: 2,
+                            document: {
+                                type: 'doc',
+                                content: [
+                                    {
+                                        type: 'paragraph',
+                                        content: [
+                                            {
+                                                type: 'text',
+                                                text: 'La démocratie est vivante.',
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                        },
+                        contentHash: '',
+                        requirementsHash: '',
+                        sourceHash: '',
+                        validationVersion: 'learning-content-v1',
+                    },
+                ],
+                randomUUID(),
+            );
+
+            await store.pauseGeneration(turn);
+            await store.finish(turn, 'succeeded');
+
+            const paused = await store.getGenerationRun(
+                access(),
+                chat.id,
+                run.runId,
+            );
+
+            expect(paused.run).toMatchObject({
+                state: 'paused',
+                completedTaskCount: 1,
+                proposalId: null,
+            });
+
+            const quoteId = randomUUID();
+            admitted.mockResolvedValueOnce({
+                confirmationRequired: true,
+                quote: {
+                    id: quoteId,
+                    maximumCredits: '1',
+                    approximateOutputTokens: 100,
+                    expiresAt: new Date(clock.getTime() + 60_000).toISOString(),
+                },
+            } as never);
+
+            await expect(
+                store.continueGenerationRun(access(), chat.id, run.runId, {
+                    requestId: randomUUID(),
+                    expectedRevision: 1,
+                }),
+            ).rejects.toMatchObject({ quote: { id: quoteId } });
+
+            expect(admitted).toHaveBeenLastCalledWith(
+                expect.anything(),
+                expect.objectContaining({ forceConfirmation: true }),
+            );
+
+            const resumed = (await store.continueGenerationRun(
+                access(),
+                chat.id,
+                run.runId,
+                {
+                    requestId: randomUUID(),
+                    expectedRevision: 1,
+                    confirmedQuoteId: quoteId,
+                },
+            )) as { id: string };
+            const resumedTurn = (await store.claim())!;
+            expect(resumedTurn.id).toBe(resumed.id);
+            const finalProposal = await store.proposeContent(resumedTurn, {
+                body: {
+                    schemaVersion: 2,
+                    document: {
+                        type: 'doc',
+                        content: [
+                            {
+                                type: 'paragraph',
+                                content: [
+                                    {
+                                        type: 'text',
+                                        text: 'La démocratie est vivante.',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            });
+
+            await store.linkGenerationProposal(resumedTurn, finalProposal.id);
+            await store.finish(resumedTurn, 'succeeded');
+
+            const complete = await store.getGenerationRun(
+                access(),
+                chat.id,
+                run.runId,
+            );
+
+            expect(complete.run).toMatchObject({
+                state: 'completed',
+                proposalId: finalProposal.id,
+                completedTaskCount: 1,
+            });
+        });
+
+        it.each(['edited', 'deleted'] as const)(
+            'keeps captured grammar after its document source is %s through Continue, publication and Insert',
+            async (change) => {
+                const grammar = {
+                    id: randomUUID(),
+                    type: 'grammar' as const,
+                    language: 'fr',
+                    rule: 'Le COD devient sujet à la voix passive.',
+                };
+                const knowledge = new DrizzleKnowledgeStore(
+                    db,
+                    { beforeNoteDeletion: async () => undefined },
+                    new KnowledgeShareCrypto(
+                        'conversation-knowledge-test-secret-47',
+                    ),
+                );
+                const note = await knowledge.create(owner, {
+                    operationId: randomUUID(),
+                    content: { ...content, body: proposalBody([grammar]) },
+                });
+                const workspace = await knowledge.getWorkspace(owner, note.id);
+                const branch = workspace.branches.find(
+                    (item) => item.id === workspace.preferredBranchId,
+                )!;
+                const chat = await store.create(access(), {
+                    source: { kind: 'knowledge', id: note.id },
+                });
+
+                await store.submit(access(), chat.id, {
+                    ...submit('Practice the grammar in French.'),
+                    editorContext: {
+                        ...workspaceContext(''),
+                        workingBranch: {
+                            id: branch.id,
+                            version: branch.version,
+                        },
+                    },
+                });
+
+                const turn = (await store.claim())!;
+                const plan = GenerationPlanSchema.parse({
+                    schemaVersion: 1,
+                    replyLanguage: 'en',
+                    sources: [
+                        {
+                            id: 'rule',
+                            kind: 'grammar',
+                            reference: { kind: 'block', blockId: grammar.id },
+                        },
+                    ],
+                    tasks: [
+                        {
+                            id: 'practice',
+                            kind: 'exercises',
+                            instruction: 'Practice the captured rule.',
+                            language: 'fr',
+                            explanationLanguage: 'fr',
+                            inputs: [{ kind: 'source', sourceId: 'rule' }],
+                            activities: [{ activityId: 'G02', count: 1 }],
+                        },
+                    ],
+                    outputOrder: ['practice'],
+                });
+                const run = await store.startGeneration(turn, plan, [
+                    { sourceId: 'rule', blocks: [grammar] },
+                ]);
+
+                await store.stop(access(), chat.id, turn.id);
+                await store.finish(turn, 'cancelled');
+
+                const changed = await knowledge.updateWorking(owner, note.id, {
+                    operationId: randomUUID(),
+                    branchId: branch.id,
+                    expectedVersion: branch.version,
+                    content: {
+                        ...branch.content,
+                        body:
+                            change === 'edited'
+                                ? proposalBody([
+                                      {
+                                          ...grammar,
+                                          rule: 'Nouvelle règle après la capture.',
+                                      },
+                                  ])
+                                : {
+                                      schemaVersion: 2,
+                                      document: {
+                                          type: 'doc',
+                                          content: [{ type: 'paragraph' }],
+                                      },
+                                  },
+                    },
+                });
+
+                await expect(
+                    store.continueGenerationRun(access(), chat.id, run.runId, {
+                        requestId: randomUUID(),
+                        expectedRevision: 1,
+                    }),
+                ).rejects.toMatchObject({ code: 'source_changed' });
+
+                await store.resolveGenerationSource(
+                    access(),
+                    chat.id,
+                    run.runId,
+                    {
+                        requestId: randomUUID(),
+                        expectedRevision: 1,
+                        choice: 'keep-snapshot',
+                    },
+                );
+
+                await store.continueGenerationRun(
+                    access(),
+                    chat.id,
+                    run.runId,
+                    { requestId: randomUUID(), expectedRevision: 1 },
+                );
+
+                const resumed = (await store.claim())!;
+                const context = (await store.generationContext(resumed))!;
+                expect(context.sources[0]!.blocks).toEqual([grammar]);
+
+                // The real restoration/authoring pipeline must produce the captured origin;
+                // the fixture supplies only model output with ordinary source bindings.
+                const restored = restoreGenerationExecution(context);
+                const exercise = namedExerciseFixture({
+                    activityId: 'G02',
+                    sources: [grammar],
+                    language: 'fr',
+                    explanationLanguage: 'fr',
+                });
+                const authored = await createLearningContentAuthoring({
+                    ...restored,
+                    run: { runId: context.runId, revision: context.revision },
+                    authorizedSources: context.sources.flatMap(
+                        (source) => source.blocks,
+                    ),
+                    generate: async () => ({
+                        tasks: [{ taskId: 'practice', blocks: [exercise] }],
+                    }),
+                    onValidatedBatch: async ({
+                        results,
+                        artifactIds,
+                        batchKey,
+                        taskComplete,
+                        validationId,
+                    }) => {
+                        await store.checkpointGeneration(
+                            resumed,
+                            results.map((result) => ({
+                                id: artifactIds.get(result.taskId)!,
+                                revision: context.revision,
+                                taskId: result.taskId,
+                                batchKey,
+                                taskComplete,
+                                body: resultBody(result),
+                                contentHash: '',
+                                requirementsHash: '',
+                                sourceHash: '',
+                                validationVersion: 'learning-content-v1',
+                            })),
+                            validationId,
+                        );
+                    },
+                }).generate(restored.brief, new AbortController().signal);
+
+                expect(authored.status).toBe('ready');
+                if (authored.status !== 'ready') {
+                    throw new Error(
+                        'Captured source did not produce an insertable exercise.',
+                    );
+                }
+
+                await store.assertGenerationProposal(
+                    resumed,
+                    authored.proposal,
+                );
+
+                const proposal = await store.proposeContent(
+                    resumed,
+                    authored.proposal,
+                );
+
+                await store.linkGenerationProposal(resumed, proposal.id);
+                await store.finish(resumed, 'succeeded');
+                const completed = await store.getGenerationRun(
+                    access(),
+                    chat.id,
+                    run.runId,
+                );
+
+                expect(completed.run).toMatchObject({
+                    state: 'completed',
+                    proposalId: proposal.id,
+                });
+
+                const applied = await store.applyContentProposal(
+                    access(),
+                    chat.id,
+                    proposal.id,
+                    changed.branch.version,
+                );
+                const inserted = blocksFromBody(
+                    applied.branch.content.body,
+                ).find((block) => block.type === 'exercise');
+
+                expect(
+                    inserted?.type === 'exercise' &&
+                        inserted.semantics?.sources,
+                ).toEqual([
+                    {
+                        kind: 'grammar',
+                        rule: grammar.rule,
+                        origin: {
+                            kind: 'captured-block',
+                            runId: run.runId,
+                            revision: 1,
+                            sourceId: 'rule',
+                            blockId: grammar.id,
+                            contentHash:
+                                expect.stringMatching(/^[a-f0-9]{64}$/u),
+                        },
+                    },
+                ]);
+
+                const currentGrammar = blocksFromBody(
+                    applied.branch.content.body,
+                ).find((block) => block.id === grammar.id);
+
+                if (change === 'edited') {
+                    expect(currentGrammar).toMatchObject({
+                        rule: 'Nouvelle règle après la capture.',
+                    });
+                } else {
+                    expect(currentGrammar).toBeUndefined();
+                }
+            },
+        );
+
+        it('discards every private generation snapshot and returns only a tombstone manifest', async () => {
+            const sentinel = `private-lesson-${randomUUID()}`;
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const note = await knowledge.create(owner, {
+                operationId: randomUUID(),
+                content: {
+                    ...content,
+                    title: sentinel,
+                    summary: sentinel,
+                },
+            });
+            const workspace = await knowledge.getWorkspace(owner, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+
+            await store.submit(access(), chat.id, {
+                ...submit(sentinel),
+                editorContext: {
+                    ...workspaceContext(sentinel),
+                    workingBranch: { id: branch.id, version: branch.version },
+                },
+            });
+
+            const turn = (await store.claim())!;
+            const run = await store.startGeneration(
+                turn,
+                {
+                    schemaVersion: 1,
+                    replyLanguage: 'en',
+                    sources: [],
+                    tasks: [
+                        {
+                            id: sentinel,
+                            kind: 'prose',
+                            instruction: sentinel,
+                            language: 'fr',
+                            sourceText: sentinel,
+                            inputs: [],
+                        },
+                    ],
+                    outputOrder: [sentinel],
+                },
+                [],
+            );
+
+            await store.checkpointGeneration(
+                turn,
+                [
+                    {
+                        id: randomUUID(),
+                        revision: 1,
+                        taskId: sentinel,
+                        batchKey: 'private:1',
+                        taskComplete: true,
+                        body: {
+                            schemaVersion: 2,
+                            document: {
+                                type: 'doc',
+                                content: [
+                                    {
+                                        type: 'paragraph',
+                                        content: [
+                                            { type: 'text', text: sentinel },
+                                        ],
+                                    },
+                                ],
+                            },
+                        },
+                        contentHash: '',
+                        requirementsHash: '',
+                        sourceHash: '',
+                        validationVersion: 'learning-content-v1',
+                    },
+                ],
+                randomUUID(),
+            );
+
+            const hiddenProposal = await store.proposeContent(turn, {
+                body: {
+                    schemaVersion: 2,
+                    document: {
+                        type: 'doc',
+                        content: [
+                            {
+                                type: 'paragraph',
+                                content: [{ type: 'text', text: sentinel }],
+                            },
+                        ],
+                    },
+                },
+            });
+
+            await client`
+            insert into conversation_generation_plan_candidates (id, run_id, base_revision, plan, created_at)
+            select ${randomUUID()}::uuid, run_id, revision, plan, now()
+            from conversation_generation_plan_revisions where run_id=${run.runId}::uuid
+        `;
+
+            const seeded = await client`
+            select count(*)::integer as candidates from conversation_generation_plan_candidates where run_id=${run.runId}::uuid
+        `;
+
+            expect(seeded[0]?.candidates).toBe(1);
+
+            await store.pauseGeneration(turn);
+            await store.finish(turn, 'failed');
+            const hidden =
+                await client`select count(*)::integer as count from conversation_content_proposals where id=${hiddenProposal.id}::uuid`;
+
+            expect(hidden[0]?.count).toBe(1);
+
+            const discarded = await store.discardGenerationRun(
+                access(),
+                chat.id,
+                run.runId,
+                { requestId: randomUUID(), expectedRevision: 1 },
+            );
+
+            const removed =
+                await client`select count(*)::integer as count from conversation_content_proposals where id=${hiddenProposal.id}::uuid`;
+
+            expect(removed[0]?.count).toBe(0);
+            expect(discarded.run).toMatchObject({ state: 'discarded' });
+            expect(discarded.plan).toBeUndefined();
+            expect(JSON.stringify(discarded)).not.toContain(sentinel);
+
+            const privateRows = await client`
+                select
+                    (select count(*)::integer from conversation_generation_plan_revisions where run_id=${run.runId}::uuid) as revisions,
+                    (select count(*)::integer from conversation_generation_run_artifacts where run_id=${run.runId}::uuid) as artifacts,
+                    (select count(*)::integer from conversation_generation_plan_candidates where run_id=${run.runId}::uuid) as candidates,
+                    (select row_to_json(conversation_generation_runs)::text from conversation_generation_runs where id=${run.runId}::uuid) as snapshot
+            `;
+
+            expect(privateRows[0]).toMatchObject({
+                revisions: 0,
+                artifacts: 0,
+                candidates: 0,
+            });
+
+            expect(privateRows[0]?.snapshot).not.toContain(sentinel);
+            const replay = await store.events(access(), chat.id, 0);
+            expect(
+                JSON.stringify(
+                    replay.filter((event) => event.type === 'generation-run'),
+                ),
+            ).not.toContain(sentinel);
         });
 
         it('updates only an unchanged target and copies a stale update separately with fresh identities', async () => {
@@ -1221,7 +2439,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 });
 
                 const turn = (await store.claim())!;
-                const proposal = await store.proposeBlocks(turn, {
+                const proposal = await proposeBlocks(store, turn, {
                     targetBlockId: blockId,
                     blocks: [{ ...original, id: randomUUID(), rule }],
                 });
@@ -1239,13 +2457,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 content: { ...branch.content, title: 'Unrelated title edit' },
             });
             const current = edited.branch;
-            const listed = (await store.listBlockProposals(access(), chat.id))
+            const listed = (await listBlockProposals(store, access(), chat.id))
                 .proposals[0]!;
 
             expect(listed.turnId).toBeTruthy();
             expect(listed.target).toMatchObject({ blockId });
             expect(listed.targetStale).toBe(false);
-            const applied = await store.applyBlockProposal(
+            const applied = await applyBlockProposal(
+                store,
                 access(),
                 chat.id,
                 proposal.id,
@@ -1298,12 +2517,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
 
             expect(
-                (await store.listBlockProposals(access(), chat.id)).proposals[0]
-                    ?.targetStale,
+                (await listBlockProposals(store, access(), chat.id))
+                    .proposals[0]?.targetStale,
             ).toBe(true);
 
             await expect(
-                store.applyBlockProposal(
+                applyBlockProposal(
+                    store,
                     access(),
                     chat.id,
                     stale.id,
@@ -1311,7 +2531,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).rejects.toThrow('target block changed');
 
-            const copied = await store.applyBlockProposal(
+            const copied = await applyBlockProposal(
+                store,
                 access(),
                 chat.id,
                 stale.id,
@@ -1324,7 +2545,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
             expect(added).toMatchObject({ rule: 'Later AI proposal.' });
             expect(added?.id).not.toBe(blockId);
-            const replay = await store.applyBlockProposal(
+            const replay = await applyBlockProposal(
+                store,
                 access(),
                 chat.id,
                 stale.id,
@@ -1389,7 +2611,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
 
             const turn = (await store.claim())!;
-            const proposed = await store.proposeBlocks(turn, {
+            const proposed = await proposeBlocks(store, turn, {
                 blocks: [
                     {
                         id: randomUUID(),
@@ -1404,7 +2626,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
 
             await store.finish(turn, 'succeeded');
-            const listed = (await store.listBlockProposals(access(), chat.id))
+            const listed = (await listBlockProposals(store, access(), chat.id))
                 .proposals[0]!;
 
             expect(listed.dependencies).toEqual([sourceBlock]);
@@ -1442,12 +2664,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
 
             expect(
-                (await store.listBlockProposals(access(), chat.id)).proposals[0]
-                    ?.targetStale,
+                (await listBlockProposals(store, access(), chat.id))
+                    .proposals[0]?.targetStale,
             ).toBe(true);
 
             await expect(
-                store.applyBlockProposal(
+                applyBlockProposal(
+                    store,
                     access(),
                     chat.id,
                     proposed.id,
@@ -1455,7 +2678,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).rejects.toThrow('source passage changed');
 
-            const copied = await store.applyBlockProposal(
+            const copied = await applyBlockProposal(
+                store,
                 access(),
                 chat.id,
                 proposed.id,
@@ -1483,7 +2707,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 segmentIds: [copiedSource.segments[0]!.id],
             });
 
-            const replay = await store.applyBlockProposal(
+            const replay = await applyBlockProposal(
+                store,
                 access(),
                 chat.id,
                 proposed.id,
@@ -1582,13 +2807,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
         it('captures named wordbank dependencies and independently copies stale grounding with remapped identities', async () => {
             const fixture = await namedProposalFixture();
-            const proposed = await store.proposeBlocks(fixture.turn, {
+            const proposed = await proposeBlocks(store, fixture.turn, {
                 blocks: [fixture.exercise],
             });
 
             await store.finish(fixture.turn, 'succeeded');
             const listed = (
-                await store.listBlockProposals(access(), fixture.chat.id)
+                await listBlockProposals(store, access(), fixture.chat.id)
             ).proposals[0]!;
 
             expect(listed.dependencies).toEqual([fixture.vocabulary]);
@@ -1631,12 +2856,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             );
 
             expect(
-                (await store.listBlockProposals(access(), fixture.chat.id))
+                (await listBlockProposals(store, access(), fixture.chat.id))
                     .proposals[0]?.targetStale,
             ).toBe(true);
 
             await expect(
-                store.applyBlockProposal(
+                applyBlockProposal(
+                    store,
                     access(),
                     fixture.chat.id,
                     proposed.id,
@@ -1644,7 +2870,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             ).rejects.toThrow('source passage changed');
 
-            const applied = await store.applyBlockProposal(
+            const applied = await applyBlockProposal(
+                store,
                 access(),
                 fixture.chat.id,
                 proposed.id,
@@ -1750,15 +2977,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 };
 
                 await expect(
-                    store.proposeBlocks(fixture.turn, { blocks: [exercise] }),
+                    proposeBlocks(store, fixture.turn, { blocks: [exercise] }),
                 ).rejects.toMatchObject({ code: 'version_conflict' });
 
                 await expect(
-                    client`select public.languon_propose_learning_block_change(${fixture.turn.id}::uuid,${fixture.turn.leaseToken}::uuid,${JSON.stringify([exercise])}::jsonb,null::uuid)`,
+                    client`select public.languon_propose_learning_content_change(${fixture.turn.id}::uuid,${fixture.turn.leaseToken}::uuid,${JSON.stringify(proposalBody([exercise]))}::jsonb,null::uuid)`,
                 ).rejects.toMatchObject({ code: '23514' });
 
                 const [row] =
-                    await client`select count(*)::integer as count from conversation_block_proposals where turn_id=${fixture.turn.id}::uuid`;
+                    await client`select count(*)::integer as count from conversation_content_proposals where turn_id=${fixture.turn.id}::uuid`;
 
                 expect(row?.['count']).toBe(0);
             },
@@ -1798,13 +3025,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
             );
 
-            await store.proposeBlocks(fixture.turn, {
+            await proposeBlocks(store, fixture.turn, {
                 blocks: [historical, selected],
             });
 
             await store.finish(fixture.turn, 'succeeded');
             const proposal = (
-                await store.listBlockProposals(access(), fixture.chat.id)
+                await listBlockProposals(store, access(), fixture.chat.id)
             ).proposals[0]!;
 
             expect(proposal.dependencies).toEqual([]);
@@ -1827,18 +3054,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             );
             const wrong = { ...fixture.grammar, id: source.id };
             await expect(
-                store.proposeBlocks(fixture.turn, {
+                proposeBlocks(store, fixture.turn, {
                     blocks: [wrong, exercise],
                 }),
             ).rejects.toMatchObject({ code: 'version_conflict' });
 
-            await store.proposeBlocks(fixture.turn, {
+            await proposeBlocks(store, fixture.turn, {
                 blocks: [source, exercise],
             });
 
             await store.finish(fixture.turn, 'succeeded');
             const proposal = (
-                await store.listBlockProposals(access(), fixture.chat.id)
+                await listBlockProposals(store, access(), fixture.chat.id)
             ).proposals[0]!;
 
             expect(proposal.dependencies).toEqual([]);
@@ -2814,7 +4041,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             );
 
             await expect(
-                store.proposeBlocks(claimed, {
+                proposeBlocks(store, claimed, {
                     blocks: [
                         {
                             id: randomUUID(),

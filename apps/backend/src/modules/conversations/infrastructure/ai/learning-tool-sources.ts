@@ -1,3 +1,4 @@
+import { bodyBlocks } from './learning-generation-plan';
 import type { LearningBlock } from '@languon/contracts';
 import type { LearningContentBrief } from '../../application/learning-content-contract';
 import type { TutorRunInput } from '../../application/ports/tutor-runner';
@@ -17,7 +18,7 @@ import {
 
 /** Source-bearing tool input is resolved from this operation's authority, never its supplied text. */
 export async function resolveLearningToolSources(
-    input: Pick<TutorRunInput, 'message' | 'memory' | 'readBlockProposal'> &
+    input: Pick<TutorRunInput, 'message' | 'memory' | 'readContentProposal'> &
         Partial<
             Pick<TutorRunInput, 'sourceContext' | 'readContext' | 'sourceNote'>
         >,
@@ -44,17 +45,17 @@ export async function resolveLearningToolSources(
         for (const id of proposalIds) {
             if (
                 !catalog.some((item) => item.id === id) ||
-                !input.readBlockProposal
+                !input.readContentProposal
             ) {
                 throw new Error('The selected proposal is unavailable.');
             }
 
-            const proposal = await input.readBlockProposal(id);
+            const proposal = await input.readContentProposal(id);
             if (proposal.id !== id) {
                 throw new Error('The selected proposal is unavailable.');
             }
 
-            sources.set(id, proposal.blocks);
+            sources.set(id, bodyBlocks(proposal.body));
         }
     }
 

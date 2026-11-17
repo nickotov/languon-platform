@@ -51,7 +51,7 @@ import {
     conversationsTable,
     conversationTurnsTable,
 } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/schema';
-import { conversationBlockProposalsTable } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposal-schema';
+import { conversationContentProposalsTable } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/conversation-content-proposal-schema';
 import { speechRecordingsTable } from '../../../../src/modules/speech/infrastructure/schema';
 import { knowledgeSpeechRecordingsTable } from '../../../../src/modules/speech/infrastructure/knowledge-speech-schema';
 import { aiProviderPriceRevisionsTable } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/provider-price-schema';
@@ -386,14 +386,25 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 });
             });
 
-            await db.insert(conversationBlockProposalsTable).values({
+            await db.insert(conversationContentProposalsTable).values({
                 id: randomUUID(),
                 conversationId: chat,
                 turnId: turn,
                 noteId: note.id,
                 branchId: branch.id,
                 baseBranchVersion: branch.version,
-                blocks: [exercise],
+                body: {
+                    schemaVersion: 2,
+                    document: {
+                        type: 'doc',
+                        content: [
+                            {
+                                type: 'learningBlock',
+                                attrs: { block: exercise },
+                            },
+                        ],
+                    },
+                },
                 createdAt: now,
             });
 
@@ -837,7 +848,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ).toHaveLength(0);
 
                 expect(
-                    await db.select().from(conversationBlockProposalsTable),
+                    await db.select().from(conversationContentProposalsTable),
                 ).toHaveLength(0);
 
                 expect(

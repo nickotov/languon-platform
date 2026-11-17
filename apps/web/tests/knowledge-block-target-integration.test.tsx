@@ -70,21 +70,21 @@ it('exposes current authorized draft labels through the actual proposal integrat
         { initialProps: { model: actions('Original target') } },
     );
 
-    expect(result.current.blockProposalContext?.getBlockLabel(blockId)).toBe(
+    expect(result.current.contentProposalContext?.getBlockLabel(blockId)).toBe(
         'Original target',
     );
 
     rerender({ model: actions('Renamed target') });
-    expect(result.current.blockProposalContext?.getBlockLabel(blockId)).toBe(
+    expect(result.current.contentProposalContext?.getBlockLabel(blockId)).toBe(
         'Renamed target',
     );
 
     rerender({ model: actions('Deleted', false) });
     expect(
-        result.current.blockProposalContext?.getBlockLabel(blockId),
+        result.current.contentProposalContext?.getBlockLabel(blockId),
     ).toBeUndefined();
 
     expect(
-        result.current.blockProposalContext?.getBlockLabel('foreign-id'),
+        result.current.contentProposalContext?.getBlockLabel('foreign-id'),
     ).toBeUndefined();
 });

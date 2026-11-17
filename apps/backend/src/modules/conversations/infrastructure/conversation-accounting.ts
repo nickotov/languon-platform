@@ -62,6 +62,8 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             requestId?: string;
             fingerprint?: string;
             confirmedQuoteId?: string;
+            forceConfirmation?: boolean;
+            minimumOutputTokens?: number;
             inputTokenBound?: number;
             minimumInputBound: number;
             reserveToolContinuation?: boolean;
@@ -332,18 +334,22 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 ? authorizedBudgetMilli
                 : plannedMaximumMilli;
 
-        if (funding === 'customer' && !zeroCustomerTariff) {
+        const customerPays = funding === 'customer' && !zeroCustomerTariff;
+        if (customerPays || input.forceConfirmation) {
             const available = account.availableCredits;
-            const held =
-                acceptedBudgetMilli < available
-                    ? acceptedBudgetMilli
-                    : available;
-            const customerAllowance = affordableActionOutput({
-                budgetMilli: held,
-                inputTokens: admittedMaxInputTokens,
-                outputLimit: 10000,
-                tariff,
-            });
+            const held = !customerPays
+                ? 0n
+                : acceptedBudgetMilli < available
+                  ? acceptedBudgetMilli
+                  : available;
+            const customerAllowance = customerPays
+                ? affordableActionOutput({
+                      budgetMilli: held,
+                      inputTokens: admittedMaxInputTokens,
+                      outputLimit: 10000,
+                      tariff,
+                  })
+                : 10000;
 
             if (customerAllowance < 1) {
                 throw new ConversationError(
@@ -362,6 +368,13 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 throw new ConversationError(
                     'credits_exhausted',
                     'You do not have enough AI credits for input and any output.',
+                );
+            }
+
+            if (allowance < (input.minimumOutputTokens ?? 0)) {
+                throw new ConversationError(
+                    'generation_scope_change',
+                    'The available allowance cannot complete the next lesson section. Increase the available budget or revise the plan.',
                 );
             }
 
@@ -402,7 +415,8 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 offered.authorizationFingerprint === authorizationFingerprint &&
                 offered.expiresAt > now &&
                 offered.heldMilli <= held &&
-                offered.outputAllowance <= allowance
+                offered.outputAllowance <= allowance &&
+                offered.outputAllowance >= (input.minimumOutputTokens ?? 0)
             ) {
                 return {
                     confirmationRequired: true,
@@ -432,10 +446,12 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                     authorizationFingerprint &&
                 confirmed.expiresAt > now &&
                 confirmed.heldMilli <= held &&
-                confirmed.outputAllowance <= allowance;
+                confirmed.outputAllowance <= allowance &&
+                confirmed.outputAllowance >= (input.minimumOutputTokens ?? 0);
 
             if (
-                (allowance < 10000 ||
+                (input.forceConfirmation ||
+                    allowance < 10000 ||
                     held < acceptedBudgetMilli ||
                     input.confirmedQuoteId) &&
                 !validQuote

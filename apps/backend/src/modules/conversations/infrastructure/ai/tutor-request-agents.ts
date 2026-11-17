@@ -30,9 +30,10 @@ export function createTutorRequestAgents(options: {
     const create = (
         id: keyof typeof tutorRequestAgentDefinitions,
         model: MastraModelConfig,
+        override?: { id: string; name: string; instructions: string },
     ) => {
         const agent = new Agent({
-            ...tutorRequestAgentDefinitions[id],
+            ...(override ?? tutorRequestAgentDefinitions[id]),
             model,
             defaultOptions: { maxSteps: 1 },
             defaultGenerateOptionsLegacy: { maxSteps: 1, maxRetries: 0 },
@@ -45,6 +46,15 @@ export function createTutorRequestAgents(options: {
     };
 
     return {
+        generationPlanReviser: create(
+            'tutor-request-resolver',
+            options.planningModel,
+            {
+                id: 'generation-plan-reviser',
+                name: 'generation-plan-reviser',
+                instructions: getLocalPrompt('generation-plan-revision'),
+            },
+        ),
         tutorRequestResolver: create(
             'tutor-request-resolver',
             options.planningModel,
@@ -58,6 +68,18 @@ export function createTutorRequestAgents(options: {
             options.authoringModel,
         ),
     };
+}
+
+export class TutorStructuredOutputError extends Error {
+    constructor(readonly reason: 'invalid-output' | 'output-limit') {
+        super(
+            reason === 'output-limit'
+                ? 'The structured response reached its output limit.'
+                : 'The structured response was invalid.',
+        );
+
+        this.name = 'TutorStructuredOutputError';
+    }
 }
 
 export async function generateTutorObject(input: {
@@ -95,14 +117,23 @@ export async function generateTutorObject(input: {
         ) {
             input.signal.throwIfAborted();
 
-            return null;
+            const finishReason =
+                'finishReason' in error ? error.finishReason : undefined;
+
+            throw new TutorStructuredOutputError(
+                finishReason === 'length' ? 'output-limit' : 'invalid-output',
+            );
         }
 
         throw error;
     }
 
     input.signal.throwIfAborted();
-    if (result.error || result.tripwire || result.finishReason === 'length') {
+    if (result.finishReason === 'length') {
+        throw new TutorStructuredOutputError('output-limit');
+    }
+
+    if (result.error || result.tripwire) {
         throw new Error(
             'The learning request could not be completed within its limits.',
         );

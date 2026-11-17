@@ -1,13 +1,14 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import type { KnowledgeBlockProposal } from '@languon/contracts';
+import { contentProposalBlocks } from '../lib/content-proposal-blocks';
+import type { KnowledgeContentProposal } from '@languon/contracts';
 import type { ConversationSessionRequest } from '@/fsd/entities/conversation';
 import { useSessionStore } from '@/fsd/entities/session';
 import { useKnowledgeAudioUrls } from '@/fsd/entities/knowledge';
 
 /** Prepare visible previews, not the entire historic conversation's media. */
 export function useProposalAudio(
-    proposal: KnowledgeBlockProposal,
+    proposal: KnowledgeContentProposal,
     requestWithSession: ConversationSessionRequest,
     review: boolean,
 ) {
@@ -42,7 +43,7 @@ export function useProposalAudio(
     }, []);
 
     const assetIds = [
-        ...proposal.blocks,
+        ...contentProposalBlocks(proposal),
         ...(proposal.dependencies ?? []),
     ].flatMap((block) =>
         block.type === 'audio' && block.assetId ? [block.assetId] : [],

@@ -36,8 +36,10 @@ source_paths:
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts
     - docs/adr/0049-native-provider-pricing-and-accounting.md
     - docs/adr/0051-duration-based-transcription-accounting.md
-source_fingerprint: sha256:47710ece901e4f0658f35c0f44a6e54cf57b69418226729beaf8ddb5f6be56e0
-reviewed: 2026-11-14
+    - apps/backend/src/modules/speech/infrastructure/knowledge-snippet-source.ts
+    - apps/backend/src/modules/speech/infrastructure/knowledge-speech-worker-authority.sql
+source_fingerprint: sha256:31f837ccba6a6db3456204e908ca8ec1be8d3539df6ca7d412d4093d343770ce
+reviewed: 2026-11-16
 ---
 
 # Speech reuse, generation and pricing
@@ -79,7 +81,7 @@ release hold permanently"]
     Admin["Authorized admin confirmed erasure"] --> Delete["Revoke playback immediately
 durable deletion of every object version"]
     Success --> Delete
-    NoteText["Saved Knowledge block/source text"] --> Narration["Private speech preview via existing engine"]
+    NoteText["Authorized Knowledge block/source text"] --> Narration["Private speech preview via existing engine"]
     Narration --> AudioGrant["Explicit copy to note-owned audio asset"]
     Upload["Bounded uploaded audio asset / verified duration"] --> STTGate{"Transcription controls and confirmation?"}
     STTGate -->|"Yes"| STTJob["Duration-metered fenced transcription job"] --> Transcript["Preview transcript; author applies to working note"]
@@ -134,7 +136,18 @@ path and does not imply transcript acquisition.
 The worker coordinator now alternates dictionary generation with shared speech and, when
 enabled, transcription.
 
+Canonical content proposals now store a Knowledge v2 `body`; snippet resolution
+and worker authority traverse its typed learningBlock nodes instead of a separate
+blocks array. Proposal, branch, source and owner checks remain required, and removal
+still revokes proposal-bound speech. Private generation artifacts do not become
+speech read authority. This source-shape migration and the shared accounting SQL
+changes do not alter the speech reuse, indivisible admission, deadline or settlement
+relationships reviewed above.
+
 ## Sources
+
+- [Canonical proposal snippet resolution](../../apps/backend/src/modules/speech/infrastructure/knowledge-snippet-source.ts).
+- [Live speech source authority](../../apps/backend/src/modules/speech/infrastructure/knowledge-speech-worker-authority.sql).
 
 - [apps/backend/src/modules/speech/application/speech-service.ts](../../apps/backend/src/modules/speech/application/speech-service.ts)
 - [apps/backend/src/modules/speech/application/speech-worker.ts](../../apps/backend/src/modules/speech/application/speech-worker.ts)

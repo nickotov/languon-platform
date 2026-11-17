@@ -26,6 +26,8 @@ export async function seedConversationActionAuthorityFixture(
     input: {
         ownerId: string;
         actionId?: string;
+        conversationId?: string;
+        sourceSnapshot?: typeof conversationTurnsTable.$inferInsert.sourceSnapshot;
         providerId?: string;
         modelId?: string;
         maximumMilli: bigint;
@@ -137,7 +139,7 @@ export async function seedConversationActionAuthorityFixture(
         ownerId: input.ownerId,
         at,
     });
-    const chatId = randomUUID(),
+    const chatId = input.conversationId ?? randomUUID(),
         sourceId = randomUUID();
     const preferences = {
         mode: 'auto' as const,
@@ -146,16 +148,18 @@ export async function seedConversationActionAuthorityFixture(
         explanationLevel: 'auto' as const,
     };
 
-    await tx.insert(conversationsTable).values({
-        id: chatId,
-        ownerId: input.ownerId,
-        sourceKind: 'dictionary',
-        sourceId,
-        source: { kind: 'dictionary', id: sourceId },
-        preferences,
-        createdAt: at,
-        updatedAt: at,
-    });
+    if (!input.conversationId) {
+        await tx.insert(conversationsTable).values({
+            id: chatId,
+            ownerId: input.ownerId,
+            sourceKind: 'dictionary',
+            sourceId,
+            source: { kind: 'dictionary', id: sourceId },
+            preferences,
+            createdAt: at,
+            updatedAt: at,
+        });
+    }
 
     await tx.insert(conversationTurnsTable).values({
         id: actionId,
@@ -167,7 +171,7 @@ export async function seedConversationActionAuthorityFixture(
         leaseToken: actionId,
         leaseUntil: new Date(at.getTime() + 60000),
         authority: { sourceOwnerId: input.ownerId },
-        sourceSnapshot: {
+        sourceSnapshot: input.sourceSnapshot ?? {
             version: '1',
             title: 'Synthetic fixture',
             description: null,

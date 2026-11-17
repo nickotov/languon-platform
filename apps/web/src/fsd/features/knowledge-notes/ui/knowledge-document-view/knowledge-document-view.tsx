@@ -1,8 +1,11 @@
 'use client';
 
 import type { ComponentProps, ReactNode } from 'react';
-import { KnowledgeBodySchema, type LearningBlock } from '@languon/contracts';
-import { KnowledgeBody } from '@/fsd/entities/knowledge';
+import { type LearningBlock } from '@languon/contracts';
+import {
+    KnowledgeBody,
+    validateKnowledgeFragment,
+} from '@/fsd/entities/knowledge';
 import type { LearningBlockViewProps } from '@/fsd/entities/learning-blocks';
 import type { MenuItem } from '@/fsd/shared/ui';
 import type { KnowledgeBlockCopyContext } from '../../api/block-copy-api';
@@ -49,7 +52,10 @@ export function KnowledgeDocumentView({
           ) => ReactNode)
         | undefined;
 }) {
-    const plan = knowledgeDocumentGroups(KnowledgeBodySchema.parse(props.body));
+    const plan = knowledgeDocumentGroups(
+        validateKnowledgeFragment(props.body, props.dependencies),
+    );
+
     function renderBlock(block: LearningBlock) {
         return (
             <ReaderLearningBlock

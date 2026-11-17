@@ -38,8 +38,14 @@ source_paths:
     - apps/backend/src/modules/conversations/infrastructure/ai/contextual-tutor-runner.ts
     - apps/backend/src/modules/knowledge/domain/named-exercise-semantics.ts
     - apps/backend/src/modules/administration/infrastructure/ai-catalog/tool-definitions.ts
-source_fingerprint: sha256:b1caf6418a5cf705a42daf7714099f628f0bb6f3e166651baff6edba8cacdb86
-reviewed: 2026-11-15
+    - docs/adr/0060-composable-generation-runs.md
+    - apps/backend/src/modules/conversations/application/ports/generation-run.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-generation-execution.ts
+    - apps/backend/src/modules/conversations/interface/http/conversation-generation.routes.ts
+    - packages/contracts/src/generation-plans.ts
+    - packages/contracts/src/knowledge-content-proposals.ts
+source_fingerprint: sha256:76cff1f73b769c138c6c045a6da0ef85ec0b038a773eda350e6e35c0b96cd990
+reviewed: 2026-11-16
 ---
 
 # Module and layer boundaries
@@ -56,7 +62,7 @@ flowchart TB
     end
     Shared --> Contracts["@languon/contracts
 Zod wire schemas
-named activity metadata and semantics"]
+named activities, generation plans and mixed content"]
     AdminShared --> Contracts
     subgraph Backend["Backend process composition"]
         Root["index.ts + createApp"] --> HTTP["Hono interface routes"]
@@ -82,7 +88,10 @@ The Knowledge and Conversations compositions share a typed note transaction
 participant for source reads, first-message draft naming and explicit proposal
 publication. Knowledge owns working branches, workbooks, share capabilities,
 media grants and private learner state; Conversations owns private turns and
-Mastra history. Knowledge sentence practice and private translations use source
+Mastra history, generation runs, immutable revisions and private artifacts. The
+application generation port accepts a validated plan independently of transcript
+preparation; the existing AI infrastructure adapter schedules and validates it.
+Knowledge sentence practice and private translations use source
 adapters to existing Learning/Texts execution instead of giving shared readers a
 document-writing path. Transcription is a Knowledge job service in the existing
 worker/runtime boundary, with a separate admin configuration surface.
@@ -118,7 +127,18 @@ activity tools are development-harness registrations; the ordinary tutor actor
 retains four high-level learning-content tools. Admin catalog inspection grants
 no execution authority. See the [named-exercise flow](named-exercises.md).
 
+Composable generation retains these app/module boundaries. Web lesson-generation
+UI uses public run contracts and Conversations endpoints; existing Knowledge
+proposal UI renders the canonical mixed `body`. AI credits owns structured-call
+eligibility and cumulative settlement series through transaction participants.
+Checkpoint and receipt acceptance commit together under worker authority. No new
+workflow service, provider, worker pool or cross-app source import is introduced.
+The reviewed process/composition relationships remain unchanged; the narrower
+[conversation view](conversations-and-knowledge.md) describes run transitions.
+
 ## Sources
+
+- [Reusable generation application port](../../apps/backend/src/modules/conversations/application/ports/generation-run.ts).
 
 - [apps/backend/src/modules/conversations/infrastructure/conversations-composition.ts](../../apps/backend/src/modules/conversations/infrastructure/conversations-composition.ts)
 - [apps/backend/src/modules/knowledge/infrastructure/knowledge-composition.ts](../../apps/backend/src/modules/knowledge/infrastructure/knowledge-composition.ts)

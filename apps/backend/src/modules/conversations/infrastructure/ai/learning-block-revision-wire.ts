@@ -4,7 +4,7 @@ import {
     BilingualTextLearningBlockSchema,
     ExerciseLearningBlockSchema,
     GrammarLearningBlockSchema,
-    LearningBlockProposalInputSchema,
+    LearningBlockSchema,
     VideoLearningBlockSchema,
     VocabularyLearningBlockSchema,
     type LearningBlock,
@@ -96,26 +96,28 @@ export function createLearningBlockRevisionWire(
                 )!;
                 const block = candidate.blocks[0] as Record<string, unknown>;
 
-                return LearningBlockProposalInputSchema.parse({
-                    ...candidate,
+                return {
+                    targetBlockId: candidate.targetBlockId,
                     blocks: [
-                        source.type === 'exercise' && source.semantics
-                            ? {
-                                  ...block,
-                                  ...(source.source
-                                      ? { source: source.source }
-                                      : {}),
-                                  semantics: {
-                                      ...(block.semantics as Record<
-                                          string,
-                                          unknown
-                                      >),
-                                      sources: source.semantics.sources,
-                                  },
-                              }
-                            : block,
+                        LearningBlockSchema.parse(
+                            source.type === 'exercise' && source.semantics
+                                ? {
+                                      ...block,
+                                      ...(source.source
+                                          ? { source: source.source }
+                                          : {}),
+                                      semantics: {
+                                          ...(block.semantics as Record<
+                                              string,
+                                              unknown
+                                          >),
+                                          sources: source.semantics.sources,
+                                      },
+                                  }
+                                : block,
+                        ),
                     ],
-                });
+                };
             });
         },
     };

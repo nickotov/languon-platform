@@ -1,3 +1,4 @@
+import { bodyBlocks } from '../infrastructure/ai/learning-generation-plan';
 import { describe, expect, it } from 'vitest';
 import { ExerciseLearningBlockSchema } from '@languon/contracts';
 import { validateExercises } from './learning-content-task-validation';
@@ -69,9 +70,11 @@ describe('exact named activity output validation', () => {
         const blocks = [block(1), block(2), block(3, 'R09')];
         expect(() => validateExercises(task, blocks)).not.toThrow();
         expect(
-            validateLearningContent({ tasks: [task] }, [
-                { taskId: task.id, blocks },
-            ]).blocks,
+            bodyBlocks(
+                validateLearningContent({ tasks: [task] }, [
+                    { taskId: task.id, blocks },
+                ]).body,
+            ),
         ).toEqual(blocks);
     });
 

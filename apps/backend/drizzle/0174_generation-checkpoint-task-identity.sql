@@ -1,0 +1,2 @@
+DROP INDEX "conversation_generation_artifact_batch_unique";--> statement-breakpoint
+CREATE UNIQUE INDEX "conversation_generation_artifact_batch_unique" ON "conversation_generation_run_artifacts" USING btree ("run_id","revision","task_id","batch_key");

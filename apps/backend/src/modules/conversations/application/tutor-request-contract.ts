@@ -8,6 +8,7 @@ const responseText = z.string().trim().min(1).max(4_000);
 const generation = {
     brief: LearningContentBriefSchema,
     continuesPending: z.boolean().optional(),
+    changesReplyLanguage: z.boolean().optional(),
     acknowledgement: responseText.optional(),
     sourceProposalIds: z.array(z.uuid()).max(8).optional(),
     sourceMatch: z
@@ -30,6 +31,7 @@ export const TutorRequestResolutionSchema = z.discriminatedUnion('kind', [
             replyLanguage: AssistantLanguageSchema.optional(),
             kind: z.literal('clarify'),
             continuesPending: z.boolean().optional(),
+            changesReplyLanguage: z.boolean().optional(),
             question: responseText,
             brief: LearningContentBriefSchema,
         })
@@ -91,6 +93,7 @@ export const tutorRequestStateKey = 'learning-request:v1';
 export const TutorRequestStateSchema = z
     .object({
         pending: LearningContentBriefSchema.nullable(),
+        replyLanguage: AssistantLanguageSchema.optional(),
         pendingProposalIds: z.array(z.uuid()).max(8).optional(),
         pendingSources: z
             .object({
@@ -112,6 +115,7 @@ export const TutorRequestStateSchema = z
                                     )
                                     .max(25)
                                     .optional(),
+                                providedMaterialId: z.uuid().optional(),
                                 selectionOrigin: z
                                     .object({
                                         noteId: z.uuid(),

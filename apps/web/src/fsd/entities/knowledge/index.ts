@@ -14,3 +14,5 @@ export {
     useKnowledgeAudioUrls,
     type KnowledgeAudioUrlsOptions,
 } from './hooks/use-knowledge-audio-urls';
+
+export { validateKnowledgeFragment } from './lib/validate-knowledge-fragment';

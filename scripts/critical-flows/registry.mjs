@@ -10,6 +10,7 @@ export const backendExecutionGroups = Object.freeze({
         'src/modules/conversations/infrastructure/ai/exercise-source-resolution.test.ts',
         'tests/integration/modules/conversations/conversation-accounting.test.ts',
         'tests/integration/modules/conversations/conversation-action-accounting.test.ts',
+        'tests/integration/modules/conversations/generation-checkpoint-accounting.test.ts',
         'tests/integration/modules/conversations/conversation-production-execution.test.ts',
         'src/modules/conversations/infrastructure/ai/contextual-tutor-runner.test.ts',
         'src/modules/conversations/infrastructure/ai/conversation-memory-storage.test.ts',

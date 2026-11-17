@@ -1,3 +1,4 @@
+import { bodyBlocks } from './learning-generation-plan';
 import type { LearningBlock } from '@languon/contracts';
 import type { TutorRunInput } from '../../application/ports/tutor-runner';
 import type { TutorRequestState } from '../../application/tutor-request-contract';
@@ -48,22 +49,22 @@ export async function loadLearningProposalCatalog(
     const blocks = new Map<string, readonly LearningBlock[]>();
     const catalog: Descriptor[] = [];
     for (const [index, descriptor] of state.proposals.entries()) {
-        if (!input.readBlockProposal) {
+        if (!input.readContentProposal) {
             catalog.push(descriptor);
             continue;
         }
 
         try {
-            const proposal = await input.readBlockProposal(descriptor.id);
+            const proposal = await input.readContentProposal(descriptor.id);
             if (proposal.id !== descriptor.id) {
                 continue;
             }
 
-            blocks.set(proposal.id, proposal.blocks);
+            blocks.set(proposal.id, bodyBlocks(proposal.body));
             catalog.push(
                 describeLearningProposal(
                     proposal.id,
-                    proposal.blocks,
+                    bodyBlocks(proposal.body),
                     descriptor.summary,
                     descriptor.ordinal ?? index + 1,
                 ),

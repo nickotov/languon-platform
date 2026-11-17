@@ -5,8 +5,13 @@ import {
     type ConversationUIMessage,
 } from '../src/fsd/entities/conversation/lib/conversation-ui-message';
 import { reduceConversationEvent } from '../src/fsd/entities/conversation/lib/reduce-event';
+import { DurableMessageProjection } from '../src/fsd/entities/conversation/lib/durable-message-projection';
+import { lessonRun } from './lesson-run-fixture';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ConversationDetailSchema } from '@languon/contracts';
+import {
+    ConversationDetailSchema,
+    ConversationEventSchema,
+} from '@languon/contracts';
 import {
     conversationApi,
     ConversationApiError,
@@ -37,6 +42,53 @@ const snapshot = {
 };
 const canonical = `id: 1\nevent: conversation\ndata: ${JSON.stringify(snapshot)}\n\n`;
 const heartbeat = 'event: heartbeat\ndata: {}\n\n';
+
+it('publishes lesson progress without rebuilding an in-flight assistant response', () => {
+    const projection = new DurableMessageProjection(detail);
+    const message = ConversationEventSchema.parse({
+        ...snapshot,
+        type: 'message',
+        data: {
+            id,
+            conversationId: id,
+            turnId: null,
+            role: 'assistant',
+            content: 'Preparing',
+            attachments: [],
+            toolCalls: [],
+            status: 'streaming',
+            sourceVersion: '1',
+            sourceProvenance: 'saved',
+            createdAt: date,
+        },
+    });
+
+    projection.project(message);
+    const progress = ConversationEventSchema.parse({
+        ...snapshot,
+        id: 2,
+        type: 'generation-run',
+        data: { ...lessonRun, conversationId: id },
+    });
+
+    expect(projection.project(progress)).toEqual([
+        { type: 'data-canonical', data: progress, transient: true },
+    ]);
+
+    const next = ConversationEventSchema.parse({
+        ...message,
+        id: 3,
+        data: { ...message.data, content: 'Preparing your lesson' },
+    });
+    const chunks = projection.project(next);
+    expect(chunks).toContainEqual({
+        type: 'text-delta',
+        id: 'answer',
+        delta: ' your lesson',
+    });
+
+    expect(chunks.some((chunk) => chunk.type === 'reset-step')).toBe(false);
+});
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -278,7 +330,7 @@ it.each(['running', 'succeeded', 'failed'] as const)(
                     toolCalls: [
                         {
                             id: 'block-call',
-                            name: 'propose_learning_blocks',
+                            name: 'propose_learning_content',
                             state,
                         },
                     ],
@@ -293,7 +345,7 @@ it.each(['running', 'succeeded', 'failed'] as const)(
         const [message] = conversationUIMessages(projection);
         expect(
             message?.parts.find((part) => part.type.startsWith('tool-'))?.type,
-        ).toBe('tool-propose_learning_blocks');
+        ).toBe('tool-propose_learning_content');
 
         expect(JSON.stringify(message)).not.toContain(
             'tool-propose_knowledge_note',

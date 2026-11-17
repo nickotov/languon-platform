@@ -1,3 +1,4 @@
+import { resultBody } from './learning-generation-plan';
 import { describe, expect, it, vi } from 'vitest';
 import type { LearningContentResult } from '../../application/learning-content-contract';
 import { createLearningContentOperations } from './learning-content-operations';
@@ -22,17 +23,20 @@ const brief = {
         },
     ],
 };
-const ready: LearningContentResult = {
+const ready: Extract<LearningContentResult, { status: 'ready' }> = {
     status: 'ready',
     proposal: {
-        blocks: [
-            {
-                id: blockId,
-                type: 'grammar',
-                language: 'fr',
-                rule: 'Use avoir with the past participle.',
-            },
-        ],
+        body: resultBody({
+            taskId: 'fixture',
+            blocks: [
+                {
+                    id: blockId,
+                    type: 'grammar',
+                    language: 'fr',
+                    rule: 'Use avoir with the past participle.',
+                },
+            ],
+        }),
     },
     summary: 'One grammar block.',
 };
@@ -120,7 +124,7 @@ describe('canonical learning generation and proposal publication', () => {
     it('refuses a proposal outside the authorized recent catalog before retrieval or authoring', async () => {
         const generate = vi.fn(async () => ready);
         const publish = vi.fn();
-        const readBlockProposal = vi.fn();
+        const readContentProposal = vi.fn();
         const memory = tutorMemoryFixture();
         const operation = createLearningContentOperations({
             authoring: { generate },
@@ -131,7 +135,7 @@ describe('canonical learning generation and proposal publication', () => {
                     {
                         memory: memory.port,
                         sourceContext: {},
-                        readBlockProposal,
+                        readContentProposal,
                         message: {
                             id: 'source',
                             role: 'user',
@@ -155,7 +159,7 @@ describe('canonical learning generation and proposal publication', () => {
             }),
         ).resolves.toMatchObject({ status: 'needs-clarification' });
 
-        expect(readBlockProposal).not.toHaveBeenCalled();
+        expect(readContentProposal).not.toHaveBeenCalled();
         expect(generate).not.toHaveBeenCalled();
         expect(publish).not.toHaveBeenCalled();
     });

@@ -1,3 +1,4 @@
+import { bodyBlocks } from '../infrastructure/ai/learning-generation-plan';
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import type { LearningBlock } from '@languon/contracts';
@@ -54,9 +55,9 @@ describe('learning content batch aggregation', () => {
             next,
         ]);
         const proposal = validateLearningContent(brief, merged.results);
-        expect(proposal.blocks).toHaveLength(1);
-        expect(proposal.blocks[0]!.id).toBe(first.blocks[0]!.id);
-        expect(proposal.blocks[0]).toMatchObject({
+        expect(bodyBlocks(proposal.body)).toHaveLength(1);
+        expect(bodyBlocks(proposal.body)[0]!.id).toBe(first.blocks[0]!.id);
+        expect(bodyBlocks(proposal.body)[0]).toMatchObject({
             entries: terms.map((term) => ({ term })),
         });
 
@@ -159,7 +160,9 @@ describe('learning content batch aggregation', () => {
         ]);
 
         expect(
-            validateLearningContent(mixedBrief, final.results).blocks[0],
+            bodyBlocks(
+                validateLearningContent(mixedBrief, final.results).body,
+            )[0],
         ).toEqual(rule);
 
         expect(() =>

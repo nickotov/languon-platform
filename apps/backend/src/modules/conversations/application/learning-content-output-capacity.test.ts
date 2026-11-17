@@ -50,7 +50,7 @@ it('allows the default mixed request and additional components through bounded b
         ],
     };
 
-    expect(estimateLearningContentOutput(brief)).toBe(4_570);
+    expect(estimateLearningContentOutput(brief)).toBe(7_820);
     expect(learningContentRequirements(brief)).toBeNull();
     brief.tasks.push({
         id: 'extra',
@@ -197,7 +197,7 @@ it('does not reserve echo output for long grammar and exercise input sources', (
         ],
     };
 
-    expect(estimateLearningContentOutput(brief)).toBe(3_350);
+    expect(estimateLearningContentOutput(brief)).toBe(6_600);
     expect(learningContentRequirements(brief)).toBeNull();
 });
 

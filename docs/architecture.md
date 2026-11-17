@@ -512,9 +512,49 @@ existing rich text. Shared contracts define video, vocabulary, bilingual text,
 audio, grammar and exercise content; fixed React renderers supply independent
 presentation and interaction ports without importing the editor. Tiptap adapts
 those blocks to manual authoring. Prose and block documents use the current
-version-2 body contract; there is no old-version application decoder. The separate typed block proposal tool requires owner authority,
-captures its target branch/version, and applies reviewed blocks only to the
-working branch. Explicit Save publishes them.
+version-2 body contract; there is no old-version application decoder. The canonical `propose_learning_content` tool requires owner authority and
+captures its target branch/version. Its persisted `body` is a safe Knowledge v2
+fragment containing ordered prose and typed blocks, with frozen dependencies.
+Mixed proposals insert into the working branch; replacement remains restricted to
+one exact typed block. Explicit Save publishes the reviewed content. Prose-only
+writers remain narrow, and generation never changes the note title.
+
+Composable lessons use a transcript-independent validated plan under
+[ADR-0060](adr/0060-composable-generation-runs.md). Up to eight stable logical tasks
+have explicit authorized source/dependency inputs and a separate output order.
+The Conversations worker persists owner-scoped runs, immutable plan revisions and
+validated artifacts; it schedules ready tasks sequentially in bounded homogeneous
+batches. Checkpoint persistence and structured-call eligibility commit under the
+same current lease/revision fence. No partial checkpoint becomes an insertable
+proposal: complete aggregate validation exposes one canonical mixed preview.
+The serialized proposal including dependencies is limited to 100,000 characters
+and 25 custom blocks, in addition to existing document limits.
+
+Each generation action retains the five-call, 10,000-output-token and deadline
+limits. Progress can pause durably; Continue requires explicit fresh quoted
+admission, idempotency and the expected revision. Capacity preflight rejects an
+unchanged unit that cannot make validated progress and asks for a scope change.
+Reconnect only reconciles state. Prepared actions bypass transcript preparation
+and memory summarization. Chat clarification retains confirmed content languages
+separately from reply language; bounded counts resolve within the requested range.
+
+Paused unfinished plans support reviewed revisions: unchanged artifacts and
+output-order-only changes reuse content, while changed tasks and descendants are
+invalidated. Applying a revision stays paused; Continue is separate. Changed
+sources require Keep captured snapshot or Refresh under current access. Unresolved
+selected passages require an exact fresh editor selection. Generated prose carries
+immutable artifact provenance; captured blocks carry frozen run/revision/source
+origins rather than rebinding to edited local blocks. Neither origin grants read
+access. Discard and deletion fence late writes and erase private plan/source/artifact
+content while preserving required numeric accounting evidence.
+
+Successful stages charge newly eligible validated calls. A rejected structured
+call is wholly ineligible; provider expense remains distinct. Technical failure
+releases only the current action hold; earlier stage charges remain. Explicit Stop
+retains eligible-partial-usage charging. Accounting rounds customer-funded run
+stages cumulatively, including chargeable Stop and excluding operator-funded work
+and technical failures. Reused artifacts are never charged again; clarification
+and revision-planning replies keep ordinary chat pricing.
 
 Space editor insertion and workspace chat share local exercise previews. The
 editor slash picker prepares generation in chat or creates clearly Custom manual

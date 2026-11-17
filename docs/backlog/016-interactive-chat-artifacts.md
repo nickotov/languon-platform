@@ -4,7 +4,7 @@ id: BL-016
 title: Interactive chat artifacts and exact follow-up references
 status: in-progress
 created: 2026-10-31
-updated: 2026-11-04
+updated: 2026-11-16
 original_tasks: '2026-10-31 extensible custom-block and follow-up discussion'
 evidence: []
 depends_on:
@@ -19,6 +19,8 @@ depends_on:
 ## Current delivery
 
 The user authorized the exact same-chat Knowledge-proposal follow-up slice in [feature 060](../../.agent/features/060-intent-aware-learning-content/FEATURE.md) on 2026-11-04, including unapplied proposals. This partial allocation does not implement the broader artifact lifecycle: dictionary/text/shared-source standalone generation, independent artifact practice and cross-context access remain future work. Verification is in progress.
+
+Feature 070 adds durable reusable generation plans and mixed content proposals in owned Knowledge conversations ([implementation record](../../.agent/features/070-composable-lesson-generation/FEATURE.md)). This extends the allocated slice; it does not complete standalone dictionary/text/shared-source artifact generation or private artifact practice. Feature verification remains tracked in its evidence record.
 
 ## Problem and outcome
 
@@ -68,7 +70,7 @@ security review and applicable mapped user-flow/critical checks are required.
 
 - Conversation source snapshots, memory and block proposal persistence under
   `apps/backend/src/modules/conversations/`
-- `apps/web/src/fsd/features/knowledge-notes/ui/block-proposals/`
+- `apps/web/src/fsd/features/knowledge-notes/ui/content-proposals/`
 - `apps/web/src/fsd/entities/learning-blocks/`
 - `packages/contracts/src/learning-blocks.ts`
 

@@ -4,6 +4,7 @@ import {
     ExerciseActivityIdSchema,
 } from './exercise-activity';
 import { getExerciseActivity } from './exercise-activity-catalog';
+import { GeneratedArtifactOriginSchema } from './generated-artifacts';
 
 const text = (max: number) =>
     z
@@ -179,6 +180,22 @@ export const NamedExerciseCheckingSchema = z.discriminatedUnion('policy', [
 
 // These are content origins, never authority. The server must resolve them within
 // the authorized document/conversation and freeze the actual source before use.
+export const CapturedBlockOriginSchema = z
+    .object({
+        kind: z.literal('captured-block'),
+        runId: z.uuid(),
+        revision: z.number().int().positive(),
+        sourceId: z
+            .string()
+            .min(1)
+            .max(80)
+            .regex(/^[A-Za-z0-9_-]+$/u),
+        blockId: z.uuid(),
+        contentHash: z.string().regex(/^[a-f0-9]{64}$/u),
+    })
+    .strict();
+export type CapturedBlockOrigin = z.infer<typeof CapturedBlockOriginSchema>;
+
 const blockOrigin = z.discriminatedUnion('kind', [
     z.object({ kind: z.literal('block'), blockId: z.uuid() }).strict(),
     z
@@ -188,6 +205,7 @@ const blockOrigin = z.discriminatedUnion('kind', [
             blockId: z.uuid(),
         })
         .strict(),
+    CapturedBlockOriginSchema,
 ]);
 
 export const NamedExerciseSourceSchema = z.discriminatedUnion('kind', [
@@ -239,6 +257,26 @@ export const NamedExerciseSourceSchema = z.discriminatedUnion('kind', [
                 .object({
                     noteId: z.uuid(),
                     noteVersion: z.number().int().nonnegative(),
+                })
+                .strict(),
+            text: text(40_000),
+        })
+        .strict(),
+    z
+        .object({
+            kind: z.literal('generated-text'),
+            origin: GeneratedArtifactOriginSchema,
+            text: text(40_000),
+        })
+        .strict(),
+    z
+        .object({
+            kind: z.literal('provided-text'),
+            origin: z
+                .object({
+                    kind: z.literal('provided-material'),
+                    materialId: z.uuid(),
+                    contentHash: z.string().regex(/^[a-f0-9]{64}$/u),
                 })
                 .strict(),
             text: text(40_000),
@@ -332,7 +370,11 @@ export const NamedExerciseSemanticsSchema = z
 
         for (const [index, source] of value.sources.entries()) {
             const kind =
-                source.kind === 'text-selection' ? 'text' : source.kind;
+                source.kind === 'text-selection' ||
+                source.kind === 'generated-text' ||
+                source.kind === 'provided-text'
+                    ? 'text'
+                    : source.kind;
 
             if (!activity.supportedSourceKinds.includes(kind)) {
                 ctx.addIssue({

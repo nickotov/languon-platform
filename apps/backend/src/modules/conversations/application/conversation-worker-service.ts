@@ -16,14 +16,21 @@ export type ConversationWorkerStore = Pick<
     | 'recordTool'
     | 'recordResponseMetadata'
     | 'propose'
-    | 'proposeBlocks'
-    | 'proposeBlockBatch'
-    | 'readBlockProposal'
+    | 'proposeContent'
+    | 'proposeContentBatch'
+    | 'readContentProposal'
     | 'proposeDictionarySnippet'
     | 'readDictionarySnippet'
     | 'recordMaterial'
     | 'finish'
     | 'memory'
+    | 'linkGenerationProposal'
+    | 'assertGenerationProposal'
+    | 'generationContext'
+    | 'startGeneration'
+    | 'checkpointGeneration'
+    | 'pauseGeneration'
+    | 'proposeGenerationRevision'
 >;
 
 /** Application process lifetime, not the HTTP subscription, owns a durable turn. */
@@ -78,7 +85,57 @@ export class ConversationWorkerService {
                 turn.message.content,
             );
 
+            const generation =
+                await this.dependencies.store.generationContext?.(turn);
+
             await runner.run({
+                ...(generation ? { generation } : {}),
+                ...(this.dependencies.store.startGeneration
+                    ? {
+                          onGenerationStart: async (
+                              plan,
+                              sources,
+                              validationIds,
+                          ) => {
+                              combined.throwIfAborted();
+
+                              return this.dependencies.store.startGeneration!(
+                                  turn,
+                                  plan,
+                                  sources,
+                                  validationIds,
+                              );
+                          },
+                          onGenerationCheckpoint: async (
+                              artifacts,
+                              validationId,
+                          ) => {
+                              combined.throwIfAborted();
+                              await this.dependencies.store
+                                  .checkpointGeneration!(
+                                  turn,
+                                  artifacts,
+                                  validationId,
+                              );
+                          },
+                          onGenerationPause: async () => {
+                              combined.throwIfAborted();
+                              await this.dependencies.store.pauseGeneration!(
+                                  turn,
+                              );
+                          },
+                          onGenerationRevision: async (plan, validationIds) => {
+                              combined.throwIfAborted();
+
+                              return this.dependencies.store
+                                  .proposeGenerationRevision!(
+                                  turn,
+                                  plan,
+                                  validationIds,
+                              );
+                          },
+                      }
+                    : {}),
                 conversationId: turn.conversationId,
                 readOnlySource: isReadOnlyKnowledgeSource(turn.source),
                 ownerId: turn.ownerId,
@@ -140,13 +197,13 @@ export class ConversationWorkerService {
                           },
                       }
                     : {}),
-                onBlockProposal: async (proposal) => {
+                onContentProposal: async (proposal, validationIds) => {
                     combined.throwIfAborted();
                     if (
                         turn.source.kind !== 'knowledge' ||
                         isReadOnlyKnowledgeSource(turn.source) ||
                         !turn.sourceSnapshot.blockTarget ||
-                        !this.dependencies.store.proposeBlocks
+                        !this.dependencies.store.proposeContent
                     ) {
                         throw new ConversationError(
                             'read_only_source',
@@ -154,19 +211,33 @@ export class ConversationWorkerService {
                         );
                     }
 
-                    return this.dependencies.store.proposeBlocks(
+                    await this.dependencies.store.assertGenerationProposal?.(
                         turn,
                         proposal,
-                        combined,
                     );
+
+                    const receipt =
+                        await this.dependencies.store.proposeContent(
+                            turn,
+                            proposal,
+                            combined,
+                            validationIds,
+                        );
+
+                    await this.dependencies.store.linkGenerationProposal?.(
+                        turn,
+                        receipt.id,
+                    );
+
+                    return receipt;
                 },
-                onBlockProposals: async (proposals) => {
+                onContentBatch: async (proposals, validationIds) => {
                     combined.throwIfAborted();
                     if (
                         turn.source.kind !== 'knowledge' ||
                         isReadOnlyKnowledgeSource(turn.source) ||
                         !turn.sourceSnapshot.blockTarget ||
-                        !this.dependencies.store.proposeBlockBatch
+                        !this.dependencies.store.proposeContentBatch
                     ) {
                         throw new ConversationError(
                             'read_only_source',
@@ -174,18 +245,19 @@ export class ConversationWorkerService {
                         );
                     }
 
-                    return this.dependencies.store.proposeBlockBatch(
+                    return this.dependencies.store.proposeContentBatch(
                         turn,
                         proposals,
                         combined,
+                        validationIds,
                     );
                 },
-                ...(this.dependencies.store.readBlockProposal
+                ...(this.dependencies.store.readContentProposal
                     ? {
-                          readBlockProposal: async (id: string) => {
+                          readContentProposal: async (id: string) => {
                               combined.throwIfAborted();
                               const result = await this.dependencies.store
-                                  .readBlockProposal!(turn, id);
+                                  .readContentProposal!(turn, id);
 
                               combined.throwIfAborted();
 

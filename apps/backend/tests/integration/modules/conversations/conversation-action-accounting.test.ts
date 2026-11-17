@@ -29,7 +29,10 @@ import {
 import { eq, sql } from 'drizzle-orm';
 import { databaseSchema } from '../../../../src/infrastructure/database/schema';
 import { conversationTurnsTable } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/schema';
-import { DrizzleAiCreditTransactionParticipant } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
+import {
+    DrizzleAiCreditTransactionParticipant,
+    type AiCreditTransaction,
+} from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import { DrizzleActionAccountingParticipant } from '../../../../src/modules/ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant';
 import {
     createTestPostgresClient,
@@ -166,6 +169,71 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         });
 
         it.each(['success', 'stopped'] as const)(
+            'excludes rejected and pending structured calls from %s without erasing provider expense',
+            async (outcome) => {
+                const action = await reserve();
+                const accepted = await attempt(action.id);
+                const register = (callId: string) =>
+                    db.transaction((tx) =>
+                        new DrizzleActionAccountingParticipant(
+                            tx,
+                        ).registerStructuredCall({
+                            callId,
+                            leaseToken: action.id,
+                            validationId: `batch:${callId}`,
+                        }),
+                    );
+                const validate = (
+                    callId: string,
+                    accepted: boolean,
+                    leaseToken = action.id,
+                ) =>
+                    db.transaction((tx) =>
+                        new DrizzleActionAccountingParticipant(
+                            tx,
+                        ).validateStructuredCall({
+                            callId,
+                            leaseToken,
+                            accepted,
+                        }),
+                    );
+
+                await register(accepted.id);
+                await record(action.id, accepted.id);
+                await expect(
+                    validate(accepted.id, true, randomUUID()),
+                ).rejects.toThrow();
+
+                await validate(accepted.id, true);
+                await validate(accepted.id, true);
+                await expect(validate(accepted.id, false)).rejects.toThrow();
+
+                const rejected = await attempt(action.id, 1000);
+                await register(rejected.id);
+                await record(action.id, rejected.id, 1000);
+                await validate(rejected.id, false);
+                const pending = await attempt(action.id, 1000);
+                await register(pending.id);
+                await record(action.id, pending.id, 1000);
+
+                expect((await settle(action.id, outcome)).chargedMilli).toBe(
+                    1n,
+                );
+
+                const rows =
+                    await client`select successful, input_tokens, output_tokens from ai_credit_action_attempts where action_id=${action.id}`;
+
+                expect(rows).toHaveLength(3);
+                expect(rows.every((row) => row.successful === 1)).toBe(true);
+                const expenses =
+                    await client`select id from ai_provider_expense_records where action_id=${action.id}`;
+
+                expect(expenses).toHaveLength(3);
+                await expect(validate(pending.id, true)).rejects.toThrow();
+            },
+        );
+
+        it.each(['success', 'stopped'] as const)(
             'charges %s once after summing eligible calls and honors the first terminal outcome',
             async (outcome) => {
                 const action = await reserve();
@@ -209,6 +277,82 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 expect((await summary()).reservedCredits).toBe(0n);
             },
         );
+
+        it('rounds across customer stages and Stop while excluding failed and operator stages', async () => {
+            const first = await reserve();
+            const [turn] = await db
+                .select()
+                .from(conversationTurnsTable)
+                .where(eq(conversationTurnsTable.id, first.id));
+            const runId = randomUUID();
+            const noteId = randomUUID();
+            await client`insert into knowledge_notes(id,owner_id,title,summary,body,categories,plain_text,created_at,updated_at) values(${noteId},${ownerId},'Synthetic lesson','','{"schemaVersion":1,"type":"doc","content":[]}'::jsonb,'{}','',now(),now())`;
+            await client`insert into conversation_generation_runs(id,conversation_id,owner_id,note_id,revision,state,source_snapshot,created_at,updated_at) values(${runId},${turn!.conversationId},${ownerId},${noteId},1,'paused',${JSON.stringify(turn!.sourceSnapshot)}::jsonb,now(),now())`;
+            const attach = async (actionId: string) => {
+                await client`insert into conversation_generation_run_actions(turn_id,run_id,revision,kind,created_at) values(${actionId},${runId},1,'generation',now())`;
+                await db.transaction((tx) =>
+                    new DrizzleActionAccountingParticipant(
+                        tx,
+                    ).attachSettlementSeries({
+                        actionId,
+                        ownerId,
+                        seriesId: runId,
+                    }),
+                );
+            };
+            const chargeStage = async (
+                actionId: string,
+                outcome: 'success' | 'failure' | 'stopped',
+            ) => {
+                await attach(actionId);
+                const call = await attempt(actionId, 300);
+                await record(actionId, call.id, 300);
+
+                return (await settle(actionId, outcome)).chargedMilli;
+            };
+
+            expect(await chargeStage(first.id, 'success')).toBe(1n);
+            for (const stage of [
+                { funding: 'operator', outcome: 'success', charge: 0n },
+                { funding: 'customer', outcome: 'failure', charge: 0n },
+                { funding: 'customer', outcome: 'stopped', charge: 0n },
+                { funding: 'customer', outcome: 'success', charge: 1n },
+            ] as const) {
+                const action = await db.transaction((tx) =>
+                    reserveConversationActionFixture(tx, {
+                        actionId: randomUUID(),
+                        ownerId,
+                        conversationId: turn!.conversationId,
+                        maximumMilli: 600n,
+                        funding: stage.funding,
+                        tariff,
+                        operatorMaximumMicros: 10000n,
+                    }),
+                );
+
+                expect(await chargeStage(action.id, stage.outcome)).toBe(
+                    stage.charge,
+                );
+
+                expect(
+                    (await settle(action.id, stage.outcome)).chargedMilli,
+                ).toBe(stage.charge);
+            }
+
+            const [totals] =
+                await client`select numerator::text,charged_milli::text from ai_credit_series_totals where series_id=${runId}`;
+
+            expect(totals).toEqual({
+                numerator: '1200000',
+                charged_milli: '2',
+            });
+
+            expect((await summary()).consumedCredits).toBe(2n);
+            await client`delete from conversation_generation_runs where id=${runId}`;
+            expect(
+                await client`select series_id from ai_credit_series_totals where series_id=${runId}`,
+            ).toHaveLength(1);
+        });
 
         it('releases the complete action after technical failure despite earlier successful calls', async () => {
             const action = await reserve();
@@ -610,6 +754,107 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(rows.find((row) => row.id === partial.id)!.successful).toBe(
                 1,
             );
+        });
+
+        it('reports authoring truncation until a later whole response is validated', async () => {
+            const action = await reserve();
+            const [pinned] =
+                await client`select execution from conversation_turns where id=${action.id}`;
+            const accounting = createConversationActionAccounting({
+                ownerId,
+                turnId: action.id,
+                leaseToken: action.id,
+                withOperation: (work) => db.transaction(work),
+                withTransaction: (work) => db.transaction(work),
+                execution: pinned!.execution as ActionConversationExecution,
+            });
+            const calls = [];
+            for (const truncated of [true, false]) {
+                const attemptRow = await attempt(action.id);
+                const call = {
+                    callId: attemptRow.id,
+                    validationId: attemptRow.id,
+                    purpose: 'authoring' as const,
+                    inputTokenEstimate: 100,
+                    maxOutputTokens: 100,
+                    outputLimitReached: truncated,
+                };
+
+                await db.transaction((tx) =>
+                    new DrizzleActionAccountingParticipant(
+                        tx,
+                    ).registerStructuredCall({
+                        callId: call.callId,
+                        leaseToken: action.id,
+                        validationId: call.validationId,
+                    }),
+                );
+
+                await accounting.settle(call, {
+                    inputTokens: 100,
+                    outputTokens: 100,
+                });
+
+                await accounting.validateStructuredCall!(call, {
+                    accepted: !truncated,
+                });
+
+                const [turn] =
+                    await client`select usage from conversation_turns where id=${action.id}`;
+
+                expect(turn!.usage.outputLimitReached).toBe(truncated);
+                calls.push(call.callId);
+            }
+
+            expect(calls).toHaveLength(2);
+            expect((await settle(action.id, 'success')).chargedMilli).toBe(1n);
+        });
+
+        it('rolls back eligibility with checkpoint failure and charges a committed validation on Stop', async () => {
+            const action = await reserve();
+            const call = await attempt(action.id);
+            const validationId = randomUUID();
+            await db.transaction((tx) =>
+                new DrizzleActionAccountingParticipant(
+                    tx,
+                ).registerStructuredCall({
+                    callId: call.id,
+                    leaseToken: action.id,
+                    validationId,
+                }),
+            );
+
+            await record(action.id, call.id);
+            const accept = (tx: AiCreditTransaction) =>
+                new DrizzleActionAccountingParticipant(
+                    tx,
+                ).acceptStructuredValidation({
+                    actionId: action.id,
+                    ownerId,
+                    leaseToken: action.id,
+                    validationId,
+                });
+
+            await expect(
+                db.transaction(async (tx) => {
+                    await accept(tx);
+
+                    throw new Error('Checkpoint publication failed');
+                }),
+            ).rejects.toThrow('Checkpoint publication failed');
+
+            const [rolledBack] =
+                await client`select accepted from ai_credit_structured_call_validations where attempt_id=${call.id}`;
+
+            expect(rolledBack!.accepted).toBeNull();
+
+            await db.transaction(accept);
+            const [committed] =
+                await client`select accepted from ai_credit_structured_call_validations where attempt_id=${call.id}`;
+
+            expect(committed!.accepted).toBe(true);
+            await client`update conversation_turns set cancel_requested=true,failure_code='explicit_stop' where id=${action.id}`;
+            expect((await settle(action.id, 'stopped')).chargedMilli).toBe(1n);
         });
 
         it('rejects invalid cache meters as unknown liability without a customer debit', async () => {

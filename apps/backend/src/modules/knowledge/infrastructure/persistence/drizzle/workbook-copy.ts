@@ -16,7 +16,9 @@ function historicalExerciseSource(value: Record<string, unknown>): boolean {
             value.kind === 'text') &&
             typeof origin === 'object' &&
             origin !== null &&
-            (origin as Record<string, unknown>).kind === 'proposal')
+            ['proposal', 'captured-block'].includes(
+                String((origin as Record<string, unknown>).kind),
+            ))
     );
 }
 

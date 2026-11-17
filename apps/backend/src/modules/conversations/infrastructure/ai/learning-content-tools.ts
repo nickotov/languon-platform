@@ -75,7 +75,7 @@ export function learningContentToolDefinition(
 
 export type LearningContentToolOptions = LearningContentAuthoringOptions & {
     signal: AbortSignal;
-    publish: NonNullable<TutorRunInput['onBlockProposal']>;
+    publish: NonNullable<TutorRunInput['onContentProposal']>;
     onTool?: TutorRunInput['onTool'];
     resolveSources?: (
         brief: LearningContentBrief,

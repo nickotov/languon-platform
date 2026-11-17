@@ -16,6 +16,128 @@ const input = {
 };
 
 describe('accounted tutor model', () => {
+    it('never accepts a structured response truncated by the provider', async () => {
+        const accounting = {
+            ...tutorAccountingFixture(),
+            validateStructuredCall: vi.fn(async () => undefined),
+        };
+        const provider = scriptedTutorModel(['{"complete-looking":true}']);
+        const generate = provider.model.doGenerate.bind(provider.model);
+        provider.model.doGenerate = async (options) => ({
+            ...(await generate(options)),
+            finishReason: 'length',
+        });
+
+        const gate = createTutorModelGate({
+            accounting,
+            signal: new AbortController().signal,
+            maxInputTokens: 64000,
+        });
+
+        await gate.withStructuredValidation('truncated', () =>
+            gate.wrap(provider.model, 'authoring').doGenerate(input),
+        );
+
+        await expect(gate.acceptStructuredCall('truncated')).rejects.toThrow(
+            'cannot be accepted',
+        );
+
+        expect(accounting.validateStructuredCall).not.toHaveBeenCalled();
+        await gate.rejectStructuredCall('truncated');
+        expect(
+            accounting.validateStructuredCall,
+        ).toHaveBeenCalledExactlyOnceWith(
+            expect.objectContaining({ outputLimitReached: true }),
+            { accepted: false },
+        );
+    });
+
+    it('keeps structured provider completion provisional until explicit whole-call validation', async () => {
+        const accounting = {
+            ...tutorAccountingFixture(),
+            validateStructuredCall: vi.fn(async () => undefined),
+        };
+        const provider = scriptedTutorModel([
+            '{"valid":true}',
+            '{"invalid":true}',
+            'ordinary reply',
+        ]);
+        const gate = createTutorModelGate({
+            accounting,
+            signal: new AbortController().signal,
+            maxInputTokens: 64000,
+        });
+        const model = gate.wrap(provider.model, 'authoring');
+
+        await gate.withStructuredValidation('batch-1', () =>
+            model.doGenerate(input),
+        );
+
+        expect(accounting.settle).toHaveBeenCalledTimes(1);
+        expect(accounting.validateStructuredCall).not.toHaveBeenCalled();
+        await gate.acceptStructuredCall('batch-1');
+        expect(accounting.validateStructuredCall).toHaveBeenLastCalledWith(
+            expect.objectContaining({ validationId: 'batch-1' }),
+            { accepted: true },
+        );
+
+        await gate.withStructuredValidation('batch-2', () =>
+            model.doGenerate(input),
+        );
+
+        await gate.rejectStructuredCall('batch-2');
+        expect(accounting.validateStructuredCall).toHaveBeenLastCalledWith(
+            expect.objectContaining({ validationId: 'batch-2' }),
+            { accepted: false },
+        );
+
+        await gate.wrap(provider.model, 'answer').doGenerate(input);
+        expect(
+            accounting.admit.mock.calls[2]?.[0].validationId,
+        ).toBeUndefined();
+
+        expect(accounting.settle).toHaveBeenCalledTimes(3);
+        expect(accounting.validateStructuredCall).toHaveBeenCalledTimes(2);
+    });
+
+    it('rejects an unbound validation and preserves validation identity across concurrent contexts', async () => {
+        const accounting = {
+            ...tutorAccountingFixture(),
+            validateStructuredCall: vi.fn(async () => undefined),
+        };
+        const provider = scriptedTutorModel(['one', 'two']);
+        const gate = createTutorModelGate({
+            accounting,
+            signal: new AbortController().signal,
+            maxInputTokens: 64000,
+        });
+        const model = gate.wrap(provider.model, 'authoring');
+
+        await expect(gate.acceptStructuredCall('missing')).rejects.toThrow(
+            'no admitted call',
+        );
+
+        await Promise.all(
+            ['one', 'two'].map((id) =>
+                gate.withStructuredValidation(id, () =>
+                    model.doGenerate(input),
+                ),
+            ),
+        );
+
+        await gate.acceptStructuredCall('two');
+        expect(
+            accounting.validateStructuredCall,
+        ).toHaveBeenCalledExactlyOnceWith(
+            expect.objectContaining({ validationId: 'two' }),
+            { accepted: true },
+        );
+
+        expect(() =>
+            gate.withStructuredValidation('one', () => model.doGenerate(input)),
+        ).toThrow('must be unique');
+    });
+
     it('exposes fresh immutable budget snapshots and reclaims measured unused output', async () => {
         const provider = scriptedTutorModel(['Explanation']);
         const gate = createTutorModelGate({

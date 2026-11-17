@@ -418,7 +418,7 @@ export function createTutorPlaygroundService(options: TutorPlaygroundOptions) {
                 );
             }
 
-            const proposals = await store.listBlockProposals(
+            const proposals = await store.listContentProposals(
                 access,
                 selected.conversationId,
             );
@@ -463,7 +463,7 @@ export function createTutorPlaygroundService(options: TutorPlaygroundOptions) {
         const taskSources = new Map<string, ExerciseAuthoringSource>();
         const toolOptions: LearningContentToolOptions = {
             signal: gate.signal,
-            publish: input.onBlockProposal!,
+            publish: input.onContentProposal!,
             taskSources,
             resolveSources: (brief) =>
                 resolveLearningToolSources(input, brief, taskSources),
@@ -480,7 +480,7 @@ export function createTutorPlaygroundService(options: TutorPlaygroundOptions) {
         };
         const activityId = namedExerciseActivityForToolId(direct.id);
         const capability = learningContentRegistry.find(
-            (item) => item.toolId === direct.id,
+            (item) => item.kind !== 'prose' && item.toolId === direct.id,
         );
 
         if (!activityId && !capability) {
@@ -496,8 +496,14 @@ export function createTutorPlaygroundService(options: TutorPlaygroundOptions) {
                 { abortSignal: gate.signal } as never,
             );
         } else {
+            if (!capability || capability.toolId === 'generate_prose') {
+                throw new Error(
+                    'Prose is authored through complete generation plans.',
+                );
+            }
+
             const tools = createLearningContentTools(toolOptions);
-            result = await tools[capability!.toolId].execute!(
+            result = await tools[capability.toolId].execute!(
                 capability!.inputSchema.parse(direct.data),
                 { abortSignal: gate.signal } as never,
             );
@@ -514,7 +520,9 @@ export function createTutorPlaygroundService(options: TutorPlaygroundOptions) {
                 proposalId: string;
                 summary: string;
             };
-            const proposal = await input.readBlockProposal!(receipt.proposalId);
+            const proposal = await input.readContentProposal!(
+                receipt.proposalId,
+            );
             const state = readTutorPlannerState(
                 await input.memory.readState(tutorRequestStateKey),
             );
@@ -522,7 +530,11 @@ export function createTutorPlaygroundService(options: TutorPlaygroundOptions) {
             state.proposals.push(
                 describeLearningProposal(
                     proposal.id,
-                    proposal.blocks,
+                    (proposal.body.document.content ?? []).flatMap((node) =>
+                        node.type === 'learningBlock' && node.attrs?.block
+                            ? [node.attrs.block]
+                            : [],
+                    ),
                     receipt.summary,
                     state.proposals.length + 1,
                 ),

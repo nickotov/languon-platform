@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+    ProseKnowledgeBodySchema,
     VocabularyLearningBlockSchema,
     GrammarLearningBlockSchema,
     BilingualTextLearningBlockSchema,
@@ -19,6 +20,7 @@ import {
 
 const briefInput = LearningContentTaskSchema.omit({ id: true, kind: true });
 const outputSchemas = {
+    prose: ProseKnowledgeBodySchema,
     vocabulary: VocabularyLearningBlockSchema,
     grammar: GrammarLearningBlockSchema,
     'bilingual-text': BilingualTextLearningBlockSchema,
@@ -58,28 +60,33 @@ export function learningContentSchemaForBrief(
     brief: LearningContentBrief,
     exerciseSchema?: z.ZodType,
 ) {
-    const schemas = [...new Set(brief.tasks.map((task) => task.kind))].map(
-        (kind) =>
-            kind === 'exercises' && exerciseSchema
+    const taskSchemas = brief.tasks.map((task) => {
+        const common = { taskId: z.literal(task.id) };
+        if (task.kind === 'prose') {
+            return z
+                .object({
+                    ...common,
+                    blocks: z.array(z.never()).length(0),
+                    prose: ProseKnowledgeBodySchema,
+                })
+                .strict();
+        }
+
+        const block =
+            task.kind === 'exercises' && exerciseSchema
                 ? exerciseSchema
-                : learningContentCapability(kind).outputSchema,
-    );
-    const [first, second, ...remaining] = schemas;
-    const blockSchema = second
-        ? z.union([first!, second, ...remaining])
-        : first!;
+                : learningContentCapability(task.kind).outputSchema;
+
+        return z
+            .object({ ...common, blocks: z.array(block).min(1).max(25) })
+            .strict();
+    });
+    const [first, second, ...rest] = taskSchemas;
 
     return z
         .object({
             tasks: z
-                .array(
-                    z
-                        .object({
-                            taskId: z.string().min(1).max(80),
-                            blocks: z.array(blockSchema).min(1).max(25),
-                        })
-                        .strict(),
-                )
+                .array(second ? z.union([first!, second, ...rest]) : first!)
                 .min(1)
                 .max(8),
         })

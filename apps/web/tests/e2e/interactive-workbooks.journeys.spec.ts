@@ -534,7 +534,7 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     ).toHaveCount(0);
 
     const proposal = tutor.getByRole('article', {
-        name: 'Proposed learning blocks',
+        name: 'Proposed content',
         exact: true,
     });
 
@@ -551,7 +551,9 @@ test('author creates blocks and uploaded audio, publishes, reopens and saves pri
     expect(frame).toEqual({ border: '1px', padding: '0px' });
     await expect(page.locator('[data-learning-block-id]')).toHaveCount(0);
     await capture(page, info, 'chat-vocabulary-proposal');
-    await proposal.getByRole('button', { name: 'Insert', exact: true }).click();
+    await proposal
+        .getByRole('button', { name: 'Insert all', exact: true })
+        .click();
 
     await expect(page.locator('[data-learning-block-id]')).toHaveCount(1);
     const proseEditor = page.locator(
@@ -2196,7 +2198,7 @@ test('authors a selected named exercise through review, insert, save, reload and
     }
 
     const proposal = tutor.getByRole('article', {
-        name: 'Proposed learning blocks',
+        name: 'Proposed content',
         exact: true,
     });
 
@@ -2214,7 +2216,10 @@ test('authors a selected named exercise through review, insert, save, reload and
         review.getByRole('heading', { name: 'V02 fixture', exact: true }),
     ).toBeVisible();
 
-    await review.getByRole('button', { name: 'Insert', exact: true }).click();
+    await review
+        .getByRole('button', { name: 'Insert all', exact: true })
+        .click();
+
     await review
         .getByRole('button', { name: 'Close dialog', exact: true })
         .click();
@@ -2795,7 +2800,7 @@ test('discovers a local exercise preview and submits typed exercise and source m
     }
 
     const proposal = tutor.getByRole('article', {
-        name: 'Proposed learning blocks',
+        name: 'Proposed content',
         exact: true,
     });
 
@@ -2809,7 +2814,10 @@ test('discovers a local exercise preview and submits typed exercise and source m
         exact: true,
     });
 
-    await review.getByRole('button', { name: 'Insert', exact: true }).click();
+    await review
+        .getByRole('button', { name: 'Insert all', exact: true })
+        .click();
+
     await review
         .getByRole('button', { name: 'Close dialog', exact: true })
         .click();
@@ -3388,7 +3396,7 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
 
     const grammarProposal = tutor
         .getByRole('article', {
-            name: 'Proposed learning blocks',
+            name: 'Proposed content',
             exact: true,
         })
         .filter({
@@ -3406,7 +3414,7 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
     await expect(grammarProposal.locator('ul > li')).toHaveCount(2);
     await expect(grammarProposal.locator('table')).toBeVisible();
     await grammarProposal
-        .getByRole('button', { name: 'Insert', exact: true })
+        .getByRole('button', { name: 'Insert all', exact: true })
         .click();
 
     const grammarSheet = page.locator('[data-learning-block-id]').filter({
@@ -3477,13 +3485,13 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
 
     const mentionedVocabulary = tutor
         .getByRole('article', {
-            name: 'Proposed learning blocks',
+            name: 'Proposed content',
             exact: true,
         })
         .filter({ hasText: 'travail amélioré' });
     const mentionedReading = tutor
         .getByRole('article', {
-            name: 'Proposed learning blocks',
+            name: 'Proposed content',
             exact: true,
         })
         .filter({
@@ -3500,7 +3508,7 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
         .click();
 
     const dismissedProposal = tutor
-        .getByRole('article', { name: 'Proposed learning blocks', exact: true })
+        .getByRole('article', { name: 'Proposed content', exact: true })
         .filter({ hasText: 'Proposal dismissed' });
 
     await expect(
@@ -3566,7 +3574,7 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
 
     const proposal = tutor
         .getByRole('article', {
-            name: 'Proposed learning blocks',
+            name: 'Proposed content',
             exact: true,
         })
         .filter({ hasText: 'работа / труд' });
@@ -3710,7 +3718,7 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
     );
 
     const audioProposal = tutor
-        .getByRole('article', { name: 'Proposed learning blocks', exact: true })
+        .getByRole('article', { name: 'Proposed content', exact: true })
         .filter({
             has: page.getByRole('heading', {
                 name: 'Prepare recording later',

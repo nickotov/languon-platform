@@ -1,3 +1,7 @@
+import {
+    executePreparedGeneration,
+    proposeGenerationRevision,
+} from './learning-generation-execution';
 import { createDictionarySnippetAuthoring } from './dictionary-snippet-authoring';
 import { readTutorPlannerState } from '../../application/tutor-planner-prompt';
 import { tutorRequestStateKey } from '../../application/tutor-request-contract';
@@ -144,7 +148,7 @@ export function createContextualTutorRunner(options: {
             const learningContentTools =
                 input.canProposeBlocks &&
                 !input.readOnlySource &&
-                input.onBlockProposal
+                input.onContentProposal
                     ? createLearningContentTools({
                           signal: modelGate.signal,
                           taskSources: exerciseTaskSources,
@@ -154,34 +158,66 @@ export function createContextualTutorRunner(options: {
                                   brief,
                                   exerciseTaskSources,
                               ),
-                          publish: (proposal) => {
-                              if (!input.onBlockProposal) {
+                          publish: (proposal, validationIds) => {
+                              if (!input.onContentProposal) {
                                   throw new Error(
                                       'This operation cannot publish learning proposals.',
                                   );
                               }
 
-                              return input.onBlockProposal(proposal);
+                              return input.onContentProposal(
+                                  proposal,
+                                  validationIds,
+                              );
                           },
                           readBudget: () => modelGate.remainingBudget,
+                          trackValidatedCalls: true,
+                          onCallRejected: (id) =>
+                              modelGate.rejectStructuredCall(id),
                           generate: ({
+                              validationId,
                               prompt,
                               schema,
                               signal,
                               maxOutputTokens,
                           }) =>
-                              generateTutorObject({
-                                  agent: requestAgents.learningContentAuthor,
-                                  prompt,
-                                  schema,
-                                  signal,
-                                  operationId: `${input.operationId}:standalone-authoring`,
-                                  maxOutputTokens,
-                              }),
+                              modelGate.withStructuredValidation(
+                                  validationId,
+                                  () =>
+                                      generateTutorObject({
+                                          agent: requestAgents.learningContentAuthor,
+                                          prompt,
+                                          schema,
+                                          signal,
+                                          operationId: `${input.operationId}:standalone-authoring`,
+                                          maxOutputTokens,
+                                      }),
+                              ),
                       })
                     : undefined;
 
             try {
+                // Prepared actions already carry all required evidence. Memory summarization
+                // must not consume their newly admitted authoring or revision allowance.
+                if (input.generation) {
+                    return input.generation.purpose === 'revision'
+                        ? await proposeGenerationRevision(
+                              input,
+                              requestAgents,
+                              modelGate.signal,
+                              input.generation,
+                              modelGate,
+                          )
+                        : await executePreparedGeneration(
+                              input,
+                              requestAgents,
+                              modelGate.signal,
+                              input.generation,
+                              () => modelGate.remainingBudget,
+                              modelGate,
+                          );
+                }
+
                 const prepared = await prepareTutorHistory(memory, input);
                 let agent = createCanonicalMastra({
                     contextualTutor: {
@@ -223,6 +259,7 @@ export function createContextualTutorRunner(options: {
                               modelGate.signal,
                               () => modelGate.remainingBudget,
                               prepared.planner,
+                              modelGate,
                           );
 
                     if ('text' in completed) {

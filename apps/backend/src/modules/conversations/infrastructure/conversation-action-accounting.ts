@@ -104,7 +104,9 @@ export function createConversationActionAccounting(input: {
                     : null;
 
             if (
-                call.purpose === 'answer' &&
+                (call.purpose === 'answer' ||
+                    call.purpose === 'planning' ||
+                    call.purpose === 'authoring') &&
                 (call.outputLimitReached || usage?.outputLimitReached)
             ) {
                 await tx
@@ -195,6 +197,16 @@ export function createConversationActionAccounting(input: {
                     at: new Date(),
                 });
 
+                if (call.validationId) {
+                    await new DrizzleActionAccountingParticipant(
+                        tx,
+                    ).registerStructuredCall({
+                        callId: call.callId,
+                        leaseToken: input.leaseToken,
+                        validationId: call.validationId,
+                    });
+                }
+
                 await tx
                     .update(turns)
                     .set({ providerDispatched: true })
@@ -203,6 +215,33 @@ export function createConversationActionAccounting(input: {
                 return { maxOutputTokens: attempt.outputLimit };
             }),
         settle: (call, usage) => record(call, true, usage),
+        validateStructuredCall: (call, result) =>
+            input.withOperation(async (tx) => {
+                if (!call.validationId || !input.leaseToken) {
+                    throw new Error(
+                        'Structured call validation requires its claimed execution.',
+                    );
+                }
+
+                await new DrizzleActionAccountingParticipant(
+                    tx,
+                ).validateStructuredCall({
+                    callId: call.callId,
+                    leaseToken: input.leaseToken,
+                    accepted: result.accepted,
+                });
+
+                // A later fully validated response recovers the earlier truncation.
+                // Historical rejected calls remain visible in their provider expense.
+                if (result.accepted && !call.outputLimitReached) {
+                    await tx
+                        .update(turns)
+                        .set({
+                            usage: sql`jsonb_set(${turns.usage}, '{outputLimitReached}', 'false'::jsonb)`,
+                        })
+                        .where(eq(turns.id, input.turnId));
+                }
+            }),
         fail: (call, reason, usage) =>
             record(call, false, usage, reason === 'aborted'),
     };

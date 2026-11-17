@@ -1,3 +1,10 @@
+import { createGenerationPlan, bodyBlocks } from './learning-generation-plan';
+import {
+    executePreparedGeneration,
+    proposeGenerationRevision,
+    type StructuredCallValidation,
+} from './learning-generation-execution';
+import { prepareNamedExerciseBrief } from './exercise-authoring-context';
 import type { PreparedTutorHistory } from '../../application/ports/tutor-runner';
 import {
     createLearningContentOperations,
@@ -36,6 +43,7 @@ import {
 } from './exercise-source-resolution';
 import {
     learningContentCapabilities,
+    learningContentRequirements,
     type LearningContentBrief,
 } from '../../application/learning-content-contract';
 import {
@@ -82,7 +90,60 @@ export async function executeTutorRequest(
     signal: AbortSignal,
     readBudget: (() => LearningContentExecutionBudget) | undefined,
     history: PreparedTutorHistory,
+    validation?: StructuredCallValidation,
 ) {
+    if (input.generation?.purpose === 'revision') {
+        return proposeGenerationRevision(
+            input,
+            agents,
+            signal,
+            input.generation,
+            validation,
+        );
+    }
+
+    if (input.generation?.purpose === 'generation') {
+        return executePreparedGeneration(
+            input,
+            agents,
+            signal,
+            input.generation,
+            readBudget,
+            validation,
+        );
+    }
+
+    const pendingPlanningReceipts: string[] = [];
+    const resolveRequest = async (prompt: string, operationId: string) => {
+        const id = randomUUID();
+        const work = () =>
+            generateTutorObject({
+                agent: agents.tutorRequestResolver,
+                prompt,
+                schema: TutorRequestResolutionSchema,
+                signal,
+                operationId,
+                maxOutputTokens: 2048,
+            });
+
+        try {
+            const parsed = TutorRequestResolutionSchema.parse(
+                await (validation
+                    ? validation.withStructuredValidation(id, work)
+                    : work()),
+            );
+
+            if (validation) {
+                pendingPlanningReceipts.push(id);
+            }
+
+            return parsed;
+        } catch (error) {
+            await validation?.rejectStructuredCall(id);
+
+            throw error;
+        }
+    };
     const stored = await input.memory.readState(tutorRequestStateKey);
     const state = readTutorPlannerState(stored);
     const loaded = await loadLearningProposalCatalog(input, state);
@@ -94,14 +155,10 @@ export async function executeTutorRequest(
             ? undefined
             : ExerciseGenerationRequestSchema.parse(choices);
     const planned = TutorRequestResolutionSchema.parse(
-        await generateTutorObject({
-            agent: agents.tutorRequestResolver,
-            prompt: buildTutorPlannerPrompt(input, state, history),
-            schema: TutorRequestResolutionSchema,
-            signal,
-            operationId: `${input.operationId}:planning`,
-            maxOutputTokens: 2048,
-        }),
+        await resolveRequest(
+            buildTutorPlannerPrompt(input, state, history),
+            `${input.operationId}:planning`,
+        ),
     );
     const mentionChoices = ConversationPromptMentionsSchema.parse(
         tutorMessageModelContent(input.message).promptMentions ?? [],
@@ -129,21 +186,62 @@ export async function executeTutorRequest(
           )
         : resolvedMentions;
 
-    const saveState = () =>
-        input.memory.writeState({
-            [tutorRequestStateKey]: {
-                ...state,
-                ...(!state.pending
-                    ? {
-                          pendingSources: undefined,
-                          pendingProposalIds: undefined,
-                      }
-                    : {}),
-                pending: state.pending
-                    ? JSON.parse(serializeLearningContentBrief(state.pending))
-                    : null,
+    if (
+        (resolution.kind === 'generate' || resolution.kind === 'clarify') &&
+        state.pending
+    ) {
+        if (
+            resolution.continuesPending === undefined &&
+            resolution.brief.tasks.every((task) =>
+                state.pending!.tasks.some((known) => known.id === task.id),
+            )
+        ) {
+            resolution.continuesPending = true;
+        }
+
+        if (
+            resolution.continuesPending &&
+            state.replyLanguage &&
+            !resolution.changesReplyLanguage
+        ) {
+            resolution.replyLanguage = state.replyLanguage;
+        }
+    }
+
+    if (
+        'replyLanguage' in resolution &&
+        resolution.replyLanguage &&
+        (!state.pending ||
+            ('changesReplyLanguage' in resolution &&
+                resolution.changesReplyLanguage))
+    ) {
+        state.replyLanguage = resolution.replyLanguage;
+    }
+
+    const saveState = async () => {
+        const validationIds = [...pendingPlanningReceipts];
+        await input.memory.writeState(
+            {
+                [tutorRequestStateKey]: {
+                    ...state,
+                    ...(!state.pending
+                        ? {
+                              pendingSources: undefined,
+                              pendingProposalIds: undefined,
+                          }
+                        : {}),
+                    pending: state.pending
+                        ? JSON.parse(
+                              serializeLearningContentBrief(state.pending),
+                          )
+                        : null,
+                },
             },
-        });
+            validationIds.length ? validationIds : undefined,
+        );
+
+        pendingPlanningReceipts.splice(0, validationIds.length);
+    };
     const finishText = async (
         text: string,
         kind:
@@ -153,6 +251,10 @@ export async function executeTutorRequest(
             | 'generation'
             | 'revision',
     ) => {
+        if (pendingPlanningReceipts.length) {
+            await saveState();
+        }
+
         signal.throwIfAborted();
         await input.onResponseMetadata?.({ kind, documentUse: false });
         await input.onDelta({ messageId: input.operationId, text });
@@ -196,13 +298,13 @@ export async function executeTutorRequest(
         const ordinal =
             Math.max(0, ...state.proposals.map((item) => item.ordinal ?? 0)) +
             1;
-        const canonical = input.readBlockProposal
-            ? await input.readBlockProposal(receipt.proposalId)
+        const canonical = input.readContentProposal
+            ? await input.readContentProposal(receipt.proposalId)
             : undefined;
         const descriptor = canonical
             ? describeLearningProposal(
                   canonical.id,
-                  canonical.blocks,
+                  bodyBlocks(canonical.body),
                   summary,
                   ordinal,
               )
@@ -220,6 +322,10 @@ export async function executeTutorRequest(
     }
 
     if (resolution.kind === 'answer') {
+        if (pendingPlanningReceipts.length) {
+            await saveState();
+        }
+
         await input.onResponseMetadata?.({
             kind: resolution.purpose,
             documentUse:
@@ -241,6 +347,7 @@ export async function executeTutorRequest(
             agents,
             signal,
             readBudget,
+            validation,
         });
 
         state.pending = null;
@@ -395,9 +502,8 @@ export async function executeTutorRequest(
     ];
     const clarifySource = async () => {
         const clarification = TutorRequestResolutionSchema.parse(
-            await generateTutorObject({
-                agent: agents.tutorRequestResolver,
-                prompt: JSON.stringify({
+            await resolveRequest(
+                JSON.stringify({
                     instruction:
                         'Ask one concise localized clarification: the requested source is unavailable, outside the recent eight proposals, or ambiguous. Ask the learner to choose a recent source or restate/copy the material. Return kind clarify and preserve every known task.',
                     preferences: input.preferences,
@@ -410,11 +516,8 @@ export async function executeTutorRequest(
                     ),
                     priorProposals: state.proposals,
                 }),
-                schema: TutorRequestResolutionSchema,
-                signal,
-                operationId: `${input.operationId}:source-clarification`,
-                maxOutputTokens: 2048,
-            }),
+                `${input.operationId}:source-clarification`,
+            ),
         );
 
         if (clarification.kind !== 'clarify') {
@@ -556,6 +659,43 @@ export async function executeTutorRequest(
                 : task,
         ),
     });
+
+    if (
+        input.onGenerationStart &&
+        input.canProposeBlocks &&
+        !input.readOnlySource
+    ) {
+        const prepared = prepareNamedExerciseBrief(
+            normalized.brief,
+            taskSources,
+            sources,
+        );
+
+        if (
+            prepared.status === 'ready' &&
+            !learningContentRequirements(prepared.brief)
+        ) {
+            const executable = createGenerationPlan(
+                prepared.brief,
+                taskSources,
+                resolution.replyLanguage,
+            );
+            const context = await input.onGenerationStart(
+                executable.plan,
+                executable.sources,
+            );
+
+            return executePreparedGeneration(
+                input,
+                agents,
+                signal,
+                context,
+                readBudget,
+                validation,
+            );
+        }
+    }
+
     const authoring = createLearningContentAuthoring({
         // Prior unapplied proposals are grounding material, not current-document reference authority.
         authorizedSources: [...taskSources.values()].flatMap((context) =>
@@ -567,25 +707,39 @@ export async function executeTutorRequest(
         taskSources,
         ...(readBudget ? { readBudget } : {}),
         generate: ({
+            validationId,
             prompt,
             schema,
             signal: authoringSignal,
             maxOutputTokens,
-        }) =>
-            generateTutorObject({
-                agent: agents.learningContentAuthor,
-                prompt: `${prompt}\nApplication authoring preferences (trusted server-validated settings): ${JSON.stringify(authorPreferences)}\nEach task's explicit explanationLanguage takes precedence over these default settings. Use explanationLanguage for explanatory prose fields such as grammar rules, commentary and exercise explanations, applying detail, wording and approach independently. Keep every task's studied language and translation language unchanged. Preserve verbatim source passages, vocabulary terms, grammatical patterns, questions and prepared answers in their designated task languages.`,
-                schema,
-                signal: authoringSignal,
-                operationId: `${input.operationId}:authoring`,
-                maxOutputTokens,
-            }),
+        }) => {
+            const work = () =>
+                generateTutorObject({
+                    agent: agents.learningContentAuthor,
+                    prompt: `${prompt}\nApplication authoring preferences (trusted server-validated settings): ${JSON.stringify(authorPreferences)}\nEach task's explicit explanationLanguage takes precedence over these default settings. Use explanationLanguage for explanatory prose fields such as grammar rules, commentary and exercise explanations, applying detail, wording and approach independently. Keep every task's studied language and translation language unchanged. Preserve verbatim source passages, vocabulary terms, grammatical patterns, questions and prepared answers in their designated task languages.`,
+                    schema,
+                    signal: authoringSignal,
+                    operationId: `${input.operationId}:${validationId}`,
+                    maxOutputTokens,
+                });
+
+            return validation
+                ? validation.withStructuredValidation(validationId, work)
+                : work();
+        },
+        ...(validation
+            ? {
+                  trackValidatedCalls: true,
+                  onCallRejected: (id: string) =>
+                      validation.rejectStructuredCall(id),
+              }
+            : {}),
     });
 
     if (
         !input.canProposeBlocks ||
         input.readOnlySource ||
-        !input.onBlockProposal
+        !input.onContentProposal
     ) {
         throw new Error('This source cannot propose learning content.');
     }
@@ -593,7 +747,7 @@ export async function executeTutorRequest(
     const operations = createLearningContentOperations({
         authoring,
         signal,
-        publish: input.onBlockProposal,
+        publish: input.onContentProposal,
         resolveSources: async () => normalized.brief,
         ...(input.onTool ? { onTool: input.onTool } : {}),
     });
@@ -616,9 +770,8 @@ export async function executeTutorRequest(
         // No author dispatch occurred. Repair the incomplete plan with one localized
         // clarification, retaining the original requirements instead of inventing defaults.
         const clarification = TutorRequestResolutionSchema.parse(
-            await generateTutorObject({
-                agent: agents.tutorRequestResolver,
-                prompt: JSON.stringify({
+            await resolveRequest(
+                JSON.stringify({
                     instruction:
                         'The host found material requirements missing. Return kind clarify with one concise localized question. Do not generate or discard any known requirements.',
                     currentMessage: input.message.content,
@@ -629,11 +782,8 @@ export async function executeTutorRequest(
                     missing: result.missing,
                     capabilities: learningContentCapabilities,
                 }),
-                schema: TutorRequestResolutionSchema,
-                signal,
-                operationId: `${input.operationId}:clarification`,
-                maxOutputTokens: 2048,
-            }),
+                `${input.operationId}:clarification`,
+            ),
         );
 
         if (clarification.kind !== 'clarify') {

@@ -185,7 +185,7 @@ export function createPlaygroundSessions(
                 throw new Error('This synthetic session is unavailable.');
             }
 
-            const result = await store.listBlockProposals(
+            const result = await store.listContentProposals(
                 access,
                 input.sessionId,
             );

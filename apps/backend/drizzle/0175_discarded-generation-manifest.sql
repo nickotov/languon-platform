@@ -1,0 +1,1 @@
+ALTER TABLE "conversation_generation_runs" ADD COLUMN "task_manifest" jsonb DEFAULT '[]'::jsonb NOT NULL;

@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision knowledge-workspace sha256:4199c602e550087f
+// @user-flow-revision knowledge-workspace sha256:fcdcf3a7e4a82280
 
 type Share = { locator: string; key: string };
 
@@ -2044,7 +2044,7 @@ test('capability replies stay in chat and mixed content generates one reviewed i
 
     await expect(
         tutor.getByRole('article', {
-            name: 'Proposed learning blocks',
+            name: 'Proposed content',
             exact: true,
         }),
     ).toHaveCount(0);
@@ -2073,7 +2073,7 @@ test('capability replies stay in chat and mixed content generates one reviewed i
 
     await tutor.getByRole('button', { name: 'Send', exact: true }).click();
     const proposal = tutor.getByRole('article', {
-        name: 'Proposed learning blocks',
+        name: 'Proposed content',
         exact: true,
     });
 
@@ -2098,7 +2098,9 @@ test('capability replies stay in chat and mixed content generates one reviewed i
 
     await expect(page.locator('[data-learning-block-id]')).toHaveCount(0);
     await capture(page, info, 'intent-mixed-proposal-desktop');
-    await proposal.getByRole('button', { name: 'Insert', exact: true }).click();
+    await proposal
+        .getByRole('button', { name: 'Insert all', exact: true })
+        .click();
 
     await expect(page.locator('[data-learning-block-id]')).toHaveCount(5);
     await page
@@ -2113,6 +2115,118 @@ test('capability replies stay in chat and mixed content generates one reviewed i
 
     await page.reload();
     await expect(page.locator('[data-learning-block-id]')).toHaveCount(5);
+    assertRuntime();
+});
+
+// @user-flow knowledge-workspace/workspace-composable-lesson-continuation
+test('a paused composable lesson continues from its checked stages, inserts one mixed proposal, and survives saving', async ({
+    page,
+}, info) => {
+    const assertRuntime = runtimeErrors(page);
+    await signup(page, info);
+    await createDraft(page);
+    await page
+        .getByRole('textbox', { name: 'Title', exact: true })
+        .fill('Composable French lesson');
+
+    const tutor = page.getByRole('region', {
+        name: 'Language tutor',
+        exact: true,
+    });
+
+    await tutor.getByLabel('Your question').fill('Composable lesson fixture');
+    await tutor.getByRole('button', { name: 'Send', exact: true }).click();
+
+    const run = tutor.getByRole('article', {
+        name: 'Preparing your lesson',
+        exact: true,
+    });
+
+    await expect(run).toBeVisible();
+    await expect(
+        run.getByText('2 of 3 parts ready', { exact: true }),
+    ).toBeVisible();
+
+    await expect(
+        run.getByText(
+            'This stage is complete. Review the next budget to continue.',
+            { exact: true },
+        ),
+    ).toBeVisible();
+
+    await run.getByRole('button', { name: 'Continue', exact: true }).click();
+    const quote = page.getByRole('dialog', {
+        name: 'Continue preparing this lesson?',
+        exact: true,
+    });
+
+    await expect(quote).toBeVisible();
+    await quote.getByRole('button', { name: 'Continue', exact: true }).click();
+
+    const complete = tutor.getByRole('article', {
+        name: 'Your lesson is ready',
+        exact: true,
+    });
+
+    await expect(complete).toBeVisible();
+    await expect(
+        complete.getByText('3 of 3 parts ready', { exact: true }),
+    ).toBeVisible();
+
+    const proposal = tutor.getByRole('article', {
+        name: 'Proposed content',
+        exact: true,
+    });
+
+    await expect(proposal).toHaveCount(1);
+    await proposal.getByRole('button', { name: 'Review', exact: true }).click();
+    const review = page.getByRole('dialog', {
+        name: 'Review proposed content',
+        exact: true,
+    });
+
+    await expect(review).toContainText(
+        'La démocratie française repose sur le débat public.',
+    );
+
+    await expect(
+        review.getByRole('heading', {
+            name: 'French noun grammar',
+            exact: true,
+        }),
+    ).toBeVisible();
+
+    await expect(
+        review.getByText(
+            /Appliquez la règle de grammaire dans le cas [1-3]\./u,
+        ),
+    ).toHaveCount(3);
+
+    await capture(page, info, 'workspace-composable-lesson-complete');
+
+    await review
+        .getByRole('button', { name: 'Insert all', exact: true })
+        .click();
+
+    await expect(page.locator('[data-learning-block-id]')).toHaveCount(4);
+    await page.keyboard.press('Escape');
+    await expect(review).not.toBeVisible();
+    await expect(
+        page.getByRole('textbox', { name: 'Document', exact: true }),
+    ).toContainText('La démocratie française repose sur le débat public.');
+
+    await waitForRecovery(page);
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(
+        page.locator('[data-workspace-topbar] [data-state="saved"]'),
+    ).toBeVisible();
+
+    await page.reload();
+    await expect(page.locator('[data-learning-block-id]')).toHaveCount(4);
+    await expect(
+        page.getByRole('textbox', { name: 'Document', exact: true }),
+    ).toContainText('La démocratie française repose sur le débat public.');
+
     assertRuntime();
 });
 
@@ -2136,7 +2250,7 @@ test('fifty shopping words become one complete vocabulary proposal and survive e
 
     await tutor.getByRole('button', { name: 'Send', exact: true }).click();
     const proposal = tutor.getByRole('article', {
-        name: 'Proposed learning blocks',
+        name: 'Proposed content',
         exact: true,
     });
 
@@ -2165,7 +2279,9 @@ test('fifty shopping words become one complete vocabulary proposal and survive e
     await expect(terms.last()).toBeInViewport();
 
     await capture(page, info, 'shopping-fifty-vocabulary-review');
-    await review.getByRole('button', { name: 'Insert', exact: true }).click();
+    await review
+        .getByRole('button', { name: 'Insert all', exact: true })
+        .click();
 
     await review.getByRole('button', { name: 'Close', exact: true }).click();
     const block = page.locator('[data-learning-block-id]');
@@ -2187,7 +2303,7 @@ test('fifty shopping words become one complete vocabulary proposal and survive e
     await expect(block.locator('li span[lang="en"]')).toHaveText(reviewedTerms);
     await expect(
         tutor.getByRole('article', {
-            name: 'Proposed learning blocks',
+            name: 'Proposed content',
             exact: true,
         }),
     ).toHaveCount(1);
@@ -2208,7 +2324,7 @@ test('fifty shopping words become one complete vocabulary proposal and survive e
 
     await tutor.getByRole('button', { name: 'Send', exact: true }).click();
     const proposals = tutor.getByRole('article', {
-        name: 'Proposed learning blocks',
+        name: 'Proposed content',
         exact: true,
     });
 
@@ -2221,7 +2337,7 @@ test('fifty shopping words become one complete vocabulary proposal and survive e
     await capture(page, info, 'shopping-ten-after-fifty-review');
     await expect
         .poll(() =>
-            requests.filter((item) => item.endsWith('/block-proposals')),
+            requests.filter((item) => item.endsWith('/content-proposals')),
         )
         .toHaveLength(1);
 

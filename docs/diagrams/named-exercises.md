@@ -26,7 +26,7 @@ source_paths:
     - apps/backend/src/modules/conversations/infrastructure/ai/exercise-activities/definitions.ts
     - apps/backend/src/modules/conversations/infrastructure/ai/learning-content-authoring.ts
     - apps/backend/src/modules/conversations/infrastructure/ai/learning-content-tools.ts
-    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposals.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-content-proposals.ts
     - apps/backend/src/modules/development-harness/infrastructure/mastra/tutor-playground-service.ts
     - apps/backend/src/modules/knowledge/domain/named-exercise-semantics.ts
     - apps/backend/src/modules/knowledge/infrastructure/ai/exercise-evaluation-provider.ts
@@ -36,8 +36,13 @@ source_paths:
     - apps/backend/src/modules/administration/infrastructure/ai-catalog/tool-definitions.ts
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source.ts
     - apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts
-source_fingerprint: sha256:c42c9629d750ef8293e8a0cadbfc079e3fef9d111a28dda68eb30a90c8279514
-reviewed: 2026-11-15
+    - docs/adr/0060-composable-generation-runs.md
+    - packages/contracts/src/generated-artifacts.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-generation-plan.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-worker.ts
+    - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/workbook-copy.ts
+source_fingerprint: sha256:9f12277d88a7382201ea8425a4d25330c5e524aaec6775d8c931b19e503e0406
+reviewed: 2026-11-16
 ---
 
 # Named text exercises
@@ -71,12 +76,16 @@ isolated synthetic session authority"] --> Ground
     Ground -->|"Missing, oversized or conflicting"| Clarify["Clarify or refuse without partial publication
 retain admissible frozen context"]
     Ground --> Author["Only selected definitions and schemas
-ordered dependent tasks; reserve future capacity"]
+dependency-ready tasks; bounded action capacity"]
     Author --> Bind["Model selects source IDs
 host restores exact values and validates artifacts"]
     Bind -->|"Invalid; bounded repair allowance"| Author
-    Bind -->|"Complete valid result"| Proposal["One complete generation proposal
-revision cohorts publish in one transaction"]
+    Bind -->|"Validated call"| Checkpoint["Private durable artifacts + accepted receipt
+atomic lease/revision fence"]
+    Checkpoint -->|"Unfinished plan"| Continue["Pause; explicit fresh quoted Continue
+reuse valid artifacts; reviewed revision invalidates descendants"] --> Author
+    Checkpoint -->|"All tasks and aggregate valid"| Proposal["One complete mixed Knowledge v2 proposal
+ordered prose + typed blocks; no partial insert"]
     Proposal --> Review["Explicit Review and Insert or Update
 working branch only"]
     Review --> Save["Explicit Save
@@ -114,11 +123,17 @@ same-conversation proposal or a validated earlier task output. This is not a new
 dependency on global Texts storage. Models supply bounded ID bindings; the host
 captures the original values and provenance. Missing source, conflicting choices
 or insufficient remaining capacity cannot produce a partly applicable proposal.
+A validated stage may pause privately; explicit Continue admits a fresh bounded
+action. Impossible units require a scope change rather than repeated empty stages.
 The parent action retains its five-provider-call/two-memory-call and output limits.
 
 Local source IDs are validated against the current document and participate in
 semantic revisions. Independent copies remap their local references; historical
 proposal/selection origins stay frozen and never authorize another source read.
+Generated prose carries immutable artifact provenance. Run-captured blocks carry
+frozen captured-block origins so Keep snapshot does not rebind to current local
+content; independent copies preserve captured-block origins without remapping their
+historical IDs. Refresh rechecks access and invalidates affected dependent artifacts.
 Published content contains no learner attempts or evaluation feedback. Cosmetic
 edits preserve learning progress; substantive manual named edits require explicit
 conversion to Custom, which deliberately omits named semantics. AI revision keeps
@@ -139,12 +154,15 @@ and [the workbook guide](../user-flows/interactive-workbooks.md) for verified jo
 
 ## Sources
 
+- [Prepared source and generated-artifact projections](../../apps/backend/src/modules/conversations/infrastructure/ai/learning-generation-plan.ts).
+- [Composable run decision](../../docs/adr/0060-composable-generation-runs.md).
+
 - [Catalog and policies](../../packages/contracts/src/exercise-activity-catalog.ts).
 - [Named semantics and frozen provenance](../../packages/contracts/src/named-exercises.ts).
 - [Picker projection](../../apps/web/src/fsd/features/knowledge-notes/lib/exercise-generation.ts).
 - [Exact source resolution](../../apps/backend/src/modules/conversations/infrastructure/ai/exercise-source-resolution.ts).
 - [Selected-only authoring](../../apps/backend/src/modules/conversations/infrastructure/ai/learning-content-authoring.ts).
-- [Atomic proposal publication](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposals.ts).
+- [Atomic proposal publication](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-content-proposals.ts).
 - [Prepared matching](../../apps/web/src/fsd/entities/learning-blocks/lib/check-prepared-answer.ts).
 - [Fenced private feedback publication](../../apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source.sql).
 - [ADR-0058](../adr/0058-named-activity-content-and-source-provenance.md).

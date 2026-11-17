@@ -52,8 +52,13 @@ source_paths:
     - apps/backend/src/modules/knowledge/infrastructure/ai/exercise-evaluation-provider.ts
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source.ts
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source.sql
-source_fingerprint: sha256:75d8c5ea65eed85cde23fd322989e0f6bda13ee26f89057c63e85f6f553badef
-reviewed: 2026-11-14
+    - docs/adr/0060-composable-generation-runs.md
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-worker.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-completion.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-admission.ts
+    - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/staged-action-accounting.sql
+source_fingerprint: sha256:83eb6fd3b33a464c4bd06a2f85b527d609b0d5f2fc1ffaf46a61d4f51bd29f3b
+reviewed: 2026-11-16
 ---
 
 # AI job lifecycle and accounting
@@ -88,16 +93,21 @@ no blind retry of ambiguous upstream work"]
     Provider --> Usage["Settle authoritative attempt observations
 derive immutable provider expense from pinned provenance"]
     Usage --> Valid{"Usable validated outcome?"}
-    Valid -->|Success| Publish["Persist domain result / proposal / permitted publication"]
+    Valid -->|Success| Publish["Persist domain result / permitted publication
+structured-call receipt acceptance and private checkpoint
+share the current lease/revision transaction"]
     Valid -->|Technical or invalid result| Failure["Failed: release customer hold
 Languon retains provider expense"]
     Stop["Explicit Stop"] --> Partial["Stopped: charge eligible partial usage"]
-    Publish --> Settle["Sum eligible customer usage; round upward once
-to 0.001 credit; release unused hold"]
+    Publish --> Settle["Sum eligible customer usage; round to 0.001 credit
+cumulatively across customer-funded run stages
+release unused hold"]
     Partial --> Settle
     Failure --> Poll
     Settle --> Poll["Durable outcome + billing state
 reconnect replays without another generation or charge"]
+    Poll -->|"Generation run paused; learner chooses Continue"| Continue["Fresh quoted admission, revision and idempotency
+minimum-progress capacity; no automatic budget extension"] --> Auth
     Hold -.-> Free["Free interviews: no customer hold
 30 admissions/account/UTC day; one active
 operator limits still apply"]
@@ -170,7 +180,30 @@ catalog and host-grounded authoring path add no provider or independent allowanc
 Conversation planning/authoring are recorded under the existing answer accounting
 category. See the [named-exercise view](named-exercises.md).
 
+## Composable generation stages
+
+Generation runs reuse conversation actions and worker leases. Each successful
+stage must checkpoint validated progress; its private artifacts are not partial
+published proposals. Exact structured-call acceptance commits with the checkpoint
+or authorized proposal/state publication under the same lease fence. A wholly or
+partly invalid structured call is ineligible in full, while its provider expense
+remains recorded. Final aggregate validation and successful turn completion expose
+one complete mixed content proposal.
+
+Accounting owns a locked settlement series per run. Customer-funded successful
+stages and chargeable Stop contribute exact usage at their own pinned tariffs;
+cumulative rounding avoids charging each stage's fraction independently. Free or
+operator-funded work and technical failures do not enter that customer accumulator.
+Technical failure releases the current hold, without undoing earlier charges.
+Validated artifacts from failed actions may be reused without retrospective billing;
+new calls reading them incur ordinary input usage. Revision-planning replies retain
+normal chat pricing; applying a reviewed revision is free and dispatches nothing.
+See [ADR-0060](../adr/0060-composable-generation-runs.md).
+
 ## Sources
+
+- [Structured-call receipt and settlement-series authority](../../apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/staged-action-accounting.sql).
+- [Atomic run completion](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-completion.ts).
 
 - [apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts](../../apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts)
 - [apps/backend/src/modules/text-ai/application/text-ai-provider-catalog.ts](../../apps/backend/src/modules/text-ai/application/text-ai-provider-catalog.ts)

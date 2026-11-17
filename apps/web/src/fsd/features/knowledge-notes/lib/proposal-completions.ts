@@ -1,7 +1,7 @@
 import type { ConversationDetail } from '@languon/contracts';
 
 const proposalTools = new Set([
-    'propose_learning_blocks',
+    'propose_learning_content',
     'generate_vocabulary',
     'generate_grammar',
     'generate_bilingual_text',
@@ -9,7 +9,7 @@ const proposalTools = new Set([
 ]);
 
 /** Only durable successful publication can make a new block proposal readable. */
-export function blockProposalCompletionKey(
+export function contentProposalCompletionKey(
     detail: ConversationDetail | undefined,
 ): string {
     if (!detail) {

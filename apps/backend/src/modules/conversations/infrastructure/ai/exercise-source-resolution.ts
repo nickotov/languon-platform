@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { LearningBlock } from '@languon/contracts';
 import type { TutorRunInput } from '../../application/ports/tutor-runner';
@@ -158,6 +159,24 @@ export async function resolveExerciseSourceContexts(
             continue;
         }
 
+        if (
+            task.sourceText &&
+            !task.source &&
+            !explicit.length &&
+            !selectedProposalIds.length &&
+            input.message.content.includes(task.sourceText)
+        ) {
+            contexts.set(task.id, {
+                blocks: [],
+                providedText: {
+                    materialId: randomUUID(),
+                    text: task.sourceText,
+                },
+            });
+
+            continue;
+        }
+
         const selectedText =
             task.source?.kind === 'selection' ? frozen.selection : undefined;
 
@@ -240,6 +259,9 @@ export function exerciseGroundingSources(
             {
                 blocks: context.blocks,
                 ...(context.selection ? { text: context.selection.text } : {}),
+                ...(context.providedText
+                    ? { text: context.providedText.text }
+                    : {}),
             },
         ]),
     );
@@ -288,6 +310,9 @@ export function storePendingExerciseSources(
             blockIds: context.blocks.map((block) => block.id),
             ...(proposalOrigins.length ? { proposalOrigins } : {}),
             ...(selectionOrigin ? { selectionOrigin } : {}),
+            ...(context.providedText
+                ? { providedMaterialId: context.providedText.materialId }
+                : {}),
         };
     });
 
@@ -320,7 +345,8 @@ export function restorePendingExerciseSources(
 
         if (
             blocks.some((block) => !block) ||
-            (saved.selectionOrigin && !original.sourceText)
+            ((saved.selectionOrigin || saved.providedMaterialId) &&
+                !original.sourceText)
         ) {
             throw new Error(
                 'The captured pending source is unavailable. Select it again.',
@@ -329,6 +355,14 @@ export function restorePendingExerciseSources(
 
         result.set(task.id, {
             blocks: blocks as LearningBlock[],
+            ...(saved.providedMaterialId
+                ? {
+                      providedText: {
+                          materialId: saved.providedMaterialId,
+                          text: original.sourceText!,
+                      },
+                  }
+                : {}),
             ...(saved.proposalOrigins
                 ? {
                       proposalIds: new Map(

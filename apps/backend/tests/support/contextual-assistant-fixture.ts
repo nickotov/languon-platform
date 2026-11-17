@@ -357,10 +357,19 @@ function deterministicModel(
         supportedUrls: {},
         doGenerate: async (options) => {
             const callPurpose = purpose.getStore();
+            const promptText = JSON.stringify(options.prompt);
+            // The fresh Continue question is intentionally different from the
+            // original request. The retained task id is the stable signal that
+            // this is the final composable-lesson authoring dispatch.
+            const composableLessonAuthoring =
+                callPurpose === 'authoring' &&
+                (question === 'Composable lesson fixture' ||
+                    promptText.includes('composable-grammar-exercises'));
+
             if (callPurpose === 'planning' || callPurpose === 'authoring') {
                 const dictionaryAuthoring =
                     callPurpose === 'authoring' &&
-                    JSON.stringify(options.prompt).includes(
+                    promptText.includes(
                         'Dictionary snippet generation request:',
                     );
                 let value: unknown;
@@ -381,8 +390,8 @@ function deterministicModel(
                     finishReason: 'stop' as const,
                     usage: {
                         inputTokens: 50,
-                        outputTokens: 30,
-                        totalTokens: 80,
+                        outputTokens: composableLessonAuthoring ? 3900 : 30,
+                        totalTokens: composableLessonAuthoring ? 3950 : 80,
                     },
                     warnings: [],
                 };
@@ -629,7 +638,7 @@ function deterministicModel(
                                     blockProposal ||
                                     mentionedProposals
                                 ) {
-                                    toolName = 'propose_learning_blocks';
+                                    toolName = 'propose_learning_content';
                                 }
 
                                 for (const input of inputs) {

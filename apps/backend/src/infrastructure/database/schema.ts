@@ -1,3 +1,5 @@
+import * as generationRunSchema from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-generation-schema';
+import * as stagedActionAccountingSchema from '../../modules/ai-credits/infrastructure/persistence/drizzle/staged-action-accounting-schema';
 import * as dictionarySnippetSchema from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-snippet-schema';
 export * from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-snippet-schema';
 import * as knowledgeFieldSourceSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/block-field-source-schema';
@@ -41,7 +43,7 @@ import * as workbookLearnerSchema from '../../modules/knowledge/infrastructure/p
 import * as knowledgeLearningEpochSchema from '../../modules/knowledge/infrastructure/persistence/drizzle/learning-epoch-schema';
 export * from '../../modules/knowledge/infrastructure/persistence/drizzle/learning-epoch-schema';
 import * as conversationSchema from '../../modules/conversations/infrastructure/persistence/drizzle/schema';
-import * as blockProposalSchema from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposal-schema';
+import * as blockProposalSchema from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-content-proposal-schema';
 import * as conversationCallSchema from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-provider-call-schema';
 import * as dictionaryTextSelectionSchema from '../../modules/dictionaries/infrastructure/persistence/drizzle/selection-card-schema';
 import * as textsJobSchema from '../../modules/texts/infrastructure/persistence/drizzle/texts-job-schema';
@@ -175,6 +177,8 @@ import {
 } from '../../modules/dictionaries/infrastructure/persistence/drizzle/schema';
 
 export const databaseSchema = {
+    ...generationRunSchema,
+    ...stagedActionAccountingSchema,
     ...dictionarySnippetSchema,
     ...adminMcpSchema,
     ...textAiRouteHealthSchema,
@@ -296,7 +300,7 @@ export { aiCreditGrantBalancesTable, aiCreditWalletTotalsTable };
 export * from '../../modules/ai-credits/infrastructure/persistence/drizzle/action-authority-schema';
 
 export * from '../../modules/knowledge/infrastructure/persistence/drizzle/workbook-schema';
-export * from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-block-proposal-schema';
+export * from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-content-proposal-schema';
 export * from '../../modules/knowledge/infrastructure/persistence/drizzle/learner-schema';
 export * from '../../modules/knowledge/infrastructure/persistence/drizzle/media-schema';
 export * from '../../modules/speech/infrastructure/knowledge-speech-schema';
@@ -304,3 +308,5 @@ export * from '../../modules/knowledge/infrastructure/persistence/drizzle/transc
 export * from '../../modules/knowledge/infrastructure/persistence/drizzle/vocabulary-practice-schema';
 export * from '../../modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-schema';
 export * from '../../modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source-schema';
+export * from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-generation-schema';
+export * from '../../modules/ai-credits/infrastructure/persistence/drizzle/staged-action-accounting-schema';

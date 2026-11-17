@@ -1,3 +1,16 @@
+import {
+    bodyBlocks,
+    resultBody as validatedResultBody,
+} from './learning-generation-plan';
+
+function resultBody(input: { taskId: string; blocks: unknown[] }) {
+    // Expected fragments may contain Vitest asymmetric matchers, not runtime block values.
+    return validatedResultBody({
+        ...input,
+        blocks: input.blocks as LearningBlock[],
+    });
+}
+
 import { projectTutorUserMessage } from '../../application/tutor-message-context';
 import { LearningBlockSchema, type LearningBlock } from '@languon/contracts';
 import { namedExerciseFixture } from '../../../../../tests/support/named-exercise-fixture';
@@ -165,7 +178,7 @@ function fixture() {
         signal: new AbortController().signal,
         onDelta: vi.fn(async () => undefined),
         onDraft: vi.fn(async () => ({ id: proposalId })),
-        onBlockProposal: vi.fn(async () => ({ id: proposalId })),
+        onContentProposal: vi.fn(async () => ({ id: proposalId })),
         onResponseMetadata: vi.fn(async () => undefined),
         readContext: async () => ({ material: [], total: 0 }),
     };
@@ -188,6 +201,88 @@ async function run(input: TutorRunInput, responses: string[]) {
 }
 
 describe('Knowledge request planning with real pinned Mastra execution', () => {
+    it('persists a valid planner receipt atomically with pending state and rejects invalid structured plans', async () => {
+        const { input } = fixture();
+        const save = vi.spyOn(input.memory, 'writeState');
+        await run(input, [
+            JSON.stringify({
+                kind: 'clarify',
+                question: 'Which translation language?',
+                replyLanguage: 'en',
+                brief: {
+                    tasks: [
+                        {
+                            id: 'words',
+                            kind: 'vocabulary',
+                            instruction: 'Travel vocabulary.',
+                            language: 'fr',
+                        },
+                    ],
+                },
+            }),
+        ]);
+
+        expect(save.mock.calls.some(([, ids]) => ids?.length === 1)).toBe(true);
+        const invalid = fixture().input;
+        const invalidSave = vi.spyOn(invalid.memory, 'writeState');
+        await expect(
+            run(invalid, [JSON.stringify({ kind: 'unknown-operation' })]),
+        ).rejects.toThrow();
+
+        expect(
+            invalidSave.mock.calls.some(([, ids]) => Boolean(ids?.length)),
+        ).toBe(false);
+    });
+
+    it('uses a dedicated revision planner and publishes only a reviewed candidate with its receipt', async () => {
+        const { input } = fixture();
+        const history = vi.spyOn(input.memory, 'listMessages');
+        const plan = {
+            schemaVersion: 1 as const,
+            replyLanguage: 'en',
+            sources: [],
+            tasks: [
+                {
+                    id: 'reading',
+                    kind: 'prose' as const,
+                    instruction: 'Read about civic life.',
+                    language: 'fr',
+                    inputs: [],
+                    targetWords: 300,
+                },
+            ],
+            outputOrder: ['reading'],
+        };
+
+        input.generation = {
+            runId: randomUUID(),
+            revision: 1,
+            plan,
+            sources: [],
+            artifacts: [],
+            purpose: 'revision',
+        };
+
+        const revised = {
+            ...plan,
+            tasks: [{ ...plan.tasks[0]!, targetWords: 200 }],
+        };
+
+        input.onGenerationRevision = vi.fn(async () => ({ id: randomUUID() }));
+        const { provider } = await run(input, [JSON.stringify(revised)]);
+        expect(provider.requests).toHaveLength(1);
+        expect(history).not.toHaveBeenCalled();
+        expect(input.onGenerationRevision).toHaveBeenCalledExactlyOnceWith(
+            revised,
+            expect.arrayContaining([expect.any(String)]),
+        );
+
+        expect(input.onContentProposal).not.toHaveBeenCalled();
+        expect(JSON.stringify(provider.requests[0]!.prompt)).toContain(
+            'You revise a prepared language-learning GenerationPlan',
+        );
+    });
+
     it('freezes the initial host editor excerpt when implicit-source clarification is continued', async () => {
         const { input, memory } = fixture();
         const passage = 'Lucie visite Lyon chaque samedi pour voir sa sœur.';
@@ -222,7 +317,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         ]);
 
         expect(first.provider.requests).toHaveLength(1);
-        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(input.onContentProposal).not.toHaveBeenCalled();
         const saved = memory.state.get(tutorRequestStateKey)!;
         const pending = deserializeLearningContentBrief(saved.pending);
         expect(pending.tasks[0]).toMatchObject({
@@ -305,23 +400,29 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         expect(authorPrompt).not.toContain('A new model paraphrase.');
         expect(authorPrompt).not.toContain('CURRENT_EDITOR_REPLACEMENT');
         const { sourceBindings: _bindings, ...published } = exercise;
-        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            blocks: [
-                {
-                    ...published,
-                    semantics: {
-                        ...exercise.semantics,
-                        sources: [
-                            {
-                                kind: 'text-selection',
-                                origin: capturedOrigin,
-                                text: passage,
+        expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
+            {
+                body: resultBody({
+                    taskId: 'fixture',
+                    blocks: [
+                        {
+                            ...published,
+                            semantics: {
+                                ...exercise.semantics,
+                                sources: [
+                                    {
+                                        kind: 'text-selection',
+                                        origin: capturedOrigin,
+                                        text: passage,
+                                    },
+                                ],
                             },
-                        ],
-                    },
-                },
-            ],
-        });
+                        },
+                    ],
+                }),
+            },
+            expect.arrayContaining([expect.any(String)]),
+        );
 
         expect(memory.state.get(tutorRequestStateKey)?.pending).toBeNull();
         expect(input.onDraft).not.toHaveBeenCalled();
@@ -388,9 +489,12 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             },
         });
 
-        input.readBlockProposal = vi.fn(async (id) => ({
+        input.readContentProposal = vi.fn(async (id) => ({
             id,
-            blocks: id === sourceA ? [bankA] : [bankB],
+            body: resultBody({
+                taskId: 'fixture',
+                blocks: id === sourceA ? [bankA] : [bankB],
+            }),
         }));
 
         input.message.content = 'Continue using the other word bank.';
@@ -414,7 +518,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             first.accounting.admit.mock.calls.map(([call]) => call.purpose),
         ).toEqual(['planning', 'planning']);
 
-        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(input.onContentProposal).not.toHaveBeenCalled();
         const saved = memory.state.get(tutorRequestStateKey)!;
         expect(saved.pendingProposalIds).toEqual([sourceB]);
         const pending = deserializeLearningContentBrief(saved.pending);
@@ -461,33 +565,39 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         expect(authorPrompt).not.toContain(bankA.id);
         expect(authorPrompt).not.toContain(sourceA);
         const { sourceBindings: _bindings, ...published } = wire;
-        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            blocks: [
-                {
-                    ...published,
-                    semantics: {
-                        ...wire.semantics,
-                        sources: [
-                            {
-                                kind: 'vocabulary',
-                                origin: {
-                                    kind: 'proposal',
-                                    proposalId: sourceB,
-                                    blockId: bankB.id,
-                                },
-                                entries: [
+        expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
+            {
+                body: resultBody({
+                    taskId: 'fixture',
+                    blocks: [
+                        {
+                            ...published,
+                            semantics: {
+                                ...wire.semantics,
+                                sources: [
                                     {
-                                        entryId: entryBId,
-                                        term: 'chien',
-                                        sense: 'dog',
+                                        kind: 'vocabulary',
+                                        origin: {
+                                            kind: 'proposal',
+                                            proposalId: sourceB,
+                                            blockId: bankB.id,
+                                        },
+                                        entries: [
+                                            {
+                                                entryId: entryBId,
+                                                term: 'chien',
+                                                sense: 'dog',
+                                            },
+                                        ],
                                     },
                                 ],
                             },
-                        ],
-                    },
-                },
-            ],
-        });
+                        },
+                    ],
+                }),
+            },
+            expect.arrayContaining([expect.any(String)]),
+        );
 
         expect(memory.state.get(tutorRequestStateKey)?.pending).toBeNull();
         expect(input.onDraft).not.toHaveBeenCalled();
@@ -604,7 +714,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         ).toEqual(['planning', 'planning']);
 
         expect(first.result.text).toContain('Bank B is unavailable');
-        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(input.onContentProposal).not.toHaveBeenCalled();
         const pending = memory.state.get(tutorRequestStateKey)!;
         expect(pending.pending).toMatchObject({
             tasks: [
@@ -678,29 +788,38 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             throw new Error('Expected canonical vocabulary fixture.');
         }
 
-        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            blocks: [
-                {
-                    ...exercise,
-                    semantics: {
-                        ...exercise.semantics,
-                        sources: [
-                            {
-                                kind: 'vocabulary',
-                                origin: { kind: 'block', blockId: bankB.id },
-                                entries: [
+        expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
+            {
+                body: resultBody({
+                    taskId: 'fixture',
+                    blocks: [
+                        {
+                            ...exercise,
+                            semantics: {
+                                ...exercise.semantics,
+                                sources: [
                                     {
-                                        entryId: bankB.entries[0]!.id,
-                                        term: 'chien',
-                                        sense: 'dog',
+                                        kind: 'vocabulary',
+                                        origin: {
+                                            kind: 'block',
+                                            blockId: bankB.id,
+                                        },
+                                        entries: [
+                                            {
+                                                entryId: bankB.entries[0]!.id,
+                                                term: 'chien',
+                                                sense: 'dog',
+                                            },
+                                        ],
                                     },
                                 ],
                             },
-                        ],
-                    },
-                },
-            ],
-        });
+                        },
+                    ],
+                }),
+            },
+            expect.arrayContaining([expect.any(String)]),
+        );
 
         expect(input.onDraft).not.toHaveBeenCalled();
         expect(memory.state.get(tutorRequestStateKey)?.pending).toBeNull();
@@ -779,7 +898,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                 };
             });
 
-            input.onBlockProposals = vi.fn(async () => []);
+            input.onContentBatch = vi.fn(async () => []);
             const tasks = sources.map((source, index) => ({
                 id: `bank-${index}`,
                 kind: 'exercises',
@@ -823,8 +942,8 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                     .mock.calls.map(([query]) => query.blockIds),
             ).toEqual(sources.map((source) => [source.id]));
 
-            expect(input.onBlockProposal).not.toHaveBeenCalled();
-            expect(input.onBlockProposals).not.toHaveBeenCalled();
+            expect(input.onContentProposal).not.toHaveBeenCalled();
+            expect(input.onContentBatch).not.toHaveBeenCalled();
             expect(result.text).toMatch(/smaller|shorter|fewer/iu);
             expect(result.text).toMatch(/vocabulary|passage|source/iu);
             expect(input.onResponseMetadata).toHaveBeenLastCalledWith({
@@ -1088,36 +1207,45 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
 
         expect(authorPrompt).toContain('V07 v1:');
         expect(authorPrompt).not.toContain('V02 v1:');
-        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            blocks: [
-                expect.objectContaining({
-                    format: 'free-text',
-                    question: goal,
-                    semantics: expect.objectContaining({
-                        activity: { id: 'V07', version: 1 },
-                        language: 'fr',
-                        explanationLanguage: 'en',
-                        checking: expect.objectContaining({
-                            policy: 'ai-rubric',
-                        }),
-                        sources: [
-                            {
-                                kind: 'vocabulary',
-                                origin: { kind: 'block', blockId: source.id },
-                                entries: [
+        expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
+            {
+                body: resultBody({
+                    taskId: 'fixture',
+                    blocks: [
+                        expect.objectContaining({
+                            format: 'free-text',
+                            question: goal,
+                            semantics: expect.objectContaining({
+                                activity: { id: 'V07', version: 1 },
+                                language: 'fr',
+                                explanationLanguage: 'en',
+                                checking: expect.objectContaining({
+                                    policy: 'ai-rubric',
+                                }),
+                                sources: [
                                     {
-                                        entryId:
-                                            '01900000-0000-4000-8000-000000000003',
-                                        term: 'chat',
-                                        sense: 'cat',
+                                        kind: 'vocabulary',
+                                        origin: {
+                                            kind: 'block',
+                                            blockId: source.id,
+                                        },
+                                        entries: [
+                                            {
+                                                entryId:
+                                                    '01900000-0000-4000-8000-000000000003',
+                                                term: 'chat',
+                                                sense: 'cat',
+                                            },
+                                        ],
                                     },
                                 ],
-                            },
-                        ],
-                    }),
+                            }),
+                        }),
+                    ],
                 }),
-            ],
-        });
+            },
+            expect.arrayContaining([expect.any(String)]),
+        );
     });
 
     it('pins the private typed exercise manifest after planning and freezes the exact selected source', async () => {
@@ -1273,29 +1401,38 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         );
 
         expect(preferences.explanationLanguage).toBe('ru');
-        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            blocks: exercises.map(
-                ({ sourceBindings: _bindings, ...exercise }) => ({
-                    ...exercise,
-                    semantics: {
-                        ...exercise.semantics,
-                        sources: [
-                            {
-                                kind: 'vocabulary',
-                                origin: { kind: 'block', blockId: source.id },
-                                entries: [
+        expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
+            {
+                body: resultBody({
+                    taskId: 'fixture',
+                    blocks: exercises.map(
+                        ({ sourceBindings: _bindings, ...exercise }) => ({
+                            ...exercise,
+                            semantics: {
+                                ...exercise.semantics,
+                                sources: [
                                     {
-                                        entryId: source.entries[0]!.id,
-                                        term: 'chat',
-                                        sense: 'cat',
+                                        kind: 'vocabulary',
+                                        origin: {
+                                            kind: 'block',
+                                            blockId: source.id,
+                                        },
+                                        entries: [
+                                            {
+                                                entryId: source.entries[0]!.id,
+                                                term: 'chat',
+                                                sense: 'cat',
+                                            },
+                                        ],
                                     },
                                 ],
                             },
-                        ],
-                    },
+                        }),
+                    ),
                 }),
-            ),
-        });
+            },
+            expect.arrayContaining([expect.any(String)]),
+        );
 
         expect(input.message.modelContent).toHaveProperty(
             'exerciseRequest',
@@ -1354,7 +1491,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             accounting.admit.mock.calls.map(([call]) => call.purpose),
         ).toEqual(['planning']);
 
-        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(input.onContentProposal).not.toHaveBeenCalled();
         expect(input.onDraft).not.toHaveBeenCalled();
         expect(memory.state.get(tutorRequestStateKey)?.pending).toMatchObject({
             tasks: [
@@ -1470,7 +1607,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                 documentUse: false,
             });
 
-            expect(input.onBlockProposal).not.toHaveBeenCalled();
+            expect(input.onContentProposal).not.toHaveBeenCalled();
             expect(input.onDraft).not.toHaveBeenCalled();
             expect(
                 memory.state.get(tutorRequestStateKey)?.pending,
@@ -1538,7 +1675,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         expect(author).toContain('Exact original source.');
         expect(author).not.toContain('Invented planner source.');
         expect(author).not.toContain('Newer editor source.');
-        expect(input.onBlockProposal).toHaveBeenCalledOnce();
+        expect(input.onContentProposal).toHaveBeenCalledOnce();
     });
 
     it('supplies host-owned batching policy alongside a complete pending request and an obsolete refusal', async () => {
@@ -1617,7 +1754,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         });
 
         expect(provider.requests).toHaveLength(3);
-        expect(input.onBlockProposal).toHaveBeenCalledOnce();
+        expect(input.onContentProposal).toHaveBeenCalledOnce();
         expect(memory.state.get(tutorRequestStateKey)?.pending).toBeNull();
     });
 
@@ -1644,10 +1781,10 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             provider.requests.map((request) => request.maxOutputTokens),
         ).toEqual([2048, 4096, 4096]);
 
-        expect(input.onBlockProposal).toHaveBeenCalledOnce();
-        const proposal = vi.mocked(input.onBlockProposal!).mock.calls[0]![0];
-        expect(proposal.blocks).toHaveLength(1);
-        const block = proposal.blocks[0]!;
+        expect(input.onContentProposal).toHaveBeenCalledOnce();
+        const proposal = vi.mocked(input.onContentProposal!).mock.calls[0]![0];
+        expect(bodyBlocks(proposal.body)).toHaveLength(1);
+        const block = bodyBlocks(proposal.body)[0]!;
         expect(block.type).toBe('vocabulary');
         if (block.type !== 'vocabulary') {
             throw new Error('Expected the compiled vocabulary block.');
@@ -1701,14 +1838,17 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             accounting.admit.mock.calls.map(([call]) => call.purpose),
         ).toEqual(['planning', 'authoring', 'authoring']);
 
-        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            blocks: [grammar],
-        });
+        expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
+            {
+                body: resultBody({ taskId: 'fixture', blocks: [grammar] }),
+            },
+            expect.arrayContaining([expect.any(String)]),
+        );
     });
 
     it('normalizes unchanged vocabulary identities before publishing a canonical revision', async () => {
         const { input } = fixture();
-        input.onBlockProposals = vi.fn(async () => []);
+        input.onContentBatch = vi.fn(async () => []);
         const entryId = randomUUID();
         const vocabulary = {
             id: blockId,
@@ -1758,29 +1898,35 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         ]);
 
         expect(provider.requests).toHaveLength(2);
-        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            targetBlockId: blockId,
-            blocks: [
-                {
-                    ...vocabulary,
-                    entries: [
+        expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
+            {
+                targetBlockId: blockId,
+                body: resultBody({
+                    taskId: 'fixture',
+                    blocks: [
                         {
-                            id: entryId,
-                            term: 'bonjour',
-                            translation: 'good morning',
+                            ...vocabulary,
+                            entries: [
+                                {
+                                    id: entryId,
+                                    term: 'bonjour',
+                                    translation: 'good morning',
+                                },
+                            ],
                         },
                     ],
-                },
-            ],
-        });
+                }),
+            },
+            expect.arrayContaining([expect.any(String)]),
+        );
 
-        expect(input.onBlockProposals).not.toHaveBeenCalled();
+        expect(input.onContentBatch).not.toHaveBeenCalled();
     });
 
     it('validates the entire canonical revision set before any proposal publication', async () => {
         const { input, memory } = fixture();
         const receipts = [{ id: proposalId }, { id: randomUUID() }];
-        input.onBlockProposals = vi.fn(async () => receipts);
+        input.onContentBatch = vi.fn(async () => receipts);
         const second = {
             ...grammar,
             id: '01900000-0000-4000-8000-000000000091',
@@ -1816,12 +1962,27 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         ]);
 
         expect(provider.requests).toHaveLength(3);
-        expect(input.onBlockProposals).toHaveBeenCalledExactlyOnceWith([
-            first,
-            last,
-        ]);
+        expect(input.onContentBatch).toHaveBeenCalledExactlyOnceWith(
+            [
+                {
+                    targetBlockId: first.targetBlockId,
+                    body: resultBody({
+                        taskId: 'fixture',
+                        blocks: first.blocks,
+                    }),
+                },
+                {
+                    targetBlockId: last.targetBlockId,
+                    body: resultBody({
+                        taskId: 'fixture',
+                        blocks: last.blocks,
+                    }),
+                },
+            ],
+            expect.arrayContaining([expect.any(String)]),
+        );
 
-        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(input.onContentProposal).not.toHaveBeenCalled();
         expect(memory.state.get(tutorRequestStateKey)?.proposals).toEqual(
             receipts.map(({ id }) => expect.objectContaining({ id })),
         );
@@ -1860,7 +2021,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             const controller = new AbortController();
             input.signal = controller.signal;
             input.onTool = vi.fn(async () => undefined);
-            input.onBlockProposals = vi.fn(async () => {
+            input.onContentBatch = vi.fn(async () => {
                 if (failure === 'reject') {
                     throw new Error('Atomic publication rejected.');
                 }
@@ -1902,11 +2063,15 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                 accounting.admit.mock.calls.map(([call]) => call.purpose),
             ).toEqual(['planning', 'authoring']);
 
-            expect(input.onBlockProposals).toHaveBeenCalledExactlyOnceWith(
-                proposals,
+            expect(input.onContentBatch).toHaveBeenCalledExactlyOnceWith(
+                proposals.map(({ targetBlockId, blocks }) => ({
+                    targetBlockId,
+                    body: resultBody({ taskId: 'fixture', blocks }),
+                })),
+                expect.arrayContaining([expect.any(String)]),
             );
 
-            expect(input.onBlockProposal).not.toHaveBeenCalled();
+            expect(input.onContentProposal).not.toHaveBeenCalled();
             expect(input.onTool).not.toHaveBeenCalledWith(
                 expect.objectContaining({ state: 'succeeded' }),
             );
@@ -1951,7 +2116,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                 accounting.admit.mock.calls.map(([call]) => call.purpose),
             ).toEqual(['planning']);
 
-            expect(input.onBlockProposal).not.toHaveBeenCalled();
+            expect(input.onContentProposal).not.toHaveBeenCalled();
         },
     );
 
@@ -1981,7 +2146,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         ).rejects.toThrow('Stopped between vocabulary chunks.');
 
         expect(provider.requests).toHaveLength(2);
-        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(input.onContentProposal).not.toHaveBeenCalled();
         expect(input.onResponseMetadata).not.toHaveBeenCalled();
     });
 
@@ -2015,8 +2180,8 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
 
         expect(provider.requests[1]?.maxOutputTokens).toBe(3900);
         expect(accounting.admit.mock.calls[1]?.[0].maxOutputTokens).toBe(3900);
-        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            blocks: [grammar],
+        expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith({
+            body: resultBody({ taskId: 'fixture', blocks: [grammar] }),
         });
     });
 
@@ -2043,7 +2208,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             'recall',
         ]);
 
-        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(input.onContentProposal).not.toHaveBeenCalled();
         expect(
             accounting.admit.mock.calls.map(([call]) => call.purpose),
         ).toEqual(['planning', 'answer']);
@@ -2056,9 +2221,12 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             JSON.stringify(authored),
         ]);
 
-        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            blocks: [grammar],
-        });
+        expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
+            {
+                body: resultBody({ taskId: 'fixture', blocks: [grammar] }),
+            },
+            expect.arrayContaining([expect.any(String)]),
+        );
 
         expect(input.onResponseMetadata).toHaveBeenCalledWith({
             kind: 'generation',
@@ -2091,7 +2259,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             tasks: [{ id: 'grammar' }],
         });
 
-        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(input.onContentProposal).not.toHaveBeenCalled();
         input.message = {
             ...input.message,
             id: 'user-2',
@@ -2109,7 +2277,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             'pendingBrief',
         );
 
-        expect(input.onBlockProposal).toHaveBeenCalledTimes(1);
+        expect(input.onContentProposal).toHaveBeenCalledTimes(1);
         expect(memory.state.get(tutorRequestStateKey)?.pending).toBeNull();
     });
 
@@ -2130,7 +2298,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         ).rejects.toThrow('could not be generated');
 
         expect(provider.requests).toHaveLength(3);
-        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(input.onContentProposal).not.toHaveBeenCalled();
     });
 
     it('retrieves exact prior proposal content under server authority instead of using the summary as source', async () => {
@@ -2162,9 +2330,9 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             },
         });
 
-        input.readBlockProposal = vi.fn(async () => ({
+        input.readContentProposal = vi.fn(async () => ({
             id: proposalId,
-            blocks: [vocabulary],
+            body: resultBody({ taskId: 'fixture', blocks: [vocabulary] }),
         }));
 
         const exerciseTask = {
@@ -2197,10 +2365,10 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             }),
         ]);
 
-        expect(input.readBlockProposal).toHaveBeenCalledWith(proposalId);
+        expect(input.readContentProposal).toHaveBeenCalledWith(proposalId);
 
         expect(JSON.stringify(provider.requests[1]?.prompt)).toContain('chat');
-        expect(input.onBlockProposal).toHaveBeenCalledTimes(1);
+        expect(input.onContentProposal).toHaveBeenCalledTimes(1);
     });
 
     it('generates Russian-guided six-word vocabulary then retrieves all exact words for typed follow-up exercises', async () => {
@@ -2252,21 +2420,21 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         input.message.content =
             'Сделай французский словарный блок с переводом на русский: travail — работа, joie — радость, ménage — уборка, carrelage — плитка, poisson — рыба, nourriture — корм.';
 
-        input.onBlockProposal = vi.fn(async (proposal) => {
+        input.onContentProposal = vi.fn(async (proposal) => {
             const id = proposals.size ? exerciseProposalId : proposalId;
-            proposals.set(id, proposal.blocks);
+            proposals.set(id, bodyBlocks(proposal.body));
 
             return { id };
         });
 
-        input.readBlockProposal = vi.fn(async (id) => {
+        input.readContentProposal = vi.fn(async (id) => {
             const blocks = proposals.get(id);
 
             if (!blocks) {
                 throw new Error('Unavailable authorized proposal.');
             }
 
-            return { id, blocks };
+            return { id, body: resultBody({ taskId: 'fixture', blocks }) };
         });
 
         await run(input, [
@@ -2323,7 +2491,10 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                 },
             }),
             JSON.stringify({
-                tasks: [{ taskId: 'practice', blocks: exercises }],
+                tasks: [{ taskId: 'practice', blocks: exercises.slice(0, 3) }],
+            }),
+            JSON.stringify({
+                tasks: [{ taskId: 'practice', blocks: exercises.slice(3) }],
             }),
         ]);
         const authorPrompt = provider.requests[1]!.prompt.flatMap((message) =>
@@ -2342,10 +2513,10 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             JSON.parse(serialized),
         );
 
-        expect(input.readBlockProposal).toHaveBeenCalledWith(proposalId);
-        expect(grounded.tasks[0]?.words).toEqual(words);
+        expect(input.readContentProposal).toHaveBeenCalledWith(proposalId);
+        expect(grounded.tasks[0]?.words).toEqual(words.slice(0, 3));
         expect(grounded.tasks[0]?.activities).toEqual([
-            { activityId: 'V01', count: 6 },
+            { activityId: 'V01', count: 3 },
         ]);
 
         const snapshots = JSON.parse(
@@ -2357,37 +2528,48 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         ) as { blocks: LearningBlock[] };
 
         expect(snapshots.blocks).toEqual([vocabulary]);
-        expect(input.onBlockProposal).toHaveBeenCalledTimes(2);
-        expect(input.onBlockProposal).toHaveBeenLastCalledWith({
-            blocks: exercises.map(
-                ({ sourceBindings: _bindings, ...exercise }, index) => ({
-                    ...exercise,
-                    semantics: {
-                        ...exercise.semantics,
-                        sources: [
-                            {
-                                kind: 'vocabulary',
-                                origin: {
-                                    kind: 'proposal',
-                                    proposalId,
-                                    blockId: vocabulary.id,
-                                },
-                                entries: [
+        expect(input.onContentProposal).toHaveBeenCalledTimes(2);
+        expect(input.onContentProposal).toHaveBeenLastCalledWith(
+            {
+                body: resultBody({
+                    taskId: 'fixture',
+                    blocks: exercises.map(
+                        (
+                            { sourceBindings: _bindings, ...exercise },
+                            index,
+                        ) => ({
+                            ...exercise,
+                            semantics: {
+                                ...exercise.semantics,
+                                sources: [
                                     {
-                                        entryId: vocabulary.entries[index]!.id,
-                                        term: words[index],
-                                        sense: translations[index],
+                                        kind: 'vocabulary',
+                                        origin: {
+                                            kind: 'proposal',
+                                            proposalId,
+                                            blockId: vocabulary.id,
+                                        },
+                                        entries: [
+                                            {
+                                                entryId:
+                                                    vocabulary.entries[index]!
+                                                        .id,
+                                                term: words[index],
+                                                sense: translations[index],
+                                            },
+                                        ],
                                     },
                                 ],
                             },
-                        ],
-                    },
+                        }),
+                    ),
                 }),
-            ),
-        });
+            },
+            expect.arrayContaining([expect.any(String)]),
+        );
 
         expect(input.onDraft).not.toHaveBeenCalled();
-        expect(provider.requests).toHaveLength(2);
+        expect(provider.requests).toHaveLength(3);
     });
 
     it('honors an explicit prose editor proposal without a planner and persists revision eligibility', async () => {
@@ -2414,7 +2596,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             documentUse: true,
         });
 
-        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(input.onContentProposal).not.toHaveBeenCalled();
     });
 
     it('preserves the five-call ceiling with two memory calls, planning and a host-grounded revision', async () => {
@@ -2505,7 +2687,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             grammar.rule,
         );
 
-        expect(input.onBlockProposal).toHaveBeenCalledTimes(1);
+        expect(input.onContentProposal).toHaveBeenCalledTimes(1);
     });
 
     it('preserves exact prepared audio copy without granting arbitrary new media generation', async () => {
@@ -2540,8 +2722,8 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             maxInputTokens: 100_000,
         }).run(input);
 
-        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            blocks: [audio],
+        expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith({
+            body: resultBody({ taskId: 'fixture', blocks: [audio] }),
         });
 
         expect(input.readContext).toHaveBeenCalledExactlyOnceWith({
@@ -2584,8 +2766,8 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             }),
         ]);
 
-        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            blocks: [audio, video],
+        expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith({
+            body: resultBody({ taskId: 'fixture', blocks: [audio, video] }),
         });
 
         expect(provider.requests).toHaveLength(1);
@@ -2600,7 +2782,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             ]),
         ).rejects.toThrow('unavailable');
 
-        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(input.onContentProposal).not.toHaveBeenCalled();
     });
 
     it('patches a multi-component pending brief without dropping unchanged tasks', async () => {
@@ -2671,10 +2853,10 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                 },
             }),
             JSON.stringify({
-                tasks: [
-                    { taskId: 'vocabulary', blocks: [preparedVocabulary] },
-                    { taskId: 'grammar', blocks: [grammar] },
-                ],
+                tasks: [{ taskId: 'vocabulary', blocks: [preparedVocabulary] }],
+            }),
+            JSON.stringify({
+                tasks: [{ taskId: 'grammar', blocks: [grammar] }],
             }),
             JSON.stringify({
                 tasks: [{ taskId: 'practice', blocks: [exercise] }],
@@ -2682,35 +2864,42 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         ]);
 
         const { sourceBindings: _bindings, ...publishedExercise } = exercise;
-        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            blocks: [
-                preparedVocabulary,
-                grammar,
-                {
-                    ...publishedExercise,
-                    semantics: {
-                        ...exercise.semantics,
-                        sources: [
-                            {
-                                kind: 'vocabulary',
-                                origin: {
-                                    kind: 'block',
-                                    blockId: preparedVocabulary.id,
-                                },
-                                entries: [
+        expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
+            {
+                body: resultBody({
+                    taskId: 'fixture',
+                    blocks: [
+                        preparedVocabulary,
+                        grammar,
+                        {
+                            ...publishedExercise,
+                            semantics: {
+                                ...exercise.semantics,
+                                sources: [
                                     {
-                                        entryId:
-                                            preparedVocabulary.entries[0]!.id,
-                                        term: 'chat',
-                                        sense: 'cat',
+                                        kind: 'vocabulary',
+                                        origin: {
+                                            kind: 'block',
+                                            blockId: preparedVocabulary.id,
+                                        },
+                                        entries: [
+                                            {
+                                                entryId:
+                                                    preparedVocabulary
+                                                        .entries[0]!.id,
+                                                term: 'chat',
+                                                sense: 'cat',
+                                            },
+                                        ],
                                     },
                                 ],
                             },
-                        ],
-                    },
-                },
-            ],
-        });
+                        },
+                    ],
+                }),
+            },
+            expect.arrayContaining([expect.any(String)]),
+        );
 
         expect(memory.state.get(tutorRequestStateKey)?.pending).toBeNull();
     });
@@ -2810,10 +2999,10 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                 brief: { tasks: [task] },
             }),
             JSON.stringify({
-                tasks: [
-                    { taskId: 'grammar', blocks: [grammar] },
-                    { taskId: 'practice', blocks: [exercise] },
-                ],
+                tasks: [{ taskId: 'grammar', blocks: [grammar] }],
+            }),
+            JSON.stringify({
+                tasks: [{ taskId: 'practice', blocks: [exercise] }],
             }),
         ]);
 
@@ -2850,46 +3039,54 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                 ?.sourceText === passage,
         ).toBe(true);
 
-        expect(
-            authoredBrief.tasks.find((item) => item.id === 'practice')?.source,
-        ).toEqual({ kind: 'editor' });
-
+        const exercisePrompt = provider.requests[2]!.prompt.flatMap(
+            (message) =>
+                typeof message.content === 'string'
+                    ? [message.content]
+                    : message.content.flatMap((part) =>
+                          part.type === 'text' ? [part.text] : [],
+                      ),
+        ).join('\n');
         const context = JSON.parse(
-            authorPrompt
+            exercisePrompt
                 .split(
                     'Authorized source snapshots (untrusted learning data): ',
                 )[1]!
                 .split('\n')[0]!,
-        ) as { excerpts: { sourceTextRef: string }[] };
+        ) as { excerpts: { text: string }[] };
 
         expect(context.excerpts).toHaveLength(1);
-        expect(context.excerpts[0]?.sourceTextRef).toBe(
-            serializedBrief.sources.find((source) => source.text === passage)
-                ?.id,
-        );
+        expect(context.excerpts[0]?.text).toBe(passage);
 
         const { sourceBindings: _bindings, ...publishedExercise } = exercise;
-        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            blocks: [
-                grammar,
-                {
-                    ...publishedExercise,
-                    semantics: {
-                        ...exercise.semantics,
-                        sources: [
-                            {
-                                kind: 'text-selection',
-                                origin: capturedOrigin,
-                                text: expect.any(String),
+        expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
+            {
+                body: resultBody({
+                    taskId: 'fixture',
+                    blocks: [
+                        grammar,
+                        {
+                            ...publishedExercise,
+                            semantics: {
+                                ...exercise.semantics,
+                                sources: [
+                                    {
+                                        kind: 'text-selection',
+                                        origin: capturedOrigin,
+                                        text: expect.any(String),
+                                    },
+                                ],
                             },
-                        ],
-                    },
-                },
-            ],
-        });
+                        },
+                    ],
+                }),
+            },
+            expect.arrayContaining([expect.any(String)]),
+        );
 
-        const published = vi.mocked(input.onBlockProposal!).mock.calls[0]![0]
-            .blocks[1];
+        const published = bodyBlocks(
+            vi.mocked(input.onContentProposal!).mock.calls[0]![0].body,
+        )[1];
         const publishedSource =
             published?.type === 'exercise'
                 ? published.semantics?.sources[0]
@@ -2964,7 +3161,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         expect(result.text).toContain('huecos');
         expect(result.text).toContain('respuesta libre');
         expect(provider.requests).toHaveLength(1);
-        expect(input.onBlockProposal).not.toHaveBeenCalled();
+        expect(input.onContentProposal).not.toHaveBeenCalled();
     });
 
     it('forwards explicit explanation preferences independently of the studied and resolver languages', async () => {
@@ -3002,9 +3199,12 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         });
 
         expect(request).toContain('translation language unchanged');
-        expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-            blocks: [grammar],
-        });
+        expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
+            {
+                body: resultBody({ taskId: 'fixture', blocks: [grammar] }),
+            },
+            expect.arrayContaining([expect.any(String)]),
+        );
     });
 
     it.each([
@@ -3072,10 +3272,16 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                     blockIds: [blockId],
                 });
 
-                expect(input.onBlockProposal).toHaveBeenCalledExactlyOnceWith({
-                    targetBlockId: blockId,
-                    blocks: [revised],
-                });
+                expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
+                    {
+                        targetBlockId: blockId,
+                        body: resultBody({
+                            taskId: 'fixture',
+                            blocks: [revised],
+                        }),
+                    },
+                    expect.arrayContaining([expect.any(String)]),
+                );
 
                 expect(JSON.stringify(provider.requests[1]?.prompt)).toContain(
                     grammar.rule,
@@ -3086,7 +3292,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                 );
 
                 expect(input.readContext).not.toHaveBeenCalled();
-                expect(input.onBlockProposal).not.toHaveBeenCalled();
+                expect(input.onContentProposal).not.toHaveBeenCalled();
             }
         },
     );

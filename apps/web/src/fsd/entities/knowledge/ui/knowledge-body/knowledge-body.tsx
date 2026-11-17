@@ -1,13 +1,13 @@
 import { createElement, type ReactNode } from 'react';
 import { renderJSONContentToReactElement } from '@tiptap/static-renderer/json/react';
 import {
-    KnowledgeBodySchema,
     type KnowledgeBody as Body,
     type KnowledgeMark,
     type KnowledgeNode,
     type LearningBlock,
 } from '@languon/contracts';
 import styles from './knowledge-body.module.css';
+import { validateKnowledgeFragment } from '../../lib/validate-knowledge-fragment';
 
 type RenderNode = {
     type: KnowledgeNode['type'];
@@ -123,13 +123,15 @@ export function KnowledgeBody({
     language,
     className,
     renderLearningBlock,
+    dependencies,
 }: {
     body: Body;
+    dependencies?: LearningBlock[] | undefined;
     language?: string;
     className?: string;
     renderLearningBlock?: (block: LearningBlock) => ReactNode;
 }) {
-    const parsed = KnowledgeBodySchema.parse(body);
+    const parsed = validateKnowledgeFragment(body, dependencies);
     // Reset the renderer's positional key counter while preserving mapping component types.
     const renderDocument = renderJSONContentToReactElement<
         KnowledgeMark,

@@ -218,7 +218,26 @@ describe('Block proposal content identity', () => {
                     },
                 },
             );
-            const original = [...sources, historical, selected];
+            const captured = completeNamedExerciseSources(
+                namedExerciseFixture({ activityId: 'V01', sources }),
+                {
+                    blocks: sources,
+                    capturedOrigins: new Map([
+                        [
+                            sources[0]!.id,
+                            {
+                                kind: 'captured-block',
+                                runId: sources[0]!.id,
+                                revision: 1,
+                                sourceId: 'captured-vocabulary',
+                                blockId: sources[0]!.id,
+                                contentHash: 'a'.repeat(64),
+                            },
+                        ],
+                    ]),
+                },
+            );
+            const original = [...sources, historical, selected, captured];
             const copied =
                 operation === 'proposal-insertion'
                     ? freshProposalBlocks(original)
@@ -228,7 +247,7 @@ describe('Block proposal content identity', () => {
                           )
                           .map((node) => node.attrs!.block!);
 
-            for (const index of [2, 3]) {
+            for (const index of [2, 3, 4]) {
                 const before = original[index];
                 const after = copied[index];
                 if (before?.type !== 'exercise' || after?.type !== 'exercise') {

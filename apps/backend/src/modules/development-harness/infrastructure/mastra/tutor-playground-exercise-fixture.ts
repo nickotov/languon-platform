@@ -27,7 +27,7 @@ export function playgroundExerciseBlocks(
         selected.blockIds.includes(block.id),
     );
     const excerpt = projection.excerpts.find(
-        (item) => item.id === selected.selectionId,
+        (item) => item.id === selected.selections?.[0]?.excerptId,
     )?.text;
     const group = { id: randomUUID(), title: 'Synthetic named exercises' };
 

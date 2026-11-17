@@ -23,6 +23,7 @@ export function normalizeLearningContentDefaults(
     const appliedDefaults: LearningContentAppliedDefault[] = [];
     const original = LearningContentBriefSchema.parse(candidate);
     const brief = LearningContentBriefSchema.parse({
+        ...original,
         tasks: original.tasks.map((task) => {
             const capability = learningContentCapabilities.find(
                 (item) => item.kind === task.kind,
@@ -45,6 +46,7 @@ export function normalizeLearningContentDefaults(
             const count =
                 task.count ??
                 explicitActivityCount ??
+                task.maxCount ??
                 (task.kind === 'vocabulary' && task.words
                     ? task.words.length
                     : capability.defaultCount);

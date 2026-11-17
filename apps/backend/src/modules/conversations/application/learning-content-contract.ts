@@ -1,8 +1,9 @@
 import { z } from 'zod';
+import type { LearningContentTaskResult } from './learning-content-batch-results';
 import {
     ExerciseActivityIdSchema,
     getExerciseActivity,
-    type LearningBlockProposalInput,
+    type LearningContentProposalInput,
 } from '@languon/contracts';
 import { serializeLearningContentBrief } from './learning-content-transport';
 import { planLearningContentBatches } from './learning-content-batches';
@@ -32,8 +33,15 @@ export const LearningContentSourceSchema = z.discriminatedUnion('kind', [
 export const LearningContentTaskSchema = z
     .object({
         id: z.string().trim().min(1).max(80),
-        kind: z.enum(['vocabulary', 'grammar', 'bilingual-text', 'exercises']),
+        kind: z.enum([
+            'prose',
+            'vocabulary',
+            'grammar',
+            'bilingual-text',
+            'exercises',
+        ]),
         source: LearningContentSourceSchema.optional(),
+        dependencies: z.array(z.string().min(1).max(80)).max(8).optional(),
         instruction: z.string().trim().min(1).max(4_000),
         language: language.optional(),
         translationLanguage: language.optional(),
@@ -62,6 +70,8 @@ export const LearningContentTaskSchema = z
             .refine((value) => value.trim().length > 0)
             .optional(),
         count: z.number().int().min(1).max(200).optional(),
+        maxCount: z.number().int().min(1).max(200).optional(),
+        targetWords: z.number().int().min(1).max(1200).optional(),
         formats: z
             .array(z.string().trim().min(1).max(80))
             .min(1)
@@ -74,6 +84,11 @@ export const LearningContentTaskSchema = z
 export const LearningContentBriefSchema = z
     .object({
         tasks: z.array(LearningContentTaskSchema).min(1).max(8),
+        outputOrder: z
+            .array(z.string().min(1).max(80))
+            .min(1)
+            .max(8)
+            .optional(),
     })
     .strict()
     .refine(
@@ -105,7 +120,12 @@ export type LearningContentLimitationCode = z.infer<
 >;
 
 export type LearningContentResult =
-    | { status: 'ready'; proposal: LearningBlockProposalInput; summary: string }
+    | {
+          status: 'ready';
+          proposal: LearningContentProposalInput;
+          summary: string;
+          validatedCallIds?: string[];
+      }
     | {
           status: 'needs-clarification';
           missing: { taskId: string; fields: string[] }[];
@@ -116,7 +136,15 @@ export type LearningContentResult =
           code: LearningContentLimitationCode;
           reason: string;
       }
-    | { status: 'failed'; reason: 'invalid-brief' | 'invalid-output' };
+    | {
+          status: 'paused';
+          reason: 'budget';
+          completed: LearningContentTaskResult[];
+      }
+    | {
+          status: 'failed';
+          reason: 'invalid-brief' | 'invalid-output' | 'output-limit';
+      };
 
 export const supportedLearningExerciseFormats = [
     'multiple-choice',
@@ -126,6 +154,15 @@ export const supportedLearningExerciseFormats = [
 
 /** Capability descriptions are data consumed by routing and authoring, not permissions. */
 export const learningContentCapabilities = [
+    {
+        kind: 'prose',
+        toolId: 'generate_prose',
+        renderer: 'prose',
+        required: ['language'],
+        defaultCount: 1,
+        instruction:
+            'Create safe document prose in the requested language using paragraphs, headings and lists. Preserve requested coverage; do not add a translation unless requested.',
+    },
     {
         kind: 'vocabulary',
         toolId: 'generate_vocabulary',
@@ -172,7 +209,7 @@ export function learningContentRequirements(
     let blockCount = 0;
     let hasWordConflict = false;
 
-    for (const [taskIndex, task] of brief.tasks.entries()) {
+    for (const task of brief.tasks) {
         const capability = learningContentCapabilities.find(
             (item) => item.kind === task.kind,
         )!;
@@ -186,13 +223,10 @@ export function learningContentRequirements(
             const sourceTask = brief.tasks.find(
                 (candidate) => candidate.id === sourceId,
             );
-            const sourceIndex = brief.tasks.findIndex(
-                (candidate) => candidate.id === sourceId,
-            );
 
             if (
                 !sourceTask ||
-                sourceIndex >= taskIndex ||
+                sourceTask.id === task.id ||
                 sourceTask.kind === 'exercises'
             ) {
                 return {
@@ -210,6 +244,17 @@ export function learningContentRequirements(
             !task.sourceText
         ) {
             missing.push({ taskId: task.id, fields: ['sourceText'] });
+        }
+
+        if (
+            task.maxCount !== undefined &&
+            task.count !== undefined &&
+            task.count > task.maxCount
+        ) {
+            return {
+                status: 'needs-clarification',
+                missing: [{ taskId: task.id, fields: ['count'] }],
+            };
         }
 
         if (task.kind === 'vocabulary' && task.words) {
@@ -333,7 +378,9 @@ export function learningContentRequirements(
                             0,
                         )
                       : capability.defaultCount))
-                : 1;
+                : task.kind === 'prose'
+                  ? 0
+                  : 1;
     }
 
     if (blockCount > 25) {

@@ -1,0 +1,12 @@
+.footer {
+    align-items: center;
+    border-top: var(--size-1) solid var(--border-default);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    padding: var(--space-6) var(--space-8);
+}
+
+.reviewButton {
+    margin-left: auto;
+}

@@ -1,4 +1,11 @@
+import { persistConversationAdmissionMessages } from './conversation-admission-messages';
 import { assertPreparedConversationCurrent } from './conversation-admission-snapshot';
+import type { GenerationAdmission } from '../../../application/ports/generation-run';
+import { generationFingerprint } from '../../../application/generation-run-revisions';
+import {
+    prepareGenerationAdmission,
+    bindGenerationAdmission,
+} from './generation-run-admission';
 import {
     captureConversationBlockTarget,
     assertConversationEditorAuthority,
@@ -13,11 +20,10 @@ import {
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { conversationRequestFingerprint } from './conversation-request-fingerprint';
-import { formatCreditMilli } from '../../../../ai-credits/domain/exact-credit-amount';
+import { conversationAdmissionBilling } from './conversation-admission-billing';
 import { projectConversationSource } from '../../../application/conversation-source-context';
 import { resolveConversationPortrait } from '../../../application/portrait-context';
 import type { ConversationAccess } from '../../../application/ports/conversation-store';
-import type { TutorMemoryMessage } from '../../../application/ports/tutor-runner';
 import {
     tutorAdmissionInputBytes,
     tutorMinimumInputBytes,
@@ -45,13 +51,11 @@ import {
 import type { MessageRow } from './conversation-persistence-context';
 import {
     conflict,
-    messageView,
     turnView,
     type ConversationPersistenceContext,
 } from './conversation-persistence-context';
 import {
     conversationsTable as chats,
-    conversationEventsTable as events,
     conversationMemoryTable as memory,
     conversationMessagesTable as messages,
     conversationTurnsTable as turns,
@@ -62,13 +66,14 @@ export async function conversationSubmit(
     access: ConversationAccess,
     id: string,
     input: SubmitConversationTurnRequest,
+    generation?: GenerationAdmission,
 ) {
     // Preparing a potentially large dictionary/text context must not keep
     // the shared capacity fence occupied. This read transaction is closed
     // before admission starts; all authorization and revision checks are
     // repeated under the normal global-first write lock order below.
     const prepared =
-        !input.editorContext && !input.retryOf
+        !input.editorContext && !input.retryOf && !generation
             ? await conversationReadTransaction(persistence, (tx) =>
                   conversationAuthorize(
                       persistence,
@@ -100,7 +105,12 @@ export async function conversationSubmit(
                 true,
                 prepared?.chat.source,
             );
-            const fingerprint = conversationRequestFingerprint(input);
+            const fingerprint = generation
+                ? generationFingerprint({
+                      input: { ...input, confirmedQuoteId: undefined },
+                      generation,
+                  })
+                : conversationRequestFingerprint(input);
             const [existing] = await tx
                 .select()
                 .from(turns)
@@ -130,7 +140,24 @@ export async function conversationSubmit(
                 );
             }
 
-            const snapshot = prepared?.snapshot ?? currentSnapshot;
+            const generationPrepared = generation
+                ? await prepareGenerationAdmission(
+                      persistence,
+                      tx,
+                      access,
+                      id,
+                      generation,
+                  )
+                : undefined;
+
+            if (generationPrepared?.sourceChanged) {
+                return { sourceChanged: true as const };
+            }
+
+            const snapshot =
+                generationPrepared?.snapshot ??
+                prepared?.snapshot ??
+                currentSnapshot;
             const [active] = await tx
                 .select()
                 .from(turns)
@@ -155,7 +182,8 @@ export async function conversationSubmit(
             const workspace =
                 chat.sourceKind === 'knowledge' &&
                 !sharedKnowledge &&
-                !input.retryOf;
+                !input.retryOf &&
+                !generation;
 
             if (workspace) {
                 assertWorkspaceTurnContext(
@@ -195,6 +223,12 @@ export async function conversationSubmit(
                             eq(turns.conversationId, id),
                         ),
                     );
+
+                if (previous?.generationRunId) {
+                    throw conflict(
+                        'Continue the existing lesson to reuse its completed sections.',
+                    );
+                }
 
                 if (
                     !previous ||
@@ -304,6 +338,16 @@ export async function conversationSubmit(
 
             const modelContent =
                 retryModelContent ??
+                (generationPrepared
+                    ? {
+                          text: learnerContent,
+                          generationRun: {
+                              runId: generation!.runId,
+                              revision: generation!.expectedRevision,
+                              purpose: generation!.kind,
+                          },
+                      }
+                    : undefined) ??
                 prepareReferencedTutorMessage({
                     snapshot,
                     sourceKind: chat.sourceKind,
@@ -375,15 +419,16 @@ export async function conversationSubmit(
                     ? { portraitContext: personalization.context }
                     : {}),
             };
-            const inputTokenBound = tutorAdmissionInputBytes(
-                contextInput,
-                recent,
-                retainedMemory,
-            );
-            const minimumInputBound = tutorMinimumInputBytes(
-                contextInput,
-                retainedMemory,
-            );
+            const inputTokenBound =
+                tutorAdmissionInputBytes(contextInput, recent, retainedMemory) +
+                (generationPrepared
+                    ? JSON.stringify(generationPrepared.context).length
+                    : 0);
+            const minimumInputBound =
+                tutorMinimumInputBytes(contextInput, retainedMemory) +
+                (generationPrepared
+                    ? JSON.stringify(generationPrepared.context).length
+                    : 0);
 
             const execution = await persistence.dependencies.admitTurn(tx, {
                 ownerId: access.ownerId,
@@ -396,6 +441,18 @@ export async function conversationSubmit(
                     !!snapshot.blockTarget ||
                     !!snapshot.dictionaryGenerationContext,
                 fingerprint,
+                ...(generation?.kind === 'generation'
+                    ? {
+                          forceConfirmation: true,
+                          ...(generationPrepared?.minimumOutputTokens !==
+                          undefined
+                              ? {
+                                    minimumOutputTokens:
+                                        generationPrepared.minimumOutputTokens,
+                                }
+                              : {}),
+                      }
+                    : {}),
                 ...(input.confirmedQuoteId
                     ? { confirmedQuoteId: input.confirmedQuoteId }
                     : {}),
@@ -412,6 +469,7 @@ export async function conversationSubmit(
                 .insert(turns)
                 .values({
                     id: turnId,
+                    generationRunId: generation?.runId ?? null,
                     conversationId: id,
                     ownerId: access.ownerId,
                     requestId: input.requestId,
@@ -421,23 +479,7 @@ export async function conversationSubmit(
                     sourceSnapshot: snapshot,
                     preferences: personalization.preferences,
                     execution,
-                    ...(execution.actionAccountingVersion === 1
-                        ? {
-                              billing: {
-                                  state:
-                                      execution.funding === 'customer'
-                                          ? ('held' as const)
-                                          : ('free' as const),
-                                  heldCredits: formatCreditMilli(
-                                      BigInt(
-                                          String(execution.heldCreditsMilli),
-                                      ),
-                                  ),
-                                  chargedCredits: null,
-                                  measurement: null,
-                              },
-                          }
-                        : {}),
+                    ...conversationAdmissionBilling(execution),
                     portraitContext: personalization.context ?? null,
                     usage: {
                         inputTokens: 0,
@@ -449,87 +491,39 @@ export async function conversationSubmit(
                     updatedAt: now,
                 })
                 .returning();
-            const userId = randomUUID();
-            const modelUserMessage: TutorMemoryMessage = {
-                id: userId,
-                role: 'user',
-                content: learnerContent,
-                attachments: learnerAttachments,
-                createdAt: now.toISOString(),
-                modelContent,
-            };
-            const assistantId = randomUUID();
-            const inserted = await tx
-                .insert(messages)
-                .values([
-                    {
-                        id: userId,
-                        conversationId: id,
-                        turnId,
-                        role: 'user',
-                        content: learnerContent,
-                        attachments: learnerAttachments,
-                        modelContent: [modelUserMessage],
-                        blockReferences: snapshot.blockReferences ?? [],
-                        promptMentions,
-                        editorTarget,
-                        status: 'complete',
-                        sourceVersion: snapshot.version,
-                        sourceProvenance: snapshot.provenance,
-                        createdAt: now,
-                    },
-                    {
-                        id: assistantId,
-                        conversationId: id,
-                        turnId,
-                        role: 'assistant',
-                        content: '',
-                        attachments: [],
-                        editorTarget,
-                        status: 'streaming',
-                        sourceVersion: snapshot.version,
-                        sourceProvenance: snapshot.provenance,
-                        createdAt: new Date(now.getTime() + 1),
-                    },
-                ])
-                .returning();
-            const user = inserted.find((row) => row.id === userId);
-            const assistant = inserted.find((row) => row.id === assistantId);
-            if (!user || !assistant) {
-                throw new Error('Conversation messages were not persisted.');
+
+            if (generation && generationPrepared) {
+                await bindGenerationAdmission(
+                    persistence,
+                    tx,
+                    turnId,
+                    generation,
+                    generationPrepared,
+                );
             }
 
-            await tx
-                .update(chats)
-                .set({ updatedAt: now })
-                .where(eq(chats.id, id));
-
-            await tx.insert(events).values([
-                {
-                    conversationId: id,
-                    type: 'message',
-                    data: messageView(user),
-                    createdAt: now,
-                },
-                {
-                    conversationId: id,
-                    type: 'message',
-                    data: messageView(assistant),
-                    createdAt: now,
-                },
-                {
-                    conversationId: id,
-                    type: 'turn',
-                    data: turnView(turn!),
-                    createdAt: now,
-                },
-            ]);
+            await persistConversationAdmissionMessages(tx, {
+                turn: turn!,
+                learnerContent,
+                learnerAttachments,
+                modelContent,
+                promptMentions,
+                editorTarget,
+                now,
+            });
 
             return turnView(turn!);
         },
         true,
         (tx) => persistence.dependencies.admitTurn.prepare?.(tx),
     );
+
+    if ('sourceChanged' in result) {
+        throw new ConversationError(
+            'source_changed',
+            'The lesson sources changed. Choose whether to keep the captured material or refresh it.',
+        );
+    }
 
     if ('quote' in result) {
         throw new ConversationActionConfirmationRequired(result.quote);

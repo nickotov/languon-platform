@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
-import type { LearningBlock, KnowledgeBlockProposal } from '@languon/contracts';
-import { knowledgeBlockReferences } from '@/fsd/features/knowledge-notes';
+import type {
+    LearningBlock,
+    KnowledgeContentProposal,
+} from '@languon/contracts';
+import {
+    knowledgeBlockReferences,
+    contentProposalBlocks,
+} from '@/fsd/features/knowledge-notes';
 import type {
     KnowledgeBlockCopyContext,
     KnowledgeLibraryContext,
@@ -36,7 +42,7 @@ export function useKnowledgeLearningIntegrations(
     const referenceCatalog = draft
         ? knowledgeBlockReferences(draft.content.body.document)
         : [];
-    const blockProposalContext = draft
+    const contentProposalContext = draft
         ? {
               disabled: actions.busy !== null,
               branchId: draft.branchId,
@@ -48,14 +54,14 @@ export function useKnowledgeLearningIntegrations(
                   actions.editor.current?.captureBlockInsertion() ?? null,
               onApplied: proposalApplied,
               onApplyingChange: actions.setProposalApplying,
-              getPlayback: (proposal: KnowledgeBlockProposal) =>
+              getPlayback: (proposal: KnowledgeContentProposal) =>
                   playback.options(async () => ({
                       origin: {
                           kind: 'proposal',
                           conversationId: proposal.conversationId,
                           proposalId: proposal.id,
                       },
-                      blocks: proposal.blocks,
+                      blocks: contentProposalBlocks(proposal),
                   })),
           }
         : undefined;
@@ -241,7 +247,7 @@ export function useKnowledgeLearningIntegrations(
         speechConfirmation: playback.confirmation,
         evaluationConsent: practice.consent,
         uploadAudio,
-        blockProposalContext,
+        contentProposalContext,
         library,
         narration,
         transcription,

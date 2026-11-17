@@ -1,3 +1,4 @@
+import { DrizzleActionAccountingParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import type { ClaimedConversationTurn } from '../../../application/ports/conversation-store';
 import type {
@@ -10,6 +11,9 @@ import {
     settleConversationAction,
 } from '../../conversation-action-accounting';
 import { conversationEvent } from './conversation-events';
+import { emitGenerationRun } from './generation-run-context';
+import { generationRunActionsTable } from './conversation-generation-schema';
+import { completeGenerationAction } from './generation-run-completion';
 import type { TurnRow } from './conversation-persistence-context';
 import {
     messageView,
@@ -31,6 +35,7 @@ export async function conversationTerminal(
     status: 'succeeded' | 'failed' | 'cancelled',
     failureCode?: string,
 ) {
+    await completeGenerationAction(persistence, tx, row, status, failureCode);
     await prepareConversationActionSettlement(tx, row);
     const [turn] = await tx
         .update(turns)
@@ -58,6 +63,15 @@ export async function conversationTerminal(
             turn,
             status === 'cancelled' && row.failureCode === 'explicit_stop',
         );
+    }
+
+    const [generationAction] = await tx
+        .select()
+        .from(generationRunActionsTable)
+        .where(eq(generationRunActionsTable.turnId, row.id));
+
+    if (generationAction) {
+        await emitGenerationRun(persistence, tx, generationAction.runId);
     }
 
     const [message] = await tx
@@ -240,8 +254,18 @@ export function conversationMemory(
 
                 return (row?.value as Record<string, unknown> | null) ?? null;
             }),
-        writeState: (entries) =>
+        writeState: (entries, validationIds) =>
             conversationWithOperation(persistence, turn, async (tx) => {
+                const accounting = new DrizzleActionAccountingParticipant(tx);
+                for (const validationId of new Set(validationIds ?? [])) {
+                    await accounting.acceptStructuredValidation({
+                        actionId: turn.id,
+                        ownerId: turn.ownerId,
+                        leaseToken: turn.leaseToken,
+                        validationId,
+                    });
+                }
+
                 for (const [key, value] of Object.entries(entries)) {
                     await tx
                         .insert(memory)

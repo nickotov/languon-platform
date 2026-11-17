@@ -21,10 +21,10 @@ export { learningBlockPlainText } from './lib/learning-block-text';
 export type { KnowledgeLibraryContext } from './api/library-copy-api';
 export type { KnowledgeBlockCopyContext } from './api/block-copy-api';
 export {
-    KnowledgeBlockProposals,
-    KnowledgeBlockProposalsForTurn,
-} from './ui/block-proposals/knowledge-block-proposals';
-export type { KnowledgeBlockProposalContext } from './ui/block-proposals/knowledge-block-proposals';
+    KnowledgeContentProposals,
+    KnowledgeContentProposalsForTurn,
+} from './ui/content-proposals/knowledge-content-proposals';
+export type { KnowledgeContentProposalContext } from './ui/content-proposals/knowledge-content-proposals';
 
 export { BlockLibrarySave } from './ui/library-copy/block-library-save/block-library-save';
 export { localizedBlockLabels as knowledgeLearningBlockLabels } from './ui/learning-block-authoring/block-locales';
@@ -37,7 +37,9 @@ export {
 } from './lib/knowledge-block-references';
 export type { KnowledgeBlockReference } from './lib/knowledge-block-references';
 
-export { blockProposalCompletionKey } from './lib/proposal-completions';
+export { contentProposalCompletionKey } from './lib/proposal-completions';
 export { ExerciseGenerationPicker } from './ui/exercise-generation-picker/exercise-generation-picker';
 export { exerciseGenerationCopy } from './lib/exercise-generation-copy';
 export type { PreparedExerciseRequest } from './hooks/use-exercise-generation';
+
+export { contentProposalBlocks } from './lib/content-proposal-blocks';
