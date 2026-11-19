@@ -83,6 +83,7 @@ const meta = {
         onDiscard: noAction,
         onKeepSources: noAction,
         onRefreshSources: noAction,
+        onPreview: noAction,
     },
 } satisfies Meta<typeof LessonRunCard>;
 
@@ -102,11 +103,156 @@ export const Running: Story = {
         }),
     },
 };
+export const AutomaticExerciseProgress: Story = {
+    args: {
+        run: GenerationRunSummarySchema.parse({
+            ...run,
+            state: 'running',
+            pauseReason: undefined,
+            activeTurnId: '44444444-4444-4444-8444-444444444444',
+            completedTaskCount: 3,
+            automation: {
+                enabled: true,
+                maximumCredits: '5',
+                remainingCredits: '3.750',
+            },
+            tasks: run.tasks.map((task) =>
+                task.id === 'practice'
+                    ? {
+                          ...task,
+                          status: 'running',
+                          completedUnitCount: 2,
+                          totalUnitCount: 4,
+                      }
+                    : { ...task, status: 'completed' },
+            ),
+        }),
+    },
+};
+export const AutomaticRepair: Story = {
+    args: {
+        run: GenerationRunSummarySchema.parse({
+            ...AutomaticExerciseProgress.args?.run,
+            automation: {
+                ...AutomaticExerciseProgress.args?.run?.automation,
+                recoveringTaskId: 'practice',
+            },
+        }),
+    },
+};
+export const SavedContentAfterValidationFailure: Story = {
+    args: {
+        run: GenerationRunSummarySchema.parse({
+            ...AutomaticExerciseProgress.args?.run,
+            state: 'paused',
+            activeTurnId: null,
+            automation: undefined,
+            pauseReason: 'technical-failure',
+            failure: {
+                code: 'content-invalid',
+                taskId: 'practice',
+                paths: ['tasks.0.blocks.0.semantics.checking.key'],
+            },
+        }),
+    },
+};
+export const ExhaustedExercise: Story = {
+    args: {
+        run: GenerationRunSummarySchema.parse({
+            ...SavedContentAfterValidationFailure.args?.run,
+            failure: {
+                ...SavedContentAfterValidationFailure.args?.run?.failure,
+                recoveryExhausted: true,
+            },
+        }),
+    },
+};
+export const ReconnectingAfterValidationFailure: Story = {
+    args: { ...SavedContentAfterValidationFailure.args, reconnecting: true },
+};
+export const BetweenAutomaticStages: Story = {
+    args: {
+        run: GenerationRunSummarySchema.parse({
+            ...AutomaticExerciseProgress.args?.run,
+            state: 'paused',
+            activeTurnId: null,
+            pauseReason: 'budget',
+        }),
+    },
+};
+export const PartialVocabulary: Story = {
+    args: {
+        run: GenerationRunSummarySchema.parse({
+            ...run,
+            completedTaskCount: 0,
+            totalTaskCount: 1,
+            tasks: [
+                {
+                    id: 'vocabulary',
+                    kind: 'vocabulary',
+                    status: 'pending',
+                    label: 'Everyday French vocabulary · 200 entries',
+                    completedUnitCount: 20,
+                    totalUnitCount: 200,
+                },
+            ],
+        }),
+    },
+};
 export const Stopping: Story = {
     args: { ...Running.args, stopping: true, busy: true },
 };
 export const TechnicalFailure: Story = {
     args: { run: { ...run, pauseReason: 'technical-failure' } },
+};
+export const ReadingFormatFailure: Story = {
+    args: {
+        run: {
+            ...run,
+            pauseReason: 'technical-failure',
+            completedTaskCount: 0,
+            tasks: [
+                {
+                    id: 'reading',
+                    kind: 'prose',
+                    status: 'failed',
+                    label: 'Texte de lecture',
+                },
+            ],
+            totalTaskCount: 1,
+            failure: {
+                code: 'schema-invalid',
+                phase: 'decode',
+                taskId: 'reading',
+                finishReason: 'tool-calls',
+            },
+        },
+    },
+};
+export const FilteredResponse: Story = {
+    args: {
+        run: {
+            ...run,
+            pauseReason: 'technical-failure',
+            failure: {
+                code: 'provider-rejected',
+                phase: 'decode',
+                finishReason: 'content-filter',
+            },
+        },
+    },
+};
+export const UnknownFailure: Story = {
+    args: {
+        run: {
+            ...run,
+            pauseReason: 'technical-failure',
+            failure: {
+                code: 'unknown',
+                referenceId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+            },
+        },
+    },
 };
 export const Stopped: Story = {
     args: { run: { ...run, pauseReason: 'stopped' } },

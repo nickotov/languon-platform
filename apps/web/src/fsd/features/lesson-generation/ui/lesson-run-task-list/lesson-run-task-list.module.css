@@ -1,0 +1,19 @@
+.tasks {
+    display: grid;
+    gap: var(--space-12);
+    list-style: none;
+    padding: 0;
+    margin-block: var(--space-16);
+}
+
+.tasks li {
+    display: grid;
+    grid-template-columns: var(--size-16) 1fr;
+    gap: var(--space-4) var(--space-8);
+    align-items: start;
+}
+
+.tasks small {
+    grid-column: 2;
+    color: var(--text-tertiary);
+}

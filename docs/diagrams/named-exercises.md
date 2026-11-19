@@ -3,6 +3,9 @@ type: diagram
 title: Named text exercises
 summary: Knowledge sources become reviewed named questions; deterministic practice and explicit private AI feedback remain separate from published content.
 source_paths:
+    - docs/adr/0062-single-submission-lesson-recovery.md
+    - apps/backend/src/modules/conversations/infrastructure/ai/exercise-authoring-payload.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-unit-recovery.ts
     - apps/web/src/fsd/features/knowledge-notes/lib/editor-insertion-target.ts
     - docs/adr/0059-typed-conversation-prompt-mentions.md
     - packages/contracts/src/conversation-prompt-mentions.ts
@@ -41,8 +44,16 @@ source_paths:
     - apps/backend/src/modules/conversations/infrastructure/ai/learning-generation-plan.ts
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-worker.ts
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/workbook-copy.ts
-source_fingerprint: sha256:9f12277d88a7382201ea8425a4d25330c5e524aaec6775d8c931b19e503e0406
-reviewed: 2026-11-16
+    - docs/adr/0061-bounded-automatic-lesson-continuation.md
+    - apps/backend/src/modules/conversations/application/learning-content-batches.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/structured-output-diagnostics.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-preview.ts
+    - packages/contracts/src/generation-run-preview.ts
+    - apps/backend/src/modules/conversations/application/learning-content-plan-capacity.ts
+    - packages/prompts/src/local/learning-content-authoring.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-completion.ts
+source_fingerprint: sha256:a5d18126123e1c78c8c712fe46bc14325c8da17f46c0d6b82dcd3b3483ccf76c
+reviewed: 2026-11-19
 ---
 
 # Named text exercises
@@ -76,14 +87,17 @@ isolated synthetic session authority"] --> Ground
     Ground -->|"Missing, oversized or conflicting"| Clarify["Clarify or refuse without partial publication
 retain admissible frozen context"]
     Ground --> Author["Only selected definitions and schemas
-dependency-ready tasks; bounded action capacity"]
+dependency-ready tasks; one durable exercise unit
+bounded action capacity"]
     Author --> Bind["Model selects source IDs
 host restores exact values and validates artifacts"]
-    Bind -->|"Invalid; bounded repair allowance"| Author
+    Bind -->|"Completed invalid; bounded repair and fallback"| Author
     Bind -->|"Validated call"| Checkpoint["Private durable artifacts + accepted receipt
 atomic lease/revision fence"]
-    Checkpoint -->|"Unfinished plan"| Continue["Pause; explicit fresh quoted Continue
-reuse valid artifacts; reviewed revision invalidates descendants"] --> Author
+    Checkpoint -->|"Successful stage; unfinished plan"| Continue["Server advances within original pinned ceilings
+8 stages / 15 minutes; reuse accepted exercise prefixes"] --> Author
+    Checkpoint --> Preview["Owner read-only prepared preview
+no partial insertion or paid checking"]
     Checkpoint -->|"All tasks and aggregate valid"| Proposal["One complete mixed Knowledge v2 proposal
 ordered prose + typed blocks; no partial insert"]
     Proposal --> Review["Explicit Review and Insert or Update
@@ -123,9 +137,18 @@ same-conversation proposal or a validated earlier task output. This is not a new
 dependency on global Texts storage. Models supply bounded ID bindings; the host
 captures the original values and provenance. Missing source, conflicting choices
 or insufficient remaining capacity cannot produce a partly applicable proposal.
-A validated stage may pause privately; explicit Continue admits a fresh bounded
-action. Impossible units require a scope change rather than repeated empty stages.
-The parent action retains its five-provider-call/two-memory-call and output limits.
+Each durable run checkpoints individual exercises as cumulative validated prefixes.
+Capacity admission and authoring both recognize previously accepted prefixes,
+including those saved before per-exercise batching. Successful stages can advance
+on the server inside the original bounded authority;
+terminal failure or exhausted authority preserves completed previews. The planner
+binds generated prose through its authorized excerpt. Each named exercise
+declares a content-only authoring contract. The host assigns IDs, builds checking
+keys or rubrics, and verifies the compiled exercise against its source.
+R04 requires an exemplar and evidence rubric. R08 supplies variants for each gap.
+After a settled rejection, the worker may run one targeted repair and one distinct
+fallback within the original authorization. Uncertain dispatch stops automatic
+replay. A restart preserves the accepted prefix and the attempts already spent.
 
 Local source IDs are validated against the current document and participate in
 semantic revisions. Independent copies remap their local references; historical

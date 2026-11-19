@@ -2,11 +2,13 @@
 feature: knowledge-workspace
 title: Knowledge workspace
 status: current
-last_verified: 2026-11-16
+last_verified: 2026-11-19
 surfaces:
     - browser
     - api
 source_paths:
+    - .agent/features/071-reliable-lesson-runs/**
+    - packages/contracts/src/generation-run-preview.ts
     - .agent/features/070-composable-lesson-generation/**
     - packages/contracts/src/generation-plans.ts
     - packages/contracts/src/generation-runs.ts
@@ -54,6 +56,7 @@ e2e_scenarios:
     - workspace-intent-content-generation
     - workspace-large-vocabulary-generation
 related_features:
+    - reliable-lesson-runs
     - composable-lesson-generation
     - reliable-learning-content-pipeline
     - intent-aware-learning-content
@@ -290,23 +293,81 @@ access. Cancelling insertion/preview leaves the draft editable.
    automatic naming and reconnect recovery still synchronize the workspace when
    needed.
 
+Local development uses the watched worker launched by `pnpm dev:all` or `pnpm dev:dictionary-worker`. After environment or built shared-package changes, restart the development launcher so the API and worker use the same configuration. A paused failure always includes a safe category; if a prior attempt did not record details, Plan and details shows an opaque support reference rather than inventing a network cause.
+
 ### Composable lessons and continuation
 
 Ask for a lesson containing ordinary reading text, grammar and exercises in the desired order. Say which language each part should use; the language of lesson content does not silently become the chat reply language. “Up to three” is a bound the tutor can resolve, not a reason to repeatedly ask for an exact number. A clear request begins preparation immediately.
 
-The lesson card shows progress. **Plan and details** expands the task list and accumulated charges. Generated parts remain private until the complete proposal is ready. Leaving the page does not stop work; reopening recovers the current run without submitting it again.
+The lesson card shows overall readiness and the current part. **Plan and details** expands the task list and accumulated charges. Exercise and vocabulary rows show explicit completed/total counts; a failed part keeps its completed count and shows a failure state rather than remaining “preparing”. Select **View prepared content** whenever at least one validated unit is ready. This private read-only preview works during generation and after failure; it does not insert, save, copy to the library or run paid checks. Per-exercise progress appears separately from the count of lesson parts. Leaving the page does not stop work; reopening recovers the current run without submitting it again.
 
-When a stage ends, select **Continue** and review the fresh maximum additional credits. Confirming authorizes only that stage. Completed content is reused. **Stop** retains completed parts and charges eligible usage from that stage. A technical failure leaves this action uncharged; earlier successful-stage charges remain. If a part cannot fit the limits, adjust its scope or the available AI budget before retrying; the server rejects impossible work before a new quote or hold.
+During uninterrupted generation, run progress arrives through the existing durable
+conversation stream. The browser loads the run list when opening the conversation
+and reconciles once after a real connection gap; it does not repeatedly fetch the
+run list or each run's detail as progress changes. An older initial response cannot
+replace newer streamed progress. A replacement stream can be healthy even when it
+only delivers heartbeats. Lesson actions become available after the current
+conversation's progress has been read. If that read fails, **Refresh** checks
+the saved state again without starting generation. Opening prepared content may read its separate
+preview endpoint; that read never starts generation.
 
-For an unfinished paused lesson, choose **Adjust plan**, describe the change in chat and review which parts will be kept, updated, added or removed. Preparing this proposed revision uses ordinary chat credits. **Apply plan** is free and leaves generation paused. Continue separately when ready. An order-only change reuses existing content; changed requirements or inputs invalidate dependent parts. Stop active preparation before adjusting it. Completed proposals remain immutable.
+Generation advances automatically within one approved budget. The configured credit and provider-cost ceilings cover the whole authorization; internal stages do not multiply them. **Stop** works while a stage runs and between stages, retains completed material and charges eligible usage. Returning to the page only reads progress and never starts duplicate work.
+
+When a spending confirmation is required, the maximum credits cover the whole
+lesson. The approximate output allowance applies to a single stage. Once
+authorized, the worker saves each validated unit and advances through the plan.
+If an exercise fails validation, the card identifies the current exercise while the
+worker tries to correct it within that authorization. A temporary capacity wait
+keeps **Stop** and prepared previews available. Neither a checkpoint nor a
+recoverable validation error requires **Continue**.
+
+If automatic attempts are exhausted, the card identifies the affected part or
+exercise and offers **Adjust plan**. Change that part’s requirements before
+continuing. The original plan and validated content remain available to preview.
+If the approved allowance, authorization lifetime or stage limit is reached,
+review the maximum additional credits before continuing. A paused older lesson
+can resume from its saved work after authorization. Eligible charges from
+previous stages are retained.
+A recorded technical failure remains visible while the connection recovers;
+reconnecting status supplements that failure instead of hiding it. Rate limiting,
+invalid output, interruption and unknown failures have distinct safe messages;
+unknown failures include only an opaque support reference in **Plan and details**.
+When the response for a reading fails format validation, the card names the
+reading as the point to resume. When the provider explicitly reports that it
+filtered a response, the card explains the restriction and offers **Adjust
+plan**. Retrying the same instructions is disabled. A recorded failure while
+saving the part or recording the attempt has its own support message.
+A rejected Continue appears on the selected lesson with its safe reason and a
+support reference when available. A capacity rejection before or after budget
+confirmation leaves the lesson paused. The card identifies a busy service, a
+provider usage limit, or a service spending limit when the server reports it.
+Continue later from the saved work when capacity becomes available. When the server rejects an oversized input
+before dispatch, reduce the source or adjust the plan. If the provider may have
+processed an earlier request, **Authorize another attempt** requests a new
+bounded attempt starting at the saved checkpoint. Repeating a command after an
+uncertain HTTP acknowledgement uses the same request identity in this tab. When
+the server confirms that exact command and the lesson pauses again, the next
+explicit Continue starts a fresh stage even at the same plan revision. After an
+uncertain provider dispatch, **Authorize a plan adjustment** opens the
+adjustment composer. Sending the instruction authorizes a new revision request
+for that specific uncertainty. Automatic admission can wait briefly for
+capacity; the lesson card shows when an expired authorization, stage limit,
+input limit or unavailable source requires learner action.
+
+For an unfinished paused lesson, choose **Adjust plan**, describe the change in chat and review which parts will be kept, updated, added or removed. Preparing this proposed revision uses ordinary chat credits. **Apply plan** is free and leaves generation paused. Resume separately when ready; a fresh confirmed authorization may advance its remaining stages automatically. An order-only change reuses existing content; changed requirements or inputs invalidate dependent parts. Stop active preparation before adjusting it. Completed proposals remain immutable.
 
 If a referenced source changes, choose **Keep original sources** or **Use current sources**. The first preserves captured evidence, including a source block later edited or removed. The second invalidates affected generated parts. To refresh a selected passage, select its current text in the editor and choose **Use current sources** again. Both choices recheck current access. **Discard lesson** removes private prepared content, while retaining prior financial evidence and leaving the document unchanged.
+
+For G03 grammar transformations, the model supplies the answer variants once and
+the service builds the prepared checking key from those same variants. The
+published exercise keeps its normal reference answer, answer checking and source
+rules; no duplicate answer-key wording is required from the model.
 
 When ready, review the single ordered proposal containing prose and custom blocks. **Insert** changes the working draft; **Save** publishes it. There is no partial lesson insertion or automatic title replacement. Existing exact single-block update and independent-copy safeguards remain available for block-only proposals.
 
 ## API verification
 
-The owner-scoped `/conversations/:id/generation-runs` list and `/:runId` detail expose progress and plans, not private generated artifact bodies. Run actions are `/continue`, `/revise`, `/apply-revision`, `/resolve-source` and `/discard`. Continue and revision planning use the existing explicit action-quote flow. Completed mixed proposals use `/conversations/:id/content-proposals`; application checks the current working-branch version. Selection refresh includes the current editor range, hash and branch version. See [ADR-0060](../adr/0060-composable-generation-runs.md).
+The owner-scoped `/conversations/:id/generation-runs` list and `/:runId` detail expose progress, safe failure categories and bounded automation status, not generated bodies. The owner-only `/:runId/preview` endpoint returns validated prepared fragments and frozen dependencies after current-access checks. Run actions are `/continue`, `/revise`, `/apply-revision`, `/resolve-source`, `/stop` and `/discard`. Explicit Resume and revision planning use the existing action-quote flow; internal automatic stages use pinned remaining authority. Run-level Stop revokes that authority even between stages. Completed mixed proposals use `/conversations/:id/content-proposals`; application checks the current working-branch version. Selection refresh includes the current editor range, hash and branch version. See [ADR-0060](../adr/0060-composable-generation-runs.md) and [ADR-0061](../adr/0061-bounded-automatic-lesson-continuation.md) and its recovery update in [ADR-0062](../adr/0062-single-submission-lesson-recovery.md).
 
 1. Under owner authentication, create a Knowledge draft and read its workspace.
    Verify the stable note ID, status `draft`, empty working content, private
@@ -335,7 +396,14 @@ The owner-scoped `/conversations/:id/generation-runs` list and `/:runId` detail 
 
 ## E2E coverage
 
-- `workspace-composable-lesson-continuation` proves a real owned workspace request pauses with validated private parts, obtains a fresh Continue quote, resumes without repeating them, previews one mixed lesson, and inserts/saves/reloads it. Only the external model boundary uses synthetic content and usage. Financial races, revision reuse, source refresh/Keep and discard cleanup are separately verified through backend integration tests.
+- `workspace-composable-lesson-continuation` proves a real owned workspace request exposes a read-only prepared preview, advances internal stages automatically without repeated Continue clicks, retains individual exercises, and inserts/saves/reloads one complete mixed lesson. Only the external model boundary uses synthetic content and usage. The journey
+  also checks that ordinary streamed progress does not trigger repeated run-list or
+  run-detail reads or intermediate Continue requests. It checks the visible actions during automatic repair and after validation attempts are exhausted. A scoped quote explains the total credit ceiling and the per-stage output allowance before consent. Financial races, revision reuse, source refresh/Keep, budget
+  handoff and discard cleanup are separately verified through backend integration
+  tests; focused frontend tests cover snapshot/event races and explicit task/failure
+  presentation. After verifying saved lesson content, the browser journey injects
+  an idle stream rotation and a rejected request. It checks one repair read,
+  action gating during that read, and diagnostic isolation between two cards.
 
 - `workspace-draft-chat-save-reopen` proves empty draft chat, working recovery,
   explicit publication and reopening across the real web/backend boundary,

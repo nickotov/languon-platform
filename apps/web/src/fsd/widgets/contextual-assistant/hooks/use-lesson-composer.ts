@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type {
-    ConversationDetail,
-    GenerationRunSummary,
-} from '@languon/contracts';
+import type { GenerationRunSummary } from '@languon/contracts';
 import type { ConversationSessionRequest } from '@/fsd/entities/conversation';
 import { useLessonRuns } from '@/fsd/features/lesson-generation';
 import type { WorkspaceAssistantProps } from '../types';
@@ -12,7 +9,7 @@ export function useLessonComposer({
     actorId,
     conversationId,
     request,
-    detail,
+    reconciliations,
     active,
     enabled,
     question,
@@ -24,7 +21,7 @@ export function useLessonComposer({
     actorId: string;
     conversationId: string | null;
     request: ConversationSessionRequest;
-    detail: ConversationDetail | undefined;
+    reconciliations: number;
     active: boolean;
     enabled: boolean;
     question: string;
@@ -37,27 +34,31 @@ export function useLessonComposer({
     const [selection, setSelection] = useState<{
         conversationId: string;
         runId: string;
+        revision: number;
+        acknowledgedUncertainTurnId?: string;
     } | null>(null);
     const consumed = useRef<unknown>(null);
-    const revisionKey =
-        detail?.turns
-            .map((turn) => `${turn.id}:${turn.status}:${turn.updatedAt}`)
-            .join(',') ?? '';
     const state = useLessonRuns({
         actorId,
         conversationId: enabled ? conversationId : null,
         request,
-        active,
-        revisionKey,
+        reconciliations,
         onChanged: refresh,
     });
     const selected =
         selection?.conversationId === conversationId
             ? state.runs.find(
-                  (run) => run.id === selection.runId && run.state === 'paused',
+                  (run) =>
+                      run.id === selection.runId &&
+                      run.state === 'paused' &&
+                      run.revision === selection.revision &&
+                      run.uncertainTurnId ===
+                          selection.acknowledgedUncertainTurnId,
               )
             : undefined;
-    const activeRun = state.runs.some((run) => run.state === 'running');
+    const activeRun = state.runs.some(
+        (run) => run.state === 'running' || run.automation?.enabled,
+    );
 
     useEffect(() => {
         const accepted = state.actions.accepted;
@@ -81,7 +82,15 @@ export function useLessonComposer({
             return;
         }
 
-        setSelection({ conversationId: run.conversationId, runId: run.id });
+        setSelection({
+            conversationId: run.conversationId,
+            runId: run.id,
+            revision: run.revision,
+            ...(run.uncertainTurnId
+                ? { acknowledgedUncertainTurnId: run.uncertainTurnId }
+                : {}),
+        });
+
         window.requestAnimationFrame(() =>
             composer.current
                 ?.querySelector<HTMLElement>(
@@ -111,8 +120,21 @@ export function useLessonComposer({
                     kind: 'revise',
                     run: selected,
                     instruction,
+                    ...(selection?.acknowledgedUncertainTurnId
+                        ? {
+                              acknowledgedUncertainTurnId:
+                                  selection.acknowledgedUncertainTurnId,
+                          }
+                        : {}),
                 });
             }
+
+            return;
+        }
+
+        if (selection?.conversationId === conversationId) {
+            // The selected plan or uncertainty changed while the learner typed.
+            setSelection(null);
 
             return;
         }

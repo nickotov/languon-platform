@@ -1,3 +1,4 @@
+import type { StopGenerationRunRequest } from '@languon/contracts';
 import type {
     LearningContentProposalInput,
     ApplyGenerationPlanRevisionRequest,
@@ -6,6 +7,7 @@ import type {
     DiscardGenerationRunRequest,
     GenerationPlan,
     GenerationRunDetail,
+    GenerationRunPreview,
     GenerationRunSummary,
     ResolveGenerationRunSourceRequest,
     ReviseGenerationRunRequest,
@@ -15,12 +17,19 @@ import type {
     ConversationAccess,
 } from './conversation-store';
 import type {
+    GenerationAttemptEvent,
     GenerationArtifact,
     GenerationExecutionContext,
     GenerationSourceSnapshot,
 } from './generation-run';
 
 export interface GenerationRunStore {
+    stopGenerationRun?(
+        access: ConversationAccess,
+        conversationId: string,
+        runId: string,
+        input: StopGenerationRunRequest,
+    ): Promise<GenerationRunDetail>;
     assertGenerationProposal?(
         turn: ClaimedConversationTurn,
         input: LearningContentProposalInput,
@@ -43,6 +52,10 @@ export interface GenerationRunStore {
         artifacts: GenerationArtifact[],
         validationId: string,
     ): Promise<void>;
+    recordGenerationAttempt?(
+        turn: ClaimedConversationTurn,
+        event: GenerationAttemptEvent,
+    ): Promise<void>;
     pauseGeneration?(turn: ClaimedConversationTurn): Promise<void>;
     proposeGenerationRevision?(
         turn: ClaimedConversationTurn,
@@ -53,6 +66,11 @@ export interface GenerationRunStore {
         access: ConversationAccess,
         conversationId: string,
     ): Promise<{ runs: GenerationRunSummary[] }>;
+    getGenerationRunPreview?(
+        access: ConversationAccess,
+        conversationId: string,
+        runId: string,
+    ): Promise<GenerationRunPreview>;
     getGenerationRun?(
         access: ConversationAccess,
         conversationId: string,

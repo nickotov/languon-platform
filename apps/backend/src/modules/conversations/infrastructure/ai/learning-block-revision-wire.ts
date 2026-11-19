@@ -5,11 +5,12 @@ import {
     ExerciseLearningBlockSchema,
     GrammarLearningBlockSchema,
     LearningBlockSchema,
+    NamedExerciseSemanticsSchema,
+    NamedExerciseKeySchema,
     VideoLearningBlockSchema,
     VocabularyLearningBlockSchema,
     type LearningBlock,
 } from '@languon/contracts';
-import { namedExerciseAuthoringSchemaForBrief } from './exercise-authoring-context';
 
 const renderers = {
     audio: AudioLearningBlockSchema,
@@ -40,29 +41,69 @@ function revisionBlockSchema(source: LearningBlock): z.ZodType {
         return z.union([options[0]!, options[1]!, options[2]!]);
     }
 
-    const schema = namedExerciseAuthoringSchemaForBrief({
-        tasks: [
-            {
-                id: 'revision',
-                kind: 'exercises',
-                instruction: 'Revise the selected activity.',
-                activities: [
-                    { activityId: source.semantics.activity.id, count: 1 },
-                ],
-            },
-        ],
-    });
+    // Revisions edit existing choices/gaps in place and therefore retain their IDs.
+    // Generation accepts content-only candidates and allocates fresh identities.
+    const { sources: _sources, ...semantics } =
+        NamedExerciseSemanticsSchema.shape;
+    const { activity, checking } = source.semantics;
+    const policySchema =
+        NamedExerciseSemanticsSchema.shape.checking.options.find(
+            (option) => option.shape.policy.value === checking.policy,
+        )!;
+    const keySchema = () => {
+        if (source.format === 'fill-in-the-blank') {
+            return NamedExerciseKeySchema.options[1];
+        }
 
-    // Exactly one known activity has exactly one format, so this factory returns
-    // an object. Frozen origins stay host-owned and need not be echoed by a model.
-    if (!(schema instanceof z.ZodObject)) {
-        throw new Error('A named revision needs one fixed activity schema.');
+        if (source.format === 'free-text') {
+            return NamedExerciseKeySchema.options[2];
+        }
+
+        const { classification, ...choice } =
+            NamedExerciseKeySchema.options[0].shape;
+
+        return activity.id === 'R03'
+            ? z.strictObject({
+                  ...choice,
+                  classification: classification.unwrap(),
+              })
+            : z.strictObject(choice);
+    };
+    const fixed = {
+        id: z.literal(source.id),
+        semantics: z.strictObject({
+            ...semantics,
+            activity: z.strictObject({
+                id: z.literal(activity.id),
+                version: z.literal(activity.version),
+            }),
+            format: z.literal(source.format),
+            checking:
+                'key' in policySchema.shape
+                    ? z.strictObject({
+                          ...policySchema.shape,
+                          key: keySchema(),
+                      })
+                    : policySchema,
+        }),
+    };
+    const [choice, gaps, text] = ExerciseLearningBlockSchema.options;
+    if (source.format === 'free-text' && checking.policy === 'ai-rubric') {
+        return z
+            .strictObject({ ...text.shape, ...fixed })
+            .omit({ source: true, acceptedAnswers: true });
     }
 
-    return schema
-        .omit({ sourceBindings: true, source: true })
-        .extend({ id: z.literal(source.id) })
-        .strict();
+    const renderer =
+        source.format === 'multiple-choice'
+            ? choice
+            : source.format === 'fill-in-the-blank'
+              ? gaps
+              : text;
+
+    return z
+        .strictObject({ ...renderer.shape, ...fixed })
+        .omit({ source: true });
 }
 
 /** Selected targets bound the provider schema; unrelated renderers/activities never enter its context. */

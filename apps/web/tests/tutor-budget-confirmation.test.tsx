@@ -193,6 +193,32 @@ it('shows the quoted allowance and explicit Send, Top up and Cancel choices', as
     expect(close).toHaveBeenCalled();
 });
 
+it.each([
+    [
+        'en',
+        'covers the entire lesson',
+        'Approximate output tokens per stage: 12',
+    ],
+    ['ru', 'на весь урок', 'Примерный лимит токенов ответа на этап: 12'],
+] as const)(
+    'explains whole-lesson consent before Send in %s',
+    (locale, ceiling, allowance) => {
+        const send = vi.fn();
+        render(
+            <ActionBudgetConfirmation
+                quote={{ ...firstQuote, scope: 'lesson-if-planned' }}
+                onSend={send}
+                onClose={vi.fn()}
+            />,
+            { locale },
+        );
+
+        expect(screen.getByRole('dialog')).toHaveTextContent(ceiling);
+        expect(screen.getByRole('dialog')).toHaveTextContent(allowance);
+        expect(send).not.toHaveBeenCalled();
+    },
+);
+
 it('never continues a limited response until the learner explicitly requests a new action', async () => {
     const next = vi.fn();
     const user = userEvent.setup();

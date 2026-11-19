@@ -93,6 +93,22 @@ it('directs exhausted credits to the balance instead of a model change or blind 
     ).not.toBeInTheDocument();
 });
 
+it.each([
+    ['provider_capacity_exhausted', 'The AI provider’s usage limit'],
+    ['operator_capacity_exhausted', 'The service’s AI spending limit'],
+])(
+    'distinguishes a %s rejection from exhausted personal credits',
+    (code, message) => {
+        render(
+            <ConversationErrorNotice error={error(code)} onRetry={vi.fn()} />,
+        );
+
+        expect(screen.getByRole('alert')).toHaveTextContent(message);
+        expect(screen.queryByRole('link')).toBeNull();
+        expect(screen.queryByText(providerMessage)).not.toBeInTheDocument();
+    },
+);
+
 it('offers retry for temporary capacity exhaustion and keeps unknown failures generic', () => {
     const retry = vi.fn();
     render(
@@ -319,7 +335,7 @@ it.each([
     },
 );
 
-it('directs an oversized context to shorten its question or remove attachments before sending again', () => {
+it('directs an oversized context to reduce its document or attachments before sending again', () => {
     render(
         <ConversationErrorNotice
             error={error('context_too_large')}
@@ -328,7 +344,7 @@ it('directs an oversized context to shorten its question or remove attachments b
     );
 
     expect(screen.getByRole('alert')).toHaveTextContent(
-        'Shorten the question or remove attachments',
+        'Shorten the document or attachments, or start a new conversation.',
     );
 
     expect(

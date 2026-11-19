@@ -1,4 +1,5 @@
 import { captureGenerationSources } from './generation-source-capture';
+import { createGenerationAuthorization } from './generation-run-authorization';
 import { assertGenerationCapacity } from './generation-run-capacity';
 import { DrizzleActionAccountingParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant';
 import {
@@ -36,6 +37,7 @@ import {
 import {
     generationContext,
     generationTurnContext,
+    generationStageHasProgress,
     emitGenerationRun,
 } from './generation-run-context';
 import {
@@ -130,7 +132,7 @@ export function conversationStartGeneration(
         await tx
             .update(memory)
             .set({
-                value: sql`(${memory.value} - 'pending' - 'pendingSources' - 'pendingProposalIds') || '{"pending":null}'::jsonb`,
+                value: sql`(${memory.value} - 'pending' - 'pendingSources' - 'pendingProposalIds' - 'pendingExplanationOverrides') || '{"pending":null}'::jsonb`,
                 updatedAt: persistence.now(),
             })
             .where(
@@ -141,10 +143,11 @@ export function conversationStartGeneration(
             );
 
         const now = persistence.now();
+        const runId = randomUUID();
         const [run] = await tx
             .insert(runs)
             .values({
-                id: randomUUID(),
+                id: runId,
                 conversationId: turn.conversationId,
                 ownerId: turn.ownerId,
                 noteId: turn.source.id,
@@ -152,6 +155,20 @@ export function conversationStartGeneration(
                 state: 'running',
                 taskManifest: plan.tasks.map(({ id, kind }) => ({ id, kind })),
                 activeTurnId: turn.id,
+                automation: await createGenerationAuthorization(
+                    tx,
+                    turn,
+                    1,
+                    now,
+                    {
+                        runId,
+                        revision: 1,
+                        plan,
+                        sources,
+                        artifacts: [],
+                        purpose: 'generation',
+                    },
+                ),
                 sourceSnapshot: turn.sourceSnapshot,
                 createdAt: now,
                 updatedAt: now,
@@ -211,6 +228,22 @@ export function conversationCheckpointGeneration(
         }
 
         const { context, run } = active;
+        const attempt = context.unitAttempts?.find(
+            (item) => item.validationId === validationId,
+        );
+
+        if (
+            attempt &&
+            (attempt.turnId !== turn.id ||
+                (attempt.outcome !== 'started' &&
+                    attempt.outcome !== 'accepted') ||
+                !parsed.some((artifact) => artifact.taskId === attempt.taskId))
+        ) {
+            throw conflict(
+                'This checkpoint does not match the active lesson candidate.',
+            );
+        }
+
         const accumulated = [...context.artifacts];
         for (const value of parsed) {
             if (value.revision !== run.revision) {
@@ -319,7 +352,19 @@ export function conversationCheckpointGeneration(
 
         await tx
             .update(revisions)
-            .set({ artifactIds: accumulated.map((artifact) => artifact.id) })
+            .set({
+                artifactIds: accumulated.map((artifact) => artifact.id),
+                unitAttempts: (context.unitAttempts ?? []).map((attempt) =>
+                    attempt.turnId === turn.id &&
+                    attempt.validationId === validationId
+                        ? {
+                              ...attempt,
+                              outcome: 'accepted' as const,
+                              concludedAt: persistence.now().toISOString(),
+                          }
+                        : attempt,
+                ),
+            })
             .where(
                 and(
                     eq(revisions.runId, run.id),
@@ -346,13 +391,7 @@ export function conversationPauseGeneration(
             throw conflict('No generation action is active.');
         }
 
-        const progress = await tx
-            .select({ id: artifacts.id })
-            .from(artifacts)
-            .where(eq(artifacts.turnId, turn.id))
-            .limit(1);
-
-        if (!progress.length) {
+        if (!(await generationStageHasProgress(tx, active.run, turn.id))) {
             throw conflict(
                 'The response allowance could not complete a generation step.',
             );

@@ -28,8 +28,11 @@ source_paths:
     - apps/backend/src/modules/knowledge/infrastructure/transcription-job-composition.ts
     - apps/backend/src/modules/knowledge/infrastructure/transcription-worker-readiness.ts
     - infra/deploy/lib/worker-database-privileges.mjs
-source_fingerprint: sha256:11bbb0ff5a9d330359649386f13c6bf7e2a6bd7e32db4f36b130e892f9d817ba
-reviewed: 2026-11-14
+    - apps/backend/package.json
+    - scripts/dev-all.mjs
+    - scripts/dev-worker-watch.test.mjs
+source_fingerprint: sha256:b14c7200813d1c52e9e5a008b803d4c2a0fffc08cc09c56b6e0ae5f2a0bf777d
+reviewed: 2026-11-19
 ---
 
 # Development and deployment tooling
@@ -86,6 +89,13 @@ compose a transcription handler, but it dispatches only when reviewed
 transcription configuration, processing approval, worker observation and local
 credential/configuration gates are all satisfied; development topology does not
 activate external processing.
+
+`pnpm dev:dictionary-worker` delegates to the backend's `dictionary:worker:dev`
+source-watching entry, and `pnpm dev:all` launches that same command. Imported
+worker source changes restart the development process; environment changes still
+require an explicit restart. The ordinary `dictionary:worker` and built production
+entry remain unwatched. This reload behavior does not add a worker role or change
+any local/deployment topology edge above.
 
 The user states this project is in development and has no production deployment.
 OCI/NGINX/blue-green nodes describe repository tooling and accepted deployment

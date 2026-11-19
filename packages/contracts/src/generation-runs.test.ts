@@ -7,7 +7,12 @@ import {
     ApplyGenerationPlanRevisionRequestSchema,
     GenerationPlanRevisionCandidateSchema,
     GenerationRunDetailSchema,
+    GenerationAutomationSchema,
+    GenerationFailureSchema,
+    GenerationTaskProgressSchema,
+    StopGenerationRunRequestSchema,
 } from './generation-runs';
+import { GenerationRunPreviewSchema } from './generation-run-preview';
 
 const summary = {
     id: randomUUID(),
@@ -30,6 +35,336 @@ const summary = {
 };
 
 describe('safe resumable generation public contracts', () => {
+    it('exposes bounded unit progress without claiming a partial task complete', () => {
+        const partial = {
+            id: 'practice',
+            kind: 'exercises',
+            status: 'running',
+            label: 'Grammar practice',
+            completedUnitCount: 2,
+            totalUnitCount: 4,
+        };
+
+        expect(GenerationTaskProgressSchema.parse(partial)).toEqual(partial);
+        for (const patch of [
+            { totalUnitCount: undefined },
+            { completedUnitCount: undefined },
+            { completedUnitCount: 5 },
+            { status: 'completed' },
+            { completedUnitCount: 4 },
+            { totalUnitCount: 26 },
+        ]) {
+            expect(
+                GenerationTaskProgressSchema.safeParse({ ...partial, ...patch })
+                    .success,
+            ).toBe(false);
+        }
+
+        expect(
+            GenerationTaskProgressSchema.safeParse({
+                ...partial,
+                status: 'completed',
+                completedUnitCount: 4,
+            }).success,
+        ).toBe(true);
+    });
+
+    it('allows safe failure categories and field paths while rejecting raw diagnostic data', () => {
+        const failure = {
+            code: 'schema-invalid',
+            taskId: 'practice',
+            paths: ['tasks.0.blocks.0.semantics.checking.key'],
+        };
+
+        expect(GenerationFailureSchema.parse(failure)).toEqual(failure);
+        for (const patch of [
+            { message: 'The original lesson text.' },
+            { code: 'raw-provider-error' },
+            { paths: ['tasks.0.blocks.0.secretAnswer'] },
+            { paths: ['The learner wrote this private sentence.'] },
+            { paths: ['tasks.10000.blocks'] },
+            { paths: Array.from({ length: 9 }, () => 'tasks') },
+        ]) {
+            expect(
+                GenerationFailureSchema.safeParse({ ...failure, ...patch })
+                    .success,
+            ).toBe(false);
+        }
+
+        const failed = {
+            ...summary,
+            pauseReason: 'technical-failure',
+            failure: { ...failure, taskId: 'grammar' },
+        };
+
+        expect(GenerationRunSummarySchema.safeParse(failed).success).toBe(true);
+        expect(
+            GenerationRunSummarySchema.safeParse({ ...failed, failure })
+                .success,
+        ).toBe(false);
+
+        expect(
+            GenerationRunSummarySchema.safeParse({
+                ...failed,
+                state: 'running',
+                pauseReason: undefined,
+                activeTurnId: randomUUID(),
+            }).success,
+        ).toBe(false);
+    });
+
+    it('provides an opaque support reference for an unclassified failure without accepting raw error text', () => {
+        const failure = { code: 'unknown', referenceId: randomUUID() };
+
+        expect(GenerationFailureSchema.parse(failure)).toEqual(failure);
+        expect(
+            GenerationRunSummarySchema.safeParse({
+                ...summary,
+                pauseReason: 'technical-failure',
+                failure,
+            }).success,
+        ).toBe(true);
+
+        for (const patch of [
+            { referenceId: 'the provider rejected the private prompt' },
+            { referenceId: 123 },
+            { message: 'raw provider response' },
+            { stack: 'private diagnostic stack' },
+        ]) {
+            expect(
+                GenerationFailureSchema.safeParse({ ...failure, ...patch })
+                    .success,
+            ).toBe(false);
+        }
+    });
+
+    it('accepts only typed reasons on durable admission failures', () => {
+        expect(
+            GenerationFailureSchema.parse({
+                code: 'admission-blocked',
+                admissionReason: 'capacity',
+            }).admissionReason,
+        ).toBe('capacity');
+
+        for (const failure of [
+            { code: 'admission-blocked' },
+            { code: 'provider-outcome-unknown', admissionReason: 'balance' },
+            {
+                code: 'admission-blocked',
+                admissionReason: 'raw database exception',
+            },
+        ]) {
+            expect(GenerationFailureSchema.safeParse(failure).success).toBe(
+                false,
+            );
+        }
+    });
+
+    it('bounds automatic credit authority exactly and stops enabling it after actionable pauses', () => {
+        const automation = {
+            enabled: true,
+            maximumCredits: '1.025',
+            remainingCredits: '0.999',
+        };
+
+        expect(GenerationAutomationSchema.parse(automation)).toEqual(
+            automation,
+        );
+
+        expect(
+            GenerationAutomationSchema.safeParse({
+                ...automation,
+                maximumCredits: '0',
+                remainingCredits: '0',
+            }).success,
+        ).toBe(true);
+
+        for (const patch of [
+            { remainingCredits: '1.026' },
+            { remainingCredits: '-1' },
+            { remainingCredits: 'invalid' },
+            { maximumCredits: 'invalid' },
+        ]) {
+            expect(
+                GenerationAutomationSchema.safeParse({
+                    ...automation,
+                    ...patch,
+                }).success,
+            ).toBe(false);
+        }
+
+        expect(
+            GenerationRunSummarySchema.safeParse({ ...summary, automation })
+                .success,
+        ).toBe(true);
+
+        for (const pauseReason of [
+            'technical-failure',
+            'stopped',
+            'source-changed',
+            'interrupted',
+        ]) {
+            expect(
+                GenerationRunSummarySchema.safeParse({
+                    ...summary,
+                    pauseReason,
+                    automation,
+                }).success,
+            ).toBe(false);
+        }
+    });
+
+    it('returns only nonempty validated preview prefixes with unique task identities and bounded payloads', () => {
+        const body = {
+            schemaVersion: 2,
+            document: {
+                type: 'doc',
+                content: [
+                    {
+                        type: 'paragraph',
+                        content: [{ type: 'text', text: 'Un texte préparé.' }],
+                    },
+                ],
+            },
+        };
+        const part = {
+            taskId: 'reading',
+            body,
+            completedUnitCount: 1,
+            totalUnitCount: 1,
+            complete: true,
+        };
+        const preview = { runId: summary.id, revision: 1, parts: [part] };
+
+        expect(GenerationRunPreviewSchema.parse(preview)).toEqual(preview);
+        expect(
+            GenerationRunPreviewSchema.parse({ ...preview, parts: [] }).parts,
+        ).toEqual([]);
+
+        for (const patch of [
+            { parts: [part, part] },
+            { parts: [{ ...part, complete: false }] },
+            { parts: [{ ...part, completedUnitCount: 0, complete: false }] },
+            {
+                parts: [
+                    {
+                        ...part,
+                        body: {
+                            schemaVersion: 2,
+                            document: {
+                                type: 'doc',
+                                content: [{ type: 'script', text: 'unsafe' }],
+                            },
+                        },
+                    },
+                ],
+            },
+            { artifacts: [{ source: 'private' }] },
+            {
+                parts: [
+                    {
+                        ...part,
+                        body: {
+                            ...body,
+                            document: {
+                                type: 'doc',
+                                content: [
+                                    {
+                                        type: 'paragraph',
+                                        content: [
+                                            {
+                                                type: 'text',
+                                                text: 'x'.repeat(100_000),
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                ],
+            },
+        ]) {
+            expect(
+                GenerationRunPreviewSchema.safeParse({ ...preview, ...patch })
+                    .success,
+            ).toBe(false);
+        }
+    });
+
+    it('closes preview source references with frozen dependencies without exposing writer authority', () => {
+        const audioId = randomUUID();
+        const segmentId = randomUUID();
+        const audio = {
+            type: 'audio',
+            id: audioId,
+            assetId: randomUUID(),
+            transcript: {
+                language: 'fr',
+                segments: [{ id: segmentId, text: 'Un chat dort.' }],
+            },
+        };
+        const exercise = {
+            type: 'exercise',
+            id: randomUUID(),
+            format: 'free-text',
+            question: 'Qui dort ?',
+            referenceAnswer: 'Un chat',
+            explanation: 'Le texte nomme un chat.',
+            source: { blockId: audioId, segmentIds: [segmentId] },
+        };
+        const preview = {
+            runId: summary.id,
+            revision: 1,
+            parts: [
+                {
+                    taskId: 'practice',
+                    completedUnitCount: 1,
+                    totalUnitCount: 2,
+                    complete: false,
+                    body: {
+                        schemaVersion: 2,
+                        document: {
+                            type: 'doc',
+                            content: [
+                                {
+                                    type: 'learningBlock',
+                                    attrs: { block: exercise },
+                                },
+                            ],
+                        },
+                    },
+                },
+            ],
+        };
+
+        expect(GenerationRunPreviewSchema.safeParse(preview).success).toBe(
+            false,
+        );
+
+        expect(
+            GenerationRunPreviewSchema.parse({
+                ...preview,
+                dependencies: [audio],
+            }),
+        ).toEqual({ ...preview, dependencies: [audio] });
+
+        expect(
+            GenerationRunPreviewSchema.safeParse({
+                ...preview,
+                dependencies: [audio],
+                targetBlockId: audioId,
+            }).success,
+        ).toBe(false);
+
+        expect(
+            GenerationRunPreviewSchema.safeParse({
+                ...preview,
+                dependencies: [audio, audio],
+            }).success,
+        ).toBe(false);
+    });
+
     it('returns validated progress without artifacts or provider diagnostics', () => {
         expect(GenerationRunSummarySchema.parse(summary)).toEqual(summary);
         expect(
@@ -87,6 +422,16 @@ describe('safe resumable generation public contracts', () => {
 
     it('requires idempotent revision fencing and keeps applying a revision separate from paid continuation', () => {
         const mutation = { requestId: randomUUID(), expectedRevision: 2 };
+        expect(StopGenerationRunRequestSchema.parse(mutation)).toEqual(
+            mutation,
+        );
+
+        expect(
+            StopGenerationRunRequestSchema.safeParse({
+                requestId: mutation.requestId,
+            }).success,
+        ).toBe(false);
+
         expect(
             ContinueGenerationRunRequestSchema.parse({
                 ...mutation,

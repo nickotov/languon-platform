@@ -1,14 +1,13 @@
 import { learningContentProseText } from '../../application/learning-content-prose';
 import { createHash } from 'node:crypto';
-import { z } from 'zod';
 import {
-    ExerciseActivityIdentitySchema,
-    getExerciseActivity,
-    NamedExerciseCheckingSchema,
-    NamedExerciseKeySchema,
-    NamedExerciseClassificationSchema,
-    ExerciseLearningBlockSchema,
-    LearningBlockSchema,
+    type ExercisePublicationContext,
+    compileExercisePayload,
+    parseExercisePayload,
+    namedExerciseAuthoringSchemaForBrief as payloadSchemaForBrief,
+} from './exercise-authoring-payload';
+
+import {
     type LearningBlock,
     type GeneratedArtifactOrigin,
     type CapturedBlockOrigin,
@@ -92,6 +91,43 @@ function sourcePassages(context: ExerciseAuthoringSource) {
               ]
             : []),
     ];
+}
+
+/** A generated passage and a bilingual block are both reading material, but
+ * only the latter has block and segment handles that a candidate may select. */
+export function namedExerciseAuthoringSchemaForBrief(
+    brief: LearningContentBrief,
+    contexts?: ReadonlyMap<string, ExerciseAuthoringSource>,
+) {
+    if (!contexts) {
+        return payloadSchemaForBrief(brief);
+    }
+
+    const bindings = new Map(
+        [...contexts].map(([taskId, context]) => {
+            const kinds = new Set<
+                'text-selection' | 'text' | 'vocabulary' | 'grammar'
+            >();
+
+            if (sourcePassages(context).length) {
+                kinds.add('text-selection');
+            }
+
+            for (const block of context.blocks) {
+                if (block.type === 'bilingual-text') {
+                    kinds.add('text');
+                }
+
+                if (block.type === 'grammar' || block.type === 'vocabulary') {
+                    kinds.add(block.type);
+                }
+            }
+
+            return [taskId, kinds] as const;
+        }),
+    );
+
+    return payloadSchemaForBrief(brief, bindings);
 }
 
 function mergeSourceContexts(
@@ -276,170 +312,6 @@ export function projectExerciseAuthoringSources(
     };
 }
 
-const uniqueIds = z
-    .array(z.uuid())
-    .min(1)
-    .max(50)
-    .refine((ids) => new Set(ids).size === ids.length);
-const sourceBinding = z.discriminatedUnion('kind', [
-    z
-        .object({
-            kind: z.literal('vocabulary'),
-            blockId: z.uuid(),
-            entryIds: uniqueIds,
-        })
-        .strict(),
-    z.object({ kind: z.literal('grammar'), blockId: z.uuid() }).strict(),
-    z
-        .object({
-            kind: z.literal('text'),
-            blockId: z.uuid(),
-            segmentIds: uniqueIds,
-        })
-        .strict(),
-    z
-        .object({
-            kind: z.literal('text-selection'),
-            sourceId: z.string().min(1).max(100).optional(),
-            from: z.number().int().min(0).max(40_000).optional(),
-            to: z.number().int().min(1).max(40_000).optional(),
-        })
-        .strict()
-        .refine(
-            (value) =>
-                (value.from === undefined && value.to === undefined) ||
-                (value.from !== undefined &&
-                    value.to !== undefined &&
-                    value.to > value.from),
-        ),
-]);
-
-// The model selects identities, never authenticates origins or supplies frozen
-// content. Keep full content snapshots out of repeated provider output.
-const wireSemantics = z
-    .object({
-        activity: ExerciseActivityIdentitySchema,
-        objective: z.string().min(1).max(2_000),
-        language: z.string().min(2).max(35),
-        explanationLanguage: z.string().min(2).max(35),
-        format: z.enum(['multiple-choice', 'fill-in-the-blank', 'free-text']),
-        checking: NamedExerciseCheckingSchema,
-    })
-    .strict();
-const [choice, gaps, text] = ExerciseLearningBlockSchema.options;
-const wireShape = {
-    semantics: wireSemantics,
-    sourceBindings: z.array(sourceBinding).min(1).max(8),
-};
-
-const namedExerciseAuthoringSchema = z.discriminatedUnion('format', [
-    z.object({ ...choice.shape, ...wireShape }).strict(),
-    z.object({ ...gaps.shape, ...wireShape }).strict(),
-    z.object({ ...text.shape, ...wireShape }).strict(),
-]);
-
-/** Restrict the actual provider schema as well as instructions to this call's activities. */
-export function namedExerciseAuthoringSchemaForBrief(
-    brief: LearningContentBrief,
-): z.ZodType {
-    const ids = [
-        ...new Set(
-            brief.tasks.flatMap((task) =>
-                (task.activities ?? []).map((item) => item.activityId),
-            ),
-        ),
-    ];
-    const formats = [
-        ...new Set(ids.map((id) => getExerciseActivity(id).format)),
-    ];
-    const options = formats.map((format) => {
-        const base = namedExerciseAuthoringSchema.options.find(
-            (option) => option.shape.format.value === format,
-        )!;
-        const selected = ids.filter(
-            (id) => getExerciseActivity(id).format === format,
-        );
-        const policies = new Set(
-            selected.map((id) => getExerciseActivity(id).checkingPolicy),
-        );
-        const keyKind = {
-            'multiple-choice': 'choice',
-            'fill-in-the-blank': 'gaps',
-            'free-text': 'text',
-        }[format];
-        let key: z.ZodType = NamedExerciseKeySchema.options.find(
-            (option) => option.shape.kind.value === keyKind,
-        )!;
-
-        if (format === 'multiple-choice') {
-            const choiceKey = z
-                .object({ ...NamedExerciseKeySchema.options[0].shape })
-                .strict();
-
-            key = selected.includes('R03')
-                ? choiceKey.extend({
-                      classification:
-                          selected.length === 1
-                              ? NamedExerciseClassificationSchema
-                              : NamedExerciseClassificationSchema.optional(),
-                  })
-                : choiceKey.omit({ classification: true });
-        }
-
-        const checkOptions = NamedExerciseCheckingSchema.options
-            .filter((option) => policies.has(option.shape.policy.value))
-            .map((option) =>
-                z
-                    .object({
-                        ...option.shape,
-                        ...('key' in option.shape ? { key } : {}),
-                    })
-                    .strict(),
-            );
-        const [firstCheck, secondCheck, ...otherChecks] = checkOptions;
-        const checking = secondCheck
-            ? z.union([firstCheck!, secondCheck, ...otherChecks])
-            : firstCheck!;
-        const sourceKinds = new Set(
-            selected.flatMap(
-                (id) => getExerciseActivity(id).supportedSourceKinds,
-            ),
-        );
-        const bindings = sourceBinding.options.filter((option) => {
-            const kind = option.shape.kind.value;
-
-            return sourceKinds.has(kind === 'text-selection' ? 'text' : kind);
-        });
-        const [firstBinding, secondBinding, ...otherBindings] = bindings;
-        const binding = secondBinding
-            ? z.union([firstBinding!, secondBinding, ...otherBindings])
-            : firstBinding!;
-        const semantics = z
-            .object({
-                ...wireSemantics.shape,
-                activity: z
-                    .object({ id: z.enum(selected), version: z.literal(1) })
-                    .strict(),
-                format: z.literal(format),
-                checking,
-            })
-            .strict();
-
-        return z
-            .object({
-                ...base.shape,
-                semantics,
-                sourceBindings: z.array(binding).min(1).max(8),
-            })
-            .strict();
-    });
-    const [first, second, ...remaining] = options;
-
-    return second
-        ? z.union([first!, second, ...remaining])
-        : (first ?? z.never());
-}
-
 export function exerciseSourceKinds(
     context: ExerciseAuthoringSource,
 ): ExerciseActivitySourceKind[] {
@@ -534,8 +406,9 @@ export function exerciseTaskSource(
 export function completeNamedExerciseSources(
     value: unknown,
     context: ExerciseAuthoringSource,
+    publication: ExercisePublicationContext,
 ): LearningBlock {
-    const wire = namedExerciseAuthoringSchema.parse(value);
+    const wire = parseExercisePayload(value);
     const sources: NamedExerciseSource[] = wire.sourceBindings.map(
         (binding) => {
             if (binding.kind === 'text-selection') {
@@ -647,56 +520,6 @@ export function completeNamedExerciseSources(
             );
         },
     );
-    const { sourceBindings: _bindings, ...block } = wire;
-    let normalized: unknown = block;
-    if (
-        wire.format === 'multiple-choice' &&
-        wire.semantics.activity.id === 'R03' &&
-        'key' in wire.semantics.checking &&
-        wire.semantics.checking.key.kind === 'choice'
-    ) {
-        const classification = wire.semantics.checking.key.classification;
-        if (!classification || wire.choices.length !== 3) {
-            throw new Error(
-                'R03 requires exactly three declared classification roles.',
-            );
-        }
 
-        const labels = ['True', 'False', 'Not stated'] as const;
-        const choices = classification.roles.map((role, index) => {
-            const choice = wire.choices.find(
-                (item) => item.id === role.choiceId,
-            );
-
-            if (!choice) {
-                throw new Error('R03 roles must identify the actual choices.');
-            }
-
-            return { ...choice, text: labels[index]! };
-        });
-        const correct = choices.find(
-            (choice) => choice.id === wire.correctChoiceId,
-        );
-
-        if (!correct) {
-            throw new Error(
-                'R03 correct classification must identify an actual role.',
-            );
-        }
-
-        normalized = {
-            ...block,
-            choices,
-            referenceAnswer: correct.text,
-            ...(classification.absenceRationale &&
-            correct.id === classification.roles[2]?.choiceId
-                ? { explanation: classification.absenceRationale }
-                : {}),
-        };
-    }
-
-    return LearningBlockSchema.parse({
-        ...(normalized as Record<string, unknown>),
-        semantics: { ...wire.semantics, sources },
-    });
+    return compileExercisePayload(wire, sources, publication);
 }

@@ -8,6 +8,7 @@ import { tutorRequestStateKey } from '../../application/tutor-request-contract';
 import { createTutorHistoryTool } from './tutor-history-tool';
 import {
     createTutorRequestAgents,
+    structuredResponseReader,
     generateTutorObject,
 } from './tutor-request-agents';
 import {
@@ -55,6 +56,7 @@ export function createContextualTutorRunner(options: {
     attemptWitness?: Omit<TextAiProviderAttemptWitness, 'attemptId'>;
     maxInputTokens: number;
     providerId?: string;
+    stageDeadline?: number;
     /** Tests inject a deterministic model and small thresholds without paid provider access. */
     memoryThresholds?: ReturnType<typeof tutorMemoryThresholds>;
 }): TutorRunner {
@@ -73,129 +75,16 @@ export function createContextualTutorRunner(options: {
                     : {}),
                 signal: input.signal,
                 maxInputTokens: options.maxInputTokens,
+                ...(options.stageDeadline !== undefined
+                    ? { deadline: options.stageDeadline }
+                    : {}),
             });
 
-            const memoryStorage = new ConversationMemoryStorage({
-                conversationId: input.conversationId,
-                ownerId: input.ownerId,
-                createdAt: input.conversationCreatedAt,
-                port: input.memory,
-            });
-
-            const contextInstructions = tutorContextInstructions(input);
-            const reservedInputBytes = tutorReservedInputBytes(
-                input,
-                readTutorPlannerState(
-                    await input.memory.readState(tutorRequestStateKey),
-                ),
-            );
-            let memoryThresholds: ReturnType<typeof tutorMemoryThresholds>;
-
-            try {
-                memoryThresholds =
-                    options.memoryThresholds ??
-                    tutorMemoryThresholds(
-                        options.maxInputTokens,
-                        reservedInputBytes,
-                    );
-            } catch {
-                throw new ConversationError(
-                    'context_too_large',
-                    'The complete editor and references exceed the model input limit. Reduce the editor text or references and try again.',
-                );
-            }
-
-            const memory = createTutorMemory({
-                conversationId: input.conversationId,
-                storage: memoryStorage,
-                model: resolvedModel,
-                modelGate,
-                thresholds: memoryThresholds,
-            });
-
-            const persistenceMemory =
-                createTutorPersistenceMemory(memoryStorage);
-            const routeKnowledgeRequest =
-                input.canProposeBlocks &&
-                !input.readOnlySource &&
-                input.sourceContext.sourceKind === 'knowledge' &&
-                input.sourceContext.snapshotScope === 'workspace';
             const requestAgents = createTutorRequestAgents({
                 planningModel: modelGate.wrap(resolvedModel, 'planning'),
                 authoringModel: modelGate.wrap(resolvedModel, 'authoring'),
             });
             let dictionaryAuthoringFailure: unknown;
-            const dictionaryAuthor = createDictionarySnippetAuthoring({
-                agent: requestAgents.dictionarySnippetAuthor,
-                signal: modelGate.signal,
-                operationId: input.operationId,
-                abort: (error) => {
-                    dictionaryAuthoringFailure = error;
-                    modelGate.abort(error);
-                },
-            });
-            const tools = {
-                ...createContextualTutorTools(
-                    {
-                        ...input,
-                        signal: modelGate.signal,
-                    },
-                    dictionaryAuthor,
-                ),
-                recall: createTutorHistoryTool(input.memory, modelGate.signal),
-            };
-            const exerciseTaskSources = new Map();
-            const learningContentTools =
-                input.canProposeBlocks &&
-                !input.readOnlySource &&
-                input.onContentProposal
-                    ? createLearningContentTools({
-                          signal: modelGate.signal,
-                          taskSources: exerciseTaskSources,
-                          resolveSources: (brief) =>
-                              resolveLearningToolSources(
-                                  input,
-                                  brief,
-                                  exerciseTaskSources,
-                              ),
-                          publish: (proposal, validationIds) => {
-                              if (!input.onContentProposal) {
-                                  throw new Error(
-                                      'This operation cannot publish learning proposals.',
-                                  );
-                              }
-
-                              return input.onContentProposal(
-                                  proposal,
-                                  validationIds,
-                              );
-                          },
-                          readBudget: () => modelGate.remainingBudget,
-                          trackValidatedCalls: true,
-                          onCallRejected: (id) =>
-                              modelGate.rejectStructuredCall(id),
-                          generate: ({
-                              validationId,
-                              prompt,
-                              schema,
-                              signal,
-                              maxOutputTokens,
-                          }) =>
-                              modelGate.withStructuredValidation(
-                                  validationId,
-                                  () =>
-                                      generateTutorObject({
-                                          agent: requestAgents.learningContentAuthor,
-                                          prompt,
-                                          schema,
-                                          signal,
-                                          operationId: `${input.operationId}:standalone-authoring`,
-                                          maxOutputTokens,
-                                      }),
-                              ),
-                      })
-                    : undefined;
-
             try {
                 // Prepared actions already carry all required evidence. Memory summarization
                 // must not consume their newly admitted authoring or revision allowance.
@@ -217,6 +106,130 @@ export function createContextualTutorRunner(options: {
                               modelGate,
                           );
                 }
+
+                const memoryStorage = new ConversationMemoryStorage({
+                    conversationId: input.conversationId,
+                    ownerId: input.ownerId,
+                    createdAt: input.conversationCreatedAt,
+                    port: input.memory,
+                });
+
+                const contextInstructions = tutorContextInstructions(input);
+                const reservedInputBytes = tutorReservedInputBytes(
+                    input,
+                    readTutorPlannerState(
+                        await input.memory.readState(tutorRequestStateKey),
+                    ),
+                );
+                let memoryThresholds: ReturnType<typeof tutorMemoryThresholds>;
+
+                try {
+                    memoryThresholds =
+                        options.memoryThresholds ??
+                        tutorMemoryThresholds(
+                            options.maxInputTokens,
+                            reservedInputBytes,
+                        );
+                } catch {
+                    throw new ConversationError(
+                        'context_too_large',
+                        'The complete editor and references exceed the model input limit. Reduce the editor text or references and try again.',
+                    );
+                }
+
+                const memory = createTutorMemory({
+                    conversationId: input.conversationId,
+                    storage: memoryStorage,
+                    model: resolvedModel,
+                    modelGate,
+                    thresholds: memoryThresholds,
+                });
+
+                const persistenceMemory =
+                    createTutorPersistenceMemory(memoryStorage);
+                const routeKnowledgeRequest =
+                    input.canProposeBlocks &&
+                    !input.readOnlySource &&
+                    input.sourceContext.sourceKind === 'knowledge' &&
+                    input.sourceContext.snapshotScope === 'workspace';
+                const dictionaryAuthor = createDictionarySnippetAuthoring({
+                    agent: requestAgents.dictionarySnippetAuthor,
+                    signal: modelGate.signal,
+                    operationId: input.operationId,
+                    abort: (error) => {
+                        dictionaryAuthoringFailure = error;
+                        modelGate.abort(error);
+                    },
+                });
+                const tools = {
+                    ...createContextualTutorTools(
+                        {
+                            ...input,
+                            signal: modelGate.signal,
+                        },
+                        dictionaryAuthor,
+                    ),
+                    recall: createTutorHistoryTool(
+                        input.memory,
+                        modelGate.signal,
+                    ),
+                };
+                const exerciseTaskSources = new Map();
+                const learningContentTools =
+                    input.canProposeBlocks &&
+                    !input.readOnlySource &&
+                    input.onContentProposal
+                        ? createLearningContentTools({
+                              signal: modelGate.signal,
+                              taskSources: exerciseTaskSources,
+                              resolveSources: (brief) =>
+                                  resolveLearningToolSources(
+                                      input,
+                                      brief,
+                                      exerciseTaskSources,
+                                  ),
+                              publish: (proposal, validationIds) => {
+                                  if (!input.onContentProposal) {
+                                      throw new Error(
+                                          'This operation cannot publish learning proposals.',
+                                      );
+                                  }
+
+                                  return input.onContentProposal(
+                                      proposal,
+                                      validationIds,
+                                  );
+                              },
+                              readBudget: () => modelGate.remainingBudget,
+                              trackValidatedCalls: true,
+                              onCallRejected: (id) =>
+                                  modelGate.rejectStructuredCall(id),
+                              generate: ({
+                                  validationId,
+                                  prompt,
+                                  schema,
+                                  signal,
+                                  maxOutputTokens,
+                              }) =>
+                                  modelGate.withStructuredValidation(
+                                      validationId,
+                                      () =>
+                                          generateTutorObject({
+                                              agent: requestAgents.learningContentAuthor,
+                                              prompt,
+                                              schema,
+                                              signal,
+                                              operationId: `${input.operationId}:standalone-authoring`,
+                                              completedResponse:
+                                                  structuredResponseReader(
+                                                      modelGate,
+                                                      validationId,
+                                                  ),
+                                              maxOutputTokens,
+                                          }),
+                                  ),
+                          })
+                        : undefined;
 
                 const prepared = await prepareTutorHistory(memory, input);
                 let agent = createCanonicalMastra({

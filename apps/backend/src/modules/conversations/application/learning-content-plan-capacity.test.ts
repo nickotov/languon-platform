@@ -22,6 +22,41 @@ const prosePlan = (targetWords: number) =>
     });
 
 describe('generation admission capacity', () => {
+    it('admits the next individual grammar exercise rather than requiring the full four-exercise batch', () => {
+        const plan = GenerationPlanSchema.parse({
+            schemaVersion: 1,
+            replyLanguage: 'en',
+            sources: [
+                {
+                    id: 'rule',
+                    kind: 'grammar',
+                    reference: { kind: 'block', blockId: randomUUID() },
+                },
+            ],
+            tasks: [
+                {
+                    id: 'grammar-exercises',
+                    kind: 'exercises',
+                    language: 'fr',
+                    explanationLanguage: 'fr',
+                    instruction: 'Check COD and COI.',
+                    inputs: [{ kind: 'source', sourceId: 'rule' }],
+                    activities: [
+                        { activityId: 'G06', count: 1 },
+                        { activityId: 'G02', count: 2 },
+                        { activityId: 'G03', count: 1 },
+                    ],
+                },
+            ],
+            outputOrder: ['grammar-exercises'],
+        });
+
+        expect(generationPlanCapacity(plan)).toEqual({
+            status: 'ready',
+            minimumOutputTokens: 1312,
+        });
+    });
+
     it('rejects a structurally valid 1200-word prose plan that cannot fit one authoring unit', () => {
         expect(generationPlanCapacity(prosePlan(1200))).toEqual({
             status: 'unsupported',

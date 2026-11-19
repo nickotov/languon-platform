@@ -35,8 +35,11 @@ source_paths:
     - docs/adr/0060-composable-generation-runs.md
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-generation-schema.ts
     - apps/backend/src/modules/conversations/infrastructure/ai/learning-generation-execution.ts
-source_fingerprint: sha256:c9b561faecf8c55a6c27ecbd3887aee8f5e0fb9b86bae42d13b8424692dccc7f
-reviewed: 2026-11-16
+    - docs/adr/0061-bounded-automatic-lesson-continuation.md
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-automation.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-authorization.ts
+source_fingerprint: sha256:72c22bc8d40b5f7414fac8f6fcf4d56171e257290aff4fcdc557fc13251fe8a6
+reviewed: 2026-11-19
 ---
 
 # System context
@@ -116,12 +119,15 @@ entry is separate from authenticated persisted Library resources.
 
 Composable lesson generation persists private runs, immutable plan revisions and
 validated artifacts in the same PostgreSQL database, and executes through the
-existing conversation worker. Continue creates an explicitly admitted bounded
-action; reconnect only reads committed state. The canonical mixed content proposal
+existing conversation worker. Successful stages advance on the server within the
+original bounded credit/provider authorization, at most eight stages and 15 minutes.
+Explicit Retry/Resume authorizes a fresh bounded session when needed; reconnect
+and owner-only prepared previews only read committed state. The canonical mixed content proposal
 still requires Review, Insert into the working branch and explicit Save. These
 changes add no deployed service, external provider or automatic web-research path;
 the reviewed system relationships above remain unchanged. See
-[ADR-0060](../adr/0060-composable-generation-runs.md).
+[ADR-0060](../adr/0060-composable-generation-runs.md) and
+[ADR-0061](../adr/0061-bounded-automatic-lesson-continuation.md).
 
 ## Sources
 

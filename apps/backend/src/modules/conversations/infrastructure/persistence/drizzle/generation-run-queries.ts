@@ -38,7 +38,9 @@ export function conversationListGenerationRuns(
 
         return {
             runs: await Promise.all(
-                rows.map((run) => generationRunView(tx, run)),
+                rows.map((run) =>
+                    generationRunView(persistence.now(), tx, run),
+                ),
             ),
         };
     });
@@ -60,6 +62,7 @@ export function conversationGetGenerationRun(
         );
 
         return generationRunDetail(
+            persistence.now(),
             tx,
             await lockGenerationRun(tx, conversationId, runId, access.ownerId),
         );
@@ -89,6 +92,12 @@ export function conversationContinueGenerationRun(
             runId,
             expectedRevision: input.expectedRevision,
             kind: 'generation',
+            ...(input.acknowledgedUncertainTurnId
+                ? {
+                      acknowledgedUncertainTurnId:
+                          input.acknowledgedUncertainTurnId,
+                  }
+                : {}),
             ...(input.sourceChoice ? { sourceChoice: input.sourceChoice } : {}),
         },
     );
@@ -113,6 +122,16 @@ export function conversationReviseGenerationRun(
                 ? { confirmedQuoteId: input.confirmedQuoteId }
                 : {}),
         },
-        { runId, expectedRevision: input.expectedRevision, kind: 'revision' },
+        {
+            runId,
+            expectedRevision: input.expectedRevision,
+            kind: 'revision',
+            ...(input.acknowledgedUncertainTurnId
+                ? {
+                      acknowledgedUncertainTurnId:
+                          input.acknowledgedUncertainTurnId,
+                  }
+                : {}),
+        },
     );
 }

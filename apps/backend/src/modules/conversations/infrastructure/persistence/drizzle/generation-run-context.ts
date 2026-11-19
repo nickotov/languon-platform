@@ -1,3 +1,5 @@
+import { generationCommandState } from './generation-command-state';
+import type { GenerationFailureDiagnostic } from '../../../application/generation-failure';
 import {
     GenerationRunDetailSchema,
     GenerationRunSummarySchema,
@@ -8,7 +10,10 @@ import {
     generationFingerprint,
     generationTaskFingerprints,
 } from '../../../application/generation-run-revisions';
-import { generationValidationVersion } from '../../../application/ports/generation-run';
+import {
+    generationValidationVersion,
+    maximumAutomaticGenerationStages,
+} from '../../../application/ports/generation-run';
 import type {
     ConversationAccess,
     ClaimedConversationTurn,
@@ -33,6 +38,8 @@ import {
 } from './conversation-generation-schema';
 import { conversationTurnsTable as turns } from './schema';
 import { conversationEvent } from './conversation-events';
+import { remainingGenerationAuthorization } from './generation-run-authorization';
+import { formatCreditMilli } from '../../../../ai-credits/domain/exact-credit-amount';
 
 export type GenerationRunRow = typeof runs.$inferSelect;
 
@@ -87,6 +94,25 @@ export async function lockGenerationRun(
     }
 
     return run;
+}
+
+/** Starting the plan itself is durable work. A continuation must save its own
+ * artifact, even when the current revision still contains no completed units. */
+export async function generationStageHasProgress(
+    tx: ConversationsTransaction,
+    run: GenerationRunRow,
+    turnId: string,
+) {
+    const [result] = await tx.execute(sql`
+        select exists(select 1 from ${artifacts} where ${artifacts.turnId} = ${turnId}::uuid)
+            or exists(select 1 from ${revisions} r, jsonb_array_elements(r.unit_attempts) u where r.run_id = ${run.id}::uuid and r.revision = ${run.revision} and u->>'turnId' = ${turnId} and u->>'outcome' = 'rejected')
+            or (${run.revision} = 1 and not exists(
+                select 1 from ${actions}
+                where ${actions.runId} = ${run.id}::uuid and ${actions.turnId} <> ${turnId}::uuid
+            )) as progress
+    `);
+
+    return result?.['progress'] === true;
 }
 
 export async function generationContext(
@@ -155,6 +181,7 @@ export async function generationContext(
         plan: revision.plan,
         sources: revision.sources,
         artifacts: accepted,
+        unitAttempts: revision.unitAttempts,
         purpose,
     };
 }
@@ -195,6 +222,7 @@ export async function generationTurnContext(
 }
 
 export async function generationRunView(
+    now: Date,
     tx: ConversationsTransaction,
     run: GenerationRunRow,
 ) {
@@ -205,6 +233,7 @@ export async function generationRunView(
                   .select({
                       plan: revisions.plan,
                       artifactIds: revisions.artifactIds,
+                      unitAttempts: revisions.unitAttempts,
                   })
                   .from(revisions)
                   .where(
@@ -218,22 +247,46 @@ export async function generationRunView(
         throw conflict('The generation plan is unavailable.');
     }
 
-    // Summary reads project completion flags only; private generated bodies stay inside worker reads.
+    // Only numeric progress leaves artifact storage; summaries never expose bodies.
     const completeRows = revision?.artifactIds.length
         ? await tx
-              .select({ taskId: artifacts.taskId })
+              .select({
+                  id: artifacts.id,
+                  taskId: artifacts.taskId,
+                  complete: sql<boolean>`(${artifacts.artifact}->>'taskComplete')::boolean`,
+                  units: sql<number>`(select count(*)::integer from jsonb_array_elements(coalesce(${artifacts.artifact}->'body'->'document'->'content','[]'::jsonb)) node where node->>'type'='learningBlock' and node->'attrs'->'block'->>'type'='exercise')`,
+                  vocabularyEntries: sql<number>`(select coalesce(sum(jsonb_array_length(coalesce(node->'attrs'->'block'->'entries','[]'::jsonb))),0)::integer from jsonb_array_elements(coalesce(${artifacts.artifact}->'body'->'document'->'content','[]'::jsonb)) node where node->>'type'='learningBlock' and node->'attrs'->'block'->>'type'='vocabulary')`,
+              })
               .from(artifacts)
               .where(
                   and(
                       eq(artifacts.runId, run.id),
                       inArray(artifacts.id, revision.artifactIds),
-                      sql`${artifacts.artifact}->>'taskComplete' = 'true'`,
                   ),
               )
         : [];
-    const completed = new Set(completeRows.map((artifact) => artifact.taskId));
+    const latest = new Map<string, (typeof completeRows)[number]>();
+    for (const id of revision?.artifactIds ?? []) {
+        const row = completeRows.find((artifact) => artifact.id === id);
+        if (row) {
+            latest.set(row.taskId, row);
+        }
+    }
+
+    const completed = new Set(
+        [...latest.values()]
+            .filter((artifact) => artifact.complete)
+            .map((artifact) => artifact.taskId),
+    );
     const stages = await tx
-        .select({ charged: turns.usage })
+        .select({
+            charged: turns.usage,
+            id: turns.id,
+            status: turns.status,
+            failureCode: turns.failureCode,
+            revision: actions.revision,
+            createdAt: turns.createdAt,
+        })
         .from(actions)
         .innerJoin(turns, eq(turns.id, actions.turnId))
         .where(and(eq(actions.runId, run.id), eq(actions.kind, 'generation')));
@@ -243,6 +296,66 @@ export async function generationRunView(
         return sum + BigInt(whole!) * 1000n + BigInt(decimals.padEnd(3, '0'));
     }, 0n);
     const chargedCredits = `${chargedMilli / 1000n}.${String(chargedMilli % 1000n).padStart(3, '0')}`;
+    const failureVisible =
+        run.state === 'paused' &&
+        (run.pauseReason === 'technical-failure' ||
+            run.pauseReason === 'interrupted' ||
+            run.failure?.code === 'admission-blocked');
+    const failedStage = failureVisible
+        ? stages
+              .filter(
+                  (stage) =>
+                      stage.revision === run.revision &&
+                      ['failed', 'cancelled'].includes(stage.status),
+              )
+              .sort(
+                  (left, right) =>
+                      right.createdAt.getTime() - left.createdAt.getTime(),
+              )[0]
+        : undefined;
+    const failure: GenerationFailureDiagnostic | undefined = failureVisible
+        ? run.failure
+            ? { ...run.failure }
+            : {
+                  code:
+                      failedStage?.failureCode === 'generation_output_limit'
+                          ? 'output-limit'
+                          : failedStage?.failureCode ===
+                              'generation_invalid_output'
+                            ? 'content-invalid'
+                            : run.pauseReason === 'interrupted'
+                              ? 'interrupted'
+                              : 'unknown',
+              }
+        : undefined;
+
+    if (
+        failure &&
+        !failure.referenceId &&
+        failure.code !== 'admission-blocked' &&
+        failedStage
+    ) {
+        failure.referenceId = failedStage.id;
+    }
+
+    const commandState =
+        run.state === 'discarded'
+            ? undefined
+            : await generationCommandState(tx, run.id);
+    const uncertainTurnId =
+        run.state === 'paused' ? commandState?.uncertainTurnId : undefined;
+    const authorization = run.automation;
+    const lastAttempt = revision?.unitAttempts.at(-1);
+    const recoveringTaskId =
+        lastAttempt &&
+        lastAttempt.outcome !== 'accepted' &&
+        (lastAttempt.strategy !== 'initial' ||
+            lastAttempt.outcome === 'rejected')
+            ? lastAttempt.taskId
+            : undefined;
+    const remaining = authorization
+        ? await remainingGenerationAuthorization(tx, run, true)
+        : null;
 
     return GenerationRunSummarySchema.parse({
         id: run.id,
@@ -253,15 +366,81 @@ export async function generationRunView(
         ...(run.state === 'paused'
             ? { pauseReason: run.pauseReason ?? 'technical-failure' }
             : {}),
-        tasks: (revision?.plan.tasks ?? run.taskManifest).map((task) => ({
-            id: task.id,
-            kind: task.kind,
-            label:
-                'instruction' in task && typeof task.instruction === 'string'
-                    ? task.instruction.slice(0, 200)
-                    : task.kind,
-            status: completed.has(task.id) ? 'completed' : 'pending',
-        })),
+        ...(failure ? { failure } : {}),
+        ...(uncertainTurnId ? { uncertainTurnId } : {}),
+        ...(commandState?.lastCommandRequestId
+            ? { lastCommandRequestId: commandState.lastCommandRequestId }
+            : {}),
+        ...(authorization && run.state !== 'discarded'
+            ? {
+                  automation: {
+                      ...(recoveringTaskId ? { recoveringTaskId } : {}),
+                      enabled:
+                          (run.state === 'running' ||
+                              (run.state === 'paused' &&
+                                  run.pauseReason === 'budget' &&
+                                  authorization.ready)) &&
+                          authorization.stageCount <
+                              maximumAutomaticGenerationStages &&
+                          new Date(authorization.expiresAt) > now,
+                      ...(authorization.ready && authorization.admissionRetry
+                          ? { retryAt: authorization.admissionRetry.retryAt }
+                          : {}),
+                      maximumCredits: formatCreditMilli(
+                          BigInt(authorization.maximumCreditsMilli),
+                      ),
+                      remainingCredits: formatCreditMilli(
+                          BigInt(remaining?.maximumCreditsMilli ?? '0'),
+                      ),
+                  },
+              }
+            : {}),
+        tasks: (revision
+            ? revision.plan.outputOrder.map((id) =>
+                  revision.plan.tasks.find((task) => task.id === id)!,
+              )
+            : run.taskManifest
+        ).map((task) => {
+            const planned = revision?.plan.tasks.find(
+                (candidate) => candidate.id === task.id,
+            );
+
+            return {
+                id: task.id,
+                kind: task.kind,
+                label:
+                    'instruction' in task &&
+                    typeof task.instruction === 'string'
+                        ? task.instruction.slice(0, 200)
+                        : task.kind,
+                status: completed.has(task.id)
+                    ? 'completed'
+                    : run.failure?.taskId === task.id && run.state === 'paused'
+                      ? 'failed'
+                      : run.state === 'running' &&
+                          lastAttempt?.turnId === run.activeTurnId &&
+                          lastAttempt?.outcome === 'started' &&
+                          lastAttempt.taskId === task.id
+                        ? 'running'
+                        : 'pending',
+                ...(planned?.kind === 'exercises'
+                    ? {
+                          completedUnitCount: latest.get(task.id)?.units ?? 0,
+                          totalUnitCount: planned.activities.reduce(
+                              (sum, activity) => sum + activity.count,
+                              0,
+                          ),
+                      }
+                    : planned?.kind === 'vocabulary'
+                      ? {
+                            completedUnitCount:
+                                latest.get(task.id)?.vocabularyEntries ?? 0,
+                            totalUnitCount:
+                                planned.words?.length ?? planned.count ?? 10,
+                        }
+                      : {}),
+            };
+        }),
         completedTaskCount: completed.size,
         totalTaskCount: revision?.plan.tasks.length ?? run.taskManifest.length,
         activeTurnId: run.activeTurnId,
@@ -273,12 +452,13 @@ export async function generationRunView(
 }
 
 export async function generationRunDetail(
+    now: Date,
     tx: ConversationsTransaction,
     run: GenerationRunRow,
 ) {
     if (run.state === 'discarded') {
         return GenerationRunDetailSchema.parse({
-            run: await generationRunView(tx, run),
+            run: await generationRunView(now, tx, run),
         });
     }
 
@@ -309,7 +489,7 @@ export async function generationRunDetail(
         .limit(1);
 
     return GenerationRunDetailSchema.parse({
-        run: await generationRunView(tx, run),
+        run: await generationRunView(now, tx, run),
         plan: context.plan,
         ...(candidate && run.state === 'paused'
             ? {
@@ -336,7 +516,7 @@ export async function emitGenerationRun(
             tx,
             run.conversationId,
             'generation-run',
-            await generationRunView(tx, run),
+            await generationRunView(persistence.now(), tx, run),
         );
     }
 }

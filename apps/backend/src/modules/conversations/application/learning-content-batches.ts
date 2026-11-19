@@ -1,3 +1,4 @@
+import { generationFingerprint } from './generation-run-revisions';
 import { exerciseActivitySequence } from './exercise-activity-allocation';
 import type {
     LearningContentBrief,
@@ -20,9 +21,41 @@ export interface LearningContentBatchPlan {
     requiredOutputTokens: number;
 }
 
+// Reserve half the existing two-minute stage for a durable call; a slow model
+// must not receive a new unit with only the tail of a previous call's deadline.
+export const learningContentMinimumCallTimeMs = 60_000;
+
 export interface LearningContentExecutionBudget {
+    readonly remainingTimeMs?: number;
+    readonly perCallInputLimit?: number;
     readonly remainingCalls: number;
     readonly remainingOutputTokens: number;
+}
+
+/** Prefix counts also recognize validated checkpoints made before unit splitting. */
+export function isLearningContentBatchCompleted(
+    batch: LearningContentBatch,
+    batchKey: string,
+    completedKeys: ReadonlySet<string>,
+    completedExerciseCounts: ReadonlyMap<string, number>,
+): boolean {
+    if (completedKeys.has(batchKey)) {
+        return true;
+    }
+
+    const part = batch.exercisePart;
+    if (!part) {
+        return false;
+    }
+
+    const count = batch.brief.tasks.find(
+        (task) => task.id === part.taskId,
+    )?.count;
+
+    return (
+        count !== undefined &&
+        part.offset + count <= (completedExerciseCounts.get(part.taskId) ?? 0)
+    );
 }
 
 export const learningContentAuthoringCallLimit = 5;
@@ -120,6 +153,7 @@ function exercisePart(
 
 function splitExercises(
     task: LearningContentTask,
+    unitSize?: number,
 ): LearningContentBatch[] | null {
     const total =
         task.count ??
@@ -130,6 +164,7 @@ function splitExercises(
         let count = 0;
         while (
             offset + count < total &&
+            (unitSize === undefined || count < unitSize) &&
             estimateLearningContentOutput({
                 tasks: [exercisePart(task, offset, count + 1)],
             }) <= learningContentOutputEstimateLimit
@@ -155,6 +190,7 @@ function splitExercises(
 /** Plan bounded homogeneous units; an action may execute only a prefix of the run. */
 export function planLearningContentBatches(
     brief: LearningContentBrief,
+    options: { exerciseUnitSize?: 1 } = {},
 ): LearningContentBatchPlan | null {
     const batches: LearningContentBatch[] = [];
     let pending: LearningContentTask[] = [];
@@ -189,7 +225,7 @@ export function planLearningContentBatches(
     }
 
     for (const task of ordered) {
-        if (task.dependencies?.length) {
+        if (options.exerciseUnitSize === 1 || task.dependencies?.length) {
             flushPending();
         }
 
@@ -212,6 +248,19 @@ export function planLearningContentBatches(
         }
 
         seen.add(task.id);
+        // Durable runs checkpoint each exercise independently. A failed sibling
+        // must never force another already validated exercise through the model.
+        if (task.kind === 'exercises' && options.exerciseUnitSize === 1) {
+            const fragments = splitExercises(task, 1);
+            if (!fragments) {
+                return null;
+            }
+
+            flushPending();
+            batches.push(...fragments);
+            continue;
+        }
+
         const estimate = estimateLearningContentOutput({ tasks: [task] });
         if (estimate > learningContentOutputEstimateLimit) {
             const fragments =
@@ -260,4 +309,55 @@ export function planLearningContentBatches(
     }
 
     return { batches, requiredOutputTokens };
+}
+
+/** Canonical ordering and missing-unit selection for both admission and the durable worker. */
+export function remainingLearningBatches(
+    brief: LearningContentBrief,
+    durable: boolean,
+    completed: {
+        completedTaskIds?: readonly string[];
+        completedBatchKeys?: readonly string[];
+        completed?: readonly { taskId: string; blocks: readonly unknown[] }[];
+    },
+) {
+    const plan = planLearningContentBatches(
+        brief,
+        durable ? { exerciseUnitSize: 1 } : {},
+    );
+
+    if (!plan) {
+        return null;
+    }
+
+    const completeTasks = new Set(completed.completedTaskIds);
+    const completeBatches = new Set(completed.completedBatchKeys);
+    const counts = new Map(
+        completed.completed?.map((result) => [
+            result.taskId,
+            result.blocks.length,
+        ]),
+    );
+    const batches = plan.batches.flatMap((original) => {
+        const tasks = original.brief.tasks.filter(
+            (task) => !completeTasks.has(task.id),
+        );
+
+        if (!tasks.length) {
+            return [];
+        }
+
+        const batch = { ...original, brief: { ...original.brief, tasks } };
+
+        return isLearningContentBatchCompleted(
+            batch,
+            generationFingerprint(batch),
+            completeBatches,
+            counts,
+        )
+            ? []
+            : [batch];
+    });
+
+    return { ...plan, batches };
 }

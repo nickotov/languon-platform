@@ -1,9 +1,11 @@
+import { ConversationError } from '../../domain/conversation';
 import { createGenerationPlan, bodyBlocks } from './learning-generation-plan';
 import {
     executePreparedGeneration,
     proposeGenerationRevision,
     type StructuredCallValidation,
 } from './learning-generation-execution';
+import { resolveTaskExplanationLanguages } from '../../application/task-explanation-language';
 import { prepareNamedExerciseBrief } from './exercise-authoring-context';
 import type { PreparedTutorHistory } from '../../application/ports/tutor-runner';
 import {
@@ -58,6 +60,7 @@ import {
 import type { TutorRunInput } from '../../application/ports/tutor-runner';
 import { createLearningContentAuthoring } from './learning-content-authoring';
 import {
+    structuredResponseReader,
     generateTutorObject,
     type createTutorRequestAgents,
 } from './tutor-request-agents';
@@ -121,6 +124,7 @@ export async function executeTutorRequest(
                 agent: agents.tutorRequestResolver,
                 prompt,
                 schema: TutorRequestResolutionSchema,
+                completedResponse: structuredResponseReader(validation, id),
                 signal,
                 operationId,
                 maxOutputTokens: 2048,
@@ -218,6 +222,34 @@ export async function executeTutorRequest(
         state.replyLanguage = resolution.replyLanguage;
     }
 
+    const explanationPolicy = (brief: LearningContentBrief) => {
+        const normalized = resolveTaskExplanationLanguages(brief, {
+            ...('continuesPending' in resolution &&
+            resolution.continuesPending &&
+            state.pendingExplanationOverrides
+                ? { retained: state.pendingExplanationOverrides }
+                : {}),
+            ...('explanationLanguageOverrides' in resolution &&
+            resolution.explanationLanguageOverrides
+                ? { overrides: resolution.explanationLanguageOverrides }
+                : {}),
+            learnerMessages: [
+                input.message.content,
+                ...history.messages
+                    .filter((message) => message.role === 'user')
+                    .map((message) => message.content),
+            ],
+            ...(exerciseRequest?.explanationLanguage
+                ? { exerciseChoice: exerciseRequest.explanationLanguage }
+                : {}),
+        });
+
+        state.pendingExplanationOverrides = normalized.overrides.length
+            ? normalized.overrides
+            : undefined;
+
+        return normalized.brief;
+    };
     const saveState = async () => {
         const validationIds = [...pendingPlanningReceipts];
         await input.memory.writeState(
@@ -228,6 +260,7 @@ export async function executeTutorRequest(
                         ? {
                               pendingSources: undefined,
                               pendingProposalIds: undefined,
+                              pendingExplanationOverrides: undefined,
                           }
                         : {}),
                     pending: state.pending
@@ -278,10 +311,10 @@ export async function executeTutorRequest(
             es: 'Elige un conjunto de palabras más pequeño, un pasaje más corto o menos bloques de origen y vuelve a enviar la solicitud.',
         };
         const replyLanguage =
-            exerciseRequest?.explanationLanguage ??
             ('replyLanguage' in resolution
                 ? resolution.replyLanguage
                 : undefined) ??
+            state.replyLanguage ??
             input.preferences.replyLanguage;
         const locale = replyLanguage.split('-')[0] as keyof typeof questions;
         state.pending = null;
@@ -372,9 +405,11 @@ export async function executeTutorRequest(
             resolution.brief,
             resolution.continuesPending ? state.pending : null,
         );
-        const pending = resolution.continuesPending
-            ? mergePendingLearningContentBrief(state.pending, extracted)
-            : extracted;
+        const pending = explanationPolicy(
+            resolution.continuesPending
+                ? mergePendingLearningContentBrief(state.pending, extracted)
+                : extracted,
+        );
 
         let preserved:
             ReturnType<typeof restorePendingExerciseSources> | undefined;
@@ -484,9 +519,11 @@ export async function executeTutorRequest(
                   }),
               }
             : state.pending;
-    const requestedBrief = resolution.continuesPending
-        ? mergePendingLearningContentBrief(pendingForMerge, extractedBrief)
-        : extractedBrief;
+    const requestedBrief = explanationPolicy(
+        resolution.continuesPending
+            ? mergePendingLearningContentBrief(pendingForMerge, extractedBrief)
+            : extractedBrief,
+    );
     const globalProposalIds = requestedBrief.tasks.some((task) => !task.source)
         ? requestedProposalIds
         : [];
@@ -647,18 +684,9 @@ export async function executeTutorRequest(
         wording: input.preferences.wording,
         approach: input.preferences.approach,
     };
-    const normalized = normalizeLearningContentDefaults({
-        tasks: brief.tasks.map((task) =>
-            task.kind === 'exercises'
-                ? {
-                      ...task,
-                      explanationLanguage:
-                          task.explanationLanguage ??
-                          authorPreferences.explanationLanguage,
-                  }
-                : task,
-        ),
-    });
+    const normalized = normalizeLearningContentDefaults(
+        explanationPolicy(brief),
+    );
 
     if (
         input.onGenerationStart &&
@@ -680,10 +708,34 @@ export async function executeTutorRequest(
                 taskSources,
                 resolution.replyLanguage,
             );
-            const context = await input.onGenerationStart(
-                executable.plan,
-                executable.sources,
-            );
+            let context;
+            try {
+                context = await input.onGenerationStart(
+                    executable.plan,
+                    executable.sources,
+                );
+            } catch (error) {
+                if (
+                    !(error instanceof ConversationError) ||
+                    error.code !== 'generation_scope_change'
+                ) {
+                    throw error;
+                }
+
+                return finishText(
+                    learningContentPresentation({
+                        status: 'unsupported',
+                        limitationCode: 'output-capacity',
+                        brief,
+                        preferences: input.preferences,
+                        message: input.message.content,
+                        ...(resolution.replyLanguage
+                            ? { replyLanguage: resolution.replyLanguage }
+                            : {}),
+                    }),
+                    'limitation',
+                );
+            }
 
             return executePreparedGeneration(
                 input,
@@ -692,6 +744,7 @@ export async function executeTutorRequest(
                 context,
                 readBudget,
                 validation,
+                'created-in-stage',
             );
         }
     }
@@ -719,6 +772,10 @@ export async function executeTutorRequest(
                     prompt: `${prompt}\nApplication authoring preferences (trusted server-validated settings): ${JSON.stringify(authorPreferences)}\nEach task's explicit explanationLanguage takes precedence over these default settings. Use explanationLanguage for explanatory prose fields such as grammar rules, commentary and exercise explanations, applying detail, wording and approach independently. Keep every task's studied language and translation language unchanged. Preserve verbatim source passages, vocabulary terms, grammatical patterns, questions and prepared answers in their designated task languages.`,
                     schema,
                     signal: authoringSignal,
+                    completedResponse: structuredResponseReader(
+                        validation,
+                        validationId,
+                    ),
                     operationId: `${input.operationId}:${validationId}`,
                     maxOutputTokens,
                 });

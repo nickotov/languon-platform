@@ -1,3 +1,4 @@
+import { learningContentActionOutputLimit } from '../application/learning-content-batches';
 import { prepareAdminTextAiRouting } from '../../text-ai/infrastructure/persistence/drizzle/routing-admission';
 import { defaultTextAiAvailabilityPolicy } from '../../text-ai/infrastructure/persistence/drizzle/text-ai-catalog-query';
 import {
@@ -48,6 +49,8 @@ import type { TextAiAvailabilityPolicy } from '../../text-ai/infrastructure/pers
 import type { TutorAccountingPort } from '../application/ports/tutor-runner';
 import type { conversationTurnsTable as turns } from './persistence/drizzle/schema';
 import { ConversationError } from '../domain/conversation';
+import { generationFingerprint } from '../application/generation-run-revisions';
+import type { GenerationAutomaticAdmission } from '../application/ports/generation-run';
 
 type Database = PostgresJsDatabase<typeof databaseSchema>;
 type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
@@ -63,10 +66,12 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             fingerprint?: string;
             confirmedQuoteId?: string;
             forceConfirmation?: boolean;
+            mayGenerateLesson?: boolean;
             minimumOutputTokens?: number;
             inputTokenBound?: number;
             minimumInputBound: number;
             reserveToolContinuation?: boolean;
+            generationAuthorization?: GenerationAutomaticAdmission;
         },
     ): Promise<Record<string, unknown>> => {
         await lockTextAiCapacity(tx);
@@ -230,7 +235,56 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 execution.snapshot.creditPricing.outputCreditsPerMillionTokens,
             ),
         };
-        const authorizedBudgetMilli = budget ? parseCreditMilli(budget) : 0n;
+        const generationAuthorizationFingerprint = generationFingerprint({
+            snapshot: execution.snapshot,
+            charging,
+            funding,
+            providerPrice,
+            settings,
+            customerBudget: budget,
+        });
+        // Session authority uses the reviewed configured ceiling; each action
+        // still reserves its narrower predicted call envelope below.
+        const generationMaximumProviderCostMicros =
+            execution.budget.maxCostMicrosPerAttempt;
+        const automatic = input.generationAuthorization;
+        if (
+            automatic &&
+            automatic.authorizationFingerprint !==
+                generationAuthorizationFingerprint
+        ) {
+            throw new ConversationError(
+                'model_unavailable',
+                'Generation settings changed. Review a fresh allowance before continuing.',
+            );
+        }
+
+        const configuredBudgetMilli = budget ? parseCreditMilli(budget) : 0n;
+        const remainingCredits = automatic
+            ? BigInt(automatic.maximumCreditsMilli)
+            : configuredBudgetMilli;
+        const authorizedBudgetMilli =
+            configuredBudgetMilli < remainingCredits
+                ? configuredBudgetMilli
+                : remainingCredits;
+
+        if (automatic) {
+            if (
+                !Number.isSafeInteger(automatic.maximumProviderCostMicros) ||
+                automatic.maximumProviderCostMicros < 1
+            ) {
+                throw new ConversationError(
+                    'generation_scope_change',
+                    'The approved generation budget is exhausted.',
+                );
+            }
+
+            execution.budget.maxCostMicrosPerAttempt = Math.min(
+                execution.budget.maxCostMicrosPerAttempt,
+                automatic.maximumProviderCostMicros,
+            );
+        }
+
         let admittedMaxInputTokens = Math.min(
             execution.snapshot.perCallMaxInputTokens,
             input.inputTokenBound!,
@@ -244,7 +298,7 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             const affordableOutput = (inputTokens: number) => {
                 const providerOutput = providerAffordableOutputTokens({
                     inputTokens,
-                    outputLimit: 10000,
+                    outputLimit: learningContentActionOutputLimit,
                     budget: execution.budget,
                 });
 
@@ -257,7 +311,7 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                     affordableActionOutput({
                         budgetMilli: customerBudget,
                         inputTokens,
-                        outputLimit: 10000,
+                        outputLimit: learningContentActionOutputLimit,
                         tariff,
                     }),
                 );
@@ -304,7 +358,7 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             execution.budget.maxCostMicrosPerAttempt,
             textAiProviderUsageCostMicros(execution.budget, {
                 inputTokens: totalInputLimit,
-                outputTokens: 10000,
+                outputTokens: learningContentActionOutputLimit,
             }) +
                 (execution.budget.inputCostMicrosPerMillionTokens > 0 ? 4 : 0) +
                 (execution.budget.outputCostMicrosPerMillionTokens > 0 ? 4 : 0),
@@ -313,7 +367,7 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
         if (
             providerAffordableOutputTokens({
                 inputTokens: admittedMaxInputTokens,
-                outputLimit: 10000,
+                outputLimit: learningContentActionOutputLimit,
                 budget: execution.budget,
             }) < 1
         ) {
@@ -323,9 +377,48 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             );
         }
 
+        // The worker and financial action cap a whole stage at 10,000 output
+        // tokens. Keep the immutable cohort (and its daily limits) separate
+        // from this prospective stage, including when returning a quote.
+        const capacity = await readTextAiCapacity(tx, {
+            actorId: input.ownerId,
+            now,
+            budget: execution.budget,
+        });
+
+        if (capacity.globalQueued >= 100 || capacity.actorQueued >= 5) {
+            throw new ConversationError(
+                'capacity_unavailable',
+                'The generation queue is currently full. Try again shortly.',
+            );
+        }
+
+        if (
+            !textAiProviderBudgetAllows(
+                capacity.providerUsage,
+                {
+                    costMicros: execution.budget.maxCostMicrosPerAttempt,
+                    inputTokens: totalInputLimit,
+                    outputTokens: Math.min(
+                        learningContentActionOutputLimit,
+                        execution.budget.maxOutputTokensPerAttempt,
+                    ),
+                },
+                execution.budget,
+            )
+        ) {
+            throw new ConversationError(
+                'provider_capacity_exhausted',
+                'The remaining provider capacity cannot cover this stage.',
+            );
+        }
+
         const plannedMaximumMilli = roundActionChargeMilli(
             maximumActionChargeNumerator(
-                { inputTokens: totalInputLimit, outputTokens: 10000 },
+                {
+                    inputTokens: totalInputLimit,
+                    outputTokens: learningContentActionOutputLimit,
+                },
                 tariff,
             ),
         );
@@ -335,21 +428,35 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 : plannedMaximumMilli;
 
         const customerPays = funding === 'customer' && !zeroCustomerTariff;
-        if (customerPays || input.forceConfirmation) {
+        const wholeLessonQuote = input.mayGenerateLesson && !automatic;
+        let generationMaximumCreditsMilli = authorizedBudgetMilli;
+        if (customerPays || input.forceConfirmation || automatic) {
             const available = account.availableCredits;
             const held = !customerPays
                 ? 0n
                 : acceptedBudgetMilli < available
                   ? acceptedBudgetMilli
                   : available;
+
+            if (customerPays && available < generationMaximumCreditsMilli) {
+                generationMaximumCreditsMilli = available;
+            }
+
+            const quoteMaximum =
+                customerPays && wholeLessonQuote
+                    ? generationMaximumCreditsMilli
+                    : held;
+            const quoteScope = wholeLessonQuote
+                ? { scope: 'lesson-if-planned' as const }
+                : {};
             const customerAllowance = customerPays
                 ? affordableActionOutput({
                       budgetMilli: held,
                       inputTokens: admittedMaxInputTokens,
-                      outputLimit: 10000,
+                      outputLimit: learningContentActionOutputLimit,
                       tariff,
                   })
-                : 10000;
+                : learningContentActionOutputLimit;
 
             if (customerAllowance < 1) {
                 throw new ConversationError(
@@ -385,6 +492,7 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                         charging,
                         budget,
                         providerPrice,
+                        ...quoteScope,
                     }),
                 )
                 .digest('hex');
@@ -414,13 +522,14 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 offered &&
                 offered.authorizationFingerprint === authorizationFingerprint &&
                 offered.expiresAt > now &&
-                offered.heldMilli <= held &&
+                offered.heldMilli <= quoteMaximum &&
                 offered.outputAllowance <= allowance &&
                 offered.outputAllowance >= (input.minimumOutputTokens ?? 0)
             ) {
                 return {
                     confirmationRequired: true,
                     quote: {
+                        ...quoteScope,
                         id: offered.id,
                         maximumCredits: formatCreditMilli(offered.heldMilli),
                         approximateOutputTokens: offered.outputAllowance,
@@ -445,13 +554,14 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 confirmed.authorizationFingerprint ===
                     authorizationFingerprint &&
                 confirmed.expiresAt > now &&
-                confirmed.heldMilli <= held &&
+                confirmed.heldMilli <= quoteMaximum &&
                 confirmed.outputAllowance <= allowance &&
                 confirmed.outputAllowance >= (input.minimumOutputTokens ?? 0);
 
             if (
+                !automatic &&
                 (input.forceConfirmation ||
-                    allowance < 10000 ||
+                    allowance < learningContentActionOutputLimit ||
                     held < acceptedBudgetMilli ||
                     input.confirmedQuoteId) &&
                 !validQuote
@@ -470,7 +580,7 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                     requestId: input.requestId,
                     fingerprint: input.fingerprint,
                     authorizationFingerprint,
-                    heldMilli: held,
+                    heldMilli: quoteMaximum,
                     outputAllowance: allowance,
                     expiresAt: new Date(now.getTime() + 5 * 60_000),
                 };
@@ -490,8 +600,9 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 return {
                     confirmationRequired: true,
                     quote: {
+                        ...quoteScope,
                         id: quote.id,
-                        maximumCredits: formatCreditMilli(held),
+                        maximumCredits: formatCreditMilli(quoteMaximum),
                         approximateOutputTokens: allowance,
                         expiresAt: quote.expiresAt.toISOString(),
                     },
@@ -499,7 +610,9 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             }
 
             if (validQuote) {
-                acceptedBudgetMilli = confirmed.heldMilli;
+                generationMaximumCreditsMilli = confirmed.heldMilli;
+                acceptedBudgetMilli =
+                    held < confirmed.heldMilli ? held : confirmed.heldMilli;
             }
         }
 
@@ -541,33 +654,13 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             .catch((error: unknown) => {
                 if (error instanceof OperatorBudgetUnavailableError) {
                     throw new ConversationError(
-                        'capacity_unavailable',
+                        'operator_capacity_exhausted',
                         'The AI spending allowance is currently unavailable. Try again later.',
                     );
                 }
 
                 throw error;
             });
-        const capacity = await readTextAiCapacity(tx, {
-            actorId: input.ownerId,
-            now,
-            budget: execution.budget,
-        });
-
-        if (
-            capacity.globalQueued >= 100 ||
-            capacity.actorQueued >= 5 ||
-            !textAiProviderBudgetAllows(
-                capacity.providerUsage,
-                true,
-                execution.budget,
-            )
-        ) {
-            throw new ConversationError(
-                'capacity_unavailable',
-                'AI capacity is currently unavailable. Try again later.',
-            );
-        }
 
         return {
             ...execution,
@@ -579,6 +672,11 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 aggregateBudget: { ...execution.budget },
             },
             actionAccountingVersion: 1,
+            generationAuthorizationFingerprint,
+            generationMaximumProviderCostMicros,
+            generationMaximumCreditsMilli: customerPays
+                ? generationMaximumCreditsMilli.toString()
+                : '0',
             providerPrice,
             admittedMaxInputTokens,
             heldCreditsMilli: action.heldMilli.toString(),

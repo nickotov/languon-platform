@@ -349,6 +349,7 @@ function deterministicModel(
     dictionaryGenerationContext?: unknown,
 ): TutorProviderModel {
     let dispatched = 0;
+    let composableExerciseDispatches = 0;
 
     return {
         specificationVersion: 'v2',
@@ -358,13 +359,16 @@ function deterministicModel(
         doGenerate: async (options) => {
             const callPurpose = purpose.getStore();
             const promptText = JSON.stringify(options.prompt);
-            // The fresh Continue question is intentionally different from the
-            // original request. The retained task id is the stable signal that
-            // this is the final composable-lesson authoring dispatch.
+            // Exercise units are intentionally returned one at a time. Delay the
+            // first unit only so the browser journey can observe a real
+            // server-owned automatic continuation and its read-only checkpoint.
             const composableLessonAuthoring =
                 callPurpose === 'authoring' &&
                 (question === 'Composable lesson fixture' ||
                     promptText.includes('composable-grammar-exercises'));
+            const composableExerciseAuthoring =
+                callPurpose === 'authoring' &&
+                promptText.includes('composable-grammar-exercises');
 
             if (callPurpose === 'planning' || callPurpose === 'authoring') {
                 const dictionaryAuthoring =
@@ -383,6 +387,15 @@ function deterministicModel(
                     value = fixtureAuthoringOutput(options.prompt);
                 }
 
+                if (
+                    composableExerciseAuthoring &&
+                    composableExerciseDispatches++ === 0
+                ) {
+                    await delay(1_500, undefined, {
+                        signal: options.abortSignal ?? undefined,
+                    });
+                }
+
                 return {
                     content: [
                         { type: 'text' as const, text: JSON.stringify(value) },
@@ -390,8 +403,13 @@ function deterministicModel(
                     finishReason: 'stop' as const,
                     usage: {
                         inputTokens: 50,
-                        outputTokens: composableLessonAuthoring ? 3900 : 30,
-                        totalTokens: composableLessonAuthoring ? 3950 : 80,
+                        outputTokens: composableLessonAuthoring
+                            ? Math.min(3900, options.maxOutputTokens ?? 3900)
+                            : 30,
+                        totalTokens: composableLessonAuthoring
+                            ? 50 +
+                              Math.min(3900, options.maxOutputTokens ?? 3900)
+                            : 80,
                     },
                     warnings: [],
                 };

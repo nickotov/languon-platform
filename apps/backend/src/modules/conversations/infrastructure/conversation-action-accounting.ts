@@ -1,7 +1,4 @@
-import {
-    readTextAiCapacity,
-    textAiProviderBudgetAllows,
-} from '../../../infrastructure/text-ai/text-ai-capacity';
+import { ProviderCapacityUnavailableError } from '../../ai-credits/infrastructure/persistence/drizzle/drizzle-operator-budget-participant';
 import { ConversationError } from '../domain/conversation';
 import type { ProviderPrice } from '@languon/contracts';
 import { providerTextExpenseMicros } from '../../ai-credits/domain/provider-expense';
@@ -151,51 +148,42 @@ export function createConversationActionAccounting(input: {
                     );
                 }
 
-                const capacity = await readTextAiCapacity(tx, {
-                    actorId: input.ownerId,
-                    now: new Date(),
-                    budget: input.execution.budget,
-                });
-
-                if (
-                    !textAiProviderBudgetAllows(
-                        capacity.providerUsage,
-                        true,
-                        input.execution.budget,
-                    )
-                ) {
-                    throw new ConversationError(
-                        'capacity_unavailable',
-                        'AI capacity is currently unavailable. Try again later.',
-                    );
-                }
-
+                // SQL admission checks the computed, financially authorized call under
+                // the shared capacity lock before inserting its provider-attempt row.
                 if (!input.leaseToken) {
                     throw new Error('Claimed execution lease is required.');
                 }
 
-                const attempt = await new DrizzleActionAccountingParticipant(
-                    tx,
-                ).admitAttempt({
-                    actionId: input.turnId,
-                    executionWitness: {
-                        jobId: input.turnId,
-                        leaseToken: input.leaseToken,
-                    },
-                    ownerId: input.ownerId,
-                    callId: call.callId,
-                    // Planning and authoring are bounded actor work. Financial authority
-                    // retains its established answer/support categories and aggregate limits.
-                    purpose:
-                        call.purpose === 'planning' ||
-                        call.purpose === 'authoring'
-                            ? 'answer'
-                            : call.purpose,
-                    inputTokens: call.inputTokenEstimate,
-                    maxOutputTokens: call.maxOutputTokens,
-                    budget: input.execution.budget,
-                    at: new Date(),
-                });
+                const attempt = await new DrizzleActionAccountingParticipant(tx)
+                    .admitAttempt({
+                        actionId: input.turnId,
+                        executionWitness: {
+                            jobId: input.turnId,
+                            leaseToken: input.leaseToken,
+                        },
+                        ownerId: input.ownerId,
+                        callId: call.callId,
+                        // Planning and authoring are bounded actor work. Financial authority
+                        // retains its established answer/support categories and aggregate limits.
+                        purpose:
+                            call.purpose === 'planning' ||
+                            call.purpose === 'authoring'
+                                ? 'answer'
+                                : call.purpose,
+                        inputTokens: call.inputTokenEstimate,
+                        maxOutputTokens: call.maxOutputTokens,
+                        budget: input.execution.budget,
+                        at: new Date(),
+                    })
+                    .catch((error: unknown) => {
+                        if (error instanceof ProviderCapacityUnavailableError) {
+                            throw new ConversationError(
+                                'provider_capacity_exhausted',
+                                'The remaining provider capacity cannot cover this call.',
+                            );
+                        }
+                        throw error;
+                    });
 
                 if (call.validationId) {
                     await new DrizzleActionAccountingParticipant(

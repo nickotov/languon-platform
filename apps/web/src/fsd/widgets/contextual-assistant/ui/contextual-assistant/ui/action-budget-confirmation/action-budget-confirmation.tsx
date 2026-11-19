@@ -20,12 +20,20 @@ export function ActionBudgetConfirmation({
         'Vérifiez le budget de cette action',
         'Revisa el presupuesto de esta acción',
     ][at]!;
-    const description = [
-        'This action’s credit and execution limits permit a smaller response. Send explicitly to authorize this allowance.',
-        'Кредитный бюджет и лимиты выполнения допускают более короткий ответ. Подтвердите отправку с этим лимитом.',
-        'Les limites de crédit et d’exécution permettent une réponse plus courte. Confirmez cet envoi et cette limite.',
-        'Los límites de crédito y ejecución permiten una respuesta más corta. Confirma el envío con este límite.',
-    ][at]!;
+    const lessonQuote = quote?.scope === 'lesson-if-planned';
+    const description = lessonQuote
+        ? [
+              'If your request creates a lesson, this maximum covers the entire lesson, including automatic retries.',
+              'Если по запросу будет создан урок, этот максимум действует на весь урок, включая автоматические повторные попытки.',
+              'Si votre demande crée une leçon, ce plafond couvre toute la leçon, y compris les nouvelles tentatives automatiques.',
+              'Si tu solicitud crea una lección, este máximo cubre toda la lección, incluidos los reintentos automáticos.',
+          ][at]!
+        : [
+              'This action’s credit and execution limits permit a smaller response. Send explicitly to authorize this allowance.',
+              'Кредитный бюджет и лимиты выполнения допускают более короткий ответ. Подтвердите отправку с этим лимитом.',
+              'Les limites de crédit et d’exécution permettent une réponse plus courte. Confirmez cet envoi et cette limite.',
+              'Los límites de crédito y ejecución permiten una respuesta más corta. Confirma el envío con este límite.',
+          ][at]!;
     const send = ['Send', 'Отправить', 'Envoyer', 'Enviar'][at]!;
     const topUp = ['Top up', 'Пополнить', 'Recharger', 'Recargar'][at]!;
     const cancel = ['Cancel', 'Отмена', 'Annuler', 'Cancelar'][at]!;
@@ -35,12 +43,19 @@ export function ActionBudgetConfirmation({
         'Crédits maximum',
         'Créditos máximos',
     ][at]!;
-    const allowance = [
-        'Approximate output tokens',
-        'Примерный лимит токенов ответа',
-        'Tokens de réponse approximatifs',
-        'Tokens de salida aproximados',
-    ][at]!;
+    const allowance = lessonQuote
+        ? [
+              'Approximate output tokens per stage',
+              'Примерный лимит токенов ответа на этап',
+              'Tokens de réponse approximatifs par étape',
+              'Tokens de salida aproximados por etapa',
+          ][at]!
+        : [
+              'Approximate output tokens',
+              'Примерный лимит токенов ответа',
+              'Tokens de réponse approximatifs',
+              'Tokens de salida aproximados',
+          ][at]!;
     const exact = [
         'Exact value',
         'Точное значение',

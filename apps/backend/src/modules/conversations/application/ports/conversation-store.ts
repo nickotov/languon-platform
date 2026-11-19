@@ -1,3 +1,4 @@
+import type { GenerationFailureDiagnostic } from '../generation-failure';
 import type {
     ApplyDictionaryChatSnippetRequest,
     ApplyDictionaryChatSnippetResponse,
@@ -205,6 +206,7 @@ export interface ConversationStore extends GenerationRunStore {
         turn: ClaimedConversationTurn,
         status: 'succeeded' | 'failed' | 'cancelled',
         failureCode?: string,
+        failure?: GenerationFailureDiagnostic,
     ): Promise<void>;
     memory(turn: ClaimedConversationTurn): TutorMemoryPort;
 }

@@ -1,3 +1,4 @@
+import type { GenerationFailureDiagnostic } from '../../../application/generation-failure';
 import { DrizzleActionAccountingParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import type { ClaimedConversationTurn } from '../../../application/ports/conversation-store';
@@ -34,8 +35,18 @@ export async function conversationTerminal(
     row: TurnRow,
     status: 'succeeded' | 'failed' | 'cancelled',
     failureCode?: string,
+    failure?: GenerationFailureDiagnostic,
+    settle = settleConversationAction,
 ) {
-    await completeGenerationAction(persistence, tx, row, status, failureCode);
+    await completeGenerationAction(
+        persistence,
+        tx,
+        row,
+        status,
+        failureCode,
+        failure,
+    );
+
     await prepareConversationActionSettlement(tx, row);
     const [turn] = await tx
         .update(turns)
@@ -58,7 +69,9 @@ export async function conversationTerminal(
         .returning();
 
     if (turn) {
-        await settleConversationAction(
+        // Attach the lesson series and persist its terminal state before settlement,
+        // including on lease recovery. Each action is settled exactly once.
+        await settle(
             tx,
             turn,
             status === 'cancelled' && row.failureCode === 'explicit_stop',
@@ -107,6 +120,7 @@ export async function conversationFinish(
     turn: ClaimedConversationTurn,
     status: 'succeeded' | 'failed' | 'cancelled',
     failureCode?: string,
+    failure?: GenerationFailureDiagnostic,
 ) {
     await conversationWithOperation(
         persistence,
@@ -118,6 +132,7 @@ export async function conversationFinish(
                 row,
                 row.cancelRequested ? 'cancelled' : status,
                 row.cancelRequested ? 'cancelled' : failureCode,
+                failure,
             ),
         true,
     );

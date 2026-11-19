@@ -35,10 +35,20 @@ describe('selected revision wire contract', () => {
             activityId: 'V07',
             sources: [vocabulary],
         });
-        const source = completeNamedExerciseSources(initial, {
-            blocks: [vocabulary],
-        });
-        const { sourceBindings: _bindings, ...block } = initial;
+        const source = completeNamedExerciseSources(
+            initial,
+            {
+                blocks: [vocabulary],
+            },
+            { language: 'fr', explanationLanguage: 'en' },
+        );
+
+        if (source.type !== 'exercise' || !source.semantics) {
+            throw new Error('Expected a named exercise.');
+        }
+
+        const { sources: _sources, ...semantics } = source.semantics;
+        const block = { ...source, semantics };
         const wire = createLearningBlockRevisionWire([source]);
         const result = wire.decode({
             proposals: [{ targetBlockId: source.id, blocks: [block] }],

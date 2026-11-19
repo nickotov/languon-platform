@@ -827,6 +827,7 @@ export const ConversationStreamUnavailableSchema = z
     .strict();
 export const ConversationActionQuoteSchema = z
     .object({
+        scope: z.literal('lesson-if-planned').optional(),
         id: z.uuid(),
         maximumCredits: z.string().regex(/^(0|[1-9][0-9]*)(\.[0-9]{1,3})?$/u),
         approximateOutputTokens: z.number().int().min(1).max(10000),

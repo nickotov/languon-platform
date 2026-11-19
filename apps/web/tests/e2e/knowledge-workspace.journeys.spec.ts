@@ -1,6 +1,8 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision knowledge-workspace sha256:fcdcf3a7e4a82280
+import { verifyIdleLessonRecovery } from './lesson-reconnect-fixture';
+
+// @user-flow-revision knowledge-workspace sha256:d3a2b7a1eb0bc5ef
 
 type Share = { locator: string; key: string };
 
@@ -122,7 +124,7 @@ function runtimeErrors(page: Page) {
         }
     });
 
-    return () => expect(failures).toEqual([]);
+    return (expected: string[] = []) => expect(failures).toEqual(expected);
 }
 
 async function capture(page: Page, info: TestInfo, name: string) {
@@ -2119,11 +2121,37 @@ test('capability replies stay in chat and mixed content generates one reviewed i
 });
 
 // @user-flow knowledge-workspace/workspace-composable-lesson-continuation
-test('a paused composable lesson continues from its checked stages, inserts one mixed proposal, and survives saving', async ({
+test('a composable lesson previews saved parts, automatically completes after one authorization, inserts one mixed proposal, and survives saving', async ({
     page,
 }, info) => {
     const assertRuntime = runtimeErrors(page);
-    await signup(page, info);
+    const continueRequests: string[] = [];
+    const runReads = { lists: [] as string[], details: [] as string[] };
+    page.on('request', (request) => {
+        const path = new URL(request.url()).pathname;
+        if (
+            request.method() === 'POST' &&
+            /\/generation-runs\/[^/]+\/continue$/u.test(path)
+        ) {
+            continueRequests.push(path);
+        }
+
+        if (request.method() !== 'GET') {
+            return;
+        }
+
+        if (/\/conversations\/[^/]+\/generation-runs$/u.test(path)) {
+            runReads.lists.push(path);
+        } else if (
+            /\/conversations\/[^/]+\/generation-runs\/[0-9a-f-]{36}$/u.test(
+                path,
+            )
+        ) {
+            runReads.details.push(path);
+        }
+    });
+
+    const ownerToken = await signup(page, info);
     await createDraft(page);
     await page
         .getByRole('textbox', { name: 'Title', exact: true })
@@ -2149,19 +2177,44 @@ test('a paused composable lesson continues from its checked stages, inserts one 
 
     await expect(
         run.getByText(
-            'This stage is complete. Review the next budget to continue.',
+            'Continues automatically within your approved budget. You can leave this page and return later.',
             { exact: true },
         ),
     ).toBeVisible();
 
-    await run.getByRole('button', { name: 'Continue', exact: true }).click();
-    const quote = page.getByRole('dialog', {
-        name: 'Continue preparing this lesson?',
+    const previewResponse = page.waitForResponse(
+        (response) =>
+            new URL(response.url()).pathname.endsWith('/preview') &&
+            response.request().method() === 'GET',
+    );
+
+    await run
+        .getByRole('button', { name: 'View prepared content', exact: true })
+        .click();
+
+    const previewUrl = (await previewResponse).url();
+    const preview = page.getByRole('dialog', {
+        name: 'Prepared content',
         exact: true,
     });
 
-    await expect(quote).toBeVisible();
-    await quote.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(preview).toContainText(
+        'La démocratie française repose sur le débat public.',
+    );
+
+    await expect(
+        preview.getByRole('heading', {
+            name: 'French noun grammar',
+            exact: true,
+        }),
+    ).toBeVisible();
+
+    await expect(
+        preview.getByRole('button', { name: 'Insert all', exact: true }),
+    ).toHaveCount(0);
+
+    await page.keyboard.press('Escape');
+    await expect(preview).not.toBeVisible();
 
     const complete = tutor.getByRole('article', {
         name: 'Your lesson is ready',
@@ -2172,6 +2225,10 @@ test('a paused composable lesson continues from its checked stages, inserts one 
     await expect(
         complete.getByText('3 of 3 parts ready', { exact: true }),
     ).toBeVisible();
+
+    expect(continueRequests).toEqual([]);
+    expect(runReads.lists).toHaveLength(1);
+    expect(runReads.details).toHaveLength(0);
 
     const proposal = tutor.getByRole('article', {
         name: 'Proposed content',
@@ -2227,7 +2284,40 @@ test('a paused composable lesson continues from its checked stages, inserts one 
         page.getByRole('textbox', { name: 'Document', exact: true }),
     ).toContainText('La démocratie française repose sur le débat public.');
 
-    assertRuntime();
+    const noteId = new URL(page.url()).pathname.split('/').at(-1)!;
+    const share = await api<Share>(
+        page,
+        ownerToken,
+        `/knowledge/${noteId}/share`,
+        { method: 'POST' },
+    );
+    const otherContext = await page.context().browser()!.newContext();
+    try {
+        const unauthenticated = await otherContext.request.get(previewUrl);
+        expect(unauthenticated.status()).toBe(401);
+        const recipient = await otherContext.newPage();
+        const recipientToken = await signup(recipient, info);
+        const denied = await otherContext.request.get(previewUrl, {
+            headers: {
+                Authorization: `Bearer ${recipientToken}`,
+                'X-Languon-Share-Key': share.key,
+            },
+        });
+
+        expect([403, 404]).toContain(denied.status());
+        expect(await denied.text()).not.toContain('La démocratie française');
+    } finally {
+        await otherContext.close();
+    }
+
+    const expectedCapacityRejection = await verifyIdleLessonRecovery(
+        page,
+        previewUrl,
+        tokens.get(page) ?? ownerToken,
+    );
+
+    await capture(page, info, 'workspace-lesson-admission-rejected');
+    assertRuntime([expectedCapacityRejection]);
 });
 
 // @user-flow knowledge-workspace/workspace-large-vocabulary-generation

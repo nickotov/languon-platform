@@ -27,6 +27,7 @@ export function createLearningContentBatchBudget(
             }
 
             return {
+                ...parent,
                 remainingCalls: Math.max(
                     0,
                     Math.min(

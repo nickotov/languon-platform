@@ -1410,6 +1410,258 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
         });
 
+        it('previews a validated vocabulary prefix and preserves output order with pending parts', async () => {
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const note = await knowledge.create(owner, {
+                operationId: randomUUID(),
+                content,
+            });
+            const workspace = await knowledge.getWorkspace(owner, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+
+            await store.submit(access(), chat.id, {
+                ...submit('Create vocabulary and grammar.'),
+                editorContext: {
+                    ...workspaceContext(''),
+                    workingBranch: { id: branch.id, version: branch.version },
+                },
+            });
+
+            const turn = (await store.claim())!;
+            const plan = GenerationPlanSchema.parse({
+                schemaVersion: 1,
+                replyLanguage: 'en',
+                sources: [],
+                tasks: [
+                    {
+                        id: 'words',
+                        kind: 'vocabulary',
+                        instruction: 'Prepare 200 French words.',
+                        language: 'fr',
+                        translationLanguage: 'ru',
+                        count: 200,
+                        inputs: [],
+                    },
+                    {
+                        id: 'rule',
+                        kind: 'grammar',
+                        instruction: 'Explain French grammar.',
+                        language: 'fr',
+                        explanationLanguage: 'fr',
+                        inputs: [],
+                    },
+                ],
+                outputOrder: ['rule', 'words'],
+            });
+            const run = await store.startGeneration(turn, plan, []);
+            const vocabulary: LearningBlock = {
+                id: randomUUID(),
+                type: 'vocabulary',
+                language: 'fr',
+                translationLanguage: 'ru',
+                entries: Array.from({ length: 20 }, (_, index) => ({
+                    id: randomUUID(),
+                    term: `mot ${index + 1}`,
+                    translation: `слово ${index + 1}`,
+                })),
+            };
+
+            await store.checkpointGeneration(
+                turn,
+                [
+                    {
+                        id: randomUUID(),
+                        revision: 1,
+                        taskId: 'words',
+                        batchKey: 'words:legacy-prefix:20',
+                        taskComplete: false,
+                        body: proposalBody([vocabulary]),
+                        contentHash: '',
+                        requirementsHash: '',
+                        sourceHash: '',
+                        validationVersion: 'learning-content-v1',
+                    },
+                ],
+                randomUUID(),
+            );
+
+            await store.pauseGeneration(turn);
+            await store.finish(turn, 'succeeded');
+            const preview = await store.getGenerationRunPreview(
+                access(),
+                chat.id,
+                run.runId,
+            );
+
+            expect(preview.parts).toHaveLength(1);
+            expect(preview.parts[0]).toMatchObject({
+                taskId: 'words',
+                complete: false,
+                completedUnitCount: 20,
+                totalUnitCount: 200,
+            });
+
+            const detail = await store.getGenerationRun(
+                access(),
+                chat.id,
+                run.runId,
+            );
+
+            expect(detail.run.tasks.map((task) => task.id)).toEqual([
+                'rule',
+                'words',
+            ]);
+
+            expect(detail.run.tasks[1]).toMatchObject({
+                completedUnitCount: 20,
+                totalUnitCount: 200,
+            });
+
+            expect(detail.run.completedTaskCount).toBe(0);
+        });
+
+        it('always exposes an honest failure reason and support reference without losing prepared content', async () => {
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const note = await knowledge.create(owner, {
+                operationId: randomUUID(),
+                content,
+            });
+            const workspace = await knowledge.getWorkspace(owner, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+
+            await store.submit(access(), chat.id, {
+                ...submit('Prepare a lesson.'),
+                editorContext: {
+                    ...workspaceContext(''),
+                    workingBranch: { id: branch.id, version: branch.version },
+                },
+            });
+
+            const turn = (await store.claim())!;
+            const run = await store.startGeneration(
+                turn,
+                GenerationPlanSchema.parse({
+                    schemaVersion: 1,
+                    replyLanguage: 'en',
+                    sources: [],
+                    tasks: [
+                        {
+                            id: 'reading',
+                            kind: 'prose',
+                            language: 'fr',
+                            instruction: 'Read French.',
+                            inputs: [],
+                        },
+                        {
+                            id: 'grammar',
+                            kind: 'grammar',
+                            language: 'fr',
+                            explanationLanguage: 'fr',
+                            instruction: 'Explain COD.',
+                            inputs: [],
+                        },
+                    ],
+                    outputOrder: ['reading', 'grammar'],
+                }),
+                [],
+            );
+
+            await store.checkpointGeneration(
+                turn,
+                [
+                    {
+                        id: randomUUID(),
+                        revision: 1,
+                        taskId: 'reading',
+                        batchKey: 'reading:complete',
+                        taskComplete: true,
+                        body: {
+                            schemaVersion: 2,
+                            document: {
+                                type: 'doc',
+                                content: [
+                                    {
+                                        type: 'paragraph',
+                                        content: [
+                                            {
+                                                type: 'text',
+                                                text: 'Un texte français.',
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                        },
+                        contentHash: '',
+                        requirementsHash: '',
+                        sourceHash: '',
+                        validationVersion: 'learning-content-v1',
+                    },
+                ],
+                randomUUID(),
+            );
+
+            await store.finish(turn, 'failed', 'generation_failed');
+            const failed = await store.getGenerationRun(
+                access(),
+                chat.id,
+                run.runId,
+            );
+
+            expect(failed.run).toMatchObject({
+                completedTaskCount: 1,
+                failure: { code: 'unknown', referenceId: turn.id },
+            });
+
+            await client`update conversation_generation_runs set failure=null where id=${run.runId}::uuid`;
+            const missingDiagnostic = await store.getGenerationRun(
+                access(),
+                chat.id,
+                run.runId,
+            );
+
+            expect(missingDiagnostic.run.failure).toEqual({
+                code: 'unknown',
+                referenceId: turn.id,
+            });
+
+            expect(
+                (
+                    await store.getGenerationRunPreview(
+                        access(),
+                        chat.id,
+                        run.runId,
+                    )
+                ).parts,
+            ).toHaveLength(1);
+
+            expect(JSON.stringify(missingDiagnostic.run.failure)).not.toContain(
+                'Un texte français',
+            );
+        });
+
         async function pausedGenerationWithDependencies() {
             const grammar = {
                 id: randomUUID(),
@@ -1687,9 +1939,9 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 changed.run.tasks.map(({ id, status }) => ({ id, status })),
             ).toEqual([
+                { id: 'introduction', status: 'completed' },
                 { id: 'reading', status: 'pending' },
                 { id: 'summary', status: 'pending' },
-                { id: 'introduction', status: 'completed' },
             ]);
 
             const [revisionThree] =
@@ -2117,8 +2369,6 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 const exercise = namedExerciseFixture({
                     activityId: 'G02',
                     sources: [grammar],
-                    language: 'fr',
-                    explanationLanguage: 'fr',
                 });
                 const authored = await createLearningContentAuthoring({
                     ...restored,
@@ -2787,6 +3037,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sources: [vocabulary],
                 }),
                 { blocks: [vocabulary] },
+                { language: 'fr', explanationLanguage: 'en' },
             );
 
             if (exercise.type !== 'exercise' || !exercise.semantics) {
@@ -2999,6 +3250,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sources: [fixture.vocabulary],
                 }),
                 { blocks: [fixture.vocabulary], proposalId: randomUUID() },
+                { language: 'fr', explanationLanguage: 'en' },
             );
             const text = {
                 id: randomUUID(),
@@ -3023,6 +3275,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         text: 'Ana lit un livre.',
                     },
                 },
+                { language: 'fr', explanationLanguage: 'en' },
             );
 
             await proposeBlocks(store, fixture.turn, {
@@ -3051,6 +3304,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const exercise = completeNamedExerciseSources(
                 namedExerciseFixture({ activityId: 'V01', sources: [source] }),
                 { blocks: [source] },
+                { language: 'fr', explanationLanguage: 'en' },
             );
             const wrong = { ...fixture.grammar, id: source.id };
             await expect(

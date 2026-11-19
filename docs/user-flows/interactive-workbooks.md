@@ -7,52 +7,54 @@ surfaces:
     - browser
     - api
 source_paths:
-    - .agent/features/070-composable-lesson-generation/**
-    - packages/contracts/src/knowledge-content-proposals.ts
-    - packages/contracts/src/generation-runs.ts
-    - .agent/improvements/contextual-picker-polish.md
-    - apps/web/src/fsd/shared/ui/command-menu/command-menu.tsx
-    - .agent/features/069-contextual-exercise-discovery/**
-    - packages/contracts/src/conversation-prompt-mentions.ts
-    - .agent/features/059-interactive-workbooks/**
-    - .agent/features/060-intent-aware-learning-content/**
-    - .agent/features/061-reliable-learning-content-pipeline/**
-    - .agent/features/067-named-text-exercises/**
-    - apps/web/src/app/workbooks/**
-    - apps/web/src/app/shared/workbooks/**
-    - apps/web/src/fsd/features/workbooks/**
-    - apps/web/src/fsd/features/workbook-learning/**
-    - apps/web/src/fsd/features/knowledge-notes/**
-    - apps/web/src/fsd/entities/learning-blocks/**
-    - apps/web/src/fsd/entities/knowledge/api/knowledge-media-api.ts
-    - apps/web/src/fsd/widgets/knowledge-speech/**
-    - apps/web/src/fsd/widgets/knowledge-transcription/**
-    - apps/web/src/fsd/widgets/knowledge-private-translation/**
-    - apps/web/src/fsd/widgets/knowledge-vocabulary/**
-    - apps/web/src/fsd/pages/workbooks/**
-    - apps/web/src/fsd/pages/knowledge/**
-    - apps/backend/src/modules/knowledge/**
-    - apps/backend/src/modules/conversations/**
-    - apps/backend/src/modules/speech/infrastructure/knowledge-*.ts
-    - apps/backend/src/modules/speech/infrastructure/knowledge-*.sql
-    - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-claim.ts
-    - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-support.ts
-    - apps/backend/drizzle/**
-    - packages/contracts/src/contextual-assistant.ts
-    - packages/contracts/src/knowledge*.ts
-    - packages/contracts/src/learning-blocks.ts
-    - packages/contracts/src/named-exercises.ts
-    - packages/contracts/src/exercise-activity*.ts
-    - packages/contracts/src/exercise-generation.ts
-    - packages/contracts/src/workbook-learning.ts
-    - packages/contracts/src/workbooks.ts
-    - packages/contracts/src/learning/sentences.ts
-    - packages/contracts/src/speech/**
-    - apps/backend/tests/support/contextual-assistant-fixture.ts
-    - apps/backend/tests/support/knowledge-private-translation-fixture.ts
-    - apps/backend/src/modules/texts/application/texts-worker-service.ts
-    - apps/backend/src/modules/texts/infrastructure/ai/texts-ai-provider.ts
-    - scripts/critical-flows/registry.mjs
+    - .agent/features/071-reliable-lesson-runs/**
+    - packages/contracts/src/generation-run-preview.ts
+      - .agent/features/070-composable-lesson-generation/**
+      - packages/contracts/src/knowledge-content-proposals.ts
+      - packages/contracts/src/generation-runs.ts
+      - .agent/improvements/contextual-picker-polish.md
+      - apps/web/src/fsd/shared/ui/command-menu/command-menu.tsx
+      - .agent/features/069-contextual-exercise-discovery/**
+      - packages/contracts/src/conversation-prompt-mentions.ts
+      - .agent/features/059-interactive-workbooks/**
+      - .agent/features/060-intent-aware-learning-content/**
+      - .agent/features/061-reliable-learning-content-pipeline/**
+      - .agent/features/067-named-text-exercises/**
+      - apps/web/src/app/workbooks/**
+      - apps/web/src/app/shared/workbooks/**
+      - apps/web/src/fsd/features/workbooks/**
+      - apps/web/src/fsd/features/workbook-learning/**
+      - apps/web/src/fsd/features/knowledge-notes/**
+      - apps/web/src/fsd/entities/learning-blocks/**
+      - apps/web/src/fsd/entities/knowledge/api/knowledge-media-api.ts
+      - apps/web/src/fsd/widgets/knowledge-speech/**
+      - apps/web/src/fsd/widgets/knowledge-transcription/**
+      - apps/web/src/fsd/widgets/knowledge-private-translation/**
+      - apps/web/src/fsd/widgets/knowledge-vocabulary/**
+      - apps/web/src/fsd/pages/workbooks/**
+      - apps/web/src/fsd/pages/knowledge/**
+      - apps/backend/src/modules/knowledge/**
+      - apps/backend/src/modules/conversations/**
+      - apps/backend/src/modules/speech/infrastructure/knowledge-*.ts
+      - apps/backend/src/modules/speech/infrastructure/knowledge-*.sql
+      - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-claim.ts
+      - apps/backend/src/modules/texts/infrastructure/persistence/drizzle/texts-job-support.ts
+      - apps/backend/drizzle/**
+      - packages/contracts/src/contextual-assistant.ts
+      - packages/contracts/src/knowledge*.ts
+      - packages/contracts/src/learning-blocks.ts
+      - packages/contracts/src/named-exercises.ts
+      - packages/contracts/src/exercise-activity*.ts
+      - packages/contracts/src/exercise-generation.ts
+      - packages/contracts/src/workbook-learning.ts
+      - packages/contracts/src/workbooks.ts
+      - packages/contracts/src/learning/sentences.ts
+      - packages/contracts/src/speech/**
+      - apps/backend/tests/support/contextual-assistant-fixture.ts
+      - apps/backend/tests/support/knowledge-private-translation-fixture.ts
+      - apps/backend/src/modules/texts/application/texts-worker-service.ts
+      - apps/backend/src/modules/texts/infrastructure/ai/texts-ai-provider.ts
+      - scripts/critical-flows/registry.mjs
 e2e_command: contextual-assistant
 e2e_tests:
     - apps/web/tests/e2e/interactive-workbooks.journeys.spec.ts
@@ -64,11 +66,12 @@ e2e_scenarios:
     - named-exercise-picker-authoring
     - named-exercise-ai-feedback
 related_features:
-    - composable-lesson-generation
-    - reliable-learning-content-pipeline
-    - intent-aware-learning-content
-    - knowledge-workspace
-    - contextual-language-assistant-and-knowledge
+    - reliable-lesson-runs
+      - composable-lesson-generation
+      - reliable-learning-content-pipeline
+      - intent-aware-learning-content
+      - knowledge-workspace
+      - contextual-language-assistant-and-knowledge
 ---
 
 # Interactive workbooks
@@ -416,3 +419,5 @@ If practice disappears, check current share access and the saved source version.
 The critical runner removes its own disposable containers and stops its app
 processes in cleanup. Reports and screenshots remain in ignored test output for
 inspection. Do not delete unrelated containers or reset ordinary development data.
+
+Prepared Knowledge lessons expose a private read-only **View prepared content** preview and individual exercise progress. Internal stages continue automatically within the original approved credit/provider ceilings; Stop revokes the whole authorization. A technical failure preserves prepared material and requires an explicit retry. This does not add partial insertion or grant shared readers access. See the [Knowledge lesson flow](knowledge-workspace.md#composable-lessons-and-continuation).

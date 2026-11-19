@@ -62,10 +62,9 @@ function canonicalNamedExercise(
         namedExerciseFixture({
             activityId,
             sources,
-            language: 'en',
-            explanationLanguage: 'en',
         }),
         { blocks: sources },
+        { language: 'en', explanationLanguage: 'en' },
     );
 }
 
@@ -205,6 +204,7 @@ describe('Block proposal content identity', () => {
             const historical = completeNamedExerciseSources(
                 namedExerciseFixture({ activityId: 'V01', sources }),
                 { blocks: sources, proposalId: sources[0]!.id },
+                { language: 'en', explanationLanguage: 'en' },
             );
             const wire = namedExerciseFixture({ activityId: 'R03', sources });
             const selected = completeNamedExerciseSources(
@@ -217,6 +217,7 @@ describe('Block proposal content identity', () => {
                         text: 'Mira borrowed a book and returned it on Monday.',
                     },
                 },
+                { language: 'en', explanationLanguage: 'en' },
             );
             const captured = completeNamedExerciseSources(
                 namedExerciseFixture({ activityId: 'V01', sources }),
@@ -236,6 +237,7 @@ describe('Block proposal content identity', () => {
                         ],
                     ]),
                 },
+                { language: 'en', explanationLanguage: 'en' },
             );
             const original = [...sources, historical, selected, captured];
             const copied =

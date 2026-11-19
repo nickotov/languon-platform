@@ -14,6 +14,7 @@
         "db:studio": "drizzle-kit studio",
         "dev": "tsx watch src/index.ts",
         "dictionary:worker": "tsx src/infrastructure/worker/dictionary-worker-command.ts run",
+        "dictionary:worker:dev": "tsx watch src/infrastructure/worker/dictionary-worker-command.ts run",
         "dictionary:worker:built": "node dist/infrastructure/worker/dictionary-worker-command.js run",
         "dictionary:worker:healthcheck": "tsx src/infrastructure/worker/dictionary-worker-command.ts healthcheck",
         "account:purge:worker": "tsx src/infrastructure/worker/account-purge-command.ts run",

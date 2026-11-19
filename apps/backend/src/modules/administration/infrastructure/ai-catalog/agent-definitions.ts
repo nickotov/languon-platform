@@ -120,6 +120,7 @@ export const catalogAgentRegistrations: readonly CatalogAgentRegistration[] = [
             (
                 {
                     'tutor-request-resolver': 'tutor-request-resolution',
+                    'generation-plan-reviser': 'generation-plan-revision',
                     'dictionary-snippet-author':
                         'dictionary-chat-snippet-authoring',
                     'learning-content-author': 'learning-content-authoring',

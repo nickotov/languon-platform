@@ -4,6 +4,7 @@ import {
     textAiModelCatalog,
     type TextAiExecutionSnapshot,
 } from '../../../text-ai/application/text-ai-provider-catalog';
+import { fenceTutorPublications } from './tutor-publication-fence';
 import { runPinnedFallback } from '../../../text-ai/infrastructure/ai/run-pinned-fallback';
 import { describe, expect, it, vi } from 'vitest';
 import type { TutorRunInput } from '../../application/ports/tutor-runner.js';
@@ -47,6 +48,28 @@ function runInput(memory = tutorMemoryFixture()): TutorRunInput {
 }
 
 describe('contextual tutor with the real pinned Mastra SDK', () => {
+    it('fences fallback before a checkpoint write even if its acknowledgement is lost', async () => {
+        const input = runInput();
+        const lostAcknowledgement = new Error(
+            'checkpoint acknowledgement lost',
+        );
+
+        input.onGenerationCheckpoint = vi.fn(async () => {
+            throw lostAcknowledgement;
+        });
+
+        const publication = fenceTutorPublications(input);
+        await publication.input.memory.readState('planner');
+        expect(publication.hasPublished()).toBe(false);
+        await expect(
+            publication.input.onGenerationCheckpoint!([], 'validation'),
+        ).rejects.toBe(lostAcknowledgement);
+
+        expect(publication.hasPublished()).toBe(true);
+        expect(input.onGenerationCheckpoint).toHaveBeenCalledOnce();
+        expect(publication.input.onGenerationStart).toBeUndefined();
+    });
+
     it('retains authorized source tools across sequential turns and pre-answer observation', async () => {
         const memory = tutorMemoryFixture();
         const first = {
@@ -655,11 +678,11 @@ describe('contextual tutor with the real pinned Mastra SDK', () => {
                 },
             };
             const selected: string[] = [];
+            const publication = fenceTutorPublications(input);
             const result = await runPinnedFallback({
                 snapshot,
                 signal: input.signal,
-                hasPublished: () =>
-                    vi.mocked(input.onDelta).mock.calls.length > 0,
+                hasPublished: publication.hasPublished,
                 execute: async (selectedSnapshot, attempt) => {
                     selected.push(selectedSnapshot.modelId);
                     if (attempt === 2) {
@@ -697,7 +720,7 @@ describe('contextual tutor with the real pinned Mastra SDK', () => {
                                 rejectedPurpose === 'reflection' ? 100 : 10000,
                             maxTokensPerBatch: 4000,
                         },
-                    }).run(input);
+                    }).run(publication.input);
                 },
             });
 

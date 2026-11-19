@@ -5,10 +5,22 @@ import { AssistantLanguageSchema } from '@languon/contracts';
 import { LearningContentBriefSchema } from './learning-content-contract';
 
 const responseText = z.string().trim().min(1).max(4_000);
+export const ExplanationLanguageOverrideSchema = z
+    .object({
+        taskId: z.string().trim().min(1).max(80),
+        language: z.string().regex(/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/u),
+        evidence: z.string().trim().min(3).max(300),
+    })
+    .strict();
+const explanationLanguageOverrides = z
+    .array(ExplanationLanguageOverrideSchema)
+    .max(8)
+    .optional();
 const generation = {
     brief: LearningContentBriefSchema,
     continuesPending: z.boolean().optional(),
     changesReplyLanguage: z.boolean().optional(),
+    explanationLanguageOverrides,
     acknowledgement: responseText.optional(),
     sourceProposalIds: z.array(z.uuid()).max(8).optional(),
     sourceMatch: z
@@ -32,6 +44,7 @@ export const TutorRequestResolutionSchema = z.discriminatedUnion('kind', [
             kind: z.literal('clarify'),
             continuesPending: z.boolean().optional(),
             changesReplyLanguage: z.boolean().optional(),
+            explanationLanguageOverrides,
             question: responseText,
             brief: LearningContentBriefSchema,
         })
@@ -94,6 +107,19 @@ export const TutorRequestStateSchema = z
     .object({
         pending: LearningContentBriefSchema.nullable(),
         replyLanguage: AssistantLanguageSchema.optional(),
+        pendingExplanationOverrides: z
+            .array(
+                ExplanationLanguageOverrideSchema.omit({
+                    evidence: true,
+                }).extend({
+                    studiedLanguage: z.union([
+                        z.literal('*'),
+                        ExplanationLanguageOverrideSchema.shape.language,
+                    ]),
+                }),
+            )
+            .max(8)
+            .optional(),
         pendingProposalIds: z.array(z.uuid()).max(8).optional(),
         pendingSources: z
             .object({

@@ -1,3 +1,5 @@
+import { chatAdmissionInput } from './conversation-chat-admission-input';
+import { generationAdmissionInput } from '../../ai/generation-admission-input';
 import { persistConversationAdmissionMessages } from './conversation-admission-messages';
 import { assertPreparedConversationCurrent } from './conversation-admission-snapshot';
 import type { GenerationAdmission } from '../../../application/ports/generation-run';
@@ -17,17 +19,13 @@ import {
     ConversationActionQuoteSchema,
     type SubmitConversationTurnRequest,
 } from '@languon/contracts';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { conversationRequestFingerprint } from './conversation-request-fingerprint';
 import { conversationAdmissionBilling } from './conversation-admission-billing';
 import { projectConversationSource } from '../../../application/conversation-source-context';
 import { resolveConversationPortrait } from '../../../application/portrait-context';
 import type { ConversationAccess } from '../../../application/ports/conversation-store';
-import {
-    tutorAdmissionInputBytes,
-    tutorMinimumInputBytes,
-} from '../../../application/tutor-context-budget';
 import {
     assertTutorCurrentMessageFits,
     projectTutorUserMessage,
@@ -56,7 +54,6 @@ import {
 } from './conversation-persistence-context';
 import {
     conversationsTable as chats,
-    conversationMemoryTable as memory,
     conversationMessagesTable as messages,
     conversationTurnsTable as turns,
 } from './schema';
@@ -385,50 +382,35 @@ export async function conversationSubmit(
                     access.ownerId,
                 ),
             );
-            const recent = await tx
-                .select({
-                    modelContent: messages.modelContent,
-                    content: messages.content,
-                    attachments: messages.attachments,
-                })
-                .from(messages)
-                .where(eq(messages.conversationId, id))
-                .orderBy(desc(messages.createdAt))
-                .limit(20);
-            const retainedMemory = await tx
-                .select({ key: memory.key, value: memory.value })
-                .from(memory)
-                .where(eq(memory.conversationId, id));
-            const contextInput = {
-                message: {
-                    id: input.requestId,
-                    role: 'user' as const,
-                    content: learnerContent,
-                    attachments: learnerAttachments,
-                    modelContent,
-                    createdAt: persistence.now().toISOString(),
-                    ...(editorTarget ? { editorTarget } : {}),
-                },
-                sourceContext: projectConversationSource(
-                    chat.source.kind,
-                    snapshot,
-                    learnerContent,
-                ).initialContext,
-                preferences: personalization.preferences,
-                ...(personalization.context
-                    ? { portraitContext: personalization.context }
-                    : {}),
-            };
-            const inputTokenBound =
-                tutorAdmissionInputBytes(contextInput, recent, retainedMemory) +
-                (generationPrepared
-                    ? JSON.stringify(generationPrepared.context).length
-                    : 0);
-            const minimumInputBound =
-                tutorMinimumInputBytes(contextInput, retainedMemory) +
-                (generationPrepared
-                    ? JSON.stringify(generationPrepared.context).length
-                    : 0);
+            const generationProjection = generationPrepared
+                ? generationAdmissionInput(
+                      generationPrepared.context,
+                      learnerContent,
+                      generation?.acknowledgedUncertainTurnId,
+                  )
+                : undefined;
+            const { minimumInputBound, inputTokenBound } =
+                generationProjection ??
+                (await chatAdmissionInput(tx, id, {
+                    message: {
+                        id: input.requestId,
+                        role: 'user' as const,
+                        content: learnerContent,
+                        attachments: learnerAttachments,
+                        modelContent,
+                        createdAt: persistence.now().toISOString(),
+                        ...(editorTarget ? { editorTarget } : {}),
+                    },
+                    sourceContext: projectConversationSource(
+                        chat.source.kind,
+                        snapshot,
+                        learnerContent,
+                    ).initialContext,
+                    preferences: personalization.preferences,
+                    ...(personalization.context
+                        ? { portraitContext: personalization.context }
+                        : {}),
+                }));
 
             const execution = await persistence.dependencies.admitTurn(tx, {
                 ownerId: access.ownerId,
@@ -437,18 +419,28 @@ export async function conversationSubmit(
                 requestId: input.requestId,
                 inputTokenBound,
                 minimumInputBound,
+                mayGenerateLesson:
+                    generation?.kind === 'generation' ||
+                    (!generation &&
+                        chat.source.kind === 'knowledge' &&
+                        !!snapshot.blockTarget),
                 reserveToolContinuation:
                     !!snapshot.blockTarget ||
                     !!snapshot.dictionaryGenerationContext,
                 fingerprint,
                 ...(generation?.kind === 'generation'
                     ? {
-                          forceConfirmation: true,
-                          ...(generationPrepared?.minimumOutputTokens !==
-                          undefined
+                          forceConfirmation: !generation.automatic,
+                          ...(generationPrepared?.generationAuthorization
+                              ? {
+                                    generationAuthorization:
+                                        generationPrepared.generationAuthorization,
+                                }
+                              : {}),
+                          ...(generationProjection
                               ? {
                                     minimumOutputTokens:
-                                        generationPrepared.minimumOutputTokens,
+                                        generationProjection.minimumOutputTokens,
                                 }
                               : {}),
                       }
@@ -478,7 +470,19 @@ export async function conversationSubmit(
                     authority,
                     sourceSnapshot: snapshot,
                     preferences: personalization.preferences,
-                    execution,
+                    execution: generationPrepared?.commandNumber
+                        ? {
+                              ...execution,
+                              generationCommandNumber:
+                                  generationPrepared.commandNumber,
+                              ...(generation?.acknowledgedUncertainTurnId
+                                  ? {
+                                        acknowledgedUncertainTurnId:
+                                            generation.acknowledgedUncertainTurnId,
+                                    }
+                                  : {}),
+                          }
+                        : execution,
                     ...conversationAdmissionBilling(execution),
                     portraitContext: personalization.context ?? null,
                     usage: {
@@ -497,6 +501,7 @@ export async function conversationSubmit(
                     persistence,
                     tx,
                     turnId,
+                    execution,
                     generation,
                     generationPrepared,
                 );

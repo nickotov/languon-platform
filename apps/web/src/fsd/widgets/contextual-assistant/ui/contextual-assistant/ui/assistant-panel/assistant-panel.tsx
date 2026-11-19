@@ -1,5 +1,9 @@
 'use client';
-import { LessonRuns, lessonRunCopy } from '@/fsd/features/lesson-generation';
+import {
+    LessonRuns,
+    lessonRunCopy,
+    type PreparedLessonRenderer,
+} from '@/fsd/features/lesson-generation';
 import { useLessonComposer } from '../../../../hooks/use-lesson-composer';
 import { BlockContextPicker } from '../block-context-picker/block-context-picker';
 import {
@@ -12,6 +16,7 @@ import {
     KnowledgeContentProposals,
     contentProposalCompletionKey,
     ExerciseGenerationPicker,
+    KnowledgeDocumentView,
 } from '@/fsd/features/knowledge-notes';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -33,6 +38,19 @@ import { AssistantDialogs } from '../assistant-dialogs/assistant-dialogs';
 import { TutorShell } from '../../../tutor-shell/tutor-shell';
 import type { ContextualAssistantProps } from '../../../../types';
 import styles from '../../../styles/contextual-assistant-assistant-panel-common.module.css';
+
+const preparedBlockOptions = () => ({
+    variant: 'review' as const,
+    scope: 'prepared-lesson',
+    interactionsDisabled: true,
+});
+const renderPreparedLesson: PreparedLessonRenderer = (body, dependencies) => (
+    <KnowledgeDocumentView
+        body={body}
+        dependencies={dependencies}
+        blockOptions={preparedBlockOptions}
+    />
+);
 
 export function AssistantPanel(
     props: ContextualAssistantProps & {
@@ -58,7 +76,7 @@ export function AssistantPanel(
         actorId: props.actorId,
         conversationId: chat.id,
         request: panel.requestWithSession,
-        detail,
+        reconciliations: chat.stream.reconciliations,
         active: panel.active,
         enabled: Boolean(workspace),
         question: chat.question,
@@ -319,6 +337,9 @@ export function AssistantPanel(
                                 >
                                     {workspace && (
                                         <LessonRuns
+                                            renderPreparedBody={
+                                                renderPreparedLesson
+                                            }
                                             state={lesson.state}
                                             actorId={props.actorId}
                                             request={panel.requestWithSession}

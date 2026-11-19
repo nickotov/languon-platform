@@ -1,5 +1,5 @@
 import { getLocalPrompt } from '@languon/prompts';
-import { z } from 'zod';
+import { structuredCallInputBytes } from './structured-call-input-bytes';
 import { exerciseActivityCatalog } from '@languon/contracts';
 import type { PreparedTutorHistory, TutorRunInput } from './ports/tutor-runner';
 import { learningContentCapabilities } from './learning-content-contract';
@@ -91,6 +91,10 @@ export function buildTutorPlannerPrompt(
             retainedReplyLanguage: state.replyLanguage ?? null,
             clarificationLanguagePolicy:
                 'Retain the conversation reply language. An answer about content, translation or grammar language changes those content fields only. Set changesReplyLanguage only for an explicit instruction to change chat replies.',
+            explanationLanguagePolicy:
+                'Grammar and exercise explanations default to each task language. A different language requires an explicit learner instruction and a verbatim explanationLanguageOverrides evidence excerpt, independently of chat replyLanguage.',
+            verifiedExplanationOverrides:
+                state.pendingExplanationOverrides ?? [],
             vocabularyBatching: 'automatic',
             vocabularyPublication: 'one-complete-block',
             priorAssistantCapacityClaimsAuthoritative: false,
@@ -139,36 +143,9 @@ export function tutorPlannerInputBytes(
     input: PlannerInput,
     state: TutorRequestState = { pending: null, proposals: [] },
 ): number {
-    const schema = z.toJSONSchema(TutorRequestResolutionSchema, {
-        io: 'input',
-        target: 'draft-7',
+    return structuredCallInputBytes({
+        schema: TutorRequestResolutionSchema,
+        instructions: getLocalPrompt('tutor-request-resolution'),
+        prompt: buildTutorPlannerPrompt(input, state),
     });
-    const jsonInstruction = `Return your response as JSON matching this schema:\n\n${JSON.stringify(schema)}\n\nReturn only valid JSON. Do not include markdown or explanatory text.`;
-
-    return Buffer.byteLength(
-        JSON.stringify({
-            prompt: [
-                {
-                    role: 'system',
-                    content: getLocalPrompt('tutor-request-resolution'),
-                },
-                {
-                    role: 'user',
-                    content: [
-                        {
-                            type: 'text',
-                            text: buildTutorPlannerPrompt(input, state),
-                            // The SDK stamps this metadata during message conversion.
-                            // Maximum safe integer bounds every valid JS timestamp.
-                            providerOptions: {
-                                mastra: { createdAt: Number.MAX_SAFE_INTEGER },
-                            },
-                        },
-                        { type: 'text', text: jsonInstruction },
-                    ],
-                },
-            ],
-        }),
-        'utf8',
-    );
 }

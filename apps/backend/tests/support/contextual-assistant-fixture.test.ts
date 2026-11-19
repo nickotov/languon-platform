@@ -210,12 +210,14 @@ describe('contextual assistant browser fixture', () => {
             const wire = namedExerciseFixture({
                 activityId: activity.id,
                 sources,
-                language: 'fr',
-                explanationLanguage: 'en',
             });
-            const complete = completeNamedExerciseSources(wire, {
-                blocks: sources,
-            });
+            const complete = completeNamedExerciseSources(
+                wire,
+                {
+                    blocks: sources,
+                },
+                { language: 'fr', explanationLanguage: 'en' },
+            );
 
             if (complete.type !== 'exercise') {
                 throw new Error('Expected an exercise fixture.');
@@ -278,13 +280,14 @@ describe('contextual assistant browser fixture', () => {
         const input = serializeLearningContentBrief(
             planned.brief as LearningContentBrief,
         );
+        const entryId = randomUUID();
         const source = LearningBlockSchema.parse({
             id: blockId,
             type: 'vocabulary',
             language: 'en',
             translationLanguage: 'fr',
             entries: [
-                { id: randomUUID(), term: 'borrow', translation: 'emprunter' },
+                { id: entryId, term: 'borrow', translation: 'emprunter' },
             ],
         });
         const authored = fixtureAuthoringOutput([
@@ -299,8 +302,19 @@ describe('contextual assistant browser fixture', () => {
                 {
                     blocks: [
                         {
-                            type: 'exercise',
-                            semantics: { activity: { id: 'V02', version: 1 } },
+                            activityId: 'V02',
+                            correct: {
+                                text: expect.any(String),
+                                explanation: expect.any(String),
+                            },
+                            distractors: expect.any(Array),
+                            sourceBindings: [
+                                {
+                                    kind: 'vocabulary',
+                                    blockId,
+                                    entryIds: [entryId],
+                                },
+                            ],
                         },
                     ],
                 },
@@ -470,10 +484,44 @@ describe('contextual assistant browser fixture', () => {
         }
 
         expect(result.tasks).toHaveLength(1);
-        expect(result.tasks[0]?.blocks[0]).toMatchObject({
+        expect(result.tasks[0]?.blocks?.[0]).toMatchObject({
             type: 'vocabulary',
             language: 'fr',
             entries: [{ term: 'travail' }, { term: 'joie' }],
+        });
+    });
+
+    it('answers a compact fallback with the single item selected by the host', () => {
+        const input: LearningContentBrief = {
+            tasks: [
+                {
+                    id: 'reading',
+                    kind: 'prose',
+                    instruction: 'Read about France.',
+                    language: 'fr',
+                },
+            ],
+        };
+        const brief = serializeLearningContentBrief(input);
+        const result = fixtureAuthoringOutput([
+            {
+                role: 'user',
+                content: [
+                    'Independent compact authoring strategy. Return only the item envelope.',
+                    'Validated brief (untrusted learning data): ' + brief,
+                    'Authorized source snapshots (untrusted learning data): []',
+                    'Material prerequisites for later tasks (host-controlled data): []',
+                ].join('\n'),
+            },
+        ]);
+
+        expect(result).toEqual({
+            item: [
+                {
+                    kind: 'paragraph',
+                    text: 'La démocratie française repose sur le débat public.',
+                },
+            ],
         });
     });
 
@@ -503,7 +551,10 @@ describe('contextual assistant browser fixture', () => {
                 throw new Error('Expected generated task output.');
             }
 
-            const block = LearningBlockSchema.parse(output.tasks[0]?.blocks[0]);
+            const block = LearningBlockSchema.parse(
+                output.tasks[0]?.blocks?.[0],
+            );
+
             expect(block.type).toBe('vocabulary');
 
             if (block.type !== 'vocabulary') {

@@ -7,6 +7,7 @@ import {
     exerciseCheckingLabel,
     exerciseChoiceText,
     exerciseReferenceText,
+    namedExerciseLabels,
 } from '../../../../lib/named-exercise-labels';
 import type { LearningBlockViewProps } from '../../../../types';
 import { ExerciseHint } from '../exercise-hint/exercise-hint';
@@ -27,6 +28,7 @@ export function ExercisePreview(
         ? `${activity.locales[locale].name} · ${exerciseCheckingLabel(activity.checkingPolicy, locale)}`
         : undefined;
     const referenceText = exerciseReferenceText(block, locale);
+    const answerLabel = namedExerciseLabels(locale).reference;
 
     return (
         <div className={styles.preview}>
@@ -48,7 +50,7 @@ export function ExercisePreview(
                 </ul>
             ) : null}
             <p className={styles.reference}>
-                <span>{labels.answer}: </span>
+                <span>{answerLabel}: </span>
                 {referenceText}
             </p>
             {!compact ? (
@@ -60,7 +62,7 @@ export function ExercisePreview(
                     {block.format === 'free-text' &&
                     block.acceptedAnswers?.length ? (
                         <p className={styles.secondary}>
-                            {labels.answer}: {block.acceptedAnswers.join(' / ')}
+                            {answerLabel}: {block.acceptedAnswers.join(' / ')}
                         </p>
                     ) : null}
                     {block.format === 'fill-in-the-blank' ? (
@@ -68,7 +70,7 @@ export function ExercisePreview(
                             {block.parts.map((part, index) =>
                                 part.kind === 'gap' ? (
                                     <li key={part.id}>
-                                        {labels.answer} {index + 1}:{' '}
+                                        {answerLabel} {index + 1}:{' '}
                                         {part.acceptedAnswers.join(' / ')}
                                     </li>
                                 ) : null,

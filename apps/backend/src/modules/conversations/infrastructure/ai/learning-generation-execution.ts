@@ -1,4 +1,7 @@
+import type { StructuredFinishReason } from './structured-output-diagnostics';
+import { generationRevisionCall } from '../../application/generation-revision-call';
 import { ConversationError } from '../../domain/conversation';
+import { GenerationExecutionFailure } from '../../application/generation-failure';
 import { randomUUID } from 'node:crypto';
 import { readTutorPlannerState } from '../../application/tutor-planner-prompt';
 import { tutorRequestStateKey } from '../../application/tutor-request-contract';
@@ -16,12 +19,16 @@ import {
     restoreGenerationExecution,
 } from './learning-generation-plan';
 import {
+    structuredResponseReader,
     generateTutorObject,
     type createTutorRequestAgents,
 } from './tutor-request-agents';
 import { publishLearningProposal } from './learning-content-operations';
 
 export interface StructuredCallValidation {
+    completedStructuredResponse?(
+        id: string,
+    ): StructuredFinishReason | undefined;
     withStructuredValidation<T>(id: string, work: () => Promise<T>): Promise<T>;
     rejectStructuredCall(id: string): Promise<void>;
 }
@@ -34,23 +41,35 @@ export async function executePreparedGeneration(
     context: GenerationExecutionContext,
     readBudget?: () => LearningContentExecutionBudget,
     validation?: StructuredCallValidation,
+    planOrigin: 'saved' | 'created-in-stage' = 'saved',
 ) {
     const restored = restoreGenerationExecution(context);
     const authoring = createLearningContentAuthoring({
         ...restored,
         run: { runId: context.runId, revision: context.revision },
+        ...(context.unitAttempts ? { unitAttempts: context.unitAttempts } : {}),
+        ...(input.onGenerationAttempt
+            ? { onGenerationAttempt: input.onGenerationAttempt }
+            : {}),
+        planCreatedInStage: planOrigin === 'created-in-stage',
         ...(readBudget ? { readBudget } : {}),
         authorizedSources: context.sources
             .filter((source) => !source.proposalId)
             .flatMap((source) => source.blocks),
-        generate: (call) => {
+        generate: async (call) => {
             const work = () =>
                 generateTutorObject({
                     agent: agents.learningContentAuthor,
                     ...call,
                     operationId: `${input.operationId}:${call.validationId}`,
+                    completedResponse: structuredResponseReader(
+                        validation,
+                        call.validationId,
+                    ),
                 });
 
+            // The model gate owns dispatch evidence. Let the caller classify its
+            // provider failure after routing; SDK errors alone do not prove dispatch.
             return validation
                 ? validation.withStructuredValidation(call.validationId, work)
                 : work();
@@ -74,31 +93,45 @@ export async function executePreparedGeneration(
                 );
             }
 
-            await input.onGenerationCheckpoint(
-                results.map((result) => {
-                    const task = context.plan.tasks.find(
-                        (candidate) => candidate.id === result.taskId,
-                    )!;
-                    const body = resultBody(result);
+            try {
+                await input.onGenerationCheckpoint(
+                    results.map((result) => {
+                        const task = context.plan.tasks.find(
+                            (candidate) => candidate.id === result.taskId,
+                        )!;
+                        const body = resultBody(result);
 
-                    return {
-                        id: artifactIds.get(result.taskId)!,
-                        revision: context.revision,
-                        taskId: result.taskId,
-                        batchKey,
-                        taskComplete,
-                        body,
-                        contentHash: generationHash(body),
-                        requirementsHash: generationHash(task),
-                        sourceHash: generationHash({
-                            inputs: task.inputs,
-                            sources: context.sources,
-                        }),
-                        validationVersion: 'learning-content-v1',
-                    };
-                }),
-                validationId,
-            );
+                        return {
+                            id: artifactIds.get(result.taskId)!,
+                            revision: context.revision,
+                            taskId: result.taskId,
+                            batchKey,
+                            taskComplete,
+                            body,
+                            contentHash: generationHash(body),
+                            requirementsHash: generationHash(task),
+                            sourceHash: generationHash({
+                                inputs: task.inputs,
+                                sources: context.sources,
+                            }),
+                            validationVersion: 'learning-content-v1',
+                        };
+                    }),
+                    validationId,
+                );
+            } catch (error) {
+                signal.throwIfAborted();
+
+                throw error instanceof ConversationError
+                    ? error
+                    : new GenerationExecutionFailure({
+                          code: 'publication',
+                          phase: 'checkpoint',
+                          ...(results.length === 1
+                              ? { taskId: results[0]!.taskId }
+                              : {}),
+                      });
+            }
         },
     });
     const result = await authoring.generate(restored.brief, signal);
@@ -106,8 +139,8 @@ export async function executePreparedGeneration(
     if (result.status === 'paused') {
         await input.onGenerationPause?.('budget');
         text = context.plan.replyLanguage.startsWith('ru')
-            ? 'Готовая часть сохранена. Продолжите создание материала, когда будете готовы.'
-            : 'Your progress is saved. Continue when you are ready to finish the material.';
+            ? 'План урока и текущий прогресс сохранены.'
+            : 'The lesson plan and current progress are saved.';
     } else if (result.status === 'ready') {
         if (!input.onContentProposal) {
             throw new Error('Content proposal authority is unavailable.');
@@ -121,7 +154,13 @@ export async function executePreparedGeneration(
             },
             result.proposal,
             result.summary,
-        );
+        ).catch((error: unknown) => {
+            signal.throwIfAborted();
+
+            throw error instanceof ConversationError
+                ? error
+                : new GenerationExecutionFailure({ code: 'publication' });
+        });
         const state = readTutorPlannerState(
             await input.memory.readState(tutorRequestStateKey),
         );
@@ -151,11 +190,26 @@ export async function executePreparedGeneration(
             replyLanguage: context.plan.replyLanguage,
         });
     } else {
-        throw new ConversationError(
-            result.status === 'failed' && result.reason === 'output-limit'
-                ? 'generation_output_limit'
-                : 'generation_invalid_output',
-            'The current generation stage could not complete. Validated progress is saved.',
+        if (
+            result.status === 'unsupported' &&
+            result.code === 'output-capacity'
+        ) {
+            throw new GenerationExecutionFailure({
+                code: 'admission-blocked',
+                admissionReason: 'allowance-required',
+            });
+        }
+
+        throw new GenerationExecutionFailure(
+            result.status === 'failed' && result.diagnostic
+                ? result.diagnostic
+                : {
+                      code:
+                          result.status === 'failed' &&
+                          result.reason === 'output-limit'
+                              ? 'output-limit'
+                              : 'content-invalid',
+                  },
         );
     }
 
@@ -195,10 +249,13 @@ export async function proposeGenerationRevision(
     const work = () =>
         generateTutorObject({
             agent: agents.generationPlanReviser,
-            prompt: `Revise the supplied prepared lesson plan according to the learner request. Return only the complete GenerationPlan object. Keep unchanged task identities and requirements. Preserve all original requirements not explicitly changed. Update outputOrder separately from dependency inputs. Sources are authorized frozen descriptors: retain their identities and never invent new references. Content language does not change replyLanguage unless the learner explicitly changes chat replies. This only proposes a revision for review; it does not generate content.\nCurrent plan (untrusted learning data): ${JSON.stringify(context.plan)}\nLearner request (untrusted learning data): ${JSON.stringify(input.message.content)}`,
-            schema: GenerationPlanSchema,
+            ...generationRevisionCall(context.plan, input.message.content),
             signal,
             operationId: `${input.operationId}:revision-plan`,
+            completedResponse: structuredResponseReader(
+                validation,
+                validationId,
+            ),
             maxOutputTokens: 2048,
         });
     let plan;

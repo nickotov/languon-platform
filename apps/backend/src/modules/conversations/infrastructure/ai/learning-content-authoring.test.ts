@@ -52,12 +52,7 @@ const output = (blocks: unknown[], taskId = 'words') => ({
     tasks: [{ taskId, blocks }],
 });
 
-function exercise(
-    question: string,
-    source: LearningBlock,
-    groupId?: string,
-    entryIndex = 0,
-) {
+function exercise(question: string, source: LearningBlock, entryIndex = 0) {
     const selected =
         source.type === 'vocabulary'
             ? { ...source, entries: [source.entries[entryIndex]!] }
@@ -65,8 +60,6 @@ function exercise(
     const block = namedExerciseFixture({
         activityId: source.type === 'vocabulary' ? 'V07' : 'R04',
         sources: [selected],
-        language: 'en',
-        explanationLanguage: 'en',
     });
 
     return {
@@ -76,7 +69,6 @@ function exercise(
             selected.type === 'vocabulary'
                 ? `I use ${selected.entries[0]!.term} in this context.`
                 : 'The apple is red.',
-        ...(groupId ? { group: { id: groupId, title: 'Words' } } : {}),
     };
 }
 
@@ -102,8 +94,6 @@ describe('dedicated content authoring', () => {
         const exercise = namedExerciseFixture({
             activityId: 'G02',
             sources: [good],
-            language: 'en',
-            explanationLanguage: 'en',
         });
         const generate = vi
             .fn()
@@ -156,16 +146,12 @@ describe('dedicated content authoring', () => {
             ...namedExerciseFixture({
                 activityId: 'V07',
                 sources: [source],
-                language: 'en',
-                explanationLanguage: 'en',
             }),
             id: source.id,
         };
         const good = namedExerciseFixture({
             activityId: 'V07',
             sources: [source],
-            language: 'en',
-            explanationLanguage: 'en',
         });
         const generate = vi
             .fn()
@@ -433,25 +419,30 @@ describe('dedicated content authoring', () => {
                 },
             ],
         };
-        const groupId = randomUUID();
         const generate = vi.fn(async () =>
             output(
                 [
-                    exercise('Use apple.', source, groupId),
-                    exercise('Use pear.', source, groupId, 1),
+                    exercise('Use apple.', source),
+                    exercise('Use pear.', source, 1),
                 ],
                 'practice',
             ),
         );
 
-        expect(
-            (
-                await createLearningContentAuthoring({
-                    generate,
-                    ...sourceOptions(source),
-                }).generate(brief, signal())
-            ).status,
-        ).toBe('ready');
+        const result = await createLearningContentAuthoring({
+            generate,
+            ...sourceOptions(source),
+        }).generate(brief, signal());
+
+        if (result.status !== 'ready') {
+            throw new Error('Expected grouped exercises.');
+        }
+
+        const groups = bodyBlocks(result.proposal.body).map((block) =>
+            block.type === 'exercise' ? block.group?.id : undefined,
+        );
+
+        expect(groups).toEqual([expect.any(String), groups[0]]);
 
         const duplicate = vi.fn(async () =>
             output(
@@ -518,7 +509,7 @@ describe('dedicated content authoring', () => {
         expect(schema).not.toContain('prepared-key');
         expect(schema).not.toContain('correctChoiceId');
         expect(schema).not.toContain('gapId');
-        expect(wire.semantics).not.toHaveProperty('sources');
+        expect(wire).not.toHaveProperty('semantics');
         if (result.status !== 'ready' || source.type !== 'vocabulary') {
             throw new Error('Expected complete named exercise fixture.');
         }
@@ -550,7 +541,13 @@ describe('dedicated content authoring', () => {
         const source = vocabulary();
         const block = {
             ...exercise('Use apple.', source),
-            source: { blockId: randomUUID(), segmentIds: [randomUUID()] },
+            sourceBindings: [
+                {
+                    kind: 'vocabulary',
+                    blockId: randomUUID(),
+                    entryIds: [randomUUID()],
+                },
+            ],
         };
         const generate = vi.fn(async () => output([block], 'practice'));
         const result = await createLearningContentAuthoring({
@@ -677,7 +674,13 @@ describe('dedicated content authoring', () => {
 
         const question = {
             ...exercise('Describe the apple.', block),
-            source: { blockId: block.id, segmentIds: [block.segments[0]!.id] },
+            sourceBindings: [
+                {
+                    kind: 'text',
+                    blockId: block.id,
+                    segmentIds: [block.segments[0]!.id],
+                },
+            ],
         };
 
         const grounded = createLearningContentAuthoring({
@@ -711,13 +714,18 @@ describe('dedicated content authoring', () => {
         const block = namedExerciseFixture({
             activityId: 'V02',
             sources: [source],
-            language: 'en',
-            explanationLanguage: 'en',
         });
 
-        block.referenceAnswer = block.choices![1]!.text;
+        if (!('correct' in block)) {
+            throw new Error('Expected a choice fixture.');
+        }
+
+        let invalid: unknown = {
+            ...block,
+            referenceAnswer: block.distractors[0]!.text,
+        };
         const authoring = createLearningContentAuthoring({
-            generate: async () => output([block], 'practice'),
+            generate: async () => output([invalid], 'practice'),
             ...sourceOptions(source),
         });
         const brief = {
@@ -737,8 +745,13 @@ describe('dedicated content authoring', () => {
             'failed',
         );
 
-        block.referenceAnswer = block.choices![0]!.text;
-        block.choices![1]!.text = block.choices![0]!.text;
+        invalid = {
+            ...block,
+            distractors: [
+                { ...block.distractors[0]!, text: block.correct.text },
+            ],
+        };
+
         expect((await authoring.generate(brief, signal())).status).toBe(
             'failed',
         );
@@ -781,8 +794,10 @@ describe('dedicated content authoring', () => {
             throw new Error('Expected vocabulary fixture.');
         }
 
-        const block = exercise('Use apple.', source);
-        block.id = source.entries[0]!.id;
+        const block = {
+            ...exercise('Use apple.', source),
+            id: source.entries[0]!.id,
+        };
         const authoring = createLearningContentAuthoring({
             ...sourceOptions(source),
             generate: async () => output([block], 'practice'),

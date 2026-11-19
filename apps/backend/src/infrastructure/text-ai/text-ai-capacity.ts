@@ -239,18 +239,35 @@ const providerOperationalBudget = {
     dailyOwnerAttempts: 3,
 } as const;
 
+interface ProviderCapacityReservation {
+    costMicros: number;
+    inputTokens: number;
+    outputTokens: number;
+}
+
 export function textAiProviderBudgetAllows(
     usage: TextAiProviderBudgetUsage,
-    includeNewReservation: boolean,
+    prospectiveReservation: boolean | ProviderCapacityReservation,
     policy: TextAiProviderBudgetPolicy,
 ): boolean {
-    const reservation = includeNewReservation
-        ? {
-              costMicros: policy.maxCostMicrosPerAttempt,
-              inputTokens: policy.maxInputTokensPerAttempt,
-              outputTokens: policy.maxOutputTokensPerAttempt,
-          }
-        : { costMicros: 0, inputTokens: 0, outputTokens: 0 };
+    const reservation =
+        typeof prospectiveReservation === 'object'
+            ? prospectiveReservation
+            : prospectiveReservation
+              ? {
+                    costMicros: policy.maxCostMicrosPerAttempt,
+                    inputTokens: policy.maxInputTokensPerAttempt,
+                    outputTokens: policy.maxOutputTokensPerAttempt,
+                }
+              : { costMicros: 0, inputTokens: 0, outputTokens: 0 };
+
+    if (
+        Object.values(reservation).some(
+            (amount) => !Number.isSafeInteger(amount) || amount < 0,
+        )
+    ) {
+        return false;
+    }
 
     return (
         usage.globalActiveCostMicros + reservation.costMicros <=

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { generatedReadingSchema } from './learning-content-prose';
 import {
     ProseKnowledgeBodySchema,
     VocabularyLearningBlockSchema,
@@ -66,8 +67,7 @@ export function learningContentSchemaForBrief(
             return z
                 .object({
                     ...common,
-                    blocks: z.array(z.never()).length(0),
-                    prose: ProseKnowledgeBodySchema,
+                    prose: generatedReadingSchema,
                 })
                 .strict();
         }

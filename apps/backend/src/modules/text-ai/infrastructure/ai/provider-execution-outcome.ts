@@ -28,10 +28,14 @@ export function withProviderExecutionOutcome<T extends Error>(
 
 /** Preserve SDK cause internally for bounded safe classifiers, never raw logging. */
 export class ProviderExecutionError extends Error {
+    readonly rateLimited: boolean;
     readonly executionOutcome: ProviderExecutionOutcome;
     constructor(source: unknown, providerId: string) {
         super('Provider execution failed.', { cause: source });
         this.name = 'ProviderExecutionError';
+        this.rateLimited =
+            sentenceProviderFailure(source, providerId).reason ===
+            'rate_limited';
         this.executionOutcome = providerExecutionOutcome(source, providerId);
     }
 }

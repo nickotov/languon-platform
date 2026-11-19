@@ -1,3 +1,8 @@
+import { learningContentActionOutputLimit } from '../../application/learning-content-batches';
+import {
+    structuredFinishReason,
+    type StructuredFinishReason,
+} from './structured-output-diagnostics';
 import { readProviderTokenUsage } from '../../../text-ai/infrastructure/ai/provider-token-usage';
 import {
     withTextAiProviderAttemptWitness,
@@ -21,6 +26,8 @@ export type TutorProviderModel = Exclude<
 >;
 type TutorExecutableModel = TutorProviderModel | TutorWrappedModel;
 type CallOptions = Parameters<TutorProviderModel['doStream']>[0];
+
+export const tutorStageTimeLimitMs = 120_000;
 
 export class TutorOperationLimitError extends Error {
     constructor() {
@@ -64,7 +71,7 @@ export function createTutorModelGate(options: {
     estimateInputTokens?: (options: CallOptions) => number;
 }) {
     const controller = new AbortController();
-    const deadline = options.deadline ?? Date.now() + 120_000;
+    const deadline = options.deadline ?? Date.now() + tutorStageTimeLimitMs;
     const signal = AbortSignal.any([
         options.signal,
         controller.signal,
@@ -80,6 +87,10 @@ export function createTutorModelGate(options: {
     const maxCalls = options.maxCalls ?? 5;
     const maxMemoryCalls = options.maxMemoryCalls ?? 2;
     const validationContext = new AsyncLocalStorage<string>();
+    const settledResponses = new WeakMap<
+        TutorCallAdmission,
+        StructuredFinishReason
+    >();
     const structuredCalls = new Map<string, TutorCallAdmission[]>();
 
     const wrap = <Model extends TutorExecutableModel>(
@@ -112,7 +123,7 @@ export function createTutorModelGate(options: {
                 calls >= maxCalls ||
                 !Number.isSafeInteger(inputTokenEstimate) ||
                 inputTokenEstimate < 0 ||
-                allocatedOutputTokens >= 10_000 ||
+                allocatedOutputTokens >= learningContentActionOutputLimit ||
                 ((purpose === 'observation' || purpose === 'reflection') &&
                     (memoryCalls >= maxMemoryCalls || calls >= maxCalls - 1))
             ) {
@@ -130,7 +141,7 @@ export function createTutorModelGate(options: {
             const maxOutputTokens = Math.min(
                 input.maxOutputTokens ?? outputCap,
                 outputCap,
-                10_000 - allocatedOutputTokens,
+                learningContentActionOutputLimit - allocatedOutputTokens,
             );
 
             if (
@@ -251,11 +262,15 @@ export function createTutorModelGate(options: {
                                 );
                             }
 
-                            prepared.call.providerCompleted =
-                                result.finishReason === 'stop' ||
-                                result.finishReason === 'length';
+                            const finishReason = structuredFinishReason(
+                                result.finishReason,
+                            );
 
-                            if (result.finishReason === 'length') {
+                            prepared.call.providerCompleted =
+                                finishReason === 'stop' ||
+                                finishReason === 'length';
+
+                            if (finishReason === 'length') {
                                 prepared.call.outputLimitReached = true;
                             }
 
@@ -270,11 +285,16 @@ export function createTutorModelGate(options: {
                                 return result;
                             }
 
-                            if (result.finishReason === 'length') {
+                            if (finishReason === 'length') {
                                 usage.outputLimitReached = true;
                             }
 
-                            await settleUsage(prepared.call, usage);
+                            await settleUsage(
+                                prepared.call,
+                                usage,
+                                result.finishReason,
+                            );
+
                             settled = true;
 
                             return result;
@@ -340,6 +360,7 @@ export function createTutorModelGate(options: {
         async function settleUsage(
             call: TutorCallAdmission,
             usage: TutorCallUsage,
+            finishReason: unknown,
         ) {
             if (
                 usage.outputTokens > call.maxOutputTokens ||
@@ -349,6 +370,10 @@ export function createTutorModelGate(options: {
             }
 
             await options.accounting.settle(call, usage);
+            // Measurement alone cannot establish a valid answer. Retain the exact
+            // terminal classification only after successful settlement for this call.
+            settledResponses.set(call, structuredFinishReason(finishReason));
+
             allocatedOutputTokens -= call.maxOutputTokens - usage.outputTokens;
         }
 
@@ -368,6 +393,17 @@ export function createTutorModelGate(options: {
                 }
 
                 finalized = true;
+                // This stream was opened by the provider. A naked EOF or local
+                // cancellation before finish leaves the dispatched attempt uncertain.
+                if (!call.providerCompleted) {
+                    providerFailure ??= {
+                        purpose,
+                        error: new Error(
+                            'The provider stream ended before a terminal result.',
+                        ),
+                    };
+                }
+
                 await fail(call, reason, usage);
             };
             const reader = result.stream.getReader();
@@ -438,11 +474,15 @@ export function createTutorModelGate(options: {
                             }
 
                             if (next.value.type === 'finish') {
-                                call.providerCompleted =
-                                    next.value.finishReason === 'stop' ||
-                                    next.value.finishReason === 'length';
+                                const finishReason = structuredFinishReason(
+                                    next.value.finishReason,
+                                );
 
-                                if (next.value.finishReason === 'length') {
+                                call.providerCompleted =
+                                    finishReason === 'stop' ||
+                                    finishReason === 'length';
+
+                                if (finishReason === 'length') {
                                     call.outputLimitReached = true;
                                 }
 
@@ -454,11 +494,16 @@ export function createTutorModelGate(options: {
                                         'missing-usage',
                                     );
                                 } else {
-                                    if (next.value.finishReason === 'length') {
+                                    if (finishReason === 'length') {
                                         usage.outputLimitReached = true;
                                     }
 
-                                    await settleUsage(call, usage);
+                                    await settleUsage(
+                                        call,
+                                        usage,
+                                        next.value.finishReason,
+                                    );
+
                                     finalized = true;
                                 }
                             }
@@ -487,6 +532,12 @@ export function createTutorModelGate(options: {
 
     return {
         wrap,
+        completedStructuredResponse(validationId: string) {
+            const calls = structuredCalls.get(validationId);
+            const call = calls?.length === 1 ? calls[0] : undefined;
+
+            return call ? settledResponses.get(call) : undefined;
+        },
         withStructuredValidation<T>(
             validationId: string,
             work: () => PromiseLike<T>,
@@ -540,10 +591,12 @@ export function createTutorModelGate(options: {
         get remainingBudget() {
             // Consumers may plan work from this snapshot; admission still owns the limits.
             return Object.freeze({
+                remainingTimeMs: Math.max(0, deadline - Date.now()),
+                perCallInputLimit: options.maxInputTokens,
                 remainingCalls: Math.max(0, maxCalls - calls),
                 remainingOutputTokens: Math.max(
                     0,
-                    10_000 - allocatedOutputTokens,
+                    learningContentActionOutputLimit - allocatedOutputTokens,
                 ),
             });
         },

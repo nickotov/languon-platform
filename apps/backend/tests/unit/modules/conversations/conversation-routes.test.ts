@@ -29,6 +29,66 @@ function composedRoutes() {
 }
 
 describe('conversation router mounting boundaries', () => {
+    it.each([
+        ['context_too_large', 400],
+        ['provider_capacity_exhausted', 503],
+        ['operator_capacity_exhausted', 503],
+        ['generation_acknowledgement_required', 409],
+    ] as const)(
+        'correlates a %s rejection with a sanitized diagnostic',
+        async (code, status) => {
+            const reportRunCommandFailure = vi.fn();
+            const route = createConversationRoutes({
+                service: {
+                    access: async () => ({ ownerId: randomUUID() }),
+                    admitSubmission: async () => ({ release: async () => {} }),
+                    store: {
+                        continueGenerationRun: async () => {
+                            throw new ConversationError(
+                                code,
+                                'Private diagnostic details.',
+                            );
+                        },
+                    },
+                } as never,
+                policy: new AuthHttpPolicy({
+                    allowedOrigins: ['http://localhost:3333'],
+                    appEnvironment: 'test',
+                    refreshTokenTtlSeconds: 3600,
+                }),
+                reportRunCommandFailure,
+            });
+            const response = await route.request(
+                `/conversations/${randomUUID()}/generation-runs/${randomUUID()}/continue`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: 'Bearer synthetic.test.token',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        requestId: randomUUID(),
+                        expectedRevision: 1,
+                    }),
+                },
+            );
+
+            expect(response.status).toBe(status);
+            const { error } = await response.json();
+            expect(reportRunCommandFailure.mock.calls).toEqual([
+                [
+                    {
+                        command:
+                            '/conversations/:conversationId/generation-runs/:runId/continue',
+                        status,
+                        code,
+                        requestId: error.requestId,
+                    },
+                ],
+            ]);
+        },
+    );
+
     it('leaves unrelated upload limits, CORS and preflight ownership with their router', async () => {
         const app = composedRoutes();
         const payload = 'x'.repeat(1_200_000);

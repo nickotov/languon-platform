@@ -19,6 +19,16 @@ export function assertGenerationCapacity(
             .map((artifact) => artifact.taskId),
         artifacts.map((artifact) => artifact.batchKey),
         sources,
+        // Artifacts are immutable cumulative prefixes in checkpoint order. Use
+        // the latest body per task, never sum historical prefix lengths.
+        new Map(
+            artifacts.map((artifact) => [
+                artifact.taskId,
+                artifact.body.document.content?.filter(
+                    (node) => node.type === 'learningBlock',
+                ).length ?? 0,
+            ]),
+        ),
     );
 
     if (capacity.status === 'unsupported') {

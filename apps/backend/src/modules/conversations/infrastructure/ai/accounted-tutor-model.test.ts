@@ -16,6 +16,68 @@ const input = {
 };
 
 describe('accounted tutor model', () => {
+    it('requires exactly one settled response for the current validation', async () => {
+        const gate = createTutorModelGate({
+            accounting: tutorAccountingFixture(),
+            signal: new AbortController().signal,
+            maxInputTokens: 64000,
+        });
+        const model = gate.wrap(
+            scriptedTutorModel(['one', 'two', 'three']).model,
+            'authoring',
+        );
+
+        await gate.withStructuredValidation('single', async () => {
+            expect(gate.completedStructuredResponse('single')).toBeUndefined();
+            await model.doGenerate(input);
+        });
+
+        expect(gate.completedStructuredResponse('single')).toBe('stop');
+
+        await gate.withStructuredValidation('multiple', async () => {
+            await model.doGenerate(input);
+            await model.doGenerate(input);
+        });
+
+        expect(gate.completedStructuredResponse('multiple')).toBeUndefined();
+    });
+
+    it.each([
+        'tool-calls',
+        'content-filter',
+        'error',
+        'other',
+        'unknown',
+    ] as const)(
+        'returns only the allowlisted terminal %s from the settled call',
+        async (finishReason) => {
+            const provider = scriptedTutorModel(['fixture']);
+            const produce = provider.model.doGenerate.bind(provider.model);
+            provider.model.doGenerate = async (options) => ({
+                ...(await produce(options)),
+                finishReason,
+            });
+
+            const gate = createTutorModelGate({
+                accounting: tutorAccountingFixture(),
+                signal: new AbortController().signal,
+                maxInputTokens: 64000,
+            });
+
+            await gate.withStructuredValidation('single', () =>
+                gate.wrap(provider.model, 'authoring').doGenerate(input),
+            );
+
+            expect(gate.completedStructuredResponse('single')).toBe(
+                finishReason,
+            );
+
+            expect(
+                gate.completedStructuredResponse('unrelated'),
+            ).toBeUndefined();
+        },
+    );
+
     it('never accepts a structured response truncated by the provider', async () => {
         const accounting = {
             ...tutorAccountingFixture(),
@@ -37,6 +99,10 @@ describe('accounted tutor model', () => {
         await gate.withStructuredValidation('truncated', () =>
             gate.wrap(provider.model, 'authoring').doGenerate(input),
         );
+
+        expect(gate.completedStructuredResponse('truncated')).toBe('length');
+
+        expect(gate.completedStructuredResponse('missing')).toBeUndefined();
 
         await expect(gate.acceptStructuredCall('truncated')).rejects.toThrow(
             'cannot be accepted',
@@ -138,6 +204,35 @@ describe('accounted tutor model', () => {
         ).toThrow('must be unique');
     });
 
+    it('reports the time left on the original stage deadline after a long call', async () => {
+        const clock = vi.spyOn(Date, 'now');
+        try {
+            clock.mockReturnValue(1_000);
+            const gate = createTutorModelGate({
+                accounting: tutorAccountingFixture(),
+                signal: new AbortController().signal,
+                maxInputTokens: 32000,
+                deadline: 121_000,
+            });
+
+            expect(gate.remainingBudget).toMatchObject({
+                perCallInputLimit: 32000,
+                remainingTimeMs: 120_000,
+            });
+
+            await gate
+                .wrap(scriptedTutorModel(['ok']).model, 'authoring')
+                .doGenerate(input);
+
+            clock.mockReturnValue(120_000);
+            expect(gate.remainingBudget.remainingTimeMs).toBe(1_000);
+            clock.mockReturnValue(122_000);
+            expect(gate.remainingBudget.remainingTimeMs).toBe(0);
+        } finally {
+            clock.mockRestore();
+        }
+    });
+
     it('exposes fresh immutable budget snapshots and reclaims measured unused output', async () => {
         const provider = scriptedTutorModel(['Explanation']);
         const gate = createTutorModelGate({
@@ -148,7 +243,7 @@ describe('accounted tutor model', () => {
         });
         const before = gate.remainingBudget;
 
-        expect(before).toEqual({
+        expect(before).toMatchObject({
             remainingCalls: 4,
             remainingOutputTokens: 10_000,
         });
@@ -158,12 +253,12 @@ describe('accounted tutor model', () => {
 
         await gate.wrap(provider.model, 'authoring').doGenerate(input);
 
-        expect(gate.remainingBudget).toEqual({
+        expect(gate.remainingBudget).toMatchObject({
             remainingCalls: 3,
             remainingOutputTokens: 9988,
         });
 
-        expect(before).toEqual({
+        expect(before).toMatchObject({
             remainingCalls: 4,
             remainingOutputTokens: 10_000,
         });
@@ -181,7 +276,7 @@ describe('accounted tutor model', () => {
             gate.wrap(provider.model, 'authoring').doGenerate(input),
         ).rejects.toThrow('Unexpected model dispatch');
 
-        expect(gate.remainingBudget).toEqual({
+        expect(gate.remainingBudget).toMatchObject({
             remainingCalls: 4,
             remainingOutputTokens: 5904,
         });
@@ -283,7 +378,7 @@ describe('accounted tutor model', () => {
 
         await vi.waitFor(() => expect(accounting.admit).toHaveBeenCalledOnce());
         expect(provider.requests).toHaveLength(0);
-        expect(gate.remainingBudget).toEqual({
+        expect(gate.remainingBudget).toMatchObject({
             remainingCalls: 4,
             remainingOutputTokens: 5904,
         });
@@ -529,6 +624,34 @@ describe('accounted tutor model', () => {
         expect(accounting.fail).toHaveBeenCalledExactlyOnceWith(
             expect.anything(),
             'aborted',
+        );
+    });
+
+    it('tracks premature EOF on a dispatched stream as an uncertain provider result', async () => {
+        const provider = scriptedTutorModel([]);
+        provider.model.doStream = async () => ({
+            stream: new ReadableStream({
+                start(controller) {
+                    controller.close();
+                },
+            }),
+        });
+
+        const accounting = tutorAccountingFixture();
+        const gate = createTutorModelGate({
+            accounting,
+            signal: new AbortController().signal,
+            maxInputTokens: 64000,
+        });
+        const result = await gate
+            .wrap(provider.model, 'authoring')
+            .doStream(input);
+
+        await expect(result.stream.getReader().read()).rejects.toThrow();
+        expect(gate.providerFailure?.purpose).toBe('authoring');
+        expect(accounting.fail).toHaveBeenCalledExactlyOnceWith(
+            expect.anything(),
+            'missing-usage',
         );
     });
 

@@ -1,6 +1,7 @@
 import type { ExerciseLearningBlock } from '@languon/contracts';
 
 const en = {
+    reference: 'Reference answer',
     prepared: 'Instant check',
     hybrid: 'Instant check; AI review for other answers',
     ai: 'AI feedback on request',
@@ -26,6 +27,7 @@ const en = {
 const messages: Record<string, typeof en> = {
     en,
     ru: {
+        reference: 'Эталонный ответ',
         prepared: 'Мгновенная проверка',
         hybrid: 'Мгновенная проверка; другие ответы — с ИИ',
         ai: 'ИИ-проверка по запросу',
@@ -48,6 +50,7 @@ const messages: Record<string, typeof en> = {
         truthNotStated: 'Не сказано',
     },
     fr: {
+        reference: 'Réponse de référence',
         prepared: 'Vérification immédiate',
         hybrid: 'Vérification immédiate ; IA pour les autres réponses',
         ai: 'Retour IA sur demande',
@@ -70,6 +73,7 @@ const messages: Record<string, typeof en> = {
         truthNotStated: 'Non indiqué',
     },
     es: {
+        reference: 'Respuesta de referencia',
         prepared: 'Comprobación inmediata',
         hybrid: 'Comprobación inmediata; IA para otras respuestas',
         ai: 'Comentarios de IA a petición',

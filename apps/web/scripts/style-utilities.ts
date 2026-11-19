@@ -76,6 +76,12 @@ function utilityBase(token: string): string {
 }
 
 function isNonClassLiteral(base: string): boolean {
+    // Validated generation failure codes may occur in copy maps and fixtures.
+    // Class contexts still reject the same spelling as a utility class.
+    if (base === 'content-invalid') {
+        return true;
+    }
+
     // HTTP headers, placement-library values and query keys aren't classes.
     if (/^content-(?:type|disposition|length)$/.test(base)) {
         return true;

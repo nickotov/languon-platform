@@ -1,3 +1,4 @@
+import { registerConversationGenerationPreviewRoute } from './conversation-generation-preview.routes';
 import { registerConversationGenerationRoutes } from './conversation-generation.routes';
 import { registerConversationDictionarySnippetRoutes } from './conversation-dictionary-snippet.routes';
 import { registerConversationContentProposalRoutes } from './conversation-content-proposal.routes';
@@ -76,10 +77,38 @@ const security = [{ bearerAuth: [] as string[] }];
 export function createConversationRoutes({
     service,
     policy,
+    reportRunCommandFailure,
 }: {
     service: ConversationService;
     policy: AuthHttpPolicy;
+    reportRunCommandFailure?: (event: {
+        command: string;
+        code: string;
+        status: number;
+        requestId: string;
+    }) => void;
 }) {
+    function errorReference(context: Context, code: string, status: number) {
+        const requestId = randomUUID();
+        // Record the route template and server-generated reference only. Payloads
+        // and concrete resource IDs can contain private lesson information.
+        const route = context.req.routePath;
+        if (
+            context.req.method === 'POST' &&
+            route?.includes('/generation-runs/') &&
+            code !== 'action_confirmation_required'
+        ) {
+            reportRunCommandFailure?.({
+                command: route,
+                code,
+                status,
+                requestId,
+            });
+        }
+
+        return requestId;
+    }
+
     const app = new OpenAPIHono({
         defaultHook: (result, c) => {
             if (!result.success) {
@@ -88,7 +117,11 @@ export function createConversationRoutes({
                         error: {
                             code: 'invalid_request',
                             message: 'The request is invalid.',
-                            requestId: randomUUID(),
+                            requestId: errorReference(
+                                c,
+                                'invalid_request',
+                                400,
+                            ),
                         },
                     },
                     400,
@@ -132,7 +165,11 @@ export function createConversationRoutes({
                             error: {
                                 code: 'invalid_request',
                                 message: 'The request body is too large.',
-                                requestId: randomUUID(),
+                                requestId: errorReference(
+                                    c,
+                                    'invalid_request',
+                                    413,
+                                ),
                             },
                         },
                         413,
@@ -176,6 +213,7 @@ export function createConversationRoutes({
                           'source_changed',
                           'source_selection_required',
                           'generation_scope_change',
+                          'generation_acknowledgement_required',
                           'idempotency_conflict',
                           'deletion_busy',
                       ].includes(code)
@@ -184,6 +222,8 @@ export function createConversationRoutes({
                             'service_unavailable',
                             'model_unavailable',
                             'capacity_unavailable',
+                            'provider_capacity_exhausted',
+                            'operator_capacity_exhausted',
                         ].includes(code)
                       ? 503
                       : 400;
@@ -205,7 +245,7 @@ export function createConversationRoutes({
                 error: {
                     code,
                     message,
-                    requestId: randomUUID(),
+                    requestId: errorReference(c, code, status),
                     ...(failure instanceof
                     ConversationActionConfirmationRequired
                         ? { details: { quote: failure.quote } }
@@ -892,6 +932,7 @@ export function createConversationRoutes({
     );
 
     registerConversationGenerationRoutes(app, service, access);
+    registerConversationGenerationPreviewRoute(app, service, access);
     registerConversationContentProposalRoutes(app, service.store, access);
     registerConversationDictionarySnippetRoutes(app, service.store, access);
 
