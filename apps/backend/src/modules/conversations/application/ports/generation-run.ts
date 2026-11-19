@@ -25,6 +25,7 @@ export interface GenerationAutomationAuthorization {
 }
 
 export interface GenerationAutomaticAdmission {
+    expiresAt: string;
     maximumCreditsMilli: string;
     maximumProviderCostMicros: number;
     authorizationFingerprint: string;

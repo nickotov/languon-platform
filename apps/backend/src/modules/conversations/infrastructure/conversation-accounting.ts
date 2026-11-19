@@ -634,6 +634,23 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             );
         }
 
+        // Provider dispatch checks the persisted action deadline under its reservation lock.
+        // A queued continuation must inherit the same absolute expiry as the lesson.
+        const stageDeadline = now.getTime() + 15 * 60_000;
+        const deadline = automatic
+            ? Math.min(Date.parse(automatic.expiresAt), stageDeadline)
+            : stageDeadline;
+
+        if (
+            automatic &&
+            (!Number.isFinite(deadline) || deadline <= Date.now())
+        ) {
+            throw new ConversationError(
+                'generation_scope_change',
+                'The approved lesson generation window has expired.',
+            );
+        }
+
         const action = await new DrizzleActionAccountingParticipant(tx)
             .reserve({
                 id: input.turnId,
@@ -649,7 +666,7 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 ),
                 operatorSettings: settings,
                 at: now,
-                deadlineAt: new Date(now.getTime() + 15 * 60_000),
+                deadlineAt: new Date(deadline),
             })
             .catch((error: unknown) => {
                 if (error instanceof OperatorBudgetUnavailableError) {

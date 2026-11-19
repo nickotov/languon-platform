@@ -22,7 +22,7 @@ export function LessonRun({
     request,
     busy,
     reconnecting,
-    failed,
+    stopping,
     actionNotice,
     continueBlocked,
     onAction,
@@ -35,7 +35,7 @@ export function LessonRun({
     request: ConversationSessionRequest;
     busy: boolean;
     reconnecting: boolean;
-    failed: boolean;
+    stopping: boolean;
     actionNotice?: ReactNode;
     continueBlocked: boolean;
     onAction(action: LessonRunAction): void;
@@ -50,7 +50,6 @@ export function LessonRun({
         null,
     );
     const [discarding, setDiscarding] = useState(false);
-    const [stopRequested, setStopRequested] = useState<string | null>(null);
     const [capturing, setCapturing] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [captureFailed, setCaptureFailed] = useState(false);
@@ -80,11 +79,6 @@ export function LessonRun({
     const candidate =
         run.state === 'paused' ? detail.data?.revisionCandidate : undefined;
     const showCandidate = candidate && candidate.id !== dismissedCandidate;
-    const stopping =
-        (run.state === 'running' || run.automation?.enabled === true) &&
-        stopRequested === (run.activeTurnId ?? run.id) &&
-        !failed;
-
     function continueRun() {
         onAction({
             kind: 'continue',
@@ -108,7 +102,6 @@ export function LessonRun({
     }
 
     function stop() {
-        setStopRequested(run.activeTurnId ?? run.id);
         onAction({ kind: 'stop', run });
     }
 

@@ -311,7 +311,7 @@ conversation's progress has been read. If that read fails, **Refresh** checks
 the saved state again without starting generation. Opening prepared content may read its separate
 preview endpoint; that read never starts generation.
 
-Generation advances automatically within one approved budget. The configured credit and provider-cost ceilings cover the whole authorization; internal stages do not multiply them. **Stop** works while a stage runs and between stages, retains completed material and charges eligible usage. Returning to the page only reads progress and never starts duplicate work.
+Generation advances automatically within one approved budget. The configured credit and provider-cost ceilings cover the whole authorization; internal stages do not multiply them. The **Stop** button beside the chat input and the one on the lesson card stop the same lesson, including the wait between stages. Completed material stays available and eligible usage is charged. Returning to the page only reads progress and never starts duplicate work.
 
 When a spending confirmation is required, the maximum credits cover the whole
 lesson. The approximate output allowance applies to a single stage. Once

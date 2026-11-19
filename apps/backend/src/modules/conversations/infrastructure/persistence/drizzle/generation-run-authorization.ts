@@ -165,6 +165,7 @@ export async function remainingGenerationAuthorization(
         BigInt(authorization.maximumProviderCostMicros) - providerSpent;
 
     return {
+        expiresAt: authorization.expiresAt,
         maximumCreditsMilli: (credits > 0n ? credits : 0n).toString(),
         maximumProviderCostMicros: Number(provider > 0n ? provider : 0n),
         authorizationFingerprint: authorization.authorizationFingerprint,

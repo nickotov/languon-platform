@@ -144,10 +144,25 @@ export function useLessonRunActions(
         };
     }, [owner, reset]);
 
+    function stopping(run: GenerationRunSummary) {
+        const action = mutation.variables?.action;
+
+        return (
+            mutation.variables?.owner === owner &&
+            (mutation.isPending || mutation.isSuccess) &&
+            action?.kind === 'stop' &&
+            action.run.id === run.id &&
+            action.run.revision === run.revision &&
+            action.run.activeTurnId === run.activeTurnId &&
+            (run.state === 'running' || run.automation?.enabled === true)
+        );
+    }
+
     function execute(action: LessonRunAction) {
         if (
             owner !== currentOwner.current ||
             action.run.conversationId !== conversationId ||
+            (action.kind === 'stop' && stopping(action.run)) ||
             locked.current ||
             mutation.isPending
         ) {
@@ -194,6 +209,7 @@ export function useLessonRunActions(
 
     return {
         execute,
+        stopping,
         confirm,
         cancelQuote,
         clearError: clearFailure,

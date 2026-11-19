@@ -728,7 +728,6 @@ it('binds plan-adjustment consent to the reviewed uncertainty before sending a r
                 conversationId: current.conversationId,
                 request,
                 reconciliations: 0,
-                active: false,
                 enabled: true,
                 question: 'Shorten the reading',
                 replaceQuestion: vi.fn(),

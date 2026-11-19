@@ -168,10 +168,38 @@ export async function verifyIdleLessonRecovery(
         release = resolve;
     });
     const posts: string[] = [];
+    let releaseStop!: () => void;
+    const stopping = new Promise<void>((resolve) => {
+        releaseStop = resolve;
+    });
+
     await page.route(`**${listPath}**`, async (route) => {
         const path = new URL(route.request().url()).pathname;
         if (route.request().method() === 'POST') {
             posts.push(path);
+            if (path.endsWith(`/${repairing.id}/stop`)) {
+                expect(route.request().postDataJSON()).toMatchObject({
+                    expectedRevision: repairing.revision,
+                    requestId: expect.any(String),
+                });
+
+                await stopping;
+                const stopped: GenerationRunSummary = {
+                    ...repairing,
+                    automation: undefined,
+                    pauseReason: 'stopped',
+                    updatedAt: new Date(
+                        Date.parse(repairing.updatedAt) + 1,
+                    ).toISOString(),
+                };
+
+                pausedRuns[pausedRuns.indexOf(repairing)] = stopped;
+
+                return route.fulfill({
+                    json: { run: stopped, plan: lessonPlan },
+                });
+            }
+
             if (path.endsWith(`/${capacityRun.id}/continue`)) {
                 if (!route.request().postDataJSON().confirmedQuoteId) {
                     return route.fulfill({
@@ -317,6 +345,11 @@ export async function verifyIdleLessonRecovery(
         ).toHaveCount(0);
     }
 
+    const composerStop = page
+        .locator('form[data-workspace="true"]')
+        .getByRole('button', { name: 'Stop', exact: true });
+
+    await expect(composerStop).toBeEnabled();
     await expect(resume).toBeEnabled();
     await page.evaluate(() =>
         window.dispatchEvent(new Event('rotate-test-lesson-stream')),
@@ -325,6 +358,7 @@ export async function verifyIdleLessonRecovery(
     try {
         await expect.poll(() => reads).toBe(2);
         await expect(resume).toBeDisabled();
+        await expect(composerStop).toBeDisabled();
     } finally {
         release();
     }
@@ -390,11 +424,31 @@ export async function verifyIdleLessonRecovery(
         capacityCard.getByRole('button', { name: 'Continue', exact: true }),
     ).toBeEnabled();
 
+    await composerStop.click();
+    try {
+        await expect
+            .poll(() => posts.at(-1))
+            .toBe(`${listPath}/${repairing.id}/stop`);
+
+        await expect(composerStop).toBeDisabled();
+        await expect(
+            repairingCard.getByRole('button', { name: 'Stop', exact: true }),
+        ).toBeDisabled();
+    } finally {
+        releaseStop();
+    }
+
+    await expect(composerStop).toHaveCount(0);
+    await expect(
+        repairingCard.getByRole('button', { name: 'Stop', exact: true }),
+    ).toHaveCount(0);
+
     expect(posts).toEqual([
         `${listPath}/${second.id}/continue`,
         `${listPath}/${first.id}/continue`,
         `${listPath}/${capacityRun.id}/continue`,
         `${listPath}/${capacityRun.id}/continue`,
+        `${listPath}/${repairing.id}/stop`,
     ]);
 
     return `503 ${listPath}/${capacityRun.id}/continue`;

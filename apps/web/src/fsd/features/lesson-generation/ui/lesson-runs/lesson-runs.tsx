@@ -79,7 +79,7 @@ export function LessonRuns({
                             )
                         }
                         reconnecting={reconnecting || state.rechecking}
-                        failed={Boolean(failure)}
+                        stopping={state.actions.stopping(run)}
                         actionNotice={
                             failure && (
                                 <LessonActionNotice

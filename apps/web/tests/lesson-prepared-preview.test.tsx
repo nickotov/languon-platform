@@ -319,7 +319,7 @@ it('keeps the real document preview open across run updates and only makes read 
         request,
         busy: false,
         reconnecting: false,
-        failed: false,
+        stopping: false,
         continueBlocked: false,
         onAction: action,
         onAdjust: vi.fn(),
@@ -387,7 +387,7 @@ it('retries a failed preview fetch without submitting a generation action', asyn
             request={request}
             busy={false}
             reconnecting={false}
-            failed={false}
+            stopping={false}
             continueBlocked={false}
             onAction={action}
             onAdjust={vi.fn()}
@@ -460,7 +460,7 @@ it('keeps only Close and local expansion actions in a prepared-content preview',
             preview={prepared}
             open
             loading={false}
-            failed={false}
+            stopping={false}
             onClose={vi.fn()}
             onRetry={vi.fn()}
             renderBody={renderBody}
@@ -558,7 +558,7 @@ it('renders canonical plan order with a pending section between prepared parts',
             preview={preview}
             open
             loading={false}
-            failed={false}
+            stopping={false}
             onClose={vi.fn()}
             onRetry={vi.fn()}
             renderBody={renderBody}
@@ -606,7 +606,7 @@ it.each([401, 403, 404])(
             request,
             busy: false,
             reconnecting: false,
-            failed: false,
+            stopping: false,
             continueBlocked: false,
             onAction: action,
             onAdjust: vi.fn(),
@@ -694,7 +694,7 @@ it('preserves prepared preview during a transient server failure and offers only
         request,
         busy: false,
         reconnecting: false,
-        failed: false,
+        stopping: false,
         continueBlocked: false,
         onAction: vi.fn(),
         onAdjust: vi.fn(),
@@ -744,7 +744,7 @@ it('closes the prepared preview with native Escape cancellation without bubbling
                     preview={prepared}
                     open={open}
                     loading={false}
-                    failed={false}
+                    stopping={false}
                     onClose={close}
                     onRetry={vi.fn()}
                     renderBody={renderBody}
@@ -877,7 +877,7 @@ it('does not refetch prepared bodies for timestamp-only run changes', async () =
         request,
         busy: false,
         reconnecting: false,
-        failed: false,
+        stopping: false,
         continueBlocked: false,
         onAction: vi.fn(),
         onAdjust: vi.fn(),

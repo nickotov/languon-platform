@@ -77,7 +77,7 @@ export function AssistantPanel(
         conversationId: chat.id,
         request: panel.requestWithSession,
         reconciliations: chat.stream.reconciliations,
-        active: panel.active,
+        activeTurnId: chat.active?.id,
         enabled: Boolean(workspace),
         question: chat.question,
         replaceQuestion: chat.replaceQuestion,
@@ -467,9 +467,24 @@ export function AssistantPanel(
                                 defaultsSaved={panel.defaultsSaved}
                                 onContext={panel.context}
                                 onSend={lesson.submit}
-                                onStop={chat.stop}
+                                onStop={
+                                    lesson.activeRun
+                                        ? lesson.stopRun
+                                        : chat.stop
+                                }
+                                stopDisabled={Boolean(
+                                    lesson.activeRun &&
+                                    (busy ||
+                                        chat.stream.reconnecting ||
+                                        lesson.state.rechecking ||
+                                        lesson.state.actions.stopping(
+                                            lesson.activeRun,
+                                        )),
+                                )}
                                 busy={busy}
-                                active={panel.active || lesson.activeRun}
+                                active={
+                                    panel.active || Boolean(lesson.activeRun)
+                                }
                                 hasDraft={Boolean(currentDraft)}
                                 useDraft={chat.useDraft}
                                 onUseDraft={chat.setUseDraft}

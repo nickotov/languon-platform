@@ -10,7 +10,7 @@ export function useLessonComposer({
     conversationId,
     request,
     reconciliations,
-    active,
+    activeTurnId,
     enabled,
     question,
     replaceQuestion,
@@ -22,7 +22,7 @@ export function useLessonComposer({
     conversationId: string | null;
     request: ConversationSessionRequest;
     reconciliations: number;
-    active: boolean;
+    activeTurnId?: string | undefined;
     enabled: boolean;
     question: string;
     replaceQuestion(value: string): void;
@@ -56,8 +56,10 @@ export function useLessonComposer({
                           selection.acknowledgedUncertainTurnId,
               )
             : undefined;
-    const activeRun = state.runs.some(
-        (run) => run.state === 'running' || run.automation?.enabled,
+    const activeRun = state.runs.find(
+        (run) =>
+            (run.state === 'running' || run.automation?.enabled) &&
+            (!activeTurnId || run.activeTurnId === activeTurnId),
     );
 
     useEffect(() => {
@@ -78,7 +80,7 @@ export function useLessonComposer({
     }, [state.actions.accepted, question, replaceQuestion]);
 
     function adjust(run: GenerationRunSummary) {
-        if (active || run.state !== 'paused') {
+        if (activeTurnId || run.state !== 'paused') {
             return;
         }
 
@@ -109,7 +111,7 @@ export function useLessonComposer({
     }
 
     function submit() {
-        if (active || activeRun || state.actions.pending) {
+        if (activeTurnId || activeRun || state.actions.pending) {
             return;
         }
 
@@ -150,6 +152,11 @@ export function useLessonComposer({
         submit,
         composer,
         activeRun,
+        stopRun() {
+            if (activeRun) {
+                state.actions.execute({ kind: 'stop', run: activeRun });
+            }
+        },
         captureSourceContext,
     };
 }

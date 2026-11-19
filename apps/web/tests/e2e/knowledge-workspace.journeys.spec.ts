@@ -2,7 +2,7 @@ import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
 import { verifyIdleLessonRecovery } from './lesson-reconnect-fixture';
 
-// @user-flow-revision knowledge-workspace sha256:d3a2b7a1eb0bc5ef
+// @user-flow-revision knowledge-workspace sha256:1af53e32c64ea6ef
 
 type Share = { locator: string; key: string };
 

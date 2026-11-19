@@ -2756,6 +2756,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     maximum_output_limit: 4_096,
                 });
 
+                const [stageWindow] = await client`
+                    select bool_and(stage.deadline_at <= root.deadline_at) as within_root_deadline
+                    from conversation_generation_run_actions link
+                    join ai_credit_actions stage on stage.id = link.turn_id
+                    join ai_credit_actions root on root.id = ${submitted.id}::uuid
+                    where link.run_id = ${runs.runs[0]!.id}::uuid and stage.id <> root.id
+                `;
+
+                expect(stageWindow?.within_root_deadline).toBe(true);
+
                 const actionUsage =
                     await client`select attempt.action_id, count(*)::integer as attempts, sum(attempt.output_tokens)::integer as output_tokens from conversation_generation_run_actions action_link join ai_credit_action_attempts attempt on attempt.action_id=action_link.turn_id where action_link.run_id=${runs.runs[0]!.id}::uuid and action_link.kind='generation' group by attempt.action_id`;
 
