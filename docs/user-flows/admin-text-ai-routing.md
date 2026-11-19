@@ -141,6 +141,9 @@ observes these controls and required-field validation without publishing a price
 
 ## API verification
 
+Running a bounded synthetic check accepts an active owner session, including after normal access-token refresh. The owner approves the displayed operator expense for each run. Recovering an unfinished check still requires recent authentication.
+
+
 Owner-only GET `/api/admin/ai/routing` exposes reviewed catalog and current
 revision. POST the same path publishes with `expectedVersion`, `configuration`
 and a reason. POST `/api/admin/ai-settings/probes` runs only approved synthetic

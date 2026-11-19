@@ -79,7 +79,7 @@ function setup() {
 }
 
 describe('admin synthetic model checks HTTP boundary', () => {
-    it('requires recent owner authentication before operator spending', async () => {
+    it('accepts an active owner session for a bounded synthetic check', async () => {
         const fixture = setup();
         fixture.authorizeSensitiveOperation.mockRejectedValueOnce(
             new AdministrationHttpError(
@@ -89,6 +89,27 @@ describe('admin synthetic model checks HTTP boundary', () => {
             ),
         );
 
+        const response = await fixture.post({
+            routeId: 'deepseek/deepseek-flash',
+            approvedMaximumCostUsd: '0.01',
+            kind: 'quick',
+        });
+
+        expect(response.status).toBe(200);
+        expect(fixture.authorizeOperation).toHaveBeenCalledOnce();
+        expect(fixture.authorizeSensitiveOperation).not.toHaveBeenCalled();
+        expect(fixture.run).toHaveBeenCalledOnce();
+    });
+
+    it('rejects a denied owner session before dispatch', async () => {
+        const fixture = setup();
+        fixture.authorizeOperation.mockRejectedValueOnce(
+            new AdministrationHttpError(
+                'admin_access_denied',
+                'Owner access required.',
+                403,
+            ),
+        );
         const response = await fixture.post({
             routeId: 'deepseek/deepseek-flash',
             approvedMaximumCostUsd: '0.01',

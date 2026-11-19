@@ -121,7 +121,7 @@ export function registerAdminTextAiProbeRoutes(
             const principal = await authorize(
                 context.req.header('Authorization'),
                 randomUUID(),
-                true,
+                false,
             );
 
             return context.json(
