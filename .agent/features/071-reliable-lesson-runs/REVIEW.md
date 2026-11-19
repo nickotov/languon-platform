@@ -79,3 +79,11 @@ Independent source and security review examined session authority, quote scope, 
 Both reviewers rechecked the final source and closed the findings. The security reviewer found no additional financial-authority, tenant access, source or replay issue. Automated evidence uses deterministic provider responses. Readiness and paid-provider evidence are recorded separately in EVIDENCE.md.
 
 Final evidence review approved after the backend declaration build. The reviewer verified the 47-case production worker suite, ledger gates, Chromium journey, web and backend builds, development readiness and the read-only saved-run forecast. No material findings remain open.
+
+### Post-commit review of 5adafe92
+
+- **Medium · automatic stage expiry.** Conversation admission checked the lesson expiry before scheduling the next stage but persisted a new fifteen-minute action deadline. A queued continuation could start a provider call after the original grant expired. The action now inherits the absolute expiry and admission rechecks it immediately before reserving. PostgreSQL continues to enforce the persisted deadline when authorizing each provider dispatch.
+- **Medium · composer Stop.** During an automatic handoff the lesson remained active while its previous chat turn had finished. The chat-input Stop control silently called the turn-only cancellation handler. Both lesson Stop controls now share the run command and its pending state. An ordinary active chat turn keeps its own cancellation handler.
+- **Documentation.** The workbook guide described a confirmation per stage and the plan still described an uncommitted implementation. The current guides, feature records and architecture diagrams now describe the accepted behavior.
+
+Both code findings were independently rechecked against the fixes in `9582d611` and closed.

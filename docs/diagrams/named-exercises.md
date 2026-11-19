@@ -52,7 +52,7 @@ source_paths:
     - apps/backend/src/modules/conversations/application/learning-content-plan-capacity.ts
     - packages/prompts/src/local/learning-content-authoring.ts
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-completion.ts
-source_fingerprint: sha256:a5d18126123e1c78c8c712fe46bc14325c8da17f46c0d6b82dcd3b3483ccf76c
+source_fingerprint: sha256:18738bd2ce2cde02ab75b707632a4b69550353db72af77a24ee9734dd1a1644c
 reviewed: 2026-11-19
 ---
 

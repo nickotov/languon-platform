@@ -70,7 +70,7 @@ source_paths:
     - apps/backend/drizzle/0178_automatic_lesson_ready_index.sql
     - apps/backend/src/modules/conversations/infrastructure/conversation-worker-composition.ts
     - apps/backend/src/modules/conversations/infrastructure/ai/learning-content-authoring.ts
-source_fingerprint: sha256:3e6ca61260f287e11f6594793f43139fe4500cd7c602e5ec1a3e5ceb8c4c230a
+source_fingerprint: sha256:bbcd0b371646eab5181f55ccdae4be124c295c72b053fdfd80573f245627152a
 reviewed: 2026-11-19
 ---
 
@@ -222,8 +222,7 @@ The original configured credit ceiling and reviewed configured provider-cost
 ceiling bound the entire authorization. Provider authority is captured before the
 narrower predicted stage envelope; it is not reset or multiplied at each action.
 At most eight stages run before the earlier of the root action deadline or
-15 minutes after authority creation. Automatic
-admission checks the pinned funding/route/tariff/provider-price fingerprint and
+15 minutes after authority creation. Each automatic stage stores the original expiry on its accounting action. The database checks it again before a provider call can start. Automatic admission checks the pinned funding/route/tariff/provider-price fingerprint and
 clamps each new stage to remaining cumulative ceilings. Pending or unknown
 liabilities cannot fund another stage; wallet balance alone cannot extend authority.
 Terminal failures, Stop, source/plan/access/configuration changes and expiry halt the chain.

@@ -2,7 +2,7 @@
 
 ## Goal and specification
 
-Implement [FEATURE.md](FEATURE.md) and the [detailed documented plan](../../../docs/reliable-lesson-runs-implementation-plan.md). The user authorized a single incident-plan commit. Implementation remains uncommitted. Branch: `feature/reliable-lesson-runs`, base `463b04ff`. Root owns integration/contracts coordination, migrations, language resolution, docs, expensive DB/compiler/browser gates. Bounded workers own authoring, autoauthority backend, contracts, frontend and test source; reviewer/design roles stay read-only.
+Implement [FEATURE.md](FEATURE.md) and the [detailed documented plan](../../../docs/reliable-lesson-runs-implementation-plan.md). The plan was committed as `51f2908d` and its implementation as `5adafe92`. Branch: `feature/reliable-lesson-runs`, base `463b04ff`. Root owns integration/contracts coordination, migrations, language resolution, docs, expensive DB/compiler/browser gates. Bounded workers own authoring, autoauthority backend, contracts, frontend and test source; reviewer/design roles stay read-only.
 
 ## Existing architecture and decisions
 
@@ -86,3 +86,9 @@ The latest R04 retry loop was traced to a demonstrated authoring/canonical contr
 Plan committed as 51f2908d. Implementation uses ADR-0062, catalog-specific educational inputs and a revision-scoped recovery history. Verify with serialized provider contract tests, the 3+5 production worker composition, paid quote and settlement cases, lease/Stop cases, the mapped browser journey, migration readiness and application builds. Live provider reliability requires separate evidence.
 
 The single-submission extension is implemented. The final worker matrix covers 47 production-composition cases. The original saved revision passed read-only validation under the new projection. Use the November 19 entries in EVIDENCE.md and REVIEW.md for the exact checks, funding boundary and remaining live-provider gap.
+
+### Post-acceptance review
+
+The user verified the lesson flow locally and requested a commit and review. The implementation was committed as `5adafe92`. Review identified two handoff cases and the fixes were committed as `9582d611`. Future regression checks should click the composer Stop while the lesson is between stages and compare every continuation action’s dispatch deadline with the root deadline. Both are now in the mapped tests.
+
+The four affected production-worker cases took 16 seconds on disposable infrastructure. The two Chromium journeys took 60 seconds. Investigation, editing, setup and rework times were not separately measured.

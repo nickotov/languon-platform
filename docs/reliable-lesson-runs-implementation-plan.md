@@ -12,7 +12,7 @@ source_paths:
 
 # Reliable lesson runs
 
-The user authorized this plan and its complete implementation on 2026-11-17, explicitly requiring all changes to remain uncommitted. The feature builds on Feature070; it does not replace its reusable plans, canonical mixed proposals or accounting protections.
+The implementation was committed as `5adafe92`. It extends Feature070’s plans, mixed document proposals and accounting protections.
 
 ## Problem and evidence
 
@@ -56,9 +56,9 @@ Root owns database resets and compilers. Dedicated disposable PostgreSQL/Redis t
 
 Required proof includes original mixed G06/G02/G03 task, partial exercise resume, malformed keys and nested SDK truncation errors, no transport redispatch, customer/operator/zero-tariff funding, overall ceiling exhaustion, duplicate continuation recovery, Stop races, changed source/access denial, preview confidentiality and discard, and complete proposal Insert/Save/reload. Existing valid unaffected accounting/provider evidence can be reused only after a source/consumer comparison.
 
-Current execution, results and review live in [Feature071](../.agent/features/071-reliable-lesson-runs/EXEC_PLAN.md). Finish with an uncommitted reviewed patch on `feature/reliable-lesson-runs`; do not commit, merge, push or delete branches.
+The [execution plan](../.agent/features/071-reliable-lesson-runs/EXEC_PLAN.md) tracks implementation and subsequent corrections.
 
-Implementation and selected verification completed on 2026-11-18. Independent completion/security reviews approved. All changes remain uncommitted on `feature/reliable-lesson-runs`, as requested. See the [evidence record](../.agent/features/071-reliable-lesson-runs/EVIDENCE.md) for exact checks and the live-provider limitation.
+The [evidence record](../.agent/features/071-reliable-lesson-runs/EVIDENCE.md) documents the production-worker and browser checks and the live-provider verification boundary.
 
 ## Recovery after an interrupted stage
 

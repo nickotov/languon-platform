@@ -131,7 +131,7 @@ source_paths:
     - apps/web/src/fsd/features/lesson-generation/lib/lesson-task-unit-progress.ts
     - apps/web/src/fsd/features/lesson-generation/lib/lesson-task-status.ts
     - apps/web/src/fsd/features/lesson-generation/ui/lesson-run-card/lesson-run-card.tsx
-source_fingerprint: sha256:38d297eb93c884795ff0b3943ebf90f18a19d2e098b056e61a058567d36241be
+source_fingerprint: sha256:4971b05cd43c88cc736cf9f2a01b266e85eaaa18f143d6a258ec8c013fe997c4
 reviewed: 2026-11-19
 ---
 
@@ -413,7 +413,7 @@ source and artifact content and fences late writes while retaining numeric audit
 [ADR-0061](../adr/0061-bounded-automatic-lesson-continuation.md) replaces manual
 confirmation at each internal stage with one pinned bounded authorization.
 Server claim maintenance recovers ready work using stable request identities; it
-admits another stage only after successful settled progress, within the initial
+admits another stage only after a saved checkpoint or a measured, settled recoverable rejection, within the initial
 configured customer-credit and reviewed configured provider-cost ceilings, unchanged
 funding/route/tariff/provider-price fingerprint and eight stages. Expiry is the
 earlier of the root action deadline or 15 minutes after authority creation; the
@@ -421,7 +421,7 @@ provider ceiling is captured before each stage narrows its predicted call envelo
 The ready-stage partial index orders eligible runs by update time and ID.
 Inaccessible source work loses its authority without poisoning the worker queue.
 Every stage still passes current access, capacity and financial admission.
-Unknown liabilities, failure, Stop, changed sources/plan/configuration or expired
+Unknown liabilities, terminal failure, Stop, changed sources/plan/configuration or expired
 or exhausted authority halt automation. A larger wallet balance does not extend
 these limits. Run-level Stop also revokes the between-stage authority.
 

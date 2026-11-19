@@ -539,7 +539,7 @@ ceiling, reviewed configured provider-cost ceiling before per-stage prediction
 clamps, funding/route/tariff/pricing fingerprint and current revision. It permits
 at most eight stages and expires at the earlier of the root action deadline or
 15 minutes after authorization creation. Defaults are not multiplied and wallet
-balance is not authorization. Each stage retains the existing
+balance is not authorization. Each automatic stage inherits the lesson expiry as its latest dispatch deadline, including time spent queued. Each stage retains the existing
 five-call, 10,000-output-token and deadline limits; admission clamps both financial
 budgets to what remains after settled stages. Unknown liability, terminal failure, Stop,
 source/plan/access/configuration change, expiry or exhausted authority stops
