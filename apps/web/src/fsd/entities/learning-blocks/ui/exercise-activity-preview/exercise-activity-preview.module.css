@@ -42,7 +42,7 @@
 
 .source p {
     margin-top: var(--space-12);
-    white-space: pre-wrap;
+    /*white-space: pre-wrap;*/
     overflow-wrap: anywhere;
 }
 
