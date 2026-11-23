@@ -65,6 +65,11 @@
     line-height: var(--size-24);
     white-space: pre-wrap;
 }
+.user::selection,
+.user :where(*)::selection {
+    background-color: var(--primary-default);
+    color: var(--text-on-primary);
+}
 .notice {
     display: flex;
     align-items: center;
@@ -225,12 +230,6 @@
     }
 }
 
-.scroller {
-    scrollbar-width: none;
-}
-.scroller::-webkit-scrollbar {
-    display: none;
-}
 
 .workspaceEmpty {
     padding: var(--space-8) var(--space-4) 0;

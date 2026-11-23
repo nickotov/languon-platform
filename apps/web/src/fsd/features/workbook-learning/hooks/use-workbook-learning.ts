@@ -16,7 +16,7 @@ import { attemptAnswer } from '../lib/attempt-answer';
 import { learningLabels } from '../lib/labels';
 import { useNoteAudio } from './use-note-audio';
 import { privateExerciseView } from '../lib/private-exercise-view';
-import { exerciseSource } from '../lib/exercise-source';
+import { exerciseSource } from '@/fsd/entities/learning-blocks';
 
 type SessionRequest = <T>(
     operation: (token: string) => Promise<T>,

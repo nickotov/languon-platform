@@ -17,7 +17,11 @@ export const LearningBlockNode = Node.create<{ labels: BlockAuthoringLabels }>({
         return { labels: defaultAuthoringLabels };
     },
     addAttributes() {
-        return { block: { default: null, rendered: false } };
+        return {
+            block: { default: null, rendered: false },
+            lessonPartId: { default: null, rendered: false },
+            lessonBlockId: { default: null, rendered: false },
+        };
     },
     // Clipboard HTML is never an authority for structured blocks or media assets.
     parseHTML() {

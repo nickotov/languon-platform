@@ -8,7 +8,7 @@ import {
     type ReactNode,
 } from 'react';
 import { useI18n } from '@/fsd/shared/i18n';
-import { Tooltip, useCompanionLayout } from '@/fsd/shared/ui';
+import { PanelPageHost, Tooltip, useCompanionLayout } from '@/fsd/shared/ui';
 import { useTutorLayout } from '../../hooks/use-tutor-layout';
 import {
     TutorHeader,
@@ -183,24 +183,26 @@ export function TutorShell({
                         <span />
                     </button>
                 )}
-                <TutorHeader
-                    key={String(folded)}
-                    layout={layout}
-                    context={props}
-                    actions={props}
-                    onFold={fold}
-                    onPointerDown={layout.onHeaderPointerDown}
-                    workspace={workspace}
-                    embedded={embedded}
-                />
-                {workspace && (
-                    <WorkspaceTutorContext
-                        title={props.contextLabel}
-                        characters={editorCharacters}
-                        limit={editorLimit}
+                <PanelPageHost>
+                    <TutorHeader
+                        key={String(folded)}
+                        layout={layout}
+                        context={props}
+                        actions={props}
+                        onFold={fold}
+                        onPointerDown={layout.onHeaderPointerDown}
+                        workspace={workspace}
+                        embedded={embedded}
                     />
-                )}
-                {children}
+                    {workspace && (
+                        <WorkspaceTutorContext
+                            title={props.contextLabel}
+                            characters={editorCharacters}
+                            limit={editorLimit}
+                        />
+                    )}
+                    {children}
+                </PanelPageHost>
                 {!layout.mobile && !layout.attached && (
                     <div
                         className={styles.resize}

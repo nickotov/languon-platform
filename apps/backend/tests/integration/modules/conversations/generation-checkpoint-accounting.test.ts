@@ -128,7 +128,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
         });
 
-        async function preparedCheckpoint() {
+        async function preparedCheckpoint(rateLimited = false) {
             const note = await knowledge.create(ownerId, {
                 operationId: randomUUID(),
                 content: {
@@ -254,8 +254,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     actionId: action.id,
                     ownerId,
                     callId,
-                    successful: true,
-                    usage: { inputTokens: 100, outputTokens: 100 },
+                    successful: !rateLimited,
+                    usage: rateLimited
+                        ? { inputTokens: 0, outputTokens: 0 }
+                        : { inputTokens: 100, outputTokens: 100 },
                 }),
             );
 
@@ -283,6 +285,169 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 cursor: Number(cursor!.id),
             };
         }
+
+        async function pinTestAuthority(
+            fixture: Awaited<ReturnType<typeof preparedCheckpoint>>,
+        ) {
+            // The financial fixture uses explicit operator and customer holds.
+            // Pin the same ceilings when exercising the durable continuation.
+            await client`update conversation_generation_runs set automation=${JSON.stringify(
+                {
+                    authorizationId: randomUUID(),
+                    revision: 1,
+                    rootActionId: fixture.turn.id,
+                    actionIds: [fixture.turn.id],
+                    maximumCreditsMilli: '600',
+                    maximumProviderCostMicros: 10000,
+                    authorizationFingerprint: 'fixture',
+                    expiresAt: new Date(Date.now() + 900_000).toISOString(),
+                    stageCount: 1,
+                    ready: false,
+                },
+            )}::jsonb where id=${fixture.runId}`;
+        }
+
+        it('waits after a conclusive rate limit with measured zero service', async () => {
+            const fixture = await preparedCheckpoint(true);
+            await pinTestAuthority(fixture);
+            await store.recordGenerationAttempt(fixture.turn, {
+                taskId: 'reading',
+                unitOrdinal: 1,
+                schemaVersion: 'test-v1',
+                dependencyFingerprint: 'fixture',
+                validationId: fixture.validationId,
+                strategy: 'initial',
+                outcome: 'started',
+            });
+
+            await store.finish(
+                fixture.turn,
+                'failed',
+                'generation_transport_failure',
+                { code: 'rate-limited' },
+            );
+
+            const result = await store.getGenerationRun(
+                { ownerId },
+                fixture.turn.conversationId,
+                fixture.runId,
+            );
+
+            expect(result.run).toMatchObject({
+                state: 'paused',
+                pauseReason: 'budget',
+                automation: { enabled: true, retryAt: expect.any(String) },
+            });
+
+            const [row] =
+                await client`select unit_attempts from conversation_generation_plan_revisions where run_id=${fixture.runId}`;
+
+            expect(row!.unit_attempts).toMatchObject([{ outcome: 'declined' }]);
+        });
+
+        it('requires measured rejected receipts before advancing the candidate strategy', async () => {
+            const fixture = await preparedCheckpoint();
+            const event = {
+                taskId: 'reading',
+                unitOrdinal: 1,
+                schemaVersion: 'test-v1',
+                dependencyFingerprint: 'fixture',
+                validationId: fixture.validationId,
+                strategy: 'initial' as const,
+                outcome: 'started' as const,
+            };
+            const competing = await Promise.allSettled([
+                store.recordGenerationAttempt(fixture.turn, event),
+                store.recordGenerationAttempt(fixture.turn, event),
+            ]);
+
+            expect(
+                competing.filter((result) => result.status === 'fulfilled'),
+            ).toHaveLength(1);
+
+            await expect(
+                store.recordGenerationAttempt(fixture.turn, {
+                    ...event,
+                    outcome: 'rejected',
+                    diagnostic: { code: 'schema-invalid' },
+                }),
+            ).rejects.toThrow('settled rejected provider response');
+
+            await store.checkpointGeneration(
+                fixture.turn,
+                [fixture.artifact],
+                fixture.validationId,
+            );
+
+            expect(
+                (await store.generationContext(fixture.turn))?.unitAttempts,
+            ).toMatchObject([
+                {
+                    taskId: 'reading',
+                    outcome: 'accepted',
+                    validationId: fixture.validationId,
+                },
+            ]);
+        });
+
+        it('schedules pre-dispatch capacity recovery and fences its queued wake on Stop', async () => {
+            const fixture = await preparedCheckpoint();
+            await store.checkpointGeneration(
+                fixture.turn,
+                [fixture.artifact],
+                fixture.validationId,
+            );
+
+            await pinTestAuthority(fixture);
+            await store.recordGenerationAttempt(fixture.turn, {
+                taskId: 'summary',
+                unitOrdinal: 1,
+                schemaVersion: 'test-v1',
+                dependencyFingerprint: 'fixture',
+                validationId: randomUUID(),
+                strategy: 'initial',
+                outcome: 'started',
+            });
+
+            await store.finish(
+                fixture.turn,
+                'failed',
+                'provider_capacity_exhausted',
+                {
+                    code: 'admission-blocked',
+                    admissionReason: 'provider-capacity',
+                },
+            );
+
+            const result = await store.getGenerationRun(
+                { ownerId },
+                fixture.turn.conversationId,
+                fixture.runId,
+            );
+
+            expect(result.run).toMatchObject({
+                state: 'paused',
+                pauseReason: 'budget',
+                completedTaskCount: 1,
+                automation: { enabled: true, retryAt: expect.any(String) },
+            });
+
+            const [row] =
+                await client`select unit_attempts from conversation_generation_plan_revisions where run_id=${fixture.runId}`;
+
+            expect(row!.unit_attempts).toMatchObject([
+                { outcome: 'undispatched' },
+            ]);
+
+            await store.stopGenerationRun(
+                { ownerId },
+                fixture.turn.conversationId,
+                fixture.runId,
+                { requestId: randomUUID(), expectedRevision: 1 },
+            );
+
+            expect(await store.claim()).toBeNull();
+        });
 
         it('makes accepted usage visible with checkpoint SSE before an immediate Stop can settle', async () => {
             const fixture = await preparedCheckpoint();

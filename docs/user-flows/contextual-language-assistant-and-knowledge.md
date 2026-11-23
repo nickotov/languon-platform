@@ -7,62 +7,64 @@ surfaces:
     - browser
     - api
 source_paths:
-    - .agent/features/070-composable-lesson-generation/**
-    - packages/contracts/src/knowledge-content-proposals.ts
-    - packages/contracts/src/generation-runs.ts
-    - .agent/improvements/contextual-picker-polish.md
-    - apps/web/src/fsd/shared/ui/command-menu/command-menu.tsx
-    - .agent/features/069-contextual-exercise-discovery/**
-    - packages/contracts/src/conversation-prompt-mentions.ts
-    - .agent/features/051-learner-portrait/**
-    - apps/backend/src/modules/learner-portraits/**
-    - packages/contracts/src/learner-portrait.ts
-    - packages/contracts/src/portrait-interview.ts
-    - .agent/features/044-contextual-language-assistant-and-knowledge/**
-    - .agent/features/060-intent-aware-learning-content/**
-    - .agent/features/061-reliable-learning-content-pipeline/**
-    - apps/backend/src/modules/conversations/**
-    - apps/backend/src/modules/authentication/application/ports/rate-limiter.ts
-    - apps/backend/src/modules/authentication/infrastructure/rate-limit/redis-rate-limiter.ts
-    - apps/backend/src/modules/knowledge/**
-    - apps/backend/src/modules/dictionaries/**
-    - apps/backend/src/modules/texts/**
-    - apps/backend/src/modules/users/**
-    - apps/backend/src/modules/ai-credits/**
-    - apps/backend/src/modules/text-ai/**
-    - apps/backend/src/infrastructure/text-ai/**
-    - apps/backend/src/infrastructure/worker/**
-    - apps/backend/src/app.ts
-    - apps/backend/src/index.ts
-    - apps/backend/drizzle/**
-    - apps/backend/tests/support/contextual-assistant-*.ts
-    - apps/backend/tests/integration/modules/conversations/**
-    - apps/backend/tests/integration/modules/authentication/infrastructure/redis-concurrent-requests.test.ts
-    - apps/backend/tests/integration/modules/authentication/infrastructure/production-redis-tls-acl.test.ts
-    - infra/deploy/redis.production.acl.example
-    - apps/web/src/app/knowledge/**
-    - apps/web/src/fsd/shared/ui/companion-layout/**
-    - apps/web/src/fsd/shared/ui/menu/**
-    - apps/web/src/fsd/shared/ui/styles/menu-common.module.css
-    - apps/web/src/fsd/pages/texts/ui/workspace-page/**
-    - apps/web/src/fsd/pages/texts/ui/styles/workspace-page-common.module.css
-    - apps/web/src/fsd/pages/shared-dictionary/**
-    - apps/web/src/fsd/features/flashcard-training/ui/training-launcher/**
-    - apps/web/next.config.mjs
-    - apps/web/src/fsd/widgets/contextual-assistant/**
-    - apps/web/src/fsd/features/conversation-preferences/**
-    - apps/web/src/fsd/features/knowledge-notes/**
-    - apps/web/src/fsd/entities/conversation/**
-    - apps/web/src/fsd/entities/learner-portrait/**
-    - apps/web/src/fsd/entities/knowledge/**
-    - apps/web/src/fsd/pages/knowledge/**
-    - apps/web/src/fsd/pages/profile/**
-    - apps/web/src/fsd/widgets/dictionary-editor/**
-    - apps/web/src/fsd/features/text-reading/**
-    - apps/web/src/fsd/widgets/app-shell/**
-    - packages/contracts/src/contextual-assistant.ts
-    - packages/prompts/src/local/contextual-language-tutor.ts
-    - scripts/run-contextual-assistant-e2e.mjs
+    - .agent/features/071-reliable-lesson-runs/**
+    - packages/contracts/src/generation-run-preview.ts
+      - .agent/features/070-composable-lesson-generation/**
+      - packages/contracts/src/knowledge-content-proposals.ts
+      - packages/contracts/src/generation-runs.ts
+      - .agent/improvements/contextual-picker-polish.md
+      - apps/web/src/fsd/shared/ui/command-menu/command-menu.tsx
+      - .agent/features/069-contextual-exercise-discovery/**
+      - packages/contracts/src/conversation-prompt-mentions.ts
+      - .agent/features/051-learner-portrait/**
+      - apps/backend/src/modules/learner-portraits/**
+      - packages/contracts/src/learner-portrait.ts
+      - packages/contracts/src/portrait-interview.ts
+      - .agent/features/044-contextual-language-assistant-and-knowledge/**
+      - .agent/features/060-intent-aware-learning-content/**
+      - .agent/features/061-reliable-learning-content-pipeline/**
+      - apps/backend/src/modules/conversations/**
+      - apps/backend/src/modules/authentication/application/ports/rate-limiter.ts
+      - apps/backend/src/modules/authentication/infrastructure/rate-limit/redis-rate-limiter.ts
+      - apps/backend/src/modules/knowledge/**
+      - apps/backend/src/modules/dictionaries/**
+      - apps/backend/src/modules/texts/**
+      - apps/backend/src/modules/users/**
+      - apps/backend/src/modules/ai-credits/**
+      - apps/backend/src/modules/text-ai/**
+      - apps/backend/src/infrastructure/text-ai/**
+      - apps/backend/src/infrastructure/worker/**
+      - apps/backend/src/app.ts
+      - apps/backend/src/index.ts
+      - apps/backend/drizzle/**
+      - apps/backend/tests/support/contextual-assistant-*.ts
+      - apps/backend/tests/integration/modules/conversations/**
+      - apps/backend/tests/integration/modules/authentication/infrastructure/redis-concurrent-requests.test.ts
+      - apps/backend/tests/integration/modules/authentication/infrastructure/production-redis-tls-acl.test.ts
+      - infra/deploy/redis.production.acl.example
+      - apps/web/src/app/knowledge/**
+      - apps/web/src/fsd/shared/ui/companion-layout/**
+      - apps/web/src/fsd/shared/ui/menu/**
+      - apps/web/src/fsd/shared/ui/styles/menu-common.module.css
+      - apps/web/src/fsd/pages/texts/ui/workspace-page/**
+      - apps/web/src/fsd/pages/texts/ui/styles/workspace-page-common.module.css
+      - apps/web/src/fsd/pages/shared-dictionary/**
+      - apps/web/src/fsd/features/flashcard-training/ui/training-launcher/**
+      - apps/web/next.config.mjs
+      - apps/web/src/fsd/widgets/contextual-assistant/**
+      - apps/web/src/fsd/features/conversation-preferences/**
+      - apps/web/src/fsd/features/knowledge-notes/**
+      - apps/web/src/fsd/entities/conversation/**
+      - apps/web/src/fsd/entities/learner-portrait/**
+      - apps/web/src/fsd/entities/knowledge/**
+      - apps/web/src/fsd/pages/knowledge/**
+      - apps/web/src/fsd/pages/profile/**
+      - apps/web/src/fsd/widgets/dictionary-editor/**
+      - apps/web/src/fsd/features/text-reading/**
+      - apps/web/src/fsd/widgets/app-shell/**
+      - packages/contracts/src/contextual-assistant.ts
+      - packages/prompts/src/local/contextual-language-tutor.ts
+      - scripts/run-contextual-assistant-e2e.mjs
 e2e_command: contextual-assistant
 e2e_tests:
     - apps/backend/tests/integration/modules/conversations/contextual-assistant.journeys.test.ts
@@ -74,19 +76,20 @@ e2e_scenarios:
     - durable-close-reopen-stop-retry
     - dictionary-card-copies-preserve-visible-fields
 related_features:
-    - composable-lesson-generation
-    - reliable-learning-content-pipeline
-    - intent-aware-learning-content
-    - ai-accounting
-    - learner-portrait
-    - persistent-tutor-modes
-    - knowledge-workspace
-    - texts
-    - dictionary-platform
-    - magic-profile-page
-    - user-ai-model-preferences-backend
-    - ai-credit-wallet
-    - profile-account-controls
+    - reliable-lesson-runs
+      - composable-lesson-generation
+      - reliable-learning-content-pipeline
+      - intent-aware-learning-content
+      - ai-accounting
+      - learner-portrait
+      - persistent-tutor-modes
+      - knowledge-workspace
+      - texts
+      - dictionary-platform
+      - magic-profile-page
+      - user-ai-model-preferences-backend
+      - ai-credit-wallet
+      - profile-account-controls
 ---
 
 # Contextual Language Assistant and Knowledge
@@ -276,6 +279,8 @@ admission. Reconfirm a newer reduced offer; it cannot silently shrink an already
 reviewed authorization. Response limit reached offers explicit Continue as a new
 action/budget. Disconnecting only unsubscribes: generation continues until it
 finishes or the learner selects Stop. Reconnect replays durable events.
+You can select and copy your own messages in either color theme. For a multi-stage Knowledge lesson, internal continuation commands and checkpoint notices stay out of the transcript. The lesson card reports progress, and the final response appears when the proposal is ready.
+
 Normal admission and event delivery update the active chat without reloading an
 unchanged document workspace or repeatedly fetching proposal history on every
 turn-state change. Reconnect reconciles canonical data without submitting the
@@ -293,7 +298,7 @@ source access, publication, modes and durable lifecycle coverage.
 
 ## Composable lesson generation
 
-Owned Knowledge requests can prepare one ordered proposal containing prose and several learning blocks. Larger lessons retain validated parts across explicit, freshly quoted Continue actions. Paused plans can be revised with reuse; changed sources require an explicit captured/current choice. Stop preserves eligible usage charges, technical failure is free for the current stage, and earlier charges remain. Review, Insert into the working draft and Save are separate actions. Dictionary/text/shared-source authoring permissions remain unchanged. The [Knowledge workspace journey](knowledge-workspace.md#composable-lessons-and-continuation) owns the full continuation, revision, source choice and mixed insertion recipe.
+Owned Knowledge requests can prepare one ordered proposal containing prose and several learning blocks. A single approval covers the lesson within its spending limits. Larger lessons retain validated parts across automatic stages and bounded retries. Paused plans can be revised with reuse; changed sources require an explicit captured/current choice. Stop preserves eligible usage charges, technical failure is free for the current stage, and earlier charges remain. Review, Insert into the working draft and Save are separate actions. Dictionary/text/shared-source authoring permissions remain unchanged. The [Knowledge workspace journey](knowledge-workspace.md#composable-lessons-and-continuation) owns the full continuation, revision, source choice and mixed insertion recipe.
 
 ## API verification
 
@@ -432,3 +437,5 @@ only its random Redis namespace; synthetic PostgreSQL rows remain for diagnosis.
 Stop the task-owned disposable containers after collecting evidence. Removing
 those exclusive containers/data is optional and destructive; never run reset or
 cleanup commands against shared, staging, production, or normal developer data.
+
+Prepared Knowledge lessons expose a private read-only **View prepared content** preview and individual exercise progress. Internal stages continue automatically within the original approved credit/provider ceilings; Stop revokes the whole authorization. Recoverable validation failures trigger bounded automatic retries. If those attempts are exhausted, the learner can preview completed work and change the affected part in **Adjust plan**. The AI panel lets the owner insert one complete lesson part or all missing parts at the cursor or document end. Removing a part makes it available again. See the [Knowledge lesson flow](knowledge-workspace.md#composable-lessons-and-continuation).

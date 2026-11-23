@@ -1,3 +1,5 @@
+import type { Editor } from '@tiptap/core';
+import { applyLearningBlockEdit } from '../src/fsd/features/knowledge-notes/lib/apply-learning-block-edit';
 import userEvent from '@testing-library/user-event';
 import { I18nProvider } from '../src/fsd/shared/i18n';
 import { en } from '../src/fsd/shared/i18n/messages/en';
@@ -951,4 +953,60 @@ it('searches all command categories and restores query, scroll and selected exer
 
     expect(restored).toHaveFocus();
     expect(restored.closest('[data-command-results]')!.scrollTop).toBe(80);
+});
+
+it('retains inserted block ownership through authoring edits and assistant replacements', async () => {
+    const lessonPartId = `${id}/grammar`;
+    const lessonBlockId = '33333333-3333-4333-8333-333333333333';
+    const source = KnowledgeBodySchema.parse({
+        schemaVersion: 2,
+        document: {
+            type: 'doc',
+            content: [
+                {
+                    type: 'learningBlock',
+                    attrs: { block: grammar, lessonPartId, lessonBlockId },
+                },
+            ],
+        },
+    });
+    const ref = createRef<KnowledgeEditorHandle>();
+    const change = vi.fn();
+    const { container } = render(
+        <KnowledgeEditor ref={ref} value={source} onChange={change} />,
+    );
+    const host = (await screen.findByRole('textbox')) as HTMLElement & {
+        editor: Editor;
+    };
+    const edited = LearningBlockSchema.parse({
+        ...grammar,
+        rule: 'First revision.',
+    });
+    const revised = LearningBlockSchema.parse({
+        ...grammar,
+        rule: 'Second revision.',
+    });
+
+    act(() => {
+        expect(applyLearningBlockEdit(host.editor, [grammar], [edited])).toBe(
+            true,
+        );
+
+        expect(ref.current?.replaceLearningBlock(edited, revised)).toBe(
+            'applied',
+        );
+    });
+
+    for (const [value] of change.mock.calls) {
+        expect(value.document.content[0].attrs).toMatchObject({
+            lessonPartId,
+            lessonBlockId,
+        });
+    }
+
+    expect(
+        change.mock.calls.at(-1)?.[0].document.content[0].attrs.block,
+    ).toEqual(revised);
+
+    expect(container.innerHTML).not.toContain(lessonPartId);
 });

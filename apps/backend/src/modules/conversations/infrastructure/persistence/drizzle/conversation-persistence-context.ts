@@ -1,3 +1,4 @@
+import type { GenerationAutomaticAdmission } from '../../../application/ports/generation-run';
 import {
     ChatPreferencesSchema,
     type ConversationSource,
@@ -138,7 +139,9 @@ export interface ConversationPersistenceDependencies {
             inputTokenBound?: number;
             minimumInputBound: number;
             reserveToolContinuation?: boolean;
+            generationAuthorization?: GenerationAutomaticAdmission;
             forceConfirmation?: boolean;
+            mayGenerateLesson?: boolean;
             minimumOutputTokens?: number;
         },
     ) => Promise<Record<string, unknown>>) & {

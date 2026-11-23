@@ -17,7 +17,6 @@ vi.mock('../src/fsd/widgets/knowledge-speech', () => ({
 
 vi.mock('../src/fsd/features/workbook-learning', () => ({
     useNoteAudio: () => ({}),
-    exerciseSource: () => ({}),
 }));
 
 vi.mock('../src/fsd/pages/knowledge/hooks/use-owned-block-practice', () => ({

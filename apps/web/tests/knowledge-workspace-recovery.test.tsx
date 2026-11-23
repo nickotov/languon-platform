@@ -163,6 +163,83 @@ describe('working draft recovery', () => {
         expect(result.current.edit?.synced.title).toBe('Second edit');
     });
 
+    it('preserves edits made while a lesson conflict refresh reads a newer branch', async () => {
+        mocks.workspace.mockReset();
+        const branch = {
+            id: 'branch',
+            noteId: 'note',
+            version: 1,
+            basePublishedVersion: 0,
+            content,
+            updatedAt: '2026-10-19T00:00:00.000Z',
+        };
+        const initial: KnowledgeWorkspace = {
+            noteId: 'note',
+            status: 'draft',
+            published: null,
+            branches: [branch],
+            preferredBranchId: branch.id,
+            shareEnabled: false,
+            limits: { referenceChars: 40_000, editorChars: 40_000 },
+        };
+        const refreshing = deferred<KnowledgeWorkspace>();
+        mocks.workspace
+            .mockResolvedValueOnce(initial)
+            .mockReturnValueOnce(refreshing.promise);
+
+        const client = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        });
+
+        function wrapper({ children }: { children: ReactNode }) {
+            return (
+                <QueryClientProvider client={client}>
+                    {children}
+                </QueryClientProvider>
+            );
+        }
+
+        const { result } = renderHook(() => useKnowledgeWorkspace('note'), {
+            wrapper,
+        });
+
+        await waitFor(() => expect(result.current.edit?.version).toBe(1));
+        let read!: Promise<void>;
+        act(() => {
+            read = result.current.reload({ throwOnError: true });
+        });
+
+        act(() =>
+            result.current.change((current) => ({
+                ...current,
+                title: 'Local edit in progress',
+            })),
+        );
+
+        await act(async () => {
+            refreshing.resolve({
+                ...initial,
+                branches: [
+                    {
+                        ...branch,
+                        version: 2,
+                        content: { ...content, title: 'Updated elsewhere' },
+                    },
+                ],
+            });
+
+            await read;
+        });
+
+        expect(result.current.workspace?.branches[0]?.version).toBe(2);
+        expect(result.current.edit?.version).toBe(1);
+        expect(result.current.edit?.content.title).toBe(
+            'Local edit in progress',
+        );
+
+        expect(result.current.hasLocalChanges).toBe(true);
+    });
+
     it('automatically saves rapid title and body edits together', async () => {
         mocks.workspace.mockReset();
         mocks.updateWorking.mockReset();

@@ -3,6 +3,7 @@ import { parseCreditMilli } from '../../../domain/exact-credit-amount';
 import {
     DrizzleOperatorBudgetParticipant,
     OperatorBudgetUnavailableError,
+    ProviderCapacityUnavailableError,
     type OperatorBudgetSettings,
 } from './drizzle-operator-budget-participant';
 import { DrizzleCapabilityPolicyParticipant } from './drizzle-capability-policy-participant';
@@ -335,9 +336,15 @@ export class DrizzleActionAccountingParticipant {
                 }
 
                 if (
+                    cause.message ===
+                    'Provider operational capacity is unavailable'
+                ) {
+                    throw new ProviderCapacityUnavailableError(cause.message);
+                }
+
+                if (
                     typeof cause.message === 'string' &&
                     [
-                        'Provider operational capacity is unavailable',
                         'Provider request minimum exceeds operator allowance',
                         'Action execution allowance is unavailable',
                         'Action input execution allowance exceeded',

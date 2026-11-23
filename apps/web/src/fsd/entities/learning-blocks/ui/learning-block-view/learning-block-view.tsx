@@ -47,11 +47,12 @@ export function LearningBlockView(props: LearningBlockViewProps) {
         `${props.labels.kinds[block.type]}${count !== undefined ? ` · ${count}` : ''}`;
     const Icon = learningBlockIcons[block.type];
     const preview = props.variant === 'compact' || props.variant === 'review';
-    const accented = !preview && props.accented !== false;
+    const plainPreview = preview && !props.preserveFrame;
+    const accented = !plainPreview && props.accented !== false;
     const className = [
         styles.root,
         accented ? styles.accented : undefined,
-        preview ? styles.preview : undefined,
+        plainPreview ? styles.preview : undefined,
         props.hideHeading && !props.preserveFrame
             ? styles.withoutHeading
             : undefined,

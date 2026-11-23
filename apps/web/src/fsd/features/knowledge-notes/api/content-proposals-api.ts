@@ -63,11 +63,14 @@ export const contentProposalsApi = {
         session: ConversationSessionRequest,
         conversationId: string,
         signal?: AbortSignal,
+        proposalId?: string,
     ) =>
         request(
             session,
             conversationId,
-            '',
+            proposalId
+                ? `?proposalId=${encodeURIComponent(c.KnowledgeContentProposalSchema.shape.id.parse(proposalId))}`
+                : '',
             c.KnowledgeContentProposalsResponseSchema,
             undefined,
             signal,
@@ -77,8 +80,9 @@ export const contentProposalsApi = {
         conversationId: string,
         proposalId: string,
         expectedBranchVersion: number,
-        mode?: 'proposal' | 'add-separately',
+        mode?: 'proposal' | 'add-separately' | 'insert-lesson',
         insertionPosition?: number,
+        lessonCopy?: c.LessonCopy,
     ) => {
         const id = c.KnowledgeContentProposalSchema.shape.id.parse(proposalId);
 
@@ -90,6 +94,7 @@ export const contentProposalsApi = {
             c.ApplyKnowledgeContentProposalRequestSchema.parse({
                 expectedBranchVersion,
                 mode,
+                lessonCopy,
                 ...(insertionPosition === undefined
                     ? {}
                     : { insertionPosition }),

@@ -6,4 +6,3 @@ export { learningApi, LearningApiError } from './api/learning-api';
 export { WorkbookProgress } from './ui/workbook-progress/workbook-progress';
 
 export { useNoteAudio } from './hooks/use-note-audio';
-export { exerciseSource } from './lib/exercise-source';

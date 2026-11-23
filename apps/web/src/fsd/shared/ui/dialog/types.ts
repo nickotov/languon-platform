@@ -25,7 +25,7 @@ export type DialogProps = {
     showHeader?: boolean;
     size?: DialogSize;
     title?: string;
-    variant?: 'dialog' | 'sheet';
+    variant?: 'dialog' | 'sheet' | 'sideSheet';
 };
 
 export type DialogActionsProps = HTMLAttributes<HTMLDivElement> & {

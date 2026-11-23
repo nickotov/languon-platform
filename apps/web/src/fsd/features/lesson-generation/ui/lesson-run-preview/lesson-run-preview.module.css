@@ -1,0 +1,21 @@
+.note {
+    color: var(--text-secondary);
+    font-size: var(--size-14);
+    line-height: var(--size-24);
+    margin: 0 0 var(--space-16);
+}
+
+.part {
+    margin-block: var(--space-20);
+}
+
+.part > h2 {
+    color: var(--text-primary);
+    font-size: var(--size-16);
+    margin: 0 0 var(--space-12);
+}
+
+.pending {
+    color: var(--text-secondary);
+    margin-block: var(--space-12);
+}

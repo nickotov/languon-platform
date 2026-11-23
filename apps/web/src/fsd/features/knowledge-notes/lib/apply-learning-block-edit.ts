@@ -44,9 +44,14 @@ export function applyLearningBlockEdit(
     }
 
     const transaction = editor.state.tr;
-    const nodes = next.map((block) =>
-        editor.schema.nodes.learningBlock!.create({ block }),
-    );
+    const nodes = next.map((block) => {
+        const existing = found.find((item) => item?.block.id === block.id);
+        const attrs = existing
+            ? transaction.doc.nodeAt(existing.position)?.attrs
+            : undefined;
+
+        return editor.schema.nodes.learningBlock!.create({ ...attrs, block });
+    });
 
     if (found.length) {
         const first = found[0]!;

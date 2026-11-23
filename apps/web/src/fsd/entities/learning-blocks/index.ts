@@ -36,3 +36,5 @@ export type { ExerciseActivityExample } from './lib/activity-examples/activity-e
 export { exerciseExampleLabels } from './lib/activity-examples/example-labels';
 export { ExerciseActivityPreview } from './ui/exercise-activity-preview/exercise-activity-preview';
 export { ExerciseActivityBrowser } from './ui/exercise-activity-browser/exercise-activity-browser';
+
+export { exerciseSource } from './lib/exercise-source';

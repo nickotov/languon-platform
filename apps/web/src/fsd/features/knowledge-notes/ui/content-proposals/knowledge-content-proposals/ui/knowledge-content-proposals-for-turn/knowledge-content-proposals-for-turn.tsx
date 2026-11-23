@@ -4,8 +4,10 @@ import { ProposalList } from '../../proposal-list-context';
 import { ProposalCards } from '../proposal-cards/proposal-cards';
 export function KnowledgeContentProposalsForTurn({
     turnId,
+    excludeProposalId,
 }: {
     turnId: string | null | undefined;
+    excludeProposalId?: string | null | undefined;
 }) {
     const value = useContext(ProposalList);
     if (!value || !turnId) {
@@ -15,7 +17,10 @@ export function KnowledgeContentProposalsForTurn({
     return (
         <ProposalCards
             value={value}
-            proposals={value.proposals.filter((item) => item.turnId === turnId)}
+            proposals={value.proposals.filter(
+                (item) =>
+                    item.turnId === turnId && item.id !== excludeProposalId,
+            )}
         />
     );
 }

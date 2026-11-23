@@ -146,6 +146,8 @@ export interface LearningBlockViewProps {
     submitAttemptLabel?: string | undefined;
     /** Presentation-only label for hosts that explain a local practice preview. */
     checkingLabelOverride?: string | undefined;
+    /** Read-only editor previews allow private disclosures without an attempt. */
+    disclosureOnly?: boolean | undefined;
     /** Hosts can wait for private persistence before enabling disclosures. */
     interactionsDisabled?: boolean | undefined;
     attemptPending?: boolean | undefined;

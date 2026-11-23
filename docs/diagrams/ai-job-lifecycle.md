@@ -3,6 +3,11 @@ type: diagram
 title: AI job lifecycle and accounting
 summary: Atomic bounded action admission separates learner charges, provider expenses and operator limits.
 source_paths:
+    - docs/adr/0062-single-submission-lesson-recovery.md
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-lesson-envelope.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-attempts.ts
+    - apps/backend/src/modules/conversations/application/generation-admission-outcome.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/generation-admission-input.ts
     - apps/backend/src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-admission-participant.ts
     - apps/backend/src/modules/text-ai/application/text-ai-provider-catalog.ts
     - apps/backend/src/modules/ai-credits/application/ai-credit-participant.ts
@@ -57,8 +62,16 @@ source_paths:
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-completion.ts
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-admission.ts
     - apps/backend/src/modules/ai-credits/infrastructure/persistence/drizzle/staged-action-accounting.sql
-source_fingerprint: sha256:83eb6fd3b33a464c4bd06a2f85b527d609b0d5f2fc1ffaf46a61d4f51bd29f3b
-reviewed: 2026-11-16
+    - docs/adr/0061-bounded-automatic-lesson-continuation.md
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-authorization.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-automation.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-stop.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-worker-claim.ts
+    - apps/backend/drizzle/0178_automatic_lesson_ready_index.sql
+    - apps/backend/src/modules/conversations/infrastructure/conversation-worker-composition.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-content-authoring.ts
+source_fingerprint: sha256:feec1e3eee08b8dc42c46a674a78d5548d622eb2ddbef4c5a5bf208281b2d4e1
+reviewed: 2026-11-23
 ---
 
 # AI job lifecycle and accounting
@@ -106,8 +119,11 @@ release unused hold"]
     Failure --> Poll
     Settle --> Poll["Durable outcome + billing state
 reconnect replays without another generation or charge"]
-    Poll -->|"Generation run paused; learner chooses Continue"| Continue["Fresh quoted admission, revision and idempotency
-minimum-progress capacity; no automatic budget extension"] --> Auth
+    Poll -->|"Successful lesson stage with new checkpoints"| Auto["Server-owned next stage
+settled liability + remaining original customer/provider ceilings
+same fingerprint; at most 8 stages / 15 minutes"] --> Auth
+    Auto -->|"Authority exhausted, changed, expired or stopped"| Paused["Paused; explicit Retry / Resume
+fresh bounded quote/admission"] --> Auth
     Hold -.-> Free["Free interviews: no customer hold
 30 admissions/account/UTC day; one active
 operator limits still apply"]
@@ -183,8 +199,8 @@ category. See the [named-exercise view](named-exercises.md).
 ## Composable generation stages
 
 Generation runs reuse conversation actions and worker leases. Each successful
-stage must checkpoint validated progress; its private artifacts are not partial
-published proposals. Exact structured-call acceptance commits with the checkpoint
+stage must checkpoint validated progress; its artifacts may be inspected through
+an owner-only read projection but are not partial published proposals. Exact structured-call acceptance commits with the checkpoint
 or authorized proposal/state publication under the same lease fence. A wholly or
 partly invalid structured call is ineligible in full, while its provider expense
 remains recorded. Final aggregate validation and successful turn completion expose
@@ -199,6 +215,45 @@ Validated artifacts from failed actions may be reused without retrospective bill
 new calls reading them incur ordinary input usage. Revision-planning replies retain
 normal chat pricing; applying a reviewed revision is free and dispatches nothing.
 See [ADR-0060](../adr/0060-composable-generation-runs.md).
+
+Under [ADR-0061](../adr/0061-bounded-automatic-lesson-continuation.md), successful
+settled stages may chain automatically through the existing worker claim path.
+The original configured credit ceiling and reviewed configured provider-cost
+ceiling bound the entire authorization. Provider authority is captured before the
+narrower predicted stage envelope; it is not reset or multiplied at each action.
+At most eight stages run before the earlier of the root action deadline or
+15 minutes after authority creation. Each automatic stage stores the original expiry on its accounting action. The database checks it again before a provider call can start. Automatic admission checks the pinned funding/route/tariff/provider-price fingerprint and
+clamps each new stage to remaining cumulative ceilings. Pending or unknown
+liabilities cannot fund another stage; wallet balance alone cannot extend authority.
+Terminal failures, Stop, source/plan/access/configuration changes and expiry halt the chain.
+Explicit Retry/Resume creates fresh bounded authority. Per-stage call/output and
+deadline limits, invalid-call ineligibility, cumulative rounding and Stop charges
+are unchanged. Read-only prepared preview neither dispatches nor settles work. Compact
+output-limit repair stays inside the same action allowance and validation-receipt
+rules; unknown diagnostic categories do not create a new retry or charging path.
+The production provider boundary preserves routing classification before mapping
+transport or rate limiting to safe conversation diagnostics. After a saved checkpoint or a settled exercise rejection, a stage may yield
+under its original authorization. The next worker claims the remaining exercise
+strategy using the persisted attempt history. Rejected calls consume the provider
+expense allowance.
+
+Admission projects the next unsaved unit and its dependencies. The model gate
+exposes remaining stage time. The worker can yield after saving the initial plan
+or a validated checkpoint before the next unit starts. Provider fallback uses
+the same deadline and cannot replay a run after a durable callback begins.
+Pre-dispatch contention persists a bounded retry schedule under existing
+authority. Unknown provider outcomes stop automatic advancement.
+
+The model gate records the normalized terminal reason against each settled
+structured call. A measured invalid exercise can receive a targeted repair and a distinct final fallback.
+A filtered response stops before repair. A missing settlement cannot authorize
+a paid retry. Failure summaries retain allowlisted phases and finish reasons.
+
+Conversation admission evaluates the bounded stage demand before issuing or
+confirming a quote. Immediately before dispatch, the worker checks the affordable
+call reservation against active and settled usage under the shared capacity lock.
+Concurrent workers cannot both consume the last available allowance. Provider
+capacity, operator funding and busy submission slots have separate outcomes.
 
 ## Sources
 
@@ -266,3 +321,5 @@ See [ADR-0060](../adr/0060-composable-generation-runs.md).
 - [apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts](../../apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/transcription-context.ts)
 - [docs/adr/0049-native-provider-pricing-and-accounting.md](../../docs/adr/0049-native-provider-pricing-and-accounting.md)
 - [docs/adr/0051-duration-based-transcription-accounting.md](../../docs/adr/0051-duration-based-transcription-accounting.md)
+- [generation-admission-input.ts](../../apps/backend/src/modules/conversations/infrastructure/ai/generation-admission-input.ts).
+- [generation-admission-outcome.ts](../../apps/backend/src/modules/conversations/application/generation-admission-outcome.ts).

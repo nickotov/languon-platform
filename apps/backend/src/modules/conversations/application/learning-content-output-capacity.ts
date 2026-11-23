@@ -77,3 +77,12 @@ export function estimateLearningContentOutput(
         return total + exerciseAllowance + requiredWords;
     }, 0);
 }
+
+/** Per-call estimate with the same fixed safety margin for planning, admission and dispatch. */
+export function learningUnitMinimumOutput(brief: LearningContentBrief) {
+    return (
+        estimateLearningContentOutput(brief) +
+        learningContentAuthoringOutputTokenLimit -
+        learningContentOutputEstimateLimit
+    );
+}

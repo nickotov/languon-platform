@@ -1,10 +1,8 @@
 import { Chat } from '@ai-sdk/react';
+import { applyLessonRunEvent } from '@/fsd/features/lesson-generation';
+import type { GenerationRunSummary } from '@languon/contracts';
 import type { QueryClient } from '@tanstack/react-query';
-import type {
-    ConversationDetail,
-    ConversationTurn,
-    GenerationRunSummary,
-} from '@languon/contracts';
+import type { ConversationDetail, ConversationTurn } from '@languon/contracts';
 import {
     DurableChatTransport,
     ConversationApiError,
@@ -112,38 +110,35 @@ export function createConversationStreamSession({
             }
 
             if (part.data.type === 'generation-run') {
-                const run = part.data.data;
-                client.setQueryData<{ runs: GenerationRunSummary[] }>(
-                    ['lesson-runs', actorId, id],
-                    (current) => {
-                        const prior = current?.runs.find(
-                            (item) => item.id === run.id,
-                        );
+                const event = part.data;
+                const run = event.data;
+                const epoch = state.epoch;
+                state.queue = state.queue.then(() => {
+                    if (!state.active || state.epoch !== epoch) {
+                        return;
+                    }
 
-                        if (
-                            prior &&
-                            Date.parse(prior.updatedAt) >
-                                Date.parse(run.updatedAt)
-                        ) {
-                            return current;
-                        }
+                    client.setQueryData<{ runs: GenerationRunSummary[] }>(
+                        ['lesson-runs', actorId, id],
+                        (current) => applyLessonRunEvent(current, run),
+                    );
 
-                        return {
-                            runs: [
-                                ...(current?.runs.filter(
-                                    (item) => item.id !== run.id,
-                                ) ?? []),
-                                run,
+                    if (run.state === 'paused' && !run.automation?.enabled) {
+                        void client.invalidateQueries({
+                            queryKey: ['lesson-run', actorId, id, run.id],
+                        });
+                    }
+
+                    if (run.state === 'completed') {
+                        void client.invalidateQueries({
+                            queryKey: [
+                                'knowledge-content-proposals',
+                                actorId,
+                                id,
                             ],
-                        };
-                    },
-                );
-
-                if (run.state === 'completed') {
-                    void client.invalidateQueries({
-                        queryKey: ['knowledge-content-proposals', actorId, id],
-                    });
-                }
+                        });
+                    }
+                });
 
                 return;
             }

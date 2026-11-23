@@ -1387,12 +1387,35 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 'paragraph',
             ]);
 
+            expect(listed.proposals[0]?.isCompletedLesson).toBeUndefined();
+            expect(
+                (
+                    await store.listContentProposals(
+                        access(),
+                        chat.id,
+                        randomUUID(),
+                    )
+                ).proposals,
+            ).toHaveLength(0);
+
             const applied = await store.applyContentProposal(
                 access(),
                 chat.id,
                 proposal.id,
                 branch.version,
             );
+
+            await expect(
+                store.applyContentProposal(
+                    access(),
+                    chat.id,
+                    proposal.id,
+                    applied.branch.version,
+                    'insert-lesson',
+                    undefined,
+                    { requestId: randomUUID(), taskId: 'other' },
+                ),
+            ).rejects.toMatchObject({ code: 'conversation_not_found' });
 
             expect(applied.branch.content.title).toBe(content.title);
             expect(
@@ -1408,6 +1431,258 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 type: 'grammar',
                 rule: 'Le COD répond à qui ou quoi.',
             });
+        });
+
+        it('previews a validated vocabulary prefix and preserves output order with pending parts', async () => {
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const note = await knowledge.create(owner, {
+                operationId: randomUUID(),
+                content,
+            });
+            const workspace = await knowledge.getWorkspace(owner, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+
+            await store.submit(access(), chat.id, {
+                ...submit('Create vocabulary and grammar.'),
+                editorContext: {
+                    ...workspaceContext(''),
+                    workingBranch: { id: branch.id, version: branch.version },
+                },
+            });
+
+            const turn = (await store.claim())!;
+            const plan = GenerationPlanSchema.parse({
+                schemaVersion: 1,
+                replyLanguage: 'en',
+                sources: [],
+                tasks: [
+                    {
+                        id: 'words',
+                        kind: 'vocabulary',
+                        instruction: 'Prepare 200 French words.',
+                        language: 'fr',
+                        translationLanguage: 'ru',
+                        count: 200,
+                        inputs: [],
+                    },
+                    {
+                        id: 'rule',
+                        kind: 'grammar',
+                        instruction: 'Explain French grammar.',
+                        language: 'fr',
+                        explanationLanguage: 'fr',
+                        inputs: [],
+                    },
+                ],
+                outputOrder: ['rule', 'words'],
+            });
+            const run = await store.startGeneration(turn, plan, []);
+            const vocabulary: LearningBlock = {
+                id: randomUUID(),
+                type: 'vocabulary',
+                language: 'fr',
+                translationLanguage: 'ru',
+                entries: Array.from({ length: 20 }, (_, index) => ({
+                    id: randomUUID(),
+                    term: `mot ${index + 1}`,
+                    translation: `слово ${index + 1}`,
+                })),
+            };
+
+            await store.checkpointGeneration(
+                turn,
+                [
+                    {
+                        id: randomUUID(),
+                        revision: 1,
+                        taskId: 'words',
+                        batchKey: 'words:legacy-prefix:20',
+                        taskComplete: false,
+                        body: proposalBody([vocabulary]),
+                        contentHash: '',
+                        requirementsHash: '',
+                        sourceHash: '',
+                        validationVersion: 'learning-content-v1',
+                    },
+                ],
+                randomUUID(),
+            );
+
+            await store.pauseGeneration(turn);
+            await store.finish(turn, 'succeeded');
+            const preview = await store.getGenerationRunPreview(
+                access(),
+                chat.id,
+                run.runId,
+            );
+
+            expect(preview.parts).toHaveLength(1);
+            expect(preview.parts[0]).toMatchObject({
+                taskId: 'words',
+                complete: false,
+                completedUnitCount: 20,
+                totalUnitCount: 200,
+            });
+
+            const detail = await store.getGenerationRun(
+                access(),
+                chat.id,
+                run.runId,
+            );
+
+            expect(detail.run.tasks.map((task) => task.id)).toEqual([
+                'rule',
+                'words',
+            ]);
+
+            expect(detail.run.tasks[1]).toMatchObject({
+                completedUnitCount: 20,
+                totalUnitCount: 200,
+            });
+
+            expect(detail.run.completedTaskCount).toBe(0);
+        });
+
+        it('always exposes an honest failure reason and support reference without losing prepared content', async () => {
+            const knowledge = new DrizzleKnowledgeStore(
+                db,
+                { beforeNoteDeletion: async () => undefined },
+                new KnowledgeShareCrypto(
+                    'conversation-knowledge-test-secret-47',
+                ),
+            );
+            const note = await knowledge.create(owner, {
+                operationId: randomUUID(),
+                content,
+            });
+            const workspace = await knowledge.getWorkspace(owner, note.id);
+            const branch = workspace.branches.find(
+                (item) => item.id === workspace.preferredBranchId,
+            )!;
+            const chat = await store.create(access(), {
+                source: { kind: 'knowledge', id: note.id },
+            });
+
+            await store.submit(access(), chat.id, {
+                ...submit('Prepare a lesson.'),
+                editorContext: {
+                    ...workspaceContext(''),
+                    workingBranch: { id: branch.id, version: branch.version },
+                },
+            });
+
+            const turn = (await store.claim())!;
+            const run = await store.startGeneration(
+                turn,
+                GenerationPlanSchema.parse({
+                    schemaVersion: 1,
+                    replyLanguage: 'en',
+                    sources: [],
+                    tasks: [
+                        {
+                            id: 'reading',
+                            kind: 'prose',
+                            language: 'fr',
+                            instruction: 'Read French.',
+                            inputs: [],
+                        },
+                        {
+                            id: 'grammar',
+                            kind: 'grammar',
+                            language: 'fr',
+                            explanationLanguage: 'fr',
+                            instruction: 'Explain COD.',
+                            inputs: [],
+                        },
+                    ],
+                    outputOrder: ['reading', 'grammar'],
+                }),
+                [],
+            );
+
+            await store.checkpointGeneration(
+                turn,
+                [
+                    {
+                        id: randomUUID(),
+                        revision: 1,
+                        taskId: 'reading',
+                        batchKey: 'reading:complete',
+                        taskComplete: true,
+                        body: {
+                            schemaVersion: 2,
+                            document: {
+                                type: 'doc',
+                                content: [
+                                    {
+                                        type: 'paragraph',
+                                        content: [
+                                            {
+                                                type: 'text',
+                                                text: 'Un texte français.',
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                        },
+                        contentHash: '',
+                        requirementsHash: '',
+                        sourceHash: '',
+                        validationVersion: 'learning-content-v1',
+                    },
+                ],
+                randomUUID(),
+            );
+
+            await store.finish(turn, 'failed', 'generation_failed');
+            const failed = await store.getGenerationRun(
+                access(),
+                chat.id,
+                run.runId,
+            );
+
+            expect(failed.run).toMatchObject({
+                completedTaskCount: 1,
+                failure: { code: 'unknown', referenceId: turn.id },
+            });
+
+            await client`update conversation_generation_runs set failure=null where id=${run.runId}::uuid`;
+            const missingDiagnostic = await store.getGenerationRun(
+                access(),
+                chat.id,
+                run.runId,
+            );
+
+            expect(missingDiagnostic.run.failure).toEqual({
+                code: 'unknown',
+                referenceId: turn.id,
+            });
+
+            expect(
+                (
+                    await store.getGenerationRunPreview(
+                        access(),
+                        chat.id,
+                        run.runId,
+                    )
+                ).parts,
+            ).toHaveLength(1);
+
+            expect(JSON.stringify(missingDiagnostic.run.failure)).not.toContain(
+                'Un texte français',
+            );
         });
 
         async function pausedGenerationWithDependencies() {
@@ -1562,6 +1837,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
 
             const revisionTurn = (await store.claim())!;
+            expect(
+                (await store.detail(access(), chat.id)).messages,
+            ).toContainEqual(
+                expect.objectContaining({
+                    id: revisionTurn.message.id,
+                    role: 'user',
+                    content: 'Put the introduction first.',
+                }),
+            );
+
             expect((await store.generationContext(revisionTurn))?.purpose).toBe(
                 'revision',
             );
@@ -1687,9 +1972,9 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 changed.run.tasks.map(({ id, status }) => ({ id, status })),
             ).toEqual([
+                { id: 'introduction', status: 'completed' },
                 { id: 'reading', status: 'pending' },
                 { id: 'summary', status: 'pending' },
-                { id: 'introduction', status: 'completed' },
             ]);
 
             const [revisionThree] =
@@ -1822,7 +2107,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
 
             await store.submit(access(), chat.id, {
-                ...submit('Create a short French reading.'),
+                // Literal wording cannot distinguish a learner from a server command.
+                ...submit('Continue the prepared lesson.'),
                 editorContext: {
                     ...workspaceContext('Ser describes identity.'),
                     workingBranch: { id: branch.id, version: branch.version },
@@ -1903,7 +2189,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             );
 
             await store.pauseGeneration(turn);
+            await store.append(turn, 'Progress saved.');
             await store.finish(turn, 'succeeded');
+            const [cursor] = await store.events(access(), chat.id, 0);
+            expect(
+                (await store.detail(access(), chat.id)).messages.map(
+                    (m) => m.id,
+                ),
+            ).toEqual([turn.message.id]);
 
             const paused = await store.getGenerationRun(
                 access(),
@@ -1952,6 +2245,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             )) as { id: string };
             const resumedTurn = (await store.claim())!;
             expect(resumedTurn.id).toBe(resumed.id);
+            const memory = await store
+                .memory(resumedTurn)
+                .listMessages({ order: 'asc', offset: 0, limit: 10 });
+
+            expect(memory.messages.map((m) => m.id)).toEqual([turn.message.id]);
             const finalProposal = await store.proposeContent(resumedTurn, {
                 body: {
                     schemaVersion: 2,
@@ -1973,7 +2271,38 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
 
             await store.linkGenerationProposal(resumedTurn, finalProposal.id);
+            await store.append(resumedTurn, 'Your lesson is ready.');
+            expect(
+                (await store.detail(access(), chat.id)).messages.map(
+                    (m) => m.id,
+                ),
+            ).toEqual([turn.message.id]);
+
             await store.finish(resumedTurn, 'succeeded');
+            const { messages: transcript, turns } = await store.detail(
+                access(),
+                chat.id,
+            );
+
+            expect(
+                transcript.map(({ role, content }) => [role, content]),
+            ).toEqual([
+                ['user', 'Continue the prepared lesson.'],
+                ['assistant', 'Your lesson is ready.'],
+            ]);
+
+            expect(turns).toHaveLength(2);
+            const replay = await store.events(access(), chat.id, cursor!.id);
+            const messageEvents = replay.filter(
+                (event) => event.type === 'message',
+            );
+
+            expect(messageEvents.length).toBeGreaterThan(0);
+            expect(
+                messageEvents.every(
+                    (event) => event.data.id === transcript[1]!.id,
+                ),
+            ).toBe(true);
 
             const complete = await store.getGenerationRun(
                 access(),
@@ -2117,8 +2446,6 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 const exercise = namedExerciseFixture({
                     activityId: 'G02',
                     sources: [grammar],
-                    language: 'fr',
-                    explanationLanguage: 'fr',
                 });
                 const authored = await createLearningContentAuthoring({
                     ...restored,
@@ -2185,6 +2512,28 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     proposalId: proposal.id,
                 });
 
+                const targeted = await store.listContentProposals(
+                    access(),
+                    chat.id,
+                    proposal.id,
+                );
+
+                expect(targeted.proposals).toHaveLength(1);
+                expect(targeted.proposals[0]).toMatchObject({
+                    id: proposal.id,
+                    isCompletedLesson: true,
+                });
+
+                await expect(
+                    store.applyContentProposal(
+                        access(),
+                        chat.id,
+                        proposal.id,
+                        changed.branch.version,
+                        'add-separately',
+                    ),
+                ).rejects.toMatchObject({ code: 'version_conflict' });
+
                 const applied = await store.applyContentProposal(
                     access(),
                     chat.id,
@@ -2213,6 +2562,117 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         },
                     },
                 ]);
+
+                const originalVersion = applied.branch.version;
+                const selection = {
+                    requestId: randomUUID(),
+                    taskId: 'practice',
+                };
+                const copy = (
+                    version: number,
+                    request = selection,
+                    actor = access(),
+                ) =>
+                    store.applyContentProposal(
+                        actor,
+                        chat.id,
+                        proposal.id,
+                        version,
+                        'insert-lesson',
+                        0,
+                        request,
+                    );
+
+                await expect(
+                    copy(originalVersion, selection, { ownerId: learner }),
+                ).rejects.toThrow();
+
+                const stillPresent = await copy(originalVersion);
+                expect(stillPresent.branch).toEqual(applied.branch);
+                expect(stillPresent.proposal.lessonParts).toMatchObject([
+                    { taskId: 'practice', present: true },
+                ]);
+
+                await expect(
+                    copy(originalVersion, { ...selection, taskId: 'other' }),
+                ).rejects.toMatchObject({ code: 'idempotency_conflict' });
+
+                const removed = await knowledge.updateWorking(owner, note.id, {
+                    operationId: randomUUID(),
+                    branchId: branch.id,
+                    expectedVersion: originalVersion,
+                    content: changed.branch.content,
+                });
+
+                // Replay a delayed successful request after removal: it must not reinsert anything.
+                expect((await copy(originalVersion)).branch).toEqual(
+                    removed.branch,
+                );
+
+                await expect(
+                    copy(originalVersion, {
+                        ...selection,
+                        requestId: randomUUID(),
+                    }),
+                ).rejects.toMatchObject({ code: 'version_conflict' });
+
+                const fresh = { ...selection, requestId: randomUUID() };
+                const again = await copy(removed.branch.version, fresh);
+                expect(again.branch.version).toBe(removed.branch.version + 1);
+                const reinserted =
+                    again.branch.content.body.document.content?.[0]?.attrs
+                        ?.block;
+
+                expect(reinserted?.id).not.toBe(inserted?.id);
+                expect(
+                    reinserted?.type === 'exercise' &&
+                        reinserted.semantics?.sources,
+                ).toEqual(
+                    inserted?.type === 'exercise' &&
+                        inserted.semantics?.sources,
+                );
+
+                expect(await copy(removed.branch.version, fresh)).toEqual(
+                    again,
+                );
+
+                const empty = await knowledge.updateWorking(owner, note.id, {
+                    operationId: randomUUID(),
+                    branchId: branch.id,
+                    expectedVersion: again.branch.version,
+                    content: changed.branch.content,
+                });
+                // Simulate reviewing material after its audio authorization is gone.
+                // The rejected copy must change neither the working branch nor the receipt ledger.
+                const audio = {
+                    type: 'learningBlock',
+                    attrs: {
+                        block: {
+                            id: randomUUID(),
+                            type: 'audio',
+                            assetId: randomUUID(),
+                        },
+                    },
+                };
+
+                await db.execute(
+                    sql`update conversation_content_proposals set body=jsonb_set(body,'{document,content}', ${JSON.stringify([audio])}::jsonb) where id=${proposal.id}`,
+                );
+
+                const denied = { requestId: randomUUID(), taskId: 'practice' };
+                await expect(
+                    copy(empty.branch.version, denied),
+                ).rejects.toMatchObject({ code: 'invalid_request' });
+
+                const receipts = await db.execute(
+                    sql`select request_id from conversation_generation_run_mutations where run_id=${run.runId} and request_id=${denied.requestId}`,
+                );
+
+                expect(receipts).toHaveLength(0);
+                const unchanged = await knowledge.getWorkspace(owner, note.id);
+                expect(
+                    unchanged.branches.find((item) => item.id === branch.id),
+                ).toEqual(empty.branch);
 
                 const currentGrammar = blocksFromBody(
                     applied.branch.content.body,
@@ -2787,6 +3247,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sources: [vocabulary],
                 }),
                 { blocks: [vocabulary] },
+                { language: 'fr', explanationLanguage: 'en' },
             );
 
             if (exercise.type !== 'exercise' || !exercise.semantics) {
@@ -2999,6 +3460,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     sources: [fixture.vocabulary],
                 }),
                 { blocks: [fixture.vocabulary], proposalId: randomUUID() },
+                { language: 'fr', explanationLanguage: 'en' },
             );
             const text = {
                 id: randomUUID(),
@@ -3023,6 +3485,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         text: 'Ana lit un livre.',
                     },
                 },
+                { language: 'fr', explanationLanguage: 'en' },
             );
 
             await proposeBlocks(store, fixture.turn, {
@@ -3051,6 +3514,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const exercise = completeNamedExerciseSources(
                 namedExerciseFixture({ activityId: 'V01', sources: [source] }),
                 { blocks: [source] },
+                { language: 'fr', explanationLanguage: 'en' },
             );
             const wrong = { ...fixture.grammar, id: source.id };
             await expect(

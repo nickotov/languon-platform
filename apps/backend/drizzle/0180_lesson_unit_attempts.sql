@@ -1,0 +1,1 @@
+ALTER TABLE "conversation_generation_plan_revisions" ADD COLUMN "unit_attempts" jsonb DEFAULT '[]'::jsonb NOT NULL;

@@ -1,6 +1,8 @@
 import { KnowledgeShareCrypto } from '../../knowledge/infrastructure/knowledge-share-crypto';
 import { createTextAiProviderRuntime } from '../../../infrastructure/text-ai/provider-runtime';
 import { runPinnedFallback } from '../../text-ai/infrastructure/ai/run-pinned-fallback';
+import { ProviderExecutionError } from '../../text-ai/infrastructure/ai/provider-execution-outcome';
+import { GenerationExecutionFailure } from '../application/generation-failure';
 import { randomBytes } from 'node:crypto';
 import { ConversationWorkerService } from '../application/conversation-worker-service';
 import { DrizzleConversationStore } from './persistence/drizzle/drizzle-conversation-store';
@@ -18,6 +20,8 @@ import {
     createConversationAccounting,
     settleInterruptedConversationCalls,
 } from './conversation-accounting';
+import { tutorStageTimeLimitMs } from './ai/accounted-tutor-model';
+import { fenceTutorPublications } from './ai/tutor-publication-fence';
 import { createContextualTutorRunner } from './ai/contextual-tutor-runner';
 
 /** Shares the existing worker slot pool. Every executable instance is bound to a claimed turn. */
@@ -91,12 +95,14 @@ export function createConversationWorkerComposition(input: {
 
             return {
                 run: async (runInput) => {
-                    let published = false;
+                    const publication = fenceTutorPublications(runInput);
+                    // Routing to a second pinned model is still the same admitted stage.
+                    const stageDeadline = Date.now() + tutorStageTimeLimitMs;
 
                     return runPinnedFallback({
                         snapshot,
                         signal: runInput.signal,
-                        hasPublished: () => published,
+                        hasPublished: publication.hasPublished,
                         execute: async (snapshot, attempt) => {
                             const selectedExecution = {
                                 ...execution,
@@ -135,6 +141,7 @@ export function createConversationWorkerComposition(input: {
                             });
                             const runner = createContextualTutorRunner({
                                 model: provider.model,
+                                stageDeadline,
                                 providerId: snapshot.providerId,
                                 accounting,
                                 attemptWitness: {
@@ -152,36 +159,22 @@ export function createConversationWorkerComposition(input: {
                                         : snapshot.perCallMaxInputTokens,
                             });
 
-                            return runner.run({
-                                ...runInput,
-                                onDelta: async (delta) => {
-                                    published = true;
-                                    await runInput.onDelta(delta);
-                                },
-                                onTool: async (call) => {
-                                    published = true;
-                                    await runInput.onTool?.(call);
-                                },
-                                ...(runInput.onDictionarySnippet
-                                    ? {
-                                          onDictionarySnippet: async (
-                                              content,
-                                          ) => {
-                                              published = true;
-
-                                              return runInput.onDictionarySnippet!(
-                                                  content,
-                                              );
-                                          },
-                                      }
-                                    : {}),
-                                onDraft: async (content) => {
-                                    published = true;
-
-                                    return runInput.onDraft(content);
-                                },
-                            });
+                            return runner.run(publication.input);
                         },
+                    }).catch((error: unknown) => {
+                        // Routing must finish deciding whether a request was conclusively
+                        // rejected before the conversation exposes its safe failure category.
+                        if (error instanceof ProviderExecutionError) {
+                            throw new GenerationExecutionFailure({
+                                code: error.rateLimited
+                                    ? 'rate-limited'
+                                    : error.executionOutcome === 'rejected'
+                                      ? 'provider-rejected'
+                                      : 'provider-outcome-unknown',
+                            });
+                        }
+
+                        throw error;
                     });
                 },
             };

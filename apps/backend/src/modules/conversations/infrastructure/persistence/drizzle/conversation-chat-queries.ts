@@ -1,3 +1,4 @@
+import { transcriptMessage } from './conversation-transcript';
 import {
     ChatPreferencesSchema,
     type ChatPreferences,
@@ -187,7 +188,9 @@ export async function conversationReadDetail(
         tx
             .select()
             .from(messages)
-            .where(eq(messages.conversationId, chat.id))
+            .where(
+                and(eq(messages.conversationId, chat.id), transcriptMessage()),
+            )
             .orderBy(asc(messages.createdAt), asc(messages.id)),
         tx
             .select()

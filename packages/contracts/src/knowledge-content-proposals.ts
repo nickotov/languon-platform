@@ -1,10 +1,13 @@
 import { z } from 'zod';
+import { LessonTaskIdSchema } from './lesson-part-identity';
+import { GenerationTaskKindSchema } from './generation-plans';
 import { LearningBlockSchema } from './learning-blocks';
 import {
     KnowledgeBodySchema,
     KnowledgeContentFragmentSchema,
     KnowledgeWorkingBranchSchema,
     type KnowledgeBody,
+    type KnowledgeNode,
 } from './contextual-assistant';
 
 function isSingleBlock(body: KnowledgeBody) {
@@ -35,6 +38,51 @@ export const LearningContentProposalInputSchema = z
         (value) => !value.targetBlockId || isSingleBlock(value.body),
         'An update must propose exactly one replacement block.',
     );
+const lessonPartSchema = z
+    .object({
+        taskId: LessonTaskIdSchema,
+        kind: GenerationTaskKindSchema,
+        startIndex: z.number().int().nonnegative(),
+        nodeCount: z.number().int().positive(),
+        present: z.boolean(),
+    })
+    .strict();
+
+export type LessonPart = z.infer<typeof lessonPartSchema>;
+
+function nonemptyProse(node: KnowledgeNode): boolean {
+    return (
+        node.type === 'horizontalRule' ||
+        Boolean(node.text) ||
+        Boolean(node.content?.some(nonemptyProse))
+    );
+}
+
+/** Any surviving member keeps its entire task unavailable for duplicate insertion. */
+export function isLessonPartPresent(
+    proposalId: string,
+    part: Omit<LessonPart, 'kind' | 'present'>,
+    proposalBody: KnowledgeBody,
+    document: KnowledgeNode,
+): boolean {
+    const material = (proposalBody.document.content ?? []).slice(
+        part.startIndex,
+        part.startIndex + part.nodeCount,
+    );
+    const blockIds = new Set(
+        material.flatMap((node) => node.attrs?.block?.id ?? []),
+    );
+    const marker = `${proposalId}/${part.taskId}`;
+    const nodes = document.content ?? [];
+    const containsMarker = (node: KnowledgeNode): boolean =>
+        (node.attrs?.lessonPartId === marker &&
+            (node.type === 'learningBlock' || nonemptyProse(node))) ||
+        Boolean(node.attrs?.block && blockIds.has(node.attrs.block.id)) ||
+        Boolean(node.content?.some(containsMarker));
+
+    return nodes.some(containsMarker);
+}
+
 export const KnowledgeContentProposalSchema = z
     .object({
         id: z.uuid(),
@@ -51,6 +99,9 @@ export const KnowledgeContentProposalSchema = z
             .strict()
             .optional(),
         targetStale: z.boolean().optional(),
+        /** Derived from the completed run at read time; never supplied by an author. */
+        isCompletedLesson: z.literal(true).optional(),
+        lessonParts: z.array(lessonPartSchema).min(1).max(8).optional(),
         dependencies: z.array(LearningBlockSchema).max(50).optional(),
         body: proposalBody,
         createdAt: z.iso.datetime(),
@@ -59,7 +110,14 @@ export const KnowledgeContentProposalSchema = z
     })
     .strict()
     .superRefine((value, ctx) => {
-        if (JSON.stringify(value).length > 100_000) {
+        // Joining run metadata must not push an already validated proposal over its size limit.
+        if (
+            JSON.stringify({
+                ...value,
+                isCompletedLesson: undefined,
+                lessonParts: undefined,
+            }).length > 100_000
+        ) {
             ctx.addIssue({
                 code: 'custom',
                 message:
@@ -104,18 +162,36 @@ export const KnowledgeContentProposalSchema = z
 export const KnowledgeContentProposalsResponseSchema = z
     .object({ proposals: z.array(KnowledgeContentProposalSchema).max(100) })
     .strict();
+const LessonCopySchema = z
+    .object({
+        requestId: z.uuid(),
+        taskId: LessonTaskIdSchema.optional(),
+    })
+    .strict();
+
+export type LessonCopy = z.infer<typeof LessonCopySchema>;
+
 export const ApplyKnowledgeContentProposalRequestSchema = z
     .object({
         expectedBranchVersion: z.number().int().positive(),
-        mode: z.enum(['proposal', 'add-separately']).optional(),
+        mode: z
+            .enum(['proposal', 'add-separately', 'insert-lesson'])
+            .optional(),
+        lessonCopy: LessonCopySchema.optional(),
         insertionPosition: z.number().int().min(0).max(1_000_000).optional(),
     })
     .strict()
     .refine(
         (value) =>
             value.insertionPosition === undefined ||
-            value.mode === 'add-separately',
+            value.mode === 'add-separately' ||
+            value.mode === 'insert-lesson',
         'Cursor insertion requires adding an independent copy.',
+    )
+    .refine(
+        (value) =>
+            (value.mode === 'insert-lesson') === Boolean(value.lessonCopy),
+        'Lesson inserts require a selection and request identity.',
     );
 export const ApplyKnowledgeContentProposalResponseSchema = z
     .object({

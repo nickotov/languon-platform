@@ -3,7 +3,10 @@ import type {
     LearningContentBrief,
     LearningContentTask,
 } from './learning-content-contract';
-import { planLearningContentBatches } from './learning-content-batches';
+import {
+    isLearningContentBatchCompleted,
+    planLearningContentBatches,
+} from './learning-content-batches';
 import {
     estimateLearningContentOutput,
     learningContentOutputEstimateLimit,
@@ -28,6 +31,83 @@ const grammar = (id: string): LearningContentTask => ({
 });
 
 describe('learning content batch planning', () => {
+    it('never skips an entire grouped batch merely because part of its prefix is complete', () => {
+        const batch = {
+            brief: {
+                tasks: [
+                    {
+                        id: 'practice',
+                        kind: 'exercises' as const,
+                        instruction: 'Practice the rule.',
+                        count: 3,
+                    },
+                ],
+            },
+            exercisePart: { taskId: 'practice', offset: 0, total: 4 },
+        };
+
+        expect(
+            isLearningContentBatchCompleted(
+                batch,
+                'new-key',
+                new Set(['old-key']),
+                new Map([['practice', 2]]),
+            ),
+        ).toBe(false);
+
+        expect(
+            isLearningContentBatchCompleted(
+                batch,
+                'new-key',
+                new Set(['old-key']),
+                new Map([['practice', 3]]),
+            ),
+        ).toBe(true);
+    });
+
+    it('gives durable mixed grammar activities stable one-exercise units in requested order', () => {
+        const tasks: LearningContentTask[] = [
+            {
+                id: 'grammar-exercises',
+                kind: 'exercises',
+                language: 'fr',
+                explanationLanguage: 'fr',
+                instruction: 'Check COD and COI.',
+                source: { kind: 'editor' },
+                count: 4,
+                activities: [
+                    { activityId: 'G06', count: 1 },
+                    { activityId: 'G02', count: 2 },
+                    { activityId: 'G03', count: 1 },
+                ],
+            },
+        ];
+        const plan = planLearningContentBatches(
+            { tasks },
+            { exerciseUnitSize: 1 },
+        )!;
+
+        expect(plan.batches.map((batch) => batch.exercisePart)).toEqual(
+            [0, 1, 2, 3].map((offset) => ({
+                taskId: 'grammar-exercises',
+                offset,
+                total: 4,
+            })),
+        );
+
+        expect(
+            plan.batches.map((batch) => batch.brief.tasks[0]!.activities),
+        ).toEqual(
+            ['G06', 'G02', 'G02', 'G03'].map((activityId) => [
+                { activityId, count: 1 },
+            ]),
+        );
+
+        expect(
+            plan.batches.every((batch) => batch.brief.tasks[0]!.count === 1),
+        ).toBe(true);
+    });
+
     it('plans all 50 topic words in two bounded standalone calls', () => {
         const brief: LearningContentBrief = { tasks: [vocabulary()] };
         const before = structuredClone(brief);

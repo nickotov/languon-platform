@@ -78,7 +78,15 @@ constraints, while feature-local decisions belong in the feature's
 
 | [ADR-0054](./0054-ui-direction-before-implementation.md) | UI direction before substantive implementation | Accepted |
 | [ADR-0055](./0055-learning-content-context-and-publication.md) | Learning-content phase context and canonical publication | Accepted |
+| [ADR-0056](./0056-optional-ai-diagnostics.md) | Optional AI diagnostics independent of routing and generation | Accepted |
+| [ADR-0057](./0057-dictionary-chat-snippet-application.md) | Dictionary-chat snippets and manual-style application | Accepted |
+| [ADR-0058](./0058-named-activity-content-and-source-provenance.md) | Named activity content and host-captured source provenance | Accepted |
 | [ADR-0059](./0059-typed-conversation-prompt-mentions.md) | Typed conversation prompt mentions | Accepted |
+| [ADR-0060](./0060-composable-generation-runs.md) | Composable generation runs and mixed document proposals | Accepted |
+| [ADR-0061](./0061-bounded-automatic-lesson-continuation.md) | Bounded automatic lesson continuation and private prepared previews | Accepted |
+| [ADR-0062](./0062-single-submission-lesson-recovery.md) | Single-submission lesson recovery | Accepted |
+| [ADR-0063](./0063-completed-lesson-insertion.md) | Repeatable insertion from completed lessons | Accepted |
+| [ADR-0064](./0064-logical-lesson-parts-in-the-workspace.md) | Logical lesson parts in the Knowledge workspace | Accepted |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.
@@ -125,9 +133,3 @@ decision dates and accepted decision/rationale text unchanged.
 5. Keep current architecture documentation aligned with accepted decisions.
 
 Fixes limited to typos, formatting, and broken links do not require a new ADR.
-
-| [ADR-0056](./0056-optional-ai-diagnostics.md) | Optional AI diagnostics independent of routing and generation | Accepted |
-| [ADR-0057](./0057-dictionary-chat-snippet-application.md) | Dictionary-chat snippets and manual-style application | Accepted |
-| [ADR-0058](./0058-named-activity-content-and-source-provenance.md) | Named activity content and host-captured source provenance | Accepted |
-
-| [ADR-0060](./0060-composable-generation-runs.md) | Composable generation runs and mixed document proposals | Accepted |

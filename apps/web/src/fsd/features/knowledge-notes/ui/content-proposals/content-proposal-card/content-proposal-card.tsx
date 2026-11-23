@@ -12,7 +12,7 @@ import { useProposalAudio } from '../../../hooks/use-proposal-audio';
 import { localizedBlockLabels } from '../../learning-block-authoring/block-locales';
 import { contentProposalLabels } from '../../../lib/content-proposal-labels';
 import type { KnowledgeContentProposalContext } from '../knowledge-content-proposals';
-import styles from './content-proposal-card.module.css';
+import styles from '../../styles/content-proposal-card-common.module.css';
 import { contentProposalBlocks } from '../../../lib/content-proposal-blocks';
 import { ContentProposalPreview } from '../content-proposal-preview/content-proposal-preview';
 import { contentProposalExcerpt } from '../../../lib/content-proposal-excerpt';

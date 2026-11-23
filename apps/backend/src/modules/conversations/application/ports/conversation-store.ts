@@ -1,3 +1,5 @@
+import type { LessonCopy } from '@languon/contracts';
+import type { GenerationFailureDiagnostic } from '../generation-failure';
 import type {
     ApplyDictionaryChatSnippetRequest,
     ApplyDictionaryChatSnippetResponse,
@@ -71,14 +73,16 @@ export interface ConversationStore extends GenerationRunStore {
     listContentProposals?(
         access: ConversationAccess,
         conversationId: string,
+        proposalId?: string,
     ): Promise<{ proposals: KnowledgeContentProposal[] }>;
     applyContentProposal?(
         access: ConversationAccess,
         conversationId: string,
         proposalId: string,
         expectedBranchVersion: number,
-        mode?: 'proposal' | 'add-separately',
+        mode?: 'proposal' | 'add-separately' | 'insert-lesson',
         insertionPosition?: number,
+        lessonCopy?: LessonCopy,
     ): Promise<{
         proposal: KnowledgeContentProposal;
         branch: KnowledgeWorkingBranch;
@@ -205,6 +209,7 @@ export interface ConversationStore extends GenerationRunStore {
         turn: ClaimedConversationTurn,
         status: 'succeeded' | 'failed' | 'cancelled',
         failureCode?: string,
+        failure?: GenerationFailureDiagnostic,
     ): Promise<void>;
     memory(turn: ClaimedConversationTurn): TutorMemoryPort;
 }

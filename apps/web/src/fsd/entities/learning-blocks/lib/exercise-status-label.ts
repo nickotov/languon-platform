@@ -3,6 +3,7 @@ import { namedExerciseLabels } from './named-exercise-labels';
 
 export function exerciseStatusLabel({
     labels,
+    disclosureOnly,
     attempted,
     hintVisible,
     revealed,
@@ -12,6 +13,7 @@ export function exerciseStatusLabel({
     feedback,
 }: {
     labels: LearningBlockLabels;
+    disclosureOnly?: boolean | undefined;
     attempted: boolean;
     hintVisible: boolean;
     revealed: boolean;
@@ -20,6 +22,15 @@ export function exerciseStatusLabel({
     saved: LearningBlockViewProps['learnerState'];
     feedback: string | undefined;
 }) {
+    if (disclosureOnly) {
+        const copy = namedExerciseLabels(labels.locale);
+        if (revealed) {
+            return copy.answerShown;
+        }
+
+        return hintVisible ? copy.hintShown : '';
+    }
+
     let status = attempted
         ? (labels.attempted ?? labels.answer)
         : (labels.notAnswered ?? '');

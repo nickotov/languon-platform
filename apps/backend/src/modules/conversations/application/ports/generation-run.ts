@@ -1,10 +1,35 @@
 import type {
+    GenerationFailure,
     GenerationPlan,
     KnowledgeBody,
     LearningBlock,
 } from '@languon/contracts';
 
+export const maximumAutomaticGenerationStages = 8;
 export const generationValidationVersion = 'learning-content-v1';
+
+/** One finite spending authorization, independent of individual worker stages. */
+export interface GenerationAutomationAuthorization {
+    authorizationId: string;
+    revision: number;
+    rootActionId: string;
+    actionIds: string[];
+    maximumCreditsMilli: string;
+    maximumProviderCostMicros: number;
+    authorizationFingerprint: string;
+    expiresAt: string;
+    stageCount: number;
+    ready: boolean;
+    dispatchRetryCount?: number;
+    admissionRetry?: { count: number; retryAt: string } | undefined;
+}
+
+export interface GenerationAutomaticAdmission {
+    expiresAt: string;
+    maximumCreditsMilli: string;
+    maximumProviderCostMicros: number;
+    authorizationFingerprint: string;
+}
 
 /** Frozen, server-resolved evidence. References in a plan never grant read authority. */
 export interface GenerationSourceSnapshot {
@@ -37,7 +62,57 @@ export interface GenerationArtifact {
     validationVersion: string;
 }
 
+export const generationUnitStrategies = [
+    'initial',
+    'repair',
+    'fallback',
+] as const;
+
+export interface GenerationAttemptEvent {
+    taskId: string;
+    unitOrdinal: number;
+    validationId: string;
+    dependencyFingerprint: string;
+    strategy: (typeof generationUnitStrategies)[number];
+    schemaVersion: string;
+    outcome: 'started' | 'rejected';
+    diagnostic?: GenerationFailure | undefined;
+}
+
+export interface GenerationUnitAttempt extends Omit<
+    GenerationAttemptEvent,
+    'outcome'
+> {
+    outcome:
+        | GenerationAttemptEvent['outcome']
+        | 'accepted'
+        | 'declined'
+        | 'undispatched'
+        | 'abandoned'
+        | 'acknowledged';
+    turnId: string;
+    sourceHash: string;
+    recordedAt: string;
+    concludedAt?: string;
+}
+
+export function acknowledgedGenerationAttempts(
+    history: readonly GenerationUnitAttempt[],
+    turnId: string,
+): GenerationUnitAttempt[] {
+    return history.map((attempt) =>
+        attempt.turnId === turnId && attempt.outcome === 'started'
+            ? {
+                  ...attempt,
+                  outcome: 'acknowledged',
+                  diagnostic: { code: 'interrupted', taskId: attempt.taskId },
+              }
+            : attempt,
+    );
+}
+
 export interface GenerationExecutionContext {
+    unitAttempts?: GenerationUnitAttempt[];
     runId: string;
     revision: number;
     plan: GenerationPlan;
@@ -57,6 +132,7 @@ export interface GenerationRunCallbacks {
         artifacts: GenerationArtifact[],
         validationId: string,
     ): Promise<void>;
+    onGenerationAttempt?(event: GenerationAttemptEvent): Promise<void>;
     onGenerationPause?(reason: 'budget'): Promise<void>;
     onGenerationRevision?(
         plan: GenerationPlan,
@@ -69,5 +145,11 @@ export interface GenerationAdmission {
     runId: string;
     expectedRevision: number;
     kind: 'generation' | 'revision';
+    acknowledgedUncertainTurnId?: string;
     sourceChoice?: 'keep-snapshot' | 'refresh';
+    automatic?: {
+        authorizationId: string;
+        stageCount: number;
+        retryCount: number;
+    };
 }

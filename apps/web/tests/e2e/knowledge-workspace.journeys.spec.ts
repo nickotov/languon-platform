@@ -1,6 +1,8 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-// @user-flow-revision knowledge-workspace sha256:fcdcf3a7e4a82280
+import { verifyIdleLessonRecovery } from './lesson-reconnect-fixture';
+
+// @user-flow-revision knowledge-workspace sha256:1bfa13315161752e
 
 type Share = { locator: string; key: string };
 
@@ -122,7 +124,7 @@ function runtimeErrors(page: Page) {
         }
     });
 
-    return () => expect(failures).toEqual([]);
+    return (expected: string[] = []) => expect(failures).toEqual(expected);
 }
 
 async function capture(page: Page, info: TestInfo, name: string) {
@@ -2119,11 +2121,38 @@ test('capability replies stay in chat and mixed content generates one reviewed i
 });
 
 // @user-flow knowledge-workspace/workspace-composable-lesson-continuation
-test('a paused composable lesson continues from its checked stages, inserts one mixed proposal, and survives saving', async ({
+test('a composable lesson previews saved parts, automatically completes after one authorization, inserts one mixed proposal, and survives saving', async ({
     page,
 }, info) => {
+    test.setTimeout(240_000);
     const assertRuntime = runtimeErrors(page);
-    await signup(page, info);
+    const continueRequests: string[] = [];
+    const runReads = { lists: [] as string[], details: [] as string[] };
+    page.on('request', (request) => {
+        const path = new URL(request.url()).pathname;
+        if (
+            request.method() === 'POST' &&
+            /\/generation-runs\/[^/]+\/continue$/u.test(path)
+        ) {
+            continueRequests.push(path);
+        }
+
+        if (request.method() !== 'GET') {
+            return;
+        }
+
+        if (/\/conversations\/[^/]+\/generation-runs$/u.test(path)) {
+            runReads.lists.push(path);
+        } else if (
+            /\/conversations\/[^/]+\/generation-runs\/[0-9a-f-]{36}$/u.test(
+                path,
+            )
+        ) {
+            runReads.details.push(path);
+        }
+    });
+
+    const ownerToken = await signup(page, info);
     await createDraft(page);
     await page
         .getByRole('textbox', { name: 'Title', exact: true })
@@ -2133,6 +2162,28 @@ test('a paused composable lesson continues from its checked stages, inserts one 
         name: 'Language tutor',
         exact: true,
     });
+
+    const responseSettings = tutor.getByRole('button', {
+        name: 'Response settings',
+    });
+
+    await responseSettings.click();
+    const settingsPanel = page
+        .getByRole('dialog')
+        .filter({ has: page.getByRole('heading', { name: 'Explanations' }) });
+
+    await expect(settingsPanel).toBeVisible();
+    const panelSize = await settingsPanel.evaluate((element) => ({
+        height: element.getBoundingClientRect().height,
+        viewport: window.innerHeight,
+        scrollable: element.scrollHeight > element.clientHeight,
+        thumb: getComputedStyle(element).scrollbarWidth,
+    }));
+
+    expect(panelSize.height).toBeLessThanOrEqual(panelSize.viewport / 2 + 1);
+    expect(panelSize.scrollable).toBe(true);
+    expect(panelSize.thumb).toBe('thin');
+    await page.keyboard.press('Escape');
 
     await tutor.getByLabel('Your question').fill('Composable lesson fixture');
     await tutor.getByRole('button', { name: 'Send', exact: true }).click();
@@ -2147,21 +2198,66 @@ test('a paused composable lesson continues from its checked stages, inserts one 
         run.getByText('2 of 3 parts ready', { exact: true }),
     ).toBeVisible();
 
+    await expect(run.locator('header .lucide-loader-circle')).toHaveCount(1);
+    await expect(run.locator('details')).toHaveAttribute('open', '');
+    const activeTask = run.locator('li[aria-current="step"]');
+    await expect(activeTask).toBeVisible();
+    await expect(activeTask.locator('svg')).toHaveCSS('margin-top', '2px');
+    await expect(activeTask.locator('svg')).not.toHaveCSS(
+        'animation-name',
+        'none',
+    );
+
+    await expect(activeTask).toContainText(/Preparing|Exercise \d+ of \d+/u);
+    await expect(tutor.getByText('Working…', { exact: true })).toHaveCount(0);
     await expect(
         run.getByText(
-            'This stage is complete. Review the next budget to continue.',
+            'Continues automatically within your approved budget. You can leave this page and return later.',
             { exact: true },
         ),
-    ).toBeVisible();
+    ).toHaveCount(0);
 
-    await run.getByRole('button', { name: 'Continue', exact: true }).click();
-    const quote = page.getByRole('dialog', {
-        name: 'Continue preparing this lesson?',
+    await capture(page, info, 'workspace-composable-lesson-running');
+
+    const transcript = tutor.getByRole('log');
+    await expect(transcript.locator('[data-assistant-content]')).toHaveCount(0);
+    await expect(transcript.locator('article p[dir="auto"]')).toHaveText([
+        'Composable lesson fixture',
+    ]);
+
+    const previewResponse = page.waitForResponse(
+        (response) =>
+            new URL(response.url()).pathname.endsWith('/preview') &&
+            response.request().method() === 'GET',
+    );
+
+    await run
+        .getByRole('button', { name: 'View prepared content', exact: true })
+        .click();
+
+    const previewUrl = (await previewResponse).url();
+    const preview = page.getByRole('region', {
+        name: 'Prepared content',
         exact: true,
     });
 
-    await expect(quote).toBeVisible();
-    await quote.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(preview).toContainText(
+        'La démocratie française repose sur le débat public.',
+    );
+
+    await expect(
+        preview.getByRole('heading', {
+            name: 'French noun grammar',
+            exact: true,
+        }),
+    ).toBeVisible();
+
+    await expect(
+        preview.getByRole('button', { name: /Insert (at|remaining)/u }),
+    ).toHaveCount(0);
+
+    await preview.getByRole('button', { name: 'Back to chat' }).click();
+    await expect(preview).not.toBeVisible();
 
     const complete = tutor.getByRole('article', {
         name: 'Your lesson is ready',
@@ -2173,14 +2269,131 @@ test('a paused composable lesson continues from its checked stages, inserts one 
         complete.getByText('3 of 3 parts ready', { exact: true }),
     ).toBeVisible();
 
+    const question = transcript.getByText('Composable lesson fixture', {
+        exact: true,
+    });
+
+    await expect(transcript.locator('[data-assistant-content]')).toHaveCount(1);
+    await expect(transcript.locator('article p[dir="auto"]')).toHaveText([
+        'Composable lesson fixture',
+    ]);
+
+    await expect(
+        transcript.getByText('Draft content', { exact: true }),
+    ).toHaveCount(0);
+
+    await question.scrollIntoViewIfNeeded();
+    const word = await question.evaluate((span) => {
+        const range = document.createRange();
+        range.setStart(span.firstChild!, 0);
+        range.setEnd(span.firstChild!, 'Composable'.length);
+        const { left, right, top, height } = range.getBoundingClientRect();
+
+        return { left, right, y: top + height / 2 };
+    });
+
+    await page.mouse.move(word.left, word.y);
+    await page.mouse.down();
+    await page.mouse.move(word.right, word.y, { steps: 10 });
+    await page.mouse.up();
+    expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(
+        'Composable',
+    );
+
+    const highlights: string[] = [];
+    for (const colorScheme of ['light', 'dark'] as const) {
+        await page.emulateMedia({ colorScheme });
+        const colors = await question.evaluate((span) => ({
+            bubble: getComputedStyle(span.closest('p')!).backgroundColor,
+            highlight: getComputedStyle(span, '::selection').backgroundColor,
+        }));
+
+        expect(colors.highlight).not.toBe(colors.bubble);
+        highlights.push(colors.highlight);
+    }
+
+    expect(new Set(highlights).size).toBe(2);
+    await page.emulateMedia({ colorScheme: null });
+
+    expect(continueRequests).toEqual([]);
+    expect(runReads.lists).toHaveLength(1);
+    expect(runReads.details).toHaveLength(0);
+
     const proposal = tutor.getByRole('article', {
         name: 'Proposed content',
         exact: true,
     });
 
-    await expect(proposal).toHaveCount(1);
-    await proposal.getByRole('button', { name: 'Review', exact: true }).click();
-    const review = page.getByRole('dialog', {
+    await expect(proposal).toHaveCount(0);
+    const proposedContent = complete.getByRole('group', {
+        name: 'Proposed content',
+        exact: true,
+    });
+
+    await expect(proposedContent).toHaveCount(1);
+    await expect(
+        proposedContent.getByRole('button', { name: 'Review' }),
+    ).toBeVisible();
+
+    await expect(
+        complete.getByRole('button', { name: 'View prepared content' }),
+    ).toHaveCount(0);
+
+    const planBeforeResult = await complete.evaluate((card) => {
+        const plan = card.querySelector('details');
+        const result = card.querySelector(
+            '[role="group"][aria-label="Proposed content"]',
+        );
+
+        return Boolean(
+            plan &&
+            result &&
+            plan.compareDocumentPosition(result) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+    });
+
+    expect(planBeforeResult).toBe(true);
+    await expect(
+        tutor.getByText('Preparing learning blocks… · Complete', {
+            exact: true,
+        }),
+    ).toHaveCount(0);
+
+    const disclosure = complete.locator('details');
+    for (const opening of [true, false]) {
+        const sizes = await disclosure.evaluate(
+            async (element: HTMLDetailsElement) => {
+                const before = element.offsetHeight;
+                element.querySelector('summary')!.click();
+                const samples: number[] = [];
+                const until = performance.now() + 350;
+                while (performance.now() < until) {
+                    await new Promise(requestAnimationFrame);
+                    samples.push(element.offsetHeight);
+                }
+
+                return { before, after: element.offsetHeight, samples };
+            },
+        );
+
+        expect(sizes.after > sizes.before).toBe(opening);
+        expect(
+            sizes.samples.some(
+                (height) =>
+                    height > Math.min(sizes.before, sizes.after) &&
+                    height < Math.max(sizes.before, sizes.after),
+            ),
+            JSON.stringify(sizes),
+        ).toBe(true);
+    }
+
+    await capture(page, info, 'workspace-composable-lesson-complete');
+    await proposedContent
+        .getByRole('button', { name: 'Review', exact: true })
+        .click();
+
+    const review = page.getByRole('region', {
         name: 'Review proposed content',
         exact: true,
     });
@@ -2202,18 +2415,253 @@ test('a paused composable lesson continues from its checked stages, inserts one 
         ),
     ).toHaveCount(3);
 
-    await capture(page, info, 'workspace-composable-lesson-complete');
+    const parts = review.locator('[data-lesson-part]');
+    const reading = parts.filter({ hasText: 'La démocratie française' });
+    const exercises = parts.filter({
+        hasText: 'Appliquez la règle de grammaire dans le cas 1.',
+    });
+    const grammar = review.locator('[data-lesson-part="composable-grammar"]');
+    await expect(parts).toHaveCount(3);
+    const editor = page.getByRole('textbox', { name: 'Document', exact: true });
+    const reviewBounds = await review.boundingBox();
+    const editorBounds = await editor.boundingBox();
+    expect(editorBounds!.x + editorBounds!.width).toBeLessThanOrEqual(
+        reviewBounds!.x,
+    );
 
-    await review
-        .getByRole('button', { name: 'Insert all', exact: true })
+    await capture(page, info, 'workspace-composable-lesson-desktop');
+    await expect(reading).toContainText(
+        'Les citoyens participent aux décisions locales.',
+    );
+
+    await expect(
+        reading.getByRole('button', { name: 'Insert at end', exact: true }),
+    ).toHaveCount(1);
+
+    await expect(
+        exercises.getByRole('button', { name: 'Insert at end', exact: true }),
+    ).toHaveCount(1);
+
+    await expect(
+        review.locator('.ProseMirror[contenteditable="false"]'),
+    ).toHaveCount(3);
+
+    await expect(tutor.getByLabel('Your question')).not.toBeVisible();
+    await expect(
+        page.getByRole('tooltip', { name: 'Send', exact: true }),
+    ).not.toBeVisible();
+
+    await expect(exercises.getByText('Observez le genre du nom.')).toHaveCount(
+        0,
+    );
+
+    await expect(exercises.getByText('réponse', { exact: true })).toHaveCount(
+        0,
+    );
+
+    await expect(
+        exercises.getByText('Fixture explanation for G02.'),
+    ).toHaveCount(0);
+
+    await exercises
+        .getByRole('button', { name: 'Hint', exact: true })
+        .first()
         .click();
 
-    await expect(page.locator('[data-learning-block-id]')).toHaveCount(4);
-    await page.keyboard.press('Escape');
-    await expect(review).not.toBeVisible();
+    await expect(exercises.getByText('Observez le genre du nom.')).toHaveCount(
+        1,
+    );
+
+    await expect(exercises.getByText('réponse', { exact: true })).toHaveCount(
+        0,
+    );
+
+    await exercises
+        .getByRole('button', { name: 'Show answer', exact: true })
+        .first()
+        .click();
+
+    await expect(exercises.getByText('réponse', { exact: true })).toHaveCount(
+        1,
+    );
+
     await expect(
-        page.getByRole('textbox', { name: 'Document', exact: true }),
-    ).toContainText('La démocratie française repose sur le débat public.');
+        exercises.getByText('Fixture explanation for G02.'),
+    ).toHaveCount(1);
+
+    await capture(
+        page,
+        info,
+        'workspace-composable-lesson-exercise-disclosure',
+    );
+
+    await exercises
+        .getByRole('button', { name: 'Hide answer', exact: true })
+        .click();
+
+    await expect(exercises.getByText('réponse', { exact: true })).toHaveCount(
+        0,
+    );
+
+    const blocks = editor.locator('[data-learning-block-id]');
+    const insertGrammar = grammar.getByRole('button', {
+        name: 'Insert at end',
+        exact: true,
+    });
+    const copyRequestIds: string[] = [];
+    let dropFirstResponse = true;
+    await page.route('**/content-proposals/*/apply', async (route) => {
+        const request = route.request();
+        if (
+            request.method() !== 'POST' ||
+            request.postDataJSON().mode !== 'insert-lesson'
+        ) {
+            await route.continue();
+
+            return;
+        }
+
+        copyRequestIds.push(request.postDataJSON().lessonCopy.requestId);
+        if (!dropFirstResponse) {
+            await route.continue();
+
+            return;
+        }
+
+        dropFirstResponse = false;
+        // The server commits the branch edit, but the first acknowledgement is lost.
+        // Retrying this particular click must recover the receipt and its block IDs.
+        const response = await route.fetch();
+        expect(response.ok(), await response.text()).toBe(true);
+        await route.abort('failed');
+    });
+
+    const lostAcknowledgement = page.waitForEvent('requestfailed', {
+        predicate: (request) =>
+            request.url().includes('/content-proposals/') &&
+            request.url().endsWith('/apply'),
+    });
+
+    await insertGrammar.click();
+    await lostAcknowledgement;
+    await expect(insertGrammar).toBeEnabled();
+    await insertGrammar.click();
+    await expect(blocks).toHaveCount(1);
+    expect(copyRequestIds[0]).toBeTruthy();
+    expect(copyRequestIds).toEqual([copyRequestIds[0], copyRequestIds[0]]);
+    const originalId = await blocks
+        .first()
+        .getAttribute('data-learning-block-id');
+
+    expect(originalId).toBeTruthy();
+    await expect(review).toBeVisible();
+    await expect(
+        grammar.getByText('In document', { exact: true }),
+    ).toBeVisible();
+
+    await expect(insertGrammar).not.toBeEnabled();
+
+    await editor
+        .getByRole('button', { name: 'Block settings: French noun grammar' })
+        .click();
+
+    await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
+    await expect(blocks).toHaveCount(0);
+    await editor.fill('Keep these notes after the grammar.');
+    await waitForRecovery(page);
+    const noteParagraph = editor.getByText(
+        'Keep these notes after the grammar.',
+        {
+            exact: true,
+        },
+    );
+
+    await noteParagraph.click({ position: { x: 1, y: 5 } });
+    await expect
+        .poll(() =>
+            noteParagraph.evaluate((paragraph) => {
+                const caret = window.getSelection();
+
+                return (
+                    caret?.isCollapsed &&
+                    caret.anchorOffset === 0 &&
+                    paragraph.contains(caret.anchorNode) &&
+                    document.activeElement?.contains(paragraph)
+                );
+            }),
+        )
+        .toBe(true);
+
+    await expect(review).toBeVisible();
+    await grammar
+        .getByRole('button', { name: 'Insert at cursor', exact: true })
+        .click();
+
+    await expect(blocks).toHaveCount(1);
+    await expect(blocks.first()).not.toHaveAttribute(
+        'data-learning-block-id',
+        originalId!,
+    );
+
+    await expect(
+        editor.locator('p').filter({ hasText: 'Keep these notes' }),
+    ).toHaveCount(1);
+
+    const precedesNotes = await blocks.first().evaluate((node) => {
+        const notes = Array.from(
+            node.closest('[contenteditable="true"]')!.querySelectorAll('p'),
+        ).find(
+            (paragraph) =>
+                paragraph.textContent === 'Keep these notes after the grammar.',
+        );
+
+        return Boolean(
+            notes &&
+            node.compareDocumentPosition(notes) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+    });
+
+    expect(precedesNotes).toBe(true);
+
+    await reading
+        .getByRole('button', { name: 'Insert at end', exact: true })
+        .click();
+
+    await expect(
+        editor.getByText(
+            'La démocratie française repose sur le débat public.',
+            { exact: true },
+        ),
+    ).toHaveCount(1);
+
+    await expect(
+        editor.getByText('Les citoyens participent aux décisions locales.', {
+            exact: true,
+        }),
+    ).toHaveCount(1);
+
+    await expect(
+        reading.getByRole('button', { name: 'Insert at end', exact: true }),
+    ).toBeDisabled();
+
+    await review
+        .getByRole('button', { name: 'Insert remaining at end', exact: true })
+        .click();
+
+    await expect(blocks).toHaveCount(4);
+    const ids = await blocks.evaluateAll((nodes) =>
+        nodes.map((node) => node.getAttribute('data-learning-block-id')),
+    );
+
+    expect(new Set(ids).size).toBe(4);
+    expect(copyRequestIds).toHaveLength(5);
+    expect(new Set(copyRequestIds).size).toBe(4);
+    await review.getByRole('button', { name: 'Back to chat' }).click();
+    await expect(review).not.toBeVisible();
+    await expect(editor).toHaveText(
+        /Keep these notes after the grammar\.[\s\S]*La démocratie française repose sur le débat public\./u,
+    );
 
     await waitForRecovery(page);
     await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -2221,13 +2669,108 @@ test('a paused composable lesson continues from its checked stages, inserts one 
         page.locator('[data-workspace-topbar] [data-state="saved"]'),
     ).toBeVisible();
 
-    await page.reload();
-    await expect(page.locator('[data-learning-block-id]')).toHaveCount(4);
-    await expect(
-        page.getByRole('textbox', { name: 'Document', exact: true }),
-    ).toContainText('La démocratie française repose sur le débat public.');
+    // A completed run can outlive the current page of proposal history.
+    // Leave the direct lookup and mutation endpoints backed by the real server.
+    await page.route('**/content-proposals', (route) =>
+        route.fulfill({ json: { proposals: [] } }),
+    );
 
-    assertRuntime();
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(blocks).toHaveCount(4);
+    await expect(editor).toContainText('Keep these notes after the grammar.');
+    await expect(editor).toContainText(
+        'La démocratie française repose sur le débat public.',
+    );
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole('tab', { name: 'Tutor', exact: true }).click();
+    const directLookup = page.waitForResponse((response) => {
+        const url = new URL(response.url());
+
+        return (
+            url.pathname.endsWith('/content-proposals') &&
+            url.searchParams.has('proposalId')
+        );
+    });
+
+    await complete
+        .getByRole('button', { name: 'View prepared content' })
+        .click();
+
+    await expect(review).toBeVisible();
+    const lookup = await directLookup;
+    expect(lookup.status()).toBe(200);
+    expect((await lookup.json()).proposals).toMatchObject([
+        {
+            id: new URL(lookup.url()).searchParams.get('proposalId'),
+            isCompletedLesson: true,
+        },
+    ]);
+
+    await expect(review.getByText('In document', { exact: true })).toHaveCount(
+        3,
+    );
+
+    await expect(
+        review.getByRole('button', {
+            name: 'Insert remaining at end',
+            exact: true,
+        }),
+    ).not.toBeEnabled();
+
+    const mobilePanel = page.getByRole('tabpanel', { name: 'Tutor' });
+    await expect(
+        mobilePanel.getByRole('region', { name: 'Review proposed content' }),
+    ).toBeVisible();
+
+    await review
+        .getByRole('button', { name: 'Choose a position in the document' })
+        .click();
+
+    await expect(editor).toBeVisible();
+    await expect(review).not.toBeVisible();
+    await page.getByRole('tab', { name: 'Tutor', exact: true }).click();
+    await expect(review).toBeVisible();
+
+    await capture(page, info, 'workspace-composable-lesson-mobile');
+    await review.getByRole('button', { name: 'Back to chat' }).click();
+    await expect(tutor.getByLabel('Your question')).toBeVisible();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+
+    const noteId = new URL(page.url()).pathname.split('/').at(-1)!;
+    const share = await api<Share>(
+        page,
+        ownerToken,
+        `/knowledge/${noteId}/share`,
+        { method: 'POST' },
+    );
+    const otherContext = await page.context().browser()!.newContext();
+    try {
+        const unauthenticated = await otherContext.request.get(previewUrl);
+        expect(unauthenticated.status()).toBe(401);
+        const recipient = await otherContext.newPage();
+        const recipientToken = await signup(recipient, info);
+        const denied = await otherContext.request.get(previewUrl, {
+            headers: {
+                Authorization: `Bearer ${recipientToken}`,
+                'X-Languon-Share-Key': share.key,
+            },
+        });
+
+        expect([403, 404]).toContain(denied.status());
+        expect(await denied.text()).not.toContain('La démocratie française');
+    } finally {
+        await otherContext.close();
+    }
+
+    const expectedCapacityRejection = await verifyIdleLessonRecovery(
+        page,
+        previewUrl,
+        tokens.get(page) ?? ownerToken,
+    );
+
+    await capture(page, info, 'workspace-lesson-admission-rejected');
+    assertRuntime([expectedCapacityRejection]);
 });
 
 // @user-flow knowledge-workspace/workspace-large-vocabulary-generation

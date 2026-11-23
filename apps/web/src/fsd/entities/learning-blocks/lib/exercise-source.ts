@@ -7,6 +7,7 @@ import type {
 export function exerciseSource(
     block: LearningBlock,
     body?: KnowledgeBody,
+    dependencies?: LearningBlock[],
 ): {
     block?: LearningBlock;
     transcript?: LearningTranscript;
@@ -33,6 +34,7 @@ export function exerciseSource(
     }
 
     body.document.content?.forEach(visit);
+    media ??= dependencies?.find((item) => item.id === source.blockId);
     if (!media) {
         return {};
     }

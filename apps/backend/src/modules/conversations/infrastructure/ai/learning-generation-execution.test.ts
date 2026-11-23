@@ -1,10 +1,14 @@
+import { assertGenerationCapacity } from '../persistence/drizzle/generation-run-capacity';
 import { generationPlanCapacity } from '../../application/learning-content-plan-capacity';
 import { namedExerciseFixture } from '../../../../../tests/support/named-exercise-fixture';
 import { bodyBlocks } from './learning-generation-plan';
 import { GenerationPlanSchema } from '@languon/contracts';
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
-import { createLearningContentAuthoring } from './learning-content-authoring';
+import {
+    createLearningContentAuthoring,
+    type LearningContentModelCall,
+} from './learning-content-authoring';
 import { TutorStructuredOutputError } from './tutor-request-agents';
 import {
     createGenerationPlan,
@@ -15,6 +19,7 @@ import {
 import { normalizeLearningContentDefaults } from '../../application/learning-content-presentation';
 import { planLearningContentBatches } from '../../application/learning-content-batches';
 import type { LearningContentBrief } from '../../application/learning-content-contract';
+import type { LearningContentTaskResult } from '../../application/learning-content-batch-results';
 import type { GenerationArtifact } from '../../application/ports/generation-run';
 
 const prose = {
@@ -61,12 +66,428 @@ const brief: LearningContentBrief = {
 const response = (taskId: string) => ({
     tasks: [
         taskId === 'reading'
-            ? { taskId, blocks: [], prose }
+            ? {
+                  taskId,
+                  prose: [
+                      {
+                          kind: 'paragraph',
+                          text: 'Les habitants participent au débat public.',
+                      },
+                  ],
+              }
             : { taskId, blocks: [grammar] },
     ],
 });
 
 describe('resumable generation executor', () => {
+    it('hands off a slow stage before the next tool dispatch and resumes only the missing grammar', async () => {
+        let remainingTimeMs = 120_000;
+        const checkpoint = vi.fn(async () => {
+            remainingTimeMs = 1000;
+        });
+        const generate = vi
+            .fn()
+            .mockResolvedValueOnce(response('reading'))
+            .mockResolvedValueOnce(response('grammar'));
+        const options = {
+            run: { runId: randomUUID(), revision: 1 },
+            onValidatedBatch: checkpoint,
+            generate,
+            readBudget: () => ({
+                remainingCalls: 5,
+                remainingOutputTokens: 10000,
+                remainingTimeMs,
+            }),
+        };
+        const signal = new AbortController().signal;
+        const first = await createLearningContentAuthoring(options).generate(
+            brief,
+            signal,
+        );
+
+        expect(first.status).toBe('paused');
+        expect(generate).toHaveBeenCalledTimes(1);
+        if (first.status !== 'paused') {
+            throw Error('Expected stage handoff');
+        }
+
+        remainingTimeMs = 120_000;
+        const second = await createLearningContentAuthoring({
+            ...options,
+            completed: first.completed,
+            completedTaskIds: ['reading'],
+        }).generate(brief, signal);
+
+        expect(second.status).toBe('ready');
+        expect(generate).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([
+        [true, 'paused'],
+        [false, 'unsupported'],
+    ] as const)(
+        'permits a no-dispatch handoff only when the stage committed the initial plan (%s)',
+        async (planCreatedInStage, status) => {
+            const generate = vi.fn();
+            const result = await createLearningContentAuthoring({
+                run: { runId: randomUUID(), revision: 1 },
+                planCreatedInStage,
+                onValidatedBatch: async () => undefined,
+                generate,
+                readBudget: () => ({
+                    remainingCalls: 5,
+                    remainingOutputTokens: 10000,
+                    remainingTimeMs: 1,
+                }),
+            }).generate(brief, new AbortController().signal);
+
+            expect(result.status).toBe(status);
+            expect(generate).not.toHaveBeenCalled();
+        },
+    );
+
+    it('identifies a rejected receipt write without retrying a unit', async () => {
+        const generate = vi
+            .fn()
+            .mockRejectedValue(
+                new TutorStructuredOutputError('invalid-output'),
+            );
+        const authoring = createLearningContentAuthoring({
+            run: { runId: randomUUID(), revision: 1 },
+            generate,
+            onCallRejected: async () => {
+                throw new Error('private storage failure details');
+            },
+        });
+
+        await expect(
+            authoring.generate(brief, new AbortController().signal),
+        ).rejects.toMatchObject({
+            generationFailure: {
+                code: 'publication',
+                phase: 'receipt',
+                taskId: 'reading',
+            },
+        });
+
+        expect(generate).toHaveBeenCalledOnce();
+    });
+
+    it('retains the validation failure when the stage has no time for a repair', async () => {
+        let remainingTimeMs = 120_000;
+        const generate = vi.fn(async () => {
+            remainingTimeMs = 1;
+
+            throw new TutorStructuredOutputError('invalid-output');
+        });
+        const result = await createLearningContentAuthoring({
+            run: { runId: randomUUID(), revision: 1 },
+            planCreatedInStage: true,
+            generate,
+            readBudget: () => ({
+                remainingCalls: 5,
+                remainingOutputTokens: 10000,
+                remainingTimeMs,
+            }),
+        }).generate(brief, new AbortController().signal);
+
+        expect(result).toMatchObject({
+            status: 'failed',
+            reason: 'invalid-output',
+        });
+
+        expect(generate).toHaveBeenCalledOnce();
+    });
+
+    it('repairs two independent exercises in one stage and preserves the first checkpoint', async () => {
+        const task = {
+            id: 'practice',
+            kind: 'exercises',
+            instruction: 'Practise grammar.',
+            source: { kind: 'editor' },
+            language: 'fr',
+            explanationLanguage: 'fr',
+            count: 2,
+            activities: [{ activityId: 'G02', count: 2 }],
+        } satisfies LearningContentBrief['tasks'][number];
+        let calls = 0;
+        const checkpoints: LearningContentTaskResult[][] = [];
+        const result = await createLearningContentAuthoring({
+            run: { runId: randomUUID(), revision: 1 },
+            taskSources: new Map([[task.id, { blocks: [grammar] }]]),
+            readBudget: () => ({
+                remainingCalls: 5 - calls,
+                remainingOutputTokens: 10000,
+            }),
+            onValidatedBatch: async ({ results }) => {
+                checkpoints.push(structuredClone(results));
+            },
+            generate: async () => {
+                calls++;
+                if (calls === 1 || calls === 3) {
+                    throw new TutorStructuredOutputError('invalid-output');
+                }
+
+                const exercise = namedExerciseFixture({
+                    activityId: 'G02',
+                    sources: [grammar],
+                });
+
+                exercise.question = 'Question ' + calls;
+
+                return { tasks: [{ taskId: task.id, blocks: [exercise] }] };
+            },
+        }).generate({ tasks: [task] }, new AbortController().signal);
+
+        expect(result.status).toBe('ready');
+        expect(calls).toBe(4);
+        expect(checkpoints.map((results) => results[0]!.blocks.length)).toEqual(
+            [1, 2],
+        );
+
+        expect(checkpoints[1]![0]!.blocks[0]).toEqual(
+            checkpoints[0]![0]!.blocks[0],
+        );
+    });
+
+    it('leaves output tokens for the repair even when the exercise consumes the full first-call allowance', async () => {
+        const task = {
+            id: 'practice',
+            kind: 'exercises',
+            instruction: 'Practise grammar.',
+            source: { kind: 'editor' },
+            language: 'fr',
+            explanationLanguage: 'fr',
+            count: 1,
+            activities: [{ activityId: 'G02', count: 1 }],
+        } satisfies LearningContentBrief['tasks'][number];
+        let tokens = 3000;
+        const caps: number[] = [];
+        const result = await createLearningContentAuthoring({
+            run: { runId: randomUUID(), revision: 1 },
+            taskSources: new Map([[task.id, { blocks: [grammar] }]]),
+            readBudget: () => ({
+                remainingCalls: 2 - caps.length,
+                remainingOutputTokens: tokens,
+            }),
+            onValidatedBatch: async () => {},
+            generate: async ({ maxOutputTokens }) => {
+                caps.push(maxOutputTokens);
+                tokens -= maxOutputTokens;
+                if (caps.length === 1) {
+                    throw new TutorStructuredOutputError('output-limit');
+                }
+
+                const exercise = namedExerciseFixture({
+                    activityId: 'G02',
+                    sources: [grammar],
+                });
+
+                return { tasks: [{ taskId: task.id, blocks: [exercise] }] };
+            },
+        }).generate({ tasks: [task] }, new AbortController().signal);
+
+        expect(result.status).toBe('ready');
+        expect(caps).toEqual([1688, 1312]);
+    });
+
+    it.each([2, 3])(
+        'checkpoints mixed grammar exercises and resumes only the missing suffix after %s saved exercises',
+        async (prefixLength) => {
+            const run = { runId: randomUUID(), revision: 1 };
+            const task: LearningContentBrief['tasks'][number] = {
+                id: 'grammar-exercises',
+                kind: 'exercises',
+                language: 'fr',
+                explanationLanguage: 'fr',
+                instruction: 'Check COD and COI.',
+                source: { kind: 'editor' },
+                count: 4,
+                activities: [
+                    { activityId: 'G06', count: 1 },
+                    { activityId: 'G02', count: 2 },
+                    { activityId: 'G03', count: 1 },
+                ],
+            };
+            const sequence = ['G06', 'G02', 'G02', 'G03'] as const;
+            let produced = 0;
+            const generate = vi.fn(async (_call: LearningContentModelCall) => {
+                const index = produced++;
+                const exercise = namedExerciseFixture({
+                    activityId: sequence[index]!,
+                    sources: [grammar],
+                });
+
+                exercise.question = `Appliquez la règle dans le cas ${index + 1}.`;
+
+                return { tasks: [{ taskId: task.id, blocks: [exercise] }] };
+            });
+            const checkpoints: {
+                batchKey: string;
+                taskComplete: boolean;
+                results: LearningContentTaskResult[];
+            }[] = [];
+            const options = {
+                run,
+                generate,
+                taskSources: new Map([[task.id, { blocks: [grammar] }]]),
+                onValidatedBatch: async (
+                    value: (typeof checkpoints)[number],
+                ) => {
+                    checkpoints.push(structuredClone(value));
+                },
+            };
+            const first = await createLearningContentAuthoring({
+                ...options,
+                readBudget: () => ({
+                    remainingCalls: Math.max(0, prefixLength - produced),
+                    remainingOutputTokens: 10000,
+                }),
+            }).generate({ tasks: [task] }, new AbortController().signal);
+
+            expect(first.status).toBe('paused');
+            expect(
+                checkpoints.map((item) => item.results[0]!.blocks.length),
+            ).toEqual(
+                Array.from({ length: prefixLength }, (_, index) => index + 1),
+            );
+
+            expect(checkpoints.every((item) => !item.taskComplete)).toBe(true);
+            const preservedIds = checkpoints[
+                prefixLength - 1
+            ]!.results[0]!.blocks.map((block) => block.id);
+
+            if (prefixLength === 3) {
+                const prepared = createGenerationPlan(
+                    { tasks: [task] },
+                    options.taskSources,
+                    'en',
+                );
+                const artifacts: GenerationArtifact[] = checkpoints.map(
+                    (checkpoint) => ({
+                        id: randomUUID(),
+                        revision: 1,
+                        taskId: task.id,
+                        batchKey: 'legacy-grouped-prefix',
+                        taskComplete: false,
+                        body: resultBody(checkpoint.results[0]!),
+                        contentHash: '',
+                        requirementsHash: '',
+                        sourceHash: '',
+                        validationVersion: 'learning-content-v1',
+                    }),
+                );
+
+                expect(
+                    assertGenerationCapacity(
+                        prepared.plan,
+                        prepared.sources,
+                        artifacts,
+                    ),
+                ).toBe(1512);
+            }
+
+            const saved = structuredClone(
+                checkpoints[prefixLength - 1]!.results,
+            );
+            const groupTitle = 'Objets directs et indirects';
+            for (const block of saved[0]!.blocks) {
+                if (block.type !== 'exercise' || !block.group) {
+                    throw new Error('Expected a grouped checkpoint.');
+                }
+
+                block.group.title = groupTitle;
+            }
+
+            const resumed = await createLearningContentAuthoring({
+                ...options,
+                completed: saved,
+                completedBatchKeys:
+                    prefixLength === 3
+                        ? ['legacy-grouped-prefix']
+                        : checkpoints.map((item) => item.batchKey),
+                readBudget: () => ({
+                    remainingCalls: 5,
+                    remainingOutputTokens: prefixLength === 3 ? 1512 : 10000,
+                }),
+            }).generate({ tasks: [task] }, new AbortController().signal);
+
+            expect(resumed.status).toBe('ready');
+            expect(generate).toHaveBeenCalledTimes(4);
+            expect(generate.mock.calls[0]![0].prompt).toContain(
+                'Exercise response size policy:',
+            );
+
+            expect(generate.mock.calls[0]![0].prompt).not.toContain(
+                'Output-limit recovery policy: regenerate-compact',
+            );
+
+            if (prefixLength === 3) {
+                expect(generate.mock.calls[3]![0].maxOutputTokens).toBe(1512);
+                expect(generate.mock.calls[3]![0].prompt).toContain('G03 v1:');
+            }
+
+            expect(
+                checkpoints.map((item) => item.results[0]!.blocks.length),
+            ).toEqual([1, 2, 3, 4]);
+
+            for (const block of checkpoints[3]!.results[0]!.blocks) {
+                expect(block).toMatchObject({ group: { title: groupTitle } });
+            }
+
+            expect(checkpoints[3]!.taskComplete).toBe(true);
+            expect(
+                checkpoints[3]!.results[0]!.blocks.slice(0, prefixLength).map(
+                    (block) => block.id,
+                ),
+            ).toEqual(preservedIds);
+
+            expect(new Set(checkpoints.map((item) => item.batchKey)).size).toBe(
+                4,
+            );
+        },
+    );
+
+    it('provides safe schema paths to repair and preserves a typed failure after the fallback is exhausted', async () => {
+        const generate = vi.fn(async (_call: LearningContentModelCall) => ({
+            tasks: [
+                {
+                    taskId: 'reading',
+                    blocks: [],
+                    prose: {
+                        invalid: 'private phrase must never enter diagnostics',
+                    },
+                },
+            ],
+        }));
+        const result = await createLearningContentAuthoring({
+            run: { runId: randomUUID(), revision: 1 },
+            generate,
+            readBudget: () => ({
+                remainingCalls: 5,
+                remainingOutputTokens: 10000,
+            }),
+        }).generate({ tasks: [brief.tasks[0]!] }, new AbortController().signal);
+
+        expect(result).toMatchObject({
+            status: 'failed',
+            diagnostic: { code: 'schema-invalid', taskId: 'reading' },
+        });
+
+        expect(generate).toHaveBeenCalledTimes(3);
+        expect(generate.mock.calls[1]![0].prompt).toContain(
+            'Safe validation diagnostic:',
+        );
+
+        expect(generate.mock.calls[1]![0].prompt).not.toContain(
+            'private phrase',
+        );
+
+        expect(generate.mock.calls[1]![0].prompt).not.toContain(
+            'Output-limit recovery policy: regenerate-compact',
+        );
+    });
+
     it.each([
         ['selection', 'prose'],
         ['provided-text', 'prose'],
@@ -200,8 +621,6 @@ describe('resumable generation executor', () => {
         const exercise = namedExerciseFixture({
             activityId: 'G02',
             sources: [grammar],
-            language: 'fr',
-            explanationLanguage: 'fr',
         });
         const result = await createLearningContentAuthoring({
             ...restored,
@@ -409,85 +828,88 @@ describe('resumable generation executor', () => {
         expect(generate).not.toHaveBeenCalled();
     });
 
-    it('grounds exercises in the exact generated prose artifact without inventing a note selection', async () => {
-        const run = { runId: randomUUID(), revision: 1 };
-        const material = {
-            id: randomUUID(),
-            type: 'bilingual-text' as const,
-            language: 'fr',
-            translations: [],
-            segments: [
-                {
-                    id: randomUUID(),
-                    text: 'Les habitants participent au débat public.',
-                },
-            ],
-        };
-        const exercise = {
-            ...namedExerciseFixture({
-                activityId: 'R04',
-                sources: [material],
+    it.each(['R01', 'R04', 'R08'] as const)(
+        'grounds %s in the exact generated prose artifact without inventing a note selection',
+        async (activityId) => {
+            const run = { runId: randomUUID(), revision: 1 };
+            const material = {
+                id: randomUUID(),
+                type: 'bilingual-text' as const,
                 language: 'fr',
-                explanationLanguage: 'fr',
-            }),
-            sourceBindings: [{ kind: 'text-selection' }],
-        };
-        const generate = vi
-            .fn()
-            .mockResolvedValueOnce(response('reading'))
-            .mockResolvedValueOnce({
-                tasks: [{ taskId: 'practice', blocks: [exercise] }],
-            });
-        const checkpoints: string[] = [];
-        const result = await createLearningContentAuthoring({
-            run,
-            generate,
-            onValidatedBatch: async ({ artifactIds }) => {
-                checkpoints.push(...artifactIds.values());
-            },
-        }).generate(
-            {
-                tasks: [
-                    brief.tasks[0]!,
+                translations: [],
+                segments: [
                     {
-                        id: 'practice',
-                        kind: 'exercises',
-                        instruction: 'Check the reading.',
-                        language: 'fr',
-                        explanationLanguage: 'fr',
-                        count: 1,
-                        activities: [{ activityId: 'R04', count: 1 }],
-                        source: { kind: 'task', taskId: 'reading' },
+                        id: randomUUID(),
+                        text: 'Les habitants participent au débat public.',
                     },
                 ],
-            },
-            new AbortController().signal,
-        );
-
-        expect(result.status).toBe('ready');
-        if (result.status !== 'ready') {
-            return;
-        }
-
-        const block = bodyBlocks(result.proposal.body)[0]!;
-        expect(block.type === 'exercise' && block.semantics?.sources).toEqual([
-            {
-                kind: 'generated-text',
-                origin: {
-                    kind: 'generated-artifact',
-                    ...run,
-                    taskId: 'reading',
-                    artifactId: checkpoints[0],
-                    contentHash: generationHash(prose),
+            };
+            const exercise = {
+                ...namedExerciseFixture({
+                    activityId,
+                    sources: [material],
+                }),
+                sourceBindings: [{ kind: 'text-selection' }],
+            };
+            const generate = vi
+                .fn()
+                .mockResolvedValueOnce(response('reading'))
+                .mockResolvedValueOnce({
+                    tasks: [{ taskId: 'practice', blocks: [exercise] }],
+                });
+            const checkpoints: string[] = [];
+            const result = await createLearningContentAuthoring({
+                run,
+                generate,
+                onValidatedBatch: async ({ artifactIds }) => {
+                    checkpoints.push(...artifactIds.values());
                 },
-                text: 'Les habitants participent au débat public.',
-            },
-        ]);
+            }).generate(
+                {
+                    tasks: [
+                        brief.tasks[0]!,
+                        {
+                            id: 'practice',
+                            kind: 'exercises',
+                            instruction: 'Check the reading.',
+                            language: 'fr',
+                            explanationLanguage: 'fr',
+                            count: 1,
+                            activities: [{ activityId, count: 1 }],
+                            source: { kind: 'task', taskId: 'reading' },
+                        },
+                    ],
+                },
+                new AbortController().signal,
+            );
 
-        expect(generate.mock.calls[1]![0].prompt).toContain(
-            'Les habitants participent au débat public.',
-        );
-    });
+            expect(result.status).toBe('ready');
+            if (result.status !== 'ready') {
+                return;
+            }
+
+            const block = bodyBlocks(result.proposal.body)[0]!;
+            expect(
+                block.type === 'exercise' && block.semantics?.sources,
+            ).toEqual([
+                {
+                    kind: 'generated-text',
+                    origin: {
+                        kind: 'generated-artifact',
+                        ...run,
+                        taskId: 'reading',
+                        artifactId: checkpoints[0],
+                        contentHash: generationHash(prose),
+                    },
+                    text: 'Les habitants participent au débat public.',
+                },
+            ]);
+
+            expect(generate.mock.calls[1]![0].prompt).toContain(
+                'Les habitants participent au débat public.',
+            );
+        },
+    );
 
     it('repairs a completed length error once and passes its exact receipt to the checkpoint', async () => {
         const events: string[] = [];
@@ -519,6 +941,25 @@ describe('resumable generation executor', () => {
         ).toHaveLength(1);
 
         expect(generate).toHaveBeenCalledTimes(2);
+        expect(generate.mock.calls[0]![0].prompt).not.toContain(
+            'Output-limit recovery policy: regenerate-compact',
+        );
+
+        expect(generate.mock.calls[1]![0].prompt).toContain(
+            'Output-limit recovery policy: regenerate-compact',
+        );
+
+        expect(generate.mock.calls[1]![0].prompt).toContain(
+            'within the unchanged 4096-token maximum',
+        );
+
+        expect(generate.mock.calls[1]![0].prompt).toContain(
+            '"code":"output-limit"',
+        );
+
+        expect(generate.mock.calls[1]![0].prompt).toContain(
+            'Never remove required semantics',
+        );
     });
 
     it('does not redispatch an ambiguous transport failure or a failed checkpoint', async () => {

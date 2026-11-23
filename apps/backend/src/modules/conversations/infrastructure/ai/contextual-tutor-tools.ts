@@ -1,6 +1,6 @@
 import type { DictionarySnippetAuthor } from './dictionary-snippet-authoring';
 import { createDictionarySnippetTools } from './dictionary-snippet-tools';
-import { ProseKnowledgeNoteContentSchema } from '@languon/contracts';
+import { GeneratedProseNoteContentSchema } from '@languon/contracts';
 import { randomUUID } from 'node:crypto';
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
@@ -35,7 +35,7 @@ export const ProposeKnowledgeNoteDefinition = {
     id: 'propose_knowledge_note',
     description:
         'Propose one editable, standalone Knowledge note draft or revision. Does not save or overwrite a note. The learner controls saving; the application controls any revision target.',
-    inputSchema: ProseKnowledgeNoteContentSchema,
+    inputSchema: GeneratedProseNoteContentSchema,
     outputSchema: z.object({
         id: z.string(),
         status: z.literal('draft'),
@@ -142,7 +142,7 @@ export function createContextualTutorTools(
                         }
 
                         const content =
-                            ProseKnowledgeNoteContentSchema.parse(candidate);
+                            GeneratedProseNoteContentSchema.parse(candidate);
 
                         proposed = true;
                         const draft = await input.onDraft(content);

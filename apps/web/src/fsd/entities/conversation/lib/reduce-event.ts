@@ -25,7 +25,26 @@ export function reduceConversationEvent(
     }
 
     if (event.type === 'turn') {
-        return { ...detail, turns: upsert(detail.turns, event.data) };
+        const turn = event.data;
+        let messages = detail.messages;
+        if (
+            turn.generationRunId &&
+            !detail.turns.find((item) => item.id === turn.id)?.generationRunId
+        ) {
+            // A turn can become a lesson after its admission placeholder reached the browser.
+            const visible = messages.filter(
+                (message) =>
+                    message.turnId !== turn.id ||
+                    message.role !== 'assistant' ||
+                    message.status !== 'streaming',
+            );
+
+            if (visible.length !== messages.length) {
+                messages = visible;
+            }
+        }
+
+        return { ...detail, messages, turns: upsert(detail.turns, turn) };
     }
 
     if (event.type === 'draft') {

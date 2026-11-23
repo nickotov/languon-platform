@@ -4,8 +4,14 @@ import {
     ApplyKnowledgeContentProposalRequestSchema,
     LearningContentProposalInputSchema,
     KnowledgeContentProposalSchema,
+    isLessonPartPresent,
 } from './knowledge-content-proposals';
-import { ProseKnowledgeBodySchema } from './contextual-assistant';
+import {
+    KnowledgeBodySchema,
+    KnowledgeContentFragmentSchema,
+    ProseKnowledgeBodySchema,
+    GeneratedProseBodySchema,
+} from './contextual-assistant';
 const block = {
     id: randomUUID(),
     type: 'grammar',
@@ -71,6 +77,106 @@ describe('Structured block change proposals', () => {
                     .success,
             ).toBe(false);
         }
+    });
+
+    it('accepts only a canonical lesson selection with a replay identity', () => {
+        const input = {
+            expectedBranchVersion: 1,
+            mode: 'insert-lesson',
+            lessonCopy: { requestId: randomUUID() },
+        };
+
+        expect(
+            ApplyKnowledgeContentProposalRequestSchema.safeParse(input).success,
+        ).toBe(true);
+
+        for (const invalid of [
+            { ...input, mode: 'proposal' },
+            { ...input, lessonCopy: undefined },
+            {
+                ...input,
+                lessonCopy: { ...input.lessonCopy, taskId: 'not/a/task' },
+            },
+            { ...input, lessonCopy: { ...input.lessonCopy, body: {} } },
+            {
+                ...input,
+                lessonCopy: { ...input.lessonCopy, requestId: 'unknown' },
+            },
+        ]) {
+            expect(
+                ApplyKnowledgeContentProposalRequestSchema.safeParse(invalid)
+                    .success,
+            ).toBe(false);
+        }
+    });
+
+    it('recognizes surviving marked prose after wrapping and ignores unmarked or emptied paragraphs', () => {
+        const id = randomUUID();
+        const part = { taskId: 'reading', startIndex: 0, nodeCount: 1 };
+        const original = KnowledgeBodySchema.parse({
+            schemaVersion: 2,
+            document: { type: 'doc', content: [paragraph] },
+        });
+        const marker = { lessonPartId: id + '/reading' };
+        const marked = (content: unknown[]) =>
+            KnowledgeBodySchema.parse({
+                schemaVersion: 2,
+                document: {
+                    type: 'doc',
+                    content: [
+                        {
+                            type: 'blockquote',
+                            content: [
+                                { type: 'paragraph', attrs: marker, content },
+                            ],
+                        },
+                    ],
+                },
+            });
+
+        expect(isLessonPartPresent(id, part, original, original.document)).toBe(
+            false,
+        );
+
+        expect(
+            isLessonPartPresent(
+                id,
+                part,
+                original,
+                marked([{ type: 'text', text: 'Edited reading.' }]).document,
+            ),
+        ).toBe(true);
+
+        expect(
+            isLessonPartPresent(id, part, original, marked([]).document),
+        ).toBe(false);
+
+        expect(
+            ProseKnowledgeBodySchema.safeParse(marked(paragraph.content))
+                .success,
+        ).toBe(true);
+
+        expect(
+            GeneratedProseBodySchema.safeParse(marked(paragraph.content))
+                .success,
+        ).toBe(false);
+
+        const typed = body([block]);
+        Object.assign(typed.document.content[0]!.attrs, {
+            lessonPartId: id + '/reading',
+            lessonBlockId: block.id,
+        });
+
+        expect(KnowledgeBodySchema.safeParse(typed).success).toBe(true);
+        expect(KnowledgeContentFragmentSchema.safeParse(typed).success).toBe(
+            false,
+        );
+
+        expect(
+            LearningContentProposalInputSchema.safeParse({
+                body: marked(paragraph.content),
+            }).success,
+        ).toBe(false);
     });
 
     it('accepts an explicit single-block update and rejects ambiguous replacement groups', () => {

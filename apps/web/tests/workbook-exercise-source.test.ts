@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { KnowledgeBodySchema, type LearningBlock } from '@languon/contracts';
 import { buildExerciseFeedbackRequest } from '@/fsd/entities/learning-blocks';
-import { exerciseSource } from '../src/fsd/features/workbook-learning/lib/exercise-source';
+import { exerciseSource } from '../src/fsd/entities/learning-blocks/lib/exercise-source';
 const mediaId = '11111111-1111-4111-8111-111111111111';
 const segmentId = '22222222-2222-4222-8222-222222222222';
 const exercise: LearningBlock = {

@@ -1,0 +1,44 @@
+.part + .part {
+    margin-top: var(--space-24);
+    padding-top: var(--space-16);
+    border-top: var(--size-1) solid var(--border-default);
+}
+
+.partHeader,
+.actions,
+.present {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.partHeader {
+    justify-content: space-between;
+    margin-bottom: var(--space-8);
+}
+
+.partHeader h3 {
+    margin: 0;
+    font-size: var(--size-16);
+}
+
+.actions {
+    margin-block: var(--space-8);
+}
+
+.present,
+.sourceNote,
+.basis summary {
+    font-size: var(--size-14);
+    color: var(--text-secondary);
+}
+
+.basis {
+    margin-top: var(--space-16);
+}
+
+.basis summary {
+    padding-block: var(--space-8);
+    cursor: pointer;
+}

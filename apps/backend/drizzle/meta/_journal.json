@@ -1240,6 +1240,34 @@
       "when": 1794943304710,
       "tag": "0176_zero_credit_continuation_quotes",
       "breakpoints": true
+    },
+    {
+      "idx": 177,
+      "version": "7",
+      "when": 1794947807441,
+      "tag": "0177_reliable_lesson_run_authority",
+      "breakpoints": true
+    },
+    {
+      "idx": 178,
+      "version": "7",
+      "when": 1794980578063,
+      "tag": "0178_automatic_lesson_ready_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 179,
+      "version": "7",
+      "when": 1795028137365,
+      "tag": "0179_bounded_conversation_capacity",
+      "breakpoints": true
+    },
+    {
+      "idx": 180,
+      "version": "7",
+      "when": 1795067032971,
+      "tag": "0180_lesson_unit_attempts",
+      "breakpoints": true
     }
   ]
 }

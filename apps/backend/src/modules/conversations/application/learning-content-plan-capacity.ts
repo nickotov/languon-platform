@@ -1,14 +1,13 @@
 import { generationTaskCapturedText } from './learning-content-plan-sources';
 import type { GenerationSourceSnapshot } from './ports/generation-run';
 import { generationFingerprint } from './generation-run-revisions';
-import {
-    estimateLearningContentOutput,
-    learningContentAuthoringOutputTokenLimit,
-    learningContentOutputEstimateLimit,
-} from './learning-content-output-capacity';
+import { learningUnitMinimumOutput } from './learning-content-output-capacity';
 import type { GenerationPlan } from '@languon/contracts';
 import type { LearningContentBrief } from './learning-content-contract';
-import { planLearningContentBatches } from './learning-content-batches';
+import {
+    isLearningContentBatchCompleted,
+    planLearningContentBatches,
+} from './learning-content-batches';
 
 /** Reject a plan with an unsplittable unit before creating or admitting a run action. */
 export function generationPlanCapacity(
@@ -16,8 +15,12 @@ export function generationPlanCapacity(
     completedTaskIds: readonly string[] = [],
     completedBatchKeys: readonly string[] = [],
     sources: readonly GenerationSourceSnapshot[] = [],
+    completedExerciseCounts: ReadonlyMap<string, number> = new Map(),
 ):
-    | { status: 'ready'; minimumOutputTokens: number }
+    | {
+          status: 'ready';
+          minimumOutputTokens: number;
+      }
     | { status: 'unsupported'; reason: string } {
     const brief: LearningContentBrief = {
         tasks: plan.tasks.map(({ inputs, ...task }) => {
@@ -59,14 +62,14 @@ export function generationPlanCapacity(
         outputOrder: plan.outputOrder,
     };
 
-    const planned = planLearningContentBatches(brief);
+    const planned = planLearningContentBatches(brief, { exerciseUnitSize: 1 });
     if (!planned) {
         return { status: 'unsupported', reason: 'single-unit-output-capacity' };
     }
 
     const completeTasks = new Set(completedTaskIds);
     const completeBatches = new Set(completedBatchKeys);
-    const next = planned.batches
+    const remaining = planned.batches
         .flatMap((batch) => {
             const tasks = batch.brief.tasks.filter(
                 (task) => !completeTasks.has(task.id),
@@ -76,14 +79,20 @@ export function generationPlanCapacity(
                 ? [{ ...batch, brief: { ...batch.brief, tasks } }]
                 : [];
         })
-        .find((batch) => !completeBatches.has(generationFingerprint(batch)));
+        .filter(
+            (batch) =>
+                !isLearningContentBatchCompleted(
+                    batch,
+                    generationFingerprint(batch),
+                    completeBatches,
+                    completedExerciseCounts,
+                ),
+        );
+
+    const next = remaining[0];
 
     return {
         status: 'ready',
-        minimumOutputTokens: next
-            ? estimateLearningContentOutput(next.brief) +
-              learningContentAuthoringOutputTokenLimit -
-              learningContentOutputEstimateLimit
-            : 0,
+        minimumOutputTokens: next ? learningUnitMinimumOutput(next.brief) : 0,
     };
 }

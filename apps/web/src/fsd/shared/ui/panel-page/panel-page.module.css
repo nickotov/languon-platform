@@ -1,0 +1,38 @@
+.page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    background: var(--background-canvas);
+}
+
+.header,
+.footer {
+    flex: none;
+    padding: var(--space-8) var(--space-16);
+    background: var(--background-surface);
+}
+
+.header {
+    border-bottom: var(--size-1) solid var(--border-default);
+}
+
+.header h2 {
+    margin: var(--space-4) 0;
+    font-size: var(--size-18);
+    line-height: var(--size-24);
+}
+
+.body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: var(--space-16);
+}
+
+.footer {
+    border-top: var(--size-1) solid var(--border-default);
+    padding-bottom: max(var(--space-8), env(safe-area-inset-bottom));
+}

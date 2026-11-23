@@ -2,7 +2,7 @@ import { learningContentProseText } from './learning-content-prose';
 import {
     LearningContentProposalInputSchema,
     LearningBlockSchema,
-    ProseKnowledgeBodySchema,
+    GeneratedProseBodySchema,
     type KnowledgeBody,
     type LearningBlock,
     type LearningContentProposalInput,
@@ -186,7 +186,7 @@ export function validateLearningContent(
                     throw new Error('Prose must not include custom blocks.');
                 }
 
-                const prose = ProseKnowledgeBodySchema.parse(result.prose);
+                const prose = GeneratedProseBodySchema.parse(result.prose);
                 if (!learningContentProseText(prose).trim()) {
                     throw new Error('Generated prose is empty.');
                 }

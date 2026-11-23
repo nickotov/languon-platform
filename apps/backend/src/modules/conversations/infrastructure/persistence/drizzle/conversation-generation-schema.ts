@@ -1,3 +1,4 @@
+import type { GenerationFailureDiagnostic } from '../../../application/generation-failure';
 import type { GenerationPlan, GenerationTask } from '@languon/contracts';
 import { sql } from 'drizzle-orm';
 import {
@@ -13,8 +14,10 @@ import {
     uuid,
 } from 'drizzle-orm/pg-core';
 import type {
+    GenerationUnitAttempt,
     GenerationArtifact,
     GenerationSourceSnapshot,
+    GenerationAutomationAuthorization,
 } from '../../../application/ports/generation-run';
 import type { ConversationSourceSnapshot } from '../../../domain/conversation';
 import { conversationsTable, conversationTurnsTable } from './schema';
@@ -51,6 +54,9 @@ export const generationRunsTable = pgTable(
             { onDelete: 'set null' },
         ),
         proposalId: uuid('proposal_id'),
+        automation:
+            jsonb('automation').$type<GenerationAutomationAuthorization>(),
+        failure: jsonb('failure').$type<GenerationFailureDiagnostic>(),
         sourceSnapshot: jsonb('source_snapshot')
             .$type<ConversationSourceSnapshot>()
             .notNull(),
@@ -61,6 +67,11 @@ export const generationRunsTable = pgTable(
         index('conversation_generation_runs_conversation_idx').on(
             t.conversationId,
         ),
+        index('conversation_generation_runs_automatic_ready_idx')
+            .on(t.updatedAt, t.id)
+            .where(
+                sql`${t.state}='paused' and ${t.pauseReason}='budget' and ${t.automation}->>'ready'='true'`,
+            ),
         uniqueIndex('conversation_generation_runs_active_turn_unique').on(
             t.activeTurnId,
         ),
@@ -84,6 +95,10 @@ export const generationPlanRevisionsTable = pgTable(
         revision: integer('revision').notNull(),
         plan: jsonb('plan').$type<GenerationPlan>().notNull(),
         sources: jsonb('sources').$type<GenerationSourceSnapshot[]>().notNull(),
+        unitAttempts: jsonb('unit_attempts')
+            .$type<GenerationUnitAttempt[]>()
+            .notNull()
+            .default(sql`'[]'::jsonb`),
         artifactIds: jsonb('artifact_ids')
             .$type<string[]>()
             .notNull()

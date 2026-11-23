@@ -82,6 +82,40 @@ const event: ConversationEvent = {
     data: message,
 };
 
+it('removes the admitted assistant placeholder when a turn becomes a lesson and preserves the final reply', () => {
+    const placeholder = {
+        ...message,
+        content: '',
+        attachments: [],
+        toolCalls: [],
+        status: 'streaming' as const,
+    };
+    const prompt = { ...message, id: conversationId, role: 'user' as const };
+    const detail = ConversationDetailSchema.parse({
+        ...initial,
+        messages: [prompt, placeholder],
+        turns: [turn],
+    });
+    const projection = new DurableMessageProjection(detail);
+    const classified: ConversationEvent = {
+        ...event,
+        type: 'turn',
+        data: { ...detail.turns[0]!, generationRunId: conversationId },
+    };
+    const next = reduceConversationEvent(detail, classified);
+    expect(next?.messages.map((item) => item.id)).toEqual([prompt.id]);
+    expect(projection.project(classified)).toContainEqual({
+        type: 'data-reconcile',
+        data: next,
+        transient: true,
+    });
+
+    expect(reduceConversationEvent(next, event)?.messages).toEqual([
+        detail.messages[0],
+        message,
+    ]);
+});
+
 afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();

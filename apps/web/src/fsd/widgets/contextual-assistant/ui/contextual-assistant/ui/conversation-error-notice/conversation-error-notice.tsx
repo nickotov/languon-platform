@@ -57,6 +57,14 @@ export function ConversationErrorNotice({
         message = copy.capacityUnavailable;
     }
 
+    if (failureCode === 'provider_capacity_exhausted') {
+        message = copy.providerCapacity;
+    }
+
+    if (failureCode === 'operator_capacity_exhausted') {
+        message = copy.operatorCapacity;
+    }
+
     if (failureCode === 'context_too_large') {
         message = copy.contextTooLarge;
         action = <></>;

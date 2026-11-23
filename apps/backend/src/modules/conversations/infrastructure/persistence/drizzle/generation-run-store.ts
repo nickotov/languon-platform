@@ -1,3 +1,5 @@
+import { recordGenerationAttempt } from './generation-run-attempts';
+import { conversationGetGenerationRunPreview } from './generation-run-preview';
 import type { GenerationRunStore } from '../../../application/ports/generation-run-store';
 import type { ConversationPersistenceContext } from './conversation-persistence-context';
 import type {
@@ -33,12 +35,28 @@ import {
     conversationReviseGenerationRun,
 } from './generation-run-queries';
 import { conversationMutateGeneration } from './generation-run-mutations';
+import { conversationStopGeneration } from './generation-run-stop';
 
 /** Cohesive run API/worker adapter sharing the canonical conversation transaction context. */
 export function createGenerationRunStore(
     persistence: ConversationPersistenceContext,
 ): Required<GenerationRunStore> {
     return {
+        getGenerationRunPreview: (access, conversationId, runId) =>
+            conversationGetGenerationRunPreview(
+                persistence,
+                access,
+                conversationId,
+                runId,
+            ),
+        stopGenerationRun: (access, conversationId, runId, input) =>
+            conversationStopGeneration(
+                persistence,
+                access,
+                conversationId,
+                runId,
+                input,
+            ),
         assertGenerationProposal(
             turn: ClaimedConversationTurn,
             input: LearningContentProposalInput,
@@ -92,6 +110,9 @@ export function createGenerationRunStore(
                 validationId,
             );
         },
+
+        recordGenerationAttempt: (turn, event) =>
+            recordGenerationAttempt(persistence, turn, event),
 
         pauseGeneration(turn: ClaimedConversationTurn) {
             return conversationPauseGeneration(persistence, turn);

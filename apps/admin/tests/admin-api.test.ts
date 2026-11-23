@@ -202,6 +202,60 @@ describe('admin API boundary', () => {
         expect(accessTokenStore.get()).toBe('valid-token');
     });
 
+    it('refreshes once and resends the approved provider check after a rejected access token', async () => {
+        const calls: string[] = [];
+        const fetchMock = vi.fn(
+            async (input: RequestInfo | URL, init?: RequestInit) => {
+                if (String(input).endsWith('/admin/auth/refresh')) {
+                    calls.push('refresh');
+                    return jsonResponse(authenticationResponse());
+                }
+
+                const headers = init?.headers as Record<string, string>;
+                calls.push(headers.Authorization!);
+                if (headers.Authorization === 'Bearer expired-token') {
+                    return jsonResponse(
+                        {
+                            error: {
+                                code: 'authentication_required',
+                                message: 'Expired.',
+                                correlationId: 'expired-check',
+                            },
+                        },
+                        401,
+                    );
+                }
+
+                // A provider-check cooldown proves the authenticated request reached the next gate.
+                return jsonResponse(
+                    {
+                        error: {
+                            code: 'probe_cooldown',
+                            message: 'Cooldown.',
+                            correlationId: 'retried-check',
+                        },
+                    },
+                    429,
+                );
+            },
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        accessTokenStore.set('expired-token');
+
+        await expect(
+            adminApi.runTextAiProbe({
+                routeId: 'deepseek/deepseek-flash',
+                kind: 'quick',
+                approvedMaximumCostUsd: '0.01',
+            }),
+        ).rejects.toMatchObject({ status: 429 });
+        expect(calls).toEqual([
+            'Bearer expired-token',
+            'refresh',
+            'Bearer aaa.bbb.ccc',
+        ]);
+    });
+
     it('refreshes an expired token before sending a sensitive accounting write once', async () => {
         const settings = {
             version: 1,

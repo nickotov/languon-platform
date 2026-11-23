@@ -4,7 +4,7 @@ id: BL-016
 title: Interactive chat artifacts and exact follow-up references
 status: in-progress
 created: 2026-10-31
-updated: 2026-11-16
+updated: 2026-11-17
 original_tasks: '2026-10-31 extensible custom-block and follow-up discussion'
 evidence: []
 depends_on:
@@ -76,3 +76,5 @@ security review and applicable mapped user-flow/critical checks are required.
 
 Depends on BL-013/015. Coordinate with BL-003/006/007 and feature 059 without
 claiming completion of their broader progress, document or manual-authoring scope.
+
+Feature071 extends the same owned-Knowledge slice with owner-only prepared previews, per-exercise recovery and bounded server continuation ([plan](../reliable-lesson-runs-implementation-plan.md)). Broader standalone artifact practice and dictionary/text/shared-source generation remain future work; this task stays In progress.

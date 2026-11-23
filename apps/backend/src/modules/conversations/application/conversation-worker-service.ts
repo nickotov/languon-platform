@@ -1,3 +1,5 @@
+import type { GenerationAttemptEvent } from './ports/generation-run';
+import { dispatchCapacityFailure } from './generation-admission-outcome';
 import { isReadOnlyKnowledgeSource } from '../domain/conversation';
 import type {
     ClaimedConversationTurn,
@@ -7,6 +9,7 @@ import type { TutorRunner } from './ports/tutor-runner';
 import { createTurnTextBuffer } from './turn-text-buffer';
 import { ConversationError } from '../domain/conversation';
 import { projectConversationSource } from './conversation-source-context';
+import { GenerationExecutionFailure } from './generation-failure';
 
 export type ConversationWorkerStore = Pick<
     ConversationStore,
@@ -29,6 +32,7 @@ export type ConversationWorkerStore = Pick<
     | 'generationContext'
     | 'startGeneration'
     | 'checkpointGeneration'
+    | 'recordGenerationAttempt'
     | 'pauseGeneration'
     | 'proposeGenerationRevision'
 >;
@@ -118,6 +122,20 @@ export class ConversationWorkerService {
                                   validationId,
                               );
                           },
+                          ...(this.dependencies.store.recordGenerationAttempt
+                              ? {
+                                    onGenerationAttempt: async (
+                                        event: GenerationAttemptEvent,
+                                    ) => {
+                                        combined.throwIfAborted();
+                                        await this.dependencies.store
+                                            .recordGenerationAttempt!(
+                                            turn,
+                                            event,
+                                        );
+                                    },
+                                }
+                              : {}),
                           onGenerationPause: async () => {
                               combined.throwIfAborted();
                               await this.dependencies.store.pauseGeneration!(
@@ -349,11 +367,22 @@ export class ConversationWorkerService {
                     turn,
                     combined.aborted ? 'cancelled' : 'failed',
                     failure,
+                    error instanceof GenerationExecutionFailure
+                        ? error.generationFailure
+                        : dispatchCapacityFailure(failure),
                 );
             } catch (finishError) {
-                if (!(finishError instanceof ConversationError)) {
+                // A lost lease or removed owner is finalized by durable recovery.
+                // Settlement or checkpoint errors must remain visible to the worker supervisor.
+                if (!(
+                    finishError instanceof ConversationError &&
+                    [
+                        'operation_interrupted',
+                        'conversation_not_found',
+                    ].includes(finishError.code)
+                )) {
                     throw finishError;
-                } /* Expired/lost source is finalized by lease recovery without exposing content. */
+                }
             }
         } finally {
             buffer.dispose();

@@ -1,4 +1,5 @@
 'use client';
+import { LessonPartProvenance } from '../../lib/lesson-part-provenance';
 import type { BlockInsertionBookmark } from '../../lib/block-insertion-bookmark';
 import { MessageSquarePlus } from 'lucide-react';
 
@@ -82,19 +83,27 @@ export const KnowledgeEditor = forwardRef<
         value: KnowledgeBody;
         getBlockActions?: ((block: LearningBlock) => MenuItem[]) | undefined;
         uploadAudio?: UploadBlockAudio | undefined;
-        onChange(value: KnowledgeBody): void;
         workspace?: KnowledgeWorkspaceEditorOptions | undefined;
         disabled?: boolean;
         toolbarVariant?: 'full' | 'tutor';
         label?: string;
         onValidityChange?: ((valid: boolean) => void) | undefined;
-    }
+    } & (
+        | { preview?: undefined; onChange(value: KnowledgeBody): void }
+        | {
+              preview: {
+                  blockViewOptions: KnowledgeWorkspaceEditorOptions['blockViewOptions'];
+              };
+              onChange?: never;
+          }
+    )
 >(function KnowledgeEditor(
     {
         value,
         getBlockActions,
         onChange,
-        disabled = false,
+        disabled: disabledProp = false,
+        preview,
         onValidityChange,
         toolbarVariant = 'full',
         label,
@@ -103,17 +112,24 @@ export const KnowledgeEditor = forwardRef<
     },
     ref,
 ) {
+    const isPreview = Boolean(preview);
+    const disabled = isPreview || disabledProp;
     const { t, locale } = useI18n();
     const blockLabels = useMemo(() => localizedBlockLabels(locale), [locale]);
     const [invalid, setInvalid] = useState(false);
     // The block parser canonicalizes field order. Compare the same projection
     // on both sides so selecting a node cannot mark an unchanged draft dirty.
-    const acceptedValue = useRef(
-        JSON.stringify(normalizeEditorDocument(value.document)),
+    const serializedValue = useMemo(
+        () =>
+            JSON.stringify(
+                isPreview ? value : normalizeEditorDocument(value.document),
+            ),
+        [isPreview, value],
     );
+    const acceptedValue = useRef(serializedValue);
     const targets = useRef(new Map<string, KnowledgeEditorTarget>());
-    const extensions = useMemo(
-        () => [
+    const extensions = useMemo(() => {
+        const documentExtensions = [
             StarterKit.configure({
                 heading: { levels: [1, 2, 3] },
                 codeBlock: false,
@@ -125,10 +141,25 @@ export const KnowledgeEditor = forwardRef<
                         KnowledgeLinkSchema.safeParse(url).success,
                 },
             }),
+            LessonPartProvenance,
             TableKit.configure({
                 table: { resizable: false, allowTableNodeSelection: true },
             }),
-            LearningBlockNode.configure({ labels: blockLabels }),
+            (isPreview
+                ? LearningBlockNode.extend({
+                      draggable: false,
+                      selectable: false,
+                  })
+                : LearningBlockNode
+            ).configure({ labels: blockLabels }),
+        ];
+
+        if (isPreview) {
+            return documentExtensions;
+        }
+
+        return [
+            ...documentExtensions,
             ExerciseGroupDrag,
             ProseBlockDrag.configure({
                 label: (node) => {
@@ -161,9 +192,8 @@ export const KnowledgeEditor = forwardRef<
             LearningBlockTextGaps.configure({
                 label: blockLabels.field('Write here…'),
             }),
-        ],
-        [blockLabels, t],
-    );
+        ];
+    }, [blockLabels, t, isPreview]);
     const editor = useEditor({
         extensions,
         content: toEditorDocument(value.document),
@@ -187,14 +217,19 @@ export const KnowledgeEditor = forwardRef<
                 return result !== 'none';
             },
             attributes: {
-                role: 'textbox',
-                'aria-multiline': 'true',
+                ...(isPreview
+                    ? { role: 'group' }
+                    : { role: 'textbox', 'aria-multiline': 'true' }),
                 'aria-label': label ?? t('knowledge.explanation'),
                 dir: 'auto',
             },
         },
         onContentError: () => setInvalid(true),
         onUpdate: ({ editor: current }) => {
+            if (!onChange) {
+                return;
+            }
+
             try {
                 const body = normalizeEditorDocument(current.getJSON());
                 const serialized = JSON.stringify(body);
@@ -238,9 +273,7 @@ export const KnowledgeEditor = forwardRef<
             return;
         }
 
-        const serialized = JSON.stringify(
-            normalizeEditorDocument(value.document),
-        );
+        const serialized = serializedValue;
 
         if (serialized === acceptedValue.current) {
             return;
@@ -270,10 +303,10 @@ export const KnowledgeEditor = forwardRef<
         return () => {
             cancelled = true;
         };
-    }, [editor, value]);
+    }, [editor, value, serializedValue]);
 
     const authoring =
-        editor && toolbarVariant !== 'tutor' ? (
+        editor && !isPreview && toolbarVariant !== 'tutor' ? (
             <LearningBlockAuthoring
                 editor={editor}
                 disabled={disabled}
@@ -286,7 +319,7 @@ export const KnowledgeEditor = forwardRef<
         ) : null;
 
     let content;
-    if (workspace && editor) {
+    if (workspace && !isPreview && editor) {
         content = (
             <WorkspaceEditorChrome
                 editor={editor}
@@ -307,8 +340,12 @@ export const KnowledgeEditor = forwardRef<
         );
     } else {
         content = (
-            <div className={styles.root} aria-busy={!editor}>
-                {editor && (
+            <div
+                className={styles.root}
+                data-editor-preview={isPreview || undefined}
+                aria-busy={!editor}
+            >
+                {editor && !isPreview && (
                     <EditorToolbar
                         editor={editor}
                         disabled={disabled}
@@ -353,7 +390,9 @@ export const KnowledgeEditor = forwardRef<
             fieldAi={workspace?.fieldAi}
             languageDefaults={workspace?.languageDefaults}
             renderAudioPreparation={workspace?.renderAudioPreparation}
-            blockViewOptions={workspace?.blockViewOptions}
+            blockViewOptions={
+                preview?.blockViewOptions ?? workspace?.blockViewOptions
+            }
             canDuplicateOnServer={Boolean(workspace?.blockCopy)}
             additionalActions={blockActions}
         >

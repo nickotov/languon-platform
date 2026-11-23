@@ -1,16 +1,30 @@
+import { lessonCopyNodes } from './lesson-copy-nodes';
+import { readContentProposals } from './read-content-proposals';
+import {
+    contentProposalView,
+    proposalBlocks,
+    withProposalBlocks,
+} from './content-proposal-view';
+import {
+    loadLessonPartLayouts,
+    lessonPartsInDocument,
+} from './lesson-proposal-parts';
+import {
+    completedLessonRunId,
+    copyCompletedLesson,
+} from './lesson-proposal-copy';
 import { DrizzleActionAccountingParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant';
 import { conversationTurnsTable as turns } from './schema';
 import { isReadOnlyKnowledgeSource } from '../../../domain/conversation';
 import { assertReferencedProposalTarget } from '../../../application/conversation-block-references';
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, getTableColumns, inArray, sql } from 'drizzle-orm';
 import {
     KnowledgeContentProposalSchema,
     KnowledgeBodySchema,
     KnowledgeWorkingBranchSchema,
     LearningContentProposalInputSchema,
     type LearningContentProposalInput,
-    type KnowledgeBody,
-    type LearningBlock,
+    type LessonCopy,
 } from '@languon/contracts';
 import type {
     ConversationAccess,
@@ -40,78 +54,6 @@ import {
 } from './block-proposal-content';
 import { insertProposalBlocks } from './block-proposal-insertion';
 import type { ConversationsTransaction } from './conversation-source';
-
-/** Only top-level typed nodes are blocks; prose order is retained separately. */
-function proposalBlocks(body: KnowledgeBody): LearningBlock[] {
-    return (body.document.content ?? []).flatMap((node) =>
-        node.type === 'learningBlock'
-            ? [node.attrs!.block as LearningBlock]
-            : [],
-    );
-}
-
-function withProposalBlocks(
-    body: KnowledgeBody,
-    blocks: LearningBlock[],
-): KnowledgeBody {
-    let index = 0;
-
-    return {
-        ...body,
-        document: {
-            ...body.document,
-            content: (body.document.content ?? []).map((node) =>
-                node.type === 'learningBlock'
-                    ? {
-                          type: 'learningBlock',
-                          attrs: { block: blocks[index++]! },
-                      }
-                    : node,
-            ),
-        },
-    };
-}
-
-function view(row: typeof proposals.$inferSelect, currentDocument?: unknown) {
-    const captured = [...row.dependencySnapshots];
-    if (row.targetSnapshot) {
-        captured.push(row.targetSnapshot);
-    }
-
-    const targetStale =
-        Boolean(currentDocument) &&
-        captured.some((block) => {
-            const current = findProposalBlock(currentDocument, block.id);
-
-            return (
-                !current ||
-                blockContentHash(current) !== blockContentHash(block)
-            );
-        });
-
-    return KnowledgeContentProposalSchema.parse({
-        id: row.id,
-        conversationId: row.conversationId,
-        turnId: row.turnId,
-        ...(row.targetBlockId && row.targetSnapshot
-            ? {
-                  target: {
-                      blockId: row.targetBlockId,
-                      blockHash: blockContentHash(row.targetSnapshot),
-                  },
-              }
-            : {}),
-        targetStale,
-        dependencies: row.dependencySnapshots,
-        noteId: row.noteId,
-        branchId: row.branchId,
-        baseBranchVersion: row.baseBranchVersion,
-        body: row.body,
-        createdAt: row.createdAt.toISOString(),
-        appliedAt: row.appliedAt?.toISOString() ?? null,
-        appliedBranchVersion: row.appliedBranchVersion,
-    });
-}
 
 async function ownerContext(
     persistence: ConversationPersistenceContext,
@@ -298,43 +240,14 @@ export async function conversationListContentProposals(
     persistence: ConversationPersistenceContext,
     access: ConversationAccess,
     id: string,
+    proposalId?: string,
 ) {
     return conversationTransaction(
         persistence,
         async (tx) => {
             await ownerContext(persistence, tx, access, id);
-            const rows = await tx
-                .select()
-                .from(proposals)
-                .where(
-                    and(
-                        eq(proposals.conversationId, id),
-                        inArray(
-                            proposals.turnId,
-                            tx
-                                .select({ id: turns.id })
-                                .from(turns)
-                                .where(eq(turns.status, 'succeeded')),
-                        ),
-                    ),
-                )
-                .orderBy(desc(proposals.createdAt))
-                .limit(100);
 
-            const branchRows = await tx
-                .select()
-                .from(branches)
-                .where(eq(branches.noteId, rows[0]?.noteId ?? id));
-            const byId = new Map(
-                branchRows.map((branch) => [
-                    branch.id,
-                    branch.content.body.document,
-                ]),
-            );
-
-            return {
-                proposals: rows.map((row) => view(row, byId.get(row.branchId))),
-            };
+            return readContentProposals(tx, access.ownerId, id, proposalId);
         },
         false,
     );
@@ -346,17 +259,21 @@ export async function conversationApplyContentProposal(
     id: string,
     proposalId: string,
     expectedBranchVersion: number,
-    mode: 'proposal' | 'add-separately' = 'proposal',
+    mode: 'proposal' | 'add-separately' | 'insert-lesson' = 'proposal',
     insertionPosition?: number,
+    lessonCopy?: LessonCopy,
 ) {
-    if (insertionPosition !== undefined && mode !== 'add-separately') {
+    if (insertionPosition !== undefined && mode === 'proposal') {
         throw conflict('Cursor insertion requires adding an independent copy.');
     }
 
     return conversationTransaction(persistence, async (tx) => {
         const { chat } = await ownerContext(persistence, tx, access, id);
         const [proposal] = await tx
-            .select()
+            .select({
+                ...getTableColumns(proposals),
+                completedRunId: completedLessonRunId(tx, access.ownerId),
+            })
             .from(proposals)
             .where(
                 and(
@@ -403,14 +320,65 @@ export async function conversationApplyContentProposal(
             throw conversationUnavailable();
         }
 
+        const layout = proposal.completedRunId
+            ? (await loadLessonPartLayouts(tx, [proposal.completedRunId])).get(
+                  proposal.completedRunId,
+              )
+            : undefined;
+        const partsFor = (body: typeof branch.content.body) =>
+            layout
+                ? lessonPartsInDocument(proposal, layout, body.document)
+                : undefined;
+
+        if (mode === 'insert-lesson') {
+            if (!lessonCopy) {
+                throw conflict('Choose a lesson material to insert.');
+            }
+
+            const updated = await copyCompletedLesson(tx, {
+                proposal,
+                branch,
+                completedRunId: proposal.completedRunId,
+                expectedBranchVersion,
+                selection: lessonCopy,
+                parts: partsFor(branch.content.body) ?? [],
+                position: insertionPosition,
+                now: persistence.now(),
+            });
+
+            return {
+                proposal: contentProposalView(
+                    proposal,
+                    updated.content.body.document,
+                    partsFor(updated.content.body),
+                ),
+                branch: KnowledgeWorkingBranchSchema.parse({
+                    ...updated,
+                    updatedAt: updated.updatedAt.toISOString(),
+                }),
+            };
+        }
+
         if (proposal.appliedAt) {
             return {
-                proposal: view(proposal),
+                proposal: contentProposalView(
+                    proposal,
+                    branch.content.body.document,
+                    partsFor(branch.content.body),
+                ),
                 branch: KnowledgeWorkingBranchSchema.parse({
                     ...branch,
                     updatedAt: branch.updatedAt.toISOString(),
                 }),
             };
+        }
+
+        // Generic independent apply rewrites the proposal's IDs as a one-shot receipt.
+        // A completed lesson must stay available with its original IDs for every copy.
+        if (mode === 'add-separately' && proposal.completedRunId) {
+            throw conflict(
+                'Insert the lesson material from the completed lesson review.',
+            );
         }
 
         if (branch.version !== expectedBranchVersion) {
@@ -445,7 +413,19 @@ export async function conversationApplyContentProposal(
         let appliedBody = proposal.body;
         let appliedDependencies = proposal.dependencySnapshots;
         const blocks = proposalBlocks(proposal.body);
-        if (isUpdate && mode === 'proposal') {
+        if (layout) {
+            const current = branch.content.body.document;
+            const nodes = lessonCopyNodes(
+                proposal,
+                partsFor(branch.content.body)!,
+                current,
+            );
+
+            document = {
+                ...current,
+                content: [...(current.content ?? []), ...nodes],
+            };
+        } else if (isUpdate && mode === 'proposal') {
             const current = findProposalBlock(
                 branch.content.body.document,
                 proposal.targetBlockId!,
@@ -545,7 +525,14 @@ export async function conversationApplyContentProposal(
             .returning();
 
         return {
-            proposal: view(applied!),
+            proposal: contentProposalView(
+                {
+                    ...applied!,
+                    completedRunId: proposal.completedRunId,
+                },
+                updatedBranch!.content.body.document,
+                partsFor(updatedBranch!.content.body),
+            ),
             branch: KnowledgeWorkingBranchSchema.parse({
                 ...updatedBranch!,
                 updatedAt: updatedBranch!.updatedAt.toISOString(),

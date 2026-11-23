@@ -79,7 +79,7 @@ export function conversationMutateGeneration(
                 );
             }
 
-            return generationRunDetail(tx, run);
+            return generationRunDetail(persistence.now(), tx, run);
         }
 
         if (run.revision !== mutation.input.expectedRevision) {
@@ -132,6 +132,8 @@ export function conversationMutateGeneration(
                 .update(runs)
                 .set({
                     state: 'discarded',
+                    automation: null,
+                    failure: null,
                     pauseReason: null,
                     // Model-supplied semantic IDs may themselves contain source text.
                     taskManifest: run.taskManifest.map((task, index) => ({
@@ -191,6 +193,8 @@ export function conversationMutateGeneration(
                 .update(runs)
                 .set({
                     revision: run.revision + 1,
+                    automation: null,
+                    failure: null,
                     taskManifest: candidate.plan.tasks.map(({ id, kind }) => ({
                         id,
                         kind,
@@ -279,6 +283,8 @@ export function conversationMutateGeneration(
                         blockTarget: currentTarget,
                     },
                     pauseReason: 'budget',
+                    automation: null,
+                    failure: null,
                     updatedAt: now,
                 })
                 .where(eq(runs.id, run.id));
@@ -294,6 +300,7 @@ export function conversationMutateGeneration(
         await emitGenerationRun(persistence, tx, run.id);
 
         return generationRunDetail(
+            persistence.now(),
             tx,
             await lockGenerationRun(tx, conversationId, runId, access.ownerId),
         );

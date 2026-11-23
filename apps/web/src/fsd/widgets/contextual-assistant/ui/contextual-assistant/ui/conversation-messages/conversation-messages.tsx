@@ -1,4 +1,14 @@
-import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
+import {
+    LessonProposalActions,
+    useListedContentProposals,
+    type KnowledgeBlockReference,
+} from '@/fsd/features/knowledge-notes';
+import {
+    LessonRunItem,
+    LessonRuns,
+    type LessonRunsProps,
+} from '@/fsd/features/lesson-generation';
+import { groupLessonResults } from '../../../../lib/group-lesson-results';
 import { useMemo, useState, type ReactNode } from 'react';
 import { ArrowDown } from 'lucide-react';
 import type {
@@ -26,6 +36,7 @@ import styles from '../../../styles/contextual-assistant-conversation-messages-c
 
 export function ConversationMessages({
     blocks,
+    lessons,
     detail,
     uiMessages,
     active,
@@ -45,6 +56,7 @@ export function ConversationMessages({
 }: {
     blocks?: KnowledgeBlockReference[] | undefined;
     detail: ConversationDetail;
+    lessons?: LessonRunsProps | undefined;
     uiMessages: ConversationUIMessage[];
     active: boolean;
     pending?: boolean;
@@ -82,6 +94,15 @@ export function ConversationMessages({
     const turns = useMemo(
         () => new Map(detail.turns.map((turn) => [turn.id, turn])),
         [detail.turns],
+    );
+    const [previewRunId, selectPreviewRun] = useState<string | null>(null);
+    const previewSelection = { runId: previewRunId, select: selectPreviewRun };
+    const proposals = useListedContentProposals();
+    const { byTurn, remaining } = groupLessonResults(
+        lessons?.state.runs ?? [],
+        uiMessages,
+        turns,
+        proposals,
     );
     const questions = useMemo(
         () =>
@@ -171,7 +192,14 @@ export function ConversationMessages({
         tool = 'readingSnippet';
     }
 
-    const responding = active || pending;
+    const showsLessonProgress = remaining.some(
+        (run) =>
+            run.state === 'running' &&
+            (!activeTurn ||
+                run.activeTurnId === activeTurn.id ||
+                run.id === activeTurn.generationRunId),
+    );
+    const responding = (active || pending) && !showsLessonProgress;
     const queued = pending || activeTurn?.status === 'queued';
 
     return (
@@ -199,47 +227,83 @@ export function ConversationMessages({
                             editorEmpty={workspace?.editorCharacters === 0}
                         />
                     )}
-                    {messages.map(({ message, changed, turn }) => (
-                        <TutorMessage
-                            key={message.id}
-                            message={message}
-                            blocks={blocks}
-                            changed={changed}
-                            turn={turn}
-                            active={active || pending}
-                            hasAssistant={assistantTurns.has(
-                                message.metadata?.turnId,
-                            )}
-                            question={
-                                questions.get(message.metadata!.turnId) ?? ''
-                            }
-                            onRetry={onRetry}
-                            onContinue={onContinue}
-                            onPropose={onPropose}
-                            workspaceTargetId={
-                                message.metadata?.turnId
-                                    ? workspaceTargets?.get(
-                                          message.metadata.turnId,
-                                      )
-                                    : undefined
-                            }
-                            workspaceAnchor={message.metadata?.editorTarget}
-                            onAcceptWorkspaceProposal={
-                                onAcceptWorkspaceProposal
-                            }
-                            proposalRootId={proposalRootId}
-                            onReviewProposal={onReviewProposal}
-                            workspace={workspace}
-                            reviewingProposalId={reviewingProposalId}
-                            onReviewingProposal={setReviewingProposalId}
-                        />
-                    ))}
+                    {messages.map(({ message, changed, turn }) => {
+                        const result =
+                            message.role === 'assistant' &&
+                            message.metadata?.turnId
+                                ? byTurn.get(message.metadata.turnId)
+                                : undefined;
+
+                        return (
+                            <TutorMessage
+                                key={message.id}
+                                message={message}
+                                blocks={blocks}
+                                groupedProposalId={result?.proposal?.id}
+                                lesson={
+                                    result &&
+                                    lessons && (
+                                        <LessonRunItem
+                                            {...lessons}
+                                            run={result.run}
+                                            previewSelection={previewSelection}
+                                            result={
+                                                result.proposal && (
+                                                    <LessonProposalActions
+                                                        proposal={
+                                                            result.proposal
+                                                        }
+                                                    />
+                                                )
+                                            }
+                                        />
+                                    )
+                                }
+                                changed={changed}
+                                turn={turn}
+                                active={active || pending}
+                                hasAssistant={assistantTurns.has(
+                                    message.metadata?.turnId,
+                                )}
+                                question={
+                                    questions.get(message.metadata!.turnId) ??
+                                    ''
+                                }
+                                onRetry={onRetry}
+                                onContinue={onContinue}
+                                onPropose={onPropose}
+                                workspaceTargetId={
+                                    message.metadata?.turnId
+                                        ? workspaceTargets?.get(
+                                              message.metadata.turnId,
+                                          )
+                                        : undefined
+                                }
+                                workspaceAnchor={message.metadata?.editorTarget}
+                                onAcceptWorkspaceProposal={
+                                    onAcceptWorkspaceProposal
+                                }
+                                proposalRootId={proposalRootId}
+                                onReviewProposal={onReviewProposal}
+                                workspace={workspace}
+                                reviewingProposalId={reviewingProposalId}
+                                onReviewingProposal={setReviewingProposalId}
+                            />
+                        );
+                    })}
                     <TutorActivity
                         active={responding}
                         queued={queued}
                         text={activeText}
                         tool={tool}
                     />
+                    {lessons && (
+                        <LessonRuns
+                            {...lessons}
+                            runs={remaining}
+                            previewSelection={previewSelection}
+                        />
+                    )}
                     {children}
                 </div>
             </div>

@@ -5,6 +5,7 @@ import {
     ConversationWorkerService,
     type ConversationWorkerStore,
 } from '../../../../src/modules/conversations/application/conversation-worker-service';
+import { ConversationError } from '../../../../src/modules/conversations/domain/conversation';
 import { projectConversationSource } from '../../../../src/modules/conversations/application/conversation-source-context';
 import {
     assertTutorCurrentMessageFits,
@@ -106,6 +107,53 @@ function fixture(turn = longTurn()) {
 }
 
 describe('conversation worker bounded source context', () => {
+    it('passes a dispatch capacity refusal through to the durable run', async () => {
+        const { store, turn } = fixture();
+        const worker = new ConversationWorkerService({
+            store,
+            createRunner: () => ({
+                run: async () => {
+                    throw new ConversationError(
+                        'provider_capacity_exhausted',
+                        'Insufficient rolling allowance.',
+                    );
+                },
+            }),
+        });
+
+        await worker.processNext(new AbortController().signal);
+
+        expect(store.finish).toHaveBeenCalledWith(
+            turn,
+            'failed',
+            'provider_capacity_exhausted',
+            {
+                code: 'admission-blocked',
+                admissionReason: 'provider-capacity',
+            },
+        );
+    });
+
+    it('propagates an unexpected failure to record a terminal turn', async () => {
+        const { store } = fixture();
+        const terminalFailure = new ConversationError(
+            'version_conflict',
+            'Checkpoint mismatch.',
+        );
+
+        vi.mocked(store.finish).mockRejectedValue(terminalFailure);
+        const worker = new ConversationWorkerService({
+            store,
+            createRunner: () => {
+                throw new Error('Synthetic worker failure.');
+            },
+        });
+
+        await expect(
+            worker.processNext(new AbortController().signal),
+        ).rejects.toBe(terminalFailure);
+    });
+
     it('keeps a near-limit escaped Unicode question and copies whole through real SDK retrieval and compaction', async () => {
         const turn = longTurn();
         turn.conversationCreatedAt = new Date(

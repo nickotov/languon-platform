@@ -5,6 +5,7 @@ import styles from '../../../styles/exercise-block-common.module.css';
 
 type ActionOptions = Pick<
     LearningBlockViewProps,
+    | 'disclosureOnly'
     | 'labels'
     | 'interactionsDisabled'
     | 'attemptPending'
@@ -57,7 +58,7 @@ export function ExerciseActions({
                     {submitLabel}
                 </Button>
             ) : null}
-            {canEvaluate ? (
+            {canEvaluate && !props.disclosureOnly ? (
                 <Button
                     type='button'
                     size='compact'
@@ -93,20 +94,28 @@ export function ExerciseActions({
                 size='compact'
                 variant='ghost'
                 onClick={handleReveal}
-                disabled={revealed || props.interactionsDisabled}
+                aria-expanded={props.disclosureOnly ? revealed : undefined}
+                disabled={
+                    (!props.disclosureOnly && revealed) ||
+                    props.interactionsDisabled
+                }
             >
-                {labels.showAnswer}
+                {props.disclosureOnly && revealed
+                    ? labels.hideAnswer
+                    : labels.showAnswer}
             </Button>
-            <Button
-                type='button'
-                size='compact'
-                variant='ghost'
-                leadingIcon={<RotateCcw size={14} />}
-                onClick={handleRetry}
-                disabled={props.interactionsDisabled}
-            >
-                {labels.retry}
-            </Button>
+            {!props.disclosureOnly && (
+                <Button
+                    type='button'
+                    size='compact'
+                    variant='ghost'
+                    leadingIcon={<RotateCcw size={14} />}
+                    onClick={handleRetry}
+                    disabled={props.interactionsDisabled}
+                >
+                    {labels.retry}
+                </Button>
+            )}
         </div>
     );
 }

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import {
-    ProseKnowledgeBodySchema,
+    GeneratedProseBodySchema,
     VocabularyLearningBlockSchema,
     GrammarLearningBlockSchema,
     BilingualTextLearningBlockSchema,
@@ -22,7 +22,7 @@ export const learningContentOutputSchema = z
                     .object({
                         taskId: z.string().min(1).max(80),
                         blocks: z.array(generatedBlockSchema).max(25),
-                        prose: ProseKnowledgeBodySchema.optional(),
+                        prose: GeneratedProseBodySchema.optional(),
                     })
                     .strict(),
             )

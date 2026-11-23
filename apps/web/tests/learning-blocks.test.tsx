@@ -1,4 +1,4 @@
-import { exerciseSource } from '../src/fsd/features/workbook-learning/lib/exercise-source';
+import { exerciseSource } from '../src/fsd/entities/learning-blocks/lib/exercise-source';
 import { KnowledgeBodySchema } from '@languon/contracts';
 import { VideoPlayer } from '../src/fsd/entities/learning-blocks/ui/media-block/media-block';
 import { checkPreparedAnswer } from '../src/fsd/entities/learning-blocks/lib/check-prepared-answer';

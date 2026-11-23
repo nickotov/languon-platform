@@ -524,24 +524,110 @@ Composable lessons use a transcript-independent validated plan under
 have explicit authorized source/dependency inputs and a separate output order.
 The Conversations worker persists owner-scoped runs, immutable plan revisions and
 validated artifacts; it schedules ready tasks sequentially in bounded homogeneous
-batches. Checkpoint persistence and structured-call eligibility commit under the
-same current lease/revision fence. No partial checkpoint becomes an insertable
+batches. Durable exercise tasks checkpoint one exercise at a time as cumulative
+validated prefixes, preserving accepted units across interruption and resume.
+Checkpoint persistence and structured-call eligibility commit under the same
+current lease/revision fence. No partial checkpoint becomes an insertable
 proposal: complete aggregate validation exposes one canonical mixed preview.
 The serialized proposal including dependencies is limited to 100,000 characters
 and 25 custom blocks, in addition to existing document limits.
 
-Each generation action retains the five-call, 10,000-output-token and deadline
-limits. Progress can pause durably; Continue requires explicit fresh quoted
-admission, idempotency and the expected revision. Capacity preflight rejects an
-unchanged unit that cannot make validated progress and asks for a scope change.
-Reconnect only reconciles state. Prepared actions bypass transcript preparation
-and memory summarization. Chat clarification retains confirmed content languages
-separately from reply language; bounded counts resolve within the requested range.
+[ADR-0061](adr/0061-bounded-automatic-lesson-continuation.md) adds server-owned
+automatic advancement after a successful stage with new validated progress. The
+initial admitted action pins one authorization: its configured customer-credit
+ceiling, reviewed configured provider-cost ceiling before per-stage prediction
+clamps, funding/route/tariff/pricing fingerprint and current revision. It permits
+at most eight stages and expires at the earlier of the root action deadline or
+15 minutes after authorization creation. Defaults are not multiplied and wallet
+balance is not authorization. Each automatic stage inherits the lesson expiry as its latest dispatch deadline, including time spent queued. Each stage retains the existing
+five-call, 10,000-output-token and deadline limits; admission clamps both financial
+budgets to what remains after settled stages. Unknown liability, terminal failure, Stop,
+source/plan/access/configuration change, expiry or exhausted authority stops
+advancement. An ordered partial index selects ready paused stages. Worker claims
+recover them idempotently after a crash. Inaccessible sources revoke their automatic
+authority without blocking the remaining worker queue. Reconnect and preview reads
+never dispatch. Explicit Retry/Resume obtains fresh
+bounded authority through the ordinary quote/admission flow. Capacity preflight
+still rejects units that cannot make validated progress. The scheduler saves unit-level recovery progress before handing off. A measured
+validation rejection permits a targeted repair followed by one distinct fallback.
+A restarted worker restores the remaining strategy and the granted spending limits.
+Independent tasks can finish while an exhausted exercise blocks its descendants.
+
+A continuation measures the next unfinished unit with the provider input builder,
+including the structured schema and its declared dependencies. Earlier versions
+of exercise checkpoints remain available for provenance and preview. Before
+dispatch the worker checks stage time as well as calls and tokens. A stage that
+just saved a plan or unit may hand off at a checkpoint. A fresh stage with no
+progress cannot repeatedly renew itself. Route fallback shares the stage deadline
+and stops once a durable callback has begun.
+
+Automatic admission persists a bounded reason for stopping. Pre-dispatch
+contention schedules up to three retries after 5, 15 and 45 seconds under
+the same authority. An uncertain provider dispatch requires a fresh, explicit
+acknowledgement bound to the failed turn before another generation attempt.
+Each attempted continuation passes the usual source, revision and accounting
+checks. The pending acknowledgement derives from saved turn evidence and survives
+plan and source changes. Automatic stages preserve the last explicit command
+receipt, so a lost HTTP response can be recovered without repeating an accepted
+action. A later user command can start from the new checkpoint. If a worker loses
+its lease, the reaper links the action to its lesson accounting series before
+settling the terminal state once. Outstanding dispatched work requires informed
+acknowledgement. A lease that expired before dispatch can resume normally.
+
+The stream considers a replacement connection healthy after a valid heartbeat or
+conversation event. Empty event streams back off. After a real gap, the page
+reads the selected conversation once before unlocking commands. A refused
+command displays its admission code and opaque server reference on that run.
+
+For new lesson readings the author emits bounded paragraphs, headings and lists.
+The host compiles those sections into the canonical editor document before
+validation and checkpointing. Dependent exercises use the saved reading. The
+provider boundary normalizes the router's string and structured finish reasons.
+A single measured, completed response can qualify for one bounded repair. A
+content filter or uncertain dispatch stops generation. Persisted failure details
+can identify the phase and normalized finish reason without storing raw output.
+
+Conversation quote offer and confirmation evaluate the proposed stage's
+enforced reservation against the shared rolling limit. At provider dispatch,
+the guarded SQL function checks the actual call reservation under the same lock
+as the inserts that consume capacity. Settlement, credit limits and operator
+spending authority still apply. A rejected confirmation can therefore leave the
+saved lesson available without starting a provider request.
+
+The owner can inspect ordered validated parts and frozen dependencies through a
+separate prepared-preview endpoint while generation runs or pauses. It checks
+current owner/source authority, current-revision artifact identities and hashes,
+and a 100,000-character aggregate payload bound. Public run summaries contain
+progress, not private bodies. The conversation stream updates the actor/conversation
+run cache; initial load and a real connection gap trigger snapshot reconciliation.
+No run-list/detail polling follows ordinary active progress. Snapshot publication
+merges revision/timestamp identities so a late GET cannot erase a streamed run or
+regress its state. Per-part counts and failure state remain explicit, including
+while reconnecting. Summary and preview parts follow canonical output
+order; unit counts cover exercises and vocabulary entries, including partial
+vocabulary batches up to the existing 200-entry limit. Access-denied preview
+responses remove cached private content and disable retries for that scope. The
+existing safe renderer displays prepared content without insertion, persisted
+practice, paid checking or library-copy authority.
+Complete aggregate validation still creates the sole insertable mixed proposal;
+The owner reviews logical parts in the AI panel using the read-only Knowledge editor. An insertion command applies one part or all missing parts to the working draft, checks source dependencies and deduplicates network retries. Publishing still requires Save. [ADR-0064](adr/0064-logical-lesson-parts-in-the-workspace.md)
+
+Safe failure metadata contains only a bounded category and allowlisted field paths:
+output limit, schema/content invalidity, transport, rate limiting, interruption,
+publication or an unknown cause. Older failures without a recorded category expose an opaque
+owner-scoped turn UUID for support, without inventing a transport diagnosis.
+Settled invalid exercises follow the durable three-strategy limit;
+ambiguous transport is never automatically redispatched. Raw provider output and
+user content are excluded from diagnostics. Prepared actions bypass transcript
+preparation and memory summarization. Explicit content/explanation languages are
+resolved independently from chat reply language; bounded counts resolve within
+the requested range.
 
 Paused unfinished plans support reviewed revisions: unchanged artifacts and
 output-order-only changes reuse content, while changed tasks and descendants are
-invalidated. Applying a revision stays paused; Continue is separate. Changed
-sources require Keep captured snapshot or Refresh under current access. Unresolved
+invalidated. Applying a revision revokes automation and stays paused; explicit
+Resume is separate. Changed sources require Keep captured snapshot or Refresh under
+current access. Unresolved
 selected passages require an exact fresh editor selection. Generated prose carries
 immutable artifact provenance; captured blocks carry frozen run/revision/source
 origins rather than rebinding to edited local blocks. Neither origin grants read
@@ -578,6 +664,13 @@ revision cohorts commit atomically, and Review, Insert/Update and Save remain
 explicit. Local source references remap on independent copies; frozen historical
 origins never grant source access. Substantive manual edits require explicit Custom
 conversion, while AI revisions preserve named identity and host provenance.
+
+G03 authoring returns accepted answer variants once. The host compiles the
+canonical prepared text key from those variants before the ordinary named-exercise
+contract and source validation; the model no longer repeats the same key in its
+wire response. Published checking semantics remain unchanged. R08 follows the same rule for each gap. The model
+supplies an answer set and its explanation once. The host assigns the gap ID
+and builds the matching checking key and explanation references before validation.
 
 Ordinary prepared checks make no model call. Unknown hybrid answers and rubric
 responses remain unchecked until explicit evaluation; Check with AI remains

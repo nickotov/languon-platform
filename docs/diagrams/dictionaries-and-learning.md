@@ -32,7 +32,7 @@ source_paths:
     - apps/web/src/fsd/features/sentence-training/model/sentence-preparation.ts
     - apps/web/src/fsd/features/sentence-training/model/sentence-preparation-recovery.ts
 source_fingerprint: sha256:92792c6cb40c1654a90c6e08499c745fba7868da7a4c8f5a288dccb27e395f86
-reviewed: 2026-11-14
+reviewed: 2026-11-19
 ---
 
 # Dictionaries and learning

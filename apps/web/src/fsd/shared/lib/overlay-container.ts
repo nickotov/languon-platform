@@ -1,6 +1,10 @@
-/** Native modal dialogs make body siblings inert, even in the popover top layer. */
+/** Keep floating UI in the same visible workspace view or native dialog as its trigger. */
 export function overlayContainer(
     anchor: Element | null | undefined,
 ): HTMLElement {
-    return anchor?.closest<HTMLDialogElement>('dialog[open]') ?? document.body;
+    return (
+        anchor?.closest<HTMLElement>(
+            'dialog[open], [data-panel-overlay-root]',
+        ) ?? document.body
+    );
 }

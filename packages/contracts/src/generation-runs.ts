@@ -14,6 +14,217 @@ const revision = z.number().int().positive();
 const credits = z.string().regex(/^(0|[1-9][0-9]*)(\.[0-9]{1,3})?$/u);
 const mutation = { requestId: z.uuid(), expectedRevision: revision };
 const sourceChoice = z.enum(['keep-snapshot', 'refresh']);
+const unitCount = z.number().int().min(0).max(200);
+const totalUnitCount = z.number().int().min(1).max(200);
+
+const failurePathFields = new Set([
+    'item',
+    'activityId',
+    'correct',
+    'distractors',
+    'reasons',
+    'correctRole',
+    'meaning',
+    'target-use',
+    'task-completion',
+    'not-stated',
+    'false',
+    'true',
+    'tasks',
+    'taskId',
+    'blocks',
+    'id',
+    'type',
+    'language',
+    'explanationLanguage',
+    'title',
+    'level',
+    'items',
+    'format',
+    'question',
+    'instruction',
+    'instructions',
+    'objective',
+    'referenceAnswer',
+    'acceptedAnswers',
+    'parts',
+    'kind',
+    'text',
+    'choices',
+    'correctChoiceId',
+    'semantics',
+    'activity',
+    'version',
+    'checking',
+    'policy',
+    'key',
+    'explanations',
+    'choiceId',
+    'explanation',
+    'gaps',
+    'gapId',
+    'rubric',
+    'criteria',
+    'description',
+    'sources',
+    'sourceBindings',
+    'origin',
+    'entries',
+    'entryIds',
+    'blockId',
+    'segmentIds',
+    'segments',
+    'target',
+    'passages',
+    'sourceId',
+    'from',
+    'to',
+    'classification',
+    'roles',
+    'role',
+    'absenceRationale',
+    'answer',
+    'answers',
+    'evidence',
+    'pattern',
+    'rule',
+    'translationLanguage',
+    'translation',
+    'content',
+    'document',
+    'prose',
+    'schemaVersion',
+    'attrs',
+    'metadata',
+    'expectedAnswer',
+    'checkingPolicy',
+    'criterion',
+    'weight',
+    'accepted',
+    'points',
+    'minimum',
+    'maximum',
+    'source',
+    'group',
+    'exercises',
+]);
+
+/** Schema field paths only: user text, provider messages and keys are excluded. */
+export const GenerationFailurePathSchema = z
+    .string()
+    .min(1)
+    .max(200)
+    .refine((path) => {
+        const fields = path.split('.');
+
+        return (
+            fields.length <= 16 &&
+            fields.every(
+                (field) =>
+                    failurePathFields.has(field) ||
+                    /^(0|[1-9][0-9]{0,2})$/u.test(field),
+            )
+        );
+    }, 'Failure paths may contain only known schema fields and bounded indices.');
+
+export const GenerationFailureSchema = z
+    .object({
+        code: z.enum([
+            'output-limit',
+            'schema-invalid',
+            'content-invalid',
+            'transport',
+            'rate-limited',
+            'admission-blocked',
+            'provider-rejected',
+            'provider-outcome-unknown',
+            'interrupted',
+            'publication',
+            'unknown',
+        ]),
+        invariant: z
+            .enum([
+                'distinct-question',
+                'distinct-term',
+                'requested-words',
+                'required-block-count',
+                'activity-allocation',
+                'passage-evidence',
+                'target-language-use',
+                'distinct-choice',
+                'checking-key',
+                'source-prerequisite',
+            ])
+            .optional(),
+        // Operational metadata is a closed vocabulary; never persist upstream text.
+        phase: z
+            .enum(['dispatch', 'decode', 'validation', 'receipt', 'checkpoint'])
+            .optional(),
+        finishReason: z
+            .enum([
+                'stop',
+                'length',
+                'tool-calls',
+                'content-filter',
+                'error',
+                'other',
+                'unknown',
+            ])
+            .optional(),
+        admissionReason: z
+            .enum([
+                'context-too-large',
+                'allowance-required',
+                'authority-expired',
+                'stage-limit',
+                'balance',
+                'capacity',
+                'provider-capacity',
+                'operator-capacity',
+                'response-active',
+                'configuration',
+                'source-unavailable',
+                'source-changed',
+                'conflict',
+                'unknown',
+            ])
+            .optional(),
+        taskId: identity.optional(),
+        recoveryExhausted: z.literal(true).optional(),
+        referenceId: z.uuid().optional(),
+        paths: z.array(GenerationFailurePathSchema).max(8).optional(),
+    })
+    .strict()
+    .refine(
+        (failure) =>
+            (failure.code === 'admission-blocked') ===
+            (failure.admissionReason !== undefined),
+        'Only admission failures carry an admission reason.',
+    );
+
+export const GenerationAutomationSchema = z
+    .object({
+        enabled: z.boolean(),
+        retryAt: z.iso.datetime().optional(),
+        recoveringTaskId: identity.optional(),
+        maximumCredits: credits,
+        remainingCredits: credits,
+    })
+    .strict()
+    .refine(
+        (value) =>
+            !credits.safeParse(value.remainingCredits).success ||
+            !credits.safeParse(value.maximumCredits).success ||
+            creditMilli(value.remainingCredits) <=
+                creditMilli(value.maximumCredits),
+        'Remaining credit authority cannot exceed its authorized maximum.',
+    );
+
+function creditMilli(value: string): bigint {
+    const [whole, fraction = ''] = value.split('.');
+
+    return BigInt(whole!) * 1000n + BigInt(fraction.padEnd(3, '0'));
+}
 
 export const GenerationRunStateSchema = z.enum([
     'running',
@@ -34,8 +245,36 @@ export const GenerationTaskProgressSchema = z
         kind: GenerationTaskKindSchema,
         status: z.enum(['pending', 'running', 'completed', 'failed']),
         label: z.string().trim().min(1).max(200),
+        completedUnitCount: unitCount.optional(),
+        totalUnitCount: totalUnitCount.optional(),
     })
-    .strict();
+    .strict()
+    .superRefine((task, ctx) => {
+        const completed = task.completedUnitCount;
+        const total = task.totalUnitCount;
+        const maximumUnits =
+            task.kind === 'vocabulary'
+                ? 200
+                : task.kind === 'exercises'
+                  ? 25
+                  : 1;
+
+        if (
+            (completed === undefined) !== (total === undefined) ||
+            (completed !== undefined &&
+                total !== undefined &&
+                (completed > total ||
+                    total > maximumUnits ||
+                    (task.status === 'completed') !== (completed === total)))
+        ) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['completedUnitCount'],
+                message:
+                    'Unit progress must be paired, bounded and match completion.',
+            });
+        }
+    });
 
 /** Deliberately excludes generated content, raw provider errors and private snapshots. */
 export const GenerationRunSummarySchema = z
@@ -50,13 +289,72 @@ export const GenerationRunSummarySchema = z
         completedTaskCount: z.number().int().min(0).max(8),
         totalTaskCount: z.number().int().min(1).max(8),
         activeTurnId: z.uuid().nullable(),
+        uncertainTurnId: z.uuid().optional(),
+        lastCommandRequestId: z.uuid().optional(),
         proposalId: z.uuid().nullable(),
         chargedCredits: credits,
+        failure: GenerationFailureSchema.optional(),
+        automation: GenerationAutomationSchema.optional(),
         createdAt: z.iso.datetime(),
         updatedAt: z.iso.datetime(),
     })
     .strict()
     .superRefine((run, ctx) => {
+        if (run.uncertainTurnId && run.state !== 'paused') {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['uncertainTurnId'],
+                message:
+                    'Only a paused run can require an attempt acknowledgement.',
+            });
+        }
+
+        if (
+            run.failure &&
+            (run.state !== 'paused' ||
+                !(run.failure.code === 'admission-blocked'
+                    ? [
+                          'technical-failure',
+                          'budget',
+                          'source-changed',
+                      ].includes(run.pauseReason ?? '')
+                    : ['technical-failure', 'interrupted'].includes(
+                          run.pauseReason ?? '',
+                      )) ||
+                (run.failure.taskId &&
+                    !run.tasks.some((task) => task.id === run.failure!.taskId)))
+        ) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['failure'],
+                message:
+                    'Failure details must identify the current failed or interrupted run.',
+            });
+        }
+
+        if (
+            run.automation?.enabled &&
+            !(
+                run.state === 'running' ||
+                (run.state === 'paused' && run.pauseReason === 'budget')
+            )
+        ) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['automation'],
+                message:
+                    'Automatic continuation requires running work or an eligible budget pause.',
+            });
+        }
+
+        if (run.state === 'discarded' && (run.failure || run.automation)) {
+            ctx.addIssue({
+                code: 'custom',
+                message:
+                    'Discarded runs cannot retain failure or authorization details.',
+            });
+        }
+
         if (
             new Set(run.tasks.map((task) => task.id)).size !==
                 run.tasks.length ||
@@ -218,6 +516,7 @@ export const GenerationRunsResponseSchema = z
 export const ContinueGenerationRunRequestSchema = z
     .object({
         ...mutation,
+        acknowledgedUncertainTurnId: z.uuid().optional(),
         confirmedQuoteId: z.uuid().optional(),
         sourceChoice: sourceChoice.optional(),
     })
@@ -226,6 +525,7 @@ export const ReviseGenerationRunRequestSchema = z
     .object({
         ...mutation,
         instruction: z.string().trim().min(1).max(4_000),
+        acknowledgedUncertainTurnId: z.uuid().optional(),
         confirmedQuoteId: z.uuid().optional(),
     })
     .strict();
@@ -280,8 +580,11 @@ export const ResolveGenerationRunSourceRequestSchema = z
         }
     });
 export const DiscardGenerationRunRequestSchema = z.object(mutation).strict();
+export const StopGenerationRunRequestSchema = z.object(mutation).strict();
 
 export type GenerationRunSummary = z.infer<typeof GenerationRunSummarySchema>;
+export type GenerationFailure = z.infer<typeof GenerationFailureSchema>;
+export type GenerationAutomation = z.infer<typeof GenerationAutomationSchema>;
 export type GenerationRunDetail = z.infer<typeof GenerationRunDetailSchema>;
 export type GenerationPlanRevisionCandidate = z.infer<
     typeof GenerationPlanRevisionCandidateSchema
@@ -300,4 +603,7 @@ export type ResolveGenerationRunSourceRequest = z.infer<
 >;
 export type DiscardGenerationRunRequest = z.infer<
     typeof DiscardGenerationRunRequestSchema
+>;
+export type StopGenerationRunRequest = z.infer<
+    typeof StopGenerationRunRequestSchema
 >;

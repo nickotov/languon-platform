@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { Button } from '@/fsd/shared/ui';
+import { LessonProposalReview } from '../lesson-proposal-review/lesson-proposal-review';
 import { I18nProvider } from '@/fsd/shared/i18n';
 import { en } from '@/fsd/shared/i18n/messages/en';
 import { ru } from '@/fsd/shared/i18n/messages/ru';
@@ -12,6 +15,22 @@ const proposal = KnowledgeContentProposalSchema.parse({
     noteId: '33333333-3333-4333-8333-333333333333',
     branchId: '44444444-4444-4444-8444-444444444444',
     baseBranchVersion: 1,
+    lessonParts: [
+        {
+            taskId: 'reading',
+            kind: 'prose',
+            startIndex: 0,
+            nodeCount: 2,
+            present: false,
+        },
+        {
+            taskId: 'grammar',
+            kind: 'grammar',
+            startIndex: 2,
+            nodeCount: 2,
+            present: false,
+        },
+    ],
     body: {
         schemaVersion: 2,
         document: {
@@ -93,3 +112,63 @@ const meta = {
 
 export default meta;
 export const OrderedProseAndGrammar: StoryObj<typeof meta> = {};
+
+export const CompletedLessonPanel: StoryObj<typeof meta> = {
+    render: () => <LessonPanelExample />,
+};
+export const StaleDraftRecovery: StoryObj<typeof meta> = {
+    render: () => <LessonPanelExample scenario='stale' />,
+};
+
+export const UnavailableCursorRecovery: StoryObj<typeof meta> = {
+    render: () => <LessonPanelExample scenario='cursor' />,
+};
+
+function LessonPanelExample({ scenario }: { scenario?: 'stale' | 'cursor' }) {
+    const [needsRefresh, setNeedsRefresh] = useState(scenario === 'stale');
+    const [cursorUnavailable, setCursorUnavailable] = useState(false);
+    const [open, setOpen] = useState(true);
+    const [present, setPresent] = useState<string[]>([]);
+    const [inserted, setInserted] = useState<{
+        taskId: string | undefined;
+        placement: 'end' | 'cursor';
+    } | null>(null);
+
+    return open ? (
+        <LessonProposalReview
+            proposal={proposal}
+            application={{
+                canInsertLesson: !needsRefresh,
+                isPartPresent: (taskId) => present.includes(taskId),
+                canInsertLessonAtCursor: true,
+                busy: false,
+                error: false,
+                wrongBranch: false,
+                isStale: needsRefresh,
+                canRefreshLessonDraft: needsRefresh,
+                cursorUnavailable,
+                refreshLessonDraft: async () => setNeedsRefresh(false),
+                lessonInsertStatus: inserted,
+                insertLesson: async (taskId, placement) => {
+                    const unavailable =
+                        scenario === 'cursor' && placement === 'cursor';
+
+                    setCursorUnavailable(unavailable);
+                    setInserted(unavailable ? null : { taskId, placement });
+                    if (!unavailable) {
+                        setPresent((parts) =>
+                            taskId
+                                ? [...parts, taskId]
+                                : (proposal.lessonParts ?? []).map(
+                                      (part) => part.taskId,
+                                  ),
+                        );
+                    }
+                },
+            }}
+            onClose={() => setOpen(false)}
+        />
+    ) : (
+        <Button onClick={() => setOpen(true)}>Review</Button>
+    );
+}

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LessonPartIdSchema } from './lesson-part-identity';
 import { createInteractiveKnowledgeBodySchema } from './knowledge-interactive';
 import type { LearningBlock } from './learning-blocks';
 import { ExerciseGenerationRequestSchema } from './exercise-generation';
@@ -103,6 +104,8 @@ export interface KnowledgeNode {
     attrs?:
         | {
               block?: LearningBlock | undefined;
+              lessonBlockId?: string | undefined;
+              lessonPartId?: string | undefined;
               level?: 1 | 2 | 3 | undefined;
               start?: number | undefined;
               colspan?: 1 | undefined;
@@ -145,6 +148,7 @@ const RawKnowledgeNodeSchema: z.ZodType<KnowledgeNode> = z.lazy(() =>
                 .optional(),
             attrs: z
                 .object({
+                    lessonPartId: LessonPartIdSchema.optional(),
                     level: z
                         .union([z.literal(1), z.literal(2), z.literal(3)])
                         .optional(),
@@ -249,6 +253,10 @@ const BoundedDocumentSchema = z
                         ? ['colspan', 'rowspan', 'colwidth']
                         : [];
 
+            if (blocks.has(node.type)) {
+                allowedAttrs.push('lessonPartId');
+            }
+
             if (attrs.some((key) => !allowedAttrs.includes(key))) {
                 issue('Attributes do not match the node type.');
             }
@@ -290,12 +298,10 @@ const BoundedDocumentSchema = z
             if (
                 node.type === 'horizontalRule' &&
                 (node.content !== undefined ||
-                    node.attrs !== undefined ||
+                    (node.attrs !== undefined && !node.attrs.lessonPartId) ||
                     node.marks !== undefined)
             ) {
-                issue(
-                    'Horizontal rules are leaf blocks without attributes or marks.',
-                );
+                issue('Horizontal rules cannot contain children or marks.');
             }
 
             if (node.type === 'heading' && node.attrs?.level === undefined) {
@@ -390,10 +396,26 @@ const BoundedDocumentSchema = z
         visit(document);
     });
 
+function hasProvenance(node: KnowledgeNode): boolean {
+    return Boolean(
+        node.attrs?.lessonPartId ||
+        node.attrs?.lessonBlockId ||
+        node.content?.some(hasProvenance),
+    );
+}
+
+function authorAssignedContent(body: { document: KnowledgeNode }) {
+    return !hasProvenance(body.document);
+}
+
 /** Prose proposals cannot introduce interactive learning blocks. */
 export const ProseKnowledgeBodySchema = z
     .object({ schemaVersion: z.literal(2), document: BoundedDocumentSchema })
     .strict();
+export const GeneratedProseBodySchema = ProseKnowledgeBodySchema.refine(
+    authorAssignedContent,
+    'Proposals cannot assign lesson insertion identity.',
+);
 export const InteractiveKnowledgeBodySchema =
     createInteractiveKnowledgeBodySchema(BoundedDocumentSchema);
 export const KnowledgeBodySchema = InteractiveKnowledgeBodySchema;
@@ -402,6 +424,9 @@ export const KnowledgeContentFragmentSchema =
     createInteractiveKnowledgeBodySchema(
         BoundedDocumentSchema,
         'proposal-fragment',
+    ).refine(
+        authorAssignedContent,
+        'Proposals cannot assign lesson insertion identity.',
     );
 export type KnowledgeBody = z.infer<typeof KnowledgeBodySchema>;
 export const KnowledgeNoteContentSchema = z
@@ -439,6 +464,10 @@ export const KnowledgeNoteContentSchema = z
 export const ProseKnowledgeNoteContentSchema =
     KnowledgeNoteContentSchema.extend({
         body: ProseKnowledgeBodySchema,
+    });
+export const GeneratedProseNoteContentSchema =
+    ProseKnowledgeNoteContentSchema.extend({
+        body: GeneratedProseBodySchema,
     });
 /** Incomplete private edits are recoverable; publication applies the stricter note rules. */
 export const KnowledgeWorkingContentSchema = KnowledgeNoteContentSchema.extend({
@@ -827,6 +856,7 @@ export const ConversationStreamUnavailableSchema = z
     .strict();
 export const ConversationActionQuoteSchema = z
     .object({
+        scope: z.literal('lesson-if-planned').optional(),
         id: z.uuid(),
         maximumCredits: z.string().regex(/^(0|[1-9][0-9]*)(\.[0-9]{1,3})?$/u),
         approximateOutputTokens: z.number().int().min(1).max(10000),

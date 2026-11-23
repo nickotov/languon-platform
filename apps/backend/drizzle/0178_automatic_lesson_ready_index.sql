@@ -1,0 +1,1 @@
+CREATE INDEX "conversation_generation_runs_automatic_ready_idx" ON "conversation_generation_runs" USING btree ("updated_at","id") WHERE "conversation_generation_runs"."state"='paused' and "conversation_generation_runs"."pause_reason"='budget' and "conversation_generation_runs"."automation"->>'ready'='true';

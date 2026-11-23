@@ -9,6 +9,7 @@
 
 .header {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-8);
     color: var(--text-secondary);
@@ -17,7 +18,7 @@
 }
 
 .header h3 {
-    flex: 1;
+    flex: 1 1 auto;
     color: var(--text-primary);
     font-size: var(--size-14);
     font-weight: 600;
@@ -27,20 +28,37 @@
 .body {
     display: grid;
     gap: var(--space-12);
-    padding: var(--space-16);
+    padding: var(--space-8) var(--space-12) var(--space-12);
 }
 
 .progress {
-    font-size: var(--size-16);
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0;
+    font-variant-numeric: tabular-nums;
+    font-size: var(--size-12);
+    line-height: 1.4;
+    color: var(--text-secondary);
+    margin-inline-start: auto;
 }
 
-.current {
-    font-size: var(--size-14);
-    color: var(--text-secondary);
-    margin: 0;
+.spinner {
+    flex-shrink: 0;
+    color: var(--sys-color-action-primary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .spinner {
+        animation: spin 1s linear infinite;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(1turn);
+    }
+}
+
+.result {
+    border-top: var(--size-1) solid var(--border-default);
+    padding: var(--space-12) var(--space-16);
 }
 
 .notice {
@@ -58,39 +76,6 @@
 
 .actions:empty {
     display: none;
-}
-
-.details {
-    border-top: var(--size-1) solid var(--border-default);
-    padding-top: var(--space-12);
-    font-size: var(--size-12);
-    color: var(--text-secondary);
-}
-
-.details summary {
-    cursor: pointer;
-    color: var(--text-primary);
-    padding-block: var(--space-4);
-}
-
-.tasks {
-    display: grid;
-    gap: var(--space-12);
-    list-style: none;
-    padding: 0;
-    margin-block: var(--space-16);
-}
-
-.tasks li {
-    display: grid;
-    grid-template-columns: var(--size-16) 1fr;
-    gap: var(--space-4) var(--space-8);
-    align-items: start;
-}
-
-.tasks small {
-    grid-column: 2;
-    color: var(--text-tertiary);
 }
 
 @media (max-width: 767px) {

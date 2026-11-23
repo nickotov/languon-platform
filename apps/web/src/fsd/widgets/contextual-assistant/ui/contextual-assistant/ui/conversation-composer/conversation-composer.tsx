@@ -52,6 +52,7 @@ export function ConversationComposer({
     onContext,
     onSend,
     onStop,
+    stopDisabled,
     busy,
     active,
     contextPicker,
@@ -89,6 +90,7 @@ export function ConversationComposer({
     onContext(): void;
     onSend(): void;
     onStop(): void;
+    stopDisabled?: boolean;
     busy: boolean;
     active: boolean;
     hasDraft: boolean;
@@ -346,6 +348,7 @@ export function ConversationComposer({
                             <button
                                 type='button'
                                 onClick={onStop}
+                                disabled={stopDisabled}
                                 className={styles.stop}
                                 aria-label={copy.stop}
                             >

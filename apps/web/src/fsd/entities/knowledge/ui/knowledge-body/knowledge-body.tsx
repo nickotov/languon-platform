@@ -128,7 +128,7 @@ export function KnowledgeBody({
     body: Body;
     dependencies?: LearningBlock[] | undefined;
     language?: string;
-    className?: string;
+    className?: string | undefined;
     renderLearningBlock?: (block: LearningBlock) => ReactNode;
 }) {
     const parsed = validateKnowledgeFragment(body, dependencies);

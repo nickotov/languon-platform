@@ -48,6 +48,9 @@ export function KnowledgeContentProposals({
 
     const value = {
         proposals,
+        actorId,
+        accessDenied: query.accessDenied,
+        loading: query.isFetching,
         context: { ...context, onApplyingChange: changeApplying },
         applying,
         refresh,

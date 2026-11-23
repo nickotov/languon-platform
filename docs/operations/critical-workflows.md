@@ -2,6 +2,7 @@
 type: operations
 title: Critical workflow verification
 source_paths:
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-generation-schema.ts
     - scripts/critical-flows
     - scripts/run-critical-flows.mjs
     - scripts/check-critical-flows.mjs
@@ -288,3 +289,48 @@ funding policy, outcome and observed cost or unknown expense. A successful model
 probe or enqueue does not complete this smoke. Without that authority or live
 credentials, record live evidence as missing; keep the deterministic gate runnable
 without live credentials or paid calls and report its result separately.
+
+### Measuring single-submission lesson completion
+
+Use these read-only aggregates on a bounded cohort after migration 0180. The first query includes unfinished runs in the denominator and counts a manually admitted command using the persisted command number. Operator cost includes settled rejected attempts. Time to completion includes queue and capacity waits.
+
+```sql
+WITH lesson AS (
+    SELECT r.id, r.state, r.updated_at - r.created_at AS elapsed,
+           bool_or(t.execution ? 'generationCommandNumber') AS manual_command,
+           sum(b.consumed_micros) AS provider_micros
+    FROM conversation_generation_runs r
+    JOIN conversation_generation_run_actions a ON a.run_id = r.id
+    JOIN conversation_turns t ON t.id = a.turn_id
+    LEFT JOIN ai_operator_action_budgets b ON b.action_id = t.id
+    WHERE r.created_at >= now() - interval '7 days'
+    GROUP BY r.id
+)
+SELECT count(*) AS runs,
+       count(*) FILTER (WHERE state = 'completed' AND NOT manual_command) AS completed_without_intervention,
+       avg(elapsed) FILTER (WHERE state = 'completed') AS mean_completion_time,
+       avg(provider_micros) FILTER (WHERE state = 'completed') AS mean_provider_micros
+FROM lesson;
+```
+
+The second query groups attempts by activity, schema version and strategy. An accepted repair or fallback counts as a recovered unit. Run this on the same cohort as the completion query. Revisions created before migration 0180 have no historical attempt entries.
+
+```sql
+SELECT activity.id AS activity, attempt->>'schemaVersion' AS schema_version,
+       attempt->>'strategy' AS strategy, attempt->>'outcome' AS outcome, count(*)
+FROM conversation_generation_plan_revisions rev
+JOIN conversation_generation_runs r ON r.id = rev.run_id
+CROSS JOIN LATERAL jsonb_array_elements(rev.unit_attempts) attempt
+CROSS JOIN LATERAL jsonb_array_elements(rev.plan->'tasks') task
+CROSS JOIN LATERAL (
+    SELECT item->>'activityId' AS id,
+           sum((item->>'count')::int) OVER (ORDER BY position) AS last_unit,
+           (item->>'count')::int AS units
+    FROM jsonb_array_elements(task->'activities') WITH ORDINALITY AS activities(item, position)
+) activity
+WHERE r.created_at >= now() - interval '7 days'
+  AND task->>'id' = attempt->>'taskId'
+  AND (attempt->>'unitOrdinal')::int BETWEEN activity.last_unit - activity.units + 1 AND activity.last_unit
+GROUP BY 1, 2, 3, 4
+ORDER BY 1, 2, 3, 4;
+```

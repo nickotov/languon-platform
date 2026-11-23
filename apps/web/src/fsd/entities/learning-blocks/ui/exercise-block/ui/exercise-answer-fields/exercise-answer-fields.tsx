@@ -9,12 +9,14 @@ export function ExerciseAnswerFields({
     labels,
     answer,
     gaps,
+    disabled,
     onAnswer,
     onGap,
 }: {
     block: ExerciseLearningBlock;
     labels: LearningBlockLabels;
     answer: string;
+    disabled?: boolean | undefined;
     gaps: Record<string, string>;
     onAnswer: (
         event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -39,6 +41,7 @@ export function ExerciseAnswerFields({
                             data-selected={answer === choice.id || undefined}
                         >
                             <input
+                                disabled={disabled}
                                 type='radio'
                                 name={`exercise-${block.id}`}
                                 value={choice.id}
@@ -59,6 +62,7 @@ export function ExerciseAnswerFields({
             <label className={styles.answer}>
                 <span className={styles.srOnly}>{labels.answer}</span>
                 <textarea
+                    disabled={disabled}
                     className={styles.field}
                     value={answer}
                     onChange={onAnswer}
@@ -89,6 +93,7 @@ export function ExerciseAnswerFields({
                         <span className={styles.srOnly}>{label}</span>
                         <input
                             className={styles.field}
+                            disabled={disabled}
                             name={part.id}
                             value={value}
                             onChange={onGap}

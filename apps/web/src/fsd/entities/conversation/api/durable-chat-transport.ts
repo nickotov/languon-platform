@@ -79,7 +79,13 @@ export class DurableChatTransport implements ChatTransport<ConversationUIMessage
 
         return new ReadableStream<UIMessageChunk>({
             start(stream) {
+                let lastConnection: boolean | undefined;
                 const connection = (reconnecting: boolean) => {
+                    if (lastConnection === reconnecting) {
+                        return;
+                    }
+
+                    lastConnection = reconnecting;
                     if (!controller.signal.aborted) {
                         stream.enqueue({
                             type: 'data-connection',
@@ -88,6 +94,12 @@ export class DurableChatTransport implements ChatTransport<ConversationUIMessage
                         });
                     }
                 };
+
+                let retryDelayMs = 1500;
+                function receivedFrame() {
+                    retryDelayMs = 1500;
+                    connection(false);
+                }
 
                 async function connect() {
                     while (!controller.signal.aborted) {
@@ -118,7 +130,7 @@ export class DurableChatTransport implements ChatTransport<ConversationUIMessage
                                             event.id,
                                         );
 
-                                        connection(false);
+                                        receivedFrame();
                                         for (const chunk of projection.project(
                                             event,
                                         )) {
@@ -127,6 +139,7 @@ export class DurableChatTransport implements ChatTransport<ConversationUIMessage
                                     },
                                     controller.signal,
                                     options.shareKey,
+                                    receivedFrame,
                                 ),
                             );
                         } catch (error) {
@@ -152,7 +165,11 @@ export class DurableChatTransport implements ChatTransport<ConversationUIMessage
 
                         connection(true);
                         await new Promise<void>((resolve) => {
-                            const timer = setTimeout(done, 1500);
+                            const delay =
+                                retryDelayMs * (0.8 + Math.random() * 0.2);
+
+                            retryDelayMs = Math.min(retryDelayMs * 2, 30_000);
+                            const timer = setTimeout(done, delay);
                             function done() {
                                 clearTimeout(timer);
                                 controller.signal.removeEventListener(

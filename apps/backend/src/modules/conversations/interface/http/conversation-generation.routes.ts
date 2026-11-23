@@ -1,6 +1,7 @@
 import { createRoute, z, type OpenAPIHono } from '@hono/zod-openapi';
 import type { Context } from 'hono';
 import {
+    StopGenerationRunRequestSchema,
     GenerationRunsResponseSchema,
     GenerationRunDetailSchema,
     ContinueGenerationRunRequestSchema,
@@ -254,6 +255,37 @@ export function registerConversationGenerationRoutes(
                     ResolveGenerationRunSourceRequestSchema.parse(
                         c.req.valid('json'),
                     ),
+                ),
+                200,
+            );
+        },
+    );
+
+    app.openapi(
+        createRoute({
+            method: 'post',
+            path: '/conversations/{conversationId}/generation-runs/{runId}/stop',
+            security,
+            request: {
+                params,
+                body: requestBody(StopGenerationRunRequestSchema),
+            },
+            responses: { 200: json(GenerationRunDetailSchema), ...errors },
+        }),
+        async (c) => {
+            if (!service.store.stopGenerationRun) {
+                throw unavailable();
+            }
+
+            const ids = c.req.valid('param');
+            const actor = await access(c);
+
+            return c.json(
+                await service.store.stopGenerationRun(
+                    actor,
+                    ids.conversationId,
+                    ids.runId,
+                    StopGenerationRunRequestSchema.parse(c.req.valid('json')),
                 ),
                 200,
             );

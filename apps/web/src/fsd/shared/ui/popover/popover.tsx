@@ -82,7 +82,8 @@ export function Popover({
 
                     Object.assign(elements.floating.style, {
                         maxWidth: `${Math.max(0, availableWidth)}px`,
-                        maxHeight: `${Math.max(0, availableHeight)}px`,
+                        maxHeight:
+                            'min(var(--popover-available-height), var(--popover-max-height, var(--popover-available-height)))',
                     });
                 },
             }),

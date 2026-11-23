@@ -84,6 +84,7 @@ export function LearningBlockNodeView({
     }
 
     const groupSummary =
+        !viewOptions?.disclosureOnly &&
         block.type === 'exercise' &&
         (mediaGroup ? groupIndex === 1 : firstInGroup) ? (
             <AuthorExerciseSummary

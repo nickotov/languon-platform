@@ -14,6 +14,14 @@
     --muted: #6a626f;
     --border: #e2dde7;
 }
+@media (forced-colors: none) and (prefers-contrast: no-preference) {
+    :where(*) {
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(in srgb, var(--muted) 50%, transparent)
+            transparent;
+    }
+}
+
 * {
     box-sizing: border-box;
 }

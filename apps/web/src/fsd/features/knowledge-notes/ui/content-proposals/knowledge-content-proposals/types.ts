@@ -2,6 +2,7 @@ import type { BlockInsertionBookmark } from '../../../lib/block-insertion-bookma
 import type {
     KnowledgeContentProposal,
     KnowledgeWorkingBranch,
+    KnowledgeNode,
 } from '@languon/contracts';
 import type { LearningBlockPlayback } from '@/fsd/entities/learning-blocks';
 import type { ConversationSessionRequest } from '@/fsd/entities/conversation';
@@ -10,8 +11,10 @@ export type KnowledgeContentProposalContext = {
     conversationId: string;
     branchId: string;
     branchVersion: number;
+    workingDocument?: KnowledgeNode | undefined;
     disabled?: boolean | undefined;
     captureInsertion?(): BlockInsertionBookmark | null;
+    refreshLessonDraft?(): Promise<void>;
     beforeApply(): Promise<{ branchId: string; version: number }>;
     onApplied(branch: KnowledgeWorkingBranch): void | Promise<void>;
     onApplyingChange?(busy: boolean): void;

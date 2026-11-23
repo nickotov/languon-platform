@@ -22,7 +22,9 @@ async function request<T>(
                 method: body === undefined ? 'GET' : 'POST',
                 credentials: 'include',
                 cache: 'no-store',
-                signal: signal ?? AbortSignal.timeout(30_000),
+                signal: signal
+                    ? AbortSignal.any([signal, AbortSignal.timeout(30_000)])
+                    : AbortSignal.timeout(30_000),
                 headers: {
                     Authorization: `Bearer ${token}`,
                     Accept: 'application/json',
@@ -33,7 +35,7 @@ async function request<T>(
                 ...(body === undefined ? {} : { body: JSON.stringify(body) }),
             },
         );
-        const payload: unknown = await response.json();
+        const payload: unknown = await response.json().catch(() => null);
         if (!response.ok) {
             const parsed = c.ConversationErrorResponseSchema.safeParse(payload);
             const detail = parsed.success
@@ -45,7 +47,11 @@ async function request<T>(
 
             throw new ConversationApiError(response.status, {
                 ...detail,
-                correlationId: detail.correlationId ?? 'lesson-run-client',
+                correlationId:
+                    detail.correlationId ??
+                    response.headers.get('x-correlation-id') ??
+                    detail.requestId ??
+                    'lesson-run-client',
             });
         }
 
@@ -58,6 +64,33 @@ function runPath(id: string) {
 }
 
 export const lessonRunsApi = {
+    stop: (
+        session: ConversationSessionRequest,
+        conversationId: string,
+        runId: string,
+        input: c.StopGenerationRunRequest,
+    ) =>
+        request(
+            session,
+            conversationId,
+            `${runPath(runId)}/stop`,
+            c.GenerationRunDetailSchema,
+            c.StopGenerationRunRequestSchema.parse(input),
+        ),
+    preview: (
+        session: ConversationSessionRequest,
+        conversationId: string,
+        runId: string,
+        signal?: AbortSignal,
+    ) =>
+        request(
+            session,
+            conversationId,
+            `${runPath(runId)}/preview`,
+            c.GenerationRunPreviewSchema,
+            undefined,
+            signal,
+        ),
     list: (
         session: ConversationSessionRequest,
         conversationId: string,

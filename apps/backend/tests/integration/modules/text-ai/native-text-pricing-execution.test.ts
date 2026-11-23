@@ -459,6 +459,61 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             );
         }
 
+        it('admits exactly one concurrent dispatch when the remaining owner allowance equals one call', async () => {
+            const reserve = () =>
+                db.transaction((tx) =>
+                    reserveConversationActionFixture(tx, {
+                        ownerId,
+                        providerId: price.providerId,
+                        modelId: price.modelId,
+                        maximumMilli: 1000n,
+                        operatorMaximumMicros: 100000n,
+                        funding: 'operator',
+                    }),
+                );
+            const first = await reserve();
+            const second = await reserve();
+
+            // Capacity changed after the two actions were admitted. Only a single
+            // 1,000-token provider dispatch now fits in their shared daily cohort.
+            await client`insert into dictionary_generation_provider_usage_archive
+                (id,owner_id,settled_at,actual_cost_micros,actual_input_tokens,actual_output_tokens,
+                 input_cost_micros_per_million_tokens,output_cost_micros_per_million_tokens,
+                 max_cost_micros_per_attempt,max_input_tokens_per_attempt,max_output_tokens_per_attempt)
+                select ${randomUUID()}::uuid,${ownerId}::uuid,now(),0,0,(b->>'maxOutputTokensPerAttempt')::integer*3-1000,
+                    (b->>'inputCostMicrosPerMillionTokens')::integer,(b->>'outputCostMicrosPerMillionTokens')::integer,
+                    (b->>'maxCostMicrosPerAttempt')::integer,(b->>'maxInputTokensPerAttempt')::integer,(b->>'maxOutputTokensPerAttempt')::integer
+                from conversation_turns cross join lateral (select execution->'budget' as b) policy where id=${first.id}::uuid`;
+
+            const dispatch = (id: string) =>
+                client`select languon_admit_text_provider_attempt(${id}::uuid, ${randomUUID()}::uuid,
+                    'answer', 50, 1000, ${id}::uuid, ${id}::text, null, null, now())`;
+            const attempts = await Promise.allSettled([
+                dispatch(first.id),
+                dispatch(second.id),
+            ]);
+
+            expect(
+                attempts.filter((r) => r.status === 'fulfilled'),
+            ).toHaveLength(1);
+
+            expect(attempts.find((r) => r.status === 'rejected')).toMatchObject(
+                {
+                    reason: {
+                        code: '23514',
+                        message: 'Provider operational capacity is unavailable',
+                    },
+                },
+            );
+
+            expect(
+                await client`select
+                (select count(*)::int from ai_credit_action_attempts) as attempts,
+                (select count(*)::int from ai_operator_attempt_costs) as reservations,
+                (select count(*)::int from text_ai_route_dispatches) as receipts`,
+            ).toEqual([{ attempts: 1, reservations: 1, receipts: 1 }]);
+        });
+
         it('binds SDK dispatch to a DB receipt and settles its checkpointed native evidence', async () => {
             fakeResponse();
             const execution = await admit();

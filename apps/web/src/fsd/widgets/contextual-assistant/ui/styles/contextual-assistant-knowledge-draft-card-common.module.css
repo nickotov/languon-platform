@@ -144,9 +144,3 @@
 .primaryAction:where(:active:not(:disabled)) {
     background: var(--tutor-control-primary-active);
 }
-.editorBody {
-    scrollbar-width: none;
-}
-.editorBody::-webkit-scrollbar {
-    display: none;
-}

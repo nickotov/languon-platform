@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { LearningContentTaskResult } from './learning-content-batch-results';
+import type { GenerationFailureDiagnostic } from './generation-failure';
 import {
     ExerciseActivityIdSchema,
     getExerciseActivity,
@@ -144,6 +145,7 @@ export type LearningContentResult =
     | {
           status: 'failed';
           reason: 'invalid-brief' | 'invalid-output' | 'output-limit';
+          diagnostic?: GenerationFailureDiagnostic;
       };
 
 export const supportedLearningExerciseFormats = [
@@ -198,7 +200,7 @@ export const learningContentCapabilities = [
         defaultCount: 5,
         formats: supportedLearningExerciseFormats,
         instruction:
-            'Create individual exercise blocks with a shared group, reference answers, short explanations and useful hints. Cover the supplied words and source material. Preserve exact activity allocations, count and order. Every generated exercise must retain its named activity semantics, checking policy and exact source provenance. Keep answers out of questions and hints.',
+            'Author one educational interaction per requested exercise with a short explanation and useful hints. The host groups accepted exercises. Cover the supplied words and source material. Preserve exact activity allocations, count and order. Select the authorized sources and supply the fields declared by the selected activity. Keep answers out of questions and hints.',
     },
 ] as const;
 

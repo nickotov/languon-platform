@@ -1,0 +1,97 @@
+.tasks {
+    display: grid;
+    gap: var(--space-2);
+    list-style: none;
+    padding: 0;
+    margin: var(--space-4) 0 0;
+}
+
+.task {
+    display: grid;
+    grid-template-columns: var(--size-16) 1fr;
+    gap: var(--space-4) var(--space-8);
+    align-items: start;
+    padding: var(--space-8);
+    border-radius: var(--radius-8);
+    font-size: var(--size-13);
+    line-height: 1.4;
+}
+
+.icon {
+    margin-top: var(--space-2);
+}
+
+.status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2) var(--space-8);
+    font-size: var(--size-12);
+    font-variant-numeric: tabular-nums;
+    grid-column: 2;
+    color: var(--text-tertiary);
+}
+
+.task[aria-current='step'] {
+    background: var(--primary-subtle);
+}
+
+.task[aria-current='step'] .label {
+    font-weight: 600;
+}
+
+.status strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.task[aria-current='step'] .icon,
+.task[aria-current='step'] .label {
+    color: var(--sys-color-action-primary);
+}
+
+.label {
+    min-width: 0;
+    justify-self: start;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .task[aria-current='step'] .icon {
+        animation: turn 1s linear infinite;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
+    @supports (background-clip: text) {
+        .task[aria-current='step'] .label {
+            background-image: linear-gradient(
+                100deg,
+                var(--text-secondary) 36%,
+                var(--sys-color-action-primary) 48%,
+                var(--text-primary) 53%,
+                var(--text-secondary) 64%
+            );
+            background-size: 250% 100%;
+            background-clip: text;
+            color: transparent;
+            animation: highlight 2.8s ease-in-out infinite;
+        }
+    }
+}
+
+@keyframes turn {
+    to {
+        transform: rotate(1turn);
+    }
+}
+
+@keyframes highlight {
+    0% {
+        background-position: 100% 0;
+    }
+
+    75%,
+    100% {
+        background-position: 0 0;
+    }
+}

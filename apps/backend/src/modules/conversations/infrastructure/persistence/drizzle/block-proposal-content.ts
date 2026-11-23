@@ -101,9 +101,25 @@ export function replaceProposalBlock(
     };
 }
 
+const identityFields = [
+    'id',
+    'blockId',
+    'sourceSegmentId',
+    'segmentIds',
+    'correctChoiceId',
+    'parentBlockId',
+    'choiceId',
+    'gapId',
+    'entryId',
+    'segmentId',
+];
+
 /** Copies have new identities, including groups, while linked references stay aligned. */
-export function freshProposalBlocks(blocks: LearningBlock[]): LearningBlock[] {
-    const ids = new Map<string, string>();
+export function freshProposalBlocks(
+    blocks: LearningBlock[],
+    ids = new Map<string, string>(),
+    createId: (id: string) => string = () => randomUUID(),
+): LearningBlock[] {
     const find = (value: unknown): void => {
         if (Array.isArray(value)) {
             value.forEach(find);
@@ -125,7 +141,7 @@ export function freshProposalBlocks(blocks: LearningBlock[]): LearningBlock[] {
             LearningBlockIdSchema.safeParse(object.id).success &&
             !ids.has(object.id)
         ) {
-            ids.set(object.id, randomUUID());
+            ids.set(object.id, createId(object.id));
         }
 
         Object.values(object).forEach(find);
@@ -137,22 +153,7 @@ export function freshProposalBlocks(blocks: LearningBlock[]): LearningBlock[] {
             return value.map((child) => remap(child, key));
         }
 
-        if (
-            typeof value === 'string' &&
-            key &&
-            [
-                'id',
-                'blockId',
-                'sourceSegmentId',
-                'segmentIds',
-                'correctChoiceId',
-                'parentBlockId',
-                'choiceId',
-                'gapId',
-                'entryId',
-                'segmentId',
-            ].includes(key)
-        ) {
+        if (typeof value === 'string' && key && identityFields.includes(key)) {
             return ids.get(value) ?? value;
         }
 

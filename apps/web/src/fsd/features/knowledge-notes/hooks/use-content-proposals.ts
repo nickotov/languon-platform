@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { BrowserApiError } from '@languon/browser-auth';
 import type { ConversationSessionRequest } from '@/fsd/entities/conversation';
 import { contentProposalsApi } from '../api/content-proposals-api';
 
@@ -101,5 +102,15 @@ export function useContentProposals({
         }
     }, [actorId, conversationId, completionKey, reconciliationKey, refresh]);
 
-    return { data: query.data, isError: query.isError, refresh };
+    const accessDenied =
+        query.error instanceof BrowserApiError &&
+        [401, 403, 404].includes(query.error.status);
+
+    return {
+        data: query.isError ? undefined : query.data,
+        accessDenied,
+        isError: query.isError,
+        isFetching: query.isFetching,
+        refresh,
+    };
 }

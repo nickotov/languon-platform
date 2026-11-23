@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { canUseResponseInDocument } from '../../../../lib/response-document-use';
 import { MessageBlockReferences } from '../block-reference-controls';
 import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
@@ -36,6 +37,8 @@ import styles from '../../../styles/contextual-assistant-conversation-messages-c
 export function TutorMessage({
     blocks = [],
     message,
+    lesson,
+    groupedProposalId,
     changed,
     turn,
     active,
@@ -55,6 +58,8 @@ export function TutorMessage({
 }: {
     blocks?: KnowledgeBlockReference[] | undefined;
     message: ConversationUIMessage;
+    lesson?: ReactNode;
+    groupedProposalId?: string | undefined;
     changed: boolean;
     turn: ConversationTurn | undefined;
     active: boolean;
@@ -133,6 +138,18 @@ export function TutorMessage({
         !generationRun &&
         turn &&
         (turn.status === 'failed' || turn.status === 'cancelled');
+
+    if (
+        !isUser &&
+        !failed &&
+        canonical.status === 'streaming' &&
+        !text &&
+        !materials.length &&
+        !tools.length
+    ) {
+        return null;
+    }
+
     const incomplete = !isUser && failed;
     const failedBeforeAnswer = isUser && failed && !hasAssistant;
     const failureLabel = `${copy.incomplete}: ${question}`;
@@ -188,6 +205,14 @@ export function TutorMessage({
                 {!isUser &&
                     tools.map((tool) => {
                         const finished = tool.state === 'output-available';
+                        if (
+                            lesson &&
+                            finished &&
+                            tool.type === 'tool-propose_learning_content'
+                        ) {
+                            return null;
+                        }
+
                         const error = tool.state === 'output-error';
                         let name = copy.preparingNote;
                         if (tool.type === 'tool-read_source_context') {
@@ -232,16 +257,15 @@ export function TutorMessage({
                         workspace={Boolean(onAcceptWorkspaceProposal)}
                     />
                 )}
+                {lesson}
                 {!isUser && (
                     <KnowledgeContentProposalsForTurn
+                        excludeProposalId={groupedProposalId}
                         turnId={canonical.turnId}
                     />
                 )}
                 {!isUser && (
                     <DictionarySnippetsForTurn turnId={canonical.turnId} />
-                )}
-                {canonical.sourceProvenance === 'draft' && (
-                    <span className={styles.notice}>{copy.draftLabel}</span>
                 )}
                 {(incomplete || failedBeforeAnswer) && (
                     <section

@@ -1,5 +1,8 @@
 'use client';
-import { LessonRuns, lessonRunCopy } from '@/fsd/features/lesson-generation';
+import {
+    lessonRunCopy,
+    type PreparedLessonRenderer,
+} from '@/fsd/features/lesson-generation';
 import { useLessonComposer } from '../../../../hooks/use-lesson-composer';
 import { BlockContextPicker } from '../block-context-picker/block-context-picker';
 import {
@@ -12,6 +15,8 @@ import {
     KnowledgeContentProposals,
     contentProposalCompletionKey,
     ExerciseGenerationPicker,
+    LessonDocumentBlocks,
+    LessonProposalReviewForRun,
 } from '@/fsd/features/knowledge-notes';
 import { conversationCopy } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
@@ -33,6 +38,16 @@ import { AssistantDialogs } from '../assistant-dialogs/assistant-dialogs';
 import { TutorShell } from '../../../tutor-shell/tutor-shell';
 import type { ContextualAssistantProps } from '../../../../types';
 import styles from '../../../styles/contextual-assistant-assistant-panel-common.module.css';
+
+const renderPreparedLesson: PreparedLessonRenderer = (body, dependencies) => (
+    <LessonDocumentBlocks body={body} dependencies={dependencies} />
+);
+
+function renderCompletedLesson(proposalId: string, onClose: () => void) {
+    return (
+        <LessonProposalReviewForRun proposalId={proposalId} onClose={onClose} />
+    );
+}
 
 export function AssistantPanel(
     props: ContextualAssistantProps & {
@@ -58,8 +73,8 @@ export function AssistantPanel(
         actorId: props.actorId,
         conversationId: chat.id,
         request: panel.requestWithSession,
-        detail,
-        active: panel.active,
+        reconciliations: chat.stream.reconciliations,
+        activeTurnId: chat.active?.id,
         enabled: Boolean(workspace),
         question: chat.question,
         replaceQuestion: chat.replaceQuestion,
@@ -316,23 +331,30 @@ export function AssistantPanel(
                                     proposalRootId={workspace?.proposalRootId}
                                     onReviewProposal={foldMobileForReview}
                                     workspace={workspace}
+                                    lessons={
+                                        workspace
+                                            ? {
+                                                  renderCompletedLesson:
+                                                      contentProposalContext
+                                                          ? renderCompletedLesson
+                                                          : undefined,
+                                                  renderPreparedBody:
+                                                      renderPreparedLesson,
+                                                  state: lesson.state,
+                                                  actorId: props.actorId,
+                                                  request:
+                                                      panel.requestWithSession,
+                                                  busy,
+                                                  activeTurnId: chat.active?.id,
+                                                  reconnecting:
+                                                      chat.stream.reconnecting,
+                                                  onAdjust: lesson.adjust,
+                                                  captureSourceContext:
+                                                      lesson.captureSourceContext,
+                                              }
+                                            : undefined
+                                    }
                                 >
-                                    {workspace && (
-                                        <LessonRuns
-                                            state={lesson.state}
-                                            actorId={props.actorId}
-                                            request={panel.requestWithSession}
-                                            busy={busy}
-                                            activeTurnId={chat.active?.id}
-                                            reconnecting={
-                                                chat.stream.reconnecting
-                                            }
-                                            onAdjust={lesson.adjust}
-                                            captureSourceContext={
-                                                lesson.captureSourceContext
-                                            }
-                                        />
-                                    )}
                                     {!readOnlyKnowledge &&
                                         detail.drafts.map((draft) => (
                                             <KnowledgeDraftCard
@@ -446,9 +468,24 @@ export function AssistantPanel(
                                 defaultsSaved={panel.defaultsSaved}
                                 onContext={panel.context}
                                 onSend={lesson.submit}
-                                onStop={chat.stop}
+                                onStop={
+                                    lesson.activeRun
+                                        ? lesson.stopRun
+                                        : chat.stop
+                                }
+                                stopDisabled={Boolean(
+                                    lesson.activeRun &&
+                                    (busy ||
+                                        chat.stream.reconnecting ||
+                                        lesson.state.rechecking ||
+                                        lesson.state.actions.stopping(
+                                            lesson.activeRun,
+                                        )),
+                                )}
                                 busy={busy}
-                                active={panel.active || lesson.activeRun}
+                                active={
+                                    panel.active || Boolean(lesson.activeRun)
+                                }
                                 hasDraft={Boolean(currentDraft)}
                                 useDraft={chat.useDraft}
                                 onUseDraft={chat.setUseDraft}

@@ -3,6 +3,10 @@ type: diagram
 title: Conversations and Knowledge workspace
 summary: Source chat and note workspaces share durable tutor turns while working drafts, publication and unlisted sharing have separate boundaries.
 source_paths:
+    - docs/adr/0062-single-submission-lesson-recovery.md
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-unit-recovery.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-attempts.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/learning-unit-call.ts
     - apps/web/src/fsd/widgets/contextual-assistant/hooks/use-conversation.ts
     - apps/web/src/fsd/widgets/contextual-assistant/hooks/use-conversation-admission.ts
     - docs/adr/0042-knowledge-workspace-document-and-context-boundaries.md
@@ -103,8 +107,32 @@ source_paths:
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-source-refresh.ts
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-capacity.ts
     - apps/backend/src/modules/conversations/interface/http/conversation-generation.routes.ts
-source_fingerprint: sha256:585b2d7a54f14f476739ec0cf4b5024f23d4a0cdf13d337ff1471e4e481ad84d
-reviewed: 2026-11-17
+    - docs/adr/0061-bounded-automatic-lesson-continuation.md
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-authorization.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-automation.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-stop.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-preview.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-context.ts
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/conversation-worker-claim.ts
+    - apps/backend/src/modules/conversations/interface/http/conversation-generation-preview.routes.ts
+    - apps/backend/src/modules/conversations/application/generation-failure.ts
+    - apps/backend/src/modules/conversations/infrastructure/ai/structured-output-diagnostics.ts
+    - packages/contracts/src/generation-run-preview.ts
+    - apps/web/src/fsd/features/lesson-generation/hooks/use-lesson-preview.ts
+    - apps/web/src/fsd/features/lesson-generation/ui/lesson-run-preview/lesson-run-preview.tsx
+    - apps/backend/drizzle/0178_automatic_lesson_ready_index.sql
+    - apps/backend/src/modules/conversations/application/learning-content-plan-capacity.ts
+    - apps/backend/src/modules/conversations/application/learning-content-batches.ts
+    - apps/web/src/fsd/features/lesson-generation/lib/prepared-lesson-sections.ts
+    - packages/prompts/src/local/learning-content-authoring.ts
+    - apps/web/src/fsd/features/lesson-generation/hooks/use-lesson-runs.ts
+    - apps/web/src/fsd/features/lesson-generation/lib/lesson-run-cache.ts
+    - apps/web/src/fsd/features/lesson-generation/lib/lesson-run-notice.ts
+    - apps/web/src/fsd/features/lesson-generation/lib/lesson-task-unit-progress.ts
+    - apps/web/src/fsd/features/lesson-generation/lib/lesson-task-status.ts
+    - apps/web/src/fsd/features/lesson-generation/ui/lesson-run-card/lesson-run-card.tsx
+source_fingerprint: sha256:f5a4fa2c769e2aef2212328ab8844c7cae18c847a5e0059de333e58bee5843e4
+reviewed: 2026-11-23
 ---
 
 # Conversations and Knowledge workspace
@@ -157,15 +185,22 @@ transcript-independent execution"] --> Plan
     Plan --> Run["Owner-scoped durable run + immutable revision
 existing worker, lease and action allowance"]
     Run --> Author["Sequential ready tasks; homogeneous batches
-selected schemas + exact captured source projections"]
+selected schemas + exact captured source projections
+one exercise per durable unit"]
     Author --> Checkpoint["Validate whole structured call
 atomically persist private artifacts + accepted receipts
 current lease and revision fence"]
     Checkpoint -->|"Work remains; stage makes progress"| Pause["Paused run; settled action
 no insertable partial proposal"]
-    Pause --> Continue["Explicit Continue; expected revision + idempotency
-fresh quote/admission and minimum-progress capacity"]
-    Continue --> Run
+    Pause --> AutoStage["Server claims ready stage idempotently
+settled successful progress + remaining pinned authority"]
+    AutoStage -->|"Same revision, access, configuration and ceilings"| Run
+    AutoStage -->|"Stopped, failed, changed, expired or exhausted"| Decision["Pause for owner decision"]
+    Decision --> Continue["Explicit Retry / Resume
+fresh quote, revision and bounded authorization"] --> Run
+    Checkpoint --> Preview["Owner-only prepared preview
+ordered validated prefixes + frozen dependencies
+read-only; no Insert or paid checking"]
     Pause --> Revision["Review revision or changed source choice
 Keep snapshot / Refresh under current access"]
     Revision -->|"Apply; reuse unchanged, invalidate descendants"| Pause
@@ -220,7 +255,9 @@ old link remains invalid"]
     Note --> Workspace
     Note --> NoteDelete["Permanent note deletion removes
 its chats, branches and share"]
-    Stop["Explicit Stop"] --> Worker
+    Stop["Run-level Stop
+revoke automatic authority, including between stages"] --> Worker
+    Stop --> Decision
     Source --> Lifecycle["Archive/lost access suspends;
 permanent primary deletion removes conversation + memory"]
     Lifecycle --> Open
@@ -235,8 +272,9 @@ retaining the same lifecycle authority checks.
 
 Navigation or disconnect does not cancel worker-owned generation; explicit Stop is
 a separate command. Failed partial chat output remains incomplete. Validated generation artifacts can
-be reused by an explicitly admitted Continue; ambiguous provider work is never
-automatically repeated.
+be reused by an explicitly admitted Retry/Resume. Successful stages with progress
+may advance on the server within their original bounded authorization; ambiguous
+provider work is never automatically repeated.
 The action bounds aggregate output to 10,000 tokens and separately bounds operator
 cost. Reduced affordable output requires a reviewed quote; changed funding requires
 confirmation again. Successful answers and eligible explicit Stop usage are charged;
@@ -363,13 +401,82 @@ skip history preparation and Observational Memory work.
 Paused revisions retain stable task identities and semantic/source/dependency
 fingerprints. Changed tasks invalidate descendants; output-order changes reuse
 content. Apply revision is free and stays paused; revision planning is ordinary
-chat-priced work. Continue performs fresh quote/admission and rejects impossible
-unchanged units before dispatch. Source refresh resolves the exact selected passage
+chat-priced work. Explicit Retry/Resume obtains fresh quote/admission and rejects
+impossible unchanged units before dispatch. Revision/source mutations revoke the
+prior automatic authority. Source refresh resolves the exact selected passage
 or requires a new owner/version/hash-bound editor selection. Keep snapshot still
 requires access. Completed proposals are immutable; Discard clears private plan,
 source and artifact content and fences late writes while retaining numeric audit.
 
+## Automatic stages and owner prepared previews
+
+Conversation detail, streamed message events and subsequent tutor history expose the learner’s submitted prompt and the published lesson response. The worker keeps its stage turns for recovery and accounting. The lesson card receives progress through run events. On completion the transcript places the plan and document review controls under the assistant response that published the proposal.
+
+[ADR-0061](../adr/0061-bounded-automatic-lesson-continuation.md) replaces manual
+confirmation at each internal stage with one pinned bounded authorization.
+Server claim maintenance recovers ready work using stable request identities; it
+admits another stage only after a saved checkpoint or a measured, settled recoverable rejection, within the initial
+configured customer-credit and reviewed configured provider-cost ceilings, unchanged
+funding/route/tariff/provider-price fingerprint and eight stages. Expiry is the
+earlier of the root action deadline or 15 minutes after authority creation; the
+provider ceiling is captured before each stage narrows its predicted call envelope.
+The ready-stage partial index orders eligible runs by update time and ID.
+Inaccessible source work loses its authority without poisoning the worker queue.
+Every stage still passes current access, capacity and financial admission.
+Unknown liabilities, terminal failure, Stop, changed sources/plan/configuration or expired
+or exhausted authority halt automation. A larger wallet balance does not extend
+these limits. Run-level Stop also revokes the between-stage authority.
+
+Durable exercise tasks preserve a cumulative validated prefix after each exercise,
+so Retry remaining part does not regenerate accepted units. Safe failure evidence
+contains bounded categories and allowlisted field paths, never raw provider output
+or user content. Unclassified failures retain an `unknown` category and a UUID
+reference to the failed turn instead of being guessed as transport errors. The
+production provider boundary classifies transport only after routing has finished
+its conclusive-rejection handling. A measured invalid exercise receives a targeted repair and, if needed,
+one distinct fallback; an output-limit repair regenerates a compact complete unit under the same
+token bound, preserving all required semantics and exact source bindings. It does
+not salvage truncated JSON. Transport ambiguity does not authorize another call.
+Generated prose is bound through its host-authorized excerpt source ID; models
+never invent or echo private artifact identities or source snapshots.
+
+The owner-only preview GET projects current-revision accepted artifact hashes in
+plan output order, plus frozen dependencies, under the existing 100,000-character
+bound. Progress summaries and shared notes do not expose these private bodies.
+The read-only safe document view refreshes from run updates without scheduling
+work. It grants no Insert, Save, persisted practice, paid check or library-copy
+capability. After publication, the owner can insert a complete lesson part or all missing parts. The server checks presence, dependencies and media grants before recording the draft update.
+Discard, deletion and access loss remove preview authority. Denied browser reads
+purge the cached private response and suppress retries for that exact actor/run/
+revision scope. Both summaries and prepared parts follow plan output order;
+vocabulary progress counts entries (up to 200), rather than declaring a partial
+vocabulary block complete. Capacity and authoring share accepted-prefix detection,
+so prior valid exercises remain skipped after the unit-batching change.
+
+Run summaries update through the existing canonical conversation stream. Initial
+load and an actual connection gap trigger bounded snapshot reconciliation; active
+progress does not poll run lists or details. Revision/timestamp-aware publication
+keeps late GETs from erasing a streamed run or regressing newer progress. The card
+shows completed exercise/vocabulary unit counts and preserves explicit failed-task
+and safe failure messages while a connection recovers. Prepared-preview reads
+remain a separate owner-only read path.
+
+After stream rotation a valid heartbeat or event confirms a healthy replacement
+connection. Empty replacement streams back off, and an idle run recovers on its
+first heartbeat. The page reconciles the selected conversation before
+enabling its commands. A continuation rejection appears on the initiating run
+with a support reference. A failure after an uncertain provider dispatch requires
+explicit acknowledgement of that attempt before the owner resumes generation.
+
+A reading is authored as ordered text sections. The host converts them into a
+validated editor fragment before publishing a reading checkpoint. Comprehension
+tasks refer to the resulting saved text. A failed repair can therefore stop at
+the reading with its phase and safe finish reason available on reload.
+
 ## Sources
+
+- [Logical lesson parts in the workspace](../adr/0064-logical-lesson-parts-in-the-workspace.md).
+- [Canonical lesson copy and idempotency](../../apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/lesson-proposal-copy.ts).
 
 - [Composable run decision](../../docs/adr/0060-composable-generation-runs.md).
 - [Transcript-independent execution](../../apps/backend/src/modules/conversations/infrastructure/ai/learning-generation-execution.ts).
@@ -461,3 +568,4 @@ authority and data-flow relationships remain unchanged.
 - [apps/web/src/fsd/features/knowledge-notes/lib/read-media-block-form.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/read-media-block-form.ts)
 - [apps/web/src/fsd/features/knowledge-notes/lib/read-text-block-form.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/read-text-block-form.ts)
 - [apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts](../../apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts)
+- [learning-unit-call.ts](../../apps/backend/src/modules/conversations/infrastructure/ai/learning-unit-call.ts).

@@ -21,6 +21,7 @@ export function ExerciseResults({
     feedbackTitle,
     hintVisible,
     revealed,
+    disclosureOnly,
     hintOptions,
     error,
     evaluation,
@@ -33,6 +34,7 @@ export function ExerciseResults({
     feedbackTitle: string;
     hintVisible: boolean;
     revealed: boolean;
+    disclosureOnly?: boolean | undefined;
     hintOptions: ComponentProps<typeof ExerciseHint>;
     error: string | undefined;
     evaluation?: WorkbookAttemptEvaluation | undefined;
@@ -75,7 +77,9 @@ export function ExerciseResults({
             ) : null}
             {revealed ? (
                 <div className={styles.referencePanel} role='status'>
-                    <p className={styles.feedbackTitle}>{labels.answer}</p>
+                    <p className={styles.feedbackTitle}>
+                        {disclosureOnly ? namedLabels.reference : labels.answer}
+                    </p>
                     <p dir='auto'>{referenceText}</p>
                     <LearningNarrative
                         className={styles.secondary}

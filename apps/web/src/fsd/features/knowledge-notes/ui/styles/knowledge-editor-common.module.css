@@ -70,6 +70,11 @@
     overflow-wrap: anywhere;
 }
 
+.root[data-editor-preview] .content :global(.tiptap) {
+    min-height: 0;
+    padding: var(--space-16);
+}
+
 .content
     :global(.tiptap)
     :where(p, ul, ol, blockquote, h1, h2, h3):not(

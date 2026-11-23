@@ -1,5 +1,5 @@
 import { type ConversationEvent } from '@languon/contracts';
-import { and, asc, desc, eq, gt } from 'drizzle-orm';
+import { and, asc, desc, eq, exists, gt, ne, or, sql } from 'drizzle-orm';
 import type { ConversationAccess } from '../../../application/ports/conversation-store';
 import { conversationReadDetail } from './conversation-chat-queries';
 import {
@@ -8,7 +8,11 @@ import {
 } from './conversation-persistence-authority';
 import { type ConversationPersistenceContext } from './conversation-persistence-context';
 import type { ConversationsTransaction } from './conversation-source';
-import { conversationEventsTable as events } from './schema';
+import {
+    conversationEventsTable as events,
+    conversationMessagesTable as messages,
+} from './schema';
+import { transcriptMessage } from './conversation-transcript';
 
 export async function conversationEvents(
     persistence: ConversationPersistenceContext,
@@ -27,18 +31,6 @@ export async function conversationEvents(
             false,
         );
         const cutoff = new Date(persistence.now().getTime() - 86_400_000);
-        const rows = await tx
-            .select()
-            .from(events)
-            .where(
-                and(
-                    eq(events.conversationId, id),
-                    gt(events.id, after),
-                    gt(events.createdAt, cutoff),
-                ),
-            )
-            .orderBy(asc(events.id))
-            .limit(100);
         const [first] = await tx
             .select()
             .from(events)
@@ -73,6 +65,33 @@ export async function conversationEvents(
                 },
             ];
         }
+
+        // Some other event payloads use non-message identifiers. Only cast IDs
+        // from message events, then check the same transcript used for snapshots.
+        const messageId = sql<string>`(case when ${events.type} = 'message' then ${events.data}->>'id' end)::uuid`;
+        const visibleMessage = tx
+            .select({ id: messages.id })
+            .from(messages)
+            .where(
+                and(
+                    eq(messages.conversationId, events.conversationId),
+                    eq(messages.id, messageId),
+                    transcriptMessage(),
+                ),
+            );
+        const rows = await tx
+            .select()
+            .from(events)
+            .where(
+                and(
+                    eq(events.conversationId, id),
+                    gt(events.id, after),
+                    gt(events.createdAt, cutoff),
+                    or(ne(events.type, 'message'), exists(visibleMessage)),
+                ),
+            )
+            .orderBy(asc(events.id))
+            .limit(100);
 
         return rows.map((row) => ({
             ...row,

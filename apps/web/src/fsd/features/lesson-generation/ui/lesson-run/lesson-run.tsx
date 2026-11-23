@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type {
     ConversationEditorContext,
@@ -8,34 +8,51 @@ import type { ConversationSessionRequest } from '@/fsd/entities/conversation';
 import { Button, Dialog, DialogActions, InlineAlert } from '@/fsd/shared/ui';
 import { useI18n } from '@/fsd/shared/i18n';
 import { lessonRunsApi } from '../../api/lesson-runs-api';
-import type { LessonRunAction } from '../../hooks/use-lesson-run-actions';
+import type { LessonRunAction } from '../../types';
 import { lessonRunCopy } from '../../lib/lesson-run-copy';
 import { LessonRunCard } from '../lesson-run-card/lesson-run-card';
 import { LessonRunRevision } from '../lesson-run-revision/lesson-run-revision';
+import { LessonRunPreview } from '../lesson-run-preview/lesson-run-preview';
+import { useLessonPreview } from '../../hooks/use-lesson-preview';
+import type {
+    LessonPreviewSelection,
+    CompletedLessonRenderer,
+    PreparedLessonRenderer,
+} from '../../types';
 
 export function LessonRun({
     run,
+    result,
     actorId,
     request,
     busy,
     reconnecting,
-    failed,
+    stopping,
+    actionNotice,
     continueBlocked,
     onAction,
     onAdjust,
     captureSourceContext,
+    previewSelection,
+    renderPreparedBody,
+    renderCompletedLesson,
 }: {
     run: GenerationRunSummary;
+    result?: ReactNode;
     actorId: string;
     request: ConversationSessionRequest;
     busy: boolean;
     reconnecting: boolean;
-    failed: boolean;
+    stopping: boolean;
+    actionNotice?: ReactNode;
     continueBlocked: boolean;
     onAction(action: LessonRunAction): void;
     onAdjust(run: GenerationRunSummary): void;
     captureSourceContext?:
         (() => Promise<ConversationEditorContext | undefined>) | undefined;
+    previewSelection?: LessonPreviewSelection | undefined;
+    renderPreparedBody?: PreparedLessonRenderer | undefined;
+    renderCompletedLesson?: CompletedLessonRenderer | undefined;
 }) {
     const { locale } = useI18n();
     const copy = lessonRunCopy(locale);
@@ -43,10 +60,23 @@ export function LessonRun({
         null,
     );
     const [discarding, setDiscarding] = useState(false);
-    const [stopRequested, setStopRequested] = useState<string | null>(null);
     const [capturing, setCapturing] = useState(false);
+    const [localPreviewOpen, setPreviewOpen] = useState(false);
+    const previewOpen = previewSelection
+        ? previewSelection.runId === run.id
+        : localPreviewOpen;
     const [captureFailed, setCaptureFailed] = useState(false);
     const captureLock = useRef(false);
+    const finalProposalId =
+        run.state === 'completed' && renderCompletedLesson
+            ? run.proposalId
+            : null;
+    const preview = useLessonPreview({
+        run,
+        actorId,
+        request,
+        open: previewOpen && !finalProposalId,
+    });
     const detail = useQuery({
         queryKey: [
             'lesson-run',
@@ -54,28 +84,49 @@ export function LessonRun({
             run.conversationId,
             run.id,
             run.revision,
-            run.updatedAt,
         ],
         queryFn: ({ signal }) =>
             lessonRunsApi.detail(request, run.conversationId, run.id, signal),
-        enabled: run.state === 'paused',
+        enabled: run.state === 'paused' && !run.automation?.enabled,
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
         retry: false,
         gcTime: 0,
     });
     const candidate =
         run.state === 'paused' ? detail.data?.revisionCandidate : undefined;
     const showCandidate = candidate && candidate.id !== dismissedCandidate;
-    const stopping =
-        run.activeTurnId !== null &&
-        stopRequested === run.activeTurnId &&
-        !failed;
-
     function continueRun() {
-        onAction({ kind: 'continue', run });
+        onAction({
+            kind: 'continue',
+            run,
+            ...(run.uncertainTurnId
+                ? { acknowledgedUncertainTurnId: run.uncertainTurnId }
+                : {}),
+        });
+    }
+
+    function openPreview() {
+        if (previewSelection) {
+            previewSelection.select(run.id);
+        } else {
+            setPreviewOpen(true);
+        }
+    }
+
+    function closePreview() {
+        if (previewSelection) {
+            previewSelection.select(null);
+        } else {
+            setPreviewOpen(false);
+        }
+    }
+
+    function retryPreview() {
+        void preview.refetch();
     }
 
     function stop() {
-        setStopRequested(run.activeTurnId);
         onAction({ kind: 'stop', run });
     }
 
@@ -147,6 +198,7 @@ export function LessonRun({
         <>
             <LessonRunCard
                 run={run}
+                result={result}
                 busy={busy || capturing}
                 stopping={stopping}
                 reconnecting={reconnecting}
@@ -157,7 +209,13 @@ export function LessonRun({
                 onDiscard={openDiscard}
                 onKeepSources={keepSources}
                 onRefreshSources={refreshSources}
+                onPreview={
+                    !result && (renderPreparedBody || finalProposalId)
+                        ? openPreview
+                        : undefined
+                }
             >
+                {actionNotice}
                 {captureFailed && (
                     <InlineAlert tone='warning'>
                         {copy.selectionRequired}
@@ -173,6 +231,22 @@ export function LessonRun({
                     />
                 )}
             </LessonRunCard>
+            {finalProposalId &&
+                previewOpen &&
+                renderCompletedLesson?.(finalProposalId, closePreview)}
+            {!finalProposalId && renderPreparedBody && (
+                <LessonRunPreview
+                    run={run}
+                    preview={preview.data}
+                    open={previewOpen && run.state !== 'discarded'}
+                    loading={preview.isPending}
+                    failed={preview.isError}
+                    accessDenied={preview.accessDenied}
+                    onClose={closePreview}
+                    onRetry={retryPreview}
+                    renderBody={renderPreparedBody}
+                />
+            )}
             <Dialog
                 open={discarding}
                 onClose={closeDiscard}

@@ -176,3 +176,28 @@
         width: 100%;
     }
 }
+
+.dialog.sideSheet {
+    position: fixed;
+    inset: var(--space-12) var(--space-12) var(--space-12) auto;
+    margin: 0;
+    height: calc(100dvh - var(--space-24));
+    width: min(var(--size-672), calc(100dvw - var(--space-24)));
+    max-height: none;
+    max-width: none;
+    border-radius: var(--radius-16);
+}
+
+@media (max-width: 767px) {
+    .dialog.sideSheet {
+        inset: auto 0 0;
+        width: 100%;
+        height: var(--sheet-mobile-height, 90dvh);
+        max-height: calc(100dvh - env(safe-area-inset-top));
+        border-radius: var(--radius-16) var(--radius-16) 0 0;
+    }
+
+    .sideSheet .footer {
+        padding-bottom: max(var(--space-12), env(safe-area-inset-bottom));
+    }
+}

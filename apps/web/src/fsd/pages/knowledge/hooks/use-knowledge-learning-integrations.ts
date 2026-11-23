@@ -17,7 +17,7 @@ import { useKnowledgeBlockPlayback } from '@/fsd/widgets/knowledge-speech';
 import { useSessionStore } from '@/fsd/entities/session';
 import { useNoteAudio } from '@/fsd/features/workbook-learning';
 import { useOwnedBlockPractice } from './use-owned-block-practice';
-import { exerciseSource } from '@/fsd/features/workbook-learning';
+import { exerciseSource } from '@/fsd/entities/learning-blocks';
 import { useAuth } from '@/fsd/features/auth';
 import type { useKnowledgePageActions } from './use-knowledge-page-actions';
 
@@ -36,7 +36,7 @@ export function useKnowledgeLearningIntegrations(
     }
 
     async function proposalApplied() {
-        await state.reload();
+        await state.reload({ throwOnError: true });
     }
 
     const referenceCatalog = draft
@@ -47,9 +47,11 @@ export function useKnowledgeLearningIntegrations(
               disabled: actions.busy !== null,
               branchId: draft.branchId,
               branchVersion: draft.version,
+              workingDocument: draft.content.body.document,
               getBlockLabel: (blockId: string) =>
                   referenceCatalog.find((item) => item.id === blockId)?.title,
               beforeApply: state.flush,
+              refreshLessonDraft: proposalApplied,
               captureInsertion: () =>
                   actions.editor.current?.captureBlockInsertion() ?? null,
               onApplied: proposalApplied,

@@ -46,9 +46,9 @@ export function useExercisePractice(
         setPreparedChecked(false);
     }
 
-    function reveal() {
+    function setAnswerRevealed(value: boolean) {
         edited.current = true;
-        setRevealed(true);
+        setRevealed(value);
     }
 
     function toggleHint() {
@@ -91,7 +91,7 @@ export function useExercisePractice(
         completePreparedCheck,
         handleAnswer,
         handleGap,
-        reveal,
+        setAnswerRevealed,
         toggleHint,
         retry,
     };

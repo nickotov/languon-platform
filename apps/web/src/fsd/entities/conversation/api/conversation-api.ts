@@ -325,6 +325,7 @@ export const conversationApi = {
         onEvent: (event: ConversationEvent) => void,
         signal: AbortSignal,
         shareKey?: string,
+        onHeartbeat?: () => void,
     ) {
         const response = await fetch(
             `${base}/conversations/${id}/events?after=${after}`,
@@ -341,6 +342,7 @@ export const conversationApi = {
 
         await assertResponse(response);
         if (
+            !response.body ||
             !response.headers.get('content-type')?.includes('text/event-stream')
         ) {
             throw new Error('Invalid stream response');
@@ -370,6 +372,17 @@ export const conversationApi = {
                             response.headers.get('x-correlation-id') ??
                             'conversation-stream',
                     });
+                }
+
+                // A proxy may return an empty 200 event stream on every retry.
+                // A complete heartbeat is evidence the application stream is live.
+                if (
+                    event.event === 'heartbeat' &&
+                    /^\s*\{\s*\}\s*$/u.test(event.data)
+                ) {
+                    onHeartbeat?.();
+
+                    return;
                 }
 
                 // SSE controls are not canonical conversation data. Heartbeats keep

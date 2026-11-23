@@ -352,3 +352,77 @@ it.each(['running', 'succeeded', 'failed'] as const)(
         );
     },
 );
+
+it('keeps one gap across empty 200s, backs off and acknowledges a replacement heartbeat without business events', async () => {
+    vi.useFakeTimers();
+    const signal = new AbortController();
+    const fetcher = vi
+        .fn()
+        .mockResolvedValueOnce(
+            new Response(heartbeat, {
+                headers: { 'content-type': 'text/event-stream' },
+            }),
+        )
+        .mockResolvedValueOnce(
+            new Response('', {
+                headers: { 'content-type': 'text/event-stream' },
+            }),
+        )
+        .mockResolvedValueOnce(
+            new Response('event: heartbeat\ndata: invalid\n\n', {
+                headers: { 'content-type': 'text/event-stream' },
+            }),
+        )
+        .mockResolvedValueOnce(
+            new Response(
+                new ReadableStream({
+                    start(controller) {
+                        controller.enqueue(new TextEncoder().encode(heartbeat));
+                        signal.signal.addEventListener('abort', () =>
+                            controller.close(),
+                        );
+                    },
+                }),
+                { headers: { 'content-type': 'text/event-stream' } },
+            ),
+        );
+
+    vi.stubGlobal('fetch', fetcher);
+    const transport = new DurableChatTransport({
+        request: (operation) => operation('local'),
+        onAdmitted: vi.fn(),
+    });
+    const stream = await transport.reconnectToStream({
+        chatId: id,
+        abortSignal: signal.signal,
+    });
+    const reader = stream!.getReader();
+    try {
+        expect((await reader.read()).value).toMatchObject({
+            type: 'data-connection',
+            data: { reconnecting: false },
+        });
+
+        expect((await reader.read()).value).toMatchObject({
+            type: 'data-connection',
+            data: { reconnecting: true },
+        });
+
+        await vi.advanceTimersByTimeAsync(1500);
+        expect(fetcher).toHaveBeenCalledTimes(2);
+        await vi.advanceTimersByTimeAsync(1500);
+        expect(fetcher).toHaveBeenCalledTimes(2);
+        await vi.advanceTimersByTimeAsync(8000);
+
+        expect((await reader.read()).value).toMatchObject({
+            type: 'data-connection',
+            data: { reconnecting: false },
+        });
+
+        expect(fetcher).toHaveBeenCalledTimes(4);
+    } finally {
+        signal.abort();
+        await reader.cancel();
+        vi.useRealTimers();
+    }
+});

@@ -18,6 +18,7 @@ export class DurableMessageProjection {
     }
 
     project(event: ConversationEvent): UIMessageChunk[] {
+        const previousMessages = this.detail?.messages;
         this.detail = reduceConversationEvent(this.detail, event);
         const chunks: UIMessageChunk[] = [
             { type: 'data-canonical', data: event, transient: true },
@@ -26,7 +27,8 @@ export class DurableMessageProjection {
         if (event.type !== 'message' || event.data.role !== 'assistant') {
             if (
                 this.detail &&
-                event.type !== 'turn' &&
+                (event.type !== 'turn' ||
+                    this.detail.messages !== previousMessages) &&
                 event.type !== 'generation-run'
             ) {
                 chunks.push({

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LessonPartIdSchema } from './lesson-part-identity';
 import { LearningBlockSchema, type LearningBlock } from './learning-blocks';
 import type { NamedExerciseSource } from './named-exercises';
 import type { KnowledgeNode } from './contextual-assistant';
@@ -6,7 +7,13 @@ import type { KnowledgeNode } from './contextual-assistant';
 export const KnowledgeLearningBlockNodeSchema = z
     .object({
         type: z.literal('learningBlock'),
-        attrs: z.object({ block: LearningBlockSchema }).strict(),
+        attrs: z
+            .object({
+                block: LearningBlockSchema,
+                lessonPartId: LessonPartIdSchema.optional(),
+                lessonBlockId: z.uuid().optional(),
+            })
+            .strict(),
     })
     .strict();
 export type KnowledgeLearningBlockNode = z.infer<

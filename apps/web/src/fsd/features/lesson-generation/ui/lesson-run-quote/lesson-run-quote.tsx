@@ -74,6 +74,14 @@ export function LessonRunQuote({
                     <p>
                         {copy.maximum}: <strong>{quote.maximumCredits}</strong>
                     </p>
+                    {!revision && (
+                        <p>
+                            {copy.stageOutput}:{' '}
+                            {quote.approximateOutputTokens.toLocaleString(
+                                locale,
+                            )}
+                        </p>
+                    )}
                     <p>
                         {copy.expires}: {expiry}
                     </p>

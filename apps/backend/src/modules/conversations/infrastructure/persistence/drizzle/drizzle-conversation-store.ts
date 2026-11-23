@@ -1,3 +1,5 @@
+import type { LessonCopy } from '@languon/contracts';
+import type { GenerationFailureDiagnostic } from '../../../application/generation-failure';
 import type { GenerationRunStore } from '../../../application/ports/generation-run-store';
 import { createGenerationRunStore } from './generation-run-store';
 import {
@@ -89,10 +91,13 @@ export class DrizzleConversationStore implements ConversationStore {
     readonly generationContext: Required<GenerationRunStore>['generationContext'];
     readonly startGeneration: Required<GenerationRunStore>['startGeneration'];
     readonly checkpointGeneration: Required<GenerationRunStore>['checkpointGeneration'];
+    readonly recordGenerationAttempt: Required<GenerationRunStore>['recordGenerationAttempt'];
     readonly pauseGeneration: Required<GenerationRunStore>['pauseGeneration'];
     readonly proposeGenerationRevision: Required<GenerationRunStore>['proposeGenerationRevision'];
     readonly listGenerationRuns: Required<GenerationRunStore>['listGenerationRuns'];
+    readonly getGenerationRunPreview: Required<GenerationRunStore>['getGenerationRunPreview'];
     readonly getGenerationRun: Required<GenerationRunStore>['getGenerationRun'];
+    readonly stopGenerationRun: Required<GenerationRunStore>['stopGenerationRun'];
     readonly continueGenerationRun: Required<GenerationRunStore>['continueGenerationRun'];
     readonly reviseGenerationRun: Required<GenerationRunStore>['reviseGenerationRun'];
     readonly applyGenerationRevision: Required<GenerationRunStore>['applyGenerationRevision'];
@@ -111,10 +116,13 @@ export class DrizzleConversationStore implements ConversationStore {
         this.generationContext = generation.generationContext;
         this.startGeneration = generation.startGeneration;
         this.checkpointGeneration = generation.checkpointGeneration;
+        this.recordGenerationAttempt = generation.recordGenerationAttempt;
         this.pauseGeneration = generation.pauseGeneration;
         this.proposeGenerationRevision = generation.proposeGenerationRevision;
         this.listGenerationRuns = generation.listGenerationRuns;
         this.getGenerationRun = generation.getGenerationRun;
+        this.getGenerationRunPreview = generation.getGenerationRunPreview;
+        this.stopGenerationRun = generation.stopGenerationRun;
         this.continueGenerationRun = generation.continueGenerationRun;
         this.reviseGenerationRun = generation.reviseGenerationRun;
         this.applyGenerationRevision = generation.applyGenerationRevision;
@@ -202,11 +210,16 @@ export class DrizzleConversationStore implements ConversationStore {
         );
     }
 
-    listContentProposals(access: ConversationAccess, conversationId: string) {
+    listContentProposals(
+        access: ConversationAccess,
+        conversationId: string,
+        proposalId?: string,
+    ) {
         return conversationListContentProposals(
             this.persistence,
             access,
             conversationId,
+            proposalId,
         );
     }
 
@@ -215,8 +228,9 @@ export class DrizzleConversationStore implements ConversationStore {
         conversationId: string,
         proposalId: string,
         expectedBranchVersion: number,
-        mode?: 'proposal' | 'add-separately',
+        mode?: 'proposal' | 'add-separately' | 'insert-lesson',
         insertionPosition?: number,
+        lessonCopy?: LessonCopy,
     ) {
         return conversationApplyContentProposal(
             this.persistence,
@@ -226,6 +240,7 @@ export class DrizzleConversationStore implements ConversationStore {
             expectedBranchVersion,
             mode,
             insertionPosition,
+            lessonCopy,
         );
     }
 
@@ -408,8 +423,15 @@ export class DrizzleConversationStore implements ConversationStore {
         turn: ClaimedConversationTurn,
         status: 'succeeded' | 'failed' | 'cancelled',
         failureCode?: string,
+        failure?: GenerationFailureDiagnostic,
     ) {
-        return conversationFinish(this.persistence, turn, status, failureCode);
+        return conversationFinish(
+            this.persistence,
+            turn,
+            status,
+            failureCode,
+            failure,
+        );
     }
 
     memory(turn: ClaimedConversationTurn): TutorMemoryPort {

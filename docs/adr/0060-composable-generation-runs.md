@@ -4,6 +4,7 @@ id: ADR-0060
 title: 'Composable generation runs and mixed document proposals'
 status: accepted
 date: 2026-11-16
+superseded_in_part_by: 'ADR-0061 automatic continuation under pinned aggregate ceilings and owner-only prepared preview; all other rules remain active'
 supersedes: 'Extends ADR-0050/0055 proposal representation, ADR-0058 generated-source origins, and implements ADR-0045 independently settled stages with cumulative rounding; other authority and accounting rules remain active'
 ---
 

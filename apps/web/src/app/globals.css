@@ -581,3 +581,15 @@ a {
         --primary-default: LinkText;
     }
 }
+
+@media (forced-colors: none) and (prefers-contrast: no-preference) {
+    :where(*) {
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(
+                in srgb,
+                var(--text-tertiary) 50%,
+                transparent
+            )
+            transparent;
+    }
+}

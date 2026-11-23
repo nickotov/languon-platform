@@ -9,6 +9,24 @@ import {
 } from '../scripts/style-contract';
 
 describe('CSS-only styling contract', () => {
+    it('permits the validated generation failure code outside class names and still checks class contexts', () => {
+        expect(
+            inspectMarkup(
+                'const failure = { code: "content-invalid" }; const labels = { "content-invalid": "Invalid exercise" };',
+            ),
+        ).toEqual([]);
+
+        expect(inspectMarkup('<div className="content-invalid" />')).toEqual([
+            'Tailwind utility: content-invalid',
+        ]);
+
+        expect(
+            inspectMarkup(
+                'const failure = "content-invalid"; <div className={failure} />',
+            ),
+        ).toContain('Tailwind utility: content-invalid');
+    });
+
     it('allows the exercise format discriminator while retaining fill utility checks', () => {
         expect(inspectMarkup('const format = "fill-in-the-blank";')).toEqual(
             [],

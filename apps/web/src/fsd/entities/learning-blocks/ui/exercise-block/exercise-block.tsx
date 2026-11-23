@@ -34,7 +34,7 @@ export function ExerciseBlock(
     const form = useRef<HTMLFormElement>(null);
     const expansion = useBlockExpansion(
         props.expandAll,
-        props.variant === undefined,
+        props.variant === undefined || props.disclosureOnly,
     );
     const practice = useExercisePractice(props.learnerState);
     const { answer, gaps, revealed, hintVisible, preparedResult } = practice;
@@ -51,8 +51,14 @@ export function ExerciseBlock(
             return;
         }
 
+        if (props.disclosureOnly) {
+            practice.setAnswerRevealed(!revealed);
+
+            return;
+        }
+
         props.onInteraction?.(block.id, { kind: 'answer-revealed' });
-        practice.reveal();
+        practice.setAnswerRevealed(true);
     }
 
     function handleHint() {
@@ -60,7 +66,7 @@ export function ExerciseBlock(
             return;
         }
 
-        if (!hintVisible) {
+        if (!hintVisible && !props.disclosureOnly) {
             props.onInteraction?.(block.id, { kind: 'hint-used' });
         }
 
@@ -84,6 +90,7 @@ export function ExerciseBlock(
     function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         if (
+            props.disclosureOnly ||
             props.interactionsDisabled ||
             props.attemptPending ||
             !form.current?.reportValidity()
@@ -164,6 +171,7 @@ export function ExerciseBlock(
         block.semantics?.checking.policy === 'hybrid';
     const status = exerciseStatusLabel({
         labels,
+        disclosureOnly: props.disclosureOnly,
         attempted: practice.attempted,
         hintVisible,
         revealed,
@@ -203,7 +211,7 @@ export function ExerciseBlock(
                     className={styles.form}
                     onSubmit={handleSubmit}
                 >
-                    {checkingLabel && (
+                    {!props.disclosureOnly && checkingLabel && (
                         <p className={styles.secondary}>{checkingLabel}</p>
                     )}
                     <p className={styles.question} dir='auto'>
@@ -214,12 +222,13 @@ export function ExerciseBlock(
                         labels={labels}
                         answer={answer}
                         gaps={gaps}
+                        disabled={props.disclosureOnly}
                         onAnswer={practice.handleAnswer}
                         onGap={practice.handleGap}
                     />
                     <ExerciseActions
                         options={props}
-                        canSubmit={canSubmit}
+                        canSubmit={canSubmit && !props.disclosureOnly}
                         submitLabel={submitLabel}
                         hasResponse={hasResponse}
                         hasHint={hasHint}
@@ -238,6 +247,7 @@ export function ExerciseBlock(
                         feedbackTitle={feedbackTitle}
                         hintVisible={hintVisible}
                         revealed={revealed}
+                        disclosureOnly={props.disclosureOnly}
                         hintOptions={props}
                         error={props.error}
                         evaluation={matchesSaved ? props.evaluation : undefined}

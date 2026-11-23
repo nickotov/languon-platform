@@ -1,0 +1,92 @@
+.plan {
+    min-width: 0;
+    color: var(--text-secondary);
+    font-size: var(--size-13);
+    line-height: 1.45;
+}
+.summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: var(--space-8);
+    padding: var(--space-8);
+    border-radius: var(--radius-8);
+    color: var(--text-primary);
+    cursor: pointer;
+    list-style: none;
+    font-weight: 600;
+}
+.summary::-webkit-details-marker {
+    display: none;
+}
+.summary:hover {
+    background: var(--background-subtle);
+}
+.summary:focus-visible {
+    outline: var(--size-2) solid var(--primary-default);
+}
+.chevron {
+    color: var(--text-secondary);
+}
+.plan[open] .chevron {
+    transform: rotate(180deg);
+}
+.activitySlot {
+    grid-column: 2 / -1;
+    display: grid;
+    grid-template-rows: 1fr;
+}
+
+.plan[open] .activitySlot {
+    grid-template-rows: 0fr;
+    visibility: hidden;
+}
+
+.activity {
+    min-height: 0;
+    overflow: clip;
+    display: grid;
+    gap: var(--space-4);
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+.activity small {
+    color: var(--text-primary);
+    font-size: var(--size-12);
+}
+.reference {
+    margin: var(--space-8);
+    font-size: var(--size-12);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .activitySlot {
+        transition:
+            grid-template-rows var(--duration-normal) var(--easing-standard),
+            visibility var(--duration-normal);
+    }
+
+    .chevron {
+        transition: transform var(--duration-normal) var(--easing-standard);
+    }
+
+    @supports selector(::details-content) and
+        (transition-behavior: allow-discrete) {
+        .plan::details-content {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition:
+                grid-template-rows var(--duration-normal) var(--easing-standard),
+                content-visibility var(--duration-normal) allow-discrete;
+        }
+
+        .plan[open]::details-content {
+            grid-template-rows: 1fr;
+        }
+
+        .body {
+            min-height: 0;
+            overflow: clip;
+        }
+    }
+}

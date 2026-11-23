@@ -4,6 +4,7 @@ import {
     KnowledgeBodySchema,
     LearningBlockSchema,
     type LearningBlock,
+    type LessonPart,
     type ExerciseActivityId,
 } from '@languon/contracts';
 import {
@@ -14,6 +15,8 @@ import {
 } from './block-proposal-content';
 import { completeNamedExerciseSources } from '../../ai/exercise-authoring-context';
 import { namedExerciseFixture } from '../../../../../../tests/support/named-exercise-fixture';
+import { lessonPartsInDocument } from './lesson-proposal-parts';
+import { lessonCopyNodes } from './lesson-copy-nodes';
 import { copyWorkbookBody } from '../../../../knowledge/infrastructure/persistence/drizzle/workbook-copy';
 
 const block: LearningBlock = {
@@ -62,10 +65,9 @@ function canonicalNamedExercise(
         namedExerciseFixture({
             activityId,
             sources,
-            language: 'en',
-            explanationLanguage: 'en',
         }),
         { blocks: sources },
+        { language: 'en', explanationLanguage: 'en' },
     );
 }
 
@@ -173,6 +175,108 @@ describe('Block proposal content identity', () => {
         }
     });
 
+    it('inserts whole tasks, including needed sources once, using the live draft to guard against duplicate parts', () => {
+        const sources = namedSourceBlocks();
+        const source = sources[1]!;
+        const exercise = canonicalNamedExercise('R03', sources);
+        const body = insertedBody([source, exercise]);
+        body.document.content!.unshift({
+            type: 'heading',
+            attrs: { level: 2 },
+            content: [{ type: 'text', text: 'Lecture' }],
+        });
+
+        const proposal = { id: randomUUID(), body, dependencySnapshots: [] };
+        const layout: LessonPart[] = [
+            {
+                taskId: 'reading',
+                kind: 'prose',
+                startIndex: 0,
+                nodeCount: 2,
+                present: false,
+            },
+            {
+                taskId: 'passage',
+                kind: 'bilingual-text',
+                startIndex: 2,
+                nodeCount: 1,
+                present: false,
+            },
+            {
+                taskId: 'practice',
+                kind: 'exercises',
+                startIndex: 3,
+                nodeCount: 1,
+                present: false,
+            },
+        ];
+        const draft: typeof body.document = { type: 'doc', content: [] };
+        const insert = (taskId?: string) =>
+            lessonCopyNodes(
+                proposal,
+                lessonPartsInDocument(proposal, layout, draft),
+                draft,
+                taskId,
+            );
+
+        expect(insert('reading').map((n) => n.type)).toEqual([
+            'heading',
+            'paragraph',
+        ]);
+
+        draft.content!.push(...insert('practice'));
+        expect(draft.content!.map((n) => n.attrs?.lessonBlockId)).toEqual([
+            source.id,
+            exercise.id,
+        ]);
+
+        expect(insert('passage')).toEqual([]);
+        expect(insert('practice')).toEqual([]);
+        draft.content!.push(...insert());
+        expect(insert()).toEqual([]);
+        expect(
+            KnowledgeBodySchema.safeParse({ schemaVersion: 2, document: draft })
+                .success,
+        ).toBe(true);
+
+        draft.content!.splice(2, 1);
+        expect(insert('reading')).toEqual([]);
+        draft.content!.splice(2, 1);
+        expect(insert('reading')).toHaveLength(2);
+        const oldExercise = draft.content!.pop()!.attrs!.block!;
+        const practiceAgain = insert('practice');
+        expect(practiceAgain).toHaveLength(1);
+        expect(practiceAgain[0]!.attrs?.block?.id).not.toBe(oldExercise.id);
+        const originalCopy = draft.content![0]!.attrs!.block!;
+        if (originalCopy.type !== 'bilingual-text') {
+            throw new Error('Expected the source passage.');
+        }
+
+        originalCopy.segments[0]!.text = 'Rewritten in the draft.';
+        const restored = insert('practice');
+        expect(restored).toHaveLength(2);
+        expect(restored[0]!.attrs?.block?.id).not.toBe(originalCopy.id);
+        expect(restored[1]!.attrs?.block).toMatchObject({
+            semantics: {
+                sources: [
+                    { origin: { blockId: restored[0]!.attrs?.block?.id } },
+                ],
+            },
+        });
+
+        expect(
+            KnowledgeBodySchema.safeParse({
+                schemaVersion: 2,
+                document: {
+                    type: 'doc',
+                    content: [...draft.content!, ...restored],
+                },
+            }).success,
+        ).toBe(true);
+
+        expect(() => insert('unknown')).toThrow();
+    });
+
     it('remaps every named gap key when inserting canonical generated source and exercise content', () => {
         const sources = namedSourceBlocks();
         const original = canonicalNamedExercise('V03', sources);
@@ -205,6 +309,7 @@ describe('Block proposal content identity', () => {
             const historical = completeNamedExerciseSources(
                 namedExerciseFixture({ activityId: 'V01', sources }),
                 { blocks: sources, proposalId: sources[0]!.id },
+                { language: 'en', explanationLanguage: 'en' },
             );
             const wire = namedExerciseFixture({ activityId: 'R03', sources });
             const selected = completeNamedExerciseSources(
@@ -217,6 +322,7 @@ describe('Block proposal content identity', () => {
                         text: 'Mira borrowed a book and returned it on Monday.',
                     },
                 },
+                { language: 'en', explanationLanguage: 'en' },
             );
             const captured = completeNamedExerciseSources(
                 namedExerciseFixture({ activityId: 'V01', sources }),
@@ -236,6 +342,7 @@ describe('Block proposal content identity', () => {
                         ],
                     ]),
                 },
+                { language: 'en', explanationLanguage: 'en' },
             );
             const original = [...sources, historical, selected, captured];
             const copied =

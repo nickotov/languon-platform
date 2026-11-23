@@ -34,13 +34,28 @@ export function normalizeEditorDocument(document: unknown): KnowledgeBody {
                 throw new Error('Atomic blocks cannot contain inline content');
             }
 
-            if (Object.keys(attrs).some((key) => key !== 'block')) {
+            if (
+                Object.keys(attrs).some(
+                    (key) =>
+                        !['block', 'lessonPartId', 'lessonBlockId'].includes(
+                            key,
+                        ),
+                )
+            ) {
                 throw new Error('Unsupported block attributes');
             }
 
             return {
                 type: 'learningBlock',
-                attrs: { block: LearningBlockSchema.parse(attrs.block) },
+                attrs: {
+                    block: LearningBlockSchema.parse(attrs.block),
+                    ...(attrs.lessonPartId == null
+                        ? {}
+                        : { lessonPartId: attrs.lessonPartId }),
+                    ...(attrs.lessonBlockId == null
+                        ? {}
+                        : { lessonBlockId: attrs.lessonBlockId }),
+                },
             };
         }
 
@@ -55,6 +70,10 @@ export function normalizeEditorDocument(document: unknown): KnowledgeBody {
 
         if (input.type === 'tableCell' || input.type === 'tableHeader') {
             names = ['colspan', 'rowspan', 'colwidth'];
+        }
+
+        if (attrs.lessonPartId != null) {
+            names.push('lessonPartId');
         }
 
         const canonical = Object.fromEntries(

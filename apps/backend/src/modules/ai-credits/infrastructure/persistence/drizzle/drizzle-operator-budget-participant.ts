@@ -7,6 +7,7 @@ import {
 } from './operator-budget-schema';
 
 export class OperatorBudgetUnavailableError extends Error {}
+export class ProviderCapacityUnavailableError extends OperatorBudgetUnavailableError {}
 export interface OperatorBudgetSettings {
     maxProviderCostUsdPerAction: string | null;
     maxProviderCostUsdPerAccountDay: string | null;

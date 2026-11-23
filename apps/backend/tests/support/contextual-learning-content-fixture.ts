@@ -534,15 +534,27 @@ export function fixtureAuthoringOutput(prompt: unknown) {
                     };
                 }
 
+                if (block.type === 'exercise' && block.semantics) {
+                    const { source: _source, semantics, ...renderer } = block;
+                    const { sources: _bindings, ...editable } = semantics;
+
+                    return {
+                        targetBlockId: block.id,
+                        blocks: [{ ...renderer, semantics: editable }],
+                    };
+                }
+
                 return { targetBlockId: block.id, blocks: [block] };
             }),
         };
     }
 
+    const compactPrompt = 'Independent compact authoring strategy.';
     const hostPrompt = texts.find(
         (text) =>
-            text.startsWith(getLocalPrompt('learning-content-authoring')) &&
-            text.includes('\nCapabilities: '),
+            (text.startsWith(getLocalPrompt('learning-content-authoring')) &&
+                text.includes('\nCapabilities: ')) ||
+            text.startsWith(compactPrompt),
     );
     const marker = '\nValidated brief (';
     const start = hostPrompt?.indexOf(marker) ?? -1;
@@ -605,153 +617,161 @@ export function fixtureAuthoringOutput(prompt: unknown) {
         poisson: 'рыба',
         nourriture: 'корм',
     };
-    const group = randomUUID();
+    const exerciseProgress = hostPrompt.match(
+        /Exercise batch progress \(host-controlled data\): (.+)/u,
+    );
+    const exerciseOffset = exerciseProgress
+        ? ((JSON.parse(exerciseProgress[1]!) as { offset?: number } | null)
+              ?.offset ?? 0)
+        : 0;
 
-    return {
-        tasks: brief.tasks.map((task) => {
-            if (task.kind === 'prose') {
-                return {
-                    taskId: task.id,
-                    blocks: [],
-                    prose: {
-                        schemaVersion: 2,
-                        document: {
-                            type: 'doc',
-                            content: [
-                                {
-                                    type: 'paragraph',
-                                    content: [
-                                        {
-                                            type: 'text',
-                                            text: 'La démocratie française repose sur le débat public.',
-                                        },
-                                    ],
-                                },
-                            ],
-                        },
+    const tasks = brief.tasks.map((task) => {
+        if (task.kind === 'prose') {
+            return {
+                taskId: task.id,
+                prose: [
+                    {
+                        kind: 'paragraph',
+                        text: 'La démocratie française repose sur le débat public.',
                     },
-                };
-            }
+                    ...(task.id === 'composable-reading'
+                        ? [
+                              {
+                                  kind: 'paragraph',
+                                  text: 'Les citoyens participent aux décisions locales.',
+                              },
+                          ]
+                        : []),
+                ],
+            };
+        }
 
-            if (task.kind === 'vocabulary') {
-                if (task.id === 'shopping-vocabulary') {
-                    return {
-                        taskId: task.id,
-                        blocks: [
-                            {
-                                id: randomUUID(),
-                                type: 'vocabulary',
-                                title: 'Shopping vocabulary',
-                                language: task.language,
-                                translationLanguage: task.translationLanguage,
-                                entries: shoppingVocabularyBatch(
-                                    task,
-                                    hostPrompt,
-                                ).map((entry) => ({
-                                    id: randomUUID(),
-                                    ...entry,
-                                })),
-                            },
-                        ],
-                    };
-                }
-
+        if (task.kind === 'vocabulary') {
+            if (task.id === 'shopping-vocabulary') {
                 return {
                     taskId: task.id,
                     blocks: [
                         {
                             id: randomUUID(),
                             type: 'vocabulary',
-                            title:
-                                task.words?.length === 6
-                                    ? 'Six French words'
-                                    : 'French vocabulary',
+                            title: 'Shopping vocabulary',
                             language: task.language,
                             translationLanguage: task.translationLanguage,
-                            entries: task.words!.map((term) => ({
+                            entries: shoppingVocabularyBatch(
+                                task,
+                                hostPrompt,
+                            ).map((entry) => ({
                                 id: randomUUID(),
-                                term,
-                                translation:
-                                    task.translationLanguage === 'ru'
-                                        ? translations[term]
-                                        : term === 'travail'
-                                          ? 'work'
-                                          : 'joy',
+                                ...entry,
                             })),
                         },
                     ],
                 };
             }
 
-            if (task.kind === 'grammar') {
-                if (task.id === 'markdown-grammar') {
-                    return {
-                        taskId: task.id,
-                        blocks: markdownGrammarProposal().blocks,
-                    };
-                }
-
-                return {
-                    taskId: task.id,
-                    blocks: [
-                        {
+            return {
+                taskId: task.id,
+                blocks: [
+                    {
+                        id: randomUUID(),
+                        type: 'vocabulary',
+                        title:
+                            task.words?.length === 6
+                                ? 'Six French words'
+                                : 'French vocabulary',
+                        language: task.language,
+                        translationLanguage: task.translationLanguage,
+                        entries: task.words!.map((term) => ({
                             id: randomUUID(),
-                            type: 'grammar',
-                            title: 'French noun grammar',
-                            language: task.language,
-                            rule: 'French nouns have grammatical gender.',
-                        },
-                    ],
-                };
-            }
+                            term,
+                            translation:
+                                task.translationLanguage === 'ru'
+                                    ? translations[term]
+                                    : term === 'travail'
+                                      ? 'work'
+                                      : 'joy',
+                        })),
+                    },
+                ],
+            };
+        }
 
-            if (task.kind === 'exercises') {
-                const activities = task.activities?.flatMap((activity) =>
-                    Array.from(
-                        { length: activity.count ?? task.count ?? 5 },
-                        () => activity.activityId,
-                    ),
-                );
-
-                if (!activities?.length) {
-                    throw new Error(
-                        'Exercise fixture requires host-resolved named activities.',
-                    );
-                }
-
+        if (task.kind === 'grammar') {
+            if (task.id === 'markdown-grammar') {
                 return {
                     taskId: task.id,
-                    blocks: activities.map((activityId, index) => ({
-                        ...namedExerciseFixture({
-                            activityId,
-                            sources: sourceBlocks.map((block) =>
-                                block.type === 'vocabulary'
-                                    ? {
-                                          ...block,
-                                          entries: [
-                                              block.entries[
-                                                  index % block.entries.length
-                                              ]!,
-                                          ],
-                                      }
-                                    : block,
-                            ),
-                            language: task.language,
-                            explanationLanguage:
-                                task.explanationLanguage ??
-                                task.translationLanguage,
-                        }),
-                        ...(task.id === 'composable-grammar-exercises'
-                            ? {
-                                  question: `Appliquez la règle de grammaire dans le cas ${index + 1}.`,
-                              }
-                            : {}),
-                        group: { id: group },
-                    })),
+                    blocks: markdownGrammarProposal().blocks,
                 };
             }
 
-            throw new Error('Unexpected fixture task.');
-        }),
-    };
+            return {
+                taskId: task.id,
+                blocks: [
+                    {
+                        id: randomUUID(),
+                        type: 'grammar',
+                        title: 'French noun grammar',
+                        language: task.language,
+                        rule: 'French nouns have grammatical gender.',
+                    },
+                ],
+            };
+        }
+
+        if (task.kind === 'exercises') {
+            const activities = task.activities?.flatMap((activity) =>
+                Array.from(
+                    { length: activity.count ?? task.count ?? 5 },
+                    () => activity.activityId,
+                ),
+            );
+
+            if (!activities?.length) {
+                throw new Error(
+                    'Exercise fixture requires host-resolved named activities.',
+                );
+            }
+
+            return {
+                taskId: task.id,
+                blocks: activities.map((activityId, index) => ({
+                    ...namedExerciseFixture({
+                        activityId,
+                        sources: sourceBlocks.map((block) =>
+                            block.type === 'vocabulary'
+                                ? {
+                                      ...block,
+                                      entries: [
+                                          block.entries[
+                                              (exerciseOffset + index) %
+                                                  block.entries.length
+                                          ]!,
+                                      ],
+                                  }
+                                : block,
+                        ),
+                    }),
+                    ...(task.id === 'composable-grammar-exercises'
+                        ? {
+                              hint: 'Observez le genre du nom.',
+                              question: `Appliquez la règle de grammaire dans le cas ${exerciseOffset + index + 1}.`,
+                          }
+                        : {}),
+                })),
+            };
+        }
+
+        throw new Error('Unexpected fixture task.');
+    });
+
+    if (hostPrompt.startsWith(compactPrompt)) {
+        const [task] = tasks;
+        if (tasks.length !== 1 || !task) {
+            throw new Error('The compact strategy requires exactly one unit.');
+        }
+
+        return { item: task.prose ?? task.blocks?.[0] };
+    }
+
+    return { tasks };
 }

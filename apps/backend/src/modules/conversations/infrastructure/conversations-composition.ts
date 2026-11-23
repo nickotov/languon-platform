@@ -113,6 +113,8 @@ export function createConversationsComposition(
         routes: createConversationRoutes({
             service,
             policy: dependencies.policy,
+            reportRunCommandFailure: (event) =>
+                console.warn('Lesson run command failed.', event),
         }),
         worker: factory
             ? new ConversationWorkerService({

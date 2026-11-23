@@ -18,6 +18,10 @@ const en = {
     creditsExhausted:
         'Your AI credits are exhausted. Check your balance before trying again.',
     viewCredits: 'View credit balance',
+    providerCapacity:
+        'The AI provider’s usage limit has been reached. Try again when active requests finish or earlier usage leaves the rolling 24-hour window.',
+    operatorCapacity:
+        'The service’s AI spending limit has been reached. Try again when a reservation is released or the daily budget resets at midnight UTC.',
     capacityUnavailable: 'The assistant is busy. Please retry shortly.',
 
     source: 'Source',
@@ -120,6 +124,10 @@ const ru: Copy = {
     creditsExhausted:
         'Кредиты ИИ закончились. Проверьте баланс перед повторной попыткой.',
     viewCredits: 'Проверить баланс кредитов',
+    providerCapacity:
+        'Достигнут лимит провайдера ИИ. Повторите попытку, когда завершатся текущие запросы или более ранние расходы выйдут за пределы последних 24 часов.',
+    operatorCapacity:
+        'Достигнут лимит расходов сервиса на ИИ. Повторите попытку, когда освободится резерв или обновится суточный бюджет в 00:00 UTC.',
     capacityUnavailable: 'Помощник занят. Повторите попытку немного позже.',
 
     source: 'Исходный текст',
@@ -219,6 +227,10 @@ const es: Copy = {
     creditsExhausted:
         'Tus créditos de IA se han agotado. Comprueba tu saldo antes de reintentarlo.',
     viewCredits: 'Ver saldo de créditos',
+    providerCapacity:
+        'Se ha alcanzado el límite de uso del proveedor de IA. Vuelve a intentarlo cuando terminen las solicitudes activas o cuando el consumo anterior quede fuera del periodo de 24 horas.',
+    operatorCapacity:
+        'Se ha alcanzado el límite de gasto del servicio de IA. Vuelve a intentarlo cuando se libere una reserva o se renueve el presupuesto diario a las 00:00 UTC.',
     capacityUnavailable:
         'El asistente está ocupado. Vuelve a intentarlo en unos momentos.',
 
@@ -320,6 +332,10 @@ const fr: Copy = {
     creditsExhausted:
         'Vos crédits IA sont épuisés. Vérifiez votre solde avant de réessayer.',
     viewCredits: 'Voir le solde des crédits',
+    providerCapacity:
+        'La limite d’utilisation du fournisseur d’IA est atteinte. Réessayez lorsque les demandes en cours seront terminées ou que des dépenses antérieures sortiront de la période de 24 heures.',
+    operatorCapacity:
+        'Le plafond de dépenses du service d’IA est atteint. Réessayez lorsqu’une réservation sera libérée ou que le budget quotidien sera renouvelé à 00 h 00 UTC.',
     capacityUnavailable:
         'L’assistant est occupé. Réessayez dans quelques instants.',
 

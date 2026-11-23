@@ -43,3 +43,9 @@ export { exerciseGenerationCopy } from './lib/exercise-generation-copy';
 export type { PreparedExerciseRequest } from './hooks/use-exercise-generation';
 
 export { contentProposalBlocks } from './lib/content-proposal-blocks';
+
+export { LessonDocumentBlocks } from './ui/content-proposals/lesson-document-blocks/lesson-document-blocks';
+export { LessonProposalReviewForRun } from './ui/content-proposals/lesson-proposal-review-for-run/lesson-proposal-review-for-run';
+
+export { useListedContentProposals } from './ui/content-proposals/knowledge-content-proposals/proposal-list-context';
+export { LessonProposalActions } from './ui/content-proposals/lesson-proposal-actions/lesson-proposal-actions';

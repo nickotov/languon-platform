@@ -1,6 +1,7 @@
 import { z } from 'zod';
+import { generatedReadingSchema } from './learning-content-prose';
 import {
-    ProseKnowledgeBodySchema,
+    GeneratedProseBodySchema,
     VocabularyLearningBlockSchema,
     GrammarLearningBlockSchema,
     BilingualTextLearningBlockSchema,
@@ -20,7 +21,7 @@ import {
 
 const briefInput = LearningContentTaskSchema.omit({ id: true, kind: true });
 const outputSchemas = {
-    prose: ProseKnowledgeBodySchema,
+    prose: GeneratedProseBodySchema,
     vocabulary: VocabularyLearningBlockSchema,
     grammar: GrammarLearningBlockSchema,
     'bilingual-text': BilingualTextLearningBlockSchema,
@@ -66,8 +67,7 @@ export function learningContentSchemaForBrief(
             return z
                 .object({
                     ...common,
-                    blocks: z.array(z.never()).length(0),
-                    prose: ProseKnowledgeBodySchema,
+                    prose: generatedReadingSchema,
                 })
                 .strict();
         }

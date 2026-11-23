@@ -2,7 +2,7 @@ import { isReadOnlyKnowledgeSource } from '../../../domain/conversation';
 import {
     ConversationToolCallSchema,
     conversationToolCallLimit,
-    ProseKnowledgeNoteContentSchema,
+    GeneratedProseNoteContentSchema,
     type ConversationToolCall,
     type KnowledgeNoteContent,
 } from '@languon/contracts';
@@ -202,7 +202,7 @@ export async function conversationPropose(
             .values({
                 id: randomUUID(),
                 conversationId: turn.conversationId,
-                content: ProseKnowledgeNoteContentSchema.parse(content),
+                content: GeneratedProseNoteContentSchema.parse(content),
                 targetNoteId: target?.noteId ?? null,
                 expectedNoteVersion: target?.version ?? null,
                 createdAt: now,

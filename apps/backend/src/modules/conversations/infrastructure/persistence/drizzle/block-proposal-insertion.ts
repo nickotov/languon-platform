@@ -150,6 +150,21 @@ export function insertProposalBlocks(
     blocks: LearningBlock[],
     position: number,
 ): KnowledgeNode {
+    return insertProposalNodes(
+        document,
+        blocks.map((item) => ({
+            type: 'learningBlock',
+            attrs: { block: item },
+        })),
+        position,
+    );
+}
+
+export function insertProposalNodes(
+    document: KnowledgeNode,
+    nodes: KnowledgeNode[],
+    position: number,
+): KnowledgeNode {
     if (!Number.isInteger(position) || position < 0) {
         throw invalid();
     }
@@ -182,14 +197,7 @@ export function insertProposalBlocks(
 
     const result = {
         ...document,
-        content: [
-            ...left,
-            ...blocks.map((item) => ({
-                type: 'learningBlock' as const,
-                attrs: { block: item },
-            })),
-            ...right,
-        ],
+        content: [...left, ...nodes, ...right],
     };
     const parsed = KnowledgeBodySchema.safeParse({
         schemaVersion: 2,

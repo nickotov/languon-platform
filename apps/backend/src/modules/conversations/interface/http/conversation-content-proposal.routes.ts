@@ -46,7 +46,10 @@ export function registerConversationContentProposalRoutes(
             method: 'get',
             path: '/conversations/{conversationId}/content-proposals',
             security,
-            request: { params: z.object({ conversationId: z.uuid() }) },
+            request: {
+                params: z.object({ conversationId: z.uuid() }),
+                query: z.object({ proposalId: z.uuid().optional() }).strict(),
+            },
             responses: {
                 200: json(KnowledgeContentProposalsResponseSchema),
                 ...errors,
@@ -64,6 +67,7 @@ export function registerConversationContentProposalRoutes(
                 await store.listContentProposals(
                     await access(c),
                     c.req.valid('param').conversationId,
+                    c.req.valid('query').proposalId,
                 ),
                 200,
             );
@@ -112,6 +116,7 @@ export function registerConversationContentProposalRoutes(
                     c.req.valid('json').expectedBranchVersion,
                     c.req.valid('json').mode,
                     c.req.valid('json').insertionPosition,
+                    c.req.valid('json').lessonCopy,
                 ),
                 200,
             );

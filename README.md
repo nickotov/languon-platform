@@ -171,8 +171,7 @@ model catalog. Removing support remains a drain-and-retire operation.
 The endpoint must provide an
 OpenAI-compatible API and the model must support the structured output used by
 dictionary generation. Generic legacy endpoints require `GET /models`; curated
-providers use the provider-specific readiness behavior above. Restart
-`pnpm dev:all` or `pnpm dev:dictionary-worker` after changing these values;
+providers use the provider-specific readiness behavior above. `pnpm dev:all` and `pnpm dev:dictionary-worker` watch the worker source and restart it after code changes. Restart either command after changing environment values;
 running `pnpm dev:mastra` does not change the dictionary worker provider.
 
 Standard development pronunciation storage uses the private, versioned MinIO

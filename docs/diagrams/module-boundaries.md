@@ -44,8 +44,11 @@ source_paths:
     - apps/backend/src/modules/conversations/interface/http/conversation-generation.routes.ts
     - packages/contracts/src/generation-plans.ts
     - packages/contracts/src/knowledge-content-proposals.ts
-source_fingerprint: sha256:76cff1f73b769c138c6c045a6da0ef85ec0b038a773eda350e6e35c0b96cd990
-reviewed: 2026-11-16
+    - docs/adr/0061-bounded-automatic-lesson-continuation.md
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-automation.ts
+    - apps/backend/src/modules/conversations/interface/http/conversation-generation-preview.routes.ts
+source_fingerprint: sha256:60977de061b7074f0f52156eea4235b6bdedaa849c7c4202a773fac498063699
+reviewed: 2026-11-23
 ---
 
 # Module and layer boundaries
@@ -131,8 +134,12 @@ Composable generation retains these app/module boundaries. Web lesson-generation
 UI uses public run contracts and Conversations endpoints; existing Knowledge
 proposal UI renders the canonical mixed `body`. AI credits owns structured-call
 eligibility and cumulative settlement series through transaction participants.
-Checkpoint and receipt acceptance commit together under worker authority. No new
-workflow service, provider, worker pool or cross-app source import is introduced.
+Checkpoint and receipt acceptance commit together under worker authority. Conversations also owns the bounded automatic-stage authorization and
+idempotent worker-claim scheduler. Its separate owner-only prepared-preview GET
+projects validated fragments and frozen dependencies; the web uses the existing
+safe document renderer without insertion or paid-check capabilities. Public run
+summaries retain progress only. No new workflow service, provider, worker pool or
+cross-app source import is introduced.
 The reviewed process/composition relationships remain unchanged; the narrower
 [conversation view](conversations-and-knowledge.md) describes run transitions.
 

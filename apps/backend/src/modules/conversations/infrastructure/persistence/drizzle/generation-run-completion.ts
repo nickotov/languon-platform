@@ -1,11 +1,17 @@
+import { generationAdmissionOutcome } from '../../../application/generation-admission-outcome';
+import { reconcileGenerationAttempts } from './generation-run-attempts';
+import type { GenerationFailureDiagnostic } from '../../../application/generation-failure';
 import { eq, sql } from 'drizzle-orm';
 import { KnowledgeContentProposalSchema } from '@languon/contracts';
 import { DrizzleActionAccountingParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant';
-import { generationContext, lockGenerationRun } from './generation-run-context';
+import {
+    generationContext,
+    generationStageHasProgress,
+    lockGenerationRun,
+} from './generation-run-context';
 import {
     generationRunActionsTable as actions,
     generationRunsTable as runs,
-    generationRunArtifactsTable as artifacts,
 } from './conversation-generation-schema';
 import type { ConversationsTransaction } from './conversation-source';
 import {
@@ -21,6 +27,7 @@ export async function completeGenerationAction(
     turn: TurnRow,
     status: 'succeeded' | 'failed' | 'cancelled',
     failureCode?: string,
+    failure?: GenerationFailureDiagnostic,
 ) {
     const [action] = await tx
         .select()
@@ -54,6 +61,18 @@ export async function completeGenerationAction(
     ) {
         return;
     }
+
+    const reconciliation =
+        status !== 'succeeded' && action.kind === 'generation'
+            ? await reconcileGenerationAttempts(
+                  tx,
+                  run.id,
+                  run.revision,
+                  turn.id,
+                  persistence.now(),
+                  failure,
+              )
+            : undefined;
 
     let proposalId: string | null = null;
     let pauseReason: NonNullable<typeof run.pauseReason> =
@@ -89,16 +108,10 @@ export async function completeGenerationAction(
             KnowledgeContentProposalSchema.parse(snapshot);
             proposalId = action.proposalId;
         } else {
-            const progress = await tx
-                .select({ id: artifacts.id })
-                .from(artifacts)
-                .where(eq(artifacts.turnId, turn.id))
-                .limit(1);
-
             if (
                 run.pauseReason !== 'budget' ||
-                !progress.length ||
-                action.proposalId
+                action.proposalId ||
+                !(await generationStageHasProgress(tx, run, turn.id))
             ) {
                 throw conflict(
                     'The lesson did not finish a usable generation stage.',
@@ -109,6 +122,63 @@ export async function completeGenerationAction(
         pauseReason = run.pauseReason ?? 'budget';
     }
 
+    // A lease can expire between a checkpoint and the next dispatch. Admission
+    // still verifies settled liabilities and the original financial authority.
+    const safeRestart =
+        (failureCode === 'worker_interrupted' ||
+            (status === 'cancelled' &&
+                failureCode === 'response_interrupted')) &&
+        failure?.code !== 'provider-outcome-unknown' &&
+        action.kind === 'generation' &&
+        !turn.cancelRequested &&
+        !reconciliation?.uncertain;
+    const ready =
+        (status === 'succeeded' || safeRestart) &&
+        action.kind === 'generation' &&
+        !proposalId &&
+        run.automation;
+    let automation = ready
+        ? { ...ready, ready: true, dispatchRetryCount: 0 }
+        : null;
+
+    if (safeRestart && automation) {
+        pauseReason = 'budget';
+    }
+
+    if (
+        run.automation &&
+        status === 'failed' &&
+        !turn.cancelRequested &&
+        ((failure?.code === 'admission-blocked' &&
+            reconciliation?.undispatched) ||
+            reconciliation?.knownRateLimit)
+    ) {
+        const capacity = generationAdmissionOutcome(
+            reconciliation?.knownRateLimit
+                ? 'capacity_unavailable'
+                : (failureCode ?? ''),
+            {
+                ...run.automation,
+                ready: true,
+                admissionRetry: {
+                    count: run.automation.dispatchRetryCount ?? 0,
+                    retryAt: persistence.now().toISOString(),
+                },
+            },
+            persistence.now(),
+            turn.id,
+        );
+
+        if (capacity.automation && capacity.automation.admissionRetry) {
+            automation = {
+                ...capacity.automation,
+                dispatchRetryCount: capacity.automation.admissionRetry.count,
+            };
+
+            pauseReason = capacity.pauseReason;
+        }
+    }
+
     await tx
         .update(runs)
         .set({
@@ -116,6 +186,23 @@ export async function completeGenerationAction(
             proposalId,
             activeTurnId: null,
             pauseReason: proposalId ? null : pauseReason,
+            failure:
+                status === 'failed' ||
+                (pauseReason === 'interrupted' &&
+                    failure?.code === 'provider-outcome-unknown')
+                    ? failure
+                        ? { ...failure, referenceId: turn.id }
+                        : {
+                              referenceId: turn.id,
+                              code:
+                                  failureCode === 'generation_output_limit'
+                                      ? 'output-limit'
+                                      : failureCode === 'worker_interrupted'
+                                        ? 'interrupted'
+                                        : 'unknown',
+                          }
+                    : null,
+            automation,
             updatedAt: persistence.now(),
         })
         .where(eq(runs.id, run.id));

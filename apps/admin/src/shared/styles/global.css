@@ -57,3 +57,15 @@ select {
         transition: none !important;
     }
 }
+
+@media (forced-colors: none) and (prefers-contrast: no-preference) {
+    :where(*) {
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(
+                in srgb,
+                var(--admin-text-secondary) 50%,
+                transparent
+            )
+            transparent;
+    }
+}

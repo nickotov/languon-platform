@@ -1,0 +1,10 @@
+.outlet:empty,
+.outlet:not(:empty) + .primary,
+.outlet:not(:empty) + .primary > [popover] {
+    display: none;
+}
+
+.primary,
+.outlet {
+    display: contents;
+}

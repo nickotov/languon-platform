@@ -2,11 +2,8 @@ import { z } from 'zod';
 import { ExerciseActivityIdSchema } from './exercise-activity';
 import { getExerciseActivity } from './exercise-activity-catalog';
 
-const identity = z
-    .string()
-    .min(1)
-    .max(80)
-    .regex(/^[A-Za-z0-9_-]+$/u);
+import { LessonTaskIdSchema as identity } from './lesson-part-identity';
+
 const language = z
     .string()
     .min(2)

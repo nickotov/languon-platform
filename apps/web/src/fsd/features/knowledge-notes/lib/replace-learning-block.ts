@@ -58,7 +58,7 @@ export function replaceLearningBlock(
         const transaction = editor.state.tr.replaceWith(
             position,
             position + current.nodeSize,
-            editor.schema.nodes.learningBlock!.create({ block: replacement }),
+            current.type.create({ ...current.attrs, block: replacement }),
         );
         const candidate = editor.state.applyTransaction(transaction);
         if (candidate.transactions.length === 0) {

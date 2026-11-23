@@ -12,7 +12,13 @@ function resultBody(input: { taskId: string; blocks: unknown[] }) {
 }
 
 import { projectTutorUserMessage } from '../../application/tutor-message-context';
-import { LearningBlockSchema, type LearningBlock } from '@languon/contracts';
+import {
+    LearningBlockSchema,
+    getExerciseActivity,
+    type LearningBlock,
+    type GenerationPlan,
+} from '@languon/contracts';
+import { completeNamedExerciseSources } from './exercise-authoring-context';
 import { namedExerciseFixture } from '../../../../../tests/support/named-exercise-fixture';
 import { applyExercisePickerChoices } from '../../application/exercise-picker-resolution';
 import { LearningContentBriefSchema } from '../../application/learning-content-contract';
@@ -26,6 +32,7 @@ import {
 } from '../../application/tutor-context-budget';
 import { describe, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
+import type { GenerationSourceSnapshot } from '../../application/ports/generation-run';
 import type { TutorRunInput } from '../../application/ports/tutor-runner';
 import {
     TutorRequestResolutionSchema,
@@ -40,6 +47,89 @@ import {
     tutorAccountingFixture,
     tutorMemoryFixture,
 } from './tutor-test-fixtures';
+
+// These journeys use a scripted provider through the real SDK. Match the authored
+// content and the host-built checking data independently of the generated UUIDs.
+function expectedExercise(
+    wire: Pick<
+        ReturnType<typeof namedExerciseFixture>,
+        'activityId' | 'title' | 'question' | 'objective' | 'explanation'
+    > & {
+        referenceAnswer?: string | undefined;
+        acceptedAnswers?: string[] | undefined;
+        correct?: { text: string; explanation: string } | undefined;
+        distractors?: { text: string; explanation: string }[] | undefined;
+        rubric?: Record<string, string> | undefined;
+    },
+    explanationLanguage: string,
+    sources: unknown[],
+) {
+    const activity = getExerciseActivity(wire.activityId);
+    const rubric = wire.rubric && {
+        criteria: Object.entries(wire.rubric).map(
+            ([dimension, requirement]) => ({ dimension, requirement }),
+        ),
+    };
+    const choices = wire.correct
+        ? [wire.correct, ...(wire.distractors ?? [])]
+        : [];
+    const checking = wire.acceptedAnswers
+        ? {
+              policy: 'hybrid',
+              key: { kind: 'text', acceptedAnswers: wire.acceptedAnswers },
+              rubric,
+          }
+        : wire.correct
+          ? {
+                policy: 'prepared-key',
+                key: expect.objectContaining({
+                    kind: 'choice',
+                    correctChoiceId: expect.any(String),
+                    explanations: expect.arrayContaining(
+                        choices.map(({ explanation }) => ({
+                            choiceId: expect.any(String),
+                            explanation,
+                        })),
+                    ),
+                }),
+            }
+          : { policy: 'ai-rubric', rubric };
+
+    return expect.objectContaining({
+        id: expect.any(String),
+        type: 'exercise',
+        format: activity.format,
+        question: wire.question,
+        referenceAnswer:
+            wire.referenceAnswer ??
+            wire.acceptedAnswers?.[0] ??
+            wire.correct?.text,
+        title: wire.title,
+        explanation: wire.explanation,
+        ...(choices.length
+            ? {
+                  choices: expect.arrayContaining(
+                      choices.map(({ text }) => ({
+                          id: expect.any(String),
+                          text,
+                      })),
+                  ),
+              }
+            : {}),
+        ...(wire.acceptedAnswers
+            ? { acceptedAnswers: wire.acceptedAnswers }
+            : {}),
+        semantics: {
+            activity: { id: activity.id, version: activity.version },
+            language: 'fr',
+            explanationLanguage,
+            objective: wire.objective,
+            format: activity.format,
+            checking,
+            sources,
+        },
+    });
+}
 
 const blockId = '01900000-0000-4000-8000-000000000001';
 const proposalId = '01900000-0000-4000-8000-000000000002';
@@ -201,6 +291,139 @@ async function run(input: TutorRunInput, responses: string[]) {
 }
 
 describe('Knowledge request planning with real pinned Mastra execution', () => {
+    it('compiles a compact G03 response into a fully validated proposal through the pinned SDK', async () => {
+        const { input } = fixture();
+        input.message.content =
+            'Generate one G03 exercise from this grammar block.';
+
+        input.sourceContext = {
+            ...input.sourceContext,
+            availableBlocks: [{ id: blockId, type: 'grammar' }],
+            availableMaterialCount: 1,
+            blockCatalogComplete: true,
+        };
+
+        input.readContext = vi.fn(async () => ({
+            material: [
+                {
+                    id: blockId,
+                    label: 'Grammar',
+                    content: JSON.stringify(grammar),
+                },
+            ],
+            total: 1,
+        }));
+
+        const wire = namedExerciseFixture({
+            activityId: 'G03',
+            sources: [grammar as LearningBlock],
+        });
+
+        if (!('acceptedAnswers' in wire)) {
+            throw new Error('Expected G03 authored answers.');
+        }
+
+        expect(wire).not.toHaveProperty('semantics');
+        const { provider } = await run(input, [
+            JSON.stringify({
+                kind: 'generate',
+                replyLanguage: 'en',
+                brief: {
+                    tasks: [
+                        {
+                            id: 'practice',
+                            kind: 'exercises',
+                            instruction: input.message.content,
+                            language: 'fr',
+                            explanationLanguage: 'fr',
+                            count: 1,
+                            activities: [{ activityId: 'G03', count: 1 }],
+                            source: { kind: 'editor', blockId },
+                        },
+                    ],
+                },
+            }),
+            JSON.stringify({ tasks: [{ taskId: 'practice', blocks: [wire] }] }),
+        ]);
+
+        expect(provider.requests).toHaveLength(2);
+        expect(input.onContentProposal).toHaveBeenCalledOnce();
+        const proposal = vi.mocked(input.onContentProposal!).mock.calls[0]![0];
+        const block = bodyBlocks(proposal.body)[0];
+        expect(block).toMatchObject({
+            type: 'exercise',
+            acceptedAnswers: wire.acceptedAnswers,
+            semantics: {
+                activity: { id: 'G03', version: 1 },
+                checking: {
+                    policy: 'hybrid',
+                    key: {
+                        kind: 'text',
+                        acceptedAnswers: wire.acceptedAnswers,
+                    },
+                    rubric: expect.anything(),
+                },
+            },
+        });
+    });
+
+    it.each([false, true])(
+        'pins French content explanations independently from English chat (explicit English explanation: %s)',
+        async (explicitEnglish) => {
+            const { input } = fixture();
+            input.message.content = explicitEnglish
+                ? 'Prepare French grammar, but explain the grammar in English.'
+                : 'Prepare grammar notes using only French.';
+
+            const start = vi.fn(
+                async (
+                    prepared: GenerationPlan,
+                    sources: GenerationSourceSnapshot[],
+                ) => ({
+                    runId: randomUUID(),
+                    revision: 1,
+                    plan: prepared,
+                    sources,
+                    artifacts: [],
+                    purpose: 'generation' as const,
+                }),
+            );
+
+            input.onGenerationStart = start;
+            input.onGenerationCheckpoint = vi.fn(async () => undefined);
+            await run(input, [
+                JSON.stringify({
+                    ...plan,
+                    brief: { tasks: [{ ...task, explanationLanguage: 'en' }] },
+                    ...(explicitEnglish
+                        ? {
+                              explanationLanguageOverrides: [
+                                  {
+                                      taskId: 'grammar',
+                                      language: 'en',
+                                      evidence:
+                                          'explain the grammar in English',
+                                  },
+                              ],
+                          }
+                        : {}),
+                }),
+                JSON.stringify(authored),
+            ]);
+
+            expect(start).toHaveBeenCalledOnce();
+            expect(start.mock.calls[0]![0]).toMatchObject({
+                replyLanguage: 'en',
+                tasks: [
+                    {
+                        language: 'fr',
+                        explanationLanguage: explicitEnglish ? 'en' : 'fr',
+                    },
+                ],
+            });
+        },
+    );
+
     it('persists a valid planner receipt atomically with pending state and rejects invalid structured plans', async () => {
         const { input } = fixture();
         const save = vi.spyOn(input.memory, 'writeState');
@@ -295,7 +518,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             kind: 'exercises',
             instruction: 'Answer a question about the current passage.',
             language: 'fr',
-            explanationLanguage: 'en',
+            explanationLanguage: 'fr',
             count: 1,
             activities: [{ activityId: 'R04', count: 1 }],
             sourceText: 'Invented planner passage.',
@@ -351,8 +574,6 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         const { sourceBindings: _fixtureBindings, ...wire } =
             namedExerciseFixture({
                 activityId: 'R04',
-                language: 'fr',
-                explanationLanguage: 'en',
                 sources: [
                     {
                         id: randomUUID(),
@@ -399,25 +620,18 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         expect(authorPrompt).not.toContain('Invented planner passage.');
         expect(authorPrompt).not.toContain('A new model paraphrase.');
         expect(authorPrompt).not.toContain('CURRENT_EDITOR_REPLACEMENT');
-        const { sourceBindings: _bindings, ...published } = exercise;
         expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
             {
                 body: resultBody({
                     taskId: 'fixture',
                     blocks: [
-                        {
-                            ...published,
-                            semantics: {
-                                ...exercise.semantics,
-                                sources: [
-                                    {
-                                        kind: 'text-selection',
-                                        origin: capturedOrigin,
-                                        text: passage,
-                                    },
-                                ],
+                        expectedExercise(exercise, 'fr', [
+                            {
+                                kind: 'text-selection',
+                                origin: capturedOrigin,
+                                text: passage,
                             },
-                        },
+                        ]),
                     ],
                 }),
             },
@@ -452,7 +666,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             kind: 'exercises',
             instruction: 'Recall one French word from the chosen proposal.',
             language: 'fr',
-            explanationLanguage: 'en',
+            explanationLanguage: 'fr',
             count: 1,
             activities: [{ activityId: 'V01', count: 1 }],
         };
@@ -542,8 +756,6 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         const wire = namedExerciseFixture({
             activityId: 'V01',
             sources: [bankB],
-            language: 'fr',
-            explanationLanguage: 'en',
         });
         const second = await run(input, [
             JSON.stringify({
@@ -564,35 +776,28 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         expect(authorPrompt).not.toContain('chat');
         expect(authorPrompt).not.toContain(bankA.id);
         expect(authorPrompt).not.toContain(sourceA);
-        const { sourceBindings: _bindings, ...published } = wire;
         expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
             {
                 body: resultBody({
                     taskId: 'fixture',
                     blocks: [
-                        {
-                            ...published,
-                            semantics: {
-                                ...wire.semantics,
-                                sources: [
+                        expectedExercise(wire, 'fr', [
+                            {
+                                kind: 'vocabulary',
+                                origin: {
+                                    kind: 'proposal',
+                                    proposalId: sourceB,
+                                    blockId: bankB.id,
+                                },
+                                entries: [
                                     {
-                                        kind: 'vocabulary',
-                                        origin: {
-                                            kind: 'proposal',
-                                            proposalId: sourceB,
-                                            blockId: bankB.id,
-                                        },
-                                        entries: [
-                                            {
-                                                entryId: entryBId,
-                                                term: 'chien',
-                                                sense: 'dog',
-                                            },
-                                        ],
+                                        entryId: entryBId,
+                                        term: 'chien',
+                                        sense: 'dog',
                                     },
                                 ],
                             },
-                        },
+                        ]),
                     ],
                 }),
             },
@@ -624,7 +829,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             kind: 'exercises',
             instruction: 'Recall one French word from bank A.',
             language: 'fr',
-            explanationLanguage: 'en',
+            explanationLanguage: 'fr',
             count: 1,
             activities: [{ activityId: 'V01', count: 1 }],
             source: { kind: 'editor', blockId: bankA.id },
@@ -635,7 +840,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             kind: 'exercises',
             instruction: 'Recall one French word from bank B.',
             language: 'fr',
-            explanationLanguage: 'en',
+            explanationLanguage: 'fr',
             count: 1,
             activities: [{ activityId: 'V01', count: 1 }],
             source: { kind: 'editor', blockId: bankB.id },
@@ -722,7 +927,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                     id: 'practice',
                     count: 1,
                     language: 'fr',
-                    explanationLanguage: 'en',
+                    explanationLanguage: 'fr',
                     activities: [{ activityId: 'V01', count: 1 }],
                     source: { kind: 'editor', blockId: bankB.id },
                 },
@@ -753,8 +958,6 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         const wire = namedExerciseFixture({
             activityId: 'V01',
             sources: [bankB],
-            language: 'fr',
-            explanationLanguage: 'en',
         });
         const second = await run(input, [
             JSON.stringify({
@@ -783,7 +986,6 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
 
         expect(authorPrompt).toContain(bankB.id);
         expect(authorPrompt).not.toContain(bankA.id);
-        const { sourceBindings: _bindings, ...exercise } = wire;
         if (bankB.type !== 'vocabulary') {
             throw new Error('Expected canonical vocabulary fixture.');
         }
@@ -793,28 +995,22 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                 body: resultBody({
                     taskId: 'fixture',
                     blocks: [
-                        {
-                            ...exercise,
-                            semantics: {
-                                ...exercise.semantics,
-                                sources: [
+                        expectedExercise(wire, 'fr', [
+                            {
+                                kind: 'vocabulary',
+                                origin: {
+                                    kind: 'block',
+                                    blockId: bankB.id,
+                                },
+                                entries: [
                                     {
-                                        kind: 'vocabulary',
-                                        origin: {
-                                            kind: 'block',
-                                            blockId: bankB.id,
-                                        },
-                                        entries: [
-                                            {
-                                                entryId: bankB.entries[0]!.id,
-                                                term: 'chien',
-                                                sense: 'dog',
-                                            },
-                                        ],
+                                        entryId: bankB.entries[0]!.id,
+                                        term: 'chien',
+                                        sense: 'dog',
                                     },
                                 ],
                             },
-                        },
+                        ]),
                     ],
                 }),
             },
@@ -904,7 +1100,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                 kind: 'exercises',
                 instruction: 'Recall one selected word from this bank.',
                 language: 'fr',
-                explanationLanguage: 'en',
+                explanationLanguage: 'fr',
                 count: 1,
                 activities: [{ activityId: 'V01', count: 1 }],
                 source: { kind: 'editor', blockId: source.id },
@@ -1145,8 +1341,6 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             ...namedExerciseFixture({
                 activityId: 'V07',
                 sources: [source],
-                language: 'fr',
-                explanationLanguage: 'en',
             }),
             question: goal,
             referenceAnswer: 'Le chat dort.',
@@ -1332,8 +1526,6 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             namedExerciseFixture({
                 activityId,
                 sources: [source],
-                language: 'fr',
-                explanationLanguage: 'ru',
             }),
         );
 
@@ -1405,29 +1597,23 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             {
                 body: resultBody({
                     taskId: 'fixture',
-                    blocks: exercises.map(
-                        ({ sourceBindings: _bindings, ...exercise }) => ({
-                            ...exercise,
-                            semantics: {
-                                ...exercise.semantics,
-                                sources: [
+                    blocks: exercises.map((exercise) =>
+                        expectedExercise(exercise, 'ru', [
+                            {
+                                kind: 'vocabulary',
+                                origin: {
+                                    kind: 'block',
+                                    blockId: source.id,
+                                },
+                                entries: [
                                     {
-                                        kind: 'vocabulary',
-                                        origin: {
-                                            kind: 'block',
-                                            blockId: source.id,
-                                        },
-                                        entries: [
-                                            {
-                                                entryId: source.entries[0]!.id,
-                                                term: 'chat',
-                                                sense: 'cat',
-                                            },
-                                        ],
+                                        entryId: source.entries[0]!.id,
+                                        term: 'chat',
+                                        sense: 'cat',
                                     },
                                 ],
                             },
-                        }),
+                        ]),
                     ),
                 }),
             },
@@ -1828,7 +2014,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                 },
             ],
         };
-        const { accounting } = await run(input, [
+        const { accounting, provider } = await run(input, [
             JSON.stringify(plan),
             JSON.stringify(wrongKind),
             JSON.stringify(authored),
@@ -1838,6 +2024,10 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             accounting.admit.mock.calls.map(([call]) => call.purpose),
         ).toEqual(['planning', 'authoring', 'authoring']);
 
+        const repairPrompt = JSON.stringify(provider.requests[2]?.prompt);
+        expect(repairPrompt).toContain('tasks.0.blocks.0.type');
+        expect(repairPrompt).not.toContain('кот');
+
         expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
             {
                 body: resultBody({ taskId: 'fixture', blocks: [grammar] }),
@@ -1845,6 +2035,84 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             expect.arrayContaining([expect.any(String)]),
         );
     });
+
+    it.each(['G03', 'R08'] as const)(
+        'revises %s through the provider SDK while preserving identity and frozen provenance',
+        async (activityId) => {
+            const { input } = fixture();
+            const source = LearningBlockSchema.parse(
+                activityId === 'G03'
+                    ? grammar
+                    : {
+                          id: randomUUID(),
+                          type: 'bilingual-text',
+                          language: 'fr',
+                          segments: [
+                              { id: randomUUID(), text: 'Ana lit ce livre.' },
+                          ],
+                          translations: [],
+                      },
+            );
+            const exercise = completeNamedExerciseSources(
+                namedExerciseFixture({ activityId, sources: [source] }),
+                { blocks: [source] },
+                { language: 'fr', explanationLanguage: 'en' },
+            );
+
+            if (exercise.type !== 'exercise' || !exercise.semantics) {
+                throw new Error('Expected a named exercise.');
+            }
+
+            const { source: _source, semantics, ...renderer } = exercise;
+            const { sources: _bindings, ...authoredSemantics } = semantics;
+            const question = 'Appliquez la consigne au document.';
+            input.sourceContext.availableBlocks = [exercise];
+            input.readContext = async () => ({
+                material: [
+                    {
+                        id: exercise.id,
+                        label: 'Frozen exercise',
+                        content: JSON.stringify(exercise),
+                    },
+                ],
+                total: 1,
+            });
+
+            const { provider } = await run(input, [
+                JSON.stringify({
+                    kind: 'revise-blocks',
+                    sourceBlockIds: [exercise.id],
+                    instruction: 'Clarify the question.',
+                }),
+                JSON.stringify({
+                    proposals: [
+                        {
+                            targetBlockId: exercise.id,
+                            blocks: [
+                                {
+                                    ...renderer,
+                                    question,
+                                    semantics: authoredSemantics,
+                                },
+                            ],
+                        },
+                    ],
+                }),
+            ]);
+
+            expect(provider.requests).toHaveLength(2);
+            expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
+                {
+                    targetBlockId: exercise.id,
+                    body: resultBody({
+                        taskId: 'fixture',
+                        blocks: [{ ...exercise, question }],
+                    }),
+                },
+                expect.arrayContaining([expect.any(String)]),
+            );
+        },
+    );
 
     it('normalizes unchanged vocabulary identities before publishing a canonical revision', async () => {
         const { input } = fixture();
@@ -2347,8 +2615,6 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             ...namedExerciseFixture({
                 activityId: 'V01',
                 sources: [vocabulary],
-                language: 'fr',
-                explanationLanguage: 'en',
             }),
             question: 'Translate cat into French.',
             explanation: 'Chat means cat.',
@@ -2402,19 +2668,15 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         };
         const exerciseProposalId = randomUUID();
         const proposals = new Map<string, LearningBlock[]>();
-        const groupId = randomUUID();
         const exercises = words.map((word, index) => ({
             ...namedExerciseFixture({
                 activityId: 'V01',
                 sources: [
                     { ...vocabulary, entries: [vocabulary.entries[index]!] },
                 ],
-                language: 'fr',
-                explanationLanguage: 'ru',
             }),
             question: `Как по-французски «${translations[index]}»?`,
             explanation: `«${word}» означает «${translations[index]}».`,
-            group: { id: groupId, title: 'Практика шести слов' },
         }));
 
         input.message.content =
@@ -2465,7 +2727,7 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             ...input.message,
             id: 'russian-exercise-followup',
             content:
-                'Теперь сделай шесть упражнений на эти слова из единственного предыдущего словарного блока. Ответы нужно вводить самостоятельно.',
+                'Теперь сделай шесть упражнений на эти слова из единственного предыдущего словарного блока. Ответы нужно вводить самостоятельно. Объяснения упражнений пиши по-русски.',
             createdAt: '2026-10-19T00:11:00.000Z',
         };
 
@@ -2475,6 +2737,13 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             JSON.stringify({
                 kind: 'generate',
                 replyLanguage: 'ru',
+                explanationLanguageOverrides: [
+                    {
+                        taskId: 'practice',
+                        language: 'ru',
+                        evidence: 'Объяснения упражнений пиши по-русски.',
+                    },
+                ],
                 brief: {
                     tasks: [
                         {
@@ -2533,35 +2802,24 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             {
                 body: resultBody({
                     taskId: 'fixture',
-                    blocks: exercises.map(
-                        (
-                            { sourceBindings: _bindings, ...exercise },
-                            index,
-                        ) => ({
-                            ...exercise,
-                            semantics: {
-                                ...exercise.semantics,
-                                sources: [
+                    blocks: exercises.map((exercise, index) =>
+                        expectedExercise(exercise, 'ru', [
+                            {
+                                kind: 'vocabulary',
+                                origin: {
+                                    kind: 'proposal',
+                                    proposalId,
+                                    blockId: vocabulary.id,
+                                },
+                                entries: [
                                     {
-                                        kind: 'vocabulary',
-                                        origin: {
-                                            kind: 'proposal',
-                                            proposalId,
-                                            blockId: vocabulary.id,
-                                        },
-                                        entries: [
-                                            {
-                                                entryId:
-                                                    vocabulary.entries[index]!
-                                                        .id,
-                                                term: words[index],
-                                                sense: translations[index],
-                                            },
-                                        ],
+                                        entryId: vocabulary.entries[index]!.id,
+                                        term: words[index],
+                                        sense: translations[index],
                                     },
                                 ],
                             },
-                        }),
+                        ]),
                     ),
                 }),
             },
@@ -2829,8 +3087,6 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             ...namedExerciseFixture({
                 activityId: 'V01',
                 sources: [preparedVocabulary],
-                language: 'fr',
-                explanationLanguage: 'en',
             }),
             question: 'Translate cat.',
             explanation: 'Chat means cat.',
@@ -2863,7 +3119,6 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
             }),
         ]);
 
-        const { sourceBindings: _bindings, ...publishedExercise } = exercise;
         expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
             {
                 body: resultBody({
@@ -2871,30 +3126,23 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
                     blocks: [
                         preparedVocabulary,
                         grammar,
-                        {
-                            ...publishedExercise,
-                            semantics: {
-                                ...exercise.semantics,
-                                sources: [
+                        expectedExercise(exercise, 'fr', [
+                            {
+                                kind: 'vocabulary',
+                                origin: {
+                                    kind: 'block',
+                                    blockId: preparedVocabulary.id,
+                                },
+                                entries: [
                                     {
-                                        kind: 'vocabulary',
-                                        origin: {
-                                            kind: 'block',
-                                            blockId: preparedVocabulary.id,
-                                        },
-                                        entries: [
-                                            {
-                                                entryId:
-                                                    preparedVocabulary
-                                                        .entries[0]!.id,
-                                                term: 'chat',
-                                                sense: 'cat',
-                                            },
-                                        ],
+                                        entryId:
+                                            preparedVocabulary.entries[0]!.id,
+                                        term: 'chat',
+                                        sense: 'cat',
                                     },
                                 ],
                             },
-                        },
+                        ]),
                     ],
                 }),
             },
@@ -2972,8 +3220,6 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         const { sourceBindings: _fixtureBindings, ...wire } =
             namedExerciseFixture({
                 activityId: 'R04',
-                language: 'fr',
-                explanationLanguage: 'en',
                 sources: [
                     {
                         id: randomUUID(),
@@ -3058,26 +3304,19 @@ describe('Knowledge request planning with real pinned Mastra execution', () => {
         expect(context.excerpts).toHaveLength(1);
         expect(context.excerpts[0]?.text).toBe(passage);
 
-        const { sourceBindings: _bindings, ...publishedExercise } = exercise;
         expect(input.onContentProposal).toHaveBeenCalledExactlyOnceWith(
             {
                 body: resultBody({
                     taskId: 'fixture',
                     blocks: [
                         grammar,
-                        {
-                            ...publishedExercise,
-                            semantics: {
-                                ...exercise.semantics,
-                                sources: [
-                                    {
-                                        kind: 'text-selection',
-                                        origin: capturedOrigin,
-                                        text: expect.any(String),
-                                    },
-                                ],
+                        expectedExercise(exercise, 'fr', [
+                            {
+                                kind: 'text-selection',
+                                origin: capturedOrigin,
+                                text: expect.any(String),
                             },
-                        },
+                        ]),
                     ],
                 }),
             },

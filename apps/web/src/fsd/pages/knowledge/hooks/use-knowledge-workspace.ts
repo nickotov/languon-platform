@@ -340,15 +340,26 @@ export function useKnowledgeWorkspace(noteId: string) {
         );
     }
 
-    async function reload() {
-        const result = await query.refetch();
-        if (result.data) {
-            setWorkspace(result.data);
+    async function reload(options?: { throwOnError?: boolean }) {
+        const result = await query.refetch(options);
+        if (result.data && !result.isError) {
             const branch = result.data.branches.find(
                 (item) => item.id === editRef.current?.branchId,
             );
 
-            if (branch && editRef.current && !contentChanged(editRef.current)) {
+            const latest = editRef.current;
+            // An autosave can win the race with this GET. Never install an older draft.
+            if (branch && latest && branch.version < latest.version) {
+                return;
+            }
+
+            setWorkspace(result.data);
+            if (
+                branch &&
+                latest &&
+                !pending.current &&
+                !contentChanged(latest)
+            ) {
                 chooseBranch(branch);
             }
         }

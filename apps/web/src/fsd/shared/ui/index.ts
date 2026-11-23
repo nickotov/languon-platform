@@ -224,3 +224,6 @@ export {
     type CommandMenuProps,
 } from './command-menu/command-menu';
 export { CommandMenuItem } from './command-menu/ui/command-menu-item/command-menu-item';
+
+export { PanelPage } from './panel-page/panel-page';
+export { PanelPageHost } from './panel-page-host/panel-page-host';

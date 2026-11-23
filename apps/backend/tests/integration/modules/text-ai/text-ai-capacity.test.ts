@@ -1,4 +1,9 @@
-import { fixtureRouteFingerprint } from '../../../support/text-ai-routing-fixture';
+import { seedDictionaryAccountingFixture } from '../../../support/dictionary-accounting-fixture';
+import { conversationCapacityObservationId } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/text-ai-worker-readiness';
+import {
+    fixtureRouteFingerprint,
+    textAiFixtureCredentials,
+} from '../../../support/text-ai-routing-fixture';
 import { randomUUID } from 'node:crypto';
 import {
     createDrizzleDatabase,
@@ -6,7 +11,15 @@ import {
     type PostgresJsDatabase,
 } from '@languon/database';
 import { eq, sql } from 'drizzle-orm';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import {
+    afterAll,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest';
 import { databaseSchema } from '../../../../src/infrastructure/database/schema';
 import { learnerPortraitInterviewOperationsTable as portraitOperations } from '../../../../src/modules/learner-portraits/infrastructure/persistence/drizzle/schema';
 import {
@@ -32,7 +45,10 @@ import {
     dictionaryGenerationProviderUsageArchiveTable,
 } from '../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/schema';
 import { sentenceAiJobsTable } from '../../../../src/modules/learning/infrastructure/persistence/drizzle/sentence-schema';
-import { dictionaryAiConfigurationRevisionsTable } from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
+import {
+    dictionaryAiConfigurationRevisionsTable,
+    dictionaryAiWorkerObservationsTable,
+} from '../../../../src/modules/text-ai/infrastructure/persistence/drizzle/configuration-schema';
 import { usersTable } from '../../../../src/modules/users/infrastructure/persistence/drizzle/schema';
 import { accountDeletionRequestsTable } from '../../../../src/modules/users/infrastructure/persistence/drizzle/account-deletion-schema';
 import { DrizzleAccountPurgeStore } from '../../../../src/modules/users/infrastructure/persistence/drizzle/drizzle-account-purge-store';
@@ -40,7 +56,6 @@ import {
     textAiModelCatalog,
     type TextAiExecutionSnapshot,
 } from '../../../../src/modules/text-ai/application/text-ai-provider-catalog';
-import { defaultDictionaryGenerationProviderBudgetPolicy as budget } from '../../../../src/modules/dictionaries/application/ports/dictionary-generation-provider-policy';
 import { createInterviewAdmission } from '../../../../src/modules/learner-portraits/infrastructure/interview-accounting';
 import {
     createTestPostgresClient,
@@ -49,6 +64,11 @@ import {
     resetTestDatabase,
 } from '../../support/test-database';
 import { seedPortraitAdmissionFixture } from '../../support/portrait-admission-fixture';
+// Both synthetic queues contribute to the same managed provider policy cohort.
+const dictionaryModel = textAiModelCatalog.find(
+    (entry) => entry.id === 'deepseek-flash',
+)!;
+const budget = dictionaryModel.aggregateBudget;
 const instant = (ms = 0) => new Date(Date.now() + ms);
 const context = (ms = 0) => ({
     now: instant(ms),
@@ -69,6 +89,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ownerId: string;
 
         beforeAll(async () => {
+            vi.stubEnv('DICTIONARY_AI_MANAGED_ROUTING_ENABLED', 'true');
+            vi.stubEnv('DICTIONARY_AI_DEEPSEEK_CREDENTIAL_CONFIGURED', 'true');
+            vi.stubEnv(
+                'DEEPSEEK_API_KEY',
+                textAiFixtureCredentials.DEEPSEEK_API_KEY,
+            );
             client = createTestPostgresClient();
             other = createTestPostgresClient();
             database = createDrizzleDatabase(client, databaseSchema);
@@ -92,9 +118,34 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await database
                 .insert(usersTable)
                 .values({ id: ownerId, status: 'active' });
+
+            await seedDictionaryAccountingFixture(database);
+            const workerId = 'shared-capacity-fixture';
+            await database.insert(dictionaryAiWorkerObservationsTable).values({
+                id: conversationCapacityObservationId(
+                    workerId,
+                    dictionaryModel.providerId,
+                    dictionaryModel.id,
+                ),
+                workerId,
+                providerId: dictionaryModel.providerId,
+                modelId: dictionaryModel.id,
+                adapterRevision: dictionaryModel.adapterRevision,
+                checkedAt: instant(),
+                expiresAt: instant(120_000),
+                status: 'available',
+                message: 'Synthetic dictionary worker',
+                textAiSelectionRevision: 1,
+                textAiCapacityRevision: 1,
+                textsCapacityRevision: 1,
+                conversationCapacityRevision: 1,
+                creditSettlementRevision: 1,
+                textAiSupportedFormats: [...dictionaryModel.supportedFormats],
+            });
         });
 
         afterAll(async () => {
+            vi.unstubAllEnvs();
             await Promise.all([client.end(), other.end()]);
         });
 
@@ -285,7 +336,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             dictionaryId: string,
             tx: Parameters<Parameters<typeof database.transaction>[0]>[0],
         ) {
-            const model = textAiModelCatalog[0]!;
+            const model = dictionaryModel;
             const snapshot: TextAiExecutionSnapshot = {
                 adapterRevision: model.adapterRevision,
                 aggregateBudget: budget,
@@ -363,6 +414,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         ) {
             return {
                 ...row,
+                // Legacy workers can claim only rows created before managed route selection.
+                selectedExecutionSnapshot: null,
+                selectedExecutionVersion: null,
+                executionRevisionId: null,
                 id: randomUUID(),
                 idempotencyKey: randomUUID(),
                 requestFingerprint: fingerprint('D'),

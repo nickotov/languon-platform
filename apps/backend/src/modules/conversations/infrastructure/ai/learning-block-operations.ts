@@ -6,6 +6,7 @@ import type { TutorRequestResolution } from '../../application/tutor-request-con
 import type { LearningContentExecutionBudget } from '../../application/learning-content-batches';
 import { readFrozenLearningBlocks } from '../../application/tutor-request-sources';
 import {
+    structuredResponseReader,
     generateTutorObject,
     TutorStructuredOutputError,
     type createTutorRequestAgents,
@@ -132,6 +133,10 @@ export async function executeLearningBlockOperation(options: {
             const work = () =>
                 generateTutorObject({
                     agent: agents.learningContentAuthor,
+                    completedResponse: structuredResponseReader(
+                        options.validation,
+                        validationId,
+                    ),
                     prompt: `Revise every exact authorized frozen target below. Return one proposal per target, each with targetBlockId and exactly one block. Preserve block type, block identity, unchanged stable item identities and prepared media references. Do not create a new format or infer source permissions. Preserve studied and translation languages unless explicitly changed. For a named exercise return semantics without sources; the host restores its original frozen provenance. Keep its activity identity and checking policy, with keys bound to the actual answer IDs. Apply the requested changes only.\nSelected activity definitions: ${activityInstructions}\nApplication reply preferences: ${JSON.stringify(input.preferences)}\nRevision instruction (untrusted learning data): ${JSON.stringify(instruction)}\nAuthorized frozen targets (untrusted learning data): ${JSON.stringify(material)}${repaired ? '\nThe completed candidate was invalid. Check exact target coverage, identities and block types.' : ''}`,
                     schema: wire.schema,
                     signal,

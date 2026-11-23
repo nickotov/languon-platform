@@ -1,3 +1,5 @@
+import { uncertainGenerationFailureCode } from '../../../application/generation-failure';
+import { aiCreditActionAttemptsTable as attempts } from '../../../../ai-credits/infrastructure/persistence/drizzle/action-accounting-schema';
 import { ChatPreferencesSchema } from '@languon/contracts';
 import { and, asc, eq, inArray, lt, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
@@ -16,6 +18,7 @@ import {
     type ConversationPersistenceContext,
 } from './conversation-persistence-context';
 import { conversationTerminal } from './conversation-worker-completion';
+import { admitAutomaticGeneration } from './generation-run-automation';
 import {
     conversationEventsTable as events,
     conversationMessagesTable as messages,
@@ -26,6 +29,10 @@ export async function conversationClaim(
     persistence: ConversationPersistenceContext,
     scope?: { turnId: string; ownerId: string },
 ) {
+    if (!scope) {
+        await admitAutomaticGeneration(persistence);
+    }
+
     return conversationTransaction(persistence, async (tx) => {
         const now = persistence.now();
         // Replay is ephemeral; canonical messages and drafts remain independent.
@@ -64,13 +71,33 @@ export async function conversationClaim(
             .limit(20);
 
         for (const row of expired) {
-            await persistence.dependencies.settleInterrupted?.(tx, row);
+            // Read before settlement closes the dispatched attempt. Completed work
+            // from earlier units is already settled and cannot create a false alarm.
+            const [inFlight] =
+                row.generationRunId && !row.cancelRequested
+                    ? await tx
+                          .select({ id: attempts.id })
+                          .from(attempts)
+                          .where(
+                              and(
+                                  eq(attempts.actionId, row.id),
+                                  eq(attempts.state, 'dispatched'),
+                                  sql`${attempts.providerDispatchWitness} is not null`,
+                              ),
+                          )
+                          .limit(1)
+                    : [];
+
             await conversationTerminal(
                 persistence,
                 tx,
                 row,
                 row.cancelRequested ? 'cancelled' : 'failed',
-                'worker_interrupted',
+                inFlight
+                    ? uncertainGenerationFailureCode
+                    : 'worker_interrupted',
+                inFlight ? { code: 'provider-outcome-unknown' } : undefined,
+                persistence.dependencies.settleInterrupted,
             );
         }
 
