@@ -1,6 +1,7 @@
 import type { ChangeEvent } from 'react';
 import type { ExerciseLearningBlock } from '@languon/contracts';
 import type { LearningBlockLabels } from '../../../../types';
+import { listeningCopy } from '../../../../lib/listening-copy';
 import { exerciseChoiceText } from '../../../../lib/named-exercise-labels';
 import styles from '../../../styles/exercise-block-common.module.css';
 
@@ -74,6 +75,9 @@ export function ExerciseAnswerFields({
         );
     }
 
+    let gapOrdinal = 0;
+    const gapLabel = listeningCopy(labels.locale)[5];
+
     return (
         <div className={styles.gaps}>
             {block.parts.map((part, index) => {
@@ -85,7 +89,11 @@ export function ExerciseAnswerFields({
                     );
                 }
 
-                const label = `${labels.answer} ${index + 1}`;
+                gapOrdinal++;
+                const label =
+                    block.semantics?.activity.id === 'L04'
+                        ? `${gapLabel} ${gapOrdinal}`
+                        : `${labels.answer} ${index + 1}`;
                 const value = gaps[part.id] ?? '';
 
                 return (

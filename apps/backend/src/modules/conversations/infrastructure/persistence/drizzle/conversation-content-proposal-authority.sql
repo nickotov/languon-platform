@@ -89,7 +89,7 @@ BEGIN
   WHERE b->>'type'='exercise' AND source->'origin'->>'kind'='block'
    AND (jsonb_typeof(source->'origin'->'blockId') IS DISTINCT FROM 'string'
     OR source->'origin'->>'blockId' !~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
-    OR coalesce(source->>'kind','') NOT IN ('vocabulary','grammar','text'))
+    OR coalesce(source->>'kind','') NOT IN ('vocabulary','grammar','text','audio'))
  ) THEN RAISE EXCEPTION 'The named question source is invalid' USING ERRCODE='23514'; END IF;
  FOR source_ref,source_kind IN
   SELECT DISTINCT reference.id,reference.kind FROM (
@@ -99,7 +99,7 @@ BEGIN
     WHERE b->>'type'='exercise'
    UNION ALL
    SELECT source->'origin'->>'blockId',
-    CASE source->>'kind' WHEN 'vocabulary' THEN 'vocabulary' WHEN 'grammar' THEN 'grammar' WHEN 'text' THEN 'bilingual-text' END
+    CASE source->>'kind' WHEN 'vocabulary' THEN 'vocabulary' WHEN 'grammar' THEN 'grammar' WHEN 'text' THEN 'bilingual-text' WHEN 'audio' THEN 'audio' END
     FROM jsonb_array_elements(blocks_value) b
     CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(b->'semantics'->'sources')='array' THEN b->'semantics'->'sources' ELSE '[]'::jsonb END) source
     WHERE b->>'type'='exercise' AND source->'origin'->>'kind'='block'

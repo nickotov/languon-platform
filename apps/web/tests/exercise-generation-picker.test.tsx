@@ -232,7 +232,7 @@ describe('exercise generation picker', () => {
 
         expect(
             screen.getByText(
-                'Choose vocabulary, grammar or text material first.',
+                'Choose vocabulary, grammar, text or a recording with a transcript first.',
             ),
         ).toBeVisible();
 
@@ -495,4 +495,36 @@ describe('exercise composer draft lifecycle', () => {
         act(() => result.current.accepted(request));
         expect(result.current.request).toBeUndefined();
     });
+});
+
+it('offers decoding only when the selected recording has a suitable excerpt', () => {
+    const props = {
+        selectedIds: [sourceId],
+        locale: 'en',
+        onClose: vi.fn(),
+        onPrepare: vi.fn(),
+    };
+    const source = {
+        type: 'audio' as const,
+        id: sourceId,
+        title: 'At the library',
+        language: 'en',
+    };
+    const { rerender } = render(
+        <ExerciseGenerationPicker
+            {...props}
+            sources={[{ ...source, listeningSource: 'meaning' }]}
+        />,
+    );
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Choose activities' }));
+    expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+    rerender(
+        <ExerciseGenerationPicker
+            {...props}
+            sources={[{ ...source, listeningSource: 'decoding' }]}
+        />,
+    );
+
+    expect(screen.getAllByRole('checkbox')).toHaveLength(3);
 });

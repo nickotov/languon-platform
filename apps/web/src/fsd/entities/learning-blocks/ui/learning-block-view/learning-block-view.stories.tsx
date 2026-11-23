@@ -1,3 +1,7 @@
+import {
+    exerciseActivityExamples,
+    exerciseExampleLabels,
+} from '../../examples';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import type { LearningBlockLabels } from '../../types';
 import { LearningBlockView } from './learning-block-view';
@@ -175,5 +179,37 @@ export const UnpreparedAudio: Story = {
         block: { id, type: 'audio', title: 'Dialogue à préparer' },
         labels: { ...labels, noRecording: 'No recording prepared yet' },
         variant: 'author',
+    },
+};
+
+const listeningExamples = exerciseActivityExamples('en').filter(
+    (example) => example.recording,
+);
+
+export const LibraryListeningSet: Story = {
+    args: { block: listeningExamples[0]!.recording!.block },
+    render() {
+        const recording = listeningExamples[0]!.recording!;
+
+        return (
+            <section data-listening-document>
+                <LearningBlockView
+                    block={recording.block}
+                    audioUrl={recording.url}
+                    labels={exerciseExampleLabels('en')}
+                    variant='author'
+                />
+                {listeningExamples.map((example) => (
+                    <LearningBlockView
+                        key={example.block.id}
+                        block={example.block}
+                        labels={exerciseExampleLabels('en')}
+                        audioUrl={recording.url}
+                        hintTranscript={example.recording!.excerpt}
+                        disclosureOnly
+                    />
+                ))}
+            </section>
+        );
     },
 };

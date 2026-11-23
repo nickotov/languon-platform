@@ -38,8 +38,8 @@ source_paths:
     - docs/adr/0051-duration-based-transcription-accounting.md
     - apps/backend/src/modules/speech/infrastructure/knowledge-snippet-source.ts
     - apps/backend/src/modules/speech/infrastructure/knowledge-speech-worker-authority.sql
-source_fingerprint: sha256:207461452f16a5929d6a1038366e7f54993988af60e808793327ad983658f2b3
-reviewed: 2026-11-19
+source_fingerprint: sha256:d4d370c2cda3e81abdc4086740a1648fe0d2c584e33c00dc62c30446c1dd2e6e
+reviewed: 2026-11-23
 ---
 
 # Speech reuse, generation and pricing

@@ -88,6 +88,46 @@ export function guideLocale(locale: string): GuideLocale {
         : 'en';
 }
 
+export function listeningRecipes(
+    locale: GuideLocale,
+    id: ExerciseActivityId,
+    name: string,
+) {
+    const prompts = {
+        en: [
+            `Use the Audio block I selected to create one ${id} exercise (${name}). Reuse its recording and transcript.`,
+            'Reuse my selected recording and choose one listening exercise that suits the dialogue and its timing.',
+            'Create a short English A2 dialogue at a library with two speakers. Generate a recording and add a meaning question, a dictation and a listening gap using that recording.',
+            'Select an Audio block with a transcript in Knowledge, or ask for a new dialogue and recording.',
+            'Copy prompt',
+        ],
+        ru: [
+            `Создай одно упражнение ${id} (${name}) по выбранному блоку «Аудио». Используй его запись и расшифровку.`,
+            'Подбери одно упражнение на аудирование по выбранной записи с учётом содержания диалога и временных меток.',
+            'Подготовь короткий диалог на английском A2 между двумя людьми в библиотеке. Создай запись, добавь вопрос на понимание, диктант и задание с пропуском по этой записи.',
+            'В «Знаниях» выберите аудиоблок с расшифровкой или попросите создать диалог с новой записью.',
+            'Копировать запрос',
+        ],
+        fr: [
+            `Crée un exercice ${id} (${name}) à partir du bloc Audio sélectionné. Réutilise son enregistrement et sa transcription.`,
+            'Choisis un exercice d’écoute adapté à mon enregistrement, au sens du dialogue et aux repères temporels.',
+            'Crée un court dialogue de niveau A2 en anglais entre deux personnes dans une bibliothèque. Produis un enregistrement et utilise-le pour une question de compréhension, une dictée et un texte à trous.',
+            'Dans Connaissances, sélectionnez un bloc Audio transcrit ou demandez un nouveau dialogue enregistré.',
+            'Copier la demande',
+        ],
+        es: [
+            `Crea un ejercicio ${id} (${name}) con el bloque Audio seleccionado. Reutiliza la grabación y su transcripción.`,
+            'Elige un ejercicio de escucha adecuado para el diálogo y los tiempos de la grabación seleccionada.',
+            'Crea un diálogo breve en inglés A2 entre dos personas en una biblioteca. Genera una grabación y úsala para una pregunta de comprensión, un dictado y un texto con huecos.',
+            'En Conocimientos, selecciona un bloque Audio con transcripción o pide un nuevo diálogo grabado.',
+            'Copiar petición',
+        ],
+    } as const;
+    const [specific, best, mixed, prerequisite, action] = prompts[locale];
+
+    return { specific, best, mixed, prerequisite, action };
+}
+
 export function activityPrompt(
     locale: string,
     id: ExerciseActivityId,

@@ -720,8 +720,27 @@ const accountingMaintenance = startAccountingMaintenance({
     },
 });
 
+const listeningShutdown = new AbortController();
+let lastListeningMaintenanceWarning = 0;
+const listeningMaintenance = startAccountingMaintenance({
+    maintain: () => speech.processListeningRecording(listeningShutdown.signal),
+    onError: () => {
+        if (
+            !listeningShutdown.signal.aborted &&
+            Date.now() - lastListeningMaintenanceWarning > 60_000
+        ) {
+            lastListeningMaintenanceWarning = Date.now();
+            console.error(
+                'Listening preparation deferred; the same request will resume.',
+            );
+        }
+    },
+});
+
 const performShutdown = createGracefulShutdown({
     closeResources: async () => {
+        listeningShutdown.abort();
+        await listeningMaintenance.stop();
         await accountingReportWorker.stop();
         await accountingMaintenance.stop();
         await accountingMaintenanceClient.end();

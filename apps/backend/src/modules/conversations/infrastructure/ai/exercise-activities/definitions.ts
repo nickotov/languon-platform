@@ -25,6 +25,51 @@ export type ExerciseActivityDefinition = Readonly<
 >;
 
 const rules = {
+    L01: {
+        purpose: 'Recognize the meaning of an authorized recording.',
+        requiredInputs: ['Playable audio with an authorized transcript.'],
+        expectedOutput:
+            'One question of gist or detail with one defensible choice and two plausible distractors.',
+        answerConstraints: [
+            'Select the transcript segments providing evidence for the correct choice.',
+        ],
+        explanationRequirements: [
+            'Explain the answer in the requested explanation language.',
+        ],
+        rejectionCases: [
+            'A task relying on information absent from the recording.',
+        ],
+    },
+    L02: {
+        purpose: 'Transcribe a single short utterance.',
+        requiredInputs: ['Playable audio with an authorized transcript.'],
+        expectedOutput:
+            'One short dictation prompt. The host derives the prepared answer from the selected transcript segment.',
+        answerConstraints: [
+            'Select exactly one replayable transcript segment.',
+        ],
+        explanationRequirements: [
+            'Explain the answer in the requested explanation language.',
+        ],
+        rejectionCases: [
+            'A task relying on information absent from the recording.',
+        ],
+    },
+    L04: {
+        purpose: 'Decode specific words in context.',
+        requiredInputs: ['Playable audio with an authorized transcript.'],
+        expectedOutput:
+            'A transcript sentence with one or two omitted expressions.',
+        answerConstraints: [
+            'The complete gap sentence must reconstruct the exact transcript wording.',
+        ],
+        explanationRequirements: [
+            'Explain the answer in the requested explanation language.',
+        ],
+        rejectionCases: [
+            'A task relying on information absent from the recording.',
+        ],
+    },
     V01: {
         purpose:
             'Retrieve one selected word from its meaning or a precise contextual cue.',

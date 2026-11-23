@@ -39,7 +39,10 @@ source_paths:
     - apps/backend/src/modules/administration/infrastructure/ai-catalog/tool-definitions.ts
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source.ts
     - apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts
-    - docs/adr/0060-composable-generation-runs.md
+    - docs/adr/0065-generated-listening-sets.md
+  - apps/backend/src/modules/speech/infrastructure/listening-recording-queue.ts
+  - apps/backend/src/modules/conversations/application/listening-script.ts
+  - docs/adr/0060-composable-generation-runs.md
     - packages/contracts/src/generated-artifacts.ts
     - apps/backend/src/modules/conversations/infrastructure/ai/learning-generation-plan.ts
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-worker.ts
@@ -52,19 +55,19 @@ source_paths:
     - apps/backend/src/modules/conversations/application/learning-content-plan-capacity.ts
     - packages/prompts/src/local/learning-content-authoring.ts
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-completion.ts
-source_fingerprint: sha256:20dfae6112c3342bd7b726f11da8f4670ff954aab40535ac9d3ea36ab35ee3c0
+source_fingerprint: sha256:7c73324cdeae2a414a164d20e3b205c0a25311582822777ae59f16ad1dd6ed9c
 reviewed: 2026-11-23
 ---
 
 # Named text exercises
 
-The shared catalog identifies 19 pedagogical activities independently from the
+The shared catalog identifies 22 pedagogical activities independently from the
 three rendering formats. This view follows their Knowledge authoring and practice
 boundaries; it adds no provider, worker pool or publishing authority.
 
 ```mermaid
 flowchart TB
-    Catalog["19 versioned activity identities
+    Catalog["22 versioned activity identities
 localized metadata and fixed checking policies"] --> Picker["Owner source menu or tutor picker
 Automatic or selected activities; count and languages"]
     Picker --> Send
@@ -82,7 +85,11 @@ persist canonical text plus identity metadata"]
     Mentions --> Plan
     Plan --> Ground["Host resolves exact authorized material
 vocabulary, grammar, passage or frozen selection"]
-    Studio["19 standalone Studio tools
+    Recording["New recording requested and authorized"] --> Script["Validate and freeze utterances"]
+    Script --> Speech["Queue speech, assemble one private asset with measured timings"]
+    Speech --> Ground
+    Existing["Selected accessible recording with transcript"] --> Ground
+    Studio["22 standalone Studio tools
 isolated synthetic session authority"] --> Ground
     Ground -->|"Missing, oversized or conflicting"| Clarify["Clarify or refuse without partial publication
 retain admissible frozen context"]

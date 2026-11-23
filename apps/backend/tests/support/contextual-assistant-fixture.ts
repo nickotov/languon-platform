@@ -134,18 +134,23 @@ function assertFixtureTarget() {
     const database = new URL(getTestDatabaseUrl());
     const redis = new URL(process.env.AUTH_TEST_REDIS_URL ?? 'invalid:');
     if (
-        !['55444', '55488'].includes(database.port) ||
+        !['55444', '55488', '55595'].includes(database.port) ||
         database.pathname !== '/languon_auth_assistant_web_test' ||
         redis.protocol !== 'redis:' ||
         !['localhost', '127.0.0.1'].includes(redis.hostname) ||
-        redis.port !== (database.port === '55488' ? '56488' : '56444') ||
+        redis.port !==
+            (database.port === '55488'
+                ? '56488'
+                : database.port === '55595'
+                  ? '56595'
+                  : '56444') ||
         redis.pathname !== '/1' ||
         process.env.ALLOW_DISPOSABLE_REDIS_TESTS !== 'true' ||
         process.env.AUTH_TEST_REDIS_CONFIRM !==
             `${redis.hostname}:${redis.port}/1`
     ) {
         throw new Error(
-            'Fixture requires its exclusive confirmed disposable PostgreSQL/Redis pair 55444/56444 or critical 55488/56488 with Redis DB1.',
+            'Fixture requires its exclusive confirmed disposable PostgreSQL/Redis pair 55444/56444, 55595/56595, or critical 55488/56488 with Redis DB1.',
         );
     }
 }
@@ -877,6 +882,7 @@ export async function createContextualAssistantFixture(
                 pricingAdmissionEnabled: true,
             }),
             settleInterrupted: settleInterruptedConversationCalls,
+            prepareListeningRecording: speech.prepareListeningRecording,
             createRunner: (store, turn) => {
                 const execution =
                     turn.execution as unknown as TextAiAdmissionExecution;

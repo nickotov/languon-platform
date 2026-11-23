@@ -1,3 +1,4 @@
+import { listeningScriptSchema } from './listening-script';
 import { z } from 'zod';
 import { generatedReadingSchema } from './learning-content-prose';
 import {
@@ -21,6 +22,7 @@ import {
 
 const briefInput = LearningContentTaskSchema.omit({ id: true, kind: true });
 const outputSchemas = {
+    audio: listeningScriptSchema,
     prose: GeneratedProseBodySchema,
     vocabulary: VocabularyLearningBlockSchema,
     grammar: GrammarLearningBlockSchema,

@@ -20,6 +20,14 @@ function frozenSource(source: NamedExerciseSource) {
         return { kind: source.kind, rule: source.rule };
     }
 
+    if (source.kind === 'audio') {
+        return {
+            kind: 'audio',
+            assetId: source.assetId,
+            passages: source.passages.map((item) => item.text),
+        };
+    }
+
     if (source.kind === 'text') {
         return {
             kind: source.kind,
@@ -78,6 +86,25 @@ function currentSource(
             pattern: target.pattern ?? null,
             examples: target.examples ?? [],
             commonMistakes: target.commonMistakes ?? [],
+        };
+    }
+
+    if (source.kind === 'audio' && target.type === 'audio') {
+        return {
+            assetId: target.assetId,
+            segments: source.passages.map((item) => {
+                const segment = target.transcript?.segments.find(
+                    (value) => value.id === item.segmentId,
+                );
+
+                if (!segment) {
+                    throw new WorkbookLearningError(
+                        'Named exercise recording segment is unavailable.',
+                    );
+                }
+
+                return { text: segment.text, timing: segment.timing ?? null };
+            }),
         };
     }
 

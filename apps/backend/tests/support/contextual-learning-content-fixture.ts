@@ -75,6 +75,44 @@ function planningSourceCatalog(
 
 /** Scripted provider outputs prove wiring only, never natural-language intent quality. */
 export function fixtureRequestResolution(question: string, prompt: unknown) {
+    if (question === 'Listening lesson fixture') {
+        return {
+            kind: 'generate',
+            replyLanguage: 'en',
+            brief: {
+                tasks: [
+                    {
+                        id: 'listening-recording',
+                        kind: 'audio',
+                        instruction:
+                            'Write a short two-speaker French dialogue about meeting at a station.',
+                        language: 'fr',
+                        speakerCount: 2,
+                    },
+                    {
+                        id: 'listening-check',
+                        kind: 'exercises',
+                        instruction:
+                            'Check understanding of the recording in three formats.',
+                        language: 'fr',
+                        explanationLanguage: 'fr',
+                        source: {
+                            kind: 'task',
+                            taskId: 'listening-recording',
+                        },
+                        count: 3,
+                        activities: [
+                            { activityId: 'L01', count: 1 },
+                            { activityId: 'L04', count: 1 },
+                            { activityId: 'L02', count: 1 },
+                        ],
+                    },
+                ],
+                outputOrder: ['listening-recording', 'listening-check'],
+            },
+        };
+    }
+
     if (question === 'Composable lesson fixture') {
         return {
             kind: 'generate',
@@ -626,6 +664,27 @@ export function fixtureAuthoringOutput(prompt: unknown) {
         : 0;
 
     const tasks = brief.tasks.map((task) => {
+        if (task.kind === 'audio') {
+            return {
+                taskId: task.id,
+                blocks: [
+                    {
+                        title: 'Rendez-vous à la gare',
+                        utterances: [
+                            {
+                                speaker: 'Anne',
+                                text: 'Bonjour Luc, le train arrive à huit heures.',
+                            },
+                            {
+                                speaker: 'Luc',
+                                text: 'Très bien, je t’attends devant la gare.',
+                            },
+                        ],
+                    },
+                ],
+            };
+        }
+
         if (task.kind === 'prose') {
             return {
                 taskId: task.id,

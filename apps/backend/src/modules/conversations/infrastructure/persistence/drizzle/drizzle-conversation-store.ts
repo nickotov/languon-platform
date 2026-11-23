@@ -91,6 +91,7 @@ export class DrizzleConversationStore implements ConversationStore {
     readonly generationContext: Required<GenerationRunStore>['generationContext'];
     readonly startGeneration: Required<GenerationRunStore>['startGeneration'];
     readonly checkpointGeneration: Required<GenerationRunStore>['checkpointGeneration'];
+    readonly freezeListeningScript: Required<GenerationRunStore>['freezeListeningScript'];
     readonly recordGenerationAttempt: Required<GenerationRunStore>['recordGenerationAttempt'];
     readonly pauseGeneration: Required<GenerationRunStore>['pauseGeneration'];
     readonly proposeGenerationRevision: Required<GenerationRunStore>['proposeGenerationRevision'];
@@ -116,6 +117,7 @@ export class DrizzleConversationStore implements ConversationStore {
         this.generationContext = generation.generationContext;
         this.startGeneration = generation.startGeneration;
         this.checkpointGeneration = generation.checkpointGeneration;
+        this.freezeListeningScript = generation.freezeListeningScript;
         this.recordGenerationAttempt = generation.recordGenerationAttempt;
         this.pauseGeneration = generation.pauseGeneration;
         this.proposeGenerationRevision = generation.proposeGenerationRevision;

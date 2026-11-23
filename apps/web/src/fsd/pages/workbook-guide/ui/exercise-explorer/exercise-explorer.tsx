@@ -5,7 +5,7 @@ import { LearningBlockView } from '@/fsd/entities/learning-blocks';
 import type { Locale } from '@/fsd/shared/i18n';
 import { Button } from '@/fsd/shared/ui';
 import type { GuideActivity } from '../../lib/examples';
-import { guideCopy } from '../../lib/content';
+import { guideCopy, listeningRecipes } from '../../lib/content';
 import { guideUiCopy } from '../copy';
 import { guideBlockLabels } from '../labels';
 import { PromptRecipe } from '../prompt-recipe/prompt-recipe';
@@ -32,6 +32,7 @@ export function ExerciseExplorer({
         'grammar',
         'reading',
         'writing',
+        'listening',
     ].indexOf(current.activity.category);
     const categoryLabel = copy.categories[categoryIndex];
     const isTranslation = selected === 'W01';
@@ -47,7 +48,11 @@ export function ExerciseExplorer({
 
     const demoKey = `${selected}-${revision}`;
     const expansion = { open: true, at: revision };
-    const promptText = `${current.prompt}\n\n${current.sourceText}`;
+    const listening = current.recording
+        ? listeningRecipes(locale, selected, metadata.name)
+        : undefined;
+    const promptText =
+        listening?.specific ?? `${current.prompt}\n\n${current.sourceText}`;
     const otherRecipes = content.recipes.filter(
         (recipe) => recipe.id !== 'specific',
     );
@@ -57,7 +62,7 @@ export function ExerciseExplorer({
     }
 
     return (
-        <div className={styles.content}>
+        <div className={styles.content} data-listening-document>
             <section
                 className={styles.identity}
                 aria-live='polite'
@@ -72,18 +77,29 @@ export function ExerciseExplorer({
                 </div>
             </section>
             <section className={styles.source}>
-                <PromptRecipe
-                    key={`${demoKey}-source`}
-                    title={copy.source}
-                    text={current.sourceText}
-                    copyLabel={copy.copySource}
-                    copy={copy}
-                />
+                {current.recording ? (
+                    <LearningBlockView
+                        variant='author'
+                        block={current.recording.block}
+                        audioUrl={current.recording.url}
+                        labels={labels}
+                    />
+                ) : (
+                    <PromptRecipe
+                        key={`${demoKey}-source`}
+                        title={copy.source}
+                        text={current.sourceText}
+                        copyLabel={copy.copySource}
+                        copy={copy}
+                    />
+                )}
             </section>
             <section className={styles.demo} data-testid='workbook-demo'>
                 <LearningBlockView
                     key={demoKey}
                     block={current.block}
+                    audioUrl={current.recording?.url}
+                    hintTranscript={current.recording?.excerpt}
                     labels={labels}
                     scope={`guide-${demoKey}`}
                     expandAll={expansion}
@@ -105,13 +121,13 @@ export function ExerciseExplorer({
             />
             <section className={styles.recipes} aria-label={copy.recipes}>
                 <h2>{copy.recipes}</h2>
-                <p>{copy.prerequisite}</p>
+                <p>{listening?.prerequisite ?? copy.prerequisite}</p>
                 <div id='recipe-specific'>
                     <PromptRecipe
                         key={demoKey}
                         title={content.recipes[0]!.title}
                         text={promptText}
-                        copyLabel={copy.copy}
+                        copyLabel={listening?.action ?? copy.copy}
                         copy={copy}
                     />
                 </div>
@@ -122,8 +138,14 @@ export function ExerciseExplorer({
                     >
                         <PromptRecipe
                             title={recipe.title}
-                            text={`${recipe.prompt}\n\n${current.sourceText}`}
-                            copyLabel={copy.copy}
+                            text={
+                                listening
+                                    ? recipe.id === 'best-fit'
+                                        ? listening.best
+                                        : listening.mixed
+                                    : `${recipe.prompt}\n\n${current.sourceText}`
+                            }
+                            copyLabel={listening?.action ?? copy.copy}
                             copy={copy}
                         />
                     </div>

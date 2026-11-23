@@ -137,7 +137,7 @@ export interface SpeechStore {
         checksum: string;
         fixture: boolean;
     }>;
-    claim(now: Date): Promise<SpeechJob | null>;
+    claim(now: Date, requestId?: string): Promise<SpeechJob | null>;
     authorizeDispatch?(job: SpeechJob, now: Date): Promise<boolean>;
     submitted(
         job: SpeechJob,

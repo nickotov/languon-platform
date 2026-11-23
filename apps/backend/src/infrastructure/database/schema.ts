@@ -1,3 +1,4 @@
+import * as listeningAllowanceSchema from '../../modules/conversations/infrastructure/persistence/drizzle/listening-allowance-schema';
 import * as generationRunSchema from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-generation-schema';
 import * as stagedActionAccountingSchema from '../../modules/ai-credits/infrastructure/persistence/drizzle/staged-action-accounting-schema';
 import * as dictionarySnippetSchema from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-dictionary-snippet-schema';
@@ -178,6 +179,7 @@ import {
 
 export const databaseSchema = {
     ...generationRunSchema,
+    ...listeningAllowanceSchema,
     ...stagedActionAccountingSchema,
     ...dictionarySnippetSchema,
     ...adminMcpSchema,
@@ -309,4 +311,5 @@ export * from '../../modules/knowledge/infrastructure/persistence/drizzle/vocabu
 export * from '../../modules/knowledge/infrastructure/persistence/drizzle/knowledge-sentence-schema';
 export * from '../../modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source-schema';
 export * from '../../modules/conversations/infrastructure/persistence/drizzle/conversation-generation-schema';
+export * from '../../modules/conversations/infrastructure/persistence/drizzle/listening-allowance-schema';
 export * from '../../modules/ai-credits/infrastructure/persistence/drizzle/staged-action-accounting-schema';

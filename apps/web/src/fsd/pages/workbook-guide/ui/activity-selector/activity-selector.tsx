@@ -7,7 +7,14 @@ import type { GuideActivity } from '../../lib/examples';
 import { guideUiCopy } from '../copy';
 import styles from './activity-selector.module.css';
 
-const categories = ['vocabulary', 'grammar', 'reading', 'writing'] as const;
+const categories = [
+    'vocabulary',
+    'grammar',
+    'reading',
+    'writing',
+    'listening',
+] as const;
+
 export function ActivitySelector({
     locale,
     activities,

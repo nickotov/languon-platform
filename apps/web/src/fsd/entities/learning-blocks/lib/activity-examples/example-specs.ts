@@ -12,6 +12,42 @@ export type ExampleSpec = {
 
 /** Each item is authored against the shared library visit, rather than generated at runtime. */
 export const exampleSpecs: Record<ExerciseActivityId, ExampleSpec> = {
+    L01: {
+        question: 'Why does the visitor speak to the librarian?',
+        answer: 'To borrow a book.',
+        reason: [
+            'The visitor asks to borrow the book.',
+            'Посетитель просит книгу.',
+            'La personne souhaite emprunter le livre.',
+            'La persona quiere llevarse el libro.',
+        ],
+        choices: [
+            'To borrow a book.',
+            'To change the opening hours.',
+            'To find a lost bag.',
+        ],
+    },
+    L04: {
+        question: 'Complete the librarian’s reply.',
+        answer: 'Friday',
+        reason: [
+            'Listen for the return date.',
+            'Прислушайтесь к дате возврата.',
+            'Écoutez la date de retour.',
+            'Escucha la fecha de devolución.',
+        ],
+        gap: ['Of course. Please return it on ', '.'],
+    },
+    L02: {
+        question: 'Write the librarian’s reply.',
+        answer: 'Of course. Please return it on Friday.',
+        reason: [
+            'Replay the second speaker’s words.',
+            'Послушайте ещё раз реплику библиотекаря.',
+            'Réécoutez les mots de la bibliothécaire.',
+            'Vuelve a escuchar a la bibliotecaria.',
+        ],
+    },
     V01: {
         question:
             'Which word means “take something for a short time and give it back”?',

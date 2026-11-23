@@ -97,7 +97,7 @@ function ExampleContent({
     }
 
     return (
-        <div className={styles.content}>
+        <div className={styles.content} data-listening-document>
             <p className={styles.notice}>{copy.notice}</p>
             <p>{example.activity.locales[locale].description}</p>
             <p>{example.useCaseGuidance}</p>
@@ -107,11 +107,22 @@ function ExampleContent({
             </p>
             <section className={styles.source}>
                 <h3>{copy.source}</h3>
-                <p dir='auto'>{example.sourceText}</p>
+                {example.recording ? (
+                    <LearningBlockView
+                        variant='author'
+                        block={example.recording.block}
+                        labels={labels}
+                        audioUrl={example.recording.url}
+                    />
+                ) : (
+                    <p dir='auto'>{example.sourceText}</p>
+                )}
             </section>
             <LearningBlockView
                 key={key}
                 block={example.block}
+                audioUrl={example.recording?.url}
+                hintTranscript={example.recording?.excerpt}
                 labels={labels}
                 scope={`preview-${key}`}
                 expandAll={expansion}

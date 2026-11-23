@@ -42,6 +42,12 @@ const values = {
         'En el documento',
         'Dans le document',
     ],
+    listening: [
+        'Listening',
+        'Аудирование',
+        'Comprensión auditiva',
+        'Compréhension orale',
+    ],
     reading: ['Reading', 'Текст', 'Lectura', 'Lecture'],
     grammar: ['Grammar', 'Грамматика', 'Gramática', 'Grammaire'],
     exercises: ['Exercises', 'Упражнения', 'Ejercicios', 'Exercices'],

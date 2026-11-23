@@ -856,7 +856,7 @@ export const ConversationStreamUnavailableSchema = z
     .strict();
 export const ConversationActionQuoteSchema = z
     .object({
-        scope: z.literal('lesson-if-planned').optional(),
+        scope: z.enum(['lesson-if-planned', 'listening-lesson']).optional(),
         id: z.uuid(),
         maximumCredits: z.string().regex(/^(0|[1-9][0-9]*)(\.[0-9]{1,3})?$/u),
         approximateOutputTokens: z.number().int().min(1).max(10000),
@@ -1068,6 +1068,7 @@ export type UpdateConversationRequest = z.infer<
 export const SubmitConversationTurnRequestSchema = z
     .object({
         requestId: z.uuid(),
+        includeListeningSpeech: z.literal(true).optional(),
         exerciseRequest: ExerciseGenerationRequestSchema.optional(),
         promptMentions: ConversationPromptMentionsSchema.optional(),
         confirmedQuoteId: z.uuid().optional(),

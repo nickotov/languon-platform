@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// @user-flow-revision workbook-guide sha256:5de6bfaafbfb1e8e
+// @user-flow-revision workbook-guide sha256:19562c507c4c0983
 const writes = new WeakMap<Page, string[]>();
 const errors = new WeakMap<Page, string[]>();
 
@@ -117,8 +117,14 @@ test('guests discover the guide and use real prepared checks without saved attem
             ),
         );
 
-    expect(options).toHaveLength(19);
-    for (const category of ['Vocabulary', 'Grammar', 'Reading', 'Writing']) {
+    expect(options).toHaveLength(22);
+    for (const category of [
+        'Vocabulary',
+        'Grammar',
+        'Reading',
+        'Writing',
+        'Listening',
+    ]) {
         await expect(
             navigation.getByText(category, { exact: true }),
         ).toBeVisible();
@@ -129,6 +135,41 @@ test('guests discover the guide and use real prepared checks without saved attem
         await expect(page.getByTestId('workbook-demo')).toHaveCount(1);
     }
 
+    await selectDesktopActivity(page, 'L02');
+    const player = page.locator('audio');
+    await expect(player).toHaveCount(1);
+    await expect
+        .poll(() => player.evaluate((node: HTMLAudioElement) => node.duration))
+        .toBeGreaterThan(5);
+
+    const dictation = page.getByTestId('workbook-demo');
+    const transcript = page.getByText(
+        'Of course. Please return it on Friday.',
+        { exact: true },
+    );
+
+    await expect(transcript).toHaveCount(0);
+    await dictation.getByRole('button', { name: 'Play excerpt' }).click();
+    await expect
+        .poll(() =>
+            player.evaluate((node: HTMLAudioElement) => node.currentTime),
+        )
+        .toBeGreaterThan(2.9);
+
+    await expect
+        .poll(() => player.evaluate((node: HTMLAudioElement) => node.paused))
+        .toBe(true);
+
+    await dictation
+        .getByRole('textbox')
+        .fill('Of course. Please return it on Tuesday.');
+
+    await dictation.getByRole('button', { name: 'Check answer' }).click();
+    await expect(dictation.locator('del')).toHaveText('Tuesday');
+    await expect(dictation.locator('ins')).toHaveText('Friday');
+    await page.getByRole('button', { name: 'Show transcript' }).click();
+    await expect(transcript).toBeVisible();
+    await captureViewport(page, 'listening-dictation-feedback');
     // Native buttons remain keyboard operable, including after scrolling the TOC.
     await activityButton(page, 'V02').focus();
     await activityButton(page, 'V02').press('Enter');
@@ -407,8 +448,8 @@ test('prompts copy useful source text and the guide works in dark narrow and mem
                 page.getByTestId('workbook-activity-navigation'),
             ).toBeHidden();
 
-            await expect(activity.locator('option')).toHaveCount(19);
-            await expect(activity.locator('optgroup')).toHaveCount(4);
+            await expect(activity.locator('option')).toHaveCount(22);
+            await expect(activity.locator('optgroup')).toHaveCount(5);
             await activity.focus();
             await expect(activity).toBeFocused();
             // Native type-ahead works without depending on the OS popup's arrow handling.

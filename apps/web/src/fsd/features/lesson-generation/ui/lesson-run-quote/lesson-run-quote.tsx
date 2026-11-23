@@ -52,7 +52,11 @@ export function LessonRunQuote({
             closeLabel={copy.cancel}
             title={revision ? copy.quoteRevisionTitle : copy.quoteTitle}
             description={
-                revision ? copy.quoteRevisionDescription : copy.quoteDescription
+                quote?.scope === 'listening-lesson'
+                    ? copy.recordingBudget
+                    : revision
+                      ? copy.quoteRevisionDescription
+                      : copy.quoteDescription
             }
             footer={
                 <DialogActions>

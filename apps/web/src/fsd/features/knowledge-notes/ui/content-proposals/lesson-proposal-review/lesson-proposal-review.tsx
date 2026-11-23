@@ -105,6 +105,7 @@ export function LessonProposalReview({
     );
     const kindLabels = {
         prose: labels.reading,
+        audio: labels.listening,
         exercises: labels.exercises,
         grammar: labels.grammar,
         vocabulary: labels.vocabulary,

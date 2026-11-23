@@ -49,6 +49,7 @@ export function createKnowledgeSpeechBrowserFixture(input: {
     });
 
     return {
+        prepareListeningRecording: speech.prepareListeningRecording,
         speechRoutes: createSpeechRoutes({
             service: speech.service,
             policy: input.policy,
@@ -111,6 +112,7 @@ export function createKnowledgeSpeechBrowserFixture(input: {
 
             loop = (async () => {
                 while (!controller.signal.aborted) {
+                    await speech.processListeningRecording(controller.signal);
                     await speech.worker.runOnce(controller.signal);
                     await delay(25, undefined, { signal: controller.signal });
                 }

@@ -87,7 +87,23 @@ const text: Extract<LearningBlock, { type: 'bilingual-text' }> = {
     ],
     translations: [],
 };
-const sourceBlocks: LearningBlock[] = [vocabulary, grammar, text];
+const spoken = 'The library opens on Monday.';
+const audio: Extract<LearningBlock, { type: 'audio' }> = {
+    id: ids.second,
+    type: 'audio',
+    assetId: ids.proposal,
+    transcript: {
+        language: 'en',
+        segments: [
+            {
+                id: ids.first,
+                text: spoken,
+                timing: { startSeconds: 0, endSeconds: 2 },
+            },
+        ],
+    },
+};
+const sourceBlocks: LearningBlock[] = [vocabulary, grammar, text, audio];
 
 type Scenario = {
     question: string;
@@ -102,6 +118,28 @@ type Scenario = {
 };
 
 const scenarios: Record<ExerciseActivityId, Scenario> = {
+    L01: {
+        question: 'When can someone first visit?',
+        referenceAnswer: 'Monday',
+        explanation: 'The library opens on Monday.',
+        alternatives: ['Sunday', 'Monday', 'Saturday'],
+        correctIndex: 1,
+    },
+    L02: {
+        question: 'Write down the utterance.',
+        referenceAnswer: spoken,
+        explanation: 'The recording gives the opening day.',
+        variants: [spoken],
+    },
+    L04: {
+        question: 'Complete the sentence using the recording.',
+        referenceAnswer: 'Monday',
+        explanation: 'The recording gives the opening day.',
+        beforeGap: 'The library opens on ',
+        afterGap: '.',
+        variants: ['Monday'],
+    },
+
     V01: {
         question:
             'Which word means to use something temporarily and give it back?',
@@ -276,6 +314,15 @@ type NamedExercise = ExerciseLearningBlock & {
 
 function sourceFor(id: ExerciseActivityId): NamedExerciseSource {
     const metadata = getExerciseActivity(id);
+    if (metadata.category === 'listening') {
+        return {
+            kind: 'audio',
+            assetId: ids.proposal,
+            origin: { kind: 'block', blockId: audio.id },
+            passages: [{ segmentId: ids.first, text: spoken }],
+        };
+    }
+
     if (metadata.category === 'vocabulary') {
         return {
             kind: 'vocabulary',
@@ -883,6 +930,61 @@ describe('activity-specific constraints and complete prepared keys', () => {
                 'complete valid catalog semantics',
             );
         }
+    });
+});
+
+describe('listening source integrity', () => {
+    it('rejects a matching transcript from a different recording', () => {
+        expect(() =>
+            validateNamedExerciseActivity(fixture('L01'), [
+                { ...audio, assetId: ids.third },
+            ]),
+        ).toThrow('playable recording');
+    });
+
+    it.each(['L02', 'L04'] as const)(
+        'requires replayable boundaries for %s in a multi-segment recording',
+        (id) => {
+            const segments = [
+                { id: ids.first, text: spoken },
+                { id: ids.third, text: 'See you there.' },
+            ];
+
+            expect(() =>
+                validateNamedExerciseActivity(fixture(id), [
+                    { ...audio, transcript: { language: 'en', segments } },
+                ]),
+            ).toThrow('timed short excerpt');
+        },
+    );
+
+    it('rejects a dictation reference derived from a paraphrase', () => {
+        expect(() =>
+            validateNamedExerciseActivity(
+                { ...fixture('L02'), referenceAnswer: 'We open on Monday.' },
+                [audio],
+            ),
+        ).toThrow('exact utterance');
+    });
+
+    it('rejects gap text that cannot be reconstructed from the recording', () => {
+        const block = fixture('L04');
+        if (block.format !== 'fill-in-the-blank') {
+            throw new Error('Unexpected fixture');
+        }
+
+        expect(() =>
+            validateNamedExerciseActivity(
+                {
+                    ...block,
+                    parts: [
+                        { kind: 'text', text: 'Another word ' },
+                        ...block.parts,
+                    ],
+                },
+                [audio],
+            ),
+        ).toThrow('restore the transcript');
     });
 });
 

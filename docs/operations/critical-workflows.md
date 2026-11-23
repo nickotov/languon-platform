@@ -159,16 +159,16 @@ provider response success can still fail during completion writes.
 The reviewed backend selections partition the retained suites; no existing suite
 or mandatory incident scenario was removed:
 
-| Flow                     | Selection                                                                                                                   |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `ai-conversation`        | Conversation admission, production SDK/worker completion, stores, tutor and learner interview accounting.                   |
-| `ai-knowledge`           | Knowledge/workbook persistence, field actions, private translation, learning epochs and account/learning purge.             |
-| `ai-dictionary`          | Dictionary admission, generation completion, authoring, worker accounting and router gateway wiring.                        |
-| `ai-text`                | Text selection and persisted text/private-translation execution.                                                            |
-| `ai-sentence`            | Sentence stores, worker role/runtime and private free/paid generation/retention.                                            |
-| `ai-speech`              | Speech provider/configuration/accounting/worker, knowledge audio and transcription production execution.                    |
-| `ai-shared-invariants`   | Common pricing, admission, financial settlement, provider SDK observations, routing/probes and account-erasure persistence. |
-| `ai-execution-contracts` | Compatibility aggregate: every backend suite above, with its existing aggregate minimum count.                              |
+| Flow                     | Selection                                                                                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ai-conversation`        | Conversation admission, production SDK/worker completion, stores, tutor and learner interview accounting.                                                           |
+| `ai-knowledge`           | Knowledge/workbook persistence, field actions, private translation, learning epochs and account/learning purge.                                                     |
+| `ai-dictionary`          | Dictionary admission, generation completion, authoring, worker accounting and router gateway wiring.                                                                |
+| `ai-text`                | Text selection and persisted text/private-translation execution.                                                                                                    |
+| `ai-sentence`            | Sentence stores, worker role/runtime and private free/paid generation/retention.                                                                                    |
+| `ai-speech`              | Speech provider/configuration/accounting/worker, listening queue admission, lease fencing and audio replay, knowledge audio and transcription production execution. |
+| `ai-shared-invariants`   | Common pricing, admission, financial settlement, provider SDK observations, routing/probes and account-erasure persistence.                                         |
+| `ai-execution-contracts` | Compatibility aggregate: every backend suite above, with its existing aggregate minimum count.                                                                      |
 
 ### Choose completion coverage by affected behavior
 

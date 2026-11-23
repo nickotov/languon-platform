@@ -1268,6 +1268,34 @@
       "when": 1795067032971,
       "tag": "0180_lesson_unit_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 181,
+      "version": "7",
+      "when": 1795459166875,
+      "tag": "0181_listening_proposal_sources",
+      "breakpoints": true
+    },
+    {
+      "idx": 182,
+      "version": "7",
+      "when": 1795459194842,
+      "tag": "0182_listening-recording-preparations",
+      "breakpoints": true
+    },
+    {
+      "idx": 183,
+      "version": "7",
+      "when": 1795459240146,
+      "tag": "0183_listening-allowance",
+      "breakpoints": true
+    },
+    {
+      "idx": 184,
+      "version": "7",
+      "when": 1795459303195,
+      "tag": "0184_listening-speech-dispatch-fence",
+      "breakpoints": true
     }
   ]
 }

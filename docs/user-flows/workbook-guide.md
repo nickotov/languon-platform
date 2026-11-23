@@ -35,7 +35,7 @@ practice. Guests and signed-in learners can visit `/workbook` and
 `/workbook/exercises` without creating a note, starting a model request or spending
 credits. This is separate from the saved collections at `/workbooks`.
 
-The exercises chapter offers all 19 named activities in four categories, with one
+The exercises chapter offers all 22 named activities in five categories, with one
 synthetic English A2 example mounted at a time. Prepared answers use the same local
 checking behavior as real exercises. Preset AI feedback illustrates a response to
 its own displayed sample answer; it never grades arbitrary learner input.
@@ -73,7 +73,7 @@ it must not create learning content or AI work.
    It aligns alongside the chapter header and exercise content, stays available
    while scrolling, and marks the selected exercise. Its scrollable height is
    capped at 70vh. On smaller
-   layouts, use the bottom **Activity** selector. Its four groups contain 19 activities. Select
+   layouts, use the bottom **Activity** selector. Its five groups contain 22 activities. Select
    a prepared multiple-choice response and choose **Check answer**. Observe actual
    local correct/incorrect feedback. **Reset example** clears that example's
    current answer and feedback. Reloading does not restore a saved attempt.
@@ -100,7 +100,7 @@ it must not create learning content or AI work.
 ## E2E coverage
 
 - `public-guide-navigation-and-prepared-check`: guest sidebar discovery, overview
-  to exercises navigation, the complete 19-activity chooser, real local prepared
+  to exercises navigation, the complete 22-activity chooser, real local prepared
   feedback, reset and reload without stored attempts, plus localized server-rendered page titles.
 - `hybrid-and-illustrative-feedback`: direct activity links, prepared-answer
   boundary for hybrid input, typed AI responses remaining ungraded, separate
@@ -116,7 +116,7 @@ matching. Those exhaustive matrices are not duplicated in browser journeys.
 
 ## Preview inside a space
 
-The same19 synthetic examples are also available from an editable space's `/`
+The same 22 synthetic examples are also available from an editable space's `/`
 exercise menu and workspace chat's exercise picker. Local preview does not select
 an exercise or create model work. The guide remains the place for the complete
 recipes; learners can inspect an activity in place without leaving their draft.

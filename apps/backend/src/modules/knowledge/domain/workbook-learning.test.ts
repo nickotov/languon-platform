@@ -501,6 +501,45 @@ describe('named activity prepared checking', () => {
         }
     });
 
+    it('checks dictation locally with punctuation tolerance and keeps accents significant', () => {
+        const referenceAnswer = 'Le café est fermé.';
+        const item: ExerciseLearningBlock = {
+            ...namedRecall,
+            referenceAnswer,
+            acceptedAnswers: [referenceAnswer],
+            semantics: {
+                ...namedSemantics,
+                activity: { id: 'L02', version: 1 },
+                checking: {
+                    policy: 'prepared-key',
+                    key: { kind: 'text', acceptedAnswers: [referenceAnswer] },
+                },
+                sources: [
+                    {
+                        kind: 'audio',
+                        origin: { kind: 'block', blockId: sourceId },
+                        assetId: otherId,
+                        passages: [{ segmentId, text: referenceAnswer }],
+                    },
+                ],
+            },
+        };
+
+        expect(
+            evaluateWorkbookAnswer(item, {
+                format: 'free-text',
+                text: 'le café est fermé!',
+            }),
+        ).toMatchObject({ status: 'correct', method: 'deterministic' });
+
+        expect(
+            evaluateWorkbookAnswer(item, {
+                format: 'free-text',
+                text: 'Le cafe est fermé.',
+            }),
+        ).toMatchObject({ status: 'incorrect', method: 'deterministic' });
+    });
+
     it('leaves rubric-only responses unchecked even when they match the reference', () => {
         const free: ExerciseLearningBlock = {
             ...namedRecall,

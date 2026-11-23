@@ -42,6 +42,15 @@ function sourceFor(kind: ExerciseActivitySourceKind): NamedExerciseSource {
         };
     }
 
+    if (kind === 'audio') {
+        return {
+            kind,
+            origin,
+            assetId: third,
+            passages: [{ segmentId: other, text: 'Mira borrowed a book.' }],
+        };
+    }
+
     if (kind === 'grammar') {
         return {
             kind,

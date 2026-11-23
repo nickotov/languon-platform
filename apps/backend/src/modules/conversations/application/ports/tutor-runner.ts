@@ -99,6 +99,7 @@ export interface TutorRunInput extends GenerationRunCallbacks {
     ): Promise<{ id: string }>;
     readDictionarySnippet?(id: string): Promise<DictionaryChatSnippet>;
     canProposeBlocks?: boolean;
+    canGenerateListeningRecording?: boolean;
     onContentProposal?(
         input: LearningContentProposalInput,
         validationIds?: string[],

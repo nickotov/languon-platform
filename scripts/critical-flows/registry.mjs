@@ -77,6 +77,7 @@ export const backendExecutionGroups = Object.freeze({
         'tests/unit/modules/dictionaries/infrastructure/audio-adapters.test.ts',
         'tests/integration/modules/speech/speech-accounting.test.ts',
         'tests/integration/modules/speech/knowledge-speech-execution.test.ts',
+        'tests/integration/modules/speech/listening-recording-queue.test.ts',
         'src/modules/knowledge/infrastructure/persistence/drizzle/transcription-store.database.test.ts',
         'src/modules/knowledge/infrastructure/persistence/drizzle/transcription-admin-store.test.ts',
         'tests/unit/modules/speech/speech-worker.test.ts',

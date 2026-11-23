@@ -11,8 +11,13 @@ export type ExerciseGenerationRequest = NonNullable<
 >;
 
 export function exerciseSourceKind(
-    type: KnowledgeBlockReference['type'],
+    source: KnowledgeBlockReference,
 ): ExerciseActivitySourceKind | undefined {
+    const { type } = source;
+    if (type === 'audio' && source.listeningSource) {
+        return 'audio';
+    }
+
     if (type === 'vocabulary' || type === 'grammar') {
         return type;
     }

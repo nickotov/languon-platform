@@ -175,7 +175,7 @@ guide sidebar item is available to guests and members, separate from saved
 `/workbooks` and persisted Library navigation. The guide uses the existing app
 shell, locale infrastructure and learning-block renderers.
 
-A canonical, source-grounded synthetic corpus covers all nineteen named activities.
+A canonical, source-grounded synthetic corpus covers the nineteen text activities.
 Only one interactive example mounts at a time. Prepared checking runs locally;
 illustrative feedback belongs to explicitly displayed sample responses, never the
 visitor's arbitrary typed answer. Guide interactions create no content, attempts,
@@ -651,7 +651,7 @@ constrain generation without turning explanation-only messages into generation;
 prose controls count unless explicit advanced settings are present. See
 [ADR-0059](adr/0059-typed-conversation-prompt-mentions.md).
 
-Named exercises optionally carry versioned activity semantics: one of 19 catalog
+Named exercises optionally carry versioned activity semantics: one of 22 catalog
 identities, objective, language, fixed format/checking policy, prepared key or rubric,
 and frozen sources. Their absence deliberately means Custom. Display metadata is
 SDK-independent; detailed authoring instructions remain backend-only. The picker
@@ -678,7 +678,9 @@ available for every format. The existing private attempt/job path publishes
 structured criteria, corrections and optional suggested answers under source,
 share, revision, epoch, worker-lease and settlement fences. Partial/unassessed
 learning outcomes are separate from execution success and do not count as correct
-progress. Studio exposes 19 standalone named tools under isolated development
+progress. Listening tasks can reuse an authorized recording or prepare a new one under the lesson’s speech allowance. The worker pins the script, and the speech pipeline assembles timed utterances into one private asset before exercise authoring. See [generated listening sets](adr/0065-generated-listening-sets.md).
+
+Studio exposes 22 standalone named tools under isolated development
 session authority, while the production tutor retains four high-level learning
 tools. The admin AI catalog only describes these definitions; inspection grants no
 execution authority. See [ADR-0058](adr/0058-named-activity-content-and-source-provenance.md),

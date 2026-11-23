@@ -1,3 +1,7 @@
+import { reserveConversationActionFixture } from '../../support/accounting-action-fixture';
+import { listeningAllowances } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/listening-allowance-schema';
+import { generationRunsTable as listeningRuns } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/conversation-generation-schema';
+import { conversationTurnsTable as listeningTurns } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/schema';
 import { createHash, randomUUID } from 'node:crypto';
 import { createDrizzleDatabase, type PostgresClient } from '@languon/database';
 import { beforeAll, afterAll, beforeEach, describe, expect, it } from 'vitest';
@@ -237,6 +241,195 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 } satisfies SpeechSource,
             };
         }
+
+        it('atomically admits a listening script under one allowance and fences a stopped lesson before dispatch', async () => {
+            const { note, source: target } = await source();
+            const snapshot = {
+                version: '1',
+                title: 'Listening fixture',
+                description: null,
+                studiedLanguage: 'fr',
+                provenance: 'draft' as const,
+                material: [],
+                blockTarget: {
+                    branchId: target.branchId,
+                    version: target.expectedBranchVersion,
+                },
+            };
+            const first = await db.transaction((tx) =>
+                reserveConversationActionFixture(tx, {
+                    ownerId: owner,
+                    funding: 'operator',
+                    maximumMilli: 0n,
+                    sourceSnapshot: snapshot,
+                }),
+            );
+            const [turn] = await db
+                .select()
+                .from(listeningTurns)
+                .where(eq(listeningTurns.id, first.id));
+            const runId = randomUUID(),
+                taskId = 'recording';
+
+            await db.insert(listeningRuns).values({
+                id: runId,
+                ownerId: owner,
+                noteId: note.id,
+                conversationId: turn!.conversationId,
+                revision: 1,
+                state: 'running',
+                activeTurnId: first.id,
+                sourceSnapshot: snapshot,
+                taskManifest: [{ id: taskId, kind: 'audio' }],
+                automation: {
+                    authorizationId: randomUUID(),
+                    revision: 1,
+                    rootActionId: first.id,
+                    actionIds: [first.id],
+                    maximumCreditsMilli: '0',
+                    maximumProviderCostMicros: 10000,
+                    authorizationFingerprint: 'synthetic',
+                    expiresAt: new Date(Date.now() + 60000).toISOString(),
+                    stageCount: 1,
+                    ready: false,
+                },
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            });
+
+            const admissions = ['bonjour', 'bonsoir'].map((text, index) => {
+                const id = randomUUID();
+
+                return {
+                    actorId: owner,
+                    language: 'fr',
+                    runId,
+                    revision: 1,
+                    noteId: note.id,
+                    branchId: target.branchId,
+                    taskId,
+                    turnId: first.id,
+                    leaseToken: first.id,
+                    utterance: { id, speaker: 'speaker' + index, text },
+                    voice: index === 0 ? 'fixture' : 'fixture-secondary',
+                    operationId: id,
+                    now: new Date(),
+                };
+            });
+
+            await expect(
+                speech.store.enqueueListeningUtterances(admissions),
+            ).rejects.toMatchObject({
+                code: 'listening_authorization_required',
+            });
+
+            await db.insert(capabilityPolicyRevisionsTable).values({
+                id: randomUUID(),
+                capability: 'speech',
+                version: 1,
+                funding: 'customer',
+                createdAt: new Date(),
+                reason: 'Fixture speech funding',
+            });
+
+            await db.transaction((tx) =>
+                new DrizzleAiCreditTransactionParticipant(tx).issueGrant({
+                    ownerId: owner,
+                    amount: 10000n,
+                    source: 'migration',
+                    sourceReference: randomUUID(),
+                    createdAt: new Date(),
+                    expiresAt: null,
+                }),
+            );
+
+            const wallet = () =>
+                db.transaction((tx) =>
+                    new DrizzleAiCreditTransactionParticipant(
+                        tx,
+                    ).accountSummary(owner, new Date()),
+                );
+
+            await db.insert(listeningAllowances).values({
+                rootTurnId: first.id,
+                ownerId: owner,
+                conversationId: turn!.conversationId,
+                noteId: note.id,
+                branchId: target.branchId,
+                remainingCredits: 2000n,
+                remainingProviderMicros: 100n,
+            });
+
+            // Seven characters cost 70 microdollars. One clip fits; two must roll back together.
+            await expect(
+                speech.store.enqueueListeningUtterances(admissions),
+            ).rejects.toMatchObject({ code: 'listening_budget_exhausted' });
+
+            expect(await db.select().from(speechJobsTable)).toHaveLength(0);
+            expect(
+                (await db.select().from(listeningAllowances))[0]
+                    ?.remainingProviderMicros,
+            ).toBe(100n);
+
+            await db.update(listeningAllowances).set({
+                remainingCredits: 1500n,
+                remainingProviderMicros: 200n,
+            });
+
+            // A 1-credit minimum applies to each authored clip even when each utterance is short.
+            await expect(
+                speech.store.enqueueListeningUtterances(admissions),
+            ).rejects.toMatchObject({ code: 'listening_budget_exhausted' });
+
+            expect(await db.select().from(speechJobsTable)).toHaveLength(0);
+            expect((await wallet()).reservedCredits).toBe(0n);
+            await db
+                .update(listeningAllowances)
+                .set({ remainingCredits: 2000n });
+
+            const [firstAdmission, replay] = await Promise.all([
+                speech.store.enqueueListeningUtterances(admissions),
+                speech.store.enqueueListeningUtterances(admissions),
+            ]);
+
+            expect(replay.map((item) => item.requestId)).toEqual(
+                firstAdmission.map((item) => item.requestId),
+            );
+
+            expect(await db.select().from(speechJobsTable)).toHaveLength(2);
+            expect((await wallet()).reservedCredits).toBe(2000n);
+            expect(
+                (await db.select().from(listeningAllowances))[0]
+                    ?.remainingProviderMicros,
+            ).toBe(60n);
+
+            await speech.worker.runOnce(
+                undefined,
+                firstAdmission[0]!.requestId!,
+            );
+
+            expect(providerSubmissions).toBe(1);
+            await db
+                .update(listeningTurns)
+                .set({ cancelRequested: true })
+                .where(eq(listeningTurns.id, first.id));
+
+            await speech.worker.runOnce();
+            expect(providerSubmissions).toBe(1);
+            expect((await wallet()).reservedCredits).toBe(0n);
+            expect((await wallet()).consumedCredits).toBe(1000n);
+            expect(
+                (
+                    await client`select languon_listening_charged_milli(${runId},${owner}) as milli`
+                )[0]?.milli,
+            ).toBe('1000');
+
+            expect(
+                (
+                    await client`select languon_listening_charged_milli(${runId},${other}) as milli`
+                )[0]?.milli,
+            ).toBe('0');
+        });
 
         it('rejects revoked payer speech before dispatch and after provider success even when a valid joiner remains', async () => {
             const at = new Date();

@@ -1,6 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { LearningBlock } from '@languon/contracts';
 import { Button } from '@/fsd/shared/ui/button';
+import {
+    clearAudioExcerpt,
+    playAudioExcerpt,
+} from '../../lib/play-audio-excerpt';
 import { safeAudioUrl } from '../../lib/safe-audio-url';
 import type { LearningBlockViewProps } from '../../types';
 import { AudioPlayer } from './ui/audio-player/audio-player';
@@ -36,6 +40,20 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
         props.variant === 'compact' && transcript
             ? { ...transcript, segments: transcript.segments.slice(0, 2) }
             : transcript;
+
+    useEffect(() => {
+        const media = player.current;
+        if (!media || block.type !== 'audio') {
+            return;
+        }
+
+        return () => {
+            clearAudioExcerpt(media);
+            if (!media.paused) {
+                media.pause();
+            }
+        };
+    }, [audioUrl, block.type]);
 
     function handlePosition(seconds: number) {
         setPosition(seconds);
@@ -85,7 +103,7 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
         player.current = element;
     }
 
-    function handleReplay(seconds: number) {
+    function handleReplay(seconds: number, endSeconds?: number) {
         if (!Number.isFinite(seconds) || seconds < 0) {
             return;
         }
@@ -103,6 +121,19 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
             return;
         }
 
+        if (
+            block.type === 'audio' &&
+            player.current instanceof HTMLAudioElement &&
+            endSeconds !== undefined
+        ) {
+            void playAudioExcerpt(player.current, [
+                { startSeconds: seconds, endSeconds },
+            ]).catch(handleFailure);
+
+            return;
+        }
+
+        clearAudioExcerpt(player.current);
         player.current.currentTime = seconds;
         void player.current.play().catch(handleFailure);
     }
@@ -174,7 +205,15 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
     const canReplay = block.type === 'video' || Boolean(audioUrl);
 
     return (
-        <div className={styles.stack}>
+        <div
+            className={styles.stack}
+            data-single-segment={
+                transcript?.segments.length === 1
+                    ? transcript.segments[0]?.id
+                    : undefined
+            }
+            data-audio-block={block.type === 'audio' ? block.id : undefined}
+        >
             {media}
             {failed ? (
                 <p role='alert' className={styles.error}>
@@ -243,6 +282,7 @@ export function MediaBlock(props: LearningBlockViewProps & { block: Media }) {
             previewTranscript ? (
                 <Transcript
                     transcript={previewTranscript}
+                    distinguishReplayTimes={block.type === 'audio'}
                     position={position}
                     replayLabel={labels.replay}
                     onReplay={canReplay ? handleReplay : undefined}

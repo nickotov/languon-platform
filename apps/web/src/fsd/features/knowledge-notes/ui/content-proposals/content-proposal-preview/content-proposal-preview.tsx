@@ -2,6 +2,7 @@ import type {
     KnowledgeContentProposal,
     LearningBlock,
 } from '@languon/contracts';
+import { LessonDocumentBlocks } from '../lesson-document-blocks/lesson-document-blocks';
 import type { LearningBlockPlayback } from '@/fsd/entities/learning-blocks';
 import { KnowledgeDocumentView } from '../../knowledge-document-view/knowledge-document-view';
 
@@ -29,6 +30,25 @@ export function ContentProposalPreview({
             playback,
             audioUrl,
         };
+    }
+
+    if (
+        proposal.body.document.content?.some(
+            (node) =>
+                node.attrs?.block?.type === 'exercise' &&
+                node.attrs.block.semantics?.sources.some(
+                    (source) => source.kind === 'audio',
+                ),
+        )
+    ) {
+        return (
+            <LessonDocumentBlocks
+                body={proposal.body}
+                dependencies={proposal.dependencies}
+                audioUrls={audioUrls}
+                playback={playback}
+            />
+        );
     }
 
     return (

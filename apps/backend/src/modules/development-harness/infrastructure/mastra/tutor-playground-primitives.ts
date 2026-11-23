@@ -211,7 +211,10 @@ export function createTutorPlaygroundPrimitives(
             (item) => item.kind !== 'prose' && item.kind === kind,
         )!;
 
-        if (capability.toolId === 'generate_prose') {
+        if (
+            capability.toolId === 'generate_prose' ||
+            capability.toolId === 'generate_listening_audio'
+        ) {
             throw new Error(
                 'Prose is authored through complete generation plans.',
             );

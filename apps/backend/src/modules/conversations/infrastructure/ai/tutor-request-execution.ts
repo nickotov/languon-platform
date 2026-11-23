@@ -175,6 +175,7 @@ export async function executeTutorRequest(
         planned,
         Boolean(frozenSources.selection) || mentionedSourceIds.length > 0,
         exerciseRequest,
+        input.canGenerateListeningRecording,
     );
     const resolution = exerciseRequest
         ? applyExercisePickerChoices(
@@ -187,6 +188,7 @@ export async function executeTutorRequest(
                       tutorMessageModelContent(input.message).blockReferences ??
                           [],
                   ),
+              input.canGenerateListeningRecording,
           )
         : resolvedMentions;
 
@@ -687,6 +689,23 @@ export async function executeTutorRequest(
     const normalized = normalizeLearningContentDefaults(
         explanationPolicy(brief),
     );
+
+    if (
+        normalized.brief.tasks.some((task) => task.kind === 'audio') &&
+        !input.canGenerateListeningRecording
+    ) {
+        const text = {
+            ru: 'Для новой записи включите озвучивание в чате и отправьте запрос. Также можно выбрать готовый аудиоблок с расшифровкой.',
+            fr: 'Pour créer un enregistrement, activez la synthèse vocale dans le chat puis envoyez votre demande. Vous pouvez aussi choisir un bloc audio avec transcription.',
+            es: 'Para crear una grabación, activa la síntesis de voz en el chat y envía tu solicitud. También puedes elegir un bloque de audio con transcripción.',
+        };
+
+        return finishText(
+            text[resolution.replyLanguage.split('-')[0] as keyof typeof text] ??
+                'To create a recording, enable speech generation in chat and send your request. You can also select an existing audio block with a transcript.',
+            'limitation',
+        );
+    }
 
     if (
         input.onGenerationStart &&

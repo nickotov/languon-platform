@@ -203,6 +203,14 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         )[0]?.role_name,
                     ).toBe(role);
 
+                    expect(
+                        (
+                            await restrictedClient`select
+                        has_table_privilege(current_user,'conversation_listening_allowances','INSERT,UPDATE,DELETE') as can_change,
+                        has_function_privilege(current_user,'languon_listening_charged_milli(uuid,uuid)','EXECUTE') as can_project`
+                        )[0],
+                    ).toEqual({ can_change: false, can_project: true });
+
                     await expect(
                         restrictedClient`update speech_jobs set provider_dispatched_at='2000-01-01'::timestamptz where id=${admitted!.id}::uuid`,
                     ).rejects.toThrow('permission denied');

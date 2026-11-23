@@ -43,6 +43,31 @@ not correct pronunciation. PostgreSQL byte storage remains a test adapter. Curre
 settings configure shared provider/storage adapters; playback and admission use
 only the `SPEECH_*` flags.
 
+## Generated listening recordings
+
+Knowledge chat freezes the speaking turns before it requests audio. The API
+admits the whole script under the conversation's speech allowance. The speech
+worker generates each utterance with its assigned voice. The API measures the
+decoded samples, inserts 250 ms between speaking turns, and stores one private
+WAV on the note. Retried preparations reuse the same utterance jobs and asset ID.
+
+For production speech, configure the existing language entry in
+`DICTIONARY_AUDIO_VOICE_MAP`. Its `voice` narrates single-speaker scripts.
+A two-speaker script also requires `dialogueVoice`, a different supported voice
+for the same model and language. A missing second voice prevents admission of
+the script. Fixture mode uses two synthetic profiles to verify timing and access.
+
+Production also requires working unprivileged Bubblewrap namespaces and prlimit. The readiness probe runs FFmpeg in the same network-isolated sandbox used for decoding. If the runtime blocks namespaces, synthesis fails before utterance admission. Verify this on the deployment host before enabling new recordings.
+
+A lesson with a new recording divides its operator cost ceiling equally between text and speech. It divides the customer credit ceiling when both are payable. Each successfully synthesized utterance settles separately. Stopping before assembly can therefore leave a charge for completed utterances. Unused holds are released, and resuming reuses completed audio.
+
+Host API processes require FFmpeg on `PATH`. Run `ffmpeg -version` in the API
+runtime to verify it. The development and production backend container images
+include FFmpeg. The API checks decoder availability before it admits speech.
+Apply the listening queue migrations and updated dictionary-worker role grants
+before deploying either process. The worker calls a lease-scoped queue function
+and the API handles private media reads and import.
+
 ## Live provider configuration
 
 Kie is the initial live adapter. Its stable configuration identity and voice-map

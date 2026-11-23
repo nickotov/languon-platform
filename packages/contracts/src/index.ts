@@ -65,3 +65,4 @@ export * from './named-exercises';
 export * from './exercise-generation';
 
 export * from './conversation-prompt-mentions';
+export * from './dictation';

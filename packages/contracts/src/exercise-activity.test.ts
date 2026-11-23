@@ -29,10 +29,13 @@ const expectedActivities = [
     ['R08', 'fill-in-the-blank', 'hybrid', 'text'],
     ['R09', 'free-text', 'ai-rubric', 'text'],
     ['W01', 'free-text', 'ai-rubric', 'text'],
+    ['L01', 'multiple-choice', 'prepared-key', 'audio'],
+    ['L02', 'free-text', 'prepared-key', 'audio'],
+    ['L04', 'fill-in-the-blank', 'prepared-key', 'audio'],
 ] as const;
 
 describe('named exercise activity catalog', () => {
-    it('contains exactly the 19 priority activities in stable order without expansion activities', () => {
+    it('contains the supported activities in stable order without expansion activities', () => {
         const ids = expectedActivities.map(([id]) => id);
 
         expect(exerciseActivityCatalog.map((activity) => activity.id)).toEqual(
@@ -50,7 +53,7 @@ describe('named exercise activity catalog', () => {
             'R10',
             'W02',
             'W03',
-            'L01',
+            'L03',
             'S01',
             'custom',
             'v01',
@@ -82,7 +85,9 @@ describe('named exercise activity catalog', () => {
                   ? 'grammar'
                   : id.startsWith('R')
                     ? 'reading'
-                    : 'writing';
+                    : id.startsWith('L')
+                      ? 'listening'
+                      : 'writing';
 
             expect(activity.category).toBe(category);
         },
@@ -175,7 +180,7 @@ describe('named exercise activity catalog', () => {
             { format: 'matching' },
             { checkingPolicy: 'fuzzy' },
             { supportedSourceKinds: [] },
-            { supportedSourceKinds: ['audio'] },
+            { supportedSourceKinds: ['video'] },
             { supportedSourceKinds: ['text', 'text'] },
             { locales: missingLocale },
             { locales: { ...activity.locales, de: activity.locales.en } },

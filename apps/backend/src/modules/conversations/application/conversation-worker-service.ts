@@ -1,3 +1,8 @@
+import { randomUUID } from 'node:crypto';
+import {
+    listeningRecordingFailure,
+    type PrepareListeningRecording,
+} from './listening-script';
 import type { GenerationAttemptEvent } from './ports/generation-run';
 import { dispatchCapacityFailure } from './generation-admission-outcome';
 import { isReadOnlyKnowledgeSource } from '../domain/conversation';
@@ -32,6 +37,7 @@ export type ConversationWorkerStore = Pick<
     | 'generationContext'
     | 'startGeneration'
     | 'checkpointGeneration'
+    | 'freezeListeningScript'
     | 'recordGenerationAttempt'
     | 'pauseGeneration'
     | 'proposeGenerationRevision'
@@ -45,6 +51,7 @@ export class ConversationWorkerService {
             createRunner: (
                 turn: ClaimedConversationTurn,
             ) => TutorRunner | Promise<TutorRunner>;
+            prepareListeningRecording?: PrepareListeningRecording;
             heartbeatMs?: number;
             timeoutMs?: number;
         },
@@ -154,6 +161,62 @@ export class ConversationWorkerService {
                           },
                       }
                     : {}),
+                materializeListeningRecording: async (request) => {
+                    combined.throwIfAborted();
+                    const target = turn.sourceSnapshot.blockTarget;
+                    if (
+                        turn.source.kind !== 'knowledge' ||
+                        isReadOnlyKnowledgeSource(turn.source) ||
+                        !target ||
+                        !this.dependencies.prepareListeningRecording ||
+                        !this.dependencies.store.freezeListeningScript
+                    ) {
+                        throw new ConversationError(
+                            'generation_scope_change',
+                            'Recording generation requires an authorized writable lesson.',
+                        );
+                    }
+
+                    const script =
+                        await this.dependencies.store.freezeListeningScript(
+                            turn,
+                            request,
+                        );
+                    const recording = await this.dependencies
+                        .prepareListeningRecording({
+                            runId: request.runId,
+                            revision: request.revision,
+                            taskId: request.taskId,
+                            language: request.language,
+                            ownerId: turn.ownerId,
+                            noteId: turn.source.id,
+                            branchId: target.branchId,
+                            turnId: turn.id,
+                            leaseToken: turn.leaseToken,
+                            utterances: script.utterances,
+                            signal: combined,
+                        })
+                        .catch((error: unknown) => {
+                            combined.throwIfAborted();
+
+                            throw listeningRecordingFailure(
+                                error,
+                                request.taskId,
+                            );
+                        });
+
+                    return {
+                        type: 'audio',
+                        id: randomUUID(),
+                        title: script.title,
+                        language: request.language,
+                        ...recording,
+                    };
+                },
+                canGenerateListeningRecording: Boolean(
+                    turn.execution.permitsListeningRecording === true &&
+                    this.dependencies.prepareListeningRecording,
+                ),
                 conversationId: turn.conversationId,
                 readOnlySource: isReadOnlyKnowledgeSource(turn.source),
                 ownerId: turn.ownerId,

@@ -496,7 +496,11 @@ export function createTutorPlaygroundService(options: TutorPlaygroundOptions) {
                 { abortSignal: gate.signal } as never,
             );
         } else {
-            if (!capability || capability.toolId === 'generate_prose') {
+            if (
+                !capability ||
+                capability.toolId === 'generate_prose' ||
+                capability.toolId === 'generate_listening_audio'
+            ) {
                 throw new Error(
                     'Prose is authored through complete generation plans.',
                 );

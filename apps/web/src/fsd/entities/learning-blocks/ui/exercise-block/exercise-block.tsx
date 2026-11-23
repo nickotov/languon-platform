@@ -11,6 +11,8 @@ import { useExercisePractice } from '../../hooks/use-exercise-practice';
 import { checkPreparedAnswer } from '../../lib/check-prepared-answer';
 import { learningAnswerEquals } from '../../lib/learning-answer-equals';
 import { ExerciseAnswerFields } from './ui/exercise-answer-fields/exercise-answer-fields';
+import { ListeningReplay } from './ui/listening-replay/listening-replay';
+import { ListeningResponse } from './ui/listening-response/listening-response';
 import { ExerciseResults } from './ui/exercise-results/exercise-results';
 import { ExercisePreview } from './ui/exercise-preview/exercise-preview';
 import { ExerciseActions } from './ui/exercise-actions/exercise-actions';
@@ -27,6 +29,8 @@ export function ExerciseBlock(
     const activity = block.semantics
         ? getExerciseActivity(block.semantics.activity.id)
         : undefined;
+    const listening = activity?.category === 'listening';
+    const readOnly = props.disclosureOnly && !listening;
     const defaultCheckingLabel = block.semantics
         ? exerciseCheckingLabel(block.semantics.checking.policy, locale)
         : undefined;
@@ -90,7 +94,7 @@ export function ExerciseBlock(
     function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         if (
-            props.disclosureOnly ||
+            readOnly ||
             props.interactionsDisabled ||
             props.attemptPending ||
             !form.current?.reportValidity()
@@ -103,6 +107,14 @@ export function ExerciseBlock(
             block.format === 'free-text' &&
             !block.semantics
         ) {
+            return;
+        }
+
+        if (props.disclosureOnly) {
+            practice.completePreparedCheck(
+                checkPreparedAnswer(block, response),
+            );
+
             return;
         }
 
@@ -135,6 +147,7 @@ export function ExerciseBlock(
 
     const canSubmit =
         block.format !== 'free-text' ||
+        listening ||
         block.semantics?.checking.policy === 'hybrid' ||
         (props.variant === undefined && props.onSubmitAttempt !== undefined);
     const submitLabel =
@@ -160,6 +173,9 @@ export function ExerciseBlock(
     const matchesSaved =
         !props.learnerState?.answer ||
         learningAnswerEquals(props.learnerState.answer, response);
+    const checked =
+        preparedResult !== undefined ||
+        (matchesSaved && props.learnerState?.correct !== undefined);
     const visibleFeedback = matchesSaved ? props.feedback : undefined;
     const feedbackTitle =
         props.feedbackKind === 'ai'
@@ -217,18 +233,30 @@ export function ExerciseBlock(
                     <p className={styles.question} dir='auto'>
                         {block.question}
                     </p>
+                    {listening && (
+                        <ListeningReplay
+                            block={block}
+                            labels={labels}
+                            transcript={props.hintTranscript}
+                            checked={checked}
+                            available={
+                                Boolean(props.audioUrl) &&
+                                !props.interactionsDisabled
+                            }
+                        />
+                    )}
                     <ExerciseAnswerFields
                         block={block}
                         labels={labels}
                         answer={answer}
                         gaps={gaps}
-                        disabled={props.disclosureOnly}
+                        disabled={readOnly}
                         onAnswer={practice.handleAnswer}
                         onGap={practice.handleGap}
                     />
                     <ExerciseActions
                         options={props}
-                        canSubmit={canSubmit && !props.disclosureOnly}
+                        canSubmit={canSubmit && !readOnly}
                         submitLabel={submitLabel}
                         hasResponse={hasResponse}
                         hasHint={hasHint}
@@ -242,17 +270,33 @@ export function ExerciseBlock(
                     <ExerciseResults
                         block={block}
                         labels={labels}
+                        selectedChoice={
+                            listening && block.format === 'multiple-choice'
+                                ? answer
+                                : undefined
+                        }
                         preparedResult={preparedResult}
                         visibleFeedback={visibleFeedback}
                         feedbackTitle={feedbackTitle}
                         hintVisible={hintVisible}
                         revealed={revealed}
                         disclosureOnly={props.disclosureOnly}
-                        hintOptions={props}
+                        hintOptions={
+                            listening
+                                ? { ...props, audioUrl: undefined }
+                                : props
+                        }
                         error={props.error}
                         evaluation={matchesSaved ? props.evaluation : undefined}
                         preparedUnchecked={preparedUnchecked}
                     />
+                    {listening && checked && (
+                        <ListeningResponse
+                            block={block}
+                            response={response}
+                            labels={labels}
+                        />
+                    )}
                 </form>
             </div>
         </div>

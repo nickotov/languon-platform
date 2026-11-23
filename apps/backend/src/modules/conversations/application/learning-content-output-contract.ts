@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+    AudioLearningBlockSchema,
     GeneratedProseBodySchema,
     VocabularyLearningBlockSchema,
     GrammarLearningBlockSchema,
@@ -8,6 +9,7 @@ import {
 } from '@languon/contracts';
 
 const generatedBlockSchema = z.discriminatedUnion('type', [
+    AudioLearningBlockSchema,
     VocabularyLearningBlockSchema,
     GrammarLearningBlockSchema,
     BilingualTextLearningBlockSchema,

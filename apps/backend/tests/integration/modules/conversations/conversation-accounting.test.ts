@@ -1,3 +1,4 @@
+import type { GenerationAutomaticAdmission } from '../../../../src/modules/conversations/application/ports/generation-run';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -53,7 +54,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         afterAll(async () => client?.end());
 
         beforeEach(async () => {
-            await client`truncate users, ai_capability_policy_revisions, ai_accounting_settings_revisions, ai_provider_price_revisions, text_ai_routing_revisions cascade`;
+            await client`truncate users, dictionary_ai_worker_observations, ai_capability_policy_revisions, ai_accounting_settings_revisions, ai_provider_price_revisions, text_ai_routing_revisions cascade`;
             ownerId = randomUUID();
             await client`insert into users(id,status) values(${ownerId},'active')`;
             await seedLegacyActionFixture(db, '10');
@@ -115,6 +116,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 reserveToolContinuation: boolean;
                 minimumOutputTokens: number;
                 forceConfirmation: boolean;
+                includeListeningSpeech: boolean;
+                generationAuthorization: GenerationAutomaticAdmission;
             }> = {},
         ) =>
             db.transaction(async (tx) => {
@@ -129,6 +132,15 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     fingerprint: randomUUID(),
                     inputTokenBound: input.inputTokenBound ?? 1_000,
                     minimumInputBound: input.minimumInputBound ?? 1_000,
+                    ...(input.generationAuthorization
+                        ? {
+                              generationAuthorization:
+                                  input.generationAuthorization,
+                          }
+                        : {}),
+                    ...(input.includeListeningSpeech
+                        ? { includeListeningSpeech: true }
+                        : {}),
                     ...(input.minimumOutputTokens !== undefined
                         ? { minimumOutputTokens: input.minimumOutputTokens }
                         : {}),
@@ -197,6 +209,67 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
                 return execution;
             });
+
+        it('allows an admitted automatic recording stage to use its original speech grant without issuing another budget', async () => {
+            await ready('operator');
+            await db.insert(capabilityPolicyRevisionsTable).values({
+                id: randomUUID(),
+                capability: 'speech',
+                version: 1,
+                funding: 'operator',
+                createdAt: new Date(),
+                reason: 'Synthetic delegated speech',
+            });
+
+            const root = await admit({ includeListeningSpeech: true });
+            expect(root).toMatchObject({
+                permitsListeningRecording: true,
+                listeningSpeechBudget: expect.any(Object),
+            });
+
+            const stage = await admit({
+                generationAuthorization: {
+                    expiresAt: new Date(Date.now() + 60000).toISOString(),
+                    maximumCreditsMilli: '0',
+                    maximumProviderCostMicros: Number(
+                        root.generationMaximumProviderCostMicros,
+                    ),
+                    authorizationFingerprint: String(
+                        root.generationAuthorizationFingerprint,
+                    ),
+                    permitsListeningRecording: true,
+                },
+            });
+
+            expect(stage.permitsListeningRecording).toBe(true);
+            expect(stage.listeningSpeechBudget).toBeUndefined();
+        });
+
+        it('quotes the combined ceiling when only speech uses customer credits', async () => {
+            await ready('operator');
+            await db.insert(capabilityPolicyRevisionsTable).values({
+                id: randomUUID(),
+                capability: 'speech',
+                version: 1,
+                funding: 'customer',
+                createdAt: new Date(),
+                reason: 'Synthetic paid speech',
+            });
+
+            const result = await admit({
+                includeListeningSpeech: true,
+                forceConfirmation: true,
+            });
+
+            expect(result).toMatchObject({
+                confirmationRequired: true,
+                quote: { scope: 'listening-lesson', maximumCredits: '10' },
+            });
+
+            expect(await client`select id from ai_credit_actions`).toHaveLength(
+                0,
+            );
+        });
 
         it('rejects unavailable current readiness before creating an action', async () => {
             await expect(admit()).rejects.toMatchObject({

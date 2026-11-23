@@ -2,6 +2,7 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { Pause, Play, RotateCcw } from 'lucide-react';
 import { IconButton } from '@/fsd/shared/ui/icon-button/icon-button';
 import type { LearningBlockLabels } from '../../../../types';
+import { clearAudioExcerpt } from '../../../../lib/play-audio-excerpt';
 import styles from '../../../styles/media-block-common.module.css';
 
 const time = (seconds: number) =>
@@ -71,6 +72,7 @@ export function AudioPlayer({
 
     function seek(event: ChangeEvent<HTMLInputElement>) {
         if (audio.current) {
+            clearAudioExcerpt(audio.current);
             audio.current.currentTime = Number(event.target.value);
         }
 

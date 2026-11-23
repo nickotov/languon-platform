@@ -61,7 +61,7 @@ sessions, application memory, and proposals persist in the isolated application
 tables; global Mastra thread/workflow storage, datasets, experiments, and trace
 archives remain unavailable. Use only the checked-in `example.test` fixture.
 
-The tutor workflow, four production actor generation tools, and 19 standalone
+The tutor workflow, four production actor generation tools, and 22 standalone
 named-exercise development tools extend the verification harness. The actor
 tool set remains the four original generators; each named tool fixes one
 catalog activity and is discoverable in Studio without creating a second
@@ -203,7 +203,7 @@ off.
    examples in the operating guide. Inspect their compact ready receipts and
    full validated proposals. Use `read-playground-proposal` with the returned
    session/proposal IDs for exact persisted readback.
-   Confirm all 19 `generate_exercise_<catalog-id>` development tools are also
+   Confirm all 22 `generate_exercise_<catalog-id>` development tools are also
    discoverable. They retain their fixed activity/checking contracts and do
    not replace the four actor tools.
 4. Exercise the `missing-language` scenario using “Generate vocabulary without

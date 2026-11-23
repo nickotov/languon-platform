@@ -43,10 +43,19 @@ export function applyExercisePickerChoices(
     planned: TutorRequestResolution,
     hasSelection: boolean,
     blockReferences: readonly string[] = [],
+    newRecordingAuthorized = false,
 ): TutorRequestResolution {
+    const audio =
+        newRecordingAuthorized &&
+        planned.kind === 'generate' &&
+        planned.brief.tasks.length === 2
+            ? planned.brief.tasks.find((item) => item.kind === 'audio')
+            : undefined;
     const task =
         planned.kind === 'generate'
-            ? planned.brief.tasks[0]
+            ? audio
+                ? planned.brief.tasks.find((item) => item.kind === 'exercises')
+                : planned.brief.tasks[0]
             : planned.kind === 'clarify'
               ? planned.brief.tasks.find((item) => item.kind === 'exercises')
               : undefined;
@@ -64,12 +73,14 @@ export function applyExercisePickerChoices(
             : blockReferences.length
               ? undefined
               : blockId;
-    const source: NonNullable<LearningContentTask['source']> = hasSelection
-        ? { kind: 'selection' }
-        : {
-              kind: 'editor',
-              ...(pinnedBlockId ? { blockId: pinnedBlockId } : {}),
-          };
+    const source: NonNullable<LearningContentTask['source']> = audio
+        ? { kind: 'task', taskId: audio.id }
+        : hasSelection
+          ? { kind: 'selection' }
+          : {
+                kind: 'editor',
+                ...(pinnedBlockId ? { blockId: pinnedBlockId } : {}),
+            };
     const expected = {
         id: 'requested-exercises',
         kind: 'exercises' as const,
@@ -90,7 +101,7 @@ export function applyExercisePickerChoices(
     const conflict =
         !automatic.valid ||
         planned.kind !== 'generate' ||
-        planned.brief.tasks.length !== 1 ||
+        planned.brief.tasks.length !== (audio ? 2 : 1) ||
         task?.kind !== 'exercises' ||
         (task.count !== undefined && task.count !== request.count) ||
         (task.language !== undefined && task.language !== request.language) ||
@@ -98,6 +109,9 @@ export function applyExercisePickerChoices(
             task.explanationLanguage !== request.explanationLanguage) ||
         (task.difficulty !== undefined &&
             task.difficulty !== request.difficulty) ||
+        (audio &&
+            task.source?.kind === 'task' &&
+            task.source.taskId !== audio.id) ||
         (task.source !== undefined &&
             task.source.kind !== expected.source.kind) ||
         (blockId !== undefined &&
@@ -121,7 +135,7 @@ export function applyExercisePickerChoices(
             kind: 'generate',
             replyLanguage: request.explanationLanguage,
             continuesPending: false,
-            brief: { tasks: [expected] },
+            brief: { tasks: [...(audio ? [audio] : []), expected] },
         };
     }
 
@@ -143,6 +157,6 @@ export function applyExercisePickerChoices(
             planned.kind === 'clarify'
                 ? planned.question
                 : (questions[locale] ?? questions.en),
-        brief: { tasks: [expected] },
+        brief: { tasks: [...(audio ? [audio] : []), expected] },
     };
 }

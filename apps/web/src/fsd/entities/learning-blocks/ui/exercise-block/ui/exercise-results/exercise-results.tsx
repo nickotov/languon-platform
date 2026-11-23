@@ -17,6 +17,7 @@ export function ExerciseResults({
     block,
     labels,
     preparedResult,
+    selectedChoice,
     visibleFeedback,
     feedbackTitle,
     hintVisible,
@@ -30,6 +31,7 @@ export function ExerciseResults({
     block: ExerciseLearningBlock;
     labels: LearningBlockLabels;
     preparedResult: boolean | undefined;
+    selectedChoice?: string | undefined;
     visibleFeedback: string | undefined;
     feedbackTitle: string;
     hintVisible: boolean;
@@ -40,6 +42,15 @@ export function ExerciseResults({
     evaluation?: WorkbookAttemptEvaluation | undefined;
     preparedUnchecked?: boolean | undefined;
 }) {
+    const checking = block.semantics?.checking;
+    const explanation =
+        selectedChoice &&
+        checking?.policy === 'prepared-key' &&
+        checking.key.kind === 'choice'
+            ? (checking.key.explanations.find(
+                  (item) => item.choiceId === selectedChoice,
+              )?.explanation ?? block.explanation)
+            : block.explanation;
     const hasEvaluation = evaluation && evaluation.status !== 'unchecked';
     const namedLabels = namedExerciseLabels(labels.locale);
     const referenceText = exerciseReferenceText(block, labels.locale);
@@ -63,7 +74,7 @@ export function ExerciseResults({
                     <strong>
                         {preparedResult ? labels.correct : labels.incorrect}
                     </strong>
-                    <LearningNarrative content={block.explanation} />
+                    <LearningNarrative content={explanation} />
                 </div>
             ) : null}
             {visibleFeedback && !hasEvaluation ? (

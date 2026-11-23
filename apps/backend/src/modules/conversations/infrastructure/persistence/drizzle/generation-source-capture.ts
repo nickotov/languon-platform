@@ -100,7 +100,14 @@ export function captureGenerationSources(
                     (reference.kind !== 'proposal' ||
                         source.proposalId === reference.proposalId);
 
-        if (!matches) {
+        const block = source.blocks[0];
+        if (
+            !matches ||
+            (descriptor.kind === 'audio' &&
+                (block?.type !== 'audio' ||
+                    !block.assetId ||
+                    !block.transcript?.segments.length))
+        ) {
             throw conflict(
                 'The captured source does not match the authorized plan reference.',
             );

@@ -2,7 +2,7 @@ import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
 import { verifyIdleLessonRecovery } from './lesson-reconnect-fixture';
 
-// @user-flow-revision knowledge-workspace sha256:1bfa13315161752e
+// @user-flow-revision knowledge-workspace sha256:b993e45dd9008fbb
 
 type Share = { locator: string; key: string };
 
@@ -2771,6 +2771,138 @@ test('a composable lesson previews saved parts, automatically completes after on
 
     await capture(page, info, 'workspace-lesson-admission-rejected');
     assertRuntime([expectedCapacityRejection]);
+});
+
+// @user-flow knowledge-workspace/workspace-listening-lesson-generation
+test('a generated dialogue and its listening checks become one saved listening set', async ({
+    page,
+}, info) => {
+    test.setTimeout(240_000);
+    const assertRuntime = runtimeErrors(page);
+    await signup(page, info);
+    await createDraft(page);
+
+    const editor = page.getByRole('textbox', { name: 'Document', exact: true });
+    const tutor = page.getByRole('region', {
+        name: 'Language tutor',
+        exact: true,
+    });
+
+    await editor.click();
+
+    await tutor
+        .getByRole('button', { name: 'New recording', exact: true })
+        .click();
+
+    await expect(
+        tutor.getByRole('button', { name: 'New recording', exact: true }),
+    ).toHaveAttribute('aria-pressed', 'true');
+
+    await tutor.getByLabel('Your question').fill('Listening lesson fixture');
+    const submittedTurn = page.waitForRequest(
+        (request) =>
+            request.method() === 'POST' && request.url().endsWith('/turns'),
+    );
+
+    await tutor.getByRole('button', { name: 'Send', exact: true }).click();
+    expect((await submittedTurn).postDataJSON()).toMatchObject({
+        includeListeningSpeech: true,
+    });
+
+    const complete = tutor.getByRole('article', {
+        name: 'Your lesson is ready',
+        exact: true,
+    });
+
+    await expect(complete).toBeVisible();
+    await expect(
+        complete.getByText('2 of 2 parts ready', { exact: true }),
+    ).toBeVisible();
+
+    const proposedContent = complete.getByRole('group', {
+        name: 'Proposed content',
+        exact: true,
+    });
+
+    await proposedContent
+        .getByRole('button', { name: 'Review', exact: true })
+        .click();
+
+    const review = page.getByRole('region', {
+        name: 'Review proposed content',
+        exact: true,
+    });
+
+    await expect(review.locator('section[data-lesson-part]')).toHaveCount(1);
+    await expect(review).toContainText('Rendez-vous à la gare');
+    await expect(
+        review.locator('audio[aria-label="Rendez-vous à la gare"]'),
+    ).toHaveCount(1);
+
+    for (const format of [
+        'Listen for meaning',
+        'Catch missing words',
+        'Short dictation',
+    ]) {
+        await expect(review).toContainText(format);
+    }
+    const transcriptControl = review.getByRole('button', {
+        name: 'Show transcript',
+        exact: true,
+    });
+    await expect(transcriptControl).toHaveAttribute('aria-expanded', 'false');
+    await transcriptControl.click();
+    await expect(
+        review.getByRole('button', { name: 'Hide transcript', exact: true }),
+    ).toHaveAttribute('aria-expanded', 'true');
+    await expect(review).toContainText(
+        'Bonjour Luc, le train arrive à huit heures.',
+    );
+    const reveals = review.getByRole('button', {
+        name: 'Show answer',
+        exact: true,
+    });
+    await expect(reveals).toHaveCount(3);
+    await reveals.first().click();
+    await expect(
+        review.getByRole('button', { name: 'Hide answer', exact: true }),
+    ).toHaveCount(1);
+    await review
+        .getByRole('button', { name: 'Insert remaining at end', exact: true })
+        .click();
+
+    const blocks = editor.locator('[data-learning-block-id]');
+    await expect(blocks).toHaveCount(4);
+    await expect(editor.locator('[data-audio-block]')).toHaveCount(1);
+    await expect(
+        editor.locator('audio[aria-label="Rendez-vous à la gare"]'),
+    ).toHaveCount(1);
+
+    await expect(
+        editor.getByText('Bonjour Luc, le train arrive à huit heures.', {
+            exact: true,
+        }),
+    ).toHaveCount(0);
+
+    await review
+        .getByRole('button', { name: 'Back to chat', exact: true })
+        .click();
+
+    await waitForRecovery(page);
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(
+        page.locator('[data-workspace-topbar] [data-state="saved"]'),
+    ).toBeVisible();
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(blocks).toHaveCount(4);
+    await expect(editor.locator('[data-audio-block]')).toHaveCount(1);
+    await expect(
+        editor.locator('audio[aria-label="Rendez-vous à la gare"]'),
+    ).toHaveCount(1);
+
+    await capture(page, info, 'workspace-listening-lesson');
+    assertRuntime();
 });
 
 // @user-flow knowledge-workspace/workspace-large-vocabulary-generation

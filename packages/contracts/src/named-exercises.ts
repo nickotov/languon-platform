@@ -237,6 +237,22 @@ export const NamedExerciseSourceSchema = z.discriminatedUnion('kind', [
         .strict(),
     z
         .object({
+            kind: z.literal('audio'),
+            assetId: z.uuid(),
+            origin: blockOrigin,
+            passages: z
+                .array(
+                    z
+                        .object({ segmentId: z.uuid(), text: text(8_000) })
+                        .strict(),
+                )
+                .min(1)
+                .max(20)
+                .refine((items) => unique(items, (item) => item.segmentId)),
+        })
+        .strict(),
+    z
+        .object({
             kind: z.literal('text'),
             origin: blockOrigin,
             passages: z

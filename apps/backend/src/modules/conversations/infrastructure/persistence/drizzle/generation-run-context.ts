@@ -290,11 +290,22 @@ export async function generationRunView(
         .from(actions)
         .innerJoin(turns, eq(turns.id, actions.turnId))
         .where(and(eq(actions.runId, run.id), eq(actions.kind, 'generation')));
-    const chargedMilli = stages.reduce((sum, stage) => {
-        const [whole, decimals = ''] = stage.charged.chargedCredits.split('.');
+    const speechCharge = run.taskManifest.some((task) => task.kind === 'audio')
+        ? await tx.execute(
+              sql`select public.languon_listening_charged_milli(${run.id}::uuid,${run.ownerId}::uuid) as milli`,
+          )
+        : [];
+    const chargedMilli = stages.reduce(
+        (sum, stage) => {
+            const [whole, decimals = ''] =
+                stage.charged.chargedCredits.split('.');
 
-        return sum + BigInt(whole!) * 1000n + BigInt(decimals.padEnd(3, '0'));
-    }, 0n);
+            return (
+                sum + BigInt(whole!) * 1000n + BigInt(decimals.padEnd(3, '0'))
+            );
+        },
+        BigInt(String(speechCharge[0]?.milli ?? 0)),
+    );
     const chargedCredits = `${chargedMilli / 1000n}.${String(chargedMilli % 1000n).padStart(3, '0')}`;
     const failureVisible =
         run.state === 'paused' &&

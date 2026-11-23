@@ -133,6 +133,7 @@ it('preserves the original request/content across explicit confirmations and req
             .mutateAsync({
                 content: 'Original question',
                 draftContext: 'frozen document',
+                includeListeningSpeech: true,
                 onAccepted,
             })
             .catch(() => undefined);
@@ -140,6 +141,7 @@ it('preserves the original request/content across explicit confirmations and req
 
     await waitFor(() => expect(result.current.quote?.id).toBe(firstQuote.id));
     expect(submitTurn).toHaveBeenCalledTimes(1);
+    expect(submitTurn.mock.calls[0]![0].includeListeningSpeech).toBe(true);
     act(() => result.current.setQuestion('Changed unsent draft'));
     act(() => {
         result.current.confirmQuote();
@@ -230,4 +232,20 @@ it('never continues a limited response until the learner explicitly requests a n
     expect(next).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     expect(next).toHaveBeenCalledTimes(1);
+});
+
+it('shows that the listening lesson cap covers creation of its recording', () => {
+    render(
+        <ActionBudgetConfirmation
+            quote={{ ...firstQuote, scope: 'listening-lesson' }}
+            onClose={() => {}}
+            onSend={() => {}}
+        />,
+    );
+
+    expect(
+        screen.getByText(
+            /covers lesson text, exercises and generation of a new recording/i,
+        ),
+    ).toBeInTheDocument();
 });

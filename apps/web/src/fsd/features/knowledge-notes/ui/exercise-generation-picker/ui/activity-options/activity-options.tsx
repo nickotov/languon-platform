@@ -96,9 +96,15 @@ export function ActivityOptions({
 
     return (
         <div className={styles.options}>
-            {(['vocabulary', 'grammar', 'reading', 'writing'] as const).map(
-                renderCategory,
-            )}
+            {(
+                [
+                    'vocabulary',
+                    'grammar',
+                    'reading',
+                    'writing',
+                    'listening',
+                ] as const
+            ).map(renderCategory)}
         </div>
     );
 }

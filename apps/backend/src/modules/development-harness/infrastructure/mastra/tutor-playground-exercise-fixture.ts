@@ -33,6 +33,23 @@ export function playgroundExerciseBlocks(
 
     return exerciseActivitySequence(task).map(({ activityId }, index) => {
         const activity = getExerciseActivity(activityId);
+        const recording = sources.find(
+            (block) =>
+                block.type === 'audio' &&
+                block.assetId &&
+                block.transcript?.segments.length,
+        );
+        const segment =
+            recording?.type === 'audio'
+                ? recording.transcript?.segments[0]
+                : undefined;
+
+        if (activity.category === 'listening' && !segment) {
+            throw new Error(
+                'Choose a prepared recording for listening exercises.',
+            );
+        }
+
         const vocabulary = sources.find((block) => block.type === 'vocabulary');
         const grammar = sources.find((block) => block.type === 'grammar');
         const reading = sources.find(
@@ -46,35 +63,85 @@ export function playgroundExerciseBlocks(
         const sentence =
             readingText?.split(/(?<=[.!?])\s+/u)[0]?.slice(0, 400) ?? '';
         const sourceBindings =
-            activity.category === 'vocabulary'
+            activity.category === 'listening'
                 ? [
                       {
-                          kind: 'vocabulary',
-                          blockId: vocabulary!.id,
-                          entryIds:
-                              activityId === 'V07'
-                                  ? entries.map((item) => item.id)
-                                  : [entry!.id],
+                          kind: 'audio',
+                          blockId: recording!.id,
+                          segmentIds: [segment!.id],
                       },
                   ]
-                : activity.category === 'grammar'
-                  ? [{ kind: 'grammar', blockId: grammar!.id }]
-                  : reading
-                    ? [
-                          {
-                              kind: 'text',
-                              blockId: reading.id,
-                              segmentIds: [reading.segments[0]!.id],
-                          },
-                      ]
-                    : [{ kind: 'text-selection' }];
+                : activity.category === 'vocabulary'
+                  ? [
+                        {
+                            kind: 'vocabulary',
+                            blockId: vocabulary!.id,
+                            entryIds:
+                                activityId === 'V07'
+                                    ? entries.map((item) => item.id)
+                                    : [entry!.id],
+                        },
+                    ]
+                  : activity.category === 'grammar'
+                    ? [{ kind: 'grammar', blockId: grammar!.id }]
+                    : reading
+                      ? [
+                            {
+                                kind: 'text',
+                                blockId: reading.id,
+                                segmentIds: [reading.segments[0]!.id],
+                            },
+                        ]
+                      : [{ kind: 'text-selection' }];
         const scenario = exerciseScenario(
             activityId,
             term,
             entry?.definition ?? entry?.translation,
             words,
-            sentence,
+            activity.category === 'listening' ? segment!.text : sentence,
         );
+
+        if (activity.category === 'listening') {
+            const common = {
+                activityId,
+                sourceBindings,
+                objective: activity.locales.en.description,
+                question: scenario.question,
+                explanation: 'The recording provides the answer.',
+            };
+
+            if (activityId === 'L02') {
+                return common;
+            }
+
+            if (activityId === 'L04') {
+                return {
+                    ...common,
+                    referenceAnswer: scenario.answer,
+                    parts: [
+                        {
+                            kind: 'gap',
+                            acceptedAnswers: [scenario.answer],
+                            explanation: common.explanation,
+                        },
+                        { kind: 'text', text: scenario.afterGap },
+                    ],
+                };
+            }
+
+            return {
+                ...common,
+                correct: {
+                    text: scenario.answer,
+                    explanation: common.explanation,
+                },
+                distractors: scenario.options!.map((text) => ({
+                    text,
+                    explanation: 'This detail is absent from the recording.',
+                })),
+            };
+        }
+
         let key: NamedExerciseKey;
         let interaction;
         if (activity.format === 'multiple-choice') {
@@ -226,6 +293,27 @@ function exerciseScenario(
     afterGap?: string;
 } {
     switch (id) {
+        case 'L01':
+            return {
+                question: 'Which statement did you hear?',
+                answer: sentence,
+                options: ['A train is delayed.', 'The concert is tomorrow.'],
+            };
+        case 'L02':
+            return {
+                question: 'Write the utterance you hear.',
+                answer: sentence,
+            };
+        case 'L04': {
+            const word = sentence.match(/^[^\s]+/u)?.[0] ?? '';
+
+            return {
+                question: 'Fill in the missing spoken expression.',
+                answer: word,
+                afterGap: sentence.slice(word.length),
+            };
+        }
+
         case 'V01':
             return {
                 question:

@@ -1,4 +1,9 @@
 import {
+    identifyListeningScript,
+    listeningScriptSchema,
+    type ListeningRecordingRequest,
+} from '../../../application/listening-script';
+import {
     GenerationFailureSchema,
     type GenerationFailure,
 } from '@languon/contracts';
@@ -292,4 +297,83 @@ export async function reconcileGenerationAttempts(
         uncertain: current.some((attempt) => attempt.outcome === 'started'),
         undispatched: current.at(-1)?.outcome === 'undispatched',
     };
+}
+
+/** Persist the exact speaking turns and operation IDs before any provider dispatch. */
+export function freezeListeningScript(
+    persistence: ConversationPersistenceContext,
+    turn: ClaimedConversationTurn,
+    input: ListeningRecordingRequest,
+) {
+    return conversationWithOperation(persistence, turn, async (tx) => {
+        const active = await generationTurnContext(tx, turn);
+        const task = active?.context.plan.tasks.find(
+            (item) => item.id === input.taskId,
+        );
+
+        if (
+            !active ||
+            active.action.kind !== 'generation' ||
+            active.context.runId !== input.runId ||
+            active.context.revision !== input.revision ||
+            task?.kind !== 'audio' ||
+            task.language !== input.language
+        ) {
+            throw conflict(
+                'The listening recording belongs to a different generation task.',
+            );
+        }
+
+        const history = [...(active.context.unitAttempts ?? [])];
+        const attempt = history.find(
+            (item) =>
+                item.taskId === task.id &&
+                item.turnId === turn.id &&
+                item.validationId === input.validationId &&
+                item.outcome === 'started',
+        );
+
+        if (!attempt) {
+            throw conflict('The listening candidate is no longer active.');
+        }
+
+        const previous = history.find(
+            (item) =>
+                item.taskId === task.id &&
+                item.sourceHash === attempt.sourceHash &&
+                item.listeningScript,
+        )?.listeningScript;
+
+        if (previous) {
+            return previous;
+        }
+
+        const script = listeningScriptSchema.parse(input.script);
+        if (
+            new Set(script.utterances.map((item) => item.speaker)).size !==
+            task.speakerCount
+        ) {
+            throw conflict(
+                'The listening script uses the wrong number of speakers.',
+            );
+        }
+
+        const frozen = identifyListeningScript(script);
+        history[history.indexOf(attempt)] = {
+            ...attempt,
+            listeningScript: frozen,
+        };
+
+        await tx
+            .update(revisions)
+            .set({ unitAttempts: history })
+            .where(
+                and(
+                    eq(revisions.runId, input.runId),
+                    eq(revisions.revision, input.revision),
+                ),
+            );
+
+        return frozen;
+    });
 }

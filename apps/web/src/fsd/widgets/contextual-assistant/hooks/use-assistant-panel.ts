@@ -63,6 +63,25 @@ export function useAssistantPanel(
         chat.id,
     );
     const [history, setHistory] = useState(false);
+    const [recordingDraft, setRecordingDraft] = useState<string | null>(null);
+    // The first draft exists before automatic conversation creation returns an ID.
+    const draftSource = JSON.stringify([
+        props.actorId,
+        props.source.kind,
+        props.source.id,
+    ]);
+    const includeListeningSpeech = recordingDraft === draftSource;
+
+    function toggleListeningSpeech() {
+        setRecordingDraft(includeListeningSpeech ? null : draftSource);
+    }
+
+    function clearListeningSpeech() {
+        setRecordingDraft((current) =>
+            current === draftSource ? null : current,
+        );
+    }
+
     const [picker, setPicker] = useState(false);
     const [editingDraft, setEditingDraft] = useState<string | null>(null);
     const [localError, setLocalError] = useState<unknown>(null);
@@ -80,6 +99,7 @@ export function useAssistantPanel(
     } = deletion;
 
     function closeDeletedDraft() {
+        clearListeningSpeech();
         setEditingDraft(null);
     }
 
@@ -274,6 +294,7 @@ export function useAssistantPanel(
 
     function select(id: string) {
         navigation.request(() => {
+            clearListeningSpeech();
             chat.select(id);
             workspaceSelection.remove();
             setHistory(false);
@@ -284,6 +305,7 @@ export function useAssistantPanel(
 
     function create() {
         navigation.request(() => {
+            clearListeningSpeech();
             chat.create.mutate(undefined);
             workspaceSelection.remove();
             setHistory(false);
@@ -307,6 +329,7 @@ export function useAssistantPanel(
         };
 
         navigation.request(() => {
+            clearListeningSpeech();
             chat.create.mutate(next);
             workspaceSelection.remove();
             setHistory(false);
@@ -475,6 +498,8 @@ export function useAssistantPanel(
                 try {
                     await chat.submit.mutateAsync({
                         content: question,
+                        includeListeningSpeech:
+                            includeListeningSpeech || undefined,
                         promptMentions: chat.promptMentions,
                         copiedAttachments,
                         blockReferences: referencedIds,
@@ -496,6 +521,7 @@ export function useAssistantPanel(
                             workspaceSelection.sent(selectedPassage?.id);
                             blockReferences.sent(referencedIds);
                             exercises.accepted(exerciseRequest);
+                            clearListeningSpeech();
                         },
                     });
                 } catch {
@@ -616,6 +642,8 @@ export function useAssistantPanel(
                 content: message.content,
                 promptMentions: message.promptMentions,
                 retryOf: turn.id,
+                includeListeningSpeech: includeListeningSpeech || undefined,
+                onAccepted: clearListeningSpeech,
                 blockReferences: message.blockReferences ?? [],
             });
         }
@@ -750,6 +778,8 @@ export function useAssistantPanel(
         blockReferences,
         missingBlockReference,
         exercises,
+        includeListeningSpeech,
+        toggleListeningSpeech,
         workspacePassage: workspaceSelection.passage,
         removeWorkspacePassage,
         requestWithSession,

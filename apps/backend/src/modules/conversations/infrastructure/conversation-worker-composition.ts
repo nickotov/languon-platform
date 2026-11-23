@@ -1,3 +1,4 @@
+import type { PrepareListeningRecording } from '../application/listening-script';
 import { KnowledgeShareCrypto } from '../../knowledge/infrastructure/knowledge-share-crypto';
 import { createTextAiProviderRuntime } from '../../../infrastructure/text-ai/provider-runtime';
 import { runPinnedFallback } from '../../text-ai/infrastructure/ai/run-pinned-fallback';
@@ -26,6 +27,7 @@ import { createContextualTutorRunner } from './ai/contextual-tutor-runner';
 
 /** Shares the existing worker slot pool. Every executable instance is bound to a claimed turn. */
 export function createConversationWorkerComposition(input: {
+    prepareListeningRecording?: PrepareListeningRecording;
     database: ConversationsDatabase;
     dictionaryHmacSecret: string;
     credentials: Partial<
@@ -81,6 +83,9 @@ export function createConversationWorkerComposition(input: {
     });
     const worker = new ConversationWorkerService({
         store,
+        ...(input.prepareListeningRecording && {
+            prepareListeningRecording: input.prepareListeningRecording,
+        }),
         createRunner(turn) {
             const execution =
                 turn.execution as unknown as TextAiAdmissionExecution;

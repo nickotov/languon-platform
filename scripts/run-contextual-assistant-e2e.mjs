@@ -52,23 +52,29 @@ export async function withPreservedFile(path, work) {
 export function assertContextualAssistantEnvironment(environment) {
     const database = new URL(environment.AUTH_TEST_DATABASE_URL ?? 'invalid:');
     const redis = new URL(environment.AUTH_TEST_REDIS_URL ?? 'invalid:');
+    const targets = new Map([
+        ['55444', '56444'],
+        ['55595', '56595'],
+    ]);
+    const expectedRedisPort = targets.get(database.port);
     if (
         environment.ALLOW_DISPOSABLE_DATABASE_TESTS !== 'true' ||
         environment.ALLOW_DISPOSABLE_REDIS_TESTS !== 'true' ||
         !['postgres:', 'postgresql:'].includes(database.protocol) ||
         !['127.0.0.1', 'localhost'].includes(database.hostname) ||
-        database.port !== '55444' ||
+        !expectedRedisPort ||
         database.pathname !== '/languon_auth_assistant_web_test' ||
         environment.AUTH_TEST_DATABASE_CONFIRM !==
             'languon_auth_assistant_web_test' ||
         redis.protocol !== 'redis:' ||
         !['127.0.0.1', 'localhost'].includes(redis.hostname) ||
-        redis.port !== '56444' ||
+        redis.port !== expectedRedisPort ||
         redis.pathname !== '/1' ||
-        environment.AUTH_TEST_REDIS_CONFIRM !== `${redis.hostname}:56444/1`
+        environment.AUTH_TEST_REDIS_CONFIRM !==
+            `${redis.hostname}:${expectedRedisPort}/1`
     ) {
         throw new Error(
-            'Contextual assistant journeys require confirmed exclusive loopback PostgreSQL 55444/languon_auth_assistant_web_test and Redis 56444/1.',
+            'Contextual assistant journeys require the confirmed exclusive loopback PostgreSQL/Redis pair 55444/56444 or 55595/56595 with database languon_auth_assistant_web_test and Redis DB 1.',
         );
     }
 }

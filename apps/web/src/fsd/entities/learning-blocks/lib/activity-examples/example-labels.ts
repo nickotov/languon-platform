@@ -63,6 +63,41 @@ const copy = {
     ],
 } as const;
 
+const media = {
+    en: [
+        'Show transcript',
+        'Hide transcript',
+        'Play excerpt',
+        'Play',
+        'Pause',
+        'Audio unavailable',
+    ],
+    ru: [
+        'Показать расшифровку',
+        'Скрыть расшифровку',
+        'Слушать фрагмент',
+        'Слушать',
+        'Пауза',
+        'Аудио недоступно',
+    ],
+    fr: [
+        'Afficher la transcription',
+        'Masquer la transcription',
+        'Écouter l’extrait',
+        'Écouter',
+        'Pause',
+        'Audio indisponible',
+    ],
+    es: [
+        'Mostrar transcripción',
+        'Ocultar transcripción',
+        'Escuchar el fragmento',
+        'Escuchar',
+        'Pausa',
+        'Audio no disponible',
+    ],
+} as const;
+
 export function exerciseExampleLabels(locale: Locale): LearningBlockLabels {
     const text = copy[locale];
     const kinds = kindLabels[locale];
@@ -88,13 +123,15 @@ export function exerciseExampleLabels(locale: Locale): LearningBlockLabels {
         check: text[8],
         notAnswered: text[9],
         attempted: text[10],
-        showTranscript: '',
-        hideTranscript: '',
-        replay: '',
+        showTranscript: media[locale][0],
+        hideTranscript: media[locale][1],
+        replay: media[locale][2],
+        play: media[locale][3],
+        stop: media[locale][4],
         original: '',
         bilingual: '',
         translationLanguage: '',
-        mediaUnavailable: '',
+        mediaUnavailable: media[locale][5],
         openVideoSource: '',
         rule: '',
         pattern: '',

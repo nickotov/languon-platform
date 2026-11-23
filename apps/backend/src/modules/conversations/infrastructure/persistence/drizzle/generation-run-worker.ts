@@ -28,7 +28,10 @@ import type {
     GenerationSourceSnapshot,
 } from '../../../application/ports/generation-run';
 import { generationValidationVersion } from '../../../application/ports/generation-run';
-import { isReadOnlyKnowledgeSource } from '../../../domain/conversation';
+import {
+    ConversationError,
+    isReadOnlyKnowledgeSource,
+} from '../../../domain/conversation';
 import { conversationWithOperation } from './conversation-worker-authority';
 import {
     conflict,
@@ -83,6 +86,16 @@ export function conversationStartGeneration(
     validationIds?: string[],
 ) {
     const plan = GenerationPlanSchema.parse(candidate);
+    if (
+        plan.tasks.some((task) => task.kind === 'audio') &&
+        turn.execution.permitsListeningRecording !== true
+    ) {
+        throw new ConversationError(
+            'generation_scope_change',
+            'New recordings require explicit speech authorization.',
+        );
+    }
+
     const sources = captureGenerationSources(turn, plan, evidence);
 
     assertGenerationCapacity(plan, sources);

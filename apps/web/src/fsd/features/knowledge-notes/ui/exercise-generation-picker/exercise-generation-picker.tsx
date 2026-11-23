@@ -65,6 +65,7 @@ export function ExerciseGenerationPicker(props: {
         grammar: text.grammar,
         reading: text.reading,
         writing: text.writing,
+        listening: text.listening,
     };
     const difficultyOptions = [
         { value: 'beginner', label: text.beginner },

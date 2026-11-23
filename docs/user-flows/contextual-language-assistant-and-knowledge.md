@@ -157,7 +157,7 @@ this surface rather than opening a detached second popup.
 
 In an editable space, type `/` in ordinary text or use **Add block**. Browse Basic
 blocks, Learning blocks, Exercises and Library. Search exercise names or IDs;
-all19 activities are grouped by category. Preview opens a local interactive
+all 22 activities are grouped by category. Preview opens a local interactive
 example without selecting it, changing the document or generating AI work.
 Closing returns to the picker. On narrow screens the preview uses a sheet.
 

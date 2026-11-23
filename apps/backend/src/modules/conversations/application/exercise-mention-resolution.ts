@@ -10,6 +10,7 @@ export function applyExerciseMentionChoices(
     planned: TutorRequestResolution,
     hasSource: boolean,
     explicitRequest?: ExerciseGenerationRequest,
+    newRecordingAuthorized = false,
 ): TutorRequestResolution {
     const ids = [
         ...new Set(
@@ -27,7 +28,20 @@ export function applyExerciseMentionChoices(
         return planned;
     }
 
-    const task = planned.brief.tasks[0];
+    const audio =
+        newRecordingAuthorized &&
+        planned.brief.tasks.length === 2 &&
+        ids.every((id) => id.startsWith('L'))
+            ? planned.brief.tasks.find((item) => item.kind === 'audio')
+            : undefined;
+    const task = audio
+        ? planned.brief.tasks.find(
+              (item) =>
+                  item.kind === 'exercises' &&
+                  item.source?.kind === 'task' &&
+                  item.source.taskId === audio.id,
+          )
+        : planned.brief.tasks[0];
     const total = task?.count ?? ids.length;
     const selected =
         task?.activities?.map((activity) => activity.activityId) ?? [];
@@ -71,6 +85,7 @@ export function applyExerciseMentionChoices(
     // Pending briefs retain the selected identities even while source/count needs clarification.
     const pinnedBrief = {
         tasks: [
+            ...(audio ? [audio] : []),
             {
                 ...(task?.kind === 'exercises'
                     ? task
@@ -86,8 +101,8 @@ export function applyExerciseMentionChoices(
         ],
     };
     const conflict =
-        !hasSource ||
-        planned.brief.tasks.length !== 1 ||
+        (!hasSource && !audio) ||
+        (!audio && planned.brief.tasks.length !== 1) ||
         task?.kind !== 'exercises' ||
         total < ids.length ||
         total > 25 ||

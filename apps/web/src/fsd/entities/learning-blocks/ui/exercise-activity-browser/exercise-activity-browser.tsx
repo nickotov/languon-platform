@@ -97,7 +97,13 @@ export function ExerciseActivityBrowser({
             .toLocaleLowerCase(locale)
             .includes(normalized);
     });
-    const categories = ['vocabulary', 'grammar', 'reading', 'writing'] as const;
+    const categories = [
+        'vocabulary',
+        'grammar',
+        'reading',
+        'writing',
+        'listening',
+    ] as const;
 
     function search(event: ChangeEvent<HTMLInputElement>) {
         setLocalQuery(event.target.value);

@@ -158,6 +158,30 @@ const definitions = [
         checkingPolicy: 'ai-rubric',
         supportedSourceKinds: ['text'],
     },
+    {
+        id: 'L01',
+        version: 1,
+        category: 'listening',
+        format: 'multiple-choice',
+        checkingPolicy: 'prepared-key',
+        supportedSourceKinds: ['audio'],
+    },
+    {
+        id: 'L02',
+        version: 1,
+        category: 'listening',
+        format: 'free-text',
+        checkingPolicy: 'prepared-key',
+        supportedSourceKinds: ['audio'],
+    },
+    {
+        id: 'L04',
+        version: 1,
+        category: 'listening',
+        format: 'fill-in-the-blank',
+        checkingPolicy: 'prepared-key',
+        supportedSourceKinds: ['audio'],
+    },
 ] as const satisfies readonly Omit<ExerciseActivityMetadata, 'locales'>[];
 
 /** Catalog order is stable; an exercise is one answerable item, not this definition. */

@@ -131,7 +131,7 @@ source_paths:
     - apps/web/src/fsd/features/lesson-generation/lib/lesson-task-unit-progress.ts
     - apps/web/src/fsd/features/lesson-generation/lib/lesson-task-status.ts
     - apps/web/src/fsd/features/lesson-generation/ui/lesson-run-card/lesson-run-card.tsx
-source_fingerprint: sha256:f5a4fa2c769e2aef2212328ab8844c7cae18c847a5e0059de333e58bee5843e4
+source_fingerprint: sha256:b3d1ce3656eb67c967923c59104448007e91d8adf5ea1033ed8207edd3715e59
 reviewed: 2026-11-23
 ---
 

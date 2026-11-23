@@ -23,6 +23,7 @@ import {
 } from './persistence/drizzle/drizzle-conversation-store';
 import { createConversationRoutes } from '../interface/http/conversation.routes';
 import type { WorkspaceContextLimits } from '../application/workspace-turn-context';
+import type { PrepareListeningRecording } from '../application/listening-script';
 export interface ConversationsCompositionDependencies extends Pick<
     ConversationPersistenceDependencies,
     'database' | 'admitTurn' | 'settleInterrupted' | 'readPortrait'
@@ -39,6 +40,7 @@ export interface ConversationsCompositionDependencies extends Pick<
         store: DrizzleConversationStore,
         turn: ClaimedConversationTurn,
     ) => TutorRunner | Promise<TutorRunner>;
+    prepareListeningRecording?: PrepareListeningRecording;
 }
 export function createConversationsComposition(
     dependencies: ConversationsCompositionDependencies,
@@ -120,6 +122,12 @@ export function createConversationsComposition(
             ? new ConversationWorkerService({
                   store,
                   createRunner: (turn) => factory(store, turn),
+                  ...(dependencies.prepareListeningRecording
+                      ? {
+                            prepareListeningRecording:
+                                dependencies.prepareListeningRecording,
+                        }
+                      : {}),
               })
             : undefined,
     };

@@ -1,5 +1,7 @@
+import type { GenerationRunCallbacks } from '../../application/ports/generation-run';
 import {
     compileLearningUnit,
+    readListeningUnit,
     type DecodedLearningUnit,
 } from './learning-unit-validation';
 import { generationFingerprint } from '../../application/generation-run-revisions';
@@ -68,6 +70,7 @@ export interface LearningContentModelCall {
 }
 
 export interface LearningContentAuthoringOptions {
+    materializeListeningRecording?: GenerationRunCallbacks['materializeListeningRecording'];
     trackValidatedCalls?: boolean;
     completed?: readonly LearningContentTaskResult[];
     completedBatchKeys?: readonly string[];
@@ -112,6 +115,16 @@ export function createLearningContentAuthoring(
             const parsed = LearningContentBriefSchema.safeParse(candidate);
             if (!parsed.success) {
                 return { status: 'failed', reason: 'invalid-brief' };
+            }
+
+            if (
+                parsed.data.tasks.some((task) => task.kind === 'audio') &&
+                (!options.run || !options.materializeListeningRecording)
+            ) {
+                throw new ConversationError(
+                    'generation_scope_change',
+                    'New recordings require a durable listening lesson.',
+                );
             }
 
             const initialRequirements = learningContentRequirements(
@@ -358,10 +371,30 @@ export function createLearningContentAuthoring(
                         signal.throwIfAborted();
                         received = true;
 
+                        const decoded = projected.decode(
+                            output,
+                        ) as DecodedLearningUnit;
+
+                        const audio = readListeningUnit(batch.brief, decoded);
+                        if (audio) {
+                            // Operational failures while storing or speaking a valid script
+                            // are never model-format failures eligible for immediate repair.
+                            received = false;
+                            const recording =
+                                await options.materializeListeningRecording!({
+                                    ...options.run!,
+                                    taskId: audio.task.id,
+                                    validationId,
+                                    language: audio.task.language!,
+                                    script: audio.script,
+                                });
+
+                            audio.item.blocks = [recording];
+                            received = true;
+                        }
+
                         const result = compileLearningUnit({
-                            decoded: projected.decode(
-                                output,
-                            ) as DecodedLearningUnit,
+                            decoded,
                             brief: batch.brief,
                             lesson: brief,
                             contexts,

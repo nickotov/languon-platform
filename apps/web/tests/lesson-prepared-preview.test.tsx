@@ -1,3 +1,5 @@
+import { exerciseActivityExamples } from '../src/fsd/entities/learning-blocks/examples';
+import { preparedLessonSections } from '../src/fsd/features/lesson-generation/lib/prepared-lesson-sections';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { PropsWithChildren } from 'react';
@@ -1168,4 +1170,55 @@ it('opens the final proposal directly from a completed run without fetching read
     ).not.toBeInTheDocument();
 
     expect(fetch).not.toHaveBeenCalled();
+});
+
+it('groups adjacent prepared recording and listening questions in a single player scope', () => {
+    const demo = exerciseActivityExamples('en').find(
+        (item) => item.activity.id === 'L02',
+    )!;
+    const bodies = [demo.recording!.block, demo.block].map((block) => ({
+        schemaVersion: 2 as const,
+        document: {
+            type: 'doc' as const,
+            content: [{ type: 'learningBlock' as const, attrs: { block } }],
+        },
+    }));
+    const tasks = [
+        {
+            id: 'dialogue',
+            kind: 'audio' as const,
+            label: 'At the library',
+            status: 'completed' as const,
+        },
+        {
+            id: 'practice',
+            kind: 'exercises' as const,
+            label: 'Transcribe the reply',
+            status: 'running' as const,
+        },
+    ];
+    const result = preparedLessonSections(
+        { ...running, tasks },
+        {
+            runId: running.id,
+            revision: 1,
+            parts: tasks.map((task, index) => ({
+                taskId: task.id,
+                body: bodies[index]!,
+                complete: index === 0,
+                completedUnitCount: 1,
+                totalUnitCount: index + 1,
+            })),
+        },
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]!.part?.complete).toBe(false);
+    expect(
+        result[0]!.part?.body.document.content?.map(
+            (node) => node.attrs?.block?.id,
+        ),
+    ).toEqual([demo.recording!.block.id, demo.block.id]);
+
+    expect(result[0]!.dependencies).toEqual([]);
 });

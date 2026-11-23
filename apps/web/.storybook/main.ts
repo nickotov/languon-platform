@@ -5,6 +5,7 @@ const config: StorybookConfig = {
     // Inferred recursive contract props stall automatic documentation transforms.
     // Stories declare their controls and remain executable without prop extraction.
     typescript: { reactDocgen: false },
+    staticDirs: ['../public'],
     stories: ['../src/**/*.stories.@(ts|tsx)'],
 };
 

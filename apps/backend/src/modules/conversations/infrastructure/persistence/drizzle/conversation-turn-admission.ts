@@ -1,3 +1,7 @@
+import {
+    lessonAdmissionOptions,
+    persistListeningAllowance,
+} from './listening-admission';
 import { chatAdmissionInput } from './conversation-chat-admission-input';
 import { generationAdmissionInput } from '../../ai/generation-admission-input';
 import { persistConversationAdmissionMessages } from './conversation-admission-messages';
@@ -419,14 +423,13 @@ export async function conversationSubmit(
                 requestId: input.requestId,
                 inputTokenBound,
                 minimumInputBound,
-                mayGenerateLesson:
-                    generation?.kind === 'generation' ||
-                    (!generation &&
-                        chat.source.kind === 'knowledge' &&
-                        !!snapshot.blockTarget),
-                reserveToolContinuation:
-                    !!snapshot.blockTarget ||
-                    !!snapshot.dictionaryGenerationContext,
+                ...lessonAdmissionOptions(
+                    input,
+                    chat.source,
+                    snapshot,
+                    generation,
+                    generationPrepared?.context,
+                ),
                 fingerprint,
                 ...(generation?.kind === 'generation'
                     ? {
@@ -496,6 +499,7 @@ export async function conversationSubmit(
                 })
                 .returning();
 
+            await persistListeningAllowance(tx, turn!, chat.sourceId);
             if (generation && generationPrepared) {
                 await bindGenerationAdmission(
                     persistence,

@@ -51,6 +51,7 @@ const voicesSchema = z.record(
         .object({
             model: z.string().min(1).max(128),
             voice: z.string().min(1).max(128),
+            dialogueVoice: z.string().min(1).max(128).optional(),
             estimatedCostUnitsPerCharacter: z.number().finite().positive(),
             settingsVersion: z.string().min(1).max(128).optional(),
         })
@@ -172,7 +173,12 @@ export function loadDictionaryAudioEnvironment(
                 !settingsVersion ||
                 (model.settingsVersions !== null &&
                     !model.settingsVersions.includes(settingsVersion)) ||
-                (model.voices !== null && !model.voices.includes(profile.voice))
+                (model.voices !== null &&
+                    !model.voices.includes(profile.voice)) ||
+                (profile.dialogueVoice !== undefined &&
+                    (profile.dialogueVoice === profile.voice ||
+                        (model.voices !== null &&
+                            !model.voices.includes(profile.dialogueVoice))))
             ) {
                 throw new Error(
                     'Unsupported curated speech model, language, voice, or settings.',
@@ -180,7 +186,13 @@ export function loadDictionaryAudioEnvironment(
             }
 
             profiles[language] = {
-                ...profile,
+                model: profile.model,
+                voice: profile.voice,
+                estimatedCostUnitsPerCharacter:
+                    profile.estimatedCostUnitsPerCharacter,
+                ...(profile.dialogueVoice
+                    ? { dialogueVoice: profile.dialogueVoice }
+                    : {}),
                 settingsVersion,
                 language: model.languageCodes[language]!,
                 provider: env.DICTIONARY_AUDIO_PROVIDER,

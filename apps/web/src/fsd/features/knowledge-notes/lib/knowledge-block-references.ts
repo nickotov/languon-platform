@@ -1,4 +1,8 @@
-import type { KnowledgeNode, LearningBlock } from '@languon/contracts';
+import {
+    listeningDecodingSegments,
+    type KnowledgeNode,
+    type LearningBlock,
+} from '@languon/contracts';
 import { authoringBlockGroup } from './authoring-block-group';
 import type { PositionedBlock } from './positioned-learning-blocks';
 
@@ -7,6 +11,7 @@ export type KnowledgeBlockReference = {
     type: LearningBlock['type'];
     title: string;
     language?: string | undefined;
+    listeningSource?: 'meaning' | 'decoding';
 };
 
 /** Descriptors for UI discovery; authoritative material is resolved by the server. */
@@ -19,13 +24,27 @@ export function knowledgeBlockReferences(
         const block = node.attrs?.block;
         if (node.type === 'learningBlock' && block && !seen.has(block.id)) {
             seen.add(block.id);
+            const recording =
+                block.type === 'audio' && block.assetId
+                    ? block.transcript
+                    : undefined;
+
+            const language =
+                ('language' in block && block.language) || recording?.language;
+
             references.push({
+                ...(recording
+                    ? {
+                          listeningSource: listeningDecodingSegments(recording)
+                              .length
+                              ? 'decoding'
+                              : 'meaning',
+                      }
+                    : {}),
                 id: block.id,
                 type: block.type,
                 title: blockReferenceTitle(block, references.length + 1),
-                ...('language' in block && block.language
-                    ? { language: block.language }
-                    : {}),
+                ...(language ? { language } : {}),
             });
         }
 

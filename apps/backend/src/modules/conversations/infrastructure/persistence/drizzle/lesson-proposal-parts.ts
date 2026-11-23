@@ -4,7 +4,7 @@ import type {
     KnowledgeNode,
     LessonPart,
 } from '@languon/contracts';
-import { isLessonPartPresent } from '@languon/contracts';
+import { getExerciseActivity, isLessonPartPresent } from '@languon/contracts';
 import {
     generationPlanRevisionsTable as revisions,
     generationRunsTable as runs,
@@ -60,7 +60,8 @@ export async function loadLessonPartLayouts(
         }
 
         let offset = 0;
-        const parts = revision.plan.outputOrder.map((taskId) => {
+        const parts: LessonPart[] = [];
+        for (const taskId of revision.plan.outputOrder) {
             const task = revision.plan.tasks.find((task) => task.id === taskId);
             const nodeCount = sizes.get(taskId);
             if (!task || !nodeCount) {
@@ -70,14 +71,32 @@ export async function loadLessonPartLayouts(
             const startIndex = offset;
             offset += nodeCount;
 
-            return {
+            const previous = parts.at(-1);
+            if (
+                previous?.kind === 'audio' &&
+                task.kind === 'exercises' &&
+                task.inputs.some(
+                    (input) =>
+                        input.kind === 'task' &&
+                        input.taskId === previous.taskId,
+                ) &&
+                task.activities.every(
+                    (activity) =>
+                        getExerciseActivity(activity.activityId).category ===
+                        'listening',
+                )
+            ) {
+                previous.nodeCount += nodeCount;
+                continue;
+            }
+            parts.push({
                 taskId,
                 kind: task.kind,
                 startIndex,
                 nodeCount,
                 present: false,
-            };
-        });
+            });
+        }
 
         layouts.set(revision.runId, parts);
     }

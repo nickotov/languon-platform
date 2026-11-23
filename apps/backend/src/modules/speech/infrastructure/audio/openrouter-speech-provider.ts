@@ -97,7 +97,8 @@ export class OpenRouterSpeechProvider implements SpeechSynthesisProvider {
                 candidate.configurationId === profile.configurationId &&
                 candidate.provider === profile.provider &&
                 candidate.model === profile.model &&
-                candidate.voice === profile.voice &&
+                (candidate.voice === profile.voice ||
+                    candidate.dialogueVoice === profile.voice) &&
                 candidate.language === profile.language &&
                 candidate.settingsVersion === profile.settingsVersion &&
                 candidate.estimatedCostUnitsPerCharacter ===

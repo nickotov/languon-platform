@@ -1,4 +1,8 @@
 import {
+    getExerciseActivity,
+    listeningDecodingSegments,
+} from '@languon/contracts';
+import {
     NamedExerciseSemanticsSchema,
     type ExerciseLearningBlock,
     type LearningBlock,
@@ -330,6 +334,32 @@ function validateFrozenBlockSource(
 
     const block = candidates[0]!;
 
+    if (source.kind === 'audio') {
+        requireCondition(
+            block.type === 'audio' &&
+                block.assetId === source.assetId &&
+                !!block.transcript,
+            'Listening requires a playable recording with its own transcript.',
+        );
+
+        const segments = block.transcript!.segments;
+        const first = segments.findIndex(
+            (item) => item.id === source.passages[0]!.segmentId,
+        );
+
+        requireCondition(
+            first >= 0 &&
+                source.passages.every(
+                    (item, offset) =>
+                        segments[first + offset]?.id === item.segmentId &&
+                        segments[first + offset]?.text === item.text,
+                ),
+            'Recording evidence must select contiguous transcript segments in order.',
+        );
+
+        return;
+    }
+
     if (source.kind === 'vocabulary') {
         requireCondition(
             block.type === 'vocabulary',
@@ -382,6 +412,68 @@ function validateFrozenBlockSource(
     );
 }
 
+function validateListeningInteraction(
+    named: NamedExerciseBlock,
+    sourceBlocks?: readonly LearningBlock[],
+) {
+    const [evidence, ...rest] = named.semantics.sources;
+    requireCondition(
+        evidence?.kind === 'audio' && rest.length === 0,
+        'A listening item needs one recording.',
+    );
+
+    if (named.format === 'multiple-choice') {
+        requireCondition(
+            named.choices.length === 3,
+            'Listen for meaning requires three choices.',
+        );
+    } else {
+        const [passage] = evidence.passages;
+        requireCondition(
+            evidence.passages.length === 1 && !!passage,
+            'A decoding task needs one short excerpt.',
+        );
+
+        const source = sourceBlocks?.find(
+            (item) => item.id === evidence.origin.blockId,
+        );
+
+        if (source?.type === 'audio') {
+            requireCondition(
+                !!source.transcript &&
+                    listeningDecodingSegments(source.transcript).some(
+                        (segment) => segment.id === passage.segmentId,
+                    ),
+                'Use a timed short excerpt or one short complete recording.',
+            );
+        }
+
+        if (named.format === 'free-text') {
+            requireCondition(
+                named.referenceAnswer === passage.text &&
+                    named.acceptedAnswers?.length === 1 &&
+                    named.acceptedAnswers[0] === passage.text,
+                'Dictation key must match the exact utterance.',
+            );
+        } else {
+            const gaps = named.parts.filter((part) => part.kind === 'gap');
+            const reconstructed = named.parts
+                .map((part) =>
+                    part.kind === 'gap' ? part.acceptedAnswers[0] : part.text,
+                )
+                .join('');
+
+            requireCondition(
+                gaps.length >= 1 &&
+                    gaps.length <= 2 &&
+                    gaps.every((gap) => gap.acceptedAnswers.length === 1) &&
+                    normalized(reconstructed) === normalized(passage.text),
+                'Listening gaps must restore the transcript with one or two missing expressions.',
+            );
+        }
+    }
+}
+
 /** Validates pedagogy-shaped content, not authorization or semantic correctness.
  * Supplied blocks must already be authorized by the application. A proposal ID
  * and a frozen selection's note/version still need their own authority checks.
@@ -405,6 +497,13 @@ export function validateNamedExerciseActivity(
     );
 
     const named = { ...block, semantics } as NamedExerciseBlock;
+
+    if (
+        getExerciseActivity(named.semantics.activity.id).category ===
+        'listening'
+    ) {
+        validateListeningInteraction(named, sourceBlocks);
+    }
 
     validatePreparedKey(named);
     validateChoiceInteraction(named);

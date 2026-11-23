@@ -1,3 +1,4 @@
+import { exerciseActivityCatalog } from '@languon/contracts';
 import type { Locale } from '@/fsd/shared/i18n';
 
 const en = {
@@ -5,12 +6,11 @@ const en = {
     chapter: 'Exercises',
     translationTarget: 'English source → French response',
     intro: 'Turn material you care about into practice that makes sense.',
-    chapterIntro:
-        'Try 19 exercise types, see how checking works, and copy a recipe for your own material.',
+    chapterIntro: `Try ${exerciseActivityCatalog.length} exercise types, see how checking works, and copy a recipe for your own material.`,
     notice: 'Local examples · no AI calls or credits · answers and progress are not saved',
     workflow: 'From material to practice',
     explore: 'Explore exercises',
-    formats: '19 interactive exercises · English A2 sample material',
+    formats: `${exerciseActivityCatalog.length} interactive exercises · English A2 sample material`,
     distinction:
         'This guide explains the service. Your saved workbooks contain your own material and practice.',
     recipes: 'Ask for the practice you need',
@@ -40,7 +40,7 @@ const en = {
     rubric: 'Practice writing here. Compare a sample response below; there is no AI check in this guide.',
     hybrid: 'Local prepared-answer check. Other valid answers may need AI review in your own workbook.',
     prepared: 'Local check against a prepared answer.',
-    categories: ['Vocabulary', 'Grammar', 'Reading', 'Writing'],
+    categories: ['Vocabulary', 'Grammar', 'Reading', 'Writing', 'Listening'],
 };
 
 export type GuideUiCopy = typeof en;
@@ -51,12 +51,11 @@ const translations: Record<Locale, GuideUiCopy> = {
         chapter: 'Упражнения',
         translationTarget: 'Источник на английском → ответ на французском',
         intro: 'Превращайте интересные вам материалы в осмысленную практику.',
-        chapterIntro:
-            'Попробуйте 19 видов упражнений, узнайте о проверке и скопируйте запрос для своего материала.',
+        chapterIntro: `Попробуйте ${exerciseActivityCatalog.length} видов упражнений, узнайте о проверке и скопируйте запрос для своего материала.`,
         notice: 'Локальные примеры · без ИИ и кредитов · ответы и прогресс не сохраняются',
         workflow: 'От материала к практике',
         explore: 'Изучить упражнения',
-        formats: '19 интерактивных упражнений · примеры на английском A2',
+        formats: `${exerciseActivityCatalog.length} интерактивных упражнений · примеры на английском A2`,
         distinction:
             'Это руководство объясняет сервис. В сохранённых тетрадях находятся ваши материалы и практика.',
         recipes: 'Попросите нужную практику',
@@ -86,19 +85,24 @@ const translations: Record<Locale, GuideUiCopy> = {
         rubric: 'Попрактикуйтесь в письме. Сравните с примером ниже: ИИ-проверка в руководстве не выполняется.',
         hybrid: 'Локальная проверка по готовому ответу. Другие верные варианты могут потребовать ИИ-проверки в вашей тетради.',
         prepared: 'Локальная проверка по готовому ответу.',
-        categories: ['Лексика', 'Грамматика', 'Чтение', 'Письмо'],
+        categories: [
+            'Лексика',
+            'Грамматика',
+            'Чтение',
+            'Письмо',
+            'Аудирование',
+        ],
     },
     fr: {
         title: 'Guide du cahier',
         chapter: 'Exercices',
         translationTarget: 'Source en anglais → réponse en français',
         intro: 'Transformez vos contenus préférés en pratique utile.',
-        chapterIntro:
-            'Essayez 19 types d’exercices, découvrez la correction et copiez une recette pour vos contenus.',
+        chapterIntro: `Essayez ${exerciseActivityCatalog.length} types d’exercices, découvrez la correction et copiez une recette pour vos contenus.`,
         notice: 'Exemples locaux · aucun appel IA ni crédit · réponses et progression non enregistrées',
         workflow: 'Du contenu à la pratique',
         explore: 'Explorer les exercices',
-        formats: '19 exercices interactifs · exemples en anglais A2',
+        formats: `${exerciseActivityCatalog.length} exercices interactifs · exemples en anglais A2`,
         distinction:
             'Ce guide explique le service. Vos cahiers enregistrés contiennent vos contenus et votre pratique.',
         recipes: 'Demandez la pratique adaptée',
@@ -129,19 +133,24 @@ const translations: Record<Locale, GuideUiCopy> = {
         rubric: 'Écrivez ici et comparez avec une réponse exemple ci-dessous. Ce guide ne fait aucune correction IA.',
         hybrid: 'Correction locale par réponse préparée. D’autres réponses valides peuvent nécessiter une vérification IA dans votre cahier.',
         prepared: 'Correction locale par réponse préparée.',
-        categories: ['Vocabulaire', 'Grammaire', 'Lecture', 'Écriture'],
+        categories: [
+            'Vocabulaire',
+            'Grammaire',
+            'Lecture',
+            'Écriture',
+            'Compréhension orale',
+        ],
     },
     es: {
         title: 'Guía del cuaderno',
         chapter: 'Ejercicios',
         translationTarget: 'Fuente en inglés → respuesta en francés',
         intro: 'Convierte el contenido que te interesa en práctica útil.',
-        chapterIntro:
-            'Prueba 19 tipos de ejercicios, descubre la corrección y copia una receta para tu contenido.',
+        chapterIntro: `Prueba ${exerciseActivityCatalog.length} tipos de ejercicios, descubre la corrección y copia una receta para tu contenido.`,
         notice: 'Ejemplos locales · sin llamadas de IA ni créditos · no se guardan respuestas ni progreso',
         workflow: 'Del contenido a la práctica',
         explore: 'Explorar ejercicios',
-        formats: '19 ejercicios interactivos · ejemplos en inglés A2',
+        formats: `${exerciseActivityCatalog.length} ejercicios interactivos · ejemplos en inglés A2`,
         distinction:
             'Esta guía explica el servicio. Tus cuadernos guardados contienen tu material y tu práctica.',
         recipes: 'Pide la práctica que necesitas',
@@ -171,7 +180,13 @@ const translations: Record<Locale, GuideUiCopy> = {
         rubric: 'Practica escribiendo y compara con una respuesta de ejemplo abajo. Esta guía no realiza corrección con IA.',
         hybrid: 'Corrección local con respuesta preparada. Otras respuestas válidas pueden necesitar revisión de IA en tu cuaderno.',
         prepared: 'Corrección local con respuesta preparada.',
-        categories: ['Vocabulario', 'Gramática', 'Lectura', 'Escritura'],
+        categories: [
+            'Vocabulario',
+            'Gramática',
+            'Lectura',
+            'Escritura',
+            'Comprensión auditiva',
+        ],
     },
 };
 

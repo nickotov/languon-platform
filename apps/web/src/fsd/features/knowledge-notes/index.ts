@@ -45,6 +45,7 @@ export type { PreparedExerciseRequest } from './hooks/use-exercise-generation';
 export { contentProposalBlocks } from './lib/content-proposal-blocks';
 
 export { LessonDocumentBlocks } from './ui/content-proposals/lesson-document-blocks/lesson-document-blocks';
+export { PreparedLessonDocument } from './ui/content-proposals/prepared-lesson-document/prepared-lesson-document';
 export { LessonProposalReviewForRun } from './ui/content-proposals/lesson-proposal-review-for-run/lesson-proposal-review-for-run';
 
 export { useListedContentProposals } from './ui/content-proposals/knowledge-content-proposals/proposal-list-context';

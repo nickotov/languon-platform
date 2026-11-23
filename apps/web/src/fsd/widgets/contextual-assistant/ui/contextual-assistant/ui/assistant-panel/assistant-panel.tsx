@@ -15,7 +15,7 @@ import {
     KnowledgeContentProposals,
     contentProposalCompletionKey,
     ExerciseGenerationPicker,
-    LessonDocumentBlocks,
+    PreparedLessonDocument,
     LessonProposalReviewForRun,
 } from '@/fsd/features/knowledge-notes';
 import { conversationCopy } from '@/fsd/entities/conversation';
@@ -38,10 +38,6 @@ import { AssistantDialogs } from '../assistant-dialogs/assistant-dialogs';
 import { TutorShell } from '../../../tutor-shell/tutor-shell';
 import type { ContextualAssistantProps } from '../../../../types';
 import styles from '../../../styles/contextual-assistant-assistant-panel-common.module.css';
-
-const renderPreparedLesson: PreparedLessonRenderer = (body, dependencies) => (
-    <LessonDocumentBlocks body={body} dependencies={dependencies} />
-);
 
 function renderCompletedLesson(proposalId: string, onClose: () => void) {
     return (
@@ -69,6 +65,18 @@ export function AssistantPanel(
     const placement = useCompanionLayout();
     const panel = useAssistantPanel({ ...props, workspace, currentDraft });
     const { chat, detail } = panel;
+    const renderPreparedLesson: PreparedLessonRenderer = (
+        body,
+        dependencies,
+    ) => (
+        <PreparedLessonDocument
+            body={body}
+            dependencies={dependencies}
+            noteId={props.source.id}
+            actorId={props.actorId}
+            requestWithSession={panel.requestWithSession}
+        />
+    );
     const lesson = useLessonComposer({
         actorId: props.actorId,
         conversationId: chat.id,
@@ -512,6 +520,14 @@ export function AssistantPanel(
                                 }
                                 onGenerateExercises={
                                     workspace ? openExercisePicker : undefined
+                                }
+                                includeListeningSpeech={
+                                    panel.includeListeningSpeech
+                                }
+                                onToggleListeningSpeech={
+                                    workspace
+                                        ? panel.toggleListeningSpeech
+                                        : undefined
                                 }
                                 exerciseRequest={panel.exercises.request}
                                 onClearExerciseRequest={panel.exercises.clear}

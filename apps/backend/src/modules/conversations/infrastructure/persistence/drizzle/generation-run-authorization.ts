@@ -2,6 +2,7 @@ import { prospectiveLessonCalls } from '../../ai/generation-admission-input';
 import type { GenerationExecutionContext } from '../../../application/ports/generation-run';
 import { assertLessonEnvelopeFits } from './generation-lesson-envelope';
 import { maximumAutomaticGenerationStages } from '../../../application/ports/generation-run';
+import { listeningAllowances } from './listening-allowance-schema';
 import { and, eq, inArray } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import type {
@@ -164,7 +165,34 @@ export async function remainingGenerationAuthorization(
     const provider =
         BigInt(authorization.maximumProviderCostMicros) - providerSpent;
 
+    // Projection runs under the restricted worker as well. Only automatic admission needs the private grant.
+    const target = run.sourceSnapshot.blockTarget;
+    const [listening] =
+        !projection &&
+        target &&
+        run.taskManifest.some((task) => task.kind === 'audio')
+            ? await tx
+                  .select({ rootTurnId: listeningAllowances.rootTurnId })
+                  .from(listeningAllowances)
+                  .where(
+                      and(
+                          eq(
+                              listeningAllowances.rootTurnId,
+                              authorization.rootActionId,
+                          ),
+                          eq(listeningAllowances.ownerId, run.ownerId),
+                          eq(
+                              listeningAllowances.conversationId,
+                              run.conversationId,
+                          ),
+                          eq(listeningAllowances.noteId, run.noteId),
+                          eq(listeningAllowances.branchId, target.branchId),
+                      ),
+                  )
+            : [];
+
     return {
+        ...(listening ? { permitsListeningRecording: true as const } : {}),
         expiresAt: authorization.expiresAt,
         maximumCreditsMilli: (credits > 0n ? credits : 0n).toString(),
         maximumProviderCostMicros: Number(provider > 0n ? provider : 0n),

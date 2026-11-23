@@ -1,3 +1,5 @@
+import type { ListeningUtteranceAdmission } from './audio/prepare-listening-recording';
+import { lockListeningSpeechAuthority } from './listening-utterance-authority';
 import {
     knowledgeSpeechSourceState,
     rejectKnowledgeSpeechResult,
@@ -341,6 +343,223 @@ export class DrizzleSpeechStore implements SpeechStore {
                 generationAvailable,
             };
         });
+    }
+
+    /** All clips reserve within one transaction, so an unaffordable script never dispatches a paid prefix. */
+    public async enqueueListeningUtterances(
+        inputs: readonly ListeningUtteranceAdmission[],
+    ): Promise<SpeechResponse[]> {
+        const first = inputs[0];
+        if (!first || inputs.length > 8) {
+            throw new SpeechError('listening_script_invalid');
+        }
+
+        if (!this.options.playbackEnabled || !this.options.generationEnabled) {
+            throw new SpeechError('speech_provider_unavailable', 503);
+        }
+
+        const profile = this.options.profileResolver.supports(first.language);
+        if (!profile) {
+            throw new SpeechError('speech_provider_unavailable', 503);
+        }
+
+        return this.options.database.transaction(async (tx) => {
+            const states: SpeechResponse[] = [];
+            const policy = await new DrizzleCapabilityPolicyParticipant(
+                tx,
+            ).current('speech');
+
+            for (const input of inputs) {
+                if (
+                    input.runId !== first.runId ||
+                    input.revision !== first.revision ||
+                    input.taskId !== first.taskId ||
+                    input.noteId !== first.noteId ||
+                    input.branchId !== first.branchId ||
+                    input.turnId !== first.turnId ||
+                    input.actorId !== first.actorId ||
+                    input.leaseToken !== first.leaseToken ||
+                    input.language !== first.language ||
+                    input.operationId !== input.utterance.id ||
+                    (profile.voice !== input.voice &&
+                        profile.dialogueVoice !== input.voice)
+                ) {
+                    throw new SpeechError('listening_script_invalid');
+                }
+
+                states.push(
+                    await this.admitListeningClip(
+                        tx,
+                        input,
+                        { ...profile, voice: input.voice },
+                        policy,
+                    ),
+                );
+            }
+
+            return states;
+        });
+    }
+
+    private async admitListeningClip(
+        tx: AiCreditTransaction,
+        input: ListeningUtteranceAdmission,
+        profile: SpeechProfile,
+        policy: CapabilityPolicy,
+    ) {
+        const draft = {
+            kind: 'knowledge-audio-draft' as const,
+            noteId: input.noteId,
+            branchId: input.branchId,
+            blockId: input.operationId,
+            sourceText: input.utterance.text,
+            language: input.language,
+        };
+        const resolved = await this.options.revalidateSource(
+            input.actorId,
+            draft,
+            tx,
+        );
+        const authority = await lockListeningSpeechAuthority(tx, input);
+        const source = {
+            ...draft,
+            listening: {
+                runId: input.runId,
+                revision: input.revision,
+                taskId: input.taskId,
+                rootTurnId: authority.rootTurnId,
+            },
+        };
+        const identity = this.identity(resolved);
+        // Identity includes immutable voice selection: repeat lines spoken by different speakers must remain distinct.
+        identity.keys = identity.keys.map((key) =>
+            createHmac('sha256', key)
+                .update(
+                    JSON.stringify([
+                        input.runId,
+                        input.revision,
+                        input.taskId,
+                        profile.configurationId,
+                        profile.settingsVersion,
+                        profile.provider,
+                        profile.model,
+                        profile.voice,
+                    ]),
+                )
+                .digest('hex'),
+        );
+
+        identity.key = identity.keys[0]!;
+        await this.lock(tx, identity.key);
+        await this.lock(tx, `actor:${input.actorId}`);
+        const admitted = {
+            actorId: input.actorId,
+            operationId: input.operationId,
+            source,
+            now: input.now,
+        };
+        const [prior] = await tx
+            .select({
+                binding: bindings,
+                key: recordings.canonicalKey,
+                outcome: jobs.providerOutcome,
+                jobState: jobs.state,
+            })
+            .from(bindings)
+            .innerJoin(recordings, eq(recordings.id, bindings.recordingId))
+            .leftJoin(jobs, eq(jobs.id, bindings.jobId))
+            .where(
+                and(
+                    eq(bindings.actorId, input.actorId),
+                    or(
+                        eq(bindings.operationId, input.operationId),
+                        eq(bindings.sourceRevision, resolved.revision),
+                    ),
+                ),
+            )
+            .orderBy(desc(bindings.createdAt), desc(bindings.id))
+            .limit(1);
+
+        if (prior) {
+            if (
+                !identity.keys.includes(prior.key) ||
+                prior.binding.sourceRevision !== resolved.revision
+            ) {
+                throw new SpeechError('speech_operation_conflict');
+            }
+
+            if (
+                prior.outcome === 'unknown' ||
+                prior.jobState === 'submission_unknown'
+            ) {
+                throw new SpeechError('speech_submission_unknown');
+            }
+
+            // A recorded non-dispatch can be retried only under a fresh user-approved allowance.
+            if (
+                prior.jobState === 'failed' &&
+                prior.outcome === 'not_submitted' &&
+                !isDeepStrictEqual(prior.binding.source, source)
+            ) {
+                const digest = createHmac('sha256', input.operationId)
+                    .update(authority.rootTurnId)
+                    .digest('hex');
+
+                admitted.operationId = `${digest.slice(0, 8)}-${digest.slice(8, 12)}-8${digest.slice(13, 16)}-a${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
+            } else {
+                const state = await this.response(tx, prior.binding, input.now);
+                if (state.state === 'failed') {
+                    throw new SpeechError(
+                        state.error ?? 'speech_recording_unavailable',
+                    );
+                }
+
+                return state;
+            }
+        }
+
+        // The billable operation is an authored recording, even when speakers use short lines.
+        const price =
+            policy.funding !== 'operator'
+                ? await new DrizzleModelPriceParticipant(tx).current({
+                      providerId: profile.provider,
+                      modelId: profile.model,
+                      meter: 'speech-characters',
+                  })
+                : null;
+        const credits = price
+            ? speechPrice(
+                  identity.characterCount,
+                  price.creditsPer1000Characters!,
+                  price.minimumCredits!,
+              )
+            : 0n;
+
+        return this.admit(
+            tx,
+            admitted,
+            resolved,
+            identity,
+            profile,
+            price?.rateRevisionId ?? null,
+            credits,
+            policy,
+            async (nominalCredits, providerMicros) => {
+                const account =
+                    nominalCredits === 0n
+                        ? null
+                        : await new DrizzleAiCreditTransactionParticipant(
+                              tx,
+                          ).accountSummary(input.actorId, input.now);
+
+                await authority.reserve(
+                    account?.policy.effectiveMode === 'unlimited'
+                        ? 0n
+                        : nominalCredits,
+                    providerMicros,
+                );
+            },
+        );
     }
 
     public async prepare(input: {
@@ -809,6 +1028,7 @@ export class DrizzleSpeechStore implements SpeechStore {
         rateRevisionId: string | null,
         credits: bigint,
         chargingPolicy?: CapabilityPolicy,
+        delegate?: (credits: bigint, providerMicros: bigint) => Promise<void>,
     ) {
         // Recheck all configured identities after the cross-key budget lock:
         // another admitted request may have filled the cache while we waited.
@@ -882,6 +1102,9 @@ export class DrizzleSpeechStore implements SpeechStore {
             ownerId: input.actorId,
             profile,
             characters: identity.characterCount,
+            authorizeMaximum: delegate
+                ? (maximum) => delegate(credits, maximum)
+                : undefined,
             at: input.now,
         });
         const recordingId = randomUUID(),
@@ -1132,12 +1355,20 @@ export class DrizzleSpeechStore implements SpeechStore {
         };
     }
 
-    public async claim(_now: Date): Promise<SpeechJob | null> {
+    public async claim(
+        _now: Date,
+        requestId?: string,
+    ): Promise<SpeechJob | null> {
         const eligible = sql`${jobs.state} in ('queued','processing','storing') and ${jobs.nextPollAt}<=clock_timestamp() and ${jobs.recoveryDeadline}>=clock_timestamp() and (${jobs.state}<>'queued' or ${jobs.queueDeadline}>clock_timestamp()) and (${jobs.leaseExpiresAt} is null or ${jobs.leaseExpiresAt}<=clock_timestamp())`;
         const candidates = await this.options.database
             .select({ id: jobs.id })
             .from(jobs)
-            .where(eligible)
+            .where(
+                and(
+                    eligible,
+                    requestId ? eq(jobs.sourceBindingId, requestId) : undefined,
+                ),
+            )
             .orderBy(asc(jobs.nextPollAt))
             .limit(20);
 

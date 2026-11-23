@@ -99,6 +99,17 @@ function namedSourceExists(
         return block?.type === 'grammar';
     }
 
+    if (source.kind === 'audio' && block?.type === 'audio') {
+        return (
+            block.assetId === source.assetId &&
+            source.passages.every((passage) =>
+                block.transcript?.segments.some(
+                    (segment) => segment.id === passage.segmentId,
+                ),
+            )
+        );
+    }
+
     if (source.kind === 'text' && block?.type === 'bilingual-text') {
         return source.passages.every((passage) =>
             block.segments.some((segment) => segment.id === passage.segmentId),

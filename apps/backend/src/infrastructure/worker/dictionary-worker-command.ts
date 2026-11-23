@@ -578,6 +578,7 @@ async function main(values = process.argv.slice(2)): Promise<void> {
 
     const conversationWorker = conversationEnabled
         ? createConversationWorkerComposition({
+              prepareListeningRecording: sharedSpeech.prepareListeningRecording,
               database,
               dictionaryHmacSecret: textsHmacSecret!,
               credentials: environment.providerCredentials,

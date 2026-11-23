@@ -8,6 +8,7 @@ import {
 } from './exercise-authoring-payload';
 
 import {
+    listeningDecodingSegments,
     type LearningBlock,
     type GeneratedArtifactOrigin,
     type CapturedBlockOrigin,
@@ -106,7 +107,7 @@ export function namedExerciseAuthoringSchemaForBrief(
     const bindings = new Map(
         [...contexts].map(([taskId, context]) => {
             const kinds = new Set<
-                'text-selection' | 'text' | 'vocabulary' | 'grammar'
+                'text-selection' | 'text' | 'vocabulary' | 'grammar' | 'audio'
             >();
 
             if (sourcePassages(context).length) {
@@ -114,6 +115,14 @@ export function namedExerciseAuthoringSchemaForBrief(
             }
 
             for (const block of context.blocks) {
+                if (
+                    block.type === 'audio' &&
+                    block.assetId &&
+                    block.transcript?.segments.length
+                ) {
+                    kinds.add('audio');
+                }
+
                 if (block.type === 'bilingual-text') {
                     kinds.add('text');
                 }
@@ -170,6 +179,7 @@ export function prepareNamedExerciseBrief(
         }
 
         let kinds: ExerciseActivitySourceKind[];
+        let canDecodeRecording = true;
         if (task.source?.kind === 'task' || task.dependencies?.length) {
             const ids = [
                 ...new Set([
@@ -205,7 +215,7 @@ export function prepareNamedExerciseBrief(
                             dependency!.kind === 'prose'
                                 ? 'text'
                                 : (dependency!.kind as
-                                      'grammar' | 'vocabulary'),
+                                      'grammar' | 'vocabulary' | 'audio'),
                     ),
                     ...exerciseSourceKinds(
                         contexts.get(task.id) ?? { blocks: [] },
@@ -231,9 +241,21 @@ export function prepareNamedExerciseBrief(
             }
 
             kinds = exerciseSourceKinds(context);
+            canDecodeRecording = context.blocks.some(
+                (block) =>
+                    block.type === 'audio' &&
+                    !!block.assetId &&
+                    !!block.transcript &&
+                    listeningDecodingSegments(block.transcript).length > 0,
+            );
         }
 
-        const allocation = resolveExerciseActivityAllocations(task, kinds);
+        const allocation = resolveExerciseActivityAllocations(
+            task,
+            kinds,
+            canDecodeRecording,
+        );
+
         if (allocation.status !== 'ready') {
             return {
                 status: 'needs-clarification',
@@ -323,6 +345,14 @@ export function exerciseSourceKinds(
 
             if (block.type === 'grammar') {
                 return block.rule || block.pattern ? ['grammar'] : [];
+            }
+
+            if (
+                block.type === 'audio' &&
+                block.assetId &&
+                block.transcript?.segments.length
+            ) {
+                return ['audio'];
             }
 
             return block.type === 'bilingual-text' ? ['text' as const] : [];
@@ -492,6 +522,32 @@ export function completeNamedExerciseSources(
                     kind: 'grammar',
                     origin,
                     rule: grammarExerciseSourceRule(block),
+                };
+            }
+
+            if (
+                binding.kind === 'audio' &&
+                block?.type === 'audio' &&
+                block.assetId &&
+                block.transcript
+            ) {
+                const segments = block.transcript.segments;
+                const selected = binding.segmentIds.map((id) =>
+                    segments.find((segment) => segment.id === id),
+                );
+
+                if (!selected.every((segment) => segment !== undefined)) {
+                    throw new Error('Unknown recording excerpt.');
+                }
+
+                return {
+                    kind: 'audio',
+                    origin,
+                    assetId: block.assetId,
+                    passages: selected.map((segment) => ({
+                        segmentId: segment.id,
+                        text: segment.text,
+                    })),
                 };
             }
 

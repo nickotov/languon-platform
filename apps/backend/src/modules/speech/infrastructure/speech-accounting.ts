@@ -23,6 +23,7 @@ export async function authorizeSpeechAccounting(
         ownerId: string;
         profile: SpeechProfile;
         characters: number;
+        authorizeMaximum?: ((maximum: bigint) => Promise<void>) | undefined;
         at: Date;
     },
 ) {
@@ -68,6 +69,8 @@ export async function authorizeSpeechAccounting(
     if (!price || maximum === null) {
         throw new SpeechError('speech_provider_unavailable', 503);
     }
+
+    await input.authorizeMaximum?.(maximum);
 
     const settings = await new DrizzleCapabilityPolicyParticipant(
         tx,

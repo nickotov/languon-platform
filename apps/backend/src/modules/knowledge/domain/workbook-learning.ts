@@ -1,3 +1,4 @@
+import { compareDictation } from '@languon/contracts';
 import { createHash } from 'node:crypto';
 import type {
     ExerciseLearningBlock,
@@ -190,8 +191,14 @@ export function evaluateWorkbookAnswer(
             return { status: 'unchecked' };
         }
 
-        const accepted = checking.key.acceptedAnswers.some(
-            (value) => normalizeAnswer(value) === normalizeAnswer(answer.text),
+        const accepted = checking.key.acceptedAnswers.some((value) =>
+            exercise.semantics?.activity.id === 'L02'
+                ? compareDictation(
+                      value,
+                      answer.text,
+                      exercise.semantics.language,
+                  ).every((word) => word.kind === 'matched')
+                : normalizeAnswer(value) === normalizeAnswer(answer.text),
         );
 
         if (!accepted && checking.policy === 'hybrid') {

@@ -261,6 +261,12 @@ export function planLearningContentBatches(
             continue;
         }
 
+        if (task.kind === 'audio') {
+            flushPending();
+            batches.push({ brief: { tasks: [task] } });
+            continue;
+        }
+
         const estimate = estimateLearningContentOutput({ tasks: [task] });
         if (estimate > learningContentOutputEstimateLimit) {
             const fragments =

@@ -66,7 +66,10 @@ export function createGenerationPlan(
                     block.type === 'bilingual-text'
                         ? 'text'
                         : block.type === 'grammar' ||
-                            block.type === 'vocabulary'
+                            block.type === 'vocabulary' ||
+                            (block.type === 'audio' &&
+                                block.assetId &&
+                                block.transcript?.segments.length)
                           ? block.type
                           : undefined;
 
@@ -136,6 +139,9 @@ export function createGenerationPlan(
         const common = {
             id: task.id,
             kind: task.kind,
+            ...(task.kind === 'audio'
+                ? { speakerCount: task.speakerCount ?? 1 }
+                : {}),
             instruction: task.instruction,
             language: task.language,
             inputs,
@@ -299,6 +305,9 @@ export function restoreGenerationExecution(
         return {
             id: task.id,
             kind: task.kind,
+            ...(task.kind === 'audio'
+                ? { speakerCount: task.speakerCount ?? 1 }
+                : {}),
             instruction: task.instruction,
             language: task.language,
             ...(task.difficulty ? { difficulty: task.difficulty } : {}),

@@ -10,7 +10,7 @@ source_paths:
 # Running the tutor and learning-tool playground
 
 Use Mastra Studio to test the tutor's complete request pipeline, the four
-production actor learning-content tools, and 19 standalone named-exercise
+production actor learning-content tools, and 22 standalone named-exercise
 development tools with isolated synthetic material. Tutor sessions and
 generated proposals persist in the dedicated playground database. The normal
 Languon application does not need to be running.
@@ -194,7 +194,7 @@ principal check, not the complete learning tutor.
 
 The four production actor tools remain exactly `generate_vocabulary`,
 `generate_grammar`, `generate_bilingual_text`, and `generate_exercises`.
-The 19 `generate_exercise_<catalog-id>` tools are standalone development
+The 22 `generate_exercise_<catalog-id>` tools are standalone development
 entries: each fixes one catalog activity, format and checking policy. They do
 not add a second production actor path or grant source authority from Studio
 input; the host still resolves the selected synthetic source.

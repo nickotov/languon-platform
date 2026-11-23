@@ -70,6 +70,7 @@ export const LearningTranscriptSchema = z
                         id: LearningBlockIdSchema,
                         text: text(),
                         timing: range.optional(),
+                        speaker: text(100).optional(),
                     })
                     .strict(),
             )
@@ -547,4 +548,18 @@ export const LearningBlockSchema = z
     .pipe(StructuredLearningBlockSchema);
 export type LearningBlock = z.infer<typeof LearningBlockSchema>;
 export type LearningTranscript = z.infer<typeof LearningTranscriptSchema>;
+
+/** Decoding needs a replayable utterance and a bounded, nonempty lexical answer. */
+export function listeningDecodingSegments(transcript: LearningTranscript) {
+    return transcript.segments.filter(
+        (segment) =>
+            segment.text.length <= 500 &&
+            /[\p{L}\p{N}]/u.test(segment.text) &&
+            (segment.timing
+                ? segment.timing.endSeconds - segment.timing.startSeconds <= 30
+                : transcript.segments.length === 1 &&
+                  segment.text.length <= 200),
+    );
+}
+
 export type ExerciseLearningBlock = z.infer<typeof ExerciseLearningBlockSchema>;

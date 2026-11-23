@@ -21,6 +21,7 @@ export class FixtureSpeechProvider implements SpeechSynthesisProvider {
             provider: 'fixture',
             model: 'tone-v1',
             voice: 'fixture',
+            dialogueVoice: 'fixture-secondary',
             language,
             settingsVersion: '1',
             estimatedCostUnitsPerCharacter: 0,

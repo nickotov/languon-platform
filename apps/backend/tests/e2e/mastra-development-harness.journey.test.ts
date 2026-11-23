@@ -62,7 +62,7 @@ async function editorContextForSession(
     };
 }
 
-// @user-flow-revision mastra-agent-development-harness sha256:3ae53b7530a4c6ba
+// @user-flow-revision mastra-agent-development-harness sha256:f955d1b7f65cafcd
 describe.runIf(enabled)('Mastra development harness journey', () => {
     // @user-flow mastra-agent-development-harness/playground-provision-run-persist-reset
     it('provisions, runs, persists, isolates, and safely resets the playground', async () => {

@@ -25,9 +25,11 @@ export const GenerationTaskKindSchema = z.enum([
     'grammar',
     'bilingual-text',
     'exercises',
+    'audio',
 ]);
 export const GenerationSourceKindSchema = z.enum([
     'text',
+    'audio',
     'vocabulary',
     'grammar',
 ]);
@@ -93,6 +95,13 @@ const targetWords = z.number().int().min(1).max(1_200).optional();
 /** Complete executable requirements; clarification drafts remain application-owned. */
 export const GenerationTaskSchema = z.discriminatedUnion('kind', [
     z
+        .object({
+            ...materialFields,
+            kind: z.literal('audio'),
+            speakerCount: z.union([z.literal(1), z.literal(2)]),
+        })
+        .strict(),
+    z
         .object({ ...materialFields, kind: z.literal('prose'), targetWords })
         .strict(),
     z
@@ -142,7 +151,7 @@ export const GenerationTaskSchema = z.discriminatedUnion('kind', [
                         .strict(),
                 )
                 .min(1)
-                .max(19)
+                .max(22)
                 .refine(
                     (activities) =>
                         new Set(
@@ -256,6 +265,33 @@ export const GenerationPlanSchema = z
             }
         }
 
+        for (const task of plan.tasks.filter((task) => task.kind === 'audio')) {
+            const dependent = plan.tasks
+                .filter(
+                    (candidate) =>
+                        candidate.kind === 'exercises' &&
+                        candidate.inputs.some(
+                            (input) =>
+                                input.kind === 'task' &&
+                                input.taskId === task.id,
+                        ),
+                )
+                .map((candidate) => candidate.id);
+            const start = plan.outputOrder.indexOf(task.id) + 1;
+            if (
+                dependent.some(
+                    (id) =>
+                        !plan.outputOrder
+                            .slice(start, start + dependent.length)
+                            .includes(id),
+                )
+            ) {
+                issue(
+                    ['outputOrder'],
+                    'Keep the recording and its listening exercises together.',
+                );
+            }
+        }
         if (blockCount > 25) {
             issue(['tasks'], 'A plan may produce at most 25 custom blocks.');
         }

@@ -7,11 +7,13 @@ export function Transcript({
     replayLabel,
     onReplay,
     position,
+    distinguishReplayTimes = false,
 }: {
     transcript: LearningTranscript;
     replayLabel: string;
-    onReplay?: ((seconds: number) => void) | undefined;
+    onReplay?: ((seconds: number, endSeconds?: number) => void) | undefined;
     position?: number | undefined;
+    distinguishReplayTimes?: boolean;
 }) {
     return (
         <ol className={styles.root} lang={transcript.language} dir='auto'>
@@ -28,6 +30,10 @@ export function Transcript({
                         segment={segment}
                         replayLabel={replayLabel}
                         onReplay={onReplay}
+                        distinguishReplayTimes={
+                            distinguishReplayTimes &&
+                            transcript.segments.length > 1
+                        }
                         active={active}
                     />
                 );
@@ -41,15 +47,17 @@ function TranscriptSegment({
     replayLabel,
     onReplay,
     active,
+    distinguishReplayTimes,
 }: {
     segment: LearningTranscript['segments'][number];
     replayLabel: string;
-    onReplay?: ((seconds: number) => void) | undefined;
+    onReplay?: ((seconds: number, endSeconds?: number) => void) | undefined;
     active: boolean;
+    distinguishReplayTimes: boolean;
 }) {
     function handleReplay() {
         if (segment.timing) {
-            onReplay?.(segment.timing.startSeconds);
+            onReplay?.(segment.timing.startSeconds, segment.timing.endSeconds);
         }
     }
 
@@ -70,7 +78,13 @@ function TranscriptSegment({
                     size='compact'
                     variant='ghost'
                     onClick={handleReplay}
-                    aria-label={replayLabel}
+                    aria-label={
+                        segment.speaker
+                            ? `${replayLabel} · ${segment.speaker} · ${timestamp}`
+                            : distinguishReplayTimes
+                              ? `${replayLabel} · ${timestamp}`
+                              : replayLabel
+                    }
                 >
                     {timestamp}
                 </Button>
@@ -81,7 +95,12 @@ function TranscriptSegment({
     return (
         <li className={styles.segment} aria-current={active || undefined}>
             {timing}
-            <p className={styles.text}>{segment.text}</p>
+            <div>
+                {segment.speaker && (
+                    <span className={styles.speaker}>{segment.speaker}</span>
+                )}
+                <p className={styles.text}>{segment.text}</p>
+            </div>
         </li>
     );
 }

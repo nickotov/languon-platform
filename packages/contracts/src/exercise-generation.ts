@@ -22,7 +22,7 @@ export const ExerciseGenerationRequestSchema = z
                     .strict(),
             )
             .min(1)
-            .max(19)
+            .max(22)
             .optional(),
         language,
         explanationLanguage: language,

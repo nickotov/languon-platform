@@ -16,6 +16,7 @@ export interface SpeechProfile {
     provider: string;
     model: string;
     voice: string;
+    dialogueVoice?: string;
     language: string;
     settingsVersion: string;
     estimatedCostUnitsPerCharacter: number;

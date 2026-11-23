@@ -24,7 +24,10 @@ export class SpeechWorker {
         this.now = options.now ?? (() => new Date());
     }
 
-    public async runOnce(signal?: AbortSignal): Promise<boolean> {
+    public async runOnce(
+        signal?: AbortSignal,
+        requestId?: string,
+    ): Promise<boolean> {
         for (const item of await this.options.store.deletionInventory(
             this.now(),
         )) {
@@ -37,7 +40,7 @@ export class SpeechWorker {
         }
 
         await this.options.store.releaseDeadlines(this.now());
-        const job = await this.options.store.claim(this.now());
+        const job = await this.options.store.claim(this.now(), requestId);
         if (!job) {
             return false;
         }

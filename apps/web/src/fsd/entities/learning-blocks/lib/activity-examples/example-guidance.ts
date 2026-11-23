@@ -3,6 +3,24 @@ import type { Locale } from '@/fsd/shared/i18n';
 
 /** Selection guidance explains when to request an activity, independently of its answer. */
 const guidance: Record<ExerciseActivityId, [string, string, string, string]> = {
+    L01: [
+        'Use a short conversation to practise listening for purpose or detail. Listen once, choose a meaning, then replay the evidence.',
+        'Возьмите короткий диалог, чтобы потренироваться понимать цель или детали разговора. Прослушайте его, выберите ответ и проверьте нужный фрагмент.',
+        'Choisissez un court dialogue pour repérer une intention ou un détail. Écoutez, choisissez le sens puis réécoutez l’extrait.',
+        'Elige un diálogo breve para identificar una intención o un detalle. Escucha, elige la respuesta y vuelve al fragmento.',
+    ],
+    L02: [
+        'Choose dictation when learners need to hear word boundaries or spelling. Use a short, clearly audible utterance and write what the speaker says.',
+        'Выберите диктант для тренировки правописания и восприятия границ слов на слух. Возьмите короткую, чёткую реплику и запишите её целиком.',
+        'Choisissez la dictée pour travailler les limites entre les mots et l’orthographe. Écoutez une courte réplique et écrivez-la en entier.',
+        'Elige el dictado para practicar la ortografía y distinguir las palabras al oírlas. Escucha una intervención breve y escríbela entera.',
+    ],
+    L04: [
+        'Use a listening gap when a learner needs to pick out a specific detail in continuous speech. Leave enough context around the missing word.',
+        'Используйте пропуски, чтобы учиться различать конкретные детали в потоке речи. Оставьте достаточно контекста до и после пропущенного слова.',
+        'Utilisez un texte à trous pour repérer un détail précis dans une conversation. Gardez suffisamment de contexte autour du mot manquant.',
+        'Usa un texto con huecos para identificar un detalle concreto en el habla continua. Deja suficiente contexto alrededor de la palabra que falta.',
+    ],
     V01: [
         'Choose this to practise recalling a word without options. Supply vocabulary entries with clear meanings so the clue points to a specific word.',
         'Выберите этот тип для вспоминания слова без вариантов ответа. Нужны словарные записи с понятными значениями, чтобы подсказка указывала на конкретное слово.',

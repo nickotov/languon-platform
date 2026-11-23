@@ -1,4 +1,10 @@
 import type {
+    FrozenListeningScript,
+    ListeningRecordingRequest,
+} from '../listening-script';
+import type { AudioLearningBlockSchema } from '@languon/contracts';
+import type { z } from 'zod';
+import type {
     GenerationFailure,
     GenerationPlan,
     KnowledgeBody,
@@ -25,6 +31,7 @@ export interface GenerationAutomationAuthorization {
 }
 
 export interface GenerationAutomaticAdmission {
+    permitsListeningRecording?: true;
     expiresAt: string;
     maximumCreditsMilli: string;
     maximumProviderCostMicros: number;
@@ -92,6 +99,7 @@ export interface GenerationUnitAttempt extends Omit<
         | 'acknowledged';
     turnId: string;
     sourceHash: string;
+    listeningScript?: FrozenListeningScript;
     recordedAt: string;
     concludedAt?: string;
 }
@@ -122,6 +130,9 @@ export interface GenerationExecutionContext {
 }
 
 export interface GenerationRunCallbacks {
+    materializeListeningRecording?(
+        input: ListeningRecordingRequest,
+    ): Promise<z.infer<typeof AudioLearningBlockSchema>>;
     generation?: GenerationExecutionContext;
     onGenerationStart?(
         plan: GenerationPlan,

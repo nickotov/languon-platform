@@ -70,7 +70,7 @@ source_paths:
     - apps/backend/drizzle/0178_automatic_lesson_ready_index.sql
     - apps/backend/src/modules/conversations/infrastructure/conversation-worker-composition.ts
     - apps/backend/src/modules/conversations/infrastructure/ai/learning-content-authoring.ts
-source_fingerprint: sha256:feec1e3eee08b8dc42c46a674a78d5548d622eb2ddbef4c5a5bf208281b2d4e1
+source_fingerprint: sha256:9e8b6c1c20b5f38556aa7e56d37d5c95f5190a5a833cd1c9d6c40463f5620409
 reviewed: 2026-11-23
 ---
 

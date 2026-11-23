@@ -231,3 +231,24 @@
         transition: none;
     }
 }
+
+.wordFeedback,
+.gapFeedback {
+    margin: 0;
+    font-size: var(--size-14);
+    line-height: 1.8;
+}
+
+.wordCorrection {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    margin-inline-end: var(--space-4);
+    border-radius: var(--radius-4);
+    padding-inline: var(--space-4);
+    background: var(--warning-subtle);
+}
+
+.wordCorrection small {
+    color: var(--text-secondary);
+}

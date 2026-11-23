@@ -31,8 +31,8 @@ source_paths:
     - apps/backend/package.json
     - scripts/dev-all.mjs
     - scripts/dev-worker-watch.test.mjs
-source_fingerprint: sha256:b14c7200813d1c52e9e5a008b803d4c2a0fffc08cc09c56b6e0ae5f2a0bf777d
-reviewed: 2026-11-19
+source_fingerprint: sha256:af05358ca16ca62cfa017173faba67a5033bae1645bb155601abe4b92aec3d6a
+reviewed: 2026-11-23
 ---
 
 # Development and deployment tooling

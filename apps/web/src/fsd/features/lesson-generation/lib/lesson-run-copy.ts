@@ -2,6 +2,8 @@ import { conversationCopy } from '@/fsd/entities/conversation';
 import type { Locale } from '@/fsd/shared/i18n';
 
 const en = {
+    recordingBudget:
+        'This budget covers the remaining lesson content and speech synthesis.',
     title: 'Preparing your lesson',
     complete: 'Your lesson is ready',
     planChangeNeeded: 'Your lesson needs a plan change',
@@ -154,6 +156,8 @@ const en = {
         'Prepared content will be removed. Previous charges remain. This does not change your document.',
 };
 const ru: typeof en = {
+    recordingBudget:
+        'В этот бюджет входят оставшиеся материалы урока и озвучивание.',
     capacity:
         'Эта часть не помещается в текущие лимиты. Измените план или увеличьте бюджет ИИ в настройках, затем нажмите «Обновить».',
     title: 'Готовим ваш урок',

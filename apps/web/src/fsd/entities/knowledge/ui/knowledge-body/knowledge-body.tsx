@@ -140,7 +140,12 @@ export function KnowledgeBody({
     const containerClass = [styles.prose, className].filter(Boolean).join(' ');
 
     return (
-        <div className={containerClass} lang={language} dir='auto'>
+        <div
+            data-listening-document
+            className={containerClass}
+            lang={language}
+            dir='auto'
+        >
             {renderDocument({
                 content: toRenderNode(parsed.document, renderLearningBlock),
             })}

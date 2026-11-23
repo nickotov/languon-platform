@@ -7,6 +7,7 @@ surfaces:
     - browser
     - api
 source_paths:
+    - .agent/features/073-listening-exercises/**
     - .agent/features/072-lesson-review-insertion/**
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/lesson-proposal-copy.ts
     - .agent/features/071-reliable-lesson-runs/**
@@ -46,6 +47,7 @@ e2e_command: contextual-assistant
 e2e_tests:
     - apps/web/tests/e2e/knowledge-workspace.journeys.spec.ts
 e2e_scenarios:
+    - workspace-listening-lesson-generation
     - workspace-composable-lesson-continuation
     - workspace-draft-chat-save-reopen
     - workspace-two-tab-conflict-recovery
@@ -58,6 +60,7 @@ e2e_scenarios:
     - workspace-intent-content-generation
     - workspace-large-vocabulary-generation
 related_features:
+    - listening-exercises
     - lesson-review-insertion
     - reliable-lesson-runs
     - composable-lesson-generation
@@ -120,6 +123,11 @@ AUTH_TEST_REDIS_CONFIRM=127.0.0.1:56444/1 \
 pnpm test:e2e:contextual-assistant
 ```
 
+For isolated listening-exercise verification, the guarded runner also accepts
+the dedicated loopback PostgreSQL/Redis pair `55595`/`56595` with the same
+database name, Redis DB 1 and explicit confirmation variables. It never uses a
+development or shared database.
+
 ## Browser verification
 
 ### Contextual exercise discovery
@@ -137,7 +145,7 @@ this surface rather than opening a detached second popup.
 
 In an editable space, type `/` in ordinary text or use **Add block**. Browse Basic
 blocks, Learning blocks, Exercises and Library. Search exercise names or IDs;
-all19 activities are grouped by category. Preview opens a local interactive
+all 22 activities are grouped by category. Preview opens a local interactive
 example without selecting it, changing the document or generating AI work.
 Closing returns to the picker. On narrow screens the preview uses a sheet.
 
@@ -370,6 +378,12 @@ rules; no duplicate answer-key wording is required from the model.
 
 Open **Review** in the AI panel. Each lesson part has its own document editor preview. A reading stays together across paragraphs and headings, and an exercise set stays together across activities. Open a hint or answer to reveal it. Place the cursor in the document, then choose **Insert at cursor** on the part you want, or use its end-of-document action. The lesson-wide actions insert the remaining parts in order. Required local source material accompanies its exercise. A part already present in the working draft shows **In document**. Removing the part makes it available again. Return to chat to resume the conversation. Use **Save** to publish your working draft. If another tab changes the draft, refresh and review the destination before trying again.
 
+### Generate a listening set
+
+In an owned Knowledge note, select **New recording** for a request that needs speech synthesis. For example, ask for a short French interview between two speakers, one question about its meaning, one missing expression and a one-sentence dictation. Submit once. Spending confirmation, when required, covers the text and recording under the displayed ceiling. Distinct configured voices are required for a generated dialogue. For an existing recording, reference the Audio block with a matching transcript and leave **New recording** off.
+
+Open **Review**, play the recording, then try the questions. Reveal the transcript, reference answer or hint separately. Dictation and focused gaps need a short whole recording or an actual timed excerpt. Insert the set at your cursor or at the end and use **Save** to publish. Reusing the original recording avoids paying for fresh synthesis.
+
 ## API verification
 
 The owner-scoped `/conversations/:id/generation-runs` list and `/:runId` detail expose progress, safe failure categories and bounded automation status, not generated bodies. The owner-only `/:runId/preview` endpoint returns validated prepared fragments and frozen dependencies after current-access checks. Run actions are `/continue`, `/revise`, `/apply-revision`, `/resolve-source`, `/stop` and `/discard`. Explicit Resume and revision planning use the existing action-quote flow; internal automatic stages use pinned remaining authority. Run-level Stop revokes that authority even between stages. Completed mixed proposals use `/conversations/:id/content-proposals`; application checks the current working-branch version. Selection refresh includes the current editor range, hash and branch version. See [ADR-0060](../adr/0060-composable-generation-runs.md) and [ADR-0061](../adr/0061-bounded-automatic-lesson-continuation.md) and its recovery update in [ADR-0062](../adr/0062-single-submission-lesson-recovery.md).
@@ -400,6 +414,13 @@ The owner-scoped `/conversations/:id/generation-runs` list and `/:runId` detail 
    proposal to apply.
 
 ## E2E coverage
+
+- `workspace-listening-lesson-generation` proves a single owner-approved
+  two-speaker recording is materialized through the production lesson worker
+  with synthetic text and speech boundaries, then reviewed as one atomic
+  listening set with L01/L04/L02 checks. It verifies the recording remains one
+  audio block, answers stay hidden before disclosure, the complete four-block
+  set inserts together, and the saved draft restores the playable recording.
 
 - `workspace-composable-lesson-continuation` proves a real owned workspace request exposes a read-only prepared preview, advances internal stages automatically without repeated Continue clicks, retains individual exercises, and inserts/saves/reloads one complete mixed lesson. It also verifies inserting a whole reading at the cursor, revealing a hint and an answer separately, restoring a removed part, and adding the remaining material in lesson order. Only the external model boundary uses synthetic content and usage. The journey
   also checks that ordinary streamed progress does not trigger repeated run-list or

@@ -31,10 +31,10 @@ describe('learner exercise generation choices', () => {
         );
     });
 
-    it('accepts the complete 19-activity selection and bounded single-activity totals', () => {
+    it('accepts the complete catalog selection and bounded single-activity totals', () => {
         const all = {
             ...selected,
-            count: 19,
+            count: ExerciseActivityIdSchema.options.length,
             activities: ExerciseActivityIdSchema.options.map((activityId) => ({
                 activityId,
                 count: 1,

@@ -556,7 +556,12 @@ test('AI seams partition all retained suites and stay narrow with reviewed exact
     }
 
     assert.deepEqual([...seen], backendExecutionFiles);
-    assert.equal(seen.size, 93);
+    assert.equal(seen.size, 95);
+    assert.ok(
+        seen.has(
+            'tests/integration/modules/speech/listening-recording-queue.test.ts',
+        ),
+    );
     assert.deepEqual(
         selectFlows([])
             .filter((flow) => flow.app === 'backend')

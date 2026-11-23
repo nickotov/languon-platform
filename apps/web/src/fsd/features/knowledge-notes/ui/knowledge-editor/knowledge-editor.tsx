@@ -328,6 +328,7 @@ export const KnowledgeEditor = forwardRef<
                 authoring={authoring}
             >
                 <EditorContent
+                    data-listening-document
                     editor={editor}
                     className={styles.workspaceContent}
                 />
@@ -353,7 +354,11 @@ export const KnowledgeEditor = forwardRef<
                         label={label}
                     />
                 )}
-                <EditorContent editor={editor} className={styles.content} />
+                <EditorContent
+                    data-listening-document
+                    editor={editor}
+                    className={styles.content}
+                />
                 {authoring}
                 {invalid && (
                     <InlineAlert tone='error'>

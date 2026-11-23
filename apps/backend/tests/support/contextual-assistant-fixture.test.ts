@@ -177,6 +177,21 @@ describe('contextual assistant browser fixture', () => {
         const textId = randomUUID();
         const sources = LearningBlockSchema.array().parse([
             {
+                id: randomUUID(),
+                type: 'audio',
+                assetId: randomUUID(),
+                transcript: {
+                    language: 'fr',
+                    segments: [
+                        {
+                            id: randomUUID(),
+                            text: 'Les citoyens votent.',
+                            timing: { startSeconds: 0, endSeconds: 3 },
+                        },
+                    ],
+                },
+            },
+            {
                 id: vocabularyId,
                 type: 'vocabulary',
                 language: 'fr',

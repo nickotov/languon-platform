@@ -1,8 +1,18 @@
-import type { ExerciseLearningBlock } from '@languon/contracts';
+import {
+    compareDictation,
+    type ExerciseLearningBlock,
+} from '@languon/contracts';
 import type { LearningAnswer } from '../types';
 
 const normalize = (value: string) =>
     value.normalize('NFC').trim().replace(/\s+/gu, ' ');
+
+export function matchesPreparedAnswer(
+    accepted: readonly string[],
+    submitted: string,
+) {
+    return accepted.some((value) => normalize(value) === normalize(submitted));
+}
 
 /** Prepared variants are acceptance shortcuts; an unknown hybrid answer remains unchecked. */
 export function checkPreparedAnswer(
@@ -23,10 +33,18 @@ export function checkPreparedAnswer(
             return undefined;
         }
 
-        const matched =
-            block.acceptedAnswers?.some(
-                (accepted) => normalize(accepted) === normalize(answer),
-            ) ?? false;
+        if (block.semantics.activity.id === 'L02') {
+            return compareDictation(
+                block.referenceAnswer,
+                answer,
+                block.semantics.language,
+            ).every((word) => word.kind === 'matched');
+        }
+
+        const matched = matchesPreparedAnswer(
+            block.acceptedAnswers ?? [],
+            answer,
+        );
 
         return matched ? true : undefined;
     }
@@ -38,10 +56,7 @@ export function checkPreparedAnswer(
     const matched = block.parts.every(
         (part) =>
             part.kind === 'text' ||
-            part.acceptedAnswers.some(
-                (accepted) =>
-                    normalize(accepted) === normalize(answer[part.id] ?? ''),
-            ),
+            matchesPreparedAnswer(part.acceptedAnswers, answer[part.id] ?? ''),
     );
 
     return matched || policy !== 'hybrid' ? matched : undefined;

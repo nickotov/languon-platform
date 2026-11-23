@@ -44,6 +44,21 @@ describe('named exercise authoring context', () => {
             const sources = [
                 vocabulary,
                 LearningBlockSchema.parse({
+                    type: 'audio',
+                    id: randomUUID(),
+                    assetId: randomUUID(),
+                    transcript: {
+                        language: 'fr',
+                        segments: [
+                            {
+                                id: randomUUID(),
+                                text: 'Les citoyens votent.',
+                                timing: { startSeconds: 0, endSeconds: 3 },
+                            },
+                        ],
+                    },
+                }),
+                LearningBlockSchema.parse({
                     type: 'grammar',
                     id: randomUUID(),
                     language: 'fr',
@@ -120,7 +135,8 @@ describe('named exercise authoring context', () => {
             validateNamedExerciseActivity(block, sources);
             const { sources: _frozen, ...revisionSemantics } = block.semantics!;
             const revision = createLearningBlockRevisionWire([block]);
-            const candidate = { ...block, semantics: revisionSemantics };
+            const { source: _sourceLink, ...editable } = block;
+            const candidate = { ...editable, semantics: revisionSemantics };
             expect(
                 revision.decode({
                     proposals: [
@@ -550,6 +566,53 @@ describe('named exercise authoring context', () => {
                 { blocks: [vocabulary] },
             ),
         ).toThrow();
+    });
+
+    it('selects meaning questions for untimed multi-segment recordings and declines explicit decoding before authoring', () => {
+        const audio = LearningBlockSchema.parse({
+            id: randomUUID(),
+            type: 'audio',
+            assetId: randomUUID(),
+            transcript: {
+                language: 'fr',
+                segments: [
+                    { id: randomUUID(), text: 'Salut.' },
+                    { id: randomUUID(), text: 'Bonjour.' },
+                ],
+            },
+        });
+        const task = {
+            id: 'listen',
+            kind: 'exercises' as const,
+            instruction: 'Listen.',
+            language: 'fr',
+            count: 3,
+            source: { kind: 'editor' as const, blockId: audio.id },
+        };
+
+        expect(
+            prepareNamedExerciseBrief({ tasks: [task] }, new Map(), [audio]),
+        ).toMatchObject({
+            status: 'ready',
+            brief: {
+                tasks: [{ activities: [{ activityId: 'L01', count: 3 }] }],
+            },
+        });
+
+        expect(
+            prepareNamedExerciseBrief(
+                {
+                    tasks: [
+                        {
+                            ...task,
+                            activities: [{ activityId: 'L02', count: 3 }],
+                        },
+                    ],
+                },
+                new Map(),
+                [audio],
+            ),
+        ).toMatchObject({ status: 'needs-clarification' });
     });
 
     it('preserves explicit allocation and derives defaults only from eligible host sources', () => {

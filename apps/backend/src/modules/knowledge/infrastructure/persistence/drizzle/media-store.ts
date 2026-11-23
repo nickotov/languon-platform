@@ -11,6 +11,7 @@ import {
     getOwnedKnowledgeRow,
     knowledgeUnavailable,
     type KnowledgeDatabase,
+    type KnowledgeTransaction,
 } from './knowledge-transaction';
 import {
     knowledgeMediaAssetsTable as assets,
@@ -30,9 +31,45 @@ export class DrizzleKnowledgeMediaStore implements KnowledgeMediaStore {
         ownerId: string,
         noteId: string,
         audio: VerifiedKnowledgeAudio,
+        generatedAssetId?: string,
+        authorize?: (transaction: KnowledgeTransaction) => Promise<void>,
     ) {
         return this.database.transaction(async (tx) => {
             await getOwnedKnowledgeRow(tx, ownerId, noteId);
+            await authorize?.(tx);
+            const checksum = createHash('sha256')
+                .update(audio.bytes)
+                .digest('hex');
+
+            if (generatedAssetId) {
+                const [existing] = await tx
+                    .select({ checksum: blobs.checksum })
+                    .from(assets)
+                    .innerJoin(blobs, eq(assets.blobId, blobs.id))
+                    .where(
+                        and(
+                            eq(assets.id, generatedAssetId),
+                            eq(assets.noteId, noteId),
+                        ),
+                    );
+
+                if (existing) {
+                    if (existing.checksum !== checksum) {
+                        throw new KnowledgeDomainError(
+                            'invalid_request',
+                            'Generated audio identity changed.',
+                        );
+                    }
+
+                    return {
+                        id: generatedAssetId,
+                        mimeType: audio.mimeType,
+                        byteLength: audio.bytes.length,
+                        durationMs: audio.durationMs,
+                    };
+                }
+            }
+
             const [quota] = await tx
                 .select({
                     count: sql<number>`count(*)::int`,
@@ -53,16 +90,14 @@ export class DrizzleKnowledgeMediaStore implements KnowledgeMediaStore {
             }
 
             const blobId = randomUUID(),
-                id = randomUUID();
+                id = generatedAssetId ?? randomUUID();
 
             await tx.insert(blobs).values({
                 id: blobId,
                 bytes: Buffer.from(audio.bytes),
                 mimeType: audio.mimeType,
                 durationMs: audio.durationMs,
-                checksum: createHash('sha256')
-                    .update(audio.bytes)
-                    .digest('hex'),
+                checksum,
             });
 
             await tx

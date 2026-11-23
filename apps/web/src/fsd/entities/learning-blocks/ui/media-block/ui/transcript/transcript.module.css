@@ -33,3 +33,9 @@
     padding: 0;
     min-height: 0;
 }
+
+.speaker {
+    color: var(--text-secondary);
+    font-size: var(--size-12);
+    font-weight: 600;
+}

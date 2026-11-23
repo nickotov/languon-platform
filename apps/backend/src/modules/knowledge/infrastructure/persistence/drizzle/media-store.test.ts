@@ -90,6 +90,36 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         const upload = () =>
             verifyKnowledgeAudio(createFixtureAudio().bytes, 'audio/wav');
 
+        it('serializes concurrent retries of a generated asset and rejects different audio under the same ID', async () => {
+            const note = await store.create(owner, {
+                operationId: randomUUID(),
+                content,
+            });
+            const assetId = randomUUID();
+            const first = upload();
+            const responses = await Promise.all([
+                media.upload(owner, note.id, first, assetId),
+                media.upload(owner, note.id, first, assetId),
+            ]);
+
+            expect(responses[0]).toEqual(responses[1]);
+            expect(responses[0]?.id).toBe(assetId);
+            expect(
+                await db.select().from(knowledgeMediaBlobsTable),
+            ).toHaveLength(1);
+
+            const changedBytes = Buffer.from(first.bytes);
+            changedBytes[44] = changedBytes[44]! ^ 1;
+            await expect(
+                media.upload(
+                    owner,
+                    note.id,
+                    verifyKnowledgeAudio(changedBytes, first.mimeType),
+                    assetId,
+                ),
+            ).rejects.toMatchObject({ code: 'invalid_request' });
+        });
+
         it('isolates drafts and foreign IDs, publishes only saved media, revokes playback live', async () => {
             const note = await store.create(owner, {
                 operationId: randomUUID(),

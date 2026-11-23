@@ -46,6 +46,7 @@ export async function executePreparedGeneration(
     const restored = restoreGenerationExecution(context);
     const authoring = createLearningContentAuthoring({
         ...restored,
+        materializeListeningRecording: input.materializeListeningRecording,
         run: { runId: context.runId, revision: context.revision },
         ...(context.unitAttempts ? { unitAttempts: context.unitAttempts } : {}),
         ...(input.onGenerationAttempt

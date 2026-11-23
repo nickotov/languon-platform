@@ -45,6 +45,10 @@ export function estimateLearningContentOutput(
             );
         }
 
+        if (task.kind === 'audio') {
+            return total + 1200;
+        }
+
         if (task.kind === 'grammar') {
             return total + 1600;
         }

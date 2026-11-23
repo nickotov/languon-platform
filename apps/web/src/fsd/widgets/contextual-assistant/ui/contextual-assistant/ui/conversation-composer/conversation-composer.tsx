@@ -11,6 +11,7 @@ import { WorkspacePromptInput } from '../workspace-prompt-input/workspace-prompt
 import {
     ArrowUp,
     FileText,
+    Headphones,
     ListChecks,
     Plus,
     Square,
@@ -69,6 +70,8 @@ export function ConversationComposer({
     workspacePassage,
     onRemoveWorkspacePassage,
     onGenerateExercises,
+    includeListeningSpeech = false,
+    onToggleListeningSpeech,
     exerciseRequest,
     onClearExerciseRequest,
 }: {
@@ -109,6 +112,8 @@ export function ConversationComposer({
     missingBlockReference?: boolean | undefined;
     workspacePassage?: WorkspacePendingPassage | null | undefined;
     onRemoveWorkspacePassage?: (() => void) | undefined;
+    includeListeningSpeech?: boolean;
+    onToggleListeningSpeech?: (() => void) | undefined;
     onGenerateExercises?: (() => void) | undefined;
     exerciseRequest?: SubmitConversationTurnRequest['exerciseRequest'];
     onClearExerciseRequest?: (() => void) | undefined;
@@ -325,6 +330,23 @@ export function ConversationComposer({
                                 <ListChecks size={16} aria-hidden='true' />
                                 {exerciseText.title}
                             </button>
+                        )}
+                        {onToggleListeningSpeech && (
+                            <Tooltip
+                                content={text.recordingHint}
+                                triggerClassName={styles.iconTooltipTrigger}
+                            >
+                                <button
+                                    type='button'
+                                    className={styles.exerciseButton}
+                                    aria-pressed={includeListeningSpeech}
+                                    onClick={onToggleListeningSpeech}
+                                    disabled={busy || active}
+                                >
+                                    <Headphones size={16} aria-hidden='true' />
+                                    {text.newRecording}
+                                </button>
+                            </Tooltip>
                         )}
                         {onSelectFromPage && (
                             <button

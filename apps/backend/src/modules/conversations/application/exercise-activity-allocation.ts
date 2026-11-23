@@ -21,6 +21,7 @@ const defaultPatterns: Record<
 > = {
     vocabulary: ['V02', 'V03', 'V01', 'V02', 'V03'],
     grammar: ['G06', 'G02', 'G02', 'G03', 'G07'],
+    audio: ['L01', 'L04', 'L02'],
     text: ['R01', 'R02', 'R02', 'R04', 'R09'],
 };
 
@@ -28,6 +29,7 @@ const defaultPatterns: Record<
 export function resolveExerciseActivityAllocations(
     task: LearningContentTask,
     sourceKinds: readonly ExerciseActivitySourceKind[],
+    canDecodeRecording = true,
 ): ExerciseActivityAllocationResult {
     const missing = (fields: string[]): ExerciseActivityAllocationResult => ({
         status: 'needs-clarification',
@@ -40,6 +42,8 @@ export function resolveExerciseActivityAllocations(
 
     const eligible = exerciseActivityCatalog.filter(
         (activity) =>
+            (canDecodeRecording ||
+                (activity.id !== 'L02' && activity.id !== 'L04')) &&
             activity.supportedSourceKinds.some((kind) =>
                 sourceKinds.includes(kind),
             ) &&

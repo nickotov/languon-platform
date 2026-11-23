@@ -7,7 +7,7 @@ import {
 type NamedExerciseSourceBinding =
     | { kind: 'vocabulary'; blockId: string; entryIds: string[] }
     | { kind: 'grammar'; blockId: string }
-    | { kind: 'text'; blockId: string; segmentIds: string[] };
+    | { kind: 'audio' | 'text'; blockId: string; segmentIds: string[] };
 
 function sourceBinding(
     activityId: ExerciseActivityId,
@@ -19,7 +19,8 @@ function sourceBinding(
             candidate.type === 'bilingual-text'
                 ? 'text'
                 : candidate.type === 'vocabulary' ||
-                    candidate.type === 'grammar'
+                    candidate.type === 'grammar' ||
+                    candidate.type === 'audio'
                   ? candidate.type
                   : 'text',
         ),
@@ -29,6 +30,14 @@ function sourceBinding(
         throw new Error(
             `Fixture ${activityId} needs an eligible frozen source.`,
         );
+    }
+
+    if (source.type === 'audio' && source.transcript?.segments[0]) {
+        return {
+            kind: 'audio',
+            blockId: source.id,
+            segmentIds: [source.transcript.segments[0].id],
+        };
     }
 
     if (source.type === 'vocabulary') {
@@ -120,6 +129,36 @@ export function namedExerciseFixture(input: {
               : { 'target-use': 'Use the target accurately.' }),
     };
 
+    if (activity.id === 'L02') {
+        return common;
+    }
+
+    if (activity.id === 'L04') {
+        const audio = input.sources.find(
+            (block) => block.id === binding.blockId,
+        );
+
+        if (audio?.type !== 'audio' || !audio.transcript) {
+            throw new Error('Expected transcript');
+        }
+
+        const phrase = audio.transcript.segments[0]!.text;
+        const [word] = phrase.split(' ');
+
+        return {
+            ...common,
+            referenceAnswer: word!,
+            parts: [
+                {
+                    kind: 'gap',
+                    acceptedAnswers: [word!],
+                    explanation: 'The recording starts with this word.',
+                },
+                { kind: 'text', text: phrase.slice(word!.length) },
+            ],
+        };
+    }
+
     if (activity.id === 'R03') {
         return {
             ...common,
@@ -137,6 +176,14 @@ export function namedExerciseFixture(input: {
             ...common,
             correct: { text: answer, explanation: 'The source supports it.' },
             distractors: [
+                ...(activity.id === 'L01'
+                    ? [
+                          {
+                              text: 'Another answer',
+                              explanation: 'The speaker never says this.',
+                          },
+                      ]
+                    : []),
                 {
                     text: 'incorrect answer',
                     explanation: 'Inconsistent with the source.',

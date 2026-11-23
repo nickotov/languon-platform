@@ -1,3 +1,4 @@
+import { listeningAllowances } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/listening-allowance-schema';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -205,6 +206,43 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             );
         }
+
+        it('carries the original listening grant across automatic stages only for the same owner and branch', async () => {
+            const { run, first } = await preparedRun();
+            const branchId = randomUUID();
+            run.taskManifest = [{ id: 'recording', kind: 'audio' }];
+            run.sourceSnapshot.blockTarget = { branchId, version: 1 };
+            await settleStage(run, first.id);
+            const remaining = () =>
+                db.transaction((tx) =>
+                    remainingGenerationAuthorization(tx, run),
+                );
+
+            expect(
+                (await remaining())?.permitsListeningRecording,
+            ).toBeUndefined();
+
+            await db.insert(listeningAllowances).values({
+                rootTurnId: first.id,
+                ownerId: run.ownerId,
+                conversationId: run.conversationId,
+                noteId: run.noteId,
+                branchId,
+                remainingCredits: 500n,
+                remainingProviderMicros: 2000n,
+            });
+
+            expect((await remaining())?.permitsListeningRecording).toBe(true);
+            expect(await db.select().from(listeningAllowances)).toHaveLength(1);
+            run.sourceSnapshot.blockTarget = {
+                branchId: randomUUID(),
+                version: 1,
+            };
+
+            expect(
+                (await remaining())?.permitsListeningRecording,
+            ).toBeUndefined();
+        });
 
         it('keeps lesson authority within the admitted root action deadline even after planning', async () => {
             const { first, run } = await preparedRun();

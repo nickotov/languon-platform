@@ -156,6 +156,17 @@ export function validateSingleBlock(
         throw new Error('Requested content has the wrong block type or count.');
     }
 
+    if (
+        block.type === 'audio' &&
+        (!block.assetId ||
+            !block.transcript?.segments.length ||
+            block.transcript.language !== task.language)
+    ) {
+        throw new Error(
+            'A listening recording requires a playable asset and its timed transcript.',
+        );
+    }
+
     if (block.type === 'bilingual-text') {
         if (
             block.translations.length !== 1 ||

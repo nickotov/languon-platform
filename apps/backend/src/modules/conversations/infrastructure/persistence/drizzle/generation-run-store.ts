@@ -1,4 +1,7 @@
-import { recordGenerationAttempt } from './generation-run-attempts';
+import {
+    freezeListeningScript,
+    recordGenerationAttempt,
+} from './generation-run-attempts';
 import { conversationGetGenerationRunPreview } from './generation-run-preview';
 import type { GenerationRunStore } from '../../../application/ports/generation-run-store';
 import type { ConversationPersistenceContext } from './conversation-persistence-context';
@@ -111,6 +114,8 @@ export function createGenerationRunStore(
             );
         },
 
+        freezeListeningScript: (turn, request) =>
+            freezeListeningScript(persistence, turn, request),
         recordGenerationAttempt: (turn, event) =>
             recordGenerationAttempt(persistence, turn, event),
 

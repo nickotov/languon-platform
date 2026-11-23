@@ -5,6 +5,73 @@ import type {
 
 /** Examples illustrate the interaction in English; generation selects its own language. */
 export const exerciseActivityLocales = {
+    L01: {
+        en: {
+            name: 'Listen for meaning',
+            description: 'Choose the idea supported by the recording.',
+            example: 'Why did the speaker change the plan?',
+        },
+        ru: {
+            name: 'Прослушайте и выберите смысл',
+            description: 'Выберите мысль, подтверждённую записью.',
+            example: 'Почему говорящий изменил план?',
+        },
+        fr: {
+            name: 'Écoutez et comprenez',
+            description: 'Choisissez l’idée exprimée dans l’enregistrement.',
+            example: 'Pourquoi la personne a-t-elle changé son projet ?',
+        },
+        es: {
+            name: 'Escucha y comprende',
+            description: 'Elige la idea respaldada por la grabación.',
+            example: '¿Por qué cambió de plan la persona?',
+        },
+    },
+    L02: {
+        en: {
+            name: 'Short dictation',
+            description: 'Listen to a short utterance and write what you hear.',
+            example: 'Replay the sentence and transcribe it.',
+        },
+        ru: {
+            name: 'Короткий диктант',
+            description: 'Запишите услышанную короткую фразу.',
+            example: 'Прослушайте предложение и запишите его.',
+        },
+        fr: {
+            name: 'Dictée courte',
+            description: 'Écoutez une courte phrase et transcrivez-la.',
+            example: 'Réécoutez la phrase et écrivez-la.',
+        },
+        es: {
+            name: 'Dictado corto',
+            description: 'Escucha una frase breve y escríbela.',
+            example: 'Reproduce la frase y transcríbela.',
+        },
+    },
+    L04: {
+        en: {
+            name: 'Catch the missing words',
+            description:
+                'Listen and fill in the words omitted from the transcript.',
+            example: 'The meeting starts at ____.',
+        },
+        ru: {
+            name: 'Вставьте услышанные слова',
+            description: 'Заполните пропуски словами из записи.',
+            example: 'Встреча начнётся в ____.',
+        },
+        fr: {
+            name: 'Retrouvez les mots manquants',
+            description: 'Complétez la transcription avec les mots entendus.',
+            example: 'La réunion commence à ____.',
+        },
+        es: {
+            name: 'Escucha y completa',
+            description: 'Completa la transcripción con lo que oyes.',
+            example: 'La reunión empieza a las ____.',
+        },
+    },
     V01: {
         en: {
             name: 'Recall the word',

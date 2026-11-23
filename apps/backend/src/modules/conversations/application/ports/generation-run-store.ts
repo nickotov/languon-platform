@@ -1,3 +1,7 @@
+import type {
+    FrozenListeningScript,
+    ListeningRecordingRequest,
+} from '../listening-script';
 import type { StopGenerationRunRequest } from '@languon/contracts';
 import type {
     LearningContentProposalInput,
@@ -24,6 +28,10 @@ import type {
 } from './generation-run';
 
 export interface GenerationRunStore {
+    freezeListeningScript?(
+        turn: ClaimedConversationTurn,
+        request: ListeningRecordingRequest,
+    ): Promise<FrozenListeningScript>;
     stopGenerationRun?(
         access: ConversationAccess,
         conversationId: string,

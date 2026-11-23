@@ -158,6 +158,9 @@ GRANT UPDATE (state, task_id, lease_token, lease_expires_at, next_poll_at,
     ON TABLE speech_jobs TO :"dictionary_worker_role";
 GRANT SELECT ON TABLE model_price_revisions TO :"dictionary_worker_role";
 -- Private knowledge speech validates source identity through a boolean lease fence, never document reads.
+-- The authenticated API owns the combined allowance. Workers may only read the settled projection.
+REVOKE ALL ON TABLE conversation_listening_allowances FROM :"dictionary_worker_role";
+GRANT EXECUTE ON FUNCTION public.languon_listening_charged_milli(uuid,uuid) TO :"dictionary_worker_role";
 GRANT EXECUTE ON FUNCTION languon_speech_knowledge_source_state(uuid,uuid), languon_cleanup_knowledge_speech_quotes(integer) TO :"dictionary_worker_role";
 REVOKE EXECUTE ON FUNCTION languon_knowledge_speech_binding_available(uuid), languon_erase_branch_speech(), languon_erase_proposal_speech() FROM :"dictionary_worker_role";
 REVOKE UPDATE (source_binding_id) ON TABLE speech_jobs FROM :"dictionary_worker_role";
@@ -293,3 +296,7 @@ GRANT EXECUTE ON FUNCTION
 REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLE conversation_dictionary_snippets, dictionary_chat_snippet_applications FROM :"dictionary_worker_role";
 GRANT EXECUTE ON FUNCTION public.languon_propose_dictionary_chat_snippet(uuid,uuid,jsonb) TO :"dictionary_worker_role";
 GRANT EXECUTE ON FUNCTION public.languon_read_dictionary_chat_snippet(uuid,uuid,uuid) TO :"dictionary_worker_role";
+
+-- Listening admission and media publication use the API role. The worker can only
+-- request the active audio task for its exact lease and read that preparation.
+GRANT EXECUTE ON FUNCTION public.languon_request_listening_recording(uuid,integer,text,uuid,uuid) TO :"dictionary_worker_role";

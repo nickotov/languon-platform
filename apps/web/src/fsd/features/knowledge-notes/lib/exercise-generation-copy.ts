@@ -22,7 +22,8 @@ const en = {
     example: 'Example',
     cancel: 'Cancel',
     generate: 'Prepare request',
-    missing: 'Choose vocabulary, grammar or text material first.',
+    missing:
+        'Choose vocabulary, grammar, text or a recording with a transcript first.',
     noActivities: 'Choose at least one activity.',
     ineligible:
         'Some selected activities need different source material. Change the source or deselect them.',
@@ -40,6 +41,7 @@ const en = {
     grammar: 'Grammar',
     reading: 'Understand a text',
     writing: 'Write',
+    listening: 'Listening',
 };
 
 const messages: Record<string, typeof en> = {
@@ -68,7 +70,8 @@ const messages: Record<string, typeof en> = {
         example: 'Пример',
         cancel: 'Отмена',
         generate: 'Подготовить запрос',
-        missing: 'Сначала выберите лексику, грамматику или текст.',
+        missing:
+            'Сначала выберите лексику, грамматику, текст или запись с расшифровкой.',
         noActivities: 'Выберите хотя бы одно задание.',
         ineligible:
             'Для некоторых выбранных заданий нужен другой материал. Измените источник или снимите выбор.',
@@ -86,6 +89,7 @@ const messages: Record<string, typeof en> = {
         grammar: 'Грамматика',
         reading: 'Понимание текста',
         writing: 'Письмо',
+        listening: 'Аудирование',
     },
     fr: {
         title: 'Créer des exercices',
@@ -112,7 +116,7 @@ const messages: Record<string, typeof en> = {
         cancel: 'Annuler',
         generate: 'Préparer la demande',
         missing:
-            'Choisissez d’abord du vocabulaire, de la grammaire ou un texte.',
+            'Choisissez d’abord du vocabulaire, de la grammaire, un texte ou un enregistrement transcrit.',
         noActivities: 'Choisissez au moins une activité.',
         ineligible:
             'Certaines activités nécessitent un autre document. Changez la source ou désélectionnez-les.',
@@ -132,6 +136,7 @@ const messages: Record<string, typeof en> = {
         grammar: 'Grammaire',
         reading: 'Comprendre un texte',
         writing: 'Écrire',
+        listening: 'Écoute',
     },
     es: {
         title: 'Crear ejercicios',
@@ -157,7 +162,8 @@ const messages: Record<string, typeof en> = {
         example: 'Ejemplo',
         cancel: 'Cancelar',
         generate: 'Preparar solicitud',
-        missing: 'Elige primero vocabulario, gramática o un texto.',
+        missing:
+            'Elige primero vocabulario, gramática, un texto o una grabación con transcripción.',
         noActivities: 'Elige al menos una actividad.',
         ineligible:
             'Algunas actividades necesitan otro material. Cambia la fuente o desmárcalas.',
@@ -177,6 +183,7 @@ const messages: Record<string, typeof en> = {
         grammar: 'Gramática',
         reading: 'Comprender un texto',
         writing: 'Escribir',
+        listening: 'Escucha',
     },
 };
 

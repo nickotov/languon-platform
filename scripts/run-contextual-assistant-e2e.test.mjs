@@ -20,6 +20,15 @@ const safe = {
 
 test('accepts only the exclusively named and confirmed local journey targets', () => {
     assert.doesNotThrow(() => assertContextualAssistantEnvironment(safe));
+    assert.doesNotThrow(() =>
+        assertContextualAssistantEnvironment({
+            ...safe,
+            AUTH_TEST_DATABASE_URL:
+                'postgresql://test:test@127.0.0.1:55595/languon_auth_assistant_web_test',
+            AUTH_TEST_REDIS_URL: 'redis://127.0.0.1:56595/1',
+            AUTH_TEST_REDIS_CONFIRM: '127.0.0.1:56595/1',
+        }),
+    );
     for (const [key, value] of Object.entries({
         ALLOW_DISPOSABLE_DATABASE_TESTS: 'false',
         ALLOW_DISPOSABLE_REDIS_TESTS: 'false',

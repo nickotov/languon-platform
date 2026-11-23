@@ -40,7 +40,7 @@ it('teaches when to choose each activity without repeating answer feedback', () 
         expect(
             new Set(examples.map(({ useCaseGuidance }) => useCaseGuidance))
                 .size,
-        ).toBe(19);
+        ).toBe(22);
 
         for (const example of examples) {
             expect(example.useCaseGuidance.length).toBeGreaterThan(80);

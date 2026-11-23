@@ -33,7 +33,7 @@ WORKDIR /app
 # unless the deployment supplies the narrow seccomp profile and passes the
 # production-like escape suite.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends bubblewrap util-linux \
+    && apt-get install -y --no-install-recommends bubblewrap util-linux ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder --chown=node:node /production/backend/node_modules ./node_modules

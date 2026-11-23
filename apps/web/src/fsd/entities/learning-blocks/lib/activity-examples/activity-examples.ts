@@ -17,6 +17,13 @@ export type ExerciseActivityExample = {
     block: ExerciseLearningBlock;
     sources: LearningBlock[];
     sourceText: string;
+    recording?: {
+        block: Extract<LearningBlock, { type: 'audio' }>;
+        url: string;
+        excerpt: NonNullable<
+            Extract<LearningBlock, { type: 'audio' }>['transcript']
+        >;
+    };
     explanation: string;
     useCaseGuidance: string;
     sampleResponses: {
@@ -40,6 +47,32 @@ const vocabulary = [
     ['help', 'make something easier for someone; assistance'],
     ['helpful', 'giving useful help'],
 ] as const;
+
+/** Original dialogue voiced offline with CMU Flite 2.2 (rms and slt); timings in seconds. */
+const libraryAudio = {
+    id: uuid(4),
+    type: 'audio',
+    title: 'At the library',
+    language: 'en',
+    assetId: uuid(23),
+    transcript: {
+        language: 'en',
+        segments: [
+            {
+                id: uuid(21),
+                speaker: 'Visitor',
+                text: 'Good morning. Can I borrow this book?',
+                timing: { startSeconds: 0, endSeconds: 2.6 },
+            },
+            {
+                id: uuid(22),
+                speaker: 'Librarian',
+                text: 'Of course. Please return it on Friday.',
+                timing: { startSeconds: 2.95, endSeconds: 5.74 },
+            },
+        ],
+    },
+} satisfies Extract<LearningBlock, { type: 'audio' }>;
 
 export const exerciseExampleSources: LearningBlock[] = [
     {
@@ -70,6 +103,7 @@ export const exerciseExampleSources: LearningBlock[] = [
         segments: [{ id: uuid(20), text: passage }],
         translations: [],
     },
+    libraryAudio,
 ];
 
 function frozenSource(activity: ExerciseActivityMetadata): {
@@ -77,6 +111,27 @@ function frozenSource(activity: ExerciseActivityMetadata): {
     frozen: NamedExerciseSource;
     text: string;
 } {
+    if (activity.category === 'listening') {
+        const segments =
+            activity.id === 'L01'
+                ? libraryAudio.transcript.segments.slice(0, 1)
+                : libraryAudio.transcript.segments.slice(1);
+
+        return {
+            source: libraryAudio,
+            text: libraryAudio.title,
+            frozen: {
+                kind: 'audio',
+                origin: { kind: 'block', blockId: libraryAudio.id },
+                assetId: libraryAudio.assetId,
+                passages: segments.map(({ id, text }) => ({
+                    segmentId: id,
+                    text,
+                })),
+            },
+        };
+    }
+
     if (activity.category === 'vocabulary') {
         const source = exerciseExampleSources[0]!;
 
@@ -247,7 +302,9 @@ function interaction(
         ...base,
         format: 'free-text',
         acceptedAnswers:
-            activity.checkingPolicy === 'hybrid' ? [spec.answer] : undefined,
+            activity.checkingPolicy === 'hybrid' || activity.id === 'L02'
+                ? [spec.answer]
+                : undefined,
     };
 }
 
@@ -330,6 +387,17 @@ export function exerciseActivityExamples(
         const explanation = spec.reason[localeIndex]!;
         const source = frozenSource(activity);
         const block = interaction(activity, spec, index, explanation);
+        if (source.frozen.kind === 'audio') {
+            block.source = {
+                blockId: source.source.id,
+                segmentIds: source.frozen.passages.map(
+                    (part) => part.segmentId!,
+                ),
+            };
+
+            block.group = { id: uuid(24), parentBlockId: source.source.id };
+        }
+
         block.title = activity.locales[language].name;
         block.semantics = {
             activity: { id: activity.id, version: 1 },
@@ -346,6 +414,23 @@ export function exerciseActivityExamples(
             block,
             sources: [source.source],
             sourceText: source.text,
+            ...(source.frozen.kind === 'audio'
+                ? {
+                      recording: {
+                          block: libraryAudio,
+                          url: '/workbook/library-dialogue.mp3',
+                          excerpt: {
+                              ...libraryAudio.transcript,
+                              segments: libraryAudio.transcript.segments.filter(
+                                  (segment) =>
+                                      block.source?.segmentIds.includes(
+                                          segment.id,
+                                      ),
+                              ),
+                          },
+                      },
+                  }
+                : {}),
             explanation,
             useCaseGuidance: activityUseCaseGuidance(activity.id, language),
             sampleResponses: sampleResponses(activity, spec, language),

@@ -1,5 +1,5 @@
 import { fireEvent, screen, within } from '@testing-library/react';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { exerciseActivityExamples } from '../src/fsd/entities/learning-blocks';
 import { LessonDocumentBlocks } from '../src/fsd/features/knowledge-notes';
 import { render } from './render';
@@ -83,3 +83,57 @@ it.each(['multiple-choice', 'fill-in-the-blank', 'free-text'] as const)(
         expect(screen.queryByText(rationale)).toBeNull();
     },
 );
+
+it('renders a reused recording once and privately checks a dictation in the proposal editor', async () => {
+    const example = examples.find((item) => item.activity.id === 'L02')!;
+    const recording = example.recording!;
+    const { container } = render(
+        <LessonDocumentBlocks
+            body={{
+                schemaVersion: 2,
+                document: {
+                    type: 'doc',
+                    content: [
+                        {
+                            type: 'learningBlock',
+                            attrs: { block: example.block },
+                        },
+                    ],
+                },
+            }}
+            dependencies={example.sources}
+            audioUrls={{ [recording.block.assetId!]: recording.url }}
+        />,
+    );
+    const answer = await screen.findByRole('textbox');
+    expect(container.querySelectorAll('audio')).toHaveLength(1);
+    const player = container.querySelector('audio')!;
+    const play = vi.spyOn(player, 'play').mockResolvedValue(undefined);
+    fireEvent.click(screen.getByRole('button', { name: 'Play excerpt' }));
+    expect(play).toHaveBeenCalledOnce();
+    expect(player.currentTime).toBe(
+        recording.excerpt.segments[0]?.timing?.startSeconds,
+    );
+
+    expect(
+        screen.queryByText(example.block.referenceAnswer),
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(answer, {
+        target: { value: 'Of course. Please return it Monday.' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /^check( answer)?$/i }));
+    expect(screen.getByText('Missing')).toBeVisible();
+    expect(screen.getByText('Replace')).toBeVisible();
+    expect(container.querySelector('ins')).toBeVisible();
+    fireEvent.change(answer, {
+        target: { value: 'of course please return it on friday' },
+    });
+
+    expect(container.querySelector('ins')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /^check( answer)?$/i }));
+    expect(screen.getAllByText('Correct').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: 'Hint' }));
+    expect(container.querySelectorAll('audio')).toHaveLength(1);
+});

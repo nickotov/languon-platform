@@ -67,6 +67,7 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             confirmedQuoteId?: string;
             forceConfirmation?: boolean;
             mayGenerateLesson?: boolean;
+            includeListeningSpeech?: boolean;
             minimumOutputTokens?: number;
             inputTokenBound?: number;
             minimumInputBound: number;
@@ -245,6 +246,14 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
         });
         // Session authority uses the reviewed configured ceiling; each action
         // still reserves its narrower predicted call envelope below.
+        const combined =
+            input.includeListeningSpeech === true &&
+            !input.generationAuthorization;
+        const speechMaximumProviderMicros = combined
+            ? Math.floor(execution.budget.maxCostMicrosPerAttempt / 2)
+            : 0;
+
+        execution.budget.maxCostMicrosPerAttempt -= speechMaximumProviderMicros;
         const generationMaximumProviderCostMicros =
             execution.budget.maxCostMicrosPerAttempt;
         const automatic = input.generationAuthorization;
@@ -263,10 +272,41 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
         const remainingCredits = automatic
             ? BigInt(automatic.maximumCreditsMilli)
             : configuredBudgetMilli;
-        const authorizedBudgetMilli =
+        const totalAuthorizedBudgetMilli =
             configuredBudgetMilli < remainingCredits
                 ? configuredBudgetMilli
                 : remainingCredits;
+
+        const speechPolicy = combined
+            ? await capability.current('speech')
+            : null;
+        const speechCustomerPays =
+            !!speechPolicy &&
+            speechPolicy.funding !== 'operator' &&
+            account.policy.effectiveMode !== 'unlimited';
+        const textCustomerPays = funding === 'customer' && !zeroCustomerTariff;
+        const availableCombined =
+            (textCustomerPays || speechCustomerPays) &&
+            account.availableCredits < totalAuthorizedBudgetMilli
+                ? account.availableCredits
+                : totalAuthorizedBudgetMilli;
+        const speechMaximumMilli = speechCustomerPays
+            ? textCustomerPays
+                ? availableCombined / 2n
+                : availableCombined
+            : 0n;
+
+        if (speechCustomerPays && speechMaximumMilli === 0n) {
+            throw new ConversationError(
+                budget ? 'credits_exhausted' : 'action_budget_unconfigured',
+                'A positive speech allowance is required to prepare a new recording.',
+            );
+        }
+
+        const authorizedBudgetMilli =
+            combined && textCustomerPays
+                ? availableCombined - speechMaximumMilli
+                : totalAuthorizedBudgetMilli;
 
         if (automatic) {
             if (
@@ -427,10 +467,10 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 ? authorizedBudgetMilli
                 : plannedMaximumMilli;
 
-        const customerPays = funding === 'customer' && !zeroCustomerTariff;
+        const customerPays = textCustomerPays;
         const wholeLessonQuote = input.mayGenerateLesson && !automatic;
         let generationMaximumCreditsMilli = authorizedBudgetMilli;
-        if (customerPays || input.forceConfirmation || automatic) {
+        if (customerPays || combined || input.forceConfirmation || automatic) {
             const available = account.availableCredits;
             const held = !customerPays
                 ? 0n
@@ -442,13 +482,17 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 generationMaximumCreditsMilli = available;
             }
 
-            const quoteMaximum =
-                customerPays && wholeLessonQuote
-                    ? generationMaximumCreditsMilli
-                    : held;
-            const quoteScope = wholeLessonQuote
-                ? { scope: 'lesson-if-planned' as const }
-                : {};
+            const quoteMaximum = combined
+                ? (customerPays ? authorizedBudgetMilli : 0n) +
+                  speechMaximumMilli
+                : customerPays && wholeLessonQuote
+                  ? generationMaximumCreditsMilli
+                  : held;
+            const quoteScope = combined
+                ? { scope: 'listening-lesson' as const }
+                : wholeLessonQuote
+                  ? { scope: 'lesson-if-planned' as const }
+                  : {};
             const customerAllowance = customerPays
                 ? affordableActionOutput({
                       budgetMilli: held,
@@ -493,6 +537,14 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                         budget,
                         providerPrice,
                         ...quoteScope,
+                        ...(combined
+                            ? {
+                                  speechPolicy,
+                                  speechMaximumMilli:
+                                      speechMaximumMilli.toString(),
+                                  speechMaximumProviderMicros,
+                              }
+                            : {}),
                     }),
                 )
                 .digest('hex');
@@ -561,8 +613,9 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             if (
                 !automatic &&
                 (input.forceConfirmation ||
+                    (combined && availableCombined < configuredBudgetMilli) ||
                     allowance < learningContentActionOutputLimit ||
-                    held < acceptedBudgetMilli ||
+                    (customerPays && held < acceptedBudgetMilli) ||
                     input.confirmedQuoteId) &&
                 !validQuote
             ) {
@@ -610,7 +663,10 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             }
 
             if (validQuote) {
-                generationMaximumCreditsMilli = confirmed.heldMilli;
+                generationMaximumCreditsMilli = customerPays
+                    ? confirmed.heldMilli - speechMaximumMilli
+                    : 0n;
+
                 acceptedBudgetMilli =
                     held < confirmed.heldMilli ? held : confirmed.heldMilli;
             }
@@ -688,6 +744,17 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 ...execution.snapshot,
                 aggregateBudget: { ...execution.budget },
             },
+            ...(combined || automatic?.permitsListeningRecording
+                ? { permitsListeningRecording: true }
+                : {}),
+            ...(combined
+                ? {
+                      listeningSpeechBudget: {
+                          maximumCreditsMilli: speechMaximumMilli.toString(),
+                          maximumProviderMicros: speechMaximumProviderMicros,
+                      },
+                  }
+                : {}),
             actionAccountingVersion: 1,
             generationAuthorizationFingerprint,
             generationMaximumProviderCostMicros,

@@ -20,6 +20,9 @@ export const ExerciseActivityIdSchema = z.enum([
     'R08',
     'R09',
     'W01',
+    'L01',
+    'L02',
+    'L04',
 ]);
 
 /** Pedagogical material kinds do not establish ownership or source access. */
@@ -27,6 +30,7 @@ export const ExerciseActivitySourceKindSchema = z.enum([
     'vocabulary',
     'grammar',
     'text',
+    'audio',
 ]);
 
 export const ExerciseCheckingPolicySchema = z.enum([
@@ -68,7 +72,13 @@ export const ExerciseActivityMetadataSchema = z
     .object({
         id: ExerciseActivityIdSchema,
         version: z.literal(1),
-        category: z.enum(['vocabulary', 'grammar', 'reading', 'writing']),
+        category: z.enum([
+            'vocabulary',
+            'grammar',
+            'reading',
+            'writing',
+            'listening',
+        ]),
         format: ExerciseActivityFormatSchema,
         checkingPolicy: ExerciseCheckingPolicySchema,
         supportedSourceKinds: z

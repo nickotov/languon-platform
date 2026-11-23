@@ -12,6 +12,7 @@ function historicalExerciseSource(value: Record<string, unknown>): boolean {
         value.kind === 'text-selection' ||
         ((value.kind === 'vocabulary' ||
             value.kind === 'grammar' ||
+            value.kind === 'audio' ||
             value.kind === 'text') &&
             typeof origin === 'object' &&
             origin !== null &&

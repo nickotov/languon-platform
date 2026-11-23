@@ -1,3 +1,10 @@
+import {
+    createWorkerListeningRequest,
+    createListeningQueueProcessor,
+    ListeningSpeechPending,
+} from './listening-recording-queue';
+import { createListeningRecordingPreparer } from './audio/prepare-listening-recording';
+import { DrizzleKnowledgeMediaStore } from '../../knowledge/infrastructure/persistence/drizzle/media-store';
 import { KnowledgeShareCrypto } from '../../knowledge/infrastructure/knowledge-share-crypto';
 import { dictionaryAudioBudget } from './audio/dictionary-audio-budget';
 import { randomBytes } from 'node:crypto';
@@ -57,19 +64,42 @@ export function createSpeechInfrastructure(input: {
         globalBudgetUnits: budget.globalDailyCost,
     });
 
+    const service = new SpeechService({
+        store,
+        resolver,
+        storage: input.storage,
+        burstLimiter: input.burstLimiter,
+    });
+    const worker = new SpeechWorker({
+        store,
+        providers: input.providers,
+        storage: input.storage,
+    });
+
     return {
         store,
         resolver,
-        service: new SpeechService({
-            store,
-            resolver,
-            storage: input.storage,
-            burstLimiter: input.burstLimiter,
-        }),
-        worker: new SpeechWorker({
-            store,
-            providers: input.providers,
-            storage: input.storage,
-        }),
+        service,
+        worker,
+        prepareListeningRecording: createWorkerListeningRequest(
+            input.database,
+            worker,
+        ),
+        processListeningRecording: createListeningQueueProcessor(
+            input.database,
+            createListeningRecordingPreparer({
+                service,
+                pending: async (bindingId) => {
+                    throw new ListeningSpeechPending(bindingId);
+                },
+                provider: input.provider,
+                enqueue: (admission) =>
+                    store.enqueueListeningUtterances(admission),
+                media: new DrizzleKnowledgeMediaStore(
+                    input.database,
+                    new KnowledgeShareCrypto(input.dictionaryHmacSecret),
+                ),
+            }),
+        ),
     };
 }

@@ -1,3 +1,4 @@
+import { listeningScriptSchema } from '../../application/listening-script';
 import { randomUUID } from 'node:crypto';
 import type { LearningBlock } from '@languon/contracts';
 import { resolveExerciseActivityAllocations } from '../../application/exercise-activity-allocation';
@@ -16,6 +17,42 @@ import { validateNamedExerciseActivity } from './exercise-activities';
 
 export interface DecodedLearningUnit {
     tasks: { taskId: string; blocks?: unknown[]; prose?: GeneratedReading }[];
+}
+
+export function readListeningUnit(
+    brief: LearningContentBrief,
+    decoded: DecodedLearningUnit,
+) {
+    const task = brief.tasks[0];
+    if (task?.kind !== 'audio') {
+        return;
+    }
+
+    const item = decoded.tasks[0];
+    if (
+        brief.tasks.length !== 1 ||
+        decoded.tasks.length !== 1 ||
+        item?.taskId !== task.id
+    ) {
+        throw new Error(
+            'Recording generation requires exactly one matching audio task.',
+        );
+    }
+
+    const script = listeningScriptSchema
+        .array()
+        .length(1)
+        .parse(item.blocks)[0]!;
+    if (
+        new Set(script.utterances.map((line) => line.speaker)).size !==
+        (task.speakerCount ?? 1)
+    ) {
+        throw new Error(
+            'Listening script speakers do not match the requested count.',
+        );
+    }
+
+    return { task, item, script };
 }
 
 type ExerciseGroup = NonNullable<

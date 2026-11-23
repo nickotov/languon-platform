@@ -40,6 +40,7 @@ export const LearningContentTaskSchema = z
             'grammar',
             'bilingual-text',
             'exercises',
+            'audio',
         ]),
         source: LearningContentSourceSchema.optional(),
         dependencies: z.array(z.string().min(1).max(80)).max(8).optional(),
@@ -57,7 +58,7 @@ export const LearningContentTaskSchema = z
                     .strict(),
             )
             .min(1)
-            .max(19)
+            .max(22)
             .optional(),
         words: z
             .array(z.string().trim().min(1).max(500))
@@ -72,6 +73,7 @@ export const LearningContentTaskSchema = z
             .optional(),
         count: z.number().int().min(1).max(200).optional(),
         maxCount: z.number().int().min(1).max(200).optional(),
+        speakerCount: z.union([z.literal(1), z.literal(2)]).optional(),
         targetWords: z.number().int().min(1).max(1200).optional(),
         formats: z
             .array(z.string().trim().min(1).max(80))
@@ -156,6 +158,15 @@ export const supportedLearningExerciseFormats = [
 
 /** Capability descriptions are data consumed by routing and authoring, not permissions. */
 export const learningContentCapabilities = [
+    {
+        kind: 'audio',
+        toolId: 'generate_listening_audio',
+        renderer: 'audio',
+        required: ['language'],
+        defaultCount: 1,
+        instruction:
+            'Write a concise original listening script, one short spoken utterance per turn. Keep speaker labels consistent. For dialogues use exactly two speakers. Only include words that will be spoken in utterance text. Use the requested language and authorized material.',
+    },
     {
         kind: 'prose',
         toolId: 'generate_prose',

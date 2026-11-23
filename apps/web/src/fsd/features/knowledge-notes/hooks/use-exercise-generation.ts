@@ -40,7 +40,7 @@ export function useExerciseGeneration({
 }) {
     const text = exerciseGenerationCopy(locale);
     const eligibleSources = sources.filter((source) =>
-        exerciseSourceKind(source.type),
+        exerciseSourceKind(source),
     );
     const initialSources = eligibleSources.filter((source) =>
         selectedIds.includes(source.id),
@@ -79,7 +79,7 @@ export function useExerciseGeneration({
             ? initialSources
             : eligibleSources.filter((source) => source.id === sourceId);
     const kinds = selectedSources.flatMap((source) => {
-        const kind = exerciseSourceKind(source.type);
+        const kind = exerciseSourceKind(source);
 
         return kind ? [kind] : [];
     });
@@ -90,7 +90,13 @@ export function useExerciseGeneration({
         kinds.push('text');
     }
 
-    const eligible = eligibleExerciseActivities(kinds);
+    const canDecode = selectedSources.some(
+        (source) => source.listeningSource === 'decoding',
+    );
+    const eligible = eligibleExerciseActivities(kinds).filter(
+        (activity) =>
+            canDecode || (activity.id !== 'L02' && activity.id !== 'L04'),
+    );
     const activities = exerciseActivityCatalog.filter(
         (activity) =>
             eligible.includes(activity) || selected.includes(activity.id),

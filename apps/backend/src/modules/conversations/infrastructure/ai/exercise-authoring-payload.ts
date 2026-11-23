@@ -28,6 +28,11 @@ const sourceBinding = z.discriminatedUnion('kind', [
             entryIds: uniqueIds,
         })
         .strict(),
+    z.strictObject({
+        kind: z.literal('audio'),
+        blockId: z.uuid(),
+        segmentIds: uniqueIds.max(20),
+    }),
     z.object({ kind: z.literal('grammar'), blockId: z.uuid() }).strict(),
     z
         .object({
@@ -113,7 +118,7 @@ function authoringSchema(
         sourceBindings: z
             .array(second ? z.union([first!, second, ...rest]) : first!)
             .min(1)
-            .max(8),
+            .max(activity.category === 'listening' ? 1 : 8),
     });
 
     if (activityId === 'R03') {
@@ -130,7 +135,10 @@ function authoringSchema(
     if (activity.format === 'multiple-choice') {
         return common.extend({
             correct: choiceContent,
-            distractors: z.array(choiceContent).min(1).max(11),
+            distractors:
+                activityId === 'L01'
+                    ? z.array(choiceContent).length(2)
+                    : z.array(choiceContent).min(1).max(11),
         });
     }
 
@@ -150,6 +158,10 @@ function authoringSchema(
         return activity.checkingPolicy === 'prepared-key'
             ? gaps
             : gaps.extend({ rubric });
+    }
+
+    if (activityId === 'L02') {
+        return common.extend({ activityId: z.literal('L02') });
     }
 
     if (activity.checkingPolicy === 'hybrid') {
@@ -195,7 +207,24 @@ export function parseExercisePayload(value: unknown) {
 }
 
 type Payload = ReturnType<typeof parseExercisePayload>;
-function compileInteraction(payload: Payload) {
+function compileInteraction(payload: Payload, sources: NamedExerciseSource[]) {
+    if (payload.activityId === 'L02') {
+        const [audio] = sources;
+        if (audio?.kind !== 'audio' || audio.passages.length !== 1) {
+            throw new Error('Dictation needs one transcript segment.');
+        }
+
+        const referenceAnswer = audio.passages[0]!.text;
+
+        return {
+            fields: { referenceAnswer, acceptedAnswers: [referenceAnswer] },
+            checking: {
+                policy: 'prepared-key',
+                key: { kind: 'text', acceptedAnswers: [referenceAnswer] },
+            },
+        };
+    }
+
     if ('correctRole' in payload || 'correct' in payload) {
         const classification = 'correctRole' in payload;
         const candidates = classification
@@ -305,7 +334,7 @@ function compileInteraction(payload: Payload) {
                 referenceAnswer: payload.acceptedAnswers[0],
             },
             checking: {
-                policy: 'hybrid',
+                policy: getExerciseActivity(payload.activityId).checkingPolicy,
                 ...rubricFields,
                 key: { kind: 'text', acceptedAnswers: payload.acceptedAnswers },
             },
@@ -332,6 +361,13 @@ function passageLink(
     blocks: readonly LearningBlock[],
 ) {
     const [passage, ...others] = sources;
+    if (passage?.kind === 'audio' && !others.length) {
+        return {
+            blockId: passage.origin.blockId,
+            segmentIds: passage.passages.map((item) => item.segmentId),
+        };
+    }
+
     if (passage?.kind !== 'text' || others.length) {
         return undefined;
     }
@@ -361,8 +397,17 @@ export function compileExercisePayload(
     publication: ExercisePublicationContext,
 ) {
     const activity = getExerciseActivity(payload.activityId);
-    const { fields, checking } = compileInteraction(payload);
+    const { fields, checking } = compileInteraction(payload, sources);
     const source = passageLink(sources, publication.linkableBlocks ?? []);
+
+    const group =
+        source && sources[0]?.kind === 'audio'
+            ? {
+                  ...publication.group,
+                  id: publication.group?.id ?? source.blockId,
+                  parentBlockId: source.blockId,
+              }
+            : publication.group;
 
     return LearningBlockSchema.parse({
         id: randomUUID(),
@@ -373,7 +418,7 @@ export function compileExercisePayload(
         hint: payload.hint,
         title: payload.title,
         ...fields,
-        ...(publication.group ? { group: publication.group } : {}),
+        ...(group ? { group } : {}),
         ...(source ? { source } : {}),
         semantics: {
             activity: { id: activity.id, version: activity.version },

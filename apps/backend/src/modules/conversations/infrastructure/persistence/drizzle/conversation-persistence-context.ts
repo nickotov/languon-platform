@@ -142,6 +142,7 @@ export interface ConversationPersistenceDependencies {
             generationAuthorization?: GenerationAutomaticAdmission;
             forceConfirmation?: boolean;
             mayGenerateLesson?: boolean;
+            includeListeningSpeech?: boolean;
             minimumOutputTokens?: number;
         },
     ) => Promise<Record<string, unknown>>) & {
