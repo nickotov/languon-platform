@@ -43,12 +43,9 @@ export function applyExercisePickerChoices(
     planned: TutorRequestResolution,
     hasSelection: boolean,
     blockReferences: readonly string[] = [],
-    newRecordingAuthorized = false,
 ): TutorRequestResolution {
     const audio =
-        newRecordingAuthorized &&
-        planned.kind === 'generate' &&
-        planned.brief.tasks.length === 2
+        planned.kind === 'generate' && planned.brief.tasks.length === 2
             ? planned.brief.tasks.find((item) => item.kind === 'audio')
             : undefined;
     const task =

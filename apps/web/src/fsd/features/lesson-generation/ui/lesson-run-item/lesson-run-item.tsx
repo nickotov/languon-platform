@@ -26,6 +26,12 @@ export function LessonRunItem({
             ? failure.error.detail.code
             : undefined;
 
+    const recordingAction =
+        state.actions.action?.kind === 'continue' &&
+        state.actions.action.run.id === run.id &&
+        state.actions.action.run.revision === run.revision &&
+        run.pauseReason === 'recording-confirmation';
+
     function refreshRun() {
         state.actions.clearError(run);
         void state.refresh();
@@ -44,6 +50,8 @@ export function LessonRunItem({
             }
             reconnecting={reconnecting || state.rechecking}
             stopping={state.actions.stopping(run)}
+            recordingPending={recordingAction && state.actions.pending}
+            updatedRecordingQuote={recordingAction ? state.actions.quote : null}
             actionNotice={
                 failure && (
                     <LessonActionNotice

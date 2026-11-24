@@ -31,10 +31,10 @@ export function ActionBudgetConfirmation({
           ][at]!
         : lessonQuote
           ? [
-                'If your request creates a lesson, this maximum covers the entire lesson, including automatic retries.',
-                'Если по запросу будет создан урок, этот максимум действует на весь урок, включая автоматические повторные попытки.',
-                'Si votre demande crée une leçon, ce plafond couvre toute la leçon, y compris les nouvelles tentatives automatiques.',
-                'Si tu solicitud crea una lección, este máximo cubre toda la lección, incluidos los reintentos automáticos.',
+                'If your request creates a lesson, this limit covers the entire lesson, including requested recordings and automatic retries.',
+                'Этот лимит действует на весь запрошенный урок, включая создание аудиозаписей и автоматические повторные попытки.',
+                'Ce plafond couvre toute la leçon, y compris les enregistrements demandés et les nouvelles tentatives automatiques.',
+                'Este límite cubre toda la lección, incluidas las grabaciones solicitadas y los reintentos automáticos.',
             ][at]!
           : [
                 'This action’s credit and execution limits permit a smaller response. Send explicitly to authorize this allowance.',

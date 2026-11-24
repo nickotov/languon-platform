@@ -29,7 +29,7 @@ export function generationPlanCapacity(
             );
 
             const capturedText =
-                task.kind === 'bilingual-text'
+                task.kind === 'bilingual-text' || task.kind === 'audio'
                     ? generationTaskCapturedText(inputs, sources)
                     : '';
 

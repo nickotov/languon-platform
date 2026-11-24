@@ -62,7 +62,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 material: [],
                 blockTarget: { branchId: branch, version: 1 },
             };
-            const task = { id: 'recording', kind: 'audio', language: 'fr' };
+            const task = {
+                id: 'recording',
+                kind: 'audio',
+                language: 'fr',
+                maxDurationSeconds: 60,
+            };
             const attempt = {
                 turnId: turn,
                 taskId: 'recording',
@@ -176,6 +181,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         branchId: branch,
                         language: 'fr',
                         utterances: [utterance],
+                        maxDurationSeconds: 60,
                     });
 
                     return result;

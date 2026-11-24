@@ -91,19 +91,32 @@ export function createListeningQueueProcessor(
         const claimed = sql`id=${id}::uuid and claim_id=${claimId}::uuid and state='pending'`;
         try {
             const scope = scopeSchema.parse(JSON.parse(String(row.scope)));
-            const active =
-                await database.execute(sql`select 1 from conversation_turns t
+            const [active] =
+                await database.execute(sql`select spec->>'maxDurationSeconds' as duration from conversation_turns t
                 join conversation_generation_runs r on r.active_turn_id=t.id
+                join conversation_generation_plan_revisions p on p.run_id=r.id and p.revision=r.revision
+                cross join lateral jsonb_array_elements(p.plan->'tasks') spec
                 where r.id=${scope.runId}::uuid and r.state='running' and r.revision=${scope.revision}
+                  and spec->>'id'=${scope.taskId} and spec->>'kind'='audio'
                   and t.id=${scope.turnId}::uuid and t.lease_token=${scope.leaseToken}::uuid
                   and t.status='running' and not t.cancel_requested and t.lease_until>clock_timestamp()`);
 
-            if (!active.length) {
+            if (!active) {
                 throw new SpeechError('listening_authorization_expired');
             }
 
             const result = await prepare({
                 ...scope,
+                ...(active.duration === null
+                    ? {}
+                    : {
+                          maxDurationSeconds: z.coerce
+                              .number()
+                              .int()
+                              .min(1)
+                              .max(120)
+                              .parse(active.duration),
+                      }),
                 ...(signal ? { signal } : {}),
             });
 

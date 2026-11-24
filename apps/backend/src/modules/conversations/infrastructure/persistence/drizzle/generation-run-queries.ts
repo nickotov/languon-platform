@@ -1,3 +1,4 @@
+import { recordingAdmissionRequestId } from './generation-request-id';
 import { desc, eq } from 'drizzle-orm';
 import type {
     ContinueGenerationRunRequest,
@@ -92,6 +93,10 @@ export function conversationContinueGenerationRun(
             runId,
             expectedRevision: input.expectedRevision,
             kind: 'generation',
+            ...(input.requestId ===
+            recordingAdmissionRequestId(runId, input.expectedRevision)
+                ? { recordingAdmission: true as const }
+                : {}),
             ...(input.acknowledgedUncertainTurnId
                 ? {
                       acknowledgedUncertainTurnId:

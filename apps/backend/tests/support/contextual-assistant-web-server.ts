@@ -59,6 +59,7 @@ const server = serve({
 console.log('Contextual assistant test fixture ready at http://127.0.0.1:4006');
 try {
     while (!controller.signal.aborted) {
+        await fixture.conversations.store.prepareNextRecordingLesson();
         await fixture.conversations.worker!.processNext(controller.signal);
         await delay(30);
     }

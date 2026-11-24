@@ -2,11 +2,14 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
+import { generationRunsTable } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/conversation-generation-schema';
 import { conversationTurnsTable } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/schema';
 import {
     ConversationResponseSchema,
     ConversationDetailSchema,
+    GenerationRunDetailSchema,
+    KnowledgeWorkspaceResponseSchema,
     ConversationTurnResponseSchema,
     KnowledgeNoteResponseSchema,
     KnowledgeDraftResponseSchema,
@@ -302,6 +305,232 @@ describe.runIf(process.env.CONTEXTUAL_ASSISTANT_FIXTURE === 'true')(
 
             return result.drafts[0]!;
         }
+
+        it('restores the paid recording offer by HTTP and admits a duplicate approval once; expired consent refreshes the original plan', async () => {
+            const owner = await fixture.signup();
+
+            async function offer() {
+                const { workspace } = KnowledgeWorkspaceResponseSchema.parse(
+                    await checked(
+                        '/knowledge/drafts',
+                        owner,
+                        { operationId: randomUUID() },
+                        undefined,
+                        undefined,
+                        201,
+                    ),
+                );
+                const chat = await conversation(owner, {
+                    kind: 'knowledge',
+                    id: workspace.noteId,
+                });
+                const branch = workspace.branches[0]!;
+                const route = `/conversations/${chat.id}`;
+                const { turn } = ConversationTurnResponseSchema.parse(
+                    await checked(`${route}/turns`, owner, {
+                        requestId: randomUUID(),
+                        content: 'Listening lesson fixture',
+                        editorContext: {
+                            content: '',
+                            editorTarget: {
+                                from: 0,
+                                to: 0,
+                                originalText: '',
+                                documentHash: createHash('sha256')
+                                    .update('')
+                                    .digest('hex'),
+                            },
+                            workingBranch: {
+                                id: branch.id,
+                                version: branch.version,
+                            },
+                        },
+                    }),
+                );
+
+                await waitForAdmittedTurn(
+                    turn.id,
+                    () => detail(owner, chat.id),
+                    () => fixture.conversations.worker!.processNext(signal),
+                );
+
+                // Admission runs in the API independently of the browser or an open SSE connection.
+                await fixture.conversations.store.prepareNextRecordingLesson();
+                const listed = await checked(`${route}/generation-runs`, owner);
+                const runRoute = `${route}/generation-runs/${listed.runs[0].id}`;
+                const first = GenerationRunDetailSchema.parse(
+                    await checked(runRoute, owner),
+                );
+                const reloaded = GenerationRunDetailSchema.parse(
+                    await checked(runRoute, owner),
+                );
+
+                expect(first.run).toMatchObject({
+                    state: 'paused',
+                    pauseReason: 'recording-confirmation',
+                    completedTaskCount: 0,
+                    recordingApproval: { quote: { scope: 'listening-lesson' } },
+                });
+
+                expect(reloaded.run.recordingApproval).toEqual(
+                    first.run.recordingApproval,
+                );
+
+                const approval = first.run.recordingApproval!;
+                expect(Number(approval.quote.maximumCredits)).toBeGreaterThan(
+                    0,
+                );
+
+                return {
+                    chat,
+                    runRoute,
+                    first,
+                    command: {
+                        requestId: approval.requestId,
+                        confirmedQuoteId: approval.quote.id,
+                        expectedRevision: first.run.revision,
+                    },
+                };
+            }
+
+            const current = await offer();
+            const responses = await Promise.all(
+                [1, 2].map(() =>
+                    fixture.request(
+                        `${current.runRoute}/continue`,
+                        owner,
+                        current.command,
+                    ),
+                ),
+            );
+
+            // Overlapping submissions can hit the per-owner capacity guard.
+            // Replaying either click after the winner commits returns that same turn.
+            expect(
+                responses.every((response) =>
+                    [200, 503].includes(response.status),
+                ),
+            ).toBe(true);
+
+            const winner = responses.find((response) => response.ok);
+            expect(winner).toBeDefined();
+            const accepted = ConversationTurnResponseSchema.parse(
+                await winner!.json(),
+            );
+            const replay = await checked(
+                `${current.runRoute}/continue`,
+                owner,
+                current.command,
+            );
+
+            expect(ConversationTurnResponseSchema.parse(replay).turn.id).toBe(
+                accepted.turn.id,
+            );
+
+            const [ledger] = await fixture.database
+                .select({ count: sql<number>`count(*)::integer` })
+                .from(conversationTurnsTable)
+                .where(
+                    eq(
+                        conversationTurnsTable.generationRunId,
+                        current.first.run.id,
+                    ),
+                );
+
+            expect(ledger!.count).toBe(2);
+            await checked(`${current.runRoute}/stop`, owner, {
+                requestId: randomUUID(),
+                expectedRevision: 1,
+            });
+
+            const expired = await offer();
+            // Simulate the learner reopening the chat after the original action deadline.
+            const [stored] = await fixture.database
+                .select()
+                .from(generationRunsTable)
+                .where(eq(generationRunsTable.id, expired.first.run.id));
+
+            await fixture.database
+                .update(generationRunsTable)
+                .set({
+                    automation: {
+                        ...stored!.automation!,
+                        expiresAt: '2000-01-01T00:00:00.000Z',
+                    },
+                })
+                .where(eq(generationRunsTable.id, expired.first.run.id));
+
+            const counts = async () => {
+                const [row] = await fixture.database
+                    .select({ count: sql<number>`count(*)::integer` })
+                    .from(conversationTurnsTable)
+                    .where(
+                        eq(
+                            conversationTurnsTable.generationRunId,
+                            expired.first.run.id,
+                        ),
+                    );
+
+                return row!.count;
+            };
+            const path = `${expired.runRoute}/continue`;
+            const { confirmedQuoteId: staleQuote, ...refresh } =
+                expired.command;
+
+            // The scheduler cannot renew or accept an existing offer in the background.
+            await fixture.conversations.store.prepareNextRecordingLesson();
+            expect(await counts()).toBe(1);
+            const refreshed = await checked(
+                path,
+                owner,
+                refresh,
+                undefined,
+                undefined,
+                409,
+            );
+
+            expect(refreshed.error.code).toBe('action_confirmation_required');
+            const freshQuote = refreshed.error.details.quote;
+            expect(freshQuote.scope).toBe('listening-lesson');
+            expect(freshQuote.id).not.toBe(staleQuote);
+
+            const recovered = GenerationRunDetailSchema.parse(
+                await checked(expired.runRoute, owner),
+            );
+
+            expect(recovered.run).toMatchObject({
+                state: 'paused',
+                pauseReason: 'recording-confirmation',
+                recordingApproval: {
+                    requestId: refresh.requestId,
+                    quote: freshQuote,
+                },
+            });
+
+            expect(recovered.plan).toEqual(expired.first.plan);
+            // Lost replies and stale tabs reuse the current offer without rotating its ID.
+            const stale = await checked(
+                path,
+                owner,
+                expired.command,
+                undefined,
+                undefined,
+                409,
+            );
+
+            expect(stale.error.details.quote.id).toBe(freshQuote.id);
+            expect(await counts()).toBe(1);
+            const accept = { ...refresh, confirmedQuoteId: freshQuote.id };
+            const firstAdmission = ConversationTurnResponseSchema.parse(
+                await checked(path, owner, accept),
+            );
+            const replayed = ConversationTurnResponseSchema.parse(
+                await checked(path, owner, accept),
+            );
+
+            expect(replayed.turn.id).toBe(firstAdmission.turn.id);
+            expect(await counts()).toBe(2);
+        }, 60_000);
 
         // @user-flow contextual-language-assistant-and-knowledge/knowledge-revision-stale-delete
         it('retains stale drafts, preserves revisions, and cannot publish an update after note deletion', async () => {

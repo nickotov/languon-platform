@@ -278,3 +278,48 @@ export const Completed: Story = {
         }),
     },
 };
+
+const recording = GenerationRunSummarySchema.parse({
+    ...run,
+    pauseReason: 'recording-confirmation',
+    completedTaskCount: 0,
+    totalTaskCount: 2,
+    tasks: [
+        {
+            id: 'recording',
+            kind: 'audio',
+            label: 'French dialogue about the reading',
+            status: 'pending',
+        },
+        {
+            id: 'question',
+            kind: 'exercises',
+            label: 'Listening comprehension question',
+            status: 'pending',
+        },
+    ],
+    recordingApproval: {
+        requestId: '44444444-4444-4444-8444-444444444444',
+        quote: {
+            id: '55555555-5555-4555-8555-555555555555',
+            scope: 'listening-lesson',
+            maximumCredits: '2.500',
+            approximateOutputTokens: 2500,
+            expiresAt: '2099-01-01T00:00:00.000Z',
+        },
+    },
+});
+
+export const RecordingConfirmation: Story = {
+    args: { run: recording, onRecordingDecision: noAction },
+};
+export const RecordingEstimateExpired: Story = {
+    args: {
+        run: recording,
+        recordingQuote: {
+            ...recording.recordingApproval!.quote,
+            expiresAt: '2020-01-01T00:00:00.000Z',
+        },
+        onRecordingDecision: noAction,
+    },
+};

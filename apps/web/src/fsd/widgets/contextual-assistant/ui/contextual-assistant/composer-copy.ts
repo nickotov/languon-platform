@@ -1,7 +1,5 @@
 import type { Locale } from '@/fsd/shared/i18n';
 const en = {
-    newRecording: 'New recording',
-    recordingHint: 'Include speech synthesis in this lesson’s budget.',
     autoReply: 'Follows the language of your question, not the quoted material',
     neutralHint: 'Clear and even',
     casualHint: 'Warmer, like a study partner',
@@ -31,8 +29,6 @@ const en = {
 
 type Copy = typeof en;
 const ru: Copy = {
-    newRecording: 'Новая запись',
-    recordingHint: 'Включить озвучивание в бюджет этого урока.',
     autoReply: 'Следует языку вопроса, а не цитаты',
     neutralHint: 'Ясно и спокойно',
     casualHint: 'Теплее, как с партнёром по учёбе',
@@ -59,9 +55,6 @@ const ru: Copy = {
     limit: 'Прикреплено 10 материалов. Удалите один, чтобы добавить другой.',
 };
 const es: Copy = {
-    newRecording: 'Nueva grabación',
-    recordingHint:
-        'Incluye la síntesis de voz en el presupuesto de esta lección.',
     autoReply: 'Sigue el idioma de tu pregunta, no el texto citado',
     neutralHint: 'Claro y equilibrado',
     casualHint: 'Cercano, como un compañero de estudio',
@@ -89,8 +82,6 @@ const es: Copy = {
     limit: 'Límite de 10 adjuntos. Elimina uno para añadir otro.',
 };
 const fr: Copy = {
-    newRecording: 'Nouvel enregistrement',
-    recordingHint: 'Inclure la synthèse vocale dans le budget de cette leçon.',
     autoReply: 'Suit la langue de votre question, pas du texte cité',
     neutralHint: 'Clair et équilibré',
     casualHint: 'Chaleureux, comme un partenaire d’étude',

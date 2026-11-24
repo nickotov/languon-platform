@@ -111,6 +111,12 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
         const admit = (
             input: Partial<{
+                conversationId: string;
+                requestId: string;
+                fingerprint: string;
+                confirmedQuoteId: string;
+                mayGenerateLesson: boolean;
+                recordingPlanAuthorization: GenerationAutomaticAdmission;
                 inputTokenBound: number;
                 minimumInputBound: number;
                 reserveToolContinuation: boolean;
@@ -122,14 +128,26 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         ) =>
             db.transaction(async (tx) => {
                 const turnId = randomUUID(),
-                    conversationId = randomUUID(),
-                    requestId = randomUUID();
+                    conversationId = input.conversationId ?? randomUUID(),
+                    requestId = input.requestId ?? randomUUID();
                 const execution = await conversationAdmission(policy)(tx, {
                     ownerId,
                     turnId,
                     conversationId,
                     requestId,
-                    fingerprint: randomUUID(),
+                    fingerprint: input.fingerprint ?? randomUUID(),
+                    ...(input.confirmedQuoteId
+                        ? { confirmedQuoteId: input.confirmedQuoteId }
+                        : {}),
+                    ...(input.mayGenerateLesson
+                        ? { mayGenerateLesson: true }
+                        : {}),
+                    ...(input.recordingPlanAuthorization
+                        ? {
+                              recordingPlanAuthorization:
+                                  input.recordingPlanAuthorization,
+                          }
+                        : {}),
                     inputTokenBound: input.inputTokenBound ?? 1_000,
                     minimumInputBound: input.minimumInputBound ?? 1_000,
                     ...(input.generationAuthorization
@@ -243,6 +261,123 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
             expect(stage.permitsListeningRecording).toBe(true);
             expect(stage.listeningSpeechBudget).toBeUndefined();
+        });
+
+        it('automatically allocates free recording from the original remaining cost and expiry', async () => {
+            await ready('operator');
+            await db.insert(capabilityPolicyRevisionsTable).values({
+                id: randomUUID(),
+                capability: 'speech',
+                version: 1,
+                funding: 'operator',
+                createdAt: new Date(),
+                reason: 'Synthetic free recording',
+            });
+
+            const root = await admit();
+            const remaining = Math.floor(
+                Number(root.generationMaximumProviderCostMicros) * 0.9,
+            );
+            const deadline = new Date(Date.now() + 30_000);
+            const stage = await admit({
+                includeListeningSpeech: true,
+                forceConfirmation: true,
+                recordingPlanAuthorization: {
+                    expiresAt: deadline.toISOString(),
+                    maximumCreditsMilli: '0',
+                    maximumProviderCostMicros: remaining,
+                    authorizationFingerprint: String(
+                        root.generationAuthorizationFingerprint,
+                    ),
+                },
+            });
+
+            expect(stage.confirmationRequired).toBeUndefined();
+            expect(stage.listeningSpeechBudget).toMatchObject({
+                maximumCreditsMilli: '0',
+                maximumProviderMicros: Math.floor(remaining / 2),
+            });
+
+            expect(
+                Number(stage.generationMaximumProviderCostMicros) +
+                    Math.floor(remaining / 2),
+            ).toBe(remaining);
+
+            const [holds] =
+                await client`select count(*)::integer as count from ai_credit_actions where deadline_at <= ${deadline.toISOString()}`;
+
+            expect(holds?.count).toBe(1);
+        });
+
+        it('carries a confirmed workspace quote through recording intent and never exceeds the remaining customer ceiling', async () => {
+            await ready('customer');
+            await db.insert(capabilityPolicyRevisionsTable).values({
+                id: randomUUID(),
+                capability: 'speech',
+                version: 1,
+                funding: 'customer',
+                createdAt: new Date(),
+                reason: 'Synthetic customer-paid recording',
+            });
+
+            const initial = {
+                mayGenerateLesson: true,
+                forceConfirmation: true,
+                conversationId: randomUUID(),
+                requestId: randomUUID(),
+                fingerprint: randomUUID(),
+            };
+            const offer = await admit(initial);
+            const quote = offer.quote as { id: string; maximumCredits: string };
+            expect(quote).toMatchObject({
+                scope: 'lesson-if-planned',
+                maximumCredits: '10',
+            });
+
+            const root = await admit({
+                ...initial,
+                confirmedQuoteId: quote.id,
+            });
+
+            expect(root.recordingConsentMilli).toBe('10000');
+            expect(root.permitsListeningRecording).toBeUndefined();
+            const remaining: GenerationAutomaticAdmission = {
+                expiresAt: new Date(Date.now() + 60_000).toISOString(),
+                maximumCreditsMilli: '9990',
+                maximumProviderCostMicros:
+                    Number(root.generationMaximumProviderCostMicros) - 1000,
+                authorizationFingerprint: String(
+                    root.generationAuthorizationFingerprint,
+                ),
+            };
+            const upgrade = {
+                includeListeningSpeech: true,
+                forceConfirmation: true,
+                recordingPlanAuthorization: remaining,
+            };
+            const unsigned = await admit(upgrade);
+            expect(unsigned).toMatchObject({
+                confirmationRequired: true,
+                quote: { scope: 'listening-lesson' },
+            });
+
+            const authorized = await admit({
+                ...upgrade,
+                recordingPlanAuthorization: {
+                    ...remaining,
+                    recordingConsent: {
+                        rootTurnId: randomUUID(),
+                        remainingCreditsMilli: '9990',
+                    },
+                },
+            });
+
+            expect(authorized.confirmationRequired).toBeUndefined();
+            expect(authorized.listeningSpeechBudget).toMatchObject({
+                maximumCreditsMilli: '4995',
+            });
+
+            expect(authorized.generationMaximumCreditsMilli).toBe('4995');
         });
 
         it('quotes the combined ceiling when only speech uses customer credits', async () => {

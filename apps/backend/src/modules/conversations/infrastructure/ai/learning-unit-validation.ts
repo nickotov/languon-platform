@@ -1,4 +1,7 @@
-import { listeningScriptSchema } from '../../application/listening-script';
+import {
+    listeningScriptSchema,
+    validateListeningScriptDuration,
+} from '../../application/listening-script';
 import { randomUUID } from 'node:crypto';
 import type { LearningBlock } from '@languon/contracts';
 import { resolveExerciseActivityAllocations } from '../../application/exercise-activity-allocation';
@@ -43,6 +46,7 @@ export function readListeningUnit(
         .array()
         .length(1)
         .parse(item.blocks)[0]!;
+
     if (
         new Set(script.utterances.map((line) => line.speaker)).size !==
         (task.speakerCount ?? 1)
@@ -51,6 +55,8 @@ export function readListeningUnit(
             'Listening script speakers do not match the requested count.',
         );
     }
+
+    validateListeningScriptDuration(script, task.maxDurationSeconds);
 
     return { task, item, script };
 }

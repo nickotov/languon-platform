@@ -1,14 +1,11 @@
+import { generationStageHasProgress } from './generation-stage-progress';
 import { generationAdmissionOutcome } from '../../../application/generation-admission-outcome';
 import { reconcileGenerationAttempts } from './generation-run-attempts';
 import type { GenerationFailureDiagnostic } from '../../../application/generation-failure';
 import { eq, sql } from 'drizzle-orm';
 import { KnowledgeContentProposalSchema } from '@languon/contracts';
 import { DrizzleActionAccountingParticipant } from '../../../../ai-credits/infrastructure/persistence/drizzle/drizzle-action-accounting-participant';
-import {
-    generationContext,
-    generationStageHasProgress,
-    lockGenerationRun,
-} from './generation-run-context';
+import { generationContext, lockGenerationRun } from './generation-run-context';
 import {
     generationRunActionsTable as actions,
     generationRunsTable as runs,
@@ -109,7 +106,8 @@ export async function completeGenerationAction(
             proposalId = action.proposalId;
         } else {
             if (
-                run.pauseReason !== 'budget' ||
+                (run.pauseReason !== 'budget' &&
+                    run.pauseReason !== 'recording-confirmation') ||
                 action.proposalId ||
                 !(await generationStageHasProgress(tx, run, turn.id))
             ) {
@@ -141,7 +139,17 @@ export async function completeGenerationAction(
         ? { ...ready, ready: true, dispatchRetryCount: 0 }
         : null;
 
-    if (safeRestart && automation) {
+    if (
+        (status === 'succeeded' || safeRestart) &&
+        run.pauseReason === 'recording-confirmation'
+    ) {
+        // Recording authorization is prepared by the actor-capable API.
+        // Other automatic generation stages already have financial authority.
+        pauseReason = 'recording-confirmation';
+        automation = run.automation
+            ? { ...run.automation, ready: false, dispatchRetryCount: 0 }
+            : null;
+    } else if (safeRestart && automation) {
         pauseReason = 'budget';
     }
 

@@ -1,3 +1,4 @@
+import type { SubmitConversationTurnRequest } from '@languon/contracts';
 import type { conversationAuthorize } from './conversation-persistence-authority';
 import {
     conflict,
@@ -30,5 +31,29 @@ export function assertPreparedConversationCurrent(
         throw conflict(
             'The conversation or its source changed while preparing your message. Review it and send again.',
         );
+    }
+}
+
+/** A retry retains its original source snapshot. Fresh submissions apply the active draft. */
+export function applySubmittedDraftContext(
+    input: SubmitConversationTurnRequest,
+    snapshot: AuthorizedConversation['snapshot'],
+    sourceId: string,
+) {
+    if (input.editorContext && !input.retryOf) {
+        snapshot.provenance = 'draft';
+        snapshot.version = `draft:${snapshot.version}`;
+        snapshot.scope = 'workspace';
+        snapshot.material = [];
+    } else if (input.draftContext && !input.retryOf) {
+        snapshot.provenance = 'draft';
+        snapshot.version = `draft:${snapshot.version}`;
+        snapshot.material = [
+            {
+                id: sourceId,
+                label: 'Current draft',
+                content: input.draftContext.content,
+            },
+        ];
     }
 }

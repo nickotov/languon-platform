@@ -15,6 +15,11 @@ export const listeningAllowances = pgTable(
         conversationId: uuid('conversation_id').notNull(),
         noteId: uuid('note_id').notNull(),
         branchId: uuid('branch_id').notNull(),
+        // A confirmed "lesson if planned" quote permits later reallocation. Until
+        // classification, its row has zero spendable speech credits/provider cost.
+        preauthorizedCredits: bigint('preauthorized_credits', {
+            mode: 'bigint',
+        }),
         remainingCredits: bigint('remaining_credits', {
             mode: 'bigint',
         }).notNull(),
@@ -23,6 +28,10 @@ export const listeningAllowances = pgTable(
         }).notNull(),
     },
     (t) => [
+        check(
+            'conversation_listening_consent_unallocated',
+            sql`${t.preauthorizedCredits} IS NULL OR (${t.preauthorizedCredits} >= 0 AND ${t.remainingCredits} = 0 AND ${t.remainingProviderMicros} = 0)`,
+        ),
         check(
             'conversation_listening_allowance_nonnegative',
             sql`${t.remainingCredits} >= 0 and ${t.remainingProviderMicros} >= 0`,

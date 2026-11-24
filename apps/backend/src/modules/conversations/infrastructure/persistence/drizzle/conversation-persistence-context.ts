@@ -140,6 +140,8 @@ export interface ConversationPersistenceDependencies {
             minimumInputBound: number;
             reserveToolContinuation?: boolean;
             generationAuthorization?: GenerationAutomaticAdmission;
+            recordingPlanAuthorization?: GenerationAutomaticAdmission;
+            renewRecording?: boolean;
             forceConfirmation?: boolean;
             mayGenerateLesson?: boolean;
             includeListeningSpeech?: boolean;

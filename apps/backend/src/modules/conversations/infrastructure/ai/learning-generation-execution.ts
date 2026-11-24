@@ -43,6 +43,17 @@ export async function executePreparedGeneration(
     validation?: StructuredCallValidation,
     planOrigin: 'saved' | 'created-in-stage' = 'saved',
 ) {
+    // Planning may finish under text-only authority. The API quotes or admits the
+    // frozen recording plan after this stage settles, even with the browser closed.
+    if (context.awaitingRecordingAuthorization) {
+        await input.onResponseMetadata?.({
+            kind: 'generation',
+            documentUse: false,
+        });
+
+        return { text: '' };
+    }
+
     const restored = restoreGenerationExecution(context);
     const authoring = createLearningContentAuthoring({
         ...restored,

@@ -33,6 +33,7 @@ interface ListeningScope {
 }
 export type ListeningSpeechInput = ListeningScope & {
     utterances: readonly Utterance[];
+    maxDurationSeconds?: number;
     signal?: AbortSignal;
 };
 export type ListeningUtteranceAdmission = Omit<ListeningScope, 'ownerId'> & {
@@ -80,6 +81,7 @@ export function createListeningRecordingPreparer(deps: {
     return async ({
         signal,
         utterances: rawUtterances,
+        maxDurationSeconds,
         ownerId,
         ...scope
     }: ListeningSpeechInput) => {
@@ -171,6 +173,7 @@ export function createListeningRecordingPreparer(deps: {
         const { audio, transcript } = await assembleListeningRecording({
             language: scope.language,
             utterances: clips,
+            ...(maxDurationSeconds !== undefined ? { maxDurationSeconds } : {}),
             ...(signal ? { signal } : {}),
         });
 

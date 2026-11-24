@@ -2,11 +2,12 @@
 feature: knowledge-workspace
 title: Knowledge workspace
 status: current
-last_verified: 2026-11-23
+last_verified: 2026-11-24
 surfaces:
     - browser
     - api
 source_paths:
+    - .agent/features/074-intent-driven-listening/**
     - .agent/features/073-listening-exercises/**
     - .agent/features/072-lesson-review-insertion/**
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/lesson-proposal-copy.ts
@@ -47,6 +48,7 @@ e2e_command: contextual-assistant
 e2e_tests:
     - apps/web/tests/e2e/knowledge-workspace.journeys.spec.ts
 e2e_scenarios:
+    - workspace-intent-driven-listening-request
     - workspace-listening-lesson-generation
     - workspace-composable-lesson-continuation
     - workspace-draft-chat-save-reopen
@@ -380,7 +382,7 @@ Open **Review** in the AI panel. Each lesson part has its own document editor pr
 
 ### Generate a listening set
 
-In an owned Knowledge note, select **New recording** for a request that needs speech synthesis. For example, ask for a short French interview between two speakers, one question about its meaning, one missing expression and a one-sentence dictation. Submit once. Spending confirmation, when required, covers the text and recording under the displayed ceiling. Distinct configured voices are required for a generated dialogue. For an existing recording, reference the Audio block with a matching transcript and leave **New recording** off.
+In an owned Knowledge note, ask directly for a recording. For example, ask for a short French interview between two speakers, one question about its meaning, one missing expression and a one-sentence dictation. Submit once. The service resolves an explicit selection or referenced block first. When the request refers to one unambiguous reading generated earlier in the conversation, it uses that prepared reading even before it is inserted into the document. If several readings fit, choose a displayed title. If a new recording needs credit approval, the original request stays in place and shows one **Generate recording** action with its upper limit. Distinct configured voices are required for a generated dialogue. For an existing recording, reference the Audio block with a matching transcript. Reused audio does not need a recording approval.
 
 Open **Review**, play the recording, then try the questions. Reveal the transcript, reference answer or hint separately. Dictation and focused gaps need a short whole recording or an actual timed excerpt. Insert the set at your cursor or at the end and use **Save** to publish. Reusing the original recording avoids paying for fresh synthesis.
 
@@ -421,6 +423,13 @@ The owner-scoped `/conversations/:id/generation-runs` list and `/:runId` detail 
   listening set with L01/L04/L02 checks. It verifies the recording remains one
   audio block, answers stay hidden before disclosure, the complete four-block
   set inserts together, and the saved draft restores the playable recording.
+
+- `workspace-intent-driven-listening-request` proves a learner can first
+  generate a reading, leave it uninserted, then ask for a two-speaker dialogue
+  and one listening question in a second typed message. The service resolves
+  the unambiguous prepared reading, keeps that original message in place for a
+  single inline recording approval, then returns one reviewable, insertable
+  listening set without asking the learner to resend.
 
 - `workspace-composable-lesson-continuation` proves a real owned workspace request exposes a read-only prepared preview, advances internal stages automatically without repeated Continue clicks, retains individual exercises, and inserts/saves/reloads one complete mixed lesson. It also verifies inserting a whole reading at the cursor, revealing a hint and an answer separately, restoring a removed part, and adding the remaining material in lesson order. Only the external model boundary uses synthetic content and usage. The journey
   also checks that ordinary streamed progress does not trigger repeated run-list or

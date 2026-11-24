@@ -722,25 +722,36 @@ const accountingMaintenance = startAccountingMaintenance({
 
 const listeningShutdown = new AbortController();
 let lastListeningMaintenanceWarning = 0;
+function reportListeningMaintenanceFailure() {
+    if (
+        !listeningShutdown.signal.aborted &&
+        Date.now() - lastListeningMaintenanceWarning > 60_000
+    ) {
+        lastListeningMaintenanceWarning = Date.now();
+        console.error(
+            'Listening preparation deferred; the same request will resume.',
+        );
+    }
+}
+
+// A slow synthesis must not delay other learners' offers or admissions.
+const listeningAdmissionMaintenance = startAccountingMaintenance({
+    maintain: () => conversations.store.prepareNextRecordingLesson(),
+    onError: reportListeningMaintenanceFailure,
+});
 const listeningMaintenance = startAccountingMaintenance({
     maintain: () => speech.processListeningRecording(listeningShutdown.signal),
-    onError: () => {
-        if (
-            !listeningShutdown.signal.aborted &&
-            Date.now() - lastListeningMaintenanceWarning > 60_000
-        ) {
-            lastListeningMaintenanceWarning = Date.now();
-            console.error(
-                'Listening preparation deferred; the same request will resume.',
-            );
-        }
-    },
+    onError: reportListeningMaintenanceFailure,
 });
 
 const performShutdown = createGracefulShutdown({
     closeResources: async () => {
         listeningShutdown.abort();
-        await listeningMaintenance.stop();
+        await Promise.all([
+            listeningMaintenance.stop(),
+            listeningAdmissionMaintenance.stop(),
+        ]);
+
         await accountingReportWorker.stop();
         await accountingMaintenance.stop();
         await accountingMaintenanceClient.end();

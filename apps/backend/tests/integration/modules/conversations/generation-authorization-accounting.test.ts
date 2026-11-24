@@ -1,3 +1,4 @@
+import { persistListeningAllowance } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/listening-admission';
 import { listeningAllowances } from '../../../../src/modules/conversations/infrastructure/persistence/drizzle/listening-allowance-schema';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -242,6 +243,92 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(
                 (await remaining())?.permitsListeningRecording,
             ).toBeUndefined();
+        });
+
+        it('projects only unspent signed scope after planner settlement without authorizing utterance dispatch', async () => {
+            const { run, first } = await preparedRun();
+            const branchId = randomUUID();
+            run.taskManifest = [{ id: 'dialogue', kind: 'audio' }];
+            run.sourceSnapshot.blockTarget = { branchId, version: 1 };
+            const settled = await settleStage(run, first.id);
+            const [turn] = await db
+                .select()
+                .from(turns)
+                .where(eq(turns.id, first.id));
+            const confirmed = {
+                ...turn!,
+                sourceSnapshot: run.sourceSnapshot,
+                execution: { recordingConsentMilli: '100' },
+            };
+
+            await db.transaction((tx) =>
+                persistListeningAllowance(tx, confirmed, run.noteId),
+            );
+
+            const remaining = () =>
+                db.transaction((tx) =>
+                    remainingGenerationAuthorization(tx, run),
+                );
+            const grant = await remaining();
+            expect(grant?.permitsListeningRecording).toBeUndefined();
+            expect(settled.chargedMilli).not.toBeNull();
+            expect(BigInt(grant!.recordingConsent!.remainingCreditsMilli)).toBe(
+                100n - settled.chargedMilli!,
+            );
+
+            run.sourceSnapshot.blockTarget = {
+                branchId: randomUUID(),
+                version: 1,
+            };
+
+            expect(
+                (await remaining())?.recordingConsent?.remainingCreditsMilli,
+            ).toBeUndefined();
+
+            const childAction = await db.transaction((tx) =>
+                reserveConversationActionFixture(tx, {
+                    ownerId,
+                    conversationId: run.conversationId,
+                    maximumMilli: 100n,
+                    tariff,
+                    funding: 'customer',
+                }),
+            );
+            const [following] = await db
+                .select()
+                .from(turns)
+                .where(eq(turns.id, childAction.id));
+
+            following!.execution = {
+                listeningSpeechBudget: {
+                    maximumCreditsMilli: '55',
+                    maximumProviderMicros: 1234,
+                },
+            };
+
+            following!.sourceSnapshot.blockTarget = { branchId, version: 1 };
+            const transfer = () =>
+                db.transaction((tx) =>
+                    persistListeningAllowance(
+                        tx,
+                        following!,
+                        run.noteId,
+                        first.id,
+                    ),
+                );
+
+            await transfer();
+            expect(await db.select().from(listeningAllowances)).toMatchObject([
+                {
+                    rootTurnId: following!.id,
+                    preauthorizedCredits: null,
+                    remainingCredits: 55n,
+                },
+            ]);
+
+            await expect(transfer()).rejects.toThrow(
+                'The recording authorization changed',
+            );
         });
 
         it('keeps lesson authority within the admitted root action deadline even after planning', async () => {

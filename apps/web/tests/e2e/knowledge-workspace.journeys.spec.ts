@@ -2,7 +2,7 @@ import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
 import { verifyIdleLessonRecovery } from './lesson-reconnect-fixture';
 
-// @user-flow-revision knowledge-workspace sha256:b993e45dd9008fbb
+// @user-flow-revision knowledge-workspace sha256:2830429f88eed478
 
 type Share = { locator: string; key: string };
 
@@ -2788,16 +2788,6 @@ test('a generated dialogue and its listening checks become one saved listening s
         exact: true,
     });
 
-    await editor.click();
-
-    await tutor
-        .getByRole('button', { name: 'New recording', exact: true })
-        .click();
-
-    await expect(
-        tutor.getByRole('button', { name: 'New recording', exact: true }),
-    ).toHaveAttribute('aria-pressed', 'true');
-
     await tutor.getByLabel('Your question').fill('Listening lesson fixture');
     const submittedTurn = page.waitForRequest(
         (request) =>
@@ -2805,9 +2795,18 @@ test('a generated dialogue and its listening checks become one saved listening s
     );
 
     await tutor.getByRole('button', { name: 'Send', exact: true }).click();
-    expect((await submittedTurn).postDataJSON()).toMatchObject({
-        includeListeningSpeech: true,
+    expect((await submittedTurn).postDataJSON()).not.toHaveProperty(
+        'includeListeningSpeech',
+    );
+
+    const approval = tutor.getByRole('article', {
+        name: 'Listening lesson',
+        exact: true,
     });
+    await expect(approval).toBeVisible();
+    await approval
+        .getByRole('button', { name: 'Generate recording', exact: true })
+        .click();
 
     const complete = tutor.getByRole('article', {
         name: 'Your lesson is ready',
@@ -2841,7 +2840,7 @@ test('a generated dialogue and its listening checks become one saved listening s
 
     for (const format of [
         'Listen for meaning',
-        'Catch missing words',
+        'Catch the missing words',
         'Short dictation',
     ]) {
         await expect(review).toContainText(format);
@@ -2902,6 +2901,141 @@ test('a generated dialogue and its listening checks become one saved listening s
     ).toHaveCount(1);
 
     await capture(page, info, 'workspace-listening-lesson');
+    assertRuntime();
+});
+
+// @user-flow knowledge-workspace/workspace-intent-driven-listening-request
+test('a typed dialogue request reuses an uninserted reading without enabling recording', async ({
+    page,
+}, info) => {
+    test.setTimeout(240_000);
+    const assertRuntime = runtimeErrors(page);
+    await signup(page, info);
+    await createDraft(page);
+
+    const editor = page.getByRole('textbox', { name: 'Document', exact: true });
+    const tutor = page.getByRole('region', {
+        name: 'Language tutor',
+        exact: true,
+    });
+    const question = tutor.getByLabel('Your question');
+
+    await question.fill('Uninserted French reading fixture');
+    await tutor.getByRole('button', { name: 'Send', exact: true }).click();
+
+    const firstComplete = tutor
+        .getByRole('article', {
+            name: 'Your lesson is ready',
+            exact: true,
+        })
+        .last();
+    await expect(firstComplete).toBeVisible();
+    await expect(
+        firstComplete.getByText('1 of 1 parts ready', { exact: true }),
+    ).toBeVisible();
+    await expect(editor.locator('[data-learning-block-id]')).toHaveCount(0);
+
+    await expect(
+        tutor.getByRole('button', { name: 'New recording', exact: true }),
+    ).toHaveCount(0);
+
+    const prompt =
+        'Create a two-speaker dialogue in French, up to one minute long, discussing the text. Then add one listening comprehension question based on the dialogue.';
+    const submittedPayloads: unknown[] = [];
+    page.on('request', (request) => {
+        if (request.method() === 'POST' && request.url().endsWith('/turns')) {
+            submittedPayloads.push(request.postDataJSON());
+        }
+    });
+    await question.fill(prompt);
+    await tutor.getByRole('button', { name: 'Send', exact: true }).click();
+    await expect.poll(() => submittedPayloads).toHaveLength(1);
+    expect(submittedPayloads[0]).not.toHaveProperty('includeListeningSpeech');
+
+    const approval = tutor.getByRole('article', {
+        name: 'Listening lesson',
+        exact: true,
+    });
+    await expect(approval).toBeVisible();
+    await expect(approval).toContainText(
+        'Covers the recording and the remaining lesson content.',
+    );
+    await expect(
+        approval.getByRole('button', {
+            name: 'Generate recording',
+            exact: true,
+        }),
+    ).toBeVisible();
+    await approval
+        .getByRole('button', { name: 'Generate recording', exact: true })
+        .click();
+
+    const complete = tutor
+        .getByRole('article', {
+            name: 'Your lesson is ready',
+            exact: true,
+        })
+        .last();
+    await expect(complete).toBeVisible();
+    await expect(
+        complete.getByText('2 of 2 parts ready', { exact: true }),
+    ).toBeVisible();
+    expect(submittedPayloads).toHaveLength(1);
+    await expect(
+        tutor.getByText(
+            'To create a recording, enable speech generation in chat and send your request.',
+            { exact: false },
+        ),
+    ).toHaveCount(0);
+
+    await complete.getByRole('button', { name: 'Review', exact: true }).click();
+    const review = page.getByRole('region', {
+        name: 'Review proposed content',
+        exact: true,
+    });
+    await expect(review.locator('section[data-lesson-part]')).toHaveCount(1);
+    await expect(
+        review.locator('audio[aria-label="Rendez-vous à la gare"]'),
+    ).toHaveCount(1);
+    await expect(review).toContainText('Listen for meaning');
+    const player = review.locator('audio[aria-label="Rendez-vous à la gare"]');
+    await review
+        .getByRole('button', {
+            name: 'Play: Rendez-vous à la gare',
+            exact: true,
+        })
+        .click();
+    await expect
+        .poll(() =>
+            player.evaluate((audio) => (audio as HTMLAudioElement).currentTime),
+        )
+        .toBeGreaterThan(0);
+    expect(
+        await player.evaluate((audio) => (audio as HTMLAudioElement).duration),
+    ).toBeLessThanOrEqual(60);
+    await expect(
+        review.getByRole('button', { name: 'Show answer', exact: true }),
+    ).toHaveCount(1);
+
+    await review
+        .getByRole('button', { name: 'Insert remaining at end', exact: true })
+        .click();
+    await expect(editor.locator('[data-learning-block-id]')).toHaveCount(2);
+    await expect(editor.locator('[data-audio-block]')).toHaveCount(1);
+    await review
+        .getByRole('button', { name: 'Back to chat', exact: true })
+        .click();
+
+    await waitForRecovery(page);
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(
+        page.locator('[data-workspace-topbar] [data-state="saved"]'),
+    ).toBeVisible();
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(editor.locator('[data-learning-block-id]')).toHaveCount(2);
+    await expect(editor.locator('[data-audio-block]')).toHaveCount(1);
+
+    await capture(page, info, 'workspace-intent-driven-listening');
     assertRuntime();
 });
 

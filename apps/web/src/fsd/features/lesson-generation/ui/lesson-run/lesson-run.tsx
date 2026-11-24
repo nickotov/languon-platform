@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type {
     ConversationEditorContext,
+    ConversationActionQuote,
     GenerationRunSummary,
 } from '@languon/contracts';
 import type { ConversationSessionRequest } from '@/fsd/entities/conversation';
@@ -28,6 +29,8 @@ export function LessonRun({
     busy,
     reconnecting,
     stopping,
+    updatedRecordingQuote,
+    recordingPending = false,
     actionNotice,
     continueBlocked,
     onAction,
@@ -44,9 +47,11 @@ export function LessonRun({
     busy: boolean;
     reconnecting: boolean;
     stopping: boolean;
+    recordingPending?: boolean;
+    updatedRecordingQuote?: ConversationActionQuote | null;
     actionNotice?: ReactNode;
     continueBlocked: boolean;
-    onAction(action: LessonRunAction): void;
+    onAction(action: LessonRunAction, confirmedQuoteId?: string): void;
     onAdjust(run: GenerationRunSummary): void;
     captureSourceContext?:
         (() => Promise<ConversationEditorContext | undefined>) | undefined;
@@ -87,7 +92,10 @@ export function LessonRun({
         ],
         queryFn: ({ signal }) =>
             lessonRunsApi.detail(request, run.conversationId, run.id, signal),
-        enabled: run.state === 'paused' && !run.automation?.enabled,
+        enabled:
+            run.state === 'paused' &&
+            run.pauseReason !== 'recording-confirmation' &&
+            !run.automation?.enabled,
         staleTime: Infinity,
         refetchOnWindowFocus: false,
         retry: false,
@@ -104,6 +112,10 @@ export function LessonRun({
                 ? { acknowledgedUncertainTurnId: run.uncertainTurnId }
                 : {}),
         });
+    }
+
+    function submitRecording(quoteId?: string) {
+        onAction({ kind: 'continue', run }, quoteId);
     }
 
     function openPreview() {
@@ -204,6 +216,11 @@ export function LessonRun({
                 reconnecting={reconnecting}
                 continueBlocked={continueBlocked}
                 onContinue={continueRun}
+                recordingQuote={
+                    updatedRecordingQuote ?? run.recordingApproval?.quote
+                }
+                recordingPending={recordingPending}
+                onRecordingDecision={submitRecording}
                 onStop={stop}
                 onAdjust={adjust}
                 onDiscard={openDiscard}

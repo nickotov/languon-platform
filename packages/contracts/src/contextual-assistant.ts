@@ -1,3 +1,8 @@
+import { ConversationActionQuoteSchema } from './conversation-action-quote';
+export {
+    ConversationActionQuoteSchema,
+    type ConversationActionQuote,
+} from './conversation-action-quote';
 import { z } from 'zod';
 import { LessonPartIdSchema } from './lesson-part-identity';
 import { createInteractiveKnowledgeBodySchema } from './knowledge-interactive';
@@ -854,18 +859,6 @@ export const ConversationStreamUnavailableSchema = z
             .optional(),
     })
     .strict();
-export const ConversationActionQuoteSchema = z
-    .object({
-        scope: z.enum(['lesson-if-planned', 'listening-lesson']).optional(),
-        id: z.uuid(),
-        maximumCredits: z.string().regex(/^(0|[1-9][0-9]*)(\.[0-9]{1,3})?$/u),
-        approximateOutputTokens: z.number().int().min(1).max(10000),
-        expiresAt: z.iso.datetime(),
-    })
-    .strict();
-export type ConversationActionQuote = z.infer<
-    typeof ConversationActionQuoteSchema
->;
 /** Bounded diagnostics are retained for support; product UI maps known codes only. */
 export const ConversationErrorResponseSchema = z.object({
     error: z.object({
@@ -932,8 +925,21 @@ export const ConversationResponseMetadataSchema = z
             'limitation',
         ]),
         documentUse: z.boolean(),
+        readingChoices: z
+            .array(z.string().trim().min(1).max(240))
+            .min(2)
+            .max(8)
+            .optional(),
     })
     .strict()
+    .refine(
+        (value) =>
+            !value.readingChoices ||
+            (value.kind === 'clarification' &&
+                new Set(value.readingChoices).size ===
+                    value.readingChoices.length),
+        'Reading choices must be distinct clarification actions.',
+    )
     .refine(
         (value) =>
             !value.documentUse ||
@@ -1068,7 +1074,6 @@ export type UpdateConversationRequest = z.infer<
 export const SubmitConversationTurnRequestSchema = z
     .object({
         requestId: z.uuid(),
-        includeListeningSpeech: z.literal(true).optional(),
         exerciseRequest: ExerciseGenerationRequestSchema.optional(),
         promptMentions: ConversationPromptMentionsSchema.optional(),
         confirmedQuoteId: z.uuid().optional(),

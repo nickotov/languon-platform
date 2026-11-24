@@ -1,3 +1,4 @@
+import { listeningRecordingFailure } from '../../application/listening-script';
 import { applyExercisePickerChoices } from '../../application/exercise-picker-resolution';
 import { applyExerciseMentionChoices } from '../../application/exercise-mention-resolution';
 import { randomUUID } from 'node:crypto';
@@ -16,6 +17,7 @@ const recording: LearningContentBrief = {
             kind: 'audio',
             language: 'fr',
             speakerCount: 2,
+            maxDurationSeconds: 60,
             instruction: 'A dialogue at the station.',
         },
     ],
@@ -56,6 +58,25 @@ const audio = {
 };
 
 describe('listening lesson generation', () => {
+    it.each([
+        ['speech_decoder_unavailable', 'speech-decoder-unavailable'],
+        ['speech_duration_exceeded', 'recording-too-long'],
+        ['speech_voice_unavailable', 'speech-voice-unavailable'],
+    ])('reports the specific recording failure %s', (code, reason) => {
+        expect(
+            listeningRecordingFailure(
+                { code, privateDetail: 'fixture' },
+                'scene',
+            ),
+        ).toMatchObject({
+            generationFailure: {
+                code: 'admission-blocked',
+                admissionReason: reason,
+                taskId: 'scene',
+            },
+        });
+    });
+
     it('saves the recording before exercises and restores a captured playable source', () => {
         const { plan, sources } = createGenerationPlan(
             { tasks: [...recording.tasks, task] },
@@ -73,7 +94,11 @@ describe('listening lesson generation', () => {
             }).brief.tasks,
         ).toEqual(
             expect.arrayContaining([
-                expect.objectContaining({ kind: 'audio', speakerCount: 2 }),
+                expect.objectContaining({
+                    kind: 'audio',
+                    speakerCount: 2,
+                    maxDurationSeconds: 60,
+                }),
                 expect.objectContaining({
                     source: { kind: 'task', taskId: 'scene' },
                 }),
@@ -145,6 +170,71 @@ describe('listening lesson generation', () => {
             }),
         );
     });
+
+    it.each([
+        ['fr', 'Le train arrive à la gare dans quelques minutes.'],
+        ['zh', '今天我们一起乘坐火车前往北京参观博物馆。'],
+    ])(
+        'repairs an overlong %s script before spending on speech',
+        async (language, longLine) => {
+            const generate = vi
+                .fn()
+                .mockResolvedValueOnce({
+                    tasks: [
+                        {
+                            taskId: 'scene',
+                            blocks: [
+                                {
+                                    ...script,
+                                    utterances: script.utterances.map(
+                                        (line) => ({ ...line, text: longLine }),
+                                    ),
+                                },
+                            ],
+                        },
+                    ],
+                })
+                .mockResolvedValueOnce({
+                    tasks: [{ taskId: 'scene', blocks: [script] }],
+                });
+            const materialize = vi.fn().mockResolvedValue({
+                ...audio,
+                language,
+                transcript: { ...audio.transcript, language },
+            });
+            const result = await createLearningContentAuthoring({
+                run,
+                generate,
+                materializeListeningRecording: materialize,
+                onValidatedBatch: async () => {},
+                readBudget: () => ({
+                    remainingCalls: 5,
+                    remainingOutputTokens: 12_000,
+                }),
+            }).generate(
+                {
+                    tasks: [
+                        {
+                            ...recording.tasks[0]!,
+                            language,
+                            maxDurationSeconds: 4,
+                        },
+                    ],
+                },
+                new AbortController().signal,
+            );
+
+            expect(result.status).toBe('ready');
+            expect(generate).toHaveBeenCalledTimes(2);
+            expect(generate.mock.calls[1]![0].prompt).toContain(
+                'Recording must fit 4 seconds',
+            );
+
+            expect(materialize).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({ script, maxDurationSeconds: 4 }),
+            );
+        },
+    );
 
     it('grounds a dictation in the completed recording and publishes one playable set', async () => {
         const generate = vi
@@ -246,7 +336,6 @@ describe('listening lesson generation', () => {
             planned,
             false,
             [],
-            true,
         );
 
         expect(picker).toMatchObject({
@@ -272,7 +361,6 @@ describe('listening lesson generation', () => {
             planned,
             false,
             undefined,
-            true,
         );
 
         expect(mention).toMatchObject({

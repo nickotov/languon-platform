@@ -59,6 +59,10 @@ the script. Fixture mode uses two synthetic profiles to verify timing and access
 
 Production also requires working unprivileged Bubblewrap namespaces and prlimit. The readiness probe runs FFmpeg in the same network-isolated sandbox used for decoding. If the runtime blocks namespaces, synthesis fails before utterance admission. Verify this on the deployment host before enabling new recordings.
 
+For a requested duration limit the plan carries an explicit maximum in seconds. Script validation budgets for speech and pauses before synthesis. Assembly measures the final recording, including 250 ms between turns. A slight overshoot can be corrected locally with up to 15% pitch-preserving speedup. When the complete dialogue still exceeds the limit, the lesson asks for a shorter plan before publishing the audio.
+
+The validated plan triggers speech admission. An eligible prior lesson quote can cover speech from its remaining credit ceiling. When a new quote is required, the chat presents it on the same lesson card. No provider work starts from an unconfirmed quote.
+
 A lesson with a new recording divides its operator cost ceiling equally between text and speech. It divides the customer credit ceiling when both are payable. Each successfully synthesized utterance settles separately. Stopping before assembly can therefore leave a charge for completed utterances. Unused holds are released, and resuming reuses completed audio.
 
 Host API processes require FFmpeg on `PATH`. Run `ffmpeg -version` in the API

@@ -37,6 +37,12 @@ export function conversationReadContentProposal(
             result[0]?.['snapshot'],
         );
 
-        return { id: proposal.id, body: proposal.body };
+        return {
+            id: proposal.id,
+            body: proposal.body,
+            publishedAt: proposal.createdAt,
+            sameBranch:
+                proposal.branchId === turn.sourceSnapshot.blockTarget?.branchId,
+        };
     });
 }

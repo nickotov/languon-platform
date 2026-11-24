@@ -110,6 +110,12 @@ const en = {
         'Another response is in progress. Wait for it to finish and refresh.',
     reviewCurrent:
         'The lesson has changed. Refresh and review its current progress.',
+    voiceUnavailable:
+        'The voices required for this recording are unavailable. Ask an administrator to check the voice settings for this language.',
+    decoderUnavailable:
+        'Audio processing is unavailable on this server. An administrator needs to check the audio decoder before you retry.',
+    recordingTooLong:
+        'The recording exceeded your time limit. Adjust the plan to shorten the dialogue or allow a longer recording.',
     authorityConfig: 'Review the AI budget in Settings before continuing.',
     uncertainAction:
         'The request could not be confirmed. Refresh to check progress before trying again.',
@@ -260,6 +266,12 @@ const ru: typeof en = {
     turnActive:
         'Сейчас готовится другой ответ. Дождитесь его завершения и обновите данные.',
     reviewCurrent: 'Урок изменился. Обновите данные и проверьте готовые части.',
+    voiceUnavailable:
+        'Нужные для записи голоса недоступны. Попросите администратора проверить настройки голосов для этого языка.',
+    decoderUnavailable:
+        'Сервер не может обработать аудио. Перед повторной попыткой администратору нужно проверить аудиодекодер.',
+    recordingTooLong:
+        'Запись получилась длиннее заданного времени. Измените план: сократите диалог или увеличьте его длительность.',
     authorityConfig: 'Проверьте бюджет ИИ в настройках перед продолжением.',
     uncertainAction:
         'Не удалось подтвердить запрос. Обновите данные и проверьте прогресс перед повтором.',

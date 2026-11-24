@@ -26,6 +26,7 @@ export type ConversationWorkerStore = Pick<
     | 'propose'
     | 'proposeContent'
     | 'proposeContentBatch'
+    | 'readGeneratedReadings'
     | 'readContentProposal'
     | 'proposeDictionarySnippet'
     | 'readDictionarySnippet'
@@ -168,6 +169,7 @@ export class ConversationWorkerService {
                         turn.source.kind !== 'knowledge' ||
                         isReadOnlyKnowledgeSource(turn.source) ||
                         !target ||
+                        turn.execution.permitsListeningRecording !== true ||
                         !this.dependencies.prepareListeningRecording ||
                         !this.dependencies.store.freezeListeningScript
                     ) {
@@ -188,6 +190,9 @@ export class ConversationWorkerService {
                             revision: request.revision,
                             taskId: request.taskId,
                             language: request.language,
+                            ...(request.maxDurationSeconds !== undefined && {
+                                maxDurationSeconds: request.maxDurationSeconds,
+                            }),
                             ownerId: turn.ownerId,
                             noteId: turn.source.id,
                             branchId: target.branchId,
@@ -213,10 +218,6 @@ export class ConversationWorkerService {
                         ...recording,
                     };
                 },
-                canGenerateListeningRecording: Boolean(
-                    turn.execution.permitsListeningRecording === true &&
-                    this.dependencies.prepareListeningRecording,
-                ),
                 conversationId: turn.conversationId,
                 readOnlySource: isReadOnlyKnowledgeSource(turn.source),
                 ownerId: turn.ownerId,
@@ -333,6 +334,10 @@ export class ConversationWorkerService {
                         validationIds,
                     );
                 },
+                ...(this.dependencies.store.readGeneratedReadings && {
+                    readGeneratedReadings: () =>
+                        this.dependencies.store.readGeneratedReadings!(turn),
+                }),
                 ...(this.dependencies.store.readContentProposal
                     ? {
                           readContentProposal: async (id: string) => {

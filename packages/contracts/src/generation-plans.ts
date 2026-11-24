@@ -99,6 +99,7 @@ export const GenerationTaskSchema = z.discriminatedUnion('kind', [
             ...materialFields,
             kind: z.literal('audio'),
             speakerCount: z.union([z.literal(1), z.literal(2)]),
+            maxDurationSeconds: z.number().int().positive().max(120).optional(),
         })
         .strict(),
     z

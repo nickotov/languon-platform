@@ -499,7 +499,7 @@ async function verifyWholeLessonQuote(
     });
 
     await expect(initialConsent).toContainText(
-        'covers the entire lesson, including automatic retries',
+        'covers the entire lesson, including requested recordings and automatic retries',
     );
 
     await expect(initialConsent).toContainText(

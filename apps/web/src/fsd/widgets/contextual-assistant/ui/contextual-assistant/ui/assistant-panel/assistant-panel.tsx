@@ -336,6 +336,11 @@ export function AssistantPanel(
                                     }
                                     workspaceTargets={panel.proposalTargets}
                                     onSuggest={chat.replaceQuestion}
+                                    onChooseReading={
+                                        workspace && !panel.busy
+                                            ? panel.send
+                                            : undefined
+                                    }
                                     proposalRootId={workspace?.proposalRootId}
                                     onReviewProposal={foldMobileForReview}
                                     workspace={workspace}
@@ -520,14 +525,6 @@ export function AssistantPanel(
                                 }
                                 onGenerateExercises={
                                     workspace ? openExercisePicker : undefined
-                                }
-                                includeListeningSpeech={
-                                    panel.includeListeningSpeech
-                                }
-                                onToggleListeningSpeech={
-                                    workspace
-                                        ? panel.toggleListeningSpeech
-                                        : undefined
                                 }
                                 exerciseRequest={panel.exercises.request}
                                 onClearExerciseRequest={panel.exercises.clear}

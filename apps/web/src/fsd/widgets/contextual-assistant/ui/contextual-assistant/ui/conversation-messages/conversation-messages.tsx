@@ -45,6 +45,7 @@ export function ConversationMessages({
     onContinue,
     onPropose,
     onSuggest,
+    onChooseReading,
     children,
     sourceKind,
     contextLabel,
@@ -64,6 +65,7 @@ export function ConversationMessages({
     onContinue?: (() => void) | undefined;
     onPropose?: ((message?: ConversationUIMessage) => void) | undefined;
     onSuggest?: (text: string) => void;
+    onChooseReading?: ((title: string) => void) | undefined;
     children?: ReactNode;
     sourceKind?: ConversationSource['kind'] | undefined;
     contextLabel?: string | undefined;
@@ -227,7 +229,7 @@ export function ConversationMessages({
                             editorEmpty={workspace?.editorCharacters === 0}
                         />
                     )}
-                    {messages.map(({ message, changed, turn }) => {
+                    {messages.map(({ message, changed, turn }, index) => {
                         const result =
                             message.role === 'assistant' &&
                             message.metadata?.turnId
@@ -270,6 +272,11 @@ export function ConversationMessages({
                                     ''
                                 }
                                 onRetry={onRetry}
+                                onChooseReading={
+                                    index === messages.length - 1
+                                        ? onChooseReading
+                                        : undefined
+                                }
                                 onContinue={onContinue}
                                 onPropose={onPropose}
                                 workspaceTargetId={

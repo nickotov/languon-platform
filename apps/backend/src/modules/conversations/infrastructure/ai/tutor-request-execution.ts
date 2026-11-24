@@ -1,3 +1,4 @@
+import { resolveListeningReading } from './listening-reading-source';
 import { ConversationError } from '../../domain/conversation';
 import { createGenerationPlan, bodyBlocks } from './learning-generation-plan';
 import {
@@ -158,12 +159,25 @@ export async function executeTutorRequest(
         choices === undefined
             ? undefined
             : ExerciseGenerationRequestSchema.parse(choices);
-    const planned = TutorRequestResolutionSchema.parse(
-        await resolveRequest(
-            buildTutorPlannerPrompt(input, state, history),
-            `${input.operationId}:planning`,
-        ),
+    const selectedReading = state.pendingReadingChoices?.find(
+        (choice) => choice.label === input.message.content.trim(),
     );
+    const planned =
+        selectedReading && state.pending
+            ? TutorRequestResolutionSchema.parse({
+                  kind: 'generate',
+                  replyLanguage: state.replyLanguage ?? 'en',
+                  brief: state.pending,
+                  continuesPending: false,
+              })
+            : TutorRequestResolutionSchema.parse(
+                  await resolveRequest(
+                      buildTutorPlannerPrompt(input, state, history),
+                      `${input.operationId}:planning`,
+                  ),
+              );
+
+    state.pendingReadingChoices = undefined;
     const mentionChoices = ConversationPromptMentionsSchema.parse(
         tutorMessageModelContent(input.message).promptMentions ?? [],
     );
@@ -175,7 +189,6 @@ export async function executeTutorRequest(
         planned,
         Boolean(frozenSources.selection) || mentionedSourceIds.length > 0,
         exerciseRequest,
-        input.canGenerateListeningRecording,
     );
     const resolution = exerciseRequest
         ? applyExercisePickerChoices(
@@ -188,7 +201,6 @@ export async function executeTutorRequest(
                       tutorMessageModelContent(input.message).blockReferences ??
                           [],
                   ),
-              input.canGenerateListeningRecording,
           )
         : resolvedMentions;
 
@@ -262,6 +274,7 @@ export async function executeTutorRequest(
                         ? {
                               pendingSources: undefined,
                               pendingProposalIds: undefined,
+                              pendingReadingChoices: undefined,
                               pendingExplanationOverrides: undefined,
                           }
                         : {}),
@@ -285,13 +298,19 @@ export async function executeTutorRequest(
             | 'conversation'
             | 'generation'
             | 'revision',
+        readingChoices?: string[],
     ) => {
         if (pendingPlanningReceipts.length) {
             await saveState();
         }
 
         signal.throwIfAborted();
-        await input.onResponseMetadata?.({ kind, documentUse: false });
+        await input.onResponseMetadata?.({
+            kind,
+            documentUse: false,
+            ...(readingChoices && { readingChoices }),
+        });
+
         await input.onDelta({ messageId: input.operationId, text });
         await input.memory.saveMessages([
             input.message,
@@ -521,11 +540,56 @@ export async function executeTutorRequest(
                   }),
               }
             : state.pending;
-    const requestedBrief = explanationPolicy(
+    const resolvedBrief = explanationPolicy(
         resolution.continuesPending
             ? mergePendingLearningContentBrief(pendingForMerge, extractedBrief)
             : extractedBrief,
     );
+    const reading = await resolveListeningReading({
+        brief: resolvedBrief,
+        selection: frozenSources.selection,
+        referencedBlocks: mentionedSourceIds,
+        replyLanguage: resolution.replyLanguage,
+        message: input.message.content,
+        selectedKey: selectedReading?.key,
+        matchedTitle: resolution.sourceMatch?.term,
+        read: async () => {
+            const durable = (await input.readGeneratedReadings?.()) ?? [];
+            const included = new Set(
+                durable.map((reading) => reading.key.split('/')[0]),
+            );
+
+            return [
+                ...durable,
+                ...Array.from(loaded.readingsByProposal)
+                    .reverse()
+                    .flatMap(([id, readings]) =>
+                        included.has(id) ? [] : readings,
+                    ),
+            ]
+                .sort((a, b) =>
+                    (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''),
+                )
+                .slice(0, 8);
+        },
+    });
+
+    if (!reading.brief) {
+        state.pending = resolvedBrief;
+        state.replyLanguage = resolution.replyLanguage;
+        state.pendingReadingChoices = reading.choices;
+        state.pendingSources = undefined;
+        state.pendingProposalIds = undefined;
+        await saveState();
+
+        return finishText(
+            reading.question,
+            'clarification',
+            reading.choices?.map((choice) => choice.label),
+        );
+    }
+
+    const requestedBrief = reading.brief;
     const globalProposalIds = requestedBrief.tasks.some((task) => !task.source)
         ? requestedProposalIds
         : [];
@@ -602,7 +666,25 @@ export async function executeTutorRequest(
     }
 
     const sources = sourceIds.flatMap((id) => loaded.blocks.get(id) ?? []);
-    if (sourceIds.some((id) => !loaded.blocks.has(id))) {
+    const recordingUsesAnotherBranch = requestedBrief.tasks.some((task) => {
+        if (task.kind !== 'audio') {
+            return false;
+        }
+
+        const proposals =
+            task.source?.kind === 'proposal'
+                ? [task.source.proposalId]
+                : !task.source && !task.sourceText
+                  ? globalProposalIds
+                  : [];
+
+        return proposals.some((id) => !loaded.readingsByProposal.has(id));
+    });
+
+    if (
+        recordingUsesAnotherBranch ||
+        sourceIds.some((id) => !loaded.blocks.has(id))
+    ) {
         return clarifySource();
     }
 
@@ -689,23 +771,6 @@ export async function executeTutorRequest(
     const normalized = normalizeLearningContentDefaults(
         explanationPolicy(brief),
     );
-
-    if (
-        normalized.brief.tasks.some((task) => task.kind === 'audio') &&
-        !input.canGenerateListeningRecording
-    ) {
-        const text = {
-            ru: 'Для новой записи включите озвучивание в чате и отправьте запрос. Также можно выбрать готовый аудиоблок с расшифровкой.',
-            fr: 'Pour créer un enregistrement, activez la synthèse vocale dans le chat puis envoyez votre demande. Vous pouvez aussi choisir un bloc audio avec transcription.',
-            es: 'Para crear una grabación, activa la síntesis de voz en el chat y envía tu solicitud. También puedes elegir un bloque de audio con transcripción.',
-        };
-
-        return finishText(
-            text[resolution.replyLanguage.split('-')[0] as keyof typeof text] ??
-                'To create a recording, enable speech generation in chat and send your request. You can also select an existing audio block with a transcript.',
-            'limitation',
-        );
-    }
 
     if (
         input.onGenerationStart &&

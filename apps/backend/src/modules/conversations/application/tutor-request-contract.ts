@@ -120,6 +120,18 @@ export const TutorRequestStateSchema = z
             )
             .max(8)
             .optional(),
+        pendingReadingChoices: z
+            .array(
+                z
+                    .object({
+                        key: z.string().max(150),
+                        label: z.string().max(240),
+                    })
+                    .strict(),
+            )
+            .min(2)
+            .max(8)
+            .optional(),
         pendingProposalIds: z.array(z.uuid()).max(8).optional(),
         pendingSources: z
             .object({

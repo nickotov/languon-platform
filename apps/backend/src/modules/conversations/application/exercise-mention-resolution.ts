@@ -10,7 +10,6 @@ export function applyExerciseMentionChoices(
     planned: TutorRequestResolution,
     hasSource: boolean,
     explicitRequest?: ExerciseGenerationRequest,
-    newRecordingAuthorized = false,
 ): TutorRequestResolution {
     const ids = [
         ...new Set(
@@ -29,7 +28,6 @@ export function applyExerciseMentionChoices(
     }
 
     const audio =
-        newRecordingAuthorized &&
         planned.brief.tasks.length === 2 &&
         ids.every((id) => id.startsWith('L'))
             ? planned.brief.tasks.find((item) => item.kind === 'audio')

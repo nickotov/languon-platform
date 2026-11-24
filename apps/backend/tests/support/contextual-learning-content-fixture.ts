@@ -75,6 +75,63 @@ function planningSourceCatalog(
 
 /** Scripted provider outputs prove wiring only, never natural-language intent quality. */
 export function fixtureRequestResolution(question: string, prompt: unknown) {
+    if (question === 'Uninserted French reading fixture') {
+        return {
+            kind: 'generate',
+            replyLanguage: 'en',
+            brief: {
+                tasks: [
+                    {
+                        id: 'uninserted-reading',
+                        kind: 'prose',
+                        instruction:
+                            'Write a concise French reading about democratic debate.',
+                        language: 'fr',
+                    },
+                ],
+                outputOrder: ['uninserted-reading'],
+            },
+        };
+    }
+
+    if (
+        question ===
+        'Create a two-speaker dialogue in French, up to one minute long, discussing the text. Then add one listening comprehension question based on the dialogue.'
+    ) {
+        return {
+            kind: 'generate',
+            replyLanguage: 'en',
+            brief: {
+                tasks: [
+                    {
+                        id: 'intent-dialogue',
+                        kind: 'audio',
+                        instruction:
+                            'Write a French dialogue that discusses the generated reading.',
+                        language: 'fr',
+                        speakerCount: 2,
+                        maxDurationSeconds: 60,
+                        source: { kind: 'selection' },
+                    },
+                    {
+                        id: 'intent-dialogue-check',
+                        kind: 'exercises',
+                        instruction: 'Check understanding of the dialogue.',
+                        language: 'fr',
+                        explanationLanguage: 'fr',
+                        source: {
+                            kind: 'task',
+                            taskId: 'intent-dialogue',
+                        },
+                        count: 1,
+                        activities: [{ activityId: 'L01', count: 1 }],
+                    },
+                ],
+                outputOrder: ['intent-dialogue', 'intent-dialogue-check'],
+            },
+        };
+    }
+
     if (question === 'Listening lesson fixture') {
         return {
             kind: 'generate',
@@ -665,6 +722,16 @@ export function fixtureAuthoringOutput(prompt: unknown) {
 
     const tasks = brief.tasks.map((task) => {
         if (task.kind === 'audio') {
+            if (
+                task.id === 'intent-dialogue' &&
+                task.sourceText !==
+                    'La démocratie française repose sur le débat public.'
+            ) {
+                throw new Error(
+                    'Intent dialogue fixture requires the uninserted generated reading as its exact source.',
+                );
+            }
+
             return {
                 taskId: task.id,
                 blocks: [

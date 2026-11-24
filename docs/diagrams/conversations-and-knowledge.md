@@ -131,8 +131,8 @@ source_paths:
     - apps/web/src/fsd/features/lesson-generation/lib/lesson-task-unit-progress.ts
     - apps/web/src/fsd/features/lesson-generation/lib/lesson-task-status.ts
     - apps/web/src/fsd/features/lesson-generation/ui/lesson-run-card/lesson-run-card.tsx
-source_fingerprint: sha256:b3d1ce3656eb67c967923c59104448007e91d8adf5ea1033ed8207edd3715e59
-reviewed: 2026-11-23
+source_fingerprint: sha256:45942a0fa880e5de1e3584b0d2538d5734e2408629344aa0f7531e1ae5ff8e6e
+reviewed: 2026-11-24
 ---
 
 # Conversations and Knowledge workspace

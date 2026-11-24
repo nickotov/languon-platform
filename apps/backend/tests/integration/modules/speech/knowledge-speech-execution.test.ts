@@ -356,6 +356,21 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 conversationId: turn!.conversationId,
                 noteId: note.id,
                 branchId: target.branchId,
+                remainingCredits: 0n,
+                remainingProviderMicros: 0n,
+                preauthorizedCredits: 2000n,
+            });
+
+            await expect(
+                speech.store.enqueueListeningUtterances(admissions),
+            ).rejects.toMatchObject({
+                code: 'listening_authorization_required',
+            });
+
+            expect(await db.select().from(speechJobsTable)).toHaveLength(0);
+            expect((await wallet()).reservedCredits).toBe(0n);
+            await db.update(listeningAllowances).set({
+                preauthorizedCredits: null,
                 remainingCredits: 2000n,
                 remainingProviderMicros: 100n,
             });

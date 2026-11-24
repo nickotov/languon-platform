@@ -291,6 +291,149 @@ async function run(input: TutorRunInput, responses: string[]) {
 }
 
 describe('Knowledge request planning with real pinned Mastra execution', () => {
+    it('saves a resolved listening plan once and defers authoring until recording admission', async () => {
+        const { input } = fixture();
+        input.message.content =
+            'Create a French dialogue and one listening comprehension question.';
+
+        const start = vi.fn(
+            async (
+                plan: GenerationPlan,
+                sources: GenerationSourceSnapshot[],
+            ) => ({
+                runId: randomUUID(),
+                revision: 1,
+                plan,
+                sources,
+                artifacts: [],
+                purpose: 'generation' as const,
+                awaitingRecordingAuthorization: true as const,
+            }),
+        );
+
+        input.onGenerationStart = start;
+        const { provider } = await run(input, [
+            JSON.stringify({
+                kind: 'generate',
+                replyLanguage: 'en',
+                brief: {
+                    tasks: [
+                        {
+                            id: 'scene',
+                            kind: 'audio',
+                            instruction: 'A French dialogue at the station.',
+                            language: 'fr',
+                            speakerCount: 2,
+                        },
+                        {
+                            id: 'check',
+                            kind: 'exercises',
+                            instruction: 'Check the conversation.',
+                            language: 'fr',
+                            explanationLanguage: 'fr',
+                            count: 1,
+                            activities: [{ activityId: 'L01', count: 1 }],
+                            source: { kind: 'task', taskId: 'scene' },
+                        },
+                    ],
+                },
+            }),
+        ]);
+
+        expect(start).toHaveBeenCalledOnce();
+        expect(start.mock.calls[0]![0].tasks.map((task) => task.kind)).toEqual([
+            'audio',
+            'exercises',
+        ]);
+
+        expect(provider.requests).toHaveLength(1);
+        expect(input.onContentProposal).not.toHaveBeenCalled();
+        expect(input.onResponseMetadata).toHaveBeenCalledWith({
+            kind: 'generation',
+            documentUse: false,
+        });
+    });
+
+    it('lets the learner choose an uninserted reading by title and resumes the saved dialogue plan without replanning', async () => {
+        const { input } = fixture();
+        input.message.content =
+            'Create a two-speaker dialogue in French, up to one minute long, discussing the selected text. Then add one listening comprehension question based on the dialogue.';
+
+        const readings = [
+            {
+                key: 'lesson-a/prose',
+                title: 'Les élections',
+                text: 'Le scrutin a lieu dimanche.',
+            },
+            {
+                key: 'lesson-b/prose',
+                title: 'La gare',
+                text: 'Le train quitte la gare à midi.',
+            },
+        ];
+
+        input.readGeneratedReadings = vi.fn(async () => readings);
+        const start = vi.fn<NonNullable<TutorRunInput['onGenerationStart']>>();
+        input.onGenerationStart = start;
+        const resolution = {
+            kind: 'generate',
+            replyLanguage: 'en',
+            brief: {
+                tasks: [
+                    {
+                        kind: 'audio',
+                        id: 'dialogue',
+                        language: 'fr',
+                        speakerCount: 2,
+                        instruction: 'Generate up to one minute of dialogue.',
+                        maxDurationSeconds: 60,
+                        source: { kind: 'generated-reading' },
+                    },
+                    {
+                        kind: 'exercises',
+                        id: 'listen',
+                        language: 'fr',
+                        instruction: 'Ask one question about this dialogue.',
+                        count: 1,
+                        activities: [{ activityId: 'L01', count: 1 }],
+                        source: { kind: 'task', taskId: 'dialogue' },
+                    },
+                ],
+            },
+        };
+
+        await run(input, [JSON.stringify(resolution)]);
+        expect(start).not.toHaveBeenCalled();
+        expect(input.onResponseMetadata).toHaveBeenCalledWith({
+            kind: 'clarification',
+            documentUse: false,
+            readingChoices: ['Les élections', 'La gare'],
+        });
+
+        input.message = {
+            ...input.message,
+            id: randomUUID(),
+            content: 'La gare',
+        };
+
+        // The saved requirements suffice. The first provider call would fail if the planner ran a second time.
+        const stop = new Error('captured frozen plan');
+        start.mockRejectedValueOnce(stop);
+        await expect(run(input, [])).rejects.toThrow(stop.message);
+        expect(start.mock.calls[0]?.[0].tasks).toMatchObject([
+            {
+                kind: 'audio',
+                speakerCount: 2,
+                sourceText: 'Le train quitte la gare à midi.',
+                maxDurationSeconds: 60,
+            },
+            {
+                kind: 'exercises',
+                inputs: [{ kind: 'task', taskId: 'dialogue' }],
+            },
+        ]);
+    });
+
     it('compiles a compact G03 response into a fully validated proposal through the pinned SDK', async () => {
         const { input } = fixture();
         input.message.content =

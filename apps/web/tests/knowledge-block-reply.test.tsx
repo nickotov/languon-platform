@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { ConversationMessageSchema } from '@languon/contracts';
 import type { ConversationUIMessage } from '../src/fsd/entities/conversation';
@@ -180,5 +180,51 @@ it('routes a failed lesson stage through its run instead of ordinary chat Retry 
 
     expect(
         screen.queryByRole('button', { name: 'Use in document' }),
+    ).not.toBeInTheDocument();
+});
+
+it('submits the chosen reading title only after a user selects it', () => {
+    const titles = ['La démocratie en France', 'Le Conseil constitutionnel'];
+    const metadata = ConversationMessageSchema.parse({
+        id: runId,
+        conversationId: runId,
+        turnId: runId,
+        role: 'assistant',
+        content: 'Which reading should the dialogue discuss?',
+        attachments: [],
+        toolCalls: [],
+        responseMetadata: {
+            kind: 'clarification',
+            documentUse: false,
+            readingChoices: titles,
+        },
+        status: 'complete',
+        sourceVersion: 'draft:1',
+        sourceProvenance: 'draft',
+        createdAt: '2026-11-16T00:00:00.000Z',
+    });
+    const choose = vi.fn();
+    const props = {
+        message: {
+            id: runId,
+            role: 'assistant',
+            metadata,
+            parts: [{ type: 'text', text: metadata.content }],
+        } as ConversationUIMessage,
+        changed: false,
+        turn: undefined,
+        active: false,
+        hasAssistant: true,
+        question: 'Generate a dialogue about our reading',
+        onRetry: vi.fn(),
+    };
+    const view = render(<TutorMessage {...props} onChooseReading={choose} />);
+    expect(choose).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: titles[1]! }));
+    expect(choose).toHaveBeenCalledExactlyOnceWith(titles[1]);
+    view.unmount();
+    render(<TutorMessage {...props} />);
+    expect(
+        screen.queryByRole('button', { name: titles[1]! }),
     ).not.toBeInTheDocument();
 });

@@ -1,3 +1,4 @@
+import { ConversationActionQuoteSchema } from '@languon/contracts';
 import { generationCommandState } from './generation-command-state';
 import { assertGenerationCapacity } from './generation-run-capacity';
 import { and, eq } from 'drizzle-orm';
@@ -11,6 +12,7 @@ import { captureConversationBlockTarget } from './conversation-block-target';
 import {
     generationContext,
     lockGenerationRun,
+    type GenerationRunRow,
     emitGenerationRun,
 } from './generation-run-context';
 import {
@@ -54,6 +56,14 @@ export async function prepareGenerationAdmission(
         throw conflict(
             'Stop the active response before changing or continuing this lesson.',
         );
+    }
+
+    if (
+        input.kind === 'generation' &&
+        (input.recordingAdmission === true) !==
+            (run.pauseReason === 'recording-confirmation')
+    ) {
+        throw conflict('Recording approval is no longer pending.');
     }
 
     const { uncertainTurnId, nextCommandNumber } = await generationCommandState(
@@ -148,11 +158,24 @@ export async function prepareGenerationAdmission(
     }
 
     const snapshot = { ...run.sourceSnapshot, blockTarget: currentTarget };
-    const generationAuthorization = input.automatic
+    // A resolved recording intent inherits the original planner's remaining operator
+    // envelope. A paid speech quote can authorize customer credits, never extra operator spend.
+    const authorizingRecording =
+        input.kind === 'generation' &&
+        run.pauseReason === 'recording-confirmation';
+    // Once the original envelope expires only a new, explicitly accepted quote may
+    // start the saved plan. The scheduler can prepare that offer, but cannot accept it.
+    const renewRecording =
+        authorizingRecording &&
+        !!run.automation &&
+        Date.parse(run.automation.expiresAt) <= persistence.now().getTime();
+    const inheritAuthority =
+        input.automatic || (authorizingRecording && !renewRecording);
+    const remaining = inheritAuthority
         ? await remainingGenerationAuthorization(tx, run)
         : undefined;
 
-    if (input.automatic && !generationAuthorization) {
+    if (inheritAuthority && !remaining) {
         throw new ConversationError(
             'generation_scope_change',
             'This lesson needs a fresh generation allowance.',
@@ -165,8 +188,50 @@ export async function prepareGenerationAdmission(
         run,
         context,
         snapshot,
-        generationAuthorization,
+        generationAuthorization: input.automatic ? remaining : undefined,
+        renewRecording,
+        recordingPlanAuthorization: authorizingRecording
+            ? remaining
+            : undefined,
     };
+}
+
+/** The offer and its reconnectable projection commit together under the run lock. */
+export async function prepareConversationQuote(
+    persistence: ConversationPersistenceContext,
+    tx: ConversationsTransaction,
+    run: GenerationRunRow | undefined,
+    requestId: string,
+    offered: unknown,
+) {
+    const quote = ConversationActionQuoteSchema.parse(offered);
+    if (!run) {
+        return { quote };
+    }
+
+    if (!run.automation || quote.scope !== 'listening-lesson') {
+        throw conflict('The recording allowance is unavailable.');
+    }
+
+    if (run.automation.recordingApproval?.quote.id === quote.id) {
+        return { quote };
+    }
+
+    await tx
+        .update(runs)
+        .set({
+            automation: {
+                ...run.automation,
+                admissionRetry: undefined,
+                recordingApproval: { requestId, quote },
+            },
+            updatedAt: persistence.now(),
+        })
+        .where(eq(runs.id, run.id));
+
+    await emitGenerationRun(persistence, tx, run.id);
+
+    return { quote };
 }
 
 export async function bindGenerationAdmission(
@@ -258,4 +323,18 @@ export async function bindGenerationAdmission(
         .where(eq(runs.id, input.runId));
 
     await emitGenerationRun(persistence, tx, input.runId);
+}
+
+export function generationCommandMetadata(
+    commandNumber?: number,
+    acknowledgedUncertainTurnId?: string,
+) {
+    return commandNumber
+        ? {
+              generationCommandNumber: commandNumber,
+              ...(acknowledgedUncertainTurnId
+                  ? { acknowledgedUncertainTurnId }
+                  : {}),
+          }
+        : {};
 }

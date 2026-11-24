@@ -5,12 +5,16 @@ import {
 import { chatAdmissionInput } from './conversation-chat-admission-input';
 import { generationAdmissionInput } from '../../ai/generation-admission-input';
 import { persistConversationAdmissionMessages } from './conversation-admission-messages';
-import { assertPreparedConversationCurrent } from './conversation-admission-snapshot';
+import {
+    applySubmittedDraftContext,
+    assertPreparedConversationCurrent,
+} from './conversation-admission-snapshot';
 import type { GenerationAdmission } from '../../../application/ports/generation-run';
-import { generationFingerprint } from '../../../application/generation-run-revisions';
 import {
     prepareGenerationAdmission,
     bindGenerationAdmission,
+    prepareConversationQuote,
+    generationCommandMetadata,
 } from './generation-run-admission';
 import {
     captureConversationBlockTarget,
@@ -20,7 +24,6 @@ import {
 import { prepareReferencedTutorMessage } from '../../../application/conversation-block-references';
 import {
     ChatPreferencesSchema,
-    ConversationActionQuoteSchema,
     type SubmitConversationTurnRequest,
 } from '@languon/contracts';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -106,12 +109,10 @@ export async function conversationSubmit(
                 true,
                 prepared?.chat.source,
             );
-            const fingerprint = generation
-                ? generationFingerprint({
-                      input: { ...input, confirmedQuoteId: undefined },
-                      generation,
-                  })
-                : conversationRequestFingerprint(input);
+            const fingerprint = conversationRequestFingerprint(
+                input,
+                generation,
+            );
             const [existing] = await tx
                 .select()
                 .from(turns)
@@ -275,22 +276,7 @@ export async function conversationSubmit(
                 }
             }
 
-            if (input.editorContext && !input.retryOf) {
-                snapshot.provenance = 'draft';
-                snapshot.version = `draft:${snapshot.version}`;
-                snapshot.scope = 'workspace';
-                snapshot.material = [];
-            } else if (input.draftContext && !input.retryOf) {
-                snapshot.provenance = 'draft';
-                snapshot.version = `draft:${snapshot.version}`;
-                snapshot.material = [
-                    {
-                        id: chat.sourceId,
-                        label: 'Current draft',
-                        content: input.draftContext.content,
-                    },
-                ];
-            }
+            applySubmittedDraftContext(input, snapshot, chat.sourceId);
 
             if (!input.retryOf && !chat.title) {
                 const generatedTitle = firstThreeWords(learnerContent);
@@ -424,11 +410,12 @@ export async function conversationSubmit(
                 inputTokenBound,
                 minimumInputBound,
                 ...lessonAdmissionOptions(
-                    input,
                     chat.source,
                     snapshot,
                     generation,
                     generationPrepared?.context,
+                    generationPrepared?.recordingPlanAuthorization,
+                    generationPrepared?.renewRecording,
                 ),
                 fingerprint,
                 ...(generation?.kind === 'generation'
@@ -454,9 +441,15 @@ export async function conversationSubmit(
             });
 
             if (execution.confirmationRequired) {
-                return {
-                    quote: ConversationActionQuoteSchema.parse(execution.quote),
-                };
+                return prepareConversationQuote(
+                    persistence,
+                    tx,
+                    generation?.recordingAdmission
+                        ? generationPrepared?.run
+                        : undefined,
+                    input.requestId,
+                    execution.quote,
+                );
             }
 
             const now = persistence.now();
@@ -473,19 +466,13 @@ export async function conversationSubmit(
                     authority,
                     sourceSnapshot: snapshot,
                     preferences: personalization.preferences,
-                    execution: generationPrepared?.commandNumber
-                        ? {
-                              ...execution,
-                              generationCommandNumber:
-                                  generationPrepared.commandNumber,
-                              ...(generation?.acknowledgedUncertainTurnId
-                                  ? {
-                                        acknowledgedUncertainTurnId:
-                                            generation.acknowledgedUncertainTurnId,
-                                    }
-                                  : {}),
-                          }
-                        : execution,
+                    execution: {
+                        ...execution,
+                        ...generationCommandMetadata(
+                            generationPrepared?.commandNumber,
+                            generation?.acknowledgedUncertainTurnId,
+                        ),
+                    },
                     ...conversationAdmissionBilling(execution),
                     portraitContext: personalization.context ?? null,
                     usage: {
@@ -499,7 +486,14 @@ export async function conversationSubmit(
                 })
                 .returning();
 
-            await persistListeningAllowance(tx, turn!, chat.sourceId);
+            await persistListeningAllowance(
+                tx,
+                turn!,
+                chat.sourceId,
+                generationPrepared?.recordingPlanAuthorization?.recordingConsent
+                    ?.rootTurnId,
+            );
+
             if (generation && generationPrepared) {
                 await bindGenerationAdmission(
                     persistence,

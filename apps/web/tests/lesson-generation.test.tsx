@@ -769,3 +769,154 @@ it('binds plan-adjustment consent to the reviewed uncertainty before sending a r
         acknowledgedUncertainTurnId: current.uncertainTurnId,
     });
 });
+
+it('shows the actual recording ceiling inline and submits the server-issued receipt once on approval', async () => {
+    const requestId = '77777777-7777-4777-8777-777777777777';
+    const listeningRun: GenerationRunSummary = {
+        ...lessonRun,
+        state: 'paused',
+        pauseReason: 'recording-confirmation',
+        recordingApproval: {
+            requestId,
+            quote: { ...quote, scope: 'listening-lesson' },
+        },
+    };
+    const { Harness, fetch } = capacityHarness(() =>
+        Response.json({ run: listeningRun, turn: lessonTurn }),
+    );
+
+    render(<Harness run={listeningRun} />, { wrapper });
+    const confirm = screen.getByRole('button', { name: 'Generate recording' });
+    expect(screen.getByText('Up to 2.5 credits')).toBeVisible();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(
+        screen.queryByRole('button', { name: 'Continue' }),
+    ).not.toBeInTheDocument();
+
+    expect(
+        fetch.mock.calls.filter(([, init]) => init?.method === 'POST'),
+    ).toHaveLength(0);
+
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+    await waitFor(() => {
+        const posts = fetch.mock.calls.filter(
+            ([, init]) => init?.method === 'POST',
+        );
+
+        expect(posts).toHaveLength(1);
+        expect(JSON.parse(String(posts[0]![1]!.body))).toMatchObject({
+            requestId,
+            confirmedQuoteId: quote.id,
+        });
+    });
+});
+
+it('refreshes an expired recording estimate inline and requires a fresh click on the updated price', async () => {
+    const listeningRun: GenerationRunSummary = {
+        ...lessonRun,
+        state: 'paused',
+        pauseReason: 'recording-confirmation',
+        recordingApproval: {
+            requestId: runId,
+            quote: {
+                ...quote,
+                scope: 'listening-lesson',
+                expiresAt: '2020-01-01T00:00:00.000Z',
+            },
+        },
+    };
+    const { Harness, fetch } = capacityHarness(() =>
+        Response.json(
+            {
+                error: {
+                    code: 'action_confirmation_required',
+                    message: 'Confirm',
+                    details: {
+                        quote: {
+                            ...quote,
+                            scope: 'listening-lesson',
+                            maximumCredits: '1.25',
+                        },
+                    },
+                },
+            },
+            { status: 409 },
+        ),
+    );
+
+    render(<Harness run={listeningRun} />, { wrapper });
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh estimate' }));
+    await screen.findByText('Up to 1.25 credits');
+    expect(
+        screen.getByRole('button', { name: 'Generate recording' }),
+    ).toBeEnabled();
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    const posts = fetch.mock.calls.filter(
+        ([, init]) => init?.method === 'POST',
+    );
+
+    expect(posts).toHaveLength(1);
+    expect(JSON.parse(String(posts[0]![1]!.body))).not.toHaveProperty(
+        'confirmedQuoteId',
+    );
+});
+
+it('keeps a capacity error on a pending recording but clears it when another tab starts the same plan', async () => {
+    const requestId = '77777777-7777-4777-8777-777777777777';
+    const awaiting: GenerationRunSummary = {
+        ...lessonRun,
+        activeTurnId: null,
+        state: 'paused',
+        pauseReason: 'recording-confirmation',
+        recordingApproval: {
+            requestId,
+            quote: { ...quote, scope: 'listening-lesson' },
+        },
+    };
+    const { Harness, fetch } = capacityHarness(() =>
+        Response.json(
+            {
+                error: {
+                    code: 'capacity_unavailable',
+                    message: 'Capacity is occupied.',
+                },
+            },
+            { status: 503 },
+        ),
+    );
+    let reconcile!: (value: GenerationRunSummary) => void;
+    function TwoTabs() {
+        const [run, setRun] = useState(awaiting);
+        reconcile = setRun;
+
+        return <Harness run={run} />;
+    }
+
+    render(<TwoTabs />, { wrapper });
+    fireEvent.click(screen.getByRole('button', { name: 'Generate recording' }));
+    await screen.findByText('capacity_unavailable');
+    act(() => reconcile({ ...awaiting, updatedAt: new Date().toISOString() }));
+    expect(screen.getByText('capacity_unavailable')).toBeVisible();
+    const {
+        recordingApproval: _approval,
+        pauseReason: _reason,
+        ...advanced
+    } = awaiting;
+
+    act(() =>
+        reconcile({
+            ...advanced,
+            state: 'running',
+            activeTurnId: lessonTurn.id,
+            lastCommandRequestId: requestId,
+        }),
+    );
+
+    expect(screen.queryByText('capacity_unavailable')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible();
+    expect(
+        fetch.mock.calls.filter(([, init]) => init?.method === 'POST'),
+    ).toHaveLength(1);
+});

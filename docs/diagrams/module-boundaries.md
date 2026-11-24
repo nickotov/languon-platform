@@ -47,8 +47,8 @@ source_paths:
     - docs/adr/0061-bounded-automatic-lesson-continuation.md
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-automation.ts
     - apps/backend/src/modules/conversations/interface/http/conversation-generation-preview.routes.ts
-source_fingerprint: sha256:1fb582ddcb3ba48daf0279e88c53779abe4098eabb7b57ff7cb92ba7661721d4
-reviewed: 2026-11-23
+source_fingerprint: sha256:21d7a47e7bb0efb4607e0dbe52334a8758fc671144b95c6aaa1a48452a73f2dd
+reviewed: 2026-11-24
 ---
 
 # Module and layer boundaries

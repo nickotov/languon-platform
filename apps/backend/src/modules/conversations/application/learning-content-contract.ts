@@ -16,6 +16,7 @@ export const LearningContentSourceSchema = z.discriminatedUnion('kind', [
         .object({ kind: z.literal('editor'), blockId: z.uuid().optional() })
         .strict(),
     z.object({ kind: z.literal('selection') }).strict(),
+    z.object({ kind: z.literal('generated-reading') }).strict(),
     z
         .object({
             kind: z.literal('task'),
@@ -74,6 +75,7 @@ export const LearningContentTaskSchema = z
         count: z.number().int().min(1).max(200).optional(),
         maxCount: z.number().int().min(1).max(200).optional(),
         speakerCount: z.union([z.literal(1), z.literal(2)]).optional(),
+        maxDurationSeconds: z.number().int().positive().max(120).optional(),
         targetWords: z.number().int().min(1).max(1200).optional(),
         formats: z
             .array(z.string().trim().min(1).max(80))
@@ -98,6 +100,24 @@ export const LearningContentBriefSchema = z
         ({ tasks }) =>
             new Set(tasks.map((task) => task.id)).size === tasks.length,
         'Task identities must be unique.',
+    )
+    .refine(
+        (brief) =>
+            brief.tasks.every(
+                (task) =>
+                    task.source?.kind !== 'generated-reading' ||
+                    task.kind === 'audio',
+            ),
+        'Only a recording task can request a reading from a prior lesson.',
+    )
+    .refine(
+        ({ tasks }) =>
+            tasks.every(
+                (task) =>
+                    task.maxDurationSeconds === undefined ||
+                    task.kind === 'audio',
+            ),
+        'Only a recording task can have a playback duration limit.',
     )
     .refine(
         (brief) => serializeLearningContentBrief(brief).length <= 60_000,

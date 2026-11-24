@@ -386,6 +386,11 @@ export function createLearningContentAuthoring(
                                     taskId: audio.task.id,
                                     validationId,
                                     language: audio.task.language!,
+                                    ...(audio.task.maxDurationSeconds !==
+                                        undefined && {
+                                        maxDurationSeconds:
+                                            audio.task.maxDurationSeconds,
+                                    }),
                                     script: audio.script,
                                 });
 

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { canUseResponseInDocument } from '../../../../lib/response-document-use';
 import { MessageBlockReferences } from '../block-reference-controls';
 import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
-import { Check } from 'lucide-react';
+import { BookOpen, Check } from 'lucide-react';
 import { KnowledgeContentProposalsForTurn } from '@/fsd/features/knowledge-notes';
 import { DictionarySnippetsForTurn } from '@/fsd/features/dictionary-chat-snippets';
 import type {
@@ -46,6 +46,7 @@ export function TutorMessage({
     question,
     onRetry,
     onContinue,
+    onChooseReading,
     onPropose,
     onAcceptWorkspaceProposal,
     workspaceTargetId,
@@ -66,6 +67,7 @@ export function TutorMessage({
     hasAssistant: boolean;
     question: string;
     onRetry(turn: ConversationTurn): void;
+    onChooseReading?: ((title: string) => void) | undefined;
     onContinue?: (() => void) | undefined;
     onPropose?: ((message?: ConversationUIMessage) => void) | undefined;
     workspaceTargetId?: string | undefined;
@@ -257,6 +259,35 @@ export function TutorMessage({
                         workspace={Boolean(onAcceptWorkspaceProposal)}
                     />
                 )}
+                {complete &&
+                !active &&
+                onChooseReading &&
+                canonical.responseMetadata?.kind === 'clarification' &&
+                canonical.responseMetadata.readingChoices?.length ? (
+                    <div className={styles.readingChoices}>
+                        {canonical.responseMetadata.readingChoices.map(
+                            (title) => (
+                                <Button
+                                    key={title}
+                                    type='button'
+                                    variant='secondary'
+                                    size='compact'
+                                    leadingIcon={
+                                        <BookOpen size={14} aria-hidden />
+                                    }
+                                    onClick={() => onChooseReading(title)}
+                                >
+                                    <span
+                                        dir='auto'
+                                        className={styles.readingTitle}
+                                    >
+                                        {title}
+                                    </span>
+                                </Button>
+                            ),
+                        )}
+                    </div>
+                ) : null}
                 {lesson}
                 {!isUser && (
                     <KnowledgeContentProposalsForTurn

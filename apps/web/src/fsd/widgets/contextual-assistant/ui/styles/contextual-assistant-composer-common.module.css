@@ -171,11 +171,6 @@
     font-weight: 500;
 }
 
-.exerciseButton[aria-pressed='true'] {
-    background: var(--primary-subtle);
-    color: var(--primary-default);
-}
-
 .selectButton {
     display: none;
 }

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ConversationActionQuoteSchema } from './conversation-action-quote';
 import { ConversationEditorContextSchema } from './conversation-editor-context';
 import {
     GenerationPlanSchema,
@@ -176,6 +177,9 @@ export const GenerationFailureSchema = z
                 'context-too-large',
                 'allowance-required',
                 'authority-expired',
+                'speech-voice-unavailable',
+                'speech-decoder-unavailable',
+                'recording-too-long',
                 'stage-limit',
                 'balance',
                 'capacity',
@@ -234,6 +238,7 @@ export const GenerationRunStateSchema = z.enum([
 ]);
 export const GenerationRunPauseReasonSchema = z.enum([
     'budget',
+    'recording-confirmation',
     'technical-failure',
     'interrupted',
     'stopped',
@@ -285,6 +290,15 @@ export const GenerationRunSummarySchema = z
         revision,
         state: GenerationRunStateSchema,
         pauseReason: GenerationRunPauseReasonSchema.optional(),
+        recordingApproval: z
+            .object({
+                requestId: z.uuid(),
+                quote: ConversationActionQuoteSchema.extend({
+                    scope: z.literal('listening-lesson'),
+                }),
+            })
+            .strict()
+            .optional(),
         tasks: z.array(GenerationTaskProgressSchema).min(1).max(8),
         completedTaskCount: z.number().int().min(0).max(8),
         totalTaskCount: z.number().int().min(1).max(8),
@@ -300,6 +314,19 @@ export const GenerationRunSummarySchema = z
     })
     .strict()
     .superRefine((run, ctx) => {
+        if (
+            run.recordingApproval &&
+            (run.state !== 'paused' ||
+                run.pauseReason !== 'recording-confirmation')
+        ) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['recordingApproval'],
+                message:
+                    'Recording approval must belong to a paused listening request.',
+            });
+        }
+
         if (run.uncertainTurnId && run.state !== 'paused') {
             ctx.addIssue({
                 code: 'custom',

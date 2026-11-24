@@ -73,6 +73,8 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             minimumInputBound: number;
             reserveToolContinuation?: boolean;
             generationAuthorization?: GenerationAutomaticAdmission;
+            recordingPlanAuthorization?: GenerationAutomaticAdmission;
+            renewRecording?: boolean;
         },
     ): Promise<Record<string, unknown>> => {
         await lockTextAiCapacity(tx);
@@ -244,22 +246,17 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             settings,
             customerBudget: budget,
         });
-        // Session authority uses the reviewed configured ceiling; each action
-        // still reserves its narrower predicted call envelope below.
-        const combined =
-            input.includeListeningSpeech === true &&
-            !input.generationAuthorization;
-        const speechMaximumProviderMicros = combined
-            ? Math.floor(execution.budget.maxCostMicrosPerAttempt / 2)
-            : 0;
-
-        execution.budget.maxCostMicrosPerAttempt -= speechMaximumProviderMicros;
-        const generationMaximumProviderCostMicros =
-            execution.budget.maxCostMicrosPerAttempt;
         const automatic = input.generationAuthorization;
+        const plannedRecording = input.recordingPlanAuthorization;
+        const prior = plannedRecording ?? automatic;
+        const stageDeadline = now.getTime() + 15 * 60_000;
+        const deadline = prior
+            ? Math.min(Date.parse(prior.expiresAt), stageDeadline)
+            : stageDeadline;
+
         if (
-            automatic &&
-            automatic.authorizationFingerprint !==
+            prior &&
+            prior.authorizationFingerprint !==
                 generationAuthorizationFingerprint
         ) {
             throw new ConversationError(
@@ -268,10 +265,55 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             );
         }
 
+        if (
+            prior &&
+            (!Number.isFinite(deadline) ||
+                deadline <= Date.now() ||
+                !Number.isSafeInteger(prior.maximumProviderCostMicros) ||
+                prior.maximumProviderCostMicros < 1)
+        ) {
+            throw new ConversationError(
+                'generation_scope_change',
+                'The original lesson allowance has expired, changed or been exhausted.',
+            );
+        }
+
+        // Split only what remains after planning. The text stage and synthesized
+        // utterances must fit inside the same original provider limit and deadline.
+        if (prior) {
+            execution.budget.maxCostMicrosPerAttempt = Math.min(
+                execution.budget.maxCostMicrosPerAttempt,
+                prior.maximumProviderCostMicros,
+            );
+        }
+
+        const combined = input.includeListeningSpeech === true && !automatic;
+        const speechMaximumProviderMicros = combined
+            ? Math.floor(execution.budget.maxCostMicrosPerAttempt / 2)
+            : 0;
+
+        if (combined && speechMaximumProviderMicros < 1) {
+            throw new ConversationError(
+                'generation_scope_change',
+                'The lesson has no remaining recording allowance.',
+            );
+        }
+
+        execution.budget.maxCostMicrosPerAttempt -= speechMaximumProviderMicros;
+        const generationMaximumProviderCostMicros =
+            execution.budget.maxCostMicrosPerAttempt;
+        const textCustomerPays = funding === 'customer' && !zeroCustomerTariff;
         const configuredBudgetMilli = budget ? parseCreditMilli(budget) : 0n;
-        const remainingCredits = automatic
-            ? BigInt(automatic.maximumCreditsMilli)
-            : configuredBudgetMilli;
+        // An operator-funded planner has no customer allowance. Any new paid
+        // speech in that case needs its own explicit combined quote below.
+        const recordingConsent =
+            plannedRecording?.recordingConsent?.remainingCreditsMilli;
+        const remainingCredits =
+            recordingConsent !== undefined
+                ? BigInt(recordingConsent)
+                : prior && (automatic || textCustomerPays)
+                  ? BigInt(prior.maximumCreditsMilli)
+                  : configuredBudgetMilli;
         const totalAuthorizedBudgetMilli =
             configuredBudgetMilli < remainingCredits
                 ? configuredBudgetMilli
@@ -284,7 +326,6 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             !!speechPolicy &&
             speechPolicy.funding !== 'operator' &&
             account.policy.effectiveMode !== 'unlimited';
-        const textCustomerPays = funding === 'customer' && !zeroCustomerTariff;
         const availableCombined =
             (textCustomerPays || speechCustomerPays) &&
             account.availableCredits < totalAuthorizedBudgetMilli
@@ -307,23 +348,6 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             combined && textCustomerPays
                 ? availableCombined - speechMaximumMilli
                 : totalAuthorizedBudgetMilli;
-
-        if (automatic) {
-            if (
-                !Number.isSafeInteger(automatic.maximumProviderCostMicros) ||
-                automatic.maximumProviderCostMicros < 1
-            ) {
-                throw new ConversationError(
-                    'generation_scope_change',
-                    'The approved generation budget is exhausted.',
-                );
-            }
-
-            execution.budget.maxCostMicrosPerAttempt = Math.min(
-                execution.budget.maxCostMicrosPerAttempt,
-                automatic.maximumProviderCostMicros,
-            );
-        }
 
         let admittedMaxInputTokens = Math.min(
             execution.snapshot.perCallMaxInputTokens,
@@ -470,6 +494,7 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
         const customerPays = textCustomerPays;
         const wholeLessonQuote = input.mayGenerateLesson && !automatic;
         let generationMaximumCreditsMilli = authorizedBudgetMilli;
+        let recordingConsentMilli: string | undefined;
         if (customerPays || combined || input.forceConfirmation || automatic) {
             const available = account.availableCredits;
             const held = !customerPays
@@ -537,6 +562,12 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                         budget,
                         providerPrice,
                         ...quoteScope,
+                        ...(input.renewRecording
+                            ? { freshRecordingAllowance: true }
+                            : {}),
+                        ...(wholeLessonQuote && !combined
+                            ? { optionalRecording: 1 }
+                            : {}),
                         ...(combined
                             ? {
                                   speechPolicy,
@@ -570,8 +601,10 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             }
 
             if (
-                !input.confirmedQuoteId &&
                 offered &&
+                (!input.confirmedQuoteId ||
+                    (input.renewRecording &&
+                        input.confirmedQuoteId !== offered.id)) &&
                 offered.authorizationFingerprint === authorizationFingerprint &&
                 offered.expiresAt > now &&
                 offered.heldMilli <= quoteMaximum &&
@@ -610,13 +643,20 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 confirmed.outputAllowance <= allowance &&
                 confirmed.outputAllowance >= (input.minimumOutputTokens ?? 0);
 
+            // An accepted lesson-wide quote is valid for a bounded reallocation from
+            // the original action, even if the remaining wallet/output is smaller.
+            const needsConfirmation = plannedRecording
+                ? speechCustomerPays && recordingConsent === undefined
+                : input.renewRecording ||
+                  input.forceConfirmation ||
+                  (combined &&
+                      availableCombined < totalAuthorizedBudgetMilli) ||
+                  allowance < learningContentActionOutputLimit ||
+                  (customerPays && held < acceptedBudgetMilli);
+
             if (
                 !automatic &&
-                (input.forceConfirmation ||
-                    (combined && availableCombined < configuredBudgetMilli) ||
-                    allowance < learningContentActionOutputLimit ||
-                    (customerPays && held < acceptedBudgetMilli) ||
-                    input.confirmedQuoteId) &&
+                (needsConfirmation || input.confirmedQuoteId) &&
                 !validQuote
             ) {
                 if (!input.requestId || !input.fingerprint) {
@@ -635,7 +675,9 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                     authorizationFingerprint,
                     heldMilli: quoteMaximum,
                     outputAllowance: allowance,
-                    expiresAt: new Date(now.getTime() + 5 * 60_000),
+                    expiresAt: new Date(
+                        Math.min(deadline, now.getTime() + 5 * 60_000),
+                    ),
                 };
 
                 await tx
@@ -663,6 +705,10 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             }
 
             if (validQuote) {
+                if (wholeLessonQuote && !combined && confirmed.heldMilli > 0n) {
+                    recordingConsentMilli = confirmed.heldMilli.toString();
+                }
+
                 generationMaximumCreditsMilli = customerPays
                     ? confirmed.heldMilli - speechMaximumMilli
                     : 0n;
@@ -692,21 +738,6 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
 
         // Provider dispatch checks the persisted action deadline under its reservation lock.
         // A queued continuation must inherit the same absolute expiry as the lesson.
-        const stageDeadline = now.getTime() + 15 * 60_000;
-        const deadline = automatic
-            ? Math.min(Date.parse(automatic.expiresAt), stageDeadline)
-            : stageDeadline;
-
-        if (
-            automatic &&
-            (!Number.isFinite(deadline) || deadline <= Date.now())
-        ) {
-            throw new ConversationError(
-                'generation_scope_change',
-                'The approved lesson generation window has expired.',
-            );
-        }
-
         const action = await new DrizzleActionAccountingParticipant(tx)
             .reserve({
                 id: input.turnId,
@@ -744,6 +775,7 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 ...execution.snapshot,
                 aggregateBudget: { ...execution.budget },
             },
+            ...(recordingConsentMilli ? { recordingConsentMilli } : {}),
             ...(combined || automatic?.permitsListeningRecording
                 ? { permitsListeningRecording: true }
                 : {}),

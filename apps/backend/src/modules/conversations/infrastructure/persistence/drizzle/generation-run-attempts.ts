@@ -1,6 +1,7 @@
 import {
     identifyListeningScript,
     listeningScriptSchema,
+    validateListeningScriptDuration,
     type ListeningRecordingRequest,
 } from '../../../application/listening-script';
 import {
@@ -317,6 +318,7 @@ export function freezeListeningScript(
             active.context.runId !== input.runId ||
             active.context.revision !== input.revision ||
             task?.kind !== 'audio' ||
+            task.maxDurationSeconds !== input.maxDurationSeconds ||
             task.language !== input.language
         ) {
             throw conflict(
@@ -358,6 +360,7 @@ export function freezeListeningScript(
             );
         }
 
+        validateListeningScriptDuration(script, task.maxDurationSeconds);
         const frozen = identifyListeningScript(script);
         history[history.indexOf(attempt)] = {
             ...attempt,

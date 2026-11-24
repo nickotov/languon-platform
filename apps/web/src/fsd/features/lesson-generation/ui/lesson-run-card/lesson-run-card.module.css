@@ -84,3 +84,8 @@
         align-items: stretch;
     }
 }
+
+.recordingIcon {
+    color: var(--sys-color-action-primary);
+    flex-shrink: 0;
+}

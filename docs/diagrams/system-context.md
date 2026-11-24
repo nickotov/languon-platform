@@ -38,8 +38,8 @@ source_paths:
     - docs/adr/0061-bounded-automatic-lesson-continuation.md
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-automation.ts
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-authorization.ts
-source_fingerprint: sha256:8291dbf2b85f02523e51c28284ba060c1fd9031b140f556f6627283584aa7ecf
-reviewed: 2026-11-23
+source_fingerprint: sha256:b18bb1ac96dd0ad4c36472690db5aac2b16fb00ce2de01b78b3e9da352fa9fef
+reviewed: 2026-11-24
 ---
 
 # System context

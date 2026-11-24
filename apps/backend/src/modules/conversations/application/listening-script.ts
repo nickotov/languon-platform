@@ -31,6 +31,44 @@ export function identifyListeningScript(script: ListeningScript) {
     };
 }
 
+/** Two spoken words per second, with time for natural pauses between lines.
+ * The decoded recording is measured separately before publication. */
+function listeningWordBudget(seconds: number, utteranceCount: number) {
+    return Math.max(1, Math.floor((seconds - (utteranceCount - 1) * 0.5) * 2));
+}
+
+export function validateListeningScriptDuration(
+    script: ListeningScript,
+    maxDurationSeconds: number | undefined,
+) {
+    if (maxDurationSeconds === undefined) {
+        return;
+    }
+
+    const words = new Intl.Segmenter('und', { granularity: 'word' });
+    const count = script.utterances.reduce(
+        (total, { text }) =>
+            total +
+            Array.from(words.segment(text)).filter((part) => part.isWordLike)
+                .length,
+        0,
+    );
+
+    if (
+        count >
+        listeningWordBudget(maxDurationSeconds, script.utterances.length)
+    ) {
+        throw new z.ZodError([
+            {
+                code: 'custom',
+                path: ['utterances', 'maxDurationSeconds'],
+                message:
+                    'Shorten the script to fit the requested playback time.',
+            },
+        ]);
+    }
+}
+
 export type FrozenListeningScript = ReturnType<typeof identifyListeningScript>;
 export interface ListeningRecordingRequest {
     runId: string;
@@ -38,6 +76,7 @@ export interface ListeningRecordingRequest {
     taskId: string;
     validationId: string;
     language: string;
+    maxDurationSeconds?: number;
     script: ListeningScript;
 }
 export type PrepareListeningRecording = (input: {
@@ -45,6 +84,7 @@ export type PrepareListeningRecording = (input: {
     revision: number;
     taskId: string;
     language: string;
+    maxDurationSeconds?: number;
     ownerId: string;
     noteId: string;
     branchId: string;
@@ -64,8 +104,9 @@ export function listeningRecordingFailure(error: unknown, taskId: string) {
         listening_authorization_required: 'allowance-required',
         listening_authorization_expired: 'authority-expired',
         listening_budget_exhausted: 'allowance-required',
-        speech_voice_unavailable: 'configuration',
-        speech_decoder_unavailable: 'configuration',
+        speech_voice_unavailable: 'speech-voice-unavailable',
+        speech_decoder_unavailable: 'speech-decoder-unavailable',
+        speech_duration_exceeded: 'recording-too-long',
         speech_source_changed: 'source-changed',
     } as const;
     const code = error.code;

@@ -1,3 +1,5 @@
+import { standaloneProposalReadings } from '../../application/generated-reading';
+import type { GeneratedReading } from '../../application/ports/tutor-runner';
 import { bodyBlocks } from './learning-generation-plan';
 import type { LearningBlock } from '@languon/contracts';
 import type { TutorRunInput } from '../../application/ports/tutor-runner';
@@ -48,6 +50,7 @@ export async function loadLearningProposalCatalog(
 ) {
     const blocks = new Map<string, readonly LearningBlock[]>();
     const catalog: Descriptor[] = [];
+    const readingsByProposal = new Map<string, GeneratedReading[]>();
     for (const [index, descriptor] of state.proposals.entries()) {
         if (!input.readContentProposal) {
             catalog.push(descriptor);
@@ -58,6 +61,20 @@ export async function loadLearningProposalCatalog(
             const proposal = await input.readContentProposal(descriptor.id);
             if (proposal.id !== descriptor.id) {
                 continue;
+            }
+
+            if (proposal.sameBranch) {
+                readingsByProposal.set(
+                    proposal.id,
+                    standaloneProposalReadings(proposal.id, proposal.body).map(
+                        (reading) => ({
+                            ...reading,
+                            ...(proposal.publishedAt && {
+                                publishedAt: proposal.publishedAt,
+                            }),
+                        }),
+                    ),
+                );
             }
 
             blocks.set(proposal.id, bodyBlocks(proposal.body));
@@ -75,7 +92,7 @@ export async function loadLearningProposalCatalog(
         }
     }
 
-    return { catalog, blocks };
+    return { catalog, blocks, readingsByProposal };
 }
 
 const normalized = (value: string) =>

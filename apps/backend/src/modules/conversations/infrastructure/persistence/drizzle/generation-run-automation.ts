@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { automaticRequestId } from './generation-request-id';
 import { and, asc, eq, notInArray, sql } from 'drizzle-orm';
 import { generationAdmissionOutcome } from '../../../application/generation-admission-outcome';
 import { ConversationError } from '../../../domain/conversation';
@@ -15,13 +15,6 @@ const workerQuarantine = new WeakMap<
     ConversationPersistenceContext,
     Map<string, number>
 >();
-
-/** Stable across workers/restarts, so a queue retry cannot create another stage. */
-function automaticRequestId(value: string): string {
-    const digest = createHash('sha256').update(value).digest('hex');
-
-    return `${digest.slice(0, 8)}-${digest.slice(8, 12)}-4${digest.slice(13, 16)}-8${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
-}
 
 function admissionFence(candidate: Run, authority: Authority) {
     return and(
@@ -152,6 +145,7 @@ async function processCandidate(
 /** Opens a bounded page; global discovery failures surface to worker health monitoring. */
 export async function admitAutomaticGeneration(
     persistence: ConversationPersistenceContext,
+    scope: 'text' | 'recording' = 'text',
 ) {
     const now = persistence.now();
     const quarantine =
@@ -171,6 +165,11 @@ export async function admitAutomaticGeneration(
             and(
                 eq(runs.state, 'paused'),
                 eq(runs.pauseReason, 'budget'),
+                // Recording admission reads API-owned financial grants. Its maintenance
+                // loop uses the same fenced command under the actor database role.
+                scope === 'recording'
+                    ? sql`${runs.taskManifest} @> '[{"kind":"audio"}]'::jsonb`
+                    : sql`not (${runs.taskManifest} @> '[{"kind":"audio"}]'::jsonb)`,
                 sql`${runs.automation}->>'ready' = 'true'`,
                 sql`coalesce(${runs.automation}->'admissionRetry'->>'retryAt', '') <= ${now.toISOString()}`,
                 quarantine.size

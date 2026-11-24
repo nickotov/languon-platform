@@ -5,6 +5,7 @@ import type {
 import type { AudioLearningBlockSchema } from '@languon/contracts';
 import type { z } from 'zod';
 import type {
+    ConversationActionQuote,
     GenerationFailure,
     GenerationPlan,
     KnowledgeBody,
@@ -26,11 +27,13 @@ export interface GenerationAutomationAuthorization {
     expiresAt: string;
     stageCount: number;
     ready: boolean;
+    recordingApproval?: { requestId: string; quote: ConversationActionQuote };
     dispatchRetryCount?: number;
     admissionRetry?: { count: number; retryAt: string } | undefined;
 }
 
 export interface GenerationAutomaticAdmission {
+    recordingConsent?: { rootTurnId: string; remainingCreditsMilli: string };
     permitsListeningRecording?: true;
     expiresAt: string;
     maximumCreditsMilli: string;
@@ -120,6 +123,7 @@ export function acknowledgedGenerationAttempts(
 }
 
 export interface GenerationExecutionContext {
+    awaitingRecordingAuthorization?: true;
     unitAttempts?: GenerationUnitAttempt[];
     runId: string;
     revision: number;
@@ -156,6 +160,7 @@ export interface GenerationAdmission {
     runId: string;
     expectedRevision: number;
     kind: 'generation' | 'revision';
+    recordingAdmission?: true;
     acknowledgedUncertainTurnId?: string;
     sourceChoice?: 'keep-snapshot' | 'refresh';
     automatic?: {

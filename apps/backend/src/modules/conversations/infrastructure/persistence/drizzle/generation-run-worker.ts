@@ -1,3 +1,4 @@
+import { generationStageHasProgress } from './generation-stage-progress';
 import { captureGenerationSources } from './generation-source-capture';
 import { createGenerationAuthorization } from './generation-run-authorization';
 import { assertGenerationCapacity } from './generation-run-capacity';
@@ -28,10 +29,7 @@ import type {
     GenerationSourceSnapshot,
 } from '../../../application/ports/generation-run';
 import { generationValidationVersion } from '../../../application/ports/generation-run';
-import {
-    ConversationError,
-    isReadOnlyKnowledgeSource,
-} from '../../../domain/conversation';
+import { isReadOnlyKnowledgeSource } from '../../../domain/conversation';
 import { conversationWithOperation } from './conversation-worker-authority';
 import {
     conflict,
@@ -40,7 +38,6 @@ import {
 import {
     generationContext,
     generationTurnContext,
-    generationStageHasProgress,
     emitGenerationRun,
 } from './generation-run-context';
 import {
@@ -86,16 +83,6 @@ export function conversationStartGeneration(
     validationIds?: string[],
 ) {
     const plan = GenerationPlanSchema.parse(candidate);
-    if (
-        plan.tasks.some((task) => task.kind === 'audio') &&
-        turn.execution.permitsListeningRecording !== true
-    ) {
-        throw new ConversationError(
-            'generation_scope_change',
-            'New recordings require explicit speech authorization.',
-        );
-    }
-
     const sources = captureGenerationSources(turn, plan, evidence);
 
     assertGenerationCapacity(plan, sources);
@@ -166,6 +153,11 @@ export function conversationStartGeneration(
                 noteId: turn.source.id,
                 revision: 1,
                 state: 'running',
+                pauseReason:
+                    plan.tasks.some((task) => task.kind === 'audio') &&
+                    turn.execution.permitsListeningRecording !== true
+                        ? 'recording-confirmation'
+                        : null,
                 taskManifest: plan.tasks.map(({ id, kind }) => ({ id, kind })),
                 activeTurnId: turn.id,
                 automation: await createGenerationAuthorization(

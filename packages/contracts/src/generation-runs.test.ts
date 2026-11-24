@@ -35,6 +35,45 @@ const summary = {
 };
 
 describe('safe resumable generation public contracts', () => {
+    it('only exposes the real listening quote while the recording awaits consent', () => {
+        const recordingApproval = {
+            requestId: randomUUID(),
+            quote: {
+                scope: 'listening-lesson',
+                id: randomUUID(),
+                maximumCredits: '2.5',
+                approximateOutputTokens: 1000,
+                expiresAt: new Date().toISOString(),
+            },
+        };
+        const waiting = {
+            ...summary,
+            pauseReason: 'recording-confirmation',
+            recordingApproval,
+        };
+        expect(GenerationRunSummarySchema.safeParse(waiting).success).toBe(
+            true,
+        );
+        expect(
+            GenerationRunSummarySchema.safeParse({
+                ...summary,
+                recordingApproval,
+            }).success,
+        ).toBe(false);
+        expect(
+            GenerationRunSummarySchema.safeParse({
+                ...waiting,
+                recordingApproval: {
+                    ...recordingApproval,
+                    quote: {
+                        ...recordingApproval.quote,
+                        scope: 'lesson-if-planned',
+                    },
+                },
+            }).success,
+        ).toBe(false);
+    });
+
     it('exposes bounded unit progress without claiming a partial task complete', () => {
         const partial = {
             id: 'practice',

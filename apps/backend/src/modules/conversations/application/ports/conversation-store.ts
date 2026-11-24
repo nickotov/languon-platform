@@ -1,3 +1,4 @@
+import type { GeneratedReading, TutorProposalReadback } from './tutor-runner';
 import type { LessonCopy } from '@languon/contracts';
 import type { GenerationFailureDiagnostic } from '../generation-failure';
 import type {
@@ -18,7 +19,6 @@ import type {
     KnowledgeNoteContent,
     LearningContentProposalInput,
     KnowledgeContentProposal,
-    KnowledgeBody,
     KnowledgeWorkingBranch,
     PublishKnowledgeDraftRequest,
     KnowledgeNote,
@@ -66,10 +66,13 @@ export interface ConversationStore extends GenerationRunStore {
         snippetId: string,
         input: ApplyDictionaryChatSnippetRequest,
     ): Promise<ApplyDictionaryChatSnippetResponse>;
+    readGeneratedReadings?(
+        turn: ClaimedConversationTurn,
+    ): Promise<GeneratedReading[]>;
     readContentProposal?(
         turn: ClaimedConversationTurn,
         proposalId: string,
-    ): Promise<{ id: string; body: KnowledgeBody }>;
+    ): Promise<TutorProposalReadback>;
     listContentProposals?(
         access: ConversationAccess,
         conversationId: string,

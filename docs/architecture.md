@@ -678,7 +678,7 @@ available for every format. The existing private attempt/job path publishes
 structured criteria, corrections and optional suggested answers under source,
 share, revision, epoch, worker-lease and settlement fences. Partial/unassessed
 learning outcomes are separate from execution success and do not count as correct
-progress. Listening tasks can reuse an authorized recording or prepare a new one under the lesson’s speech allowance. The worker pins the script, and the speech pipeline assembles timed utterances into one private asset before exercise authoring. See [generated listening sets](adr/0065-generated-listening-sets.md).
+progress. Listening tasks can reuse an authorized recording or prepare a new one under the lesson’s speech allowance. The backend admits new speech after planning. The lesson card displays any required confirmation with the remaining work. See [recording admission](adr/0066-recording-admission-after-planning.md). The worker pins the script, and the speech pipeline assembles timed utterances into one private asset before exercise authoring. See [generated listening sets](adr/0065-generated-listening-sets.md).
 
 Studio exposes 22 standalone named tools under isolated development
 session authority, while the production tutor retains four high-level learning

@@ -172,7 +172,10 @@ export async function remainingGenerationAuthorization(
         target &&
         run.taskManifest.some((task) => task.kind === 'audio')
             ? await tx
-                  .select({ rootTurnId: listeningAllowances.rootTurnId })
+                  .select({
+                      preauthorizedCredits:
+                          listeningAllowances.preauthorizedCredits,
+                  })
                   .from(listeningAllowances)
                   .where(
                       and(
@@ -192,7 +195,21 @@ export async function remainingGenerationAuthorization(
             : [];
 
     return {
-        ...(listening ? { permitsListeningRecording: true as const } : {}),
+        ...(listening?.preauthorizedCredits === null
+            ? { permitsListeningRecording: true as const }
+            : {}),
+        ...(listening?.preauthorizedCredits != null
+            ? {
+                  recordingConsent: {
+                      rootTurnId: authorization.rootActionId,
+                      remainingCreditsMilli: (listening.preauthorizedCredits >
+                      charged
+                          ? listening.preauthorizedCredits - charged
+                          : 0n
+                      ).toString(),
+                  },
+              }
+            : {}),
         expiresAt: authorization.expiresAt,
         maximumCreditsMilli: (credits > 0n ? credits : 0n).toString(),
         maximumProviderCostMicros: Number(provider > 0n ? provider : 0n),

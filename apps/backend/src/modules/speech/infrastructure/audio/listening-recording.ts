@@ -10,7 +10,9 @@ import {
 
 const sampleRate = 16_000;
 const bytesPerSecond = sampleRate * 2;
-const maximumPcmBytes = bytesPerSecond * 120;
+const maximumDurationSeconds = 120;
+// Keep dialogue intelligible, including for learners. Longer scripts need a fresh, shorter draft.
+const maximumTempo = 1.15;
 const turnPause = Buffer.alloc(bytesPerSecond / 4);
 
 let decoderChecked = false;
@@ -83,7 +85,12 @@ export async function checkListeningDecoder(signal?: AbortSignal) {
     }
 }
 
-async function decode(audio: AudioBytes, limit: number, signal?: AbortSignal) {
+async function decode(
+    audio: AudioBytes,
+    limit: number,
+    signal?: AbortSignal,
+    tempo = 1,
+) {
     assertAudioIntegrity(audio);
     signal?.throwIfAborted();
     // Fix the demuxer and protocol. Provider bytes can never select a path, URL or playlist.
@@ -104,6 +111,7 @@ async function decode(audio: AudioBytes, limit: number, signal?: AbortSignal) {
         '0:a:0',
         '-threads',
         '1',
+        ...(tempo === 1 ? [] : ['-af', 'atempo=' + tempo.toFixed(6)]),
         '-ac',
         '1',
         '-ar',
@@ -138,7 +146,9 @@ async function decode(audio: AudioBytes, limit: number, signal?: AbortSignal) {
         });
 
         child.once('close', (code) => {
-            if (code !== 0 || size === 0 || size % 2 || size > limit) {
+            if (size > limit) {
+                reject(new SpeechError('speech_duration_exceeded'));
+            } else if (code !== 0 || size === 0 || size % 2) {
                 reject(
                     new Error(
                         'Unable to decode a bounded listening utterance.',
@@ -171,30 +181,95 @@ function wav(pcm: Buffer) {
     return Buffer.concat([header, pcm]);
 }
 
+interface ListeningClip {
+    id: string;
+    speaker: string;
+    text: string;
+    audio: AudioBytes;
+}
+
+async function decodeClips(
+    utterances: readonly ListeningClip[],
+    byteLimit: number,
+    tempo: number,
+    signal?: AbortSignal,
+) {
+    const clips: Buffer[] = [];
+    let length = 0;
+    for (const utterance of utterances) {
+        const clip = await decode(
+            utterance.audio,
+            byteLimit - length,
+            signal,
+            tempo,
+        );
+
+        clips.push(clip);
+        length += clip.length;
+    }
+
+    return { clips, length };
+}
+
 export async function assembleListeningRecording(input: {
     language: string;
-    utterances: readonly {
-        id: string;
-        speaker: string;
-        text: string;
-        audio: AudioBytes;
-    }[];
+    utterances: readonly ListeningClip[];
+    maxDurationSeconds?: number;
     signal?: AbortSignal;
 }) {
+    const seconds = input.maxDurationSeconds ?? maximumDurationSeconds;
+    if (
+        !Number.isInteger(seconds) ||
+        seconds < 1 ||
+        seconds > maximumDurationSeconds
+    ) {
+        throw new SpeechError('speech_duration_invalid');
+    }
+
+    const pauseBytes =
+        Math.max(0, input.utterances.length - 1) * turnPause.length;
+    const voicedLimit = seconds * bytesPerSecond - pauseBytes;
+    if (voicedLimit <= 0) {
+        throw new SpeechError('speech_duration_exceeded');
+    }
+
+    // Count actual samples including the pauses. Provider-reported durations are estimates.
+    const natural = await decodeClips(
+        input.utterances,
+        input.maxDurationSeconds === undefined
+            ? voicedLimit
+            : Math.ceil(voicedLimit * maximumTempo),
+        1,
+        input.signal,
+    );
+    let clips = natural.clips;
+    if (natural.length > voicedLimit) {
+        // atempo preserves pitch. Small headroom covers filter frame rounding across clips.
+        const tempo = Math.min(
+            maximumTempo,
+            (natural.length / voicedLimit) * 1.005,
+        );
+
+        clips = (
+            await decodeClips(
+                input.utterances,
+                voicedLimit,
+                tempo,
+                input.signal,
+            )
+        ).clips;
+    }
+
     const chunks: Buffer[] = [];
     const segments = [];
     let length = 0;
-    for (const utterance of input.utterances) {
+    for (const [index, utterance] of input.utterances.entries()) {
         if (segments.length) {
             chunks.push(turnPause);
             length += turnPause.length;
         }
 
-        const pcm = await decode(
-            utterance.audio,
-            maximumPcmBytes - length,
-            input.signal,
-        );
+        const pcm = clips[index]!;
         const startSeconds = length / bytesPerSecond;
         chunks.push(pcm);
         length += pcm.length;

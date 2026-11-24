@@ -41,7 +41,13 @@ export function LessonRuns({
                 </InlineAlert>
             )}
             <LessonRunQuote
-                quote={state.actions.quote}
+                quote={
+                    state.actions.action?.kind === 'continue' &&
+                    state.actions.action.run.pauseReason ===
+                        'recording-confirmation'
+                        ? null
+                        : state.actions.quote
+                }
                 revision={state.actions.action?.kind === 'revise'}
                 busy={state.actions.pending || reconnecting || state.rechecking}
                 onConfirm={state.actions.confirm}

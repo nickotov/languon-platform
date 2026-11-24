@@ -40,9 +40,11 @@ source_paths:
     - apps/backend/src/modules/knowledge/infrastructure/persistence/drizzle/exercise-evaluation-source.ts
     - apps/web/src/fsd/features/knowledge-notes/lib/read-exercise-block-form.ts
     - docs/adr/0065-generated-listening-sets.md
-  - apps/backend/src/modules/speech/infrastructure/listening-recording-queue.ts
-  - apps/backend/src/modules/conversations/application/listening-script.ts
-  - docs/adr/0060-composable-generation-runs.md
+    - docs/adr/0066-recording-admission-after-planning.md
+    - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-recording-admission.ts
+    - apps/backend/src/modules/speech/infrastructure/listening-recording-queue.ts
+    - apps/backend/src/modules/conversations/application/listening-script.ts
+    - docs/adr/0060-composable-generation-runs.md
     - packages/contracts/src/generated-artifacts.ts
     - apps/backend/src/modules/conversations/infrastructure/ai/learning-generation-plan.ts
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-worker.ts
@@ -55,8 +57,8 @@ source_paths:
     - apps/backend/src/modules/conversations/application/learning-content-plan-capacity.ts
     - packages/prompts/src/local/learning-content-authoring.ts
     - apps/backend/src/modules/conversations/infrastructure/persistence/drizzle/generation-run-completion.ts
-source_fingerprint: sha256:7c73324cdeae2a414a164d20e3b205c0a25311582822777ae59f16ad1dd6ed9c
-reviewed: 2026-11-23
+source_fingerprint: sha256:f622c6696742cdbeebe4d6be5541553180e28480531828849734e0d0c643487f
+reviewed: 2026-11-24
 ---
 
 # Named text exercises
@@ -85,7 +87,9 @@ persist canonical text plus identity metadata"]
     Mentions --> Plan
     Plan --> Ground["Host resolves exact authorized material
 vocabulary, grammar, passage or frozen selection"]
-    Recording["New recording requested and authorized"] --> Script["Validate and freeze utterances"]
+    Plan --> Recording["Saved plan requires new speech"]
+    Recording --> Approval["Check remaining authority or show an expiring quote in chat"]
+    Approval --> Script["Validate and freeze utterances"]
     Script --> Speech["Queue speech, assemble one private asset with measured timings"]
     Speech --> Ground
     Existing["Selected accessible recording with transcript"] --> Ground

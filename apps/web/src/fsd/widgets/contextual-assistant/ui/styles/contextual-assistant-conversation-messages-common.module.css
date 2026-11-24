@@ -230,7 +230,6 @@
     }
 }
 
-
 .workspaceEmpty {
     padding: var(--space-8) var(--space-4) 0;
     border: 0;
@@ -286,4 +285,16 @@
     .workspaceEmpty .suggestion {
         min-height: var(--size-44);
     }
+}
+
+.readingChoices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+    margin-block-start: var(--space-8);
+}
+.readingTitle {
+    white-space: normal;
+    text-align: start;
+    overflow-wrap: anywhere;
 }

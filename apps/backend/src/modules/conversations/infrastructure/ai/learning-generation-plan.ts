@@ -140,7 +140,12 @@ export function createGenerationPlan(
             id: task.id,
             kind: task.kind,
             ...(task.kind === 'audio'
-                ? { speakerCount: task.speakerCount ?? 1 }
+                ? {
+                      speakerCount: task.speakerCount ?? 1,
+                      ...(task.maxDurationSeconds !== undefined && {
+                          maxDurationSeconds: task.maxDurationSeconds,
+                      }),
+                  }
                 : {}),
             instruction: task.instruction,
             language: task.language,
@@ -298,7 +303,7 @@ export function restoreGenerationExecution(
         );
 
         const capturedText =
-            task.kind === 'bilingual-text'
+            task.kind === 'bilingual-text' || task.kind === 'audio'
                 ? generationTaskCapturedText(task.inputs, context.sources)
                 : '';
 
@@ -306,7 +311,12 @@ export function restoreGenerationExecution(
             id: task.id,
             kind: task.kind,
             ...(task.kind === 'audio'
-                ? { speakerCount: task.speakerCount ?? 1 }
+                ? {
+                      speakerCount: task.speakerCount ?? 1,
+                      ...(task.maxDurationSeconds !== undefined && {
+                          maxDurationSeconds: task.maxDurationSeconds,
+                      }),
+                  }
                 : {}),
             instruction: task.instruction,
             language: task.language,

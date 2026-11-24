@@ -35,6 +35,9 @@ export function lessonRunNotice(
             'operator-capacity': copy.operatorCapacity,
             'response-active': copy.turnActive,
             configuration: copy.authorityConfig,
+            'speech-voice-unavailable': copy.voiceUnavailable,
+            'speech-decoder-unavailable': copy.decoderUnavailable,
+            'recording-too-long': copy.recordingTooLong,
             'source-unavailable': copy.sourceUnavailable,
             'source-changed': copy.sourceChanged,
             conflict: copy.reviewCurrent,
@@ -111,6 +114,7 @@ export function lessonRunNotice(
     }
 
     const reasons = {
+        'recording-confirmation': undefined,
         budget: copy.budget,
         'technical-failure': copy.failed,
         interrupted: copy.interrupted,

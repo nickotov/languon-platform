@@ -63,25 +63,6 @@ export function useAssistantPanel(
         chat.id,
     );
     const [history, setHistory] = useState(false);
-    const [recordingDraft, setRecordingDraft] = useState<string | null>(null);
-    // The first draft exists before automatic conversation creation returns an ID.
-    const draftSource = JSON.stringify([
-        props.actorId,
-        props.source.kind,
-        props.source.id,
-    ]);
-    const includeListeningSpeech = recordingDraft === draftSource;
-
-    function toggleListeningSpeech() {
-        setRecordingDraft(includeListeningSpeech ? null : draftSource);
-    }
-
-    function clearListeningSpeech() {
-        setRecordingDraft((current) =>
-            current === draftSource ? null : current,
-        );
-    }
-
     const [picker, setPicker] = useState(false);
     const [editingDraft, setEditingDraft] = useState<string | null>(null);
     const [localError, setLocalError] = useState<unknown>(null);
@@ -99,7 +80,6 @@ export function useAssistantPanel(
     } = deletion;
 
     function closeDeletedDraft() {
-        clearListeningSpeech();
         setEditingDraft(null);
     }
 
@@ -294,7 +274,6 @@ export function useAssistantPanel(
 
     function select(id: string) {
         navigation.request(() => {
-            clearListeningSpeech();
             chat.select(id);
             workspaceSelection.remove();
             setHistory(false);
@@ -305,7 +284,6 @@ export function useAssistantPanel(
 
     function create() {
         navigation.request(() => {
-            clearListeningSpeech();
             chat.create.mutate(undefined);
             workspaceSelection.remove();
             setHistory(false);
@@ -329,7 +307,6 @@ export function useAssistantPanel(
         };
 
         navigation.request(() => {
-            clearListeningSpeech();
             chat.create.mutate(next);
             workspaceSelection.remove();
             setHistory(false);
@@ -394,8 +371,8 @@ export function useAssistantPanel(
     const missingBlockReference =
         blockReferences.missing || missingPromptSource;
 
-    function send() {
-        if (missingBlockReference) {
+    function send(readingChoice?: string) {
+        if (!readingChoice && missingBlockReference) {
             return;
         }
 
@@ -404,10 +381,13 @@ export function useAssistantPanel(
                 return;
             }
 
+            const selectedPassage = readingChoice
+                ? null
+                : workspaceSelection.passage;
             let snapshot;
             try {
                 snapshot = props.workspace.getSnapshot(
-                    workspaceSelection.passage?.targetId ?? null,
+                    selectedPassage?.targetId ?? null,
                 );
 
                 if (!snapshot.editorTarget) {
@@ -415,7 +395,7 @@ export function useAssistantPanel(
                 }
             } catch (error) {
                 preparationFailed.current = true;
-                if (workspaceSelection.passage) {
+                if (selectedPassage) {
                     setAttachmentError(workspaceCopy(locale).selectionChanged);
                 } else {
                     setLocalError(error);
@@ -426,9 +406,8 @@ export function useAssistantPanel(
 
             const editorLimit = props.workspace.editorLimit ?? 40_000;
             if (
-                workspaceSelection.passage &&
-                workspaceSelection.passage.content !==
-                    snapshot.editorTarget.originalText
+                selectedPassage &&
+                selectedPassage.content !== snapshot.editorTarget.originalText
             ) {
                 setAttachmentError(workspaceCopy(locale).selectionChanged);
 
@@ -444,15 +423,18 @@ export function useAssistantPanel(
             }
 
             const targetId = snapshot.targetId;
-            const question = chat.question;
-            const exerciseRequest = exercises.request;
-            const copiedAttachments = [...chat.attachments];
-            const selectedPassage = workspaceSelection.passage;
-            const referencedIds = blockReferences.selected.map(
-                (item) => item.id,
-            );
+            const question = readingChoice ?? chat.question;
+            const exerciseRequest = readingChoice
+                ? undefined
+                : exercises.request;
+            const copiedAttachments = readingChoice
+                ? []
+                : [...chat.attachments];
+            const referencedIds = readingChoice
+                ? []
+                : blockReferences.selected.map((item) => item.id);
 
-            if (blockReferences.missing) {
+            if (!readingChoice && blockReferences.missing) {
                 return;
             }
 
@@ -498,9 +480,9 @@ export function useAssistantPanel(
                 try {
                     await chat.submit.mutateAsync({
                         content: question,
-                        includeListeningSpeech:
-                            includeListeningSpeech || undefined,
-                        promptMentions: chat.promptMentions,
+                        promptMentions: readingChoice
+                            ? []
+                            : chat.promptMentions,
                         copiedAttachments,
                         blockReferences: referencedIds,
                         exerciseRequest,
@@ -518,10 +500,13 @@ export function useAssistantPanel(
                             }
 
                             props.workspace?.onSent?.(firstMessage);
+                            if (readingChoice) {
+                                return;
+                            }
+
                             workspaceSelection.sent(selectedPassage?.id);
                             blockReferences.sent(referencedIds);
                             exercises.accepted(exerciseRequest);
-                            clearListeningSpeech();
                         },
                     });
                 } catch {
@@ -642,8 +627,6 @@ export function useAssistantPanel(
                 content: message.content,
                 promptMentions: message.promptMentions,
                 retryOf: turn.id,
-                includeListeningSpeech: includeListeningSpeech || undefined,
-                onAccepted: clearListeningSpeech,
                 blockReferences: message.blockReferences ?? [],
             });
         }
@@ -778,8 +761,6 @@ export function useAssistantPanel(
         blockReferences,
         missingBlockReference,
         exercises,
-        includeListeningSpeech,
-        toggleListeningSpeech,
         workspacePassage: workspaceSelection.passage,
         removeWorkspacePassage,
         requestWithSession,

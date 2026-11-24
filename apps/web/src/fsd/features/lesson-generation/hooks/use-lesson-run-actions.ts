@@ -158,7 +158,7 @@ export function useLessonRunActions(
         );
     }
 
-    function execute(action: LessonRunAction) {
+    function execute(action: LessonRunAction, confirmedQuoteId?: string) {
         if (
             owner !== currentOwner.current ||
             action.run.conversationId !== conversationId ||
@@ -171,7 +171,11 @@ export function useLessonRunActions(
 
         locked.current = true;
         setQuote(null);
-        mutation.mutate({ action, owner });
+        mutation.mutate({
+            action,
+            owner,
+            ...(confirmedQuoteId ? { confirmedQuoteId } : {}),
+        });
     }
 
     function confirm() {
@@ -247,5 +251,15 @@ function readQuote(error: unknown) {
 }
 
 function failureKey(run: GenerationRunSummary) {
-    return [run.conversationId, run.id, run.revision].join(':');
+    // A command error belongs to the state in which the owner issued it. A
+    // winning command in another tab can advance the same plan revision.
+    return [
+        run.conversationId,
+        run.id,
+        run.revision,
+        run.state,
+        run.pauseReason,
+        run.activeTurnId,
+        run.lastCommandRequestId,
+    ].join(':');
 }

@@ -1,3 +1,6 @@
+import { admitAutomaticGeneration } from './generation-run-automation';
+import { prepareNextRecordingLesson } from './generation-recording-admission';
+import { readGeneratedReadings } from './generated-reading-sources';
 import type { LessonCopy } from '@languon/contracts';
 import type { GenerationFailureDiagnostic } from '../../../application/generation-failure';
 import type { GenerationRunStore } from '../../../application/ports/generation-run-store';
@@ -132,6 +135,11 @@ export class DrizzleConversationStore implements ConversationStore {
         this.discardGenerationRun = generation.discardGenerationRun;
     }
 
+    async prepareNextRecordingLesson() {
+        await prepareNextRecordingLesson(this.persistence);
+        await admitAutomaticGeneration(this.persistence, 'recording');
+    }
+
     proposeDictionarySnippet(
         turn: ClaimedConversationTurn,
         input: DictionaryChatSnippetInput,
@@ -202,6 +210,10 @@ export class DrizzleConversationStore implements ConversationStore {
             signal,
             validationIds,
         );
+    }
+
+    readGeneratedReadings(turn: ClaimedConversationTurn) {
+        return readGeneratedReadings(this.persistence, turn);
     }
 
     readContentProposal(turn: ClaimedConversationTurn, proposalId: string) {

@@ -43,6 +43,7 @@ export const generationRunsTable = pgTable(
             .$type<'running' | 'paused' | 'completed' | 'discarded'>()
             .notNull(),
         pauseReason: text('pause_reason').$type<
+            | 'recording-confirmation'
             | 'budget'
             | 'technical-failure'
             | 'interrupted'
@@ -71,6 +72,11 @@ export const generationRunsTable = pgTable(
             .on(t.updatedAt, t.id)
             .where(
                 sql`${t.state}='paused' and ${t.pauseReason}='budget' and ${t.automation}->>'ready'='true'`,
+            ),
+        index('conversation_generation_recording_admission_idx')
+            .on(t.updatedAt, t.id)
+            .where(
+                sql`${t.state}='paused' and ${t.pauseReason}='recording-confirmation' and ${t.automation}->'recordingApproval' is null`,
             ),
         uniqueIndex('conversation_generation_runs_active_turn_unique').on(
             t.activeTurnId,

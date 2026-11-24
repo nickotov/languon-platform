@@ -12,6 +12,21 @@ import type {
     ConversationEditorTarget,
 } from '@languon/contracts';
 
+/** Content of one completed prose or bilingual task, re-read under the current turn lease. */
+export interface GeneratedReading {
+    key: string;
+    title: string;
+    text: string;
+    publishedAt?: string;
+}
+
+export interface TutorProposalReadback {
+    id: string;
+    body: KnowledgeBody;
+    sameBranch?: boolean;
+    publishedAt?: string;
+}
+
 /** Application-owned persistence boundary. Implementations fence every write to the claimed turn. */
 export interface TutorMemoryMessage {
     id: string;
@@ -99,7 +114,6 @@ export interface TutorRunInput extends GenerationRunCallbacks {
     ): Promise<{ id: string }>;
     readDictionarySnippet?(id: string): Promise<DictionaryChatSnippet>;
     canProposeBlocks?: boolean;
-    canGenerateListeningRecording?: boolean;
     onContentProposal?(
         input: LearningContentProposalInput,
         validationIds?: string[],
@@ -109,9 +123,8 @@ export interface TutorRunInput extends GenerationRunCallbacks {
         inputs: LearningContentProposalInput[],
         validationIds?: string[],
     ): Promise<{ id: string }[]>;
-    readContentProposal?(
-        id: string,
-    ): Promise<{ id: string; body: KnowledgeBody }>;
+    readGeneratedReadings?(): Promise<GeneratedReading[]>;
+    readContentProposal?(id: string): Promise<TutorProposalReadback>;
     ownerId: string;
     operationId: string;
     conversationCreatedAt: string;

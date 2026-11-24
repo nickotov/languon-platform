@@ -133,7 +133,6 @@ it('preserves the original request/content across explicit confirmations and req
             .mutateAsync({
                 content: 'Original question',
                 draftContext: 'frozen document',
-                includeListeningSpeech: true,
                 onAccepted,
             })
             .catch(() => undefined);
@@ -141,7 +140,6 @@ it('preserves the original request/content across explicit confirmations and req
 
     await waitFor(() => expect(result.current.quote?.id).toBe(firstQuote.id));
     expect(submitTurn).toHaveBeenCalledTimes(1);
-    expect(submitTurn.mock.calls[0]![0].includeListeningSpeech).toBe(true);
     act(() => result.current.setQuestion('Changed unsent draft'));
     act(() => {
         result.current.confirmQuote();
@@ -198,10 +196,14 @@ it('shows the quoted allowance and explicit Send, Top up and Cancel choices', as
 it.each([
     [
         'en',
-        'covers the entire lesson',
+        'including requested recordings',
         'Approximate output tokens per stage: 12',
     ],
-    ['ru', 'на весь урок', 'Примерный лимит токенов ответа на этап: 12'],
+    [
+        'ru',
+        'включая создание аудиозаписей',
+        'Примерный лимит токенов ответа на этап: 12',
+    ],
 ] as const)(
     'explains whole-lesson consent before Send in %s',
     (locale, ceiling, allowance) => {

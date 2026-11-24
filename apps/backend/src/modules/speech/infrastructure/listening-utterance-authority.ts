@@ -1,4 +1,4 @@
-import { and, eq, gt, sql } from 'drizzle-orm';
+import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import type { AiCreditTransaction } from '../../ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import { generationRunsTable as runs } from '../../conversations/infrastructure/persistence/drizzle/conversation-generation-schema';
 import { listeningAllowances } from '../../conversations/infrastructure/persistence/drizzle/listening-allowance-schema';
@@ -65,6 +65,7 @@ export async function lockListeningSpeechAuthority(
         .where(
             and(
                 eq(listeningAllowances.rootTurnId, auth.rootActionId),
+                isNull(listeningAllowances.preauthorizedCredits),
                 eq(listeningAllowances.ownerId, input.actorId),
                 eq(listeningAllowances.conversationId, run.conversationId),
                 eq(listeningAllowances.noteId, input.noteId),

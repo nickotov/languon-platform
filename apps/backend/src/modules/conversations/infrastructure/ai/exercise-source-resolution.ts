@@ -58,6 +58,12 @@ export async function resolveExerciseSourceContexts(
     for (const task of brief.tasks) {
         if (
             (task.kind !== 'exercises' &&
+                !(
+                    task.kind === 'audio' &&
+                    (task.source?.kind === 'editor' ||
+                        task.source?.kind === 'selection' ||
+                        task.source?.kind === 'proposal')
+                ) &&
                 !(task.source?.kind === 'editor' && task.source.blockId)) ||
             task.source?.kind === 'task'
         ) {

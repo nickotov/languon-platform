@@ -1,6 +1,6 @@
 import type { LessonRunAction } from '../types';
 
-type Receipt = { key: string; requestId: string };
+type Receipt = { key?: string; requestId: string };
 const memory = new Map<string, string>();
 
 /** Keep an uncertain command replayable across navigation and same-tab reloads.
@@ -9,6 +9,11 @@ export async function lessonActionReceipt(
     scope: string,
     action: LessonRunAction,
 ): Promise<Receipt> {
+    // The scheduler's quote already identifies the resumable request across tabs.
+    if (action.kind === 'continue' && action.run.recordingApproval) {
+        return { requestId: action.run.recordingApproval.requestId };
+    }
+
     const { run, ...intent } = action;
     const signature = JSON.stringify([
         scope,
@@ -56,6 +61,10 @@ export async function lessonActionReceipt(
 }
 
 export function releaseLessonActionReceipt(receipt: Receipt) {
+    if (!receipt.key) {
+        return;
+    }
+
     if (memory.get(receipt.key) === receipt.requestId) {
         memory.delete(receipt.key);
     }

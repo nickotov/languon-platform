@@ -142,6 +142,20 @@ describe('prepare listening recording', () => {
         },
     );
 
+    it('declines an overlong completed recording before note asset publication', async () => {
+        const { prepare, input, enqueue, pending, media } = fixture('second');
+        enqueue.mockResolvedValue(
+            input.utterances.map((item) => ({ ...ready, playbackId: item.id })),
+        );
+
+        await expect(
+            prepare({ ...input, maxDurationSeconds: 1 }),
+        ).rejects.toMatchObject({ code: 'speech_duration_exceeded' });
+
+        expect(pending).not.toHaveBeenCalled();
+        expect(media.upload).not.toHaveBeenCalled();
+    });
+
     it('stops on unknown delivery without retrying or admitting another clip', async () => {
         const { prepare, input, enqueue, pending, media } = fixture('second');
         enqueue.mockResolvedValueOnce([
