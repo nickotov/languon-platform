@@ -54,5 +54,5 @@ export const NarrowMixedLanguage: StoryObj<typeof meta> = {
         controlSize: 'large',
         placeholder: 'Слово или фраза · Word or phrase',
     },
-    parameters: { viewport: { defaultViewport: 'mobile1' } },
+    globals: { viewport: { value: 'phone', isRotated: false } },
 };

@@ -36,5 +36,5 @@ export const LastActivity: StoryObj<typeof meta> = {
 };
 
 export const MobileDock: StoryObj<typeof meta> = {
-    parameters: { viewport: { defaultViewport: 'mobile1' } },
+    globals: { viewport: { value: 'phone', isRotated: false } },
 };

@@ -1,19 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 
-import { I18nProvider } from '@/fsd/shared/i18n';
-import { en } from '@/fsd/shared/i18n/messages/en';
-
 import { DictionaryExportPanel } from './dictionary-export-panel';
 
 const meta = {
     component: DictionaryExportPanel,
-    decorators: [
-        (Story) => (
-            <I18nProvider locale='en' messages={en}>
-                <Story />
-            </I18nProvider>
-        ),
-    ],
     args: {
         onExport: async () => undefined,
         pending: false,

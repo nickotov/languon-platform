@@ -1,9 +1,6 @@
 import type { LanguageCatalogEntry } from '@languon/contracts';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 
-import { I18nProvider } from '@/fsd/shared/i18n';
-import { en } from '@/fsd/shared/i18n/messages/en';
-
 import { DictionaryImportPanel } from './dictionary-import-panel';
 
 const languages = [
@@ -31,13 +28,6 @@ const languages = [
 
 const meta = {
     component: DictionaryImportPanel,
-    decorators: [
-        (Story) => (
-            <I18nProvider locale='en' messages={en}>
-                <Story />
-            </I18nProvider>
-        ),
-    ],
     args: {
         aiAvailable: true,
         languages,
@@ -87,7 +77,7 @@ type Story = StoryObj<typeof meta>;
 export const Input: Story = {};
 
 export const MobileInput: Story = {
-    parameters: { viewport: { defaultViewport: 'mobile1' } },
+    globals: { viewport: { value: 'phone', isRotated: false } },
 };
 
 export const UnavailableAi: Story = {

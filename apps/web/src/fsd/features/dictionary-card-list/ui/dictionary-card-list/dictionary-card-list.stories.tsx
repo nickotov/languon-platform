@@ -6,9 +6,6 @@ import type {
 import storyStyles from './dictionary-card-list.stories.module.css';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 
-import { I18nProvider } from '@/fsd/shared/i18n';
-import { en } from '@/fsd/shared/i18n/messages/en';
-
 import { DictionaryCardList } from './dictionary-card-list';
 
 const languages = [
@@ -112,13 +109,6 @@ const card = {
 
 const meta = {
     component: DictionaryCardList,
-    decorators: [
-        (Story) => (
-            <I18nProvider locale='en' messages={en}>
-                <Story />
-            </I18nProvider>
-        ),
-    ],
     title: 'Dictionary/Ordered card list',
 } satisfies Meta<typeof DictionaryCardList>;
 

@@ -7,9 +7,6 @@ import type {
 import storyStyles from './dictionary-generation-panel.stories.module.css';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 
-import { I18nProvider } from '@/fsd/shared/i18n';
-import { en } from '@/fsd/shared/i18n/messages/en';
-
 import { DictionaryGenerationPanel } from './dictionary-generation-panel';
 
 const languages = [
@@ -169,13 +166,6 @@ const reviewJob = {
 
 const meta = {
     component: DictionaryGenerationPanel,
-    decorators: [
-        (Story) => (
-            <I18nProvider locale='en' messages={en}>
-                <Story />
-            </I18nProvider>
-        ),
-    ],
     title: 'Dictionary/Generation review',
 } satisfies Meta<typeof DictionaryGenerationPanel>;
 

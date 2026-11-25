@@ -5,9 +5,6 @@ import type {
 } from '@languon/contracts';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 
-import { I18nProvider } from '@/fsd/shared/i18n';
-import { en } from '@/fsd/shared/i18n/messages/en';
-
 import { DictionaryDocumentGenerationPanel } from './dictionary-document-generation-panel';
 
 const languages = [
@@ -121,13 +118,6 @@ const reviewJob = {
 
 const meta = {
     component: DictionaryDocumentGenerationPanel,
-    decorators: [
-        (Story) => (
-            <I18nProvider locale='en' messages={en}>
-                <Story />
-            </I18nProvider>
-        ),
-    ],
     args: {
         available: true,
         dictionary,
@@ -168,7 +158,7 @@ export const Review: Story = { args: { job: reviewJob } };
 
 export const MobileReview: Story = {
     args: { job: reviewJob },
-    parameters: { viewport: { defaultViewport: 'mobile1' } },
+    globals: { viewport: { value: 'phone', isRotated: false } },
 };
 
 export const UnavailableOcr: Story = {

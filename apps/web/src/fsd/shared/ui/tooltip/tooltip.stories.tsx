@@ -53,5 +53,5 @@ export const RichContent: StoryObj<typeof meta> = {
             </div>
         ),
     ],
-    parameters: { viewport: { defaultViewport: 'mobile1' } },
+    globals: { viewport: { value: 'phone', isRotated: false } },
 };

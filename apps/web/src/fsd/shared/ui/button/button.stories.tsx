@@ -64,7 +64,7 @@ export const ControlSizes: Story = {
 
 export const MixedLanguage: Story = {
     args: { children: 'Продолжить · Continue', size: 'large' },
-    parameters: { viewport: { defaultViewport: 'mobile1' } },
+    globals: { viewport: { value: 'phone', isRotated: false } },
 };
 
 export const ResponsiveIconAction: Story = {

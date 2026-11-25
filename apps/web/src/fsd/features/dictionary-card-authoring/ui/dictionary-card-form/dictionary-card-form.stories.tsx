@@ -2,8 +2,6 @@ import type { LanguageCatalogEntry, OwnedDictionary } from '@languon/contracts';
 import storyStyles from './dictionary-card-form.stories.module.css';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 
-import { I18nProvider } from '@/fsd/shared/i18n';
-import { en } from '@/fsd/shared/i18n/messages/en';
 import { BottomSheet } from '@/fsd/shared/ui';
 
 import { DictionaryCardForm } from './dictionary-card-form';
@@ -78,13 +76,6 @@ const dictionary = {
 
 const meta = {
     component: DictionaryCardForm,
-    decorators: [
-        (Story) => (
-            <I18nProvider locale='en' messages={en}>
-                <Story />
-            </I18nProvider>
-        ),
-    ],
     title: 'Dictionary/Card form',
 } satisfies Meta<typeof DictionaryCardForm>;
 

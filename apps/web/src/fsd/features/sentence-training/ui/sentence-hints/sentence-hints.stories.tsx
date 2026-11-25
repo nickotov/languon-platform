@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import type { SentenceExercise } from '@languon/contracts';
-import { I18nProvider } from '@/fsd/shared/i18n';
-import { en } from '@/fsd/shared/i18n/messages/en';
 import { SentenceWithHints } from './sentence-hints';
 
 const exercise: SentenceExercise = {
@@ -45,13 +43,6 @@ const exercise: SentenceExercise = {
 const meta = {
     component: SentenceWithHints,
     title: 'Training/Sentence hints',
-    decorators: [
-        (Story) => (
-            <I18nProvider locale='en' messages={en}>
-                <Story />
-            </I18nProvider>
-        ),
-    ],
 } satisfies Meta<typeof SentenceWithHints>;
 
 export default meta;

@@ -16,5 +16,5 @@ export const IllustrativeFeedback: StoryObj<typeof meta> = {
 };
 export const MobileRussian: StoryObj<typeof meta> = {
     args: { locale: 'ru', activityId: 'W01' },
-    parameters: { viewport: { defaultViewport: 'mobile1' } },
+    globals: { viewport: { value: 'phone', isRotated: false } },
 };

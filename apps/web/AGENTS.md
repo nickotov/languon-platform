@@ -44,10 +44,25 @@ coding, and verify the rendered result against it.
 - Keep loading, empty, error, retry, and accessibility behavior explicit.
 - Avoid hydration-dependent behavior for essential content.
 
+## Storybook
+
+When adding or changing visible UI or an interaction, add or update colocated
+Storybook stories in the same change. This applies to shared primitives and
+presentational components in entities, features, widgets, and pages. Show the
+normal state and each distinct state introduced or affected by the change,
+such as loading, empty, error/retry, disabled, read-only, or narrow layout.
+Use deterministic fake data and local handlers. For a route or data-connected
+component, exercise its affected UI in a story for the presentational component
+or composition that owns that state. Record a concrete reason in the active
+work record if the changed UI cannot be isolated, and verify it in the app.
+Build the catalog and open the affected stories with `$browser-verification`.
+
 ## Commands
 
 ```sh
 pnpm dev:web
+pnpm --filter @languon/web storybook
+pnpm --filter @languon/web storybook:build
 pnpm --filter @languon/web test
 pnpm --filter @languon/web typecheck
 pnpm --filter @languon/web build

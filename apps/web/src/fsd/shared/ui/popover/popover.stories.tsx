@@ -56,7 +56,7 @@ export const ViewportCollision: StoryObj<typeof meta> = {
             </div>
         ),
     ],
-    parameters: { viewport: { defaultViewport: 'mobile1' } },
+    globals: { viewport: { value: 'phone', isRotated: false } },
 };
 
 function ModalContainerExample() {
@@ -133,7 +133,7 @@ export const OversizedContent: StoryObj<typeof meta> = {
             </>
         ),
     },
-    parameters: { viewport: { defaultViewport: 'mobile1' } },
+    globals: { viewport: { value: 'phone', isRotated: false } },
 };
 
 export const NestedPanel: StoryObj<typeof meta> = {

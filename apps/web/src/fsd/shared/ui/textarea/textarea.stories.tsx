@@ -42,5 +42,5 @@ export const NarrowMixedLanguage: Story = {
         'aria-label': 'Notes',
         placeholder: 'Заметка · Lesson note',
     },
-    parameters: { viewport: { defaultViewport: 'mobile1' } },
+    globals: { viewport: { value: 'phone', isRotated: false } },
 };

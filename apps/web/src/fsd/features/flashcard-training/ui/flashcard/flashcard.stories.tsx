@@ -1,18 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { I18nProvider } from '@/fsd/shared/i18n';
-import { en } from '@/fsd/shared/i18n/messages/en';
 import { Flashcard } from './flashcard';
 
 const meta = {
     component: Flashcard,
     title: 'Features/Flashcard training/Card',
-    decorators: [
-        (Story) => (
-            <I18nProvider locale='en' messages={en}>
-                <Story />
-            </I18nProvider>
-        ),
-    ],
     args: {
         face: 'front',
         position: '1 / 32',
