@@ -17,7 +17,7 @@ export async function resolveKnowledgeAudioDraftSource(
 ): Promise<ResolvedSpeechSource & { authority: typeof source }> {
     const note = await getOwnedKnowledgeRow(tx, actorId, source.noteId).catch(
         () => {
-            throw new SpeechError('speech_source_unavailable', 404);
+            throw new SpeechError('speech_source_unavailable');
         },
     );
     const [branch] = await tx
@@ -29,7 +29,7 @@ export async function resolveKnowledgeAudioDraftSource(
         .for('share');
 
     if (!branch) {
-        throw new SpeechError('speech_source_unavailable', 404);
+        throw new SpeechError('speech_source_unavailable');
     }
 
     return {

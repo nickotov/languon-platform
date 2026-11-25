@@ -57,7 +57,9 @@ export function createWorkerListeningRequest(
             }
 
             if (row.state === 'failed') {
-                throw new SpeechError(String(row.failure_code));
+                throw new SpeechError({
+                    recordingFailure: String(row.failure_code),
+                });
             }
 
             // A one-slot worker can advance its own private job while waiting for API publication.
@@ -132,8 +134,8 @@ export function createListeningQueueProcessor(
                     due_at=clock_timestamp()+interval '1 second',claim_id=null where ${claimed}`);
             } else if (
                 (error instanceof SpeechError &&
-                    error.status !== 429 &&
-                    error.status !== 503) ||
+                    error.kind !== 'capacity_limited' &&
+                    error.kind !== 'unavailable') ||
                 error instanceof z.ZodError ||
                 Number(row.failures) >= 2
             ) {

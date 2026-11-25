@@ -1,3 +1,5 @@
+import { textAiCircuitKey } from '../../../../src/infrastructure/text-ai/text-ai-circuit';
+import { dictionaryGenerationProviderCircuitTable } from '../../../../src/modules/dictionaries/infrastructure/persistence/drizzle/schema';
 import {
     verifyPrivateTranslationBeforeCompletion,
     verifyPrivateTranslationAfterCompletion,
@@ -1317,6 +1319,94 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 },
             });
         });
+
+        it('passes a full page of circuit-blocked jobs and resumes them after recovery', async () => {
+            const first = await enqueue();
+            const [template] = await db
+                .select()
+                .from(jobs)
+                .where(eq(jobs.id, first.id));
+            const execution = Object.fromEntries(
+                Object.entries(template!.selectedExecutionSnapshot).filter(
+                    ([key]) => !key.startsWith('action'),
+                ),
+            ) as NonNullable<typeof template>['selectedExecutionSnapshot'];
+            // Model queued peers waiting for fresh provider reservations. Only the
+            // first blocked job and the healthy job need active financial holds.
+            const peers = Array.from({ length: 24 }, (_, index) => ({
+                ...template!,
+                id: randomUUID(),
+                operationId: randomUUID(),
+                selectedExecutionSnapshot: execution,
+                aiCreditAccounted: false,
+                aiCreditReservationId: null,
+                providerReservationState: 'released',
+                providerReservedAttempts: 0,
+                providerReservedCostMicros: 0,
+                providerReservedInputTokens: 0,
+                providerReservedOutputTokens: 0,
+                createdAt: new Date(now.getTime() + index + 1),
+                nextAttemptAt: new Date(now.getTime() + index + 1),
+            }));
+
+            await db.transaction(async (tx) => {
+                await tx.execute(
+                    sql`select set_config('languon.texts_execution_revision','1',true),set_config('languon.texts_capacity_revision','1',true),set_config('languon.text_ai_selection_revision','1',true),set_config('languon.ai_credit_settlement_revision','1',true)`,
+                );
+
+                await tx.insert(jobs).values(peers);
+            });
+
+            now = new Date(now.getTime() + peers.length + 1);
+            const healthy = await enqueueWithConsent(
+                owner,
+                'text-translation',
+                {
+                    folderId: folder,
+                    operationId: randomUUID(),
+                    sourceText: 'Hello world.',
+                    sourceLanguage: 'en',
+                    targetLanguage: 'es',
+                },
+                context(),
+            );
+            const circuit = textAiCircuitKey(
+                template!.selectedExecutionSnapshot,
+                template!.format,
+            );
+            const recoveryAt = new Date(now.getTime() + 60_000);
+            await db.insert(dictionaryGenerationProviderCircuitTable).values({
+                id: circuit,
+                consecutiveFailures: 3,
+                openUntil: recoveryAt,
+                updatedAt: now,
+            });
+
+            expect(await store.claimNext(claimOptions, context())).toBeNull();
+            now = new Date(now.getTime() + 1000);
+            const claim = await store.claimNext(claimOptions, context());
+            expect(claim?.lease.jobId).toBe(healthy.id);
+            now = recoveryAt;
+            const resumed = await store.claimNext(claimOptions, context());
+            expect(resumed?.lease.jobId).toBe(first.id);
+            expect(resumed?.lease.attempt).toBe(1);
+            expect(await store.markDispatched(resumed!.lease, context())).toBe(
+                true,
+            );
+
+            expect(
+                await store.complete(
+                    resumed!.lease,
+                    { language: 'en', confidence: 'high' },
+                    { inputTokens: 10, outputTokens: 1 },
+                    context(),
+                ),
+            ).toBe(true);
+
+            expect((await store.get(owner, first.id, context())).state).toBe(
+                'completed',
+            );
+        }, 60_000);
 
         it('cancels a running attempt and fences its late completion', async () => {
             const job = await enqueue(),

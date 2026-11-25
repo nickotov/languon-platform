@@ -4311,6 +4311,84 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ).toBe(next.sourceSnapshot.version);
         });
 
+        it('applies the same owner and optional-folder visibility to reference search and detail', async () => {
+            const chat = await create();
+            const activeFolder = randomUUID();
+            const archivedFolder = randomUUID();
+            const date = clock.toISOString();
+            await client`insert into text_folders(id,owner_id,name,lifecycle,created_at,updated_at) values
+                (${activeFolder},${owner},'Reader','active',${date},${date}),
+                (${archivedFolder},${owner},'Old reader','archived',${date},${date})`;
+
+            const fixtures = [
+                {
+                    actor: owner,
+                    folder: null,
+                    lifecycle: 'active',
+                    visible: true,
+                },
+                {
+                    actor: owner,
+                    folder: activeFolder,
+                    lifecycle: 'active',
+                    visible: true,
+                },
+                {
+                    actor: owner,
+                    folder: archivedFolder,
+                    lifecycle: 'active',
+                    visible: false,
+                },
+                {
+                    actor: owner,
+                    folder: null,
+                    lifecycle: 'archived',
+                    visible: false,
+                },
+                {
+                    actor: learner,
+                    folder: null,
+                    lifecycle: 'active',
+                    visible: false,
+                },
+            ].map((row) => ({ ...row, id: randomUUID() }));
+
+            for (const row of fixtures) {
+                await client`insert into texts(id,owner_id,folder_id,title,source_language,target_language,source_text,lifecycle,created_at,updated_at) values
+                    (${row.id},${row.actor},${row.folder},'Reference selection','es','en','Selected body',${row.lifecycle},${date},${date})`;
+            }
+
+            const { references } = await store.textReferences(
+                access(),
+                chat.id,
+                'Selected body',
+            );
+
+            expect(references.map((item) => item.id).sort()).toEqual(
+                fixtures
+                    .filter((row) => row.visible)
+                    .map((row) => row.id)
+                    .sort(),
+            );
+
+            for (const row of fixtures) {
+                const result = store.textReference(access(), chat.id, row.id);
+                if (row.visible) {
+                    await expect(result).resolves.toMatchObject({
+                        reference: { id: row.id, content: 'Selected body' },
+                    });
+                } else {
+                    await expect(result).rejects.toMatchObject({
+                        code: 'conversation_not_found',
+                    });
+                }
+            }
+
+            await expect(
+                store.textReferences({ ownerId: learner }, chat.id, ''),
+            ).rejects.toMatchObject({ code: 'conversation_not_found' });
+        });
+
         it('freezes the full Knowledge editor snapshot, copies owned Text references, and names the first conversation turn', async () => {
             const note = await db.transaction((tx) =>
                 new DrizzleKnowledgeTransactionParticipant(tx).publish(

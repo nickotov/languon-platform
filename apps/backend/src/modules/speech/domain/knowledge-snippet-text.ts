@@ -34,7 +34,7 @@ export function knowledgeSnippetText(block: LearningBlock, selector: Selector) {
     }
 
     if (!text?.trim() || !language) {
-        throw new SpeechError('speech_text_unavailable', 400);
+        throw new SpeechError('speech_text_unavailable');
     }
 
     return { text, language };

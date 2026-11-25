@@ -248,6 +248,7 @@ deferred; start it explicitly with `pnpm dev:mobile` when needed.
 | `pnpm lint`                                               | Run repository lint rules                                                              |
 | `pnpm typecheck`                                          | Type-check every workspace                                                             |
 | `pnpm test`                                               | Run all automated tests                                                                |
+| `pnpm test:backend-architecture`                          | Test backend domain and application dependency rules                                   |
 | `pnpm test:frontend-architecture`                         | Test web/admin FSD import boundaries                                                   |
 | `pnpm test:persistence-readability`                       | Test backend persistence size and spacing lint rules                                   |
 | `pnpm test:readability`                                   | Test shared readability enforcement, safe fixes and persistence constraints            |

@@ -200,30 +200,65 @@ describe('speech HTTP boundary', () => {
         expect(service.prepare).not.toHaveBeenCalled();
     });
 
-    it('returns a stable sanitized source error without leaking saved content', async () => {
-        const { app, service } = setup();
-        service.prepare.mockRejectedValueOnce(
-            new SpeechError('speech_source_unavailable', 404),
-        );
+    it.each([
+        [
+            new SpeechError('speech_source_unavailable'),
+            404,
+            'speech_source_unavailable',
+        ],
+        [
+            new SpeechError('speech_source_forbidden'),
+            403,
+            'speech_source_unavailable',
+        ],
+        [
+            new SpeechError('speech_text_unavailable'),
+            400,
+            'speech_text_unavailable',
+        ],
+        [
+            new SpeechError('speech_operation_conflict'),
+            409,
+            'speech_operation_conflict',
+        ],
+        [
+            new SpeechError({
+                recordingFailure: 'speech_recording_unavailable',
+            }),
+            409,
+            'speech_recording_unavailable',
+        ],
+        [new SpeechError('speech_queue_limit'), 429, 'speech_queue_limit'],
+        [
+            new SpeechError('speech_provider_unavailable'),
+            503,
+            'speech_provider_unavailable',
+        ],
+    ] as const)(
+        'maps %s to HTTP %i with public code %s',
+        async (error, status, code) => {
+            const { app, service } = setup();
+            service.prepare.mockRejectedValueOnce(error);
 
-        const result = await app.request('/speech/prepare', {
-            method: 'POST',
-            headers: {
-                Authorization: authorization,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ source, operationId }),
-        });
+            const result = await app.request('/speech/prepare', {
+                method: 'POST',
+                headers: {
+                    Authorization: authorization,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ source, operationId }),
+            });
 
-        expect(result.status).toBe(404);
-        const body = await result.json();
-        expect(body).toMatchObject({
-            error: {
-                code: 'speech_source_unavailable',
-                message: 'Pronunciation is unavailable for this request.',
-            },
-        });
+            expect(result.status).toBe(status);
+            const body = await result.json();
+            expect(body).toMatchObject({
+                error: {
+                    code,
+                    message: 'Pronunciation is unavailable for this request.',
+                },
+            });
 
-        expect(JSON.stringify(body)).not.toContain(cardId);
-    });
+            expect(JSON.stringify(body)).not.toContain(cardId);
+        },
+    );
 });

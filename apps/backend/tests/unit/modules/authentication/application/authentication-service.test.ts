@@ -1,3 +1,6 @@
+import { drizzle } from 'drizzle-orm/postgres-js';
+import type { databaseSchema } from '../../../../../src/infrastructure/database/schema';
+import { DrizzleSecurityEventRecorder } from '../../../../../src/modules/authentication/infrastructure/persistence/drizzle/drizzle-security-event-recorder';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -637,6 +640,52 @@ function createHarness(
 const context = { clientAddress: '127.0.0.1', correlationId: 'test' };
 
 describe('AuthenticationService', () => {
+    it('reports audit write failures at most once a minute while committed session changes succeed', async () => {
+        vi.useFakeTimers();
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        try {
+            const database = drizzle.mock<typeof databaseSchema>();
+            vi.spyOn(database, 'insert').mockImplementation(() => {
+                throw new Error('synthetic private driver detail');
+            });
+
+            const { service, store } = createHarness({
+                securityEvents: new DrizzleSecurityEventRecorder(database),
+            });
+            const account = activeAccount();
+            store.accounts.set(account.userId, account);
+            await service.passwordLogin({
+                context,
+                email: account.email,
+                password,
+            });
+
+            expect(store.sessions.size).toBe(1);
+
+            const logout = () =>
+                service.logoutAll({ context, userId: account.userId });
+
+            expect(await logout()).toEqual({ status: 'all_sessions_revoked' });
+            expect([...store.sessions.values()][0]?.revocationReason).toBe(
+                'logout_all',
+            );
+
+            expect(warn.mock.calls).toEqual([
+                ['Authentication audit write failed.', { failureCount: 1 }],
+            ]);
+
+            vi.advanceTimersByTime(60_000);
+            await logout();
+            expect(warn.mock.calls).toEqual([
+                ['Authentication audit write failed.', { failureCount: 1 }],
+                ['Authentication audit write failed.', { failureCount: 3 }],
+            ]);
+        } finally {
+            warn.mockRestore();
+            vi.useRealTimers();
+        }
+    });
+
     it('creates and safely replaces a pending signup, but leaves an active account unchanged', async () => {
         const { sent, service, store } = createHarness();
         const first = await service.signUp({

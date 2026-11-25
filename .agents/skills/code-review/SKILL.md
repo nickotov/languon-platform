@@ -58,7 +58,12 @@ Trace changed execution paths and verify:
 - For React performance findings, identify the triggering interaction, state
   owner, repeated work, and affected data size. Label an unmeasured cost as a
   profiling candidate. Hook counts alone cannot establish an interaction delay.
-- Performance or resource use has no material unbounded behavior.
+- For backend query or worker costs, identify the accepted input size, rows or
+  bytes returned, calls per input, concurrency limit and work under locks where
+  relevant. State whether a cost was derived from source or measured. Select
+  representative cardinalities for a query-count, payload or timing comparison.
+- Trace a changed domain decision through a production caller and its response
+  or persisted outcome. Check that the relevant test exercises that decision.
 - For handwritten changes, apply the
   [readability reviewer checks](../../../docs/code-readability.md#author-and-reviewer-checks).
   Identify concrete comprehension risks and behavior changes hidden in refactors;

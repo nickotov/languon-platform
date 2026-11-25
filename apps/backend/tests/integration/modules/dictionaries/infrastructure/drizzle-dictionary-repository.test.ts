@@ -2586,6 +2586,35 @@ run('DrizzleDictionaryStore', () => {
         expect(ownerPage.nextCursor).not.toBeNull();
         expect(publicPage.nextCursor).not.toBeNull();
 
+        for (const sortKey of [1024, '9223372036854775808', '1'.repeat(20)]) {
+            const cursor = Buffer.from(
+                JSON.stringify({
+                    dictionaryVersion: published.version,
+                    settingsVersion: dictionary.settings.version,
+                    id: randomUUID(),
+                    sortKey,
+                }),
+            ).toString('base64url');
+
+            await expect(
+                store.listCards({
+                    context: context(),
+                    dictionaryId: dictionary.id,
+                    ownerId,
+                    query: { lifecycle: 'active', limit: 1, cursor },
+                }),
+            ).rejects.toMatchObject({ name: 'InvalidDictionaryRequestError' });
+
+            await expect(
+                store.readSharedDictionary({
+                    context: context(),
+                    dictionaryId: dictionary.id,
+                    verifiedShareDigest: digest,
+                    query: { limit: 1, cursor },
+                }),
+            ).rejects.toMatchObject({ name: 'InvalidDictionaryRequestError' });
+        }
+
         await store.createCard({
             context: context(),
             dictionaryId: dictionary.id,

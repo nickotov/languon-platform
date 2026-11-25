@@ -145,11 +145,21 @@ export async function heartbeatTranscription(
                 return false;
             }
 
-            await readTranscriptionWorkerAudio(tx, job, lease.leaseToken);
-
-            const renewed = await tx.execute(
-                sql`select languon_heartbeat_transcription(${job.id}::uuid,${lease.workerId}::text,${lease.fencingToken}::integer,${lease.leaseToken}::uuid) as renewed`,
-            );
+            // Keep audio inside PostgreSQL. Only dispatch needs the media bytes.
+            const renewed = await tx.execute(sql`
+                select case when exists (
+                    select 1 from languon_read_transcription_audio_fenced(
+                        ${job.id}::uuid, ${lease.workerId}::text,
+                        ${lease.fencingToken}::integer, ${lease.leaseToken}::uuid
+                    ) as source
+                    where source.bytes is not null
+                      and source.mime_type in ('audio/wav', 'audio/mpeg')
+                      and source.duration_ms = ${job.sourceDurationMs}
+                ) then languon_heartbeat_transcription(
+                    ${job.id}::uuid, ${lease.workerId}::text,
+                    ${lease.fencingToken}::integer, ${lease.leaseToken}::uuid
+                ) else false end as renewed
+            `);
 
             return renewed[0]?.renewed === true;
         } catch (error) {

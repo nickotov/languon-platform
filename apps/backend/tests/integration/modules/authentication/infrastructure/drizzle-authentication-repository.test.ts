@@ -875,6 +875,32 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ).resolves.toMatchObject({ id: independent.id });
         });
 
+        it('rejects rotation at the absolute expiry without creating a successor', async () => {
+            const { session, userId } =
+                await createVerifiedAuthStoreAccount('expiry@example.com');
+            const successor = createAuthStoreSession({
+                userId,
+                predecessorId: session.id,
+                familyId: session.familyId,
+                method: session.authenticationMethod,
+            });
+
+            await expect(
+                authStore.rotateRefreshSession({
+                    digest: session.refreshDigest,
+                    now: session.absoluteExpiresAt,
+                    successor,
+                }),
+            ).resolves.toEqual({ kind: 'unavailable' });
+
+            const family = await database
+                .select()
+                .from(authSessionsTable)
+                .where(eq(authSessionsTable.familyId, session.familyId));
+
+            expect(family).toMatchObject([{ id: session.id, rotatedAt: null }]);
+        });
+
         it('revokes a rotated refresh family when logout presents a stale predecessor', async () => {
             const { session, userId } = await createVerifiedAuthStoreAccount(
                 'stale-logout@example.com',
@@ -900,11 +926,36 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }),
             ).resolves.toMatchObject({ kind: 'rotated' });
 
+            const revokedAt = new Date('2026-08-13T12:03:00.000Z');
             await authStore.revokeSessionFamilyByDigest({
                 digest: session.refreshDigest,
                 reason: 'logout',
-                revokedAt: new Date('2026-08-13T12:03:00.000Z'),
+                revokedAt,
             });
+
+            // Repeated revocation must retain the original reason and time.
+            const later = new Date('2026-08-13T12:04:00.000Z');
+            await authStore.revokeSessionFamilyByDigest({
+                digest: session.refreshDigest,
+                reason: 'logout_all',
+                revokedAt: later,
+            });
+
+            await expect(
+                authStore.rotateRefreshSession({
+                    digest: successor.refreshDigest,
+                    now: later,
+                    successor: {
+                        ...createAuthStoreSession({
+                            userId,
+                            familyId: session.familyId,
+                            predecessorId: successor.id,
+                            method: session.authenticationMethod,
+                        }),
+                        createdAt: later,
+                    },
+                }),
+            ).resolves.toEqual({ kind: 'unavailable' });
 
             const family = await database
                 .select()
@@ -912,11 +963,28 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .where(eq(authSessionsTable.familyId, session.familyId));
 
             expect(family).toHaveLength(2);
-            expect(
-                family.every(
-                    ({ revocationReason }) => revocationReason === 'logout',
-                ),
-            ).toBe(true);
+            expect(family).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        id: session.id,
+                        rotatedAt: successor.createdAt,
+                        rotatedToSessionId: successor.id,
+                        revocationReason: 'logout',
+                        revokedAt,
+                    }),
+                    expect.objectContaining({
+                        id: successor.id,
+                        predecessorSessionId: session.id,
+                        absoluteExpiresAt: session.absoluteExpiresAt,
+                        authenticatedAt: session.authenticatedAt,
+                        familyId: session.familyId,
+                        userId,
+                        refreshTokenDigest: successor.refreshDigest,
+                        revocationReason: 'logout',
+                        revokedAt,
+                    }),
+                ]),
+            );
         });
 
         it('serializes stale-token logout with refresh rotation', async () => {

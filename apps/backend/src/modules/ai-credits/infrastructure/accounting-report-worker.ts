@@ -1,3 +1,7 @@
+// At the default cadence, two fast batches can visit all 64 registered ranges.
+const maximumRefreshesPerTick = 32;
+const claimBudgetMs = 1000;
+
 /** Dedicated accounting pool can be supplied through the store; no generation-pool timer work. */
 export function startAccountingReportWorker(options: {
     refreshNextReport(at?: Date): Promise<boolean>;
@@ -19,17 +23,27 @@ export function startAccountingReportWorker(options: {
         );
     }
 
+    const refreshBatch = async () => {
+        // Bound new claims. Each claimed report keeps its own lease and SQL timeout.
+        const deadline = performance.now() + claimBudgetMs;
+        for (let count = 0; count < maximumRefreshesPerTick; count++) {
+            if (stopped || performance.now() >= deadline) {
+                return;
+            }
+
+            if (!(await options.refreshNextReport())) {
+                return;
+            }
+        }
+    };
+
     const schedule = () => {
         if (stopped) {
             return;
         }
 
         timer = setTimeout(() => {
-            inFlight = options
-                .refreshNextReport()
-                .then(() => undefined)
-                .catch(options.onError)
-                .finally(schedule);
+            inFlight = refreshBatch().catch(options.onError).finally(schedule);
         }, interval);
 
         timer.unref();

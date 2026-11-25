@@ -30,6 +30,8 @@ import {
 } from './texts-job-persistence-support';
 import { textsAiJobsTable as jobs } from './texts-job-schema';
 
+const claimPageSize = 25;
+
 export async function claimNext(
     persistence: TextsJobStoreContext,
     input: Parameters<TextsWorkerStore['claimNext']>[0],
@@ -143,8 +145,9 @@ export async function claimNext(
                     lte(jobs.nextAttemptAt, context.now),
                 ),
             )
-            .orderBy(asc(jobs.createdAt), asc(jobs.id))
-            .limit(25);
+            .orderBy(asc(jobs.nextAttemptAt), asc(jobs.createdAt), asc(jobs.id))
+            .limit(claimPageSize);
+        const locallyBlocked: string[] = [];
 
         for (const candidate of candidates) {
             const invalid = await valid(
@@ -169,6 +172,7 @@ export async function claimNext(
             }
 
             if (await isTextAiCircuitOpen(tx, scope(job, context.now))) {
+                locallyBlocked.push(job.id);
                 continue;
             }
 
@@ -179,8 +183,11 @@ export async function claimNext(
                     budget,
                 });
 
+            if (capacity.globalRunning >= input.globalConcurrency) {
+                continue;
+            }
+
             if (
-                capacity.globalRunning >= input.globalConcurrency ||
                 capacity.actorRunning >= input.userConcurrency ||
                 !textAiProviderBudgetAllows(
                     capacity.providerUsage,
@@ -188,6 +195,7 @@ export async function claimNext(
                     budget,
                 )
             ) {
+                locallyBlocked.push(job.id);
                 continue;
             }
 
@@ -311,6 +319,15 @@ export async function claimNext(
                 budget: actionBudget,
                 providerIdempotencyKey: `texts:${job.id}:${attempt}`,
             };
+        }
+
+        // Move a full page of locally blocked jobs behind already eligible work.
+        // Each claim retains its bounded scan under the shared capacity lock.
+        if (candidates.length === claimPageSize && locallyBlocked.length) {
+            await tx
+                .update(jobs)
+                .set({ nextAttemptAt: new Date(context.now.getTime() + 1) })
+                .where(inArray(jobs.id, locallyBlocked));
         }
 
         return null;

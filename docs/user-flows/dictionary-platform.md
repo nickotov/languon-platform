@@ -728,6 +728,8 @@ the scenarios declared here.
 
 ## Automated regression checks
 
+The dictionary repository regression checks both owner and shared card lists. Cursor sort keys outside the PostgreSQL bigint range and non-string keys must produce the ordinary invalid-request failure.
+
 Run the focused deterministic checks:
 
 ```sh

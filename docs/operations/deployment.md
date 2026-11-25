@@ -109,7 +109,10 @@ that budget during deployment overlap. Worker concurrency, polling, readiness,
 and drain limits use the matching `DICTIONARY_WORKER_*` keys in the sanitized
 environment examples.
 `SHUTDOWN_TIMEOUT_MS` defaults to 295 seconds and must remain below the Compose
-300-second stop grace so the process can close clients before forced kill.
+300-second stop grace. On termination, the API stops accepting requests and
+stops its background workers. It waits for active requests and workers before
+closing clients. One deadline covers both phases. If it expires, the API closes
+remaining HTTP connections and exits with status 1.
 
 The API and worker receive the same explicit generation policy:
 `DICTIONARY_GENERATION_MAX_INPUT_TOKENS` (32,768–262,144),

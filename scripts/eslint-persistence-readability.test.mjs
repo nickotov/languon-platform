@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { ESLint } from 'eslint';
 
@@ -125,4 +126,30 @@ test('formerly oversized implementations follow the ordinary persistence limit',
             ),
         );
     }
+});
+
+test('the speech facade has no line-budget headroom and extracted operations use the ordinary limit', async () => {
+    const facade =
+        'apps/backend/src/modules/speech/infrastructure/drizzle-speech-store.ts';
+    const source = await readFile(facade, 'utf8');
+    const exceedsSize = (results) =>
+        results.some(({ ruleId }) => ruleId === 'max-lines');
+
+    assert.equal(exceedsSize(await messages(source, facade)), false);
+    assert.equal(
+        exceedsSize(await messages(source + '\nvoid 0;', facade)),
+        true,
+    );
+
+    const extracted = facade.replace(
+        'drizzle-speech-store.ts',
+        'persistence/drizzle/recording-deletions.ts',
+    );
+
+    assert.equal(
+        exceedsSize(
+            await messages(Array(501).fill('void 0;').join('\n'), extracted),
+        ),
+        true,
+    );
 });

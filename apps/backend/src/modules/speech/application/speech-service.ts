@@ -39,11 +39,11 @@ export class SpeechService {
             });
 
             if (!decision.allowed) {
-                throw new SpeechError('rate_limited', 429);
+                throw new SpeechError('rate_limited');
             }
         } catch (error) {
             if (error instanceof GenerationBurstUnavailableError) {
-                throw new SpeechError('service_unavailable', 503);
+                throw new SpeechError('service_unavailable');
             }
 
             throw error;
@@ -152,7 +152,7 @@ export class SpeechService {
 
         const audio = await this.options.storage.read(handle.storage, signal);
         if (!audio || audio.checksum !== handle.checksum) {
-            throw new SpeechError('speech_recording_unavailable', 404);
+            throw new SpeechError('speech_recording_unavailable');
         }
 
         assertAudioIntegrity(audio);

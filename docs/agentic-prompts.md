@@ -1,3 +1,8 @@
+---
+type: reference
+title: Agentic development prompt cookbook
+---
+
 # Agentic development prompt cookbook
 
 Copy the example closest to your task and replace bracketed placeholders. State
@@ -183,6 +188,15 @@ Ask for material product/safety decisions, not routine milestone approval.
 Explore how [behavior] works and compare [bounded alternatives].
 Do not edit files or start implementation. Explain execution paths, constraints,
 tradeoffs, and the smallest recommended scope. Identify decisions I must make.
+```
+
+## Current-state backend audit
+
+```text
+Audit the current backend at [revision], focusing on [flows]. Identify included
+local changes and trace each material finding through a production caller.
+Rank findings by impact and give the smallest check that could close each one.
+Distinguish source inspection, measured results and remaining uncertainty.
 ```
 
 ## Initial code review

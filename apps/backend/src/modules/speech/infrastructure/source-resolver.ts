@@ -62,7 +62,7 @@ export class DrizzleSpeechSourceResolver {
 
         if (source.kind === 'knowledge-snippet') {
             if (!this.knowledgeCrypto) {
-                throw new SpeechError('speech_source_unavailable', 404);
+                throw new SpeechError('speech_source_unavailable');
             }
 
             return resolveKnowledgeSnippetSource(
@@ -117,7 +117,7 @@ export class DrizzleSpeechSourceResolver {
                 (source.expectedSettingsVersion !== undefined &&
                     source.expectedSettingsVersion !== owned.settings.version))
         ) {
-            throw new SpeechError('speech_source_changed', 409);
+            throw new SpeechError('speech_source_changed');
         }
 
         if (
@@ -145,7 +145,7 @@ export class DrizzleSpeechSourceResolver {
                     source.expectedLearningVersion !== undefined &&
                     source.expectedLearningVersion !== card.learningVersion)
             ) {
-                throw new SpeechError('speech_source_unavailable', 404);
+                throw new SpeechError('speech_source_unavailable');
             }
 
             const settings = learningCardSettings(owned.settings, card);
@@ -169,19 +169,19 @@ export class DrizzleSpeechSourceResolver {
             }
 
             if (field === 'example' && !settings.exampleEnabled) {
-                throw new SpeechError('speech_source_unavailable', 404);
+                throw new SpeechError('speech_source_unavailable');
             }
 
             if (
                 field === 'exampleTranslation' &&
                 !settings.exampleTranslationEnabled
             ) {
-                throw new SpeechError('speech_source_unavailable', 404);
+                throw new SpeechError('speech_source_unavailable');
             }
 
             const text = card[field];
             if (!text?.trim()) {
-                throw new SpeechError('speech_source_unavailable', 404);
+                throw new SpeechError('speech_source_unavailable');
             }
 
             let role: 'source' | 'target';
@@ -222,7 +222,7 @@ export class DrizzleSpeechSourceResolver {
                 .for('share');
 
             if (!attempt) {
-                throw new SpeechError('speech_source_unavailable', 404);
+                throw new SpeechError('speech_source_unavailable');
             }
 
             const exercise = await readableExercise(
@@ -285,7 +285,7 @@ export class DrizzleSpeechSourceResolver {
                 .limit(1);
 
             if (!review && !attempt) {
-                throw new SpeechError('speech_reference_hidden', 403);
+                throw new SpeechError('speech_reference_hidden');
             }
         }
 

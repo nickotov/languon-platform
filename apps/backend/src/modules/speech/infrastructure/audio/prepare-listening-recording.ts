@@ -144,9 +144,10 @@ export function createListeningRecordingPreparer(deps: {
             }
 
             if (state.state !== 'ready' || !state.playbackId) {
-                throw new SpeechError(
-                    state.error ?? 'speech_recording_unavailable',
-                );
+                throw new SpeechError({
+                    recordingFailure:
+                        state.error ?? 'speech_recording_unavailable',
+                });
             }
 
             playback.push({ utterance, playbackId: state.playbackId });

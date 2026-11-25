@@ -21,7 +21,6 @@ import { DrizzleCapabilityPolicyParticipant } from '../../ai-credits/infrastruct
 import type { CapabilityPolicy } from '@languon/contracts';
 import { randomUUID, createHmac } from 'node:crypto';
 import { knowledgeSpeechRecordingsTable } from './knowledge-speech-schema';
-import { usersTable } from '../../users/infrastructure/persistence/drizzle/schema';
 import { isDeepStrictEqual } from 'node:util';
 import {
     and,
@@ -30,7 +29,6 @@ import {
     desc,
     eq,
     gte,
-    gt,
     inArray,
     lte,
     ne,
@@ -69,10 +67,12 @@ import type {
     StoredSpeechSource,
     SpeechProviderObservation,
 } from '../application/ports';
+import { lockSpeechOperation } from './persistence/drizzle/speech-operation-lock';
 import {
-    adminAuditEventsTable,
-    adminMembershipsTable,
-} from '../../administration/infrastructure/persistence/drizzle/schema';
+    markRecordingsDeleting,
+    finishRecordingDeletion,
+    listRecordingDeletions,
+} from './persistence/drizzle/recording-deletions';
 import {
     speechBindingsTable as bindings,
     speechJobsTable as jobs,
@@ -135,7 +135,7 @@ export class DrizzleSpeechStore implements SpeechStore {
         const value = rows[0]?.now;
         const now = value instanceof Date ? value : new Date(String(value));
         if (!Number.isFinite(now.getTime())) {
-            throw new SpeechError('speech_clock_unavailable', 503);
+            throw new SpeechError('speech_clock_unavailable');
         }
 
         return now;
@@ -188,7 +188,7 @@ export class DrizzleSpeechStore implements SpeechStore {
 
         if (source.kind === 'knowledge-snippet') {
             if (!resolved.authority) {
-                throw new SpeechError('speech_source_unavailable', 403);
+                throw new SpeechError('speech_source_forbidden');
             }
 
             return resolved.authority;
@@ -202,7 +202,7 @@ export class DrizzleSpeechStore implements SpeechStore {
             source.access.kind === 'shared' &&
             !('keyDigest' in source.access)
         ) {
-            throw new SpeechError('speech_source_unavailable', 403);
+            throw new SpeechError('speech_source_forbidden');
         }
 
         return source as StoredSpeechSource;
@@ -214,7 +214,7 @@ export class DrizzleSpeechStore implements SpeechStore {
             !inspected.characterCount ||
             inspected.characterCount > (this.options.maxCharacters ?? 2000)
         ) {
-            throw new SpeechError('speech_text_unavailable', 400);
+            throw new SpeechError('speech_text_unavailable');
         }
 
         const fixture =
@@ -261,12 +261,6 @@ export class DrizzleSpeechStore implements SpeechStore {
         return fixture
             ? sql`${recordings.profile}->>'provider' = 'fixture'`
             : sql`${recordings.profile}->>'provider' <> 'fixture'`;
-    }
-
-    private async lock(transaction: AiCreditTransaction, key: string) {
-        await transaction.execute(
-            sql`select pg_advisory_xact_lock(hashtextextended(${key}, 1920424383))`,
-        );
     }
 
     private async ready(
@@ -355,12 +349,12 @@ export class DrizzleSpeechStore implements SpeechStore {
         }
 
         if (!this.options.playbackEnabled || !this.options.generationEnabled) {
-            throw new SpeechError('speech_provider_unavailable', 503);
+            throw new SpeechError('speech_provider_unavailable');
         }
 
         const profile = this.options.profileResolver.supports(first.language);
         if (!profile) {
-            throw new SpeechError('speech_provider_unavailable', 503);
+            throw new SpeechError('speech_provider_unavailable');
         }
 
         return this.options.database.transaction(async (tx) => {
@@ -450,8 +444,8 @@ export class DrizzleSpeechStore implements SpeechStore {
         );
 
         identity.key = identity.keys[0]!;
-        await this.lock(tx, identity.key);
-        await this.lock(tx, `actor:${input.actorId}`);
+        await lockSpeechOperation(tx, identity.key);
+        await lockSpeechOperation(tx, `actor:${input.actorId}`);
         const admitted = {
             actorId: input.actorId,
             operationId: input.operationId,
@@ -509,9 +503,10 @@ export class DrizzleSpeechStore implements SpeechStore {
             } else {
                 const state = await this.response(tx, prior.binding, input.now);
                 if (state.state === 'failed') {
-                    throw new SpeechError(
-                        state.error ?? 'speech_recording_unavailable',
-                    );
+                    throw new SpeechError({
+                        recordingFailure:
+                            state.error ?? 'speech_recording_unavailable',
+                    });
                 }
 
                 return state;
@@ -583,8 +578,8 @@ export class DrizzleSpeechStore implements SpeechStore {
             const admittedInput = { ...input, source };
             const identity = this.identity(resolved);
             // Source aggregate locks precede canonical/actor admission locks, then wallet locks.
-            await this.lock(tx, identity.key);
-            await this.lock(tx, `actor:${input.actorId}`);
+            await lockSpeechOperation(tx, identity.key);
+            await lockSpeechOperation(tx, `actor:${input.actorId}`);
             const existing = (
                 await tx
                     .select()
@@ -764,7 +759,7 @@ export class DrizzleSpeechStore implements SpeechStore {
             )[0];
 
             if (!quote) {
-                throw new SpeechError('speech_quote_not_found', 404);
+                throw new SpeechError('speech_quote_not_found');
             }
 
             const resolved = await this.options.revalidateSource(
@@ -773,8 +768,8 @@ export class DrizzleSpeechStore implements SpeechStore {
                 tx,
             );
             const identity = this.identity(resolved);
-            await this.lock(tx, identity.key);
-            await this.lock(tx, `actor:${input.actorId}`);
+            await lockSpeechOperation(tx, identity.key);
+            await lockSpeechOperation(tx, `actor:${input.actorId}`);
             if (
                 resolved.revision !== quote.sourceRevision ||
                 !identity.keys.includes(quote.canonicalKey)
@@ -871,7 +866,7 @@ export class DrizzleSpeechStore implements SpeechStore {
                 );
 
                 if (!profile || !this.options.generationEnabled) {
-                    throw new SpeechError('speech_generation_unavailable', 503);
+                    throw new SpeechError('speech_generation_unavailable');
                 }
 
                 if (!isDeepStrictEqual(profile, quote.profile)) {
@@ -934,7 +929,7 @@ export class DrizzleSpeechStore implements SpeechStore {
             .for('update');
 
         if (!recording || !['ready', 'pending'].includes(recording.state)) {
-            throw new SpeechError('speech_recording_unavailable', 404);
+            throw new SpeechError('speech_recording_unavailable');
         }
 
         if (recording.state === 'pending') {
@@ -953,7 +948,7 @@ export class DrizzleSpeechStore implements SpeechStore {
                 : [];
 
             if (!activeJob) {
-                throw new SpeechError('speech_recording_unavailable', 404);
+                throw new SpeechError('speech_recording_unavailable');
             }
         }
 
@@ -1032,7 +1027,7 @@ export class DrizzleSpeechStore implements SpeechStore {
     ) {
         // Recheck all configured identities after the cross-key budget lock:
         // another admitted request may have filled the cache while we waited.
-        await this.lock(tx, 'operational-budget');
+        await lockSpeechOperation(tx, 'operational-budget');
         const cached = await this.ready(tx, identity.keys, identity.fixture);
         if (cached) {
             return this.bind(tx, input, resolved, cached.id, null);
@@ -1076,7 +1071,7 @@ export class DrizzleSpeechStore implements SpeechStore {
             );
 
         if ((queued?.value ?? 0) >= (this.options.ownerQueuedLimit ?? 10)) {
-            throw new SpeechError('speech_queue_limit', 429);
+            throw new SpeechError('speech_queue_limit');
         }
 
         const estimatedCost = Math.ceil(
@@ -1084,7 +1079,7 @@ export class DrizzleSpeechStore implements SpeechStore {
         );
 
         if (estimatedCost > (this.options.maxCostUnitsPerClip ?? 10000)) {
-            throw new SpeechError('speech_provider_budget', 429);
+            throw new SpeechError('speech_provider_budget');
         }
 
         await reserveSpeechAdmissionQuota(tx, {
@@ -1267,7 +1262,7 @@ export class DrizzleSpeechStore implements SpeechStore {
 
     public async request(actorId: string, requestId: string, now: Date) {
         if (!this.options.playbackEnabled) {
-            throw new SpeechError('speech_playback_unavailable', 503);
+            throw new SpeechError('speech_playback_unavailable');
         }
 
         return this.options.database.transaction(async (tx) => {
@@ -1285,7 +1280,7 @@ export class DrizzleSpeechStore implements SpeechStore {
             )[0];
 
             if (!row) {
-                throw new SpeechError('speech_request_not_found', 404);
+                throw new SpeechError('speech_request_not_found');
             }
 
             return {
@@ -1298,7 +1293,7 @@ export class DrizzleSpeechStore implements SpeechStore {
 
     public async playback(actorId: string, playbackId: string, now: Date) {
         if (!this.options.playbackEnabled) {
-            throw new SpeechError('speech_playback_unavailable', 503);
+            throw new SpeechError('speech_playback_unavailable');
         }
 
         return this.options.database.transaction(async (tx) => {
@@ -1321,7 +1316,7 @@ export class DrizzleSpeechStore implements SpeechStore {
             )[0];
 
             if (!row?.recording.checksum) {
-                throw new SpeechError('speech_recording_unavailable', 404);
+                throw new SpeechError('speech_recording_unavailable');
             }
 
             await tx
@@ -1375,7 +1370,7 @@ export class DrizzleSpeechStore implements SpeechStore {
         for (const candidate of candidates) {
             const result = await this.workerTransaction(
                 async (tx, now, sourceState) => {
-                    await this.lock(tx, 'worker-capacity');
+                    await lockSpeechOperation(tx, 'worker-capacity');
                     const [row] = await tx
                         .select()
                         .from(jobs)
@@ -2152,167 +2147,34 @@ export class DrizzleSpeechStore implements SpeechStore {
             .limit(1);
 
         if (!row) {
-            throw new SpeechError('speech_recording_unavailable', 404);
+            throw new SpeechError('speech_recording_unavailable');
         }
 
         return row.storage;
     }
 
-    public async markDeleting(input: {
-        audit: {
-            actorId: string;
-            correlationId: string;
-            reason: string;
-            occurredAt: Date;
-        };
-        recordings: {
-            id: string;
-            expectedVersion: number;
-            expectedBindingCount: number;
-        }[];
-    }) {
-        return this.options.database.transaction(async (tx) => {
-            const [administrator] = await tx
-                .select({ id: adminMembershipsTable.id })
-                .from(adminMembershipsTable)
-                .innerJoin(
-                    usersTable,
-                    eq(usersTable.id, adminMembershipsTable.userId),
-                )
-                .where(
-                    and(
-                        eq(adminMembershipsTable.userId, input.audit.actorId),
-                        eq(adminMembershipsTable.role, 'owner'),
-                        sql`${adminMembershipsTable.revokedAt} is null`,
-                        eq(usersTable.status, 'active'),
-                    ),
-                )
-                .for('share');
-
-            if (!administrator) {
-                throw new SpeechError('admin_access_denied', 403);
-            }
-
-            const selected: { id: string; storage: AudioObjectReference }[] =
-                [];
-
-            for (const target of [...input.recordings].sort((a, b) =>
-                a.id.localeCompare(b.id),
-            )) {
-                const [snapshot] = await tx
-                    .select()
-                    .from(recordings)
-                    .where(eq(recordings.id, target.id))
-                    .limit(1);
-
-                if (!snapshot) {
-                    throw new SpeechError('speech_recording_not_found', 404);
-                }
-
-                await this.lock(tx, snapshot.canonicalKey);
-                const [row] = await tx
-                    .select()
-                    .from(recordings)
-                    .where(eq(recordings.id, target.id))
-                    .limit(1)
-                    .for('update');
-                const [linked] = await tx
-                    .select({ value: count() })
-                    .from(bindings)
-                    .where(eq(bindings.recordingId, target.id));
-
-                if (
-                    !row ||
-                    row.version !== target.expectedVersion ||
-                    linked?.value !== target.expectedBindingCount ||
-                    !['ready', 'deleting', 'failed'].includes(row.state)
-                ) {
-                    throw new SpeechError('speech_delete_impact_changed');
-                }
-
-                selected.push({ id: row.id, storage: row.storage });
-            }
-
-            for (const target of selected) {
-                await tx
-                    .update(recordings)
-                    .set({
-                        state: 'deleting',
-                        text: '',
-                        version: sql`${recordings.version}+1`,
-                    })
-                    .where(eq(recordings.id, target.id));
-            }
-
-            await tx.insert(adminAuditEventsTable).values({
-                id: randomUUID(),
-                action: 'speech_recordings_deleted',
-                actorUserId: input.audit.actorId,
-                correlationId: input.audit.correlationId,
-                reason: input.audit.reason,
-                occurredAt: input.audit.occurredAt,
-                expiresAt: new Date(
-                    input.audit.occurredAt.getTime() + 365 * 86_400_000,
-                ),
-                outcome: 'success',
-                metadata: { recordingIds: selected.map((item) => item.id) },
-            });
-
-            return selected;
-        });
+    public markDeleting(input: Parameters<SpeechStore['markDeleting']>[0]) {
+        return this.options.database.transaction((tx) =>
+            markRecordingsDeleting(tx, input),
+        );
     }
 
-    public async deleted(recordingId: string, _now = new Date()) {
-        await this.workerTransaction(async (tx, now) => {
-            // Keep association IDs as idempotency tombstones until source/account
-            // deletion. Erasing a consumed quote's binding would permit a replay
-            // of the same confirmation to reserve/charge a second generation.
-            await tx
-                .update(recordings)
-                .set({
-                    state: 'deleted',
-                    text: '',
-                    deletedAt: now,
-                    version: sql`${recordings.version}+1`,
-                })
-                .where(
-                    and(
-                        eq(recordings.id, recordingId),
-                        eq(recordings.state, 'deleting'),
-                    ),
-                );
-        });
+    public deleted(recordingId: string, _now = new Date()) {
+        return this.workerTransaction((tx, now) =>
+            finishRecordingDeletion(tx, recordingId, now),
+        );
     }
 
     public async deletionInventory(now: Date) {
-        // Cycle through durable tombstones so repeated verification of the first
-        // page cannot starve later removals after more than 100 admin deletions.
-        const rows = await this.options.database
-            .select({ id: recordings.id, storage: recordings.storage })
-            .from(recordings)
-            .where(
-                and(
-                    or(
-                        eq(recordings.state, 'deleting'),
-                        and(
-                            eq(recordings.state, 'deleted'),
-                            gte(
-                                recordings.deletedAt,
-                                new Date(now.getTime() - 86_400_000),
-                            ),
-                        ),
-                    ),
-                    this.deletionCursor
-                        ? gt(recordings.id, this.deletionCursor)
-                        : undefined,
-                ),
-            )
-            .orderBy(asc(recordings.id))
-            .limit(100);
+        const page = await listRecordingDeletions(
+            this.options.database,
+            this.deletionCursor,
+            now,
+        );
 
-        this.deletionCursor = rows.length === 100 ? rows.at(-1)!.id : null;
+        this.deletionCursor = page.nextCursor;
 
-        return rows;
+        return page.rows;
     }
 
     public async purgeActor(

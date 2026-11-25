@@ -179,6 +179,8 @@ not waived, until frontend implementation after design handoff.
 
 ## Automated regression checks
 
+The learning repository regression selects two matching entries using a maximum-length multilingual search. It validates each page and reuses the emitted cursor through the same request contract as the manual picker.
+
 Run focused contracts, projection, HTTP/service unit and guarded disposable
 PostgreSQL learning tests using repository package scripts. Relevant examples:
 

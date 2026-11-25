@@ -18,7 +18,7 @@ export async function resolveKnowledgeSpeechSource(
 > {
     const note = await getOwnedKnowledgeRow(tx, actorId, source.noteId).catch(
         () => {
-            throw new SpeechError('speech_source_unavailable', 404);
+            throw new SpeechError('speech_source_unavailable');
         },
     );
     const [branch] = await tx
@@ -43,7 +43,7 @@ export async function resolveKnowledgeSpeechSource(
     )?.attrs?.block;
 
     if (!block || ['video', 'exercise'].includes(block.type)) {
-        throw new SpeechError('speech_source_unavailable', 404);
+        throw new SpeechError('speech_source_unavailable');
     }
 
     const { text, language } = knowledgeNarrationText(

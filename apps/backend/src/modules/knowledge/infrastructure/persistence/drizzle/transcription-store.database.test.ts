@@ -764,6 +764,69 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ).rejects.toThrow();
         });
 
+        async function withRestrictedWorker(
+            run: (connection: PostgresClient, role: string) => Promise<void>,
+        ) {
+            const role = `transcription_worker_${randomUUID().replaceAll('-', '')}`;
+            await client.unsafe(`create role ${role} nologin`);
+            let restricted: PostgresClient | undefined;
+            try {
+                const script = await readFile(
+                    new URL(
+                        '../../../../../../../../infra/deploy/sql/dictionary-worker-role.sql',
+                        import.meta.url,
+                    ),
+                    'utf8',
+                );
+
+                await client.unsafe(
+                    script
+                        .split('\n')
+                        .filter((line) => !line.startsWith('\\'))
+                        .join('\n')
+                        .replaceAll(':"dictionary_worker_role"', role),
+                );
+
+                const url = new URL(getTestDatabaseUrl());
+                url.searchParams.set('options', `-c role=${role}`);
+                restricted = createPostgresClient({
+                    databaseUrl: url.toString(),
+                    maxConnections: 2,
+                });
+
+                await run(restricted, role);
+            } finally {
+                await restricted?.end();
+                await client.unsafe(`drop owned by ${role}`);
+                await client.unsafe(`drop role ${role}`);
+            }
+        }
+
+        it('renews only a live, source-bound heartbeat with the deployed worker grants', async () => {
+            const { input } = await enqueue();
+            const lease = await store.claim(workerId);
+            expect(lease?.operationId).toBe(input.operationId);
+
+            await withRestrictedWorker(async (connection) => {
+                const workerStore = new DrizzleKnowledgeTranscriptionStore({
+                    database: createDrizzleDatabase(connection, databaseSchema),
+                    executionReady: true,
+                    credentialFingerprint,
+                });
+
+                expect(await workerStore.heartbeat(lease!)).toBe(true);
+                expect(
+                    await workerStore.heartbeat({
+                        ...lease!,
+                        leaseToken: randomUUID(),
+                    }),
+                ).toBe(false);
+
+                await store.cancel(owner, noteId, input.operationId);
+                expect(await workerStore.heartbeat(lease!)).toBe(false);
+            });
+        });
+
         it('runs the real worker with deployed restricted grants and refuses raw media and forged receipts', async () => {
             const foreignOwner = randomUUID();
             await db
@@ -869,33 +932,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             ).toBe('completed');
 
             const { input } = await enqueue();
-            const role = `transcription_worker_${randomUUID().replaceAll('-', '')}`;
-            await client.unsafe(`create role ${role} nologin`);
-            let restricted: PostgresClient | undefined;
-            try {
-                const script = await readFile(
-                    new URL(
-                        '../../../../../../../../infra/deploy/sql/dictionary-worker-role.sql',
-                        import.meta.url,
-                    ),
-                    'utf8',
-                );
-
-                await client.unsafe(
-                    script
-                        .split('\n')
-                        .filter((line) => !line.startsWith('\\'))
-                        .join('\n')
-                        .replaceAll(':"dictionary_worker_role"', role),
-                );
-
-                const url = new URL(getTestDatabaseUrl());
-                url.searchParams.set('options', `-c role=${role}`);
-                restricted = createPostgresClient({
-                    databaseUrl: url.toString(),
-                    maxConnections: 2,
-                });
-
+            await withRestrictedWorker(async (restricted, role) => {
                 const restrictedDb = createDrizzleDatabase(
                     restricted,
                     databaseSchema,
@@ -1159,11 +1196,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     measurement: 'measured',
                     amountUsdMicros: 75n,
                 });
-            } finally {
-                await restricted?.end();
-                await client.unsafe(`drop owned by ${role}`);
-                await client.unsafe(`drop role ${role}`);
-            }
+            });
         });
 
         it('serializes confirmed admission against permanent source deletion without deadlock or stranded holds', async () => {

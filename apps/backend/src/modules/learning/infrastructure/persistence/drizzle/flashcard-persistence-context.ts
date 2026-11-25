@@ -28,7 +28,10 @@ export const cursorSchema = z
         id: z.uuid(),
         dictionaryId: z.uuid(),
         dictionaryVersion: z.number().int().positive(),
-        search: z.string().nullable(),
+        searchHash: z
+            .string()
+            .regex(/^[a-f0-9]{64}$/)
+            .nullable(),
     })
     .strict();
 

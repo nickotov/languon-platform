@@ -110,7 +110,10 @@ import { databaseSchema } from './infrastructure/database/schema';
 import { DrizzleAccountingStore } from './modules/ai-credits/infrastructure/persistence/drizzle/drizzle-accounting-store';
 import { DrizzleAiCreditTransactionParticipant } from './modules/ai-credits/infrastructure/persistence/drizzle/drizzle-ai-credit-participant';
 import { loadEnvironment } from './config/environment';
-import { createGracefulShutdown } from './infrastructure/server/graceful-shutdown';
+import {
+    createGracefulShutdown,
+    listenForShutdownSignals,
+} from './infrastructure/server/graceful-shutdown';
 import { createAdministrationComposition } from './modules/administration/infrastructure/administration-composition';
 import { createAuthenticationComposition } from './modules/authentication/infrastructure/authentication-composition';
 import { createDictionaryComposition } from './modules/dictionaries/infrastructure/dictionary-composition';
@@ -745,27 +748,26 @@ const listeningMaintenance = startAccountingMaintenance({
 });
 
 const performShutdown = createGracefulShutdown({
-    closeResources: async () => {
-        listeningShutdown.abort();
-        await Promise.all([
-            listeningMaintenance.stop(),
-            listeningAdmissionMaintenance.stop(),
-        ]);
+    stopWorkers: [
+        () => {
+            listeningShutdown.abort();
 
-        await accountingReportWorker.stop();
-        await accountingMaintenance.stop();
-        await accountingMaintenanceClient.end();
-        await accountingReportingClient.end();
-        audioAdapters.close();
-        dictionaryDocumentS3Client?.destroy();
-        deletionJournalClient?.destroy();
-        await authentication.close();
-    },
-    onDeadline: () => {
-        process.exitCode = 1;
-    },
-    onError: (error) => {
-        console.error(error);
+            return listeningMaintenance.stop();
+        },
+        () => listeningAdmissionMaintenance.stop(),
+        () => accountingReportWorker.stop(),
+        () => accountingMaintenance.stop(),
+    ],
+    closeResources: [
+        () => accountingMaintenanceClient.end(),
+        () => accountingReportingClient.end(),
+        () => audioAdapters.close(),
+        () => dictionaryDocumentS3Client?.destroy(),
+        () => deletionJournalClient?.destroy(),
+        () => authentication.close(),
+    ],
+    onError: () => {
+        console.error('Backend resource shutdown failed.');
         process.exitCode = 1;
     },
     server,
@@ -777,5 +779,4 @@ function shutdown(signal: string): void {
     performShutdown(signal);
 }
 
-process.once('SIGINT', () => shutdown('SIGINT'));
-process.once('SIGTERM', () => shutdown('SIGTERM'));
+listenForShutdownSignals(shutdown);

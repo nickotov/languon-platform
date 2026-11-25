@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { AuthenticationService } from '../../../../../src/modules/authentication/application/authentication-service';
-import type { AccessTokenSigner } from '../../../../../src/modules/authentication/application/ports/access-token';
+import { AccessTokenClaims } from '../../../../../src/modules/authentication/domain/access-token-claims';
 import { AuthenticationRequiredError } from '../../../../../src/modules/authentication/application/authentication-errors';
 import { AuthHttpPolicy } from '../../../../../src/modules/authentication/interface/http/auth-http-policy';
 import { LearnerAiCreditBalanceService } from '../../../../../src/modules/ai-credits/application/learner-ai-credit-balance';
@@ -19,18 +19,25 @@ function harness() {
             unlimitedUntil: null,
         },
     }));
-    const requireActiveSession = vi.fn(async () => ({}));
+    const requireActiveSession =
+        vi.fn<AuthenticationService['requireActiveSession']>();
     const app = createLearnerAiCreditBalanceRoutes({
         balances: new LearnerAiCreditBalanceService({ accountSummary }),
         accessTokens: {
-            verify: async () => ({
-                userId: 'learner-a',
-                sessionId: 'session-a',
-            }),
-        } as unknown as AccessTokenSigner,
+            verify: async () =>
+                AccessTokenClaims.issue({
+                    audience: 'api',
+                    issuer: 'test',
+                    tokenId: 'token',
+                    issuedAt: new Date(0),
+                    expiresAt: new Date(60_000),
+                    userId: 'learner-a',
+                    sessionId: 'session-a',
+                }),
+        },
         authentication: {
             requireActiveSession,
-        } as unknown as AuthenticationService,
+        },
         policy: new AuthHttpPolicy({
             allowedOrigins: ['https://app.example'],
             appEnvironment: 'test',

@@ -30,6 +30,14 @@ When applicable:
    forward again to prove repeatability.
 7. Verify compatibility with existing rows and partial rollout when relevant.
 
+For a transaction race, identify the competing writers, lock acquisition order
+and final invariant. Exercise the overlap with independent connections to the
+disposable database. For external work followed by settlement, distinguish a
+rolled-back write from a committed write whose acknowledgement was lost.
+Assert the persisted outcome and number of external calls with a deterministic
+adapter. When SQL and TypeScript enforce the same rule, pass the same boundary
+fixtures through both implementations.
+
 ## Verify Redis changes
 
 Check key namespacing, serialization, TTL, invalidation, idempotency, concurrency,

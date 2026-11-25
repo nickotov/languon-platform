@@ -4,6 +4,7 @@ import type {
 } from '@languon/contracts';
 import { and, asc, eq, gt, ilike, or } from 'drizzle-orm';
 import { Buffer } from 'node:buffer';
+import { createHash } from 'node:crypto';
 import type { z } from 'zod';
 import { dictionaryCardsTable as cards } from '../../../../dictionaries/infrastructure/persistence/drizzle/schema';
 import type {
@@ -29,6 +30,10 @@ export async function flashcardListEntries(
     query: LearningEntriesQuery,
     context: LearningContext,
 ) {
+    // A full Unicode search can exceed the encoded cursor's wire limit.
+    const searchHash = query.search
+        ? createHash('sha256').update(query.search).digest('hex')
+        : null;
     let cursor: z.infer<typeof cursorSchema> | null = null;
     if (query.cursor) {
         try {
@@ -47,7 +52,7 @@ export async function flashcardListEntries(
             cursor &&
             (cursor.dictionaryId !== owned.dictionary.id ||
                 cursor.dictionaryVersion !== owned.dictionary.version ||
-                cursor.search !== (query.search ?? null))
+                cursor.searchHash !== searchHash)
         ) {
             throw new LearningInvalidRequestError();
         }
@@ -97,7 +102,7 @@ export async function flashcardListEntries(
                               id: last.entryId,
                               dictionaryId: owned.dictionary.id,
                               dictionaryVersion: owned.dictionary.version,
-                              search: query.search ?? null,
+                              searchHash,
                           }),
                       ).toString('base64url')
                     : null,

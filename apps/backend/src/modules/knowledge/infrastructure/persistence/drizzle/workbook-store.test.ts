@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { createDrizzleDatabase, type PostgresClient } from '@languon/database';
 import { KnowledgeNoteContentSchema } from '@languon/contracts';
 import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/postgres-js';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { databaseSchema } from '../../../../../infrastructure/database/schema';
 import { usersTable } from '../../../../users/infrastructure/persistence/drizzle/schema';
@@ -125,6 +126,86 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
             return id;
         }
+
+        it('lists ordered owner workbooks with a constant number of queries up to the existing cap', async () => {
+            let selects = 0;
+            const observedStore = new DrizzleWorkbookStore(
+                drizzle(client, {
+                    schema: databaseSchema,
+                    logger: {
+                        logQuery(query) {
+                            if (query.startsWith('select ')) {
+                                selects++;
+                            }
+                        },
+                    },
+                }),
+                crypto,
+            );
+
+            await store.create(reader, {
+                id: randomUUID(),
+                title: 'Other owner',
+            });
+
+            expect(await observedStore.list(owner)).toEqual([]);
+            expect(selects).toBe(2);
+
+            const workbook = await store.create(owner, {
+                id: randomUUID(),
+                title: 'First',
+            });
+            const draft = await note('draft');
+            const saved = await note();
+            const ordered = await store.setNotes(owner, workbook.id, {
+                expectedVersion: workbook.version,
+                noteIds: [draft, saved],
+                acknowledgeSharedAddition: false,
+            });
+
+            await store.issueShare(owner, workbook.id, ordered.version);
+
+            let existingCount = 1;
+            for (const count of [1, 100, 500]) {
+                if (count > existingCount) {
+                    const older = new Date('2020-01-01');
+                    const extra = Array.from(
+                        { length: count - existingCount },
+                        () => ({
+                            id: randomUUID(),
+                            ownerId: owner,
+                            title: 'Empty workbook',
+                            createdAt: older,
+                            updatedAt: older,
+                        }),
+                    );
+
+                    await db.insert(knowledgeWorkbooksTable).values(extra);
+                }
+
+                selects = 0;
+                const result = await observedStore.list(owner);
+
+                expect(selects).toBe(4);
+                expect(result).toHaveLength(count);
+                expect(result[0]).toMatchObject({
+                    id: workbook.id,
+                    shared: true,
+                    notes: [
+                        { id: draft, status: 'draft' },
+                        { id: saved, status: 'saved' },
+                    ],
+                });
+
+                expect(
+                    result
+                        .slice(1)
+                        .every((item) => !item.shared && !item.notes.length),
+                ).toBe(true);
+
+                existingCount = count;
+            }
+        });
 
         it('rejects owner workbook copies with draft members atomically while shared copies expose only saved material', async () => {
             const saved = await note();

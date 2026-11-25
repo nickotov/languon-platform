@@ -12,8 +12,8 @@ import type { AuthHttpPolicy } from '../../../authentication/interface/http/auth
 import type { LearnerAiCreditBalanceService } from '../../application/learner-ai-credit-balance';
 
 export interface LearnerAiCreditBalanceRouteDependencies {
-    accessTokens: AccessTokenSigner;
-    authentication: AuthenticationService;
+    accessTokens: Pick<AccessTokenSigner, 'verify'>;
+    authentication: Pick<AuthenticationService, 'requireActiveSession'>;
     policy: AuthHttpPolicy;
     balances: LearnerAiCreditBalanceService;
 }

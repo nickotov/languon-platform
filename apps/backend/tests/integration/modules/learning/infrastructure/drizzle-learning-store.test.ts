@@ -1,3 +1,7 @@
+import {
+    LearningEntriesQuerySchema,
+    LearningEntriesResponseSchema,
+} from '@languon/contracts';
 import { randomUUID } from 'node:crypto';
 import {
     createDrizzleDatabase,
@@ -281,6 +285,50 @@ run('DrizzleLearningStore', () => {
                 context(),
             ),
         ).rejects.toBeInstanceOf(LearningInvalidRequestError);
+    });
+
+    it('round-trips maximum-length multilingual searches through the public cursor contracts', async () => {
+        const search = '日'.repeat(198) + '"\\';
+        const secondId = randomUUID();
+        await database
+            .update(dictionaryCardsTable)
+            .set({ translation: search })
+            .where(eq(dictionaryCardsTable.id, entryId));
+
+        await database.insert(dictionaryCardsTable).values({
+            id: secondId,
+            dictionaryId,
+            source: 'second',
+            normalizedSource: 'second',
+            translation: search,
+            authorship: 'human',
+            sortKey: 2048n,
+        });
+
+        const first = LearningEntriesResponseSchema.parse(
+            await store.listEntries(
+                shared(null),
+                LearningEntriesQuerySchema.parse({ search, limit: 1 }),
+                context(),
+            ),
+        );
+
+        expect(first.entries.map(({ entryId }) => entryId)).toEqual([entryId]);
+        expect(first.nextCursor).toBeTypeOf('string');
+        const next = LearningEntriesResponseSchema.parse(
+            await store.listEntries(
+                shared(null),
+                LearningEntriesQuerySchema.parse({
+                    search,
+                    limit: 1,
+                    cursor: first.nextCursor,
+                }),
+                context(),
+            ),
+        );
+
+        expect(next.entries.map(({ entryId }) => entryId)).toEqual([secondId]);
+        expect(next.nextCursor).toBeNull();
     });
 
     it('persists independent preferences and rejects a concurrent optimistic write', async () => {

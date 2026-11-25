@@ -1,6 +1,6 @@
 import type {
     AudioObjectStorage,
-    SpeechStore,
+    SpeechWorkerStore,
     SpeechSynthesisProvider,
     SpeechProviderObservation,
 } from './ports';
@@ -15,7 +15,7 @@ export class SpeechWorker {
     private readonly now: () => Date;
     public constructor(
         private readonly options: {
-            store: SpeechStore;
+            store: SpeechWorkerStore;
             providers: ReadonlyMap<string, SpeechSynthesisProvider>;
             storage: AudioObjectStorage;
             now?: () => Date;
@@ -96,7 +96,6 @@ export class SpeechWorker {
 
             if (
                 !job.taskId &&
-                this.options.store.authorizeDispatch &&
                 !(await this.options.store.authorizeDispatch(job, this.now()))
             ) {
                 return true;

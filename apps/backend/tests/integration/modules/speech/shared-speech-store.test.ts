@@ -179,7 +179,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         _source.kind === 'knowledge-snippet' ||
                         _source.kind === 'knowledge-audio-draft'
                     ) {
-                        throw new SpeechError('speech_source_unavailable', 404);
+                        throw new SpeechError('speech_source_unavailable');
                     }
 
                     const [user] = await tx
@@ -194,7 +194,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                         .for('share');
 
                     if (!user || revoked) {
-                        throw new SpeechError('speech_source_unavailable', 404);
+                        throw new SpeechError('speech_source_unavailable');
                     }
 
                     const authority =

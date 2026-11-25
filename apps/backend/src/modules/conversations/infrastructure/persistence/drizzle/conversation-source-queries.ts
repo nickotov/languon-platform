@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, or } from 'drizzle-orm';
+import { and, desc, eq, ilike, isNull, or } from 'drizzle-orm';
 import {
     textFoldersTable,
     textsTable,
@@ -40,6 +40,20 @@ export async function conversationContext(
     });
 }
 
+function visibleOwnedText(ownerId: string) {
+    return and(
+        eq(textsTable.ownerId, ownerId),
+        eq(textsTable.lifecycle, 'active'),
+        or(
+            isNull(textsTable.folderId),
+            and(
+                eq(textFoldersTable.ownerId, ownerId),
+                eq(textFoldersTable.lifecycle, 'active'),
+            ),
+        ),
+    );
+}
+
 export async function conversationTextReferences(
     persistence: ConversationPersistenceContext,
     access: ConversationAccess,
@@ -68,16 +82,13 @@ export async function conversationTextReferences(
                 alignment: textsTable.alignment,
             })
             .from(textsTable)
-            .innerJoin(
+            .leftJoin(
                 textFoldersTable,
                 eq(textFoldersTable.id, textsTable.folderId),
             )
             .where(
                 and(
-                    eq(textsTable.ownerId, access.ownerId),
-                    eq(textsTable.lifecycle, 'active'),
-                    eq(textFoldersTable.ownerId, access.ownerId),
-                    eq(textFoldersTable.lifecycle, 'active'),
+                    visibleOwnedText(access.ownerId),
                     query
                         ? or(
                               ilike(textsTable.title, pattern),
@@ -130,17 +141,14 @@ export async function conversationTextReference(
                 alignment: textsTable.alignment,
             })
             .from(textsTable)
-            .innerJoin(
+            .leftJoin(
                 textFoldersTable,
                 eq(textFoldersTable.id, textsTable.folderId),
             )
             .where(
                 and(
                     eq(textsTable.id, textId),
-                    eq(textsTable.ownerId, access.ownerId),
-                    eq(textsTable.lifecycle, 'active'),
-                    eq(textFoldersTable.ownerId, access.ownerId),
-                    eq(textFoldersTable.lifecycle, 'active'),
+                    visibleOwnedText(access.ownerId),
                 ),
             );
 

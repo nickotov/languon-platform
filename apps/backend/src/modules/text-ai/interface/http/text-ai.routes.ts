@@ -19,10 +19,10 @@ import {
 } from '../../domain/text-ai-preference-store';
 
 export interface TextAiRouteDependencies {
-    accessTokens: AccessTokenSigner;
-    authentication: AuthenticationService;
+    accessTokens: Pick<AccessTokenSigner, 'verify'>;
+    authentication: Pick<AuthenticationService, 'requireActiveSession'>;
     policy: AuthHttpPolicy;
-    preferences: TextAiPreferenceService;
+    preferences: Pick<TextAiPreferenceService, 'get' | 'update' | 'models'>;
 }
 export function createTextAiRoutes(
     dependencies: TextAiRouteDependencies,

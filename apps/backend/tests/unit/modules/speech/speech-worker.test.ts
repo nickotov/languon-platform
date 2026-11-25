@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { SpeechWorker } from '../../../../src/modules/speech/application/speech-worker';
 import type {
-    SpeechStore,
+    SpeechWorkerStore,
     SpeechJob,
     SpeechSynthesisProvider,
     AudioObjectStorage,
@@ -37,32 +37,40 @@ function harness(overrides: Partial<SpeechJob> = {}) {
         ...overrides,
     };
     const store = {
-        deletionInventory: vi.fn().mockResolvedValue([]),
-        releaseDeadlines: vi.fn(),
-        claim: vi.fn().mockResolvedValue(job),
-        submitted: vi.fn(),
-        pending: vi.fn(),
-        storing: vi.fn().mockResolvedValue(true),
-        complete: vi.fn(),
-        fail: vi.fn(),
-        deleted: vi.fn(),
-    } as unknown as SpeechStore;
+        deletionInventory: vi
+            .fn<SpeechWorkerStore['deletionInventory']>()
+            .mockResolvedValue([]),
+        releaseDeadlines: vi.fn<SpeechWorkerStore['releaseDeadlines']>(),
+        claim: vi.fn<SpeechWorkerStore['claim']>().mockResolvedValue(job),
+        authorizeDispatch: vi
+            .fn<SpeechWorkerStore['authorizeDispatch']>()
+            .mockResolvedValue(true),
+        submitted: vi.fn<SpeechWorkerStore['submitted']>(),
+        pending: vi.fn<SpeechWorkerStore['pending']>(),
+        storing: vi.fn<SpeechWorkerStore['storing']>().mockResolvedValue(true),
+        complete: vi.fn<SpeechWorkerStore['complete']>(),
+        fail: vi.fn<SpeechWorkerStore['fail']>(),
+        deleted: vi.fn<SpeechWorkerStore['deleted']>(),
+    } satisfies SpeechWorkerStore;
     const provider = {
         configurationId: 'fixture-v1',
         supports: () => job.profile,
         submit: vi
-            .fn()
+            .fn<SpeechSynthesisProvider['submit']>()
             .mockResolvedValue({ state: 'ready', audio: createFixtureAudio() }),
         poll: vi
-            .fn()
+            .fn<SpeechSynthesisProvider['poll']>()
             .mockResolvedValue({ state: 'ready', audio: createFixtureAudio() }),
-    } as SpeechSynthesisProvider;
+    } satisfies SpeechSynthesisProvider;
     const storage = {
         identity: { backend: 's3', namespace: 'test' },
-        read: vi.fn().mockResolvedValue(null),
-        putForReference: vi.fn().mockResolvedValue(job.storage),
-        delete: vi.fn(),
-    } as unknown as AudioObjectStorage;
+        put: vi.fn<AudioObjectStorage['put']>(),
+        read: vi.fn<AudioObjectStorage['read']>().mockResolvedValue(null),
+        putForReference: vi
+            .fn<AudioObjectStorage['putForReference']>()
+            .mockResolvedValue(job.storage),
+        delete: vi.fn<AudioObjectStorage['delete']>(),
+    } satisfies AudioObjectStorage;
 
     return {
         job,
@@ -132,6 +140,21 @@ describe('shared speech worker recovery', () => {
             false,
             { usage },
         );
+    });
+
+    it('skips submission and publication when dispatch authorization is denied', async () => {
+        const h = harness();
+        h.store.authorizeDispatch.mockResolvedValue(false);
+
+        expect(await h.worker.runOnce()).toBe(true);
+        expect(h.store.authorizeDispatch).toHaveBeenCalledExactlyOnceWith(
+            h.job,
+            expect.any(Date),
+        );
+
+        expect(h.provider.submit).not.toHaveBeenCalled();
+        expect(h.storage.putForReference).not.toHaveBeenCalled();
+        expect(h.store.complete).not.toHaveBeenCalled();
     });
 
     it('publishes validated audio through inventory before completion', async () => {

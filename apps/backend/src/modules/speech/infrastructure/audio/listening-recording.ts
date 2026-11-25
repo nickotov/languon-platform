@@ -81,7 +81,7 @@ export async function checkListeningDecoder(signal?: AbortSignal) {
     } catch {
         signal?.throwIfAborted();
 
-        throw new SpeechError('speech_decoder_unavailable', 503);
+        throw new SpeechError('speech_decoder_unavailable');
     }
 }
 

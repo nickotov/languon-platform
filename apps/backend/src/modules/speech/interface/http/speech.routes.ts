@@ -1,3 +1,4 @@
+import { speechErrorStatus } from './speech-error-status';
 import { randomUUID } from 'node:crypto';
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import { bodyLimit } from 'hono/body-limit';
@@ -126,7 +127,7 @@ export function createSpeechRoutes(options: {
                         correlationId: randomUUID(),
                     },
                 },
-                error.status,
+                speechErrorStatus[error.kind],
             );
         }
 
@@ -373,7 +374,7 @@ export function createAdminSpeechRoutes(options: {
                         correlationId: randomUUID(),
                     },
                 },
-                error.status,
+                speechErrorStatus[error.kind],
             );
         }
 
@@ -439,7 +440,7 @@ export function createAdminSpeechRoutes(options: {
                 audio = await options.storage.read(reference, c.req.raw.signal);
 
             if (!audio) {
-                throw new SpeechError('speech_recording_unavailable', 404);
+                throw new SpeechError('speech_recording_unavailable');
             }
 
             await options.administration.authorizeOperation(

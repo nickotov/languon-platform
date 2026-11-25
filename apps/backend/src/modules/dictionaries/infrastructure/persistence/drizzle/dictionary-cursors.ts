@@ -67,12 +67,14 @@ export function isCardCursor(value: unknown): value is {
 
     return (
         typeof cursor.id === 'string' &&
-        uuidPattern.test(String(cursor.id)) &&
+        uuidPattern.test(cursor.id) &&
         Number.isSafeInteger(cursor.dictionaryVersion) &&
         Number(cursor.dictionaryVersion) > 0 &&
         Number.isSafeInteger(cursor.settingsVersion) &&
         Number(cursor.settingsVersion) > 0 &&
-        /^\d+$/.test(String(cursor.sortKey))
+        typeof cursor.sortKey === 'string' &&
+        /^\d{1,19}$/.test(cursor.sortKey) &&
+        BigInt(cursor.sortKey) <= 9223372036854775807n
     );
 }
 

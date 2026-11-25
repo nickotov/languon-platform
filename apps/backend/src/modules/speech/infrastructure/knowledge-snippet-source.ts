@@ -29,7 +29,7 @@ import { knowledgeSnippetText } from '../domain/knowledge-snippet-text';
 import type { SpeechSourceTransaction } from './source-resolver';
 
 type Source = KnowledgeSnippetSpeechSource | StoredKnowledgeSnippetSpeechSource;
-const unavailable = () => new SpeechError('speech_source_unavailable', 404);
+const unavailable = () => new SpeechError('speech_source_unavailable');
 
 /** Every prepare/confirm/read re-resolves source authority under lifecycle locks. */
 export async function resolveKnowledgeSnippetSource(

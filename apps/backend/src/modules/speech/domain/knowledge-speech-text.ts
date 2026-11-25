@@ -44,7 +44,7 @@ export function knowledgeNarrationText(
     }
 
     if (!language || !text.trim()) {
-        throw new SpeechError('speech_text_unavailable', 400);
+        throw new SpeechError('speech_text_unavailable');
     }
 
     return { text, language };

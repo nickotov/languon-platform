@@ -24,6 +24,9 @@ side effects fails regardless of its other decisions.
 | 09 | Resolves substantive visual direction before production UI coding; offers approved-pattern extension, agent preview/approval, or external-design prompt; preserves autonomous small copy corrections; uses focused real-browser and affected component proof, not automatic full regression; an accepted task triggers a brief retrospective rather than a new blocking gate. |
 | 10 | Selects real SQL and distinct router/restricted-worker plus SDK/settlement/browser proof without automatic full shared/account-erasure suites; retains credentials, authorization, Free/Paid, failures, fencing and consent; preflights full synthetic fixtures, assigns one compiler owner and budgets cold resets; diagnoses slow runs without weakening product deadlines; reports partial builds honestly; preserves fail-closed release checks while separating local delivery from deployment; claims no executed checks or live proof. |
 
+| 11 | Scopes a current-state audit to backend revision A, excludes the story, follows the live reader, derives 2 + 2W statements under the lock and requests representative counts and a concurrency measurement. Treats latency as unmeasured. |
+| 12 | Scopes remediation to A–B and W1, follows the route and verifies the production batch reader, considers the recorded evidence for reuse and distinguishes query-count proof from lock timing. Excludes the unrelated story. |
+
 Also record authority conflicts, unnecessary skills or repeated reads visible
 in the trace, and unsupported assumptions. These observations explain results;
 they are not token savings measurements. Evaluate factual decisions, not whether

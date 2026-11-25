@@ -1,3 +1,4 @@
+import { readWorkbook, readWorkbooks } from './workbook-read';
 import { syncLearningEpochs } from './learning-epochs';
 import { randomUUID } from 'node:crypto';
 import { copyWorkbookBody } from './workbook-copy';
@@ -7,7 +8,6 @@ import { knowledgeNoteRevisionsTable } from './schema';
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import {
     SharedWorkbookSchema,
-    WorkbookSchema,
     type CopyWorkbookRequest,
     type KnowledgeNote,
     type CreateWorkbookRequest,
@@ -63,41 +63,6 @@ async function owned(tx: KnowledgeTransaction, ownerId: string, id: string) {
     return row;
 }
 
-async function read(tx: KnowledgeTransaction, row: Row) {
-    const notes = await tx
-        .select({
-            id: knowledgeNotesTable.id,
-            title: knowledgeNotesTable.title,
-            status: knowledgeNotesTable.status,
-        })
-        .from(members)
-        .innerJoin(
-            knowledgeNotesTable,
-            eq(members.noteId, knowledgeNotesTable.id),
-        )
-        .where(
-            and(
-                eq(members.workbookId, row.id),
-                eq(knowledgeNotesTable.ownerId, row.ownerId),
-            ),
-        )
-        .orderBy(asc(members.position), asc(members.noteId));
-    const [share] = await tx
-        .select({ id: shares.workbookId })
-        .from(shares)
-        .where(eq(shares.workbookId, row.id));
-
-    return WorkbookSchema.parse({
-        id: row.id,
-        title: row.title,
-        version: row.version,
-        shared: !!share,
-        notes,
-        createdAt: row.createdAt.toISOString(),
-        updatedAt: row.updatedAt.toISOString(),
-    });
-}
-
 async function touch(tx: KnowledgeTransaction, row: Row) {
     const [updated] = await tx
         .update(workbooks)
@@ -129,7 +94,7 @@ export class DrizzleWorkbookStore implements WorkbookStore {
                 .orderBy(desc(workbooks.updatedAt))
                 .limit(500);
 
-            return Promise.all(rows.map((row) => read(tx, row)));
+            return readWorkbooks(tx, ownerId, rows);
         });
     }
 
@@ -157,13 +122,13 @@ export class DrizzleWorkbookStore implements WorkbookStore {
                 );
             }
 
-            return read(tx, row);
+            return readWorkbook(tx, row);
         });
     }
 
     get(ownerId: string, id: string) {
         return this.database.transaction(async (tx) =>
-            read(tx, await owned(tx, ownerId, id)),
+            readWorkbook(tx, await owned(tx, ownerId, id)),
         );
     }
 
@@ -181,7 +146,7 @@ export class DrizzleWorkbookStore implements WorkbookStore {
                 .where(eq(workbooks.id, id))
                 .returning();
 
-            return read(tx, updated!);
+            return readWorkbook(tx, updated!);
         });
     }
 
@@ -255,7 +220,7 @@ export class DrizzleWorkbookStore implements WorkbookStore {
                 );
             }
 
-            return read(tx, await touch(tx, row));
+            return readWorkbook(tx, await touch(tx, row));
         });
     }
 
@@ -541,6 +506,6 @@ export class DrizzleWorkbookStore implements WorkbookStore {
             });
         }
 
-        return read(tx, row!);
+        return readWorkbook(tx, row!);
     }
 }

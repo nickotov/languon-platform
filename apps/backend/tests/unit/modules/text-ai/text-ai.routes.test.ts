@@ -1,8 +1,8 @@
+import { AuthenticationRequiredError } from '../../../../src/modules/authentication/application/authentication-errors';
 import { describe, expect, it, vi } from 'vitest';
 import type { AuthenticationService } from '../../../../src/modules/authentication/application/authentication-service';
-import type { AccessTokenSigner } from '../../../../src/modules/authentication/application/ports/access-token';
+import { AccessTokenClaims } from '../../../../src/modules/authentication/domain/access-token-claims';
 import { AuthHttpPolicy } from '../../../../src/modules/authentication/interface/http/auth-http-policy';
-import type { TextAiPreferenceService } from '../../../../src/modules/text-ai/application/text-ai-preference-service';
 import {
     TextAiModelUnavailableError,
     TextAiPreferenceConflictError,
@@ -12,23 +12,34 @@ import { createTextAiRoutes } from '../../../../src/modules/text-ai/interface/ht
 
 function harness() {
     const userId = '0198a941-8ace-7115-aec6-d2b594aaee06';
-    const requireActiveSession = vi.fn(async () => ({}));
+    const requireActiveSession =
+        vi.fn<AuthenticationService['requireActiveSession']>();
     const preference = {
         mode: 'auto' as const,
         modelId: null,
         version: 0,
         selectedModel: null,
+        maxCreditsPerAction: null,
     };
     const get = vi.fn(async () => preference);
     const update = vi.fn(async () => ({ ...preference, version: 1 }));
     const models = vi.fn(async () => ({ defaultModelId: null, models: [] }));
     const app = createTextAiRoutes({
         accessTokens: {
-            verify: async () => ({ userId, sessionId: 'session' }),
-        } as unknown as AccessTokenSigner,
+            verify: async () =>
+                AccessTokenClaims.issue({
+                    userId,
+                    sessionId: 'session',
+                    audience: 'api',
+                    issuer: 'test',
+                    tokenId: 'token',
+                    issuedAt: new Date(0),
+                    expiresAt: new Date(60_000),
+                }),
+        },
         authentication: {
             requireActiveSession,
-        } as unknown as AuthenticationService,
+        },
         policy: new AuthHttpPolicy({
             allowedOrigins: ['https://app.languon.example'],
             appEnvironment: 'production',
@@ -38,7 +49,7 @@ function harness() {
             get,
             update,
             models,
-        } as unknown as TextAiPreferenceService,
+        },
     });
     const request = (
         method: string,
@@ -75,6 +86,21 @@ describe('text AI authenticated HTTP routes', () => {
             userId,
             sessionId: 'session',
         });
+    });
+
+    it('refuses preference updates after the authenticated session expires', async () => {
+        const { request, requireActiveSession, update } = harness();
+        requireActiveSession.mockRejectedValueOnce(
+            new AuthenticationRequiredError(),
+        );
+
+        const response = await request('PUT', '/users/me/ai-model-preference', {
+            mode: 'auto',
+            expectedVersion: 0,
+        });
+
+        expect(response.status).toBe(401);
+        expect(update).not.toHaveBeenCalled();
     });
 
     it('rejects missing authentication, foreign identity, invalid modes and hostile origins', async () => {

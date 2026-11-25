@@ -98,7 +98,49 @@ export interface SpeechJob {
     storage: AudioObjectReference;
     checksum: string | null;
 }
-export interface SpeechStore {
+export interface SpeechWorkerStore {
+    claim(now: Date, requestId?: string): Promise<SpeechJob | null>;
+    authorizeDispatch(job: SpeechJob, now: Date): Promise<boolean>;
+    submitted(
+        job: SpeechJob,
+        taskId: string,
+        retryAfterMs: number,
+        now: Date,
+    ): Promise<void>;
+    pending(
+        job: SpeechJob,
+        retryAfterMs: number,
+        now: Date,
+        observation?: SpeechProviderObservation,
+    ): Promise<void>;
+    storing(
+        job: SpeechJob,
+        audio: AudioBytes,
+        now: Date,
+        observation?: SpeechProviderObservation,
+    ): Promise<boolean>;
+    complete(
+        job: SpeechJob,
+        storage: AudioObjectReference,
+        audio: AudioBytes,
+        now: Date,
+    ): Promise<void>;
+    fail(
+        job: SpeechJob,
+        outcome: 'failure' | 'unknown',
+        now: Date,
+        reason?: 'speech_provider_unavailable',
+        notSubmitted?: boolean,
+        observation?: SpeechProviderObservation,
+    ): Promise<void>;
+    releaseDeadlines(now: Date): Promise<void>;
+    deleted(recordingId: string, now?: Date): Promise<void>;
+    deletionInventory(
+        now: Date,
+    ): Promise<{ id: string; storage: AudioObjectReference }[]>;
+}
+
+export interface SpeechStore extends SpeechWorkerStore {
     availability(
         actorId: string,
         source: SpeechSource,
@@ -137,41 +179,6 @@ export interface SpeechStore {
         checksum: string;
         fixture: boolean;
     }>;
-    claim(now: Date, requestId?: string): Promise<SpeechJob | null>;
-    authorizeDispatch?(job: SpeechJob, now: Date): Promise<boolean>;
-    submitted(
-        job: SpeechJob,
-        taskId: string,
-        retryAfterMs: number,
-        now: Date,
-    ): Promise<void>;
-    pending(
-        job: SpeechJob,
-        retryAfterMs: number,
-        now: Date,
-        observation?: SpeechProviderObservation,
-    ): Promise<void>;
-    storing(
-        job: SpeechJob,
-        audio: AudioBytes,
-        now: Date,
-        observation?: SpeechProviderObservation,
-    ): Promise<boolean>;
-    complete(
-        job: SpeechJob,
-        storage: AudioObjectReference,
-        audio: AudioBytes,
-        now: Date,
-    ): Promise<void>;
-    fail(
-        job: SpeechJob,
-        outcome: 'failure' | 'unknown',
-        now: Date,
-        reason?: 'speech_provider_unavailable',
-        notSubmitted?: boolean,
-        observation?: SpeechProviderObservation,
-    ): Promise<void>;
-    releaseDeadlines(now: Date): Promise<void>;
     listRecordings(query: {
         search?: string;
         language?: string;
@@ -198,9 +205,5 @@ export interface SpeechStore {
             expectedBindingCount: number;
         }[];
     }): Promise<{ id: string; storage: AudioObjectReference }[]>;
-    deleted(recordingId: string, now?: Date): Promise<void>;
-    deletionInventory(
-        now: Date,
-    ): Promise<{ id: string; storage: AudioObjectReference }[]>;
     purgeActor(actorId: string, now: Date): Promise<void>;
 }

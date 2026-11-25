@@ -34,7 +34,7 @@ export async function authorizeSpeechAccounting(
 
     // A model serving limit is useful evidence, but not a broker's task cost cap.
     if (nativeBilling && !nativeBilling.providerTaskBoundVerified) {
-        throw new SpeechError('speech_provider_unavailable', 503);
+        throw new SpeechError('speech_provider_unavailable');
     }
 
     const price = await pinProviderPrice(tx, {
@@ -67,7 +67,7 @@ export async function authorizeSpeechAccounting(
         : providerSpeechExpenseMicros(price, input.characters);
 
     if (!price || maximum === null) {
-        throw new SpeechError('speech_provider_unavailable', 503);
+        throw new SpeechError('speech_provider_unavailable');
     }
 
     await input.authorizeMaximum?.(maximum);
@@ -81,7 +81,7 @@ export async function authorizeSpeechAccounting(
         !settings.maxProviderCostUsdPerAccountDay ||
         !settings.maxProviderCostUsdPerDay
     ) {
-        throw new SpeechError('speech_provider_unavailable', 503);
+        throw new SpeechError('speech_provider_unavailable');
     }
 
     const authorization = await new DrizzleOperatorBudgetParticipant(tx)
@@ -94,7 +94,7 @@ export async function authorizeSpeechAccounting(
         })
         .catch((error: unknown) => {
             if (error instanceof OperatorBudgetUnavailableError) {
-                throw new SpeechError('speech_provider_budget', 429);
+                throw new SpeechError('speech_provider_budget');
             }
 
             throw error;
@@ -102,7 +102,7 @@ export async function authorizeSpeechAccounting(
 
     // Speech is an indivisible provider operation: a partially authorized clip must never dispatch.
     if (authorization.reservedMicros < maximum) {
-        throw new SpeechError('speech_provider_budget', 429);
+        throw new SpeechError('speech_provider_budget');
     }
 
     // Numerical execution provenance needs no administrator identity, free-text reason or source URL.
@@ -180,12 +180,12 @@ export async function reserveSpeechAdmissionQuota(
                     : input.ownerUnitLimit,
             )
         ) {
-            throw new SpeechError('speech_provider_budget', 429);
+            throw new SpeechError('speech_provider_budget');
         }
 
         const freeCount = current!.freeCount + (input.free ? 1 : 0);
         if (scope !== 'global' && freeCount > input.freeLimit) {
-            throw new SpeechError('speech_free_daily_limit', 429);
+            throw new SpeechError('speech_free_daily_limit');
         }
 
         await tx

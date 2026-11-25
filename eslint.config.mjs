@@ -4,7 +4,11 @@ import boundaries from 'eslint-plugin-boundaries';
 import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
-import { persistenceReadabilityConfig } from './scripts/eslint-persistence-readability.mjs';
+import { backendBoundariesConfig } from './scripts/eslint-backend-boundaries.mjs';
+import {
+    persistenceReadabilityConfig,
+    speechStoreReadabilityConfig,
+} from './scripts/eslint-persistence-readability.mjs';
 import { readabilityConfig } from './scripts/eslint-readability.mjs';
 
 export default tseslint.config(
@@ -334,6 +338,8 @@ export default tseslint.config(
         },
     },
     eslintConfigPrettier,
+    backendBoundariesConfig,
     persistenceReadabilityConfig,
+    speechStoreReadabilityConfig,
     readabilityConfig,
 );
