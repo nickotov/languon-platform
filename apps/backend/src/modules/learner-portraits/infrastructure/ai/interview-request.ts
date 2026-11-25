@@ -1,3 +1,4 @@
+import { textCallInputTokenBound } from '../../../text-ai/application/text-call-input-bound';
 import type { CapabilityPolicy } from '@languon/contracts';
 import { PortraitInterviewerOutputSchema } from '@languon/contracts';
 import { z } from 'zod';
@@ -60,7 +61,13 @@ export function interviewInputTokenLimit(
             {
                 role: 'user',
                 content: [
-                    { type: 'text', text: buildInterviewRequest(operation) },
+                    {
+                        type: 'text',
+                        text: buildInterviewRequest(operation),
+                        providerOptions: {
+                            mastra: { createdAt: Number.MAX_SAFE_INTEGER },
+                        },
+                    },
                     // Mastra 1.57 injects this compact JSON schema into the latest user
                     // message. SDK-boundary tests compare its actual prompt/tools bytes
                     // with this pin so upgrades cannot silently under-reserve a call.
@@ -74,10 +81,7 @@ export function interviewInputTokenLimit(
         tools: [],
     };
 
-    return Math.min(
-        modelLimit,
-        Buffer.byteLength(JSON.stringify(envelope), 'utf8') + 256,
-    );
+    return Math.min(modelLimit, textCallInputTokenBound(envelope));
 }
 
 export const INTERVIEW_MIN_OUTPUT_TOKENS = 1;

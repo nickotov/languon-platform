@@ -117,16 +117,6 @@ export function createLearningContentAuthoring(
                 return { status: 'failed', reason: 'invalid-brief' };
             }
 
-            if (
-                parsed.data.tasks.some((task) => task.kind === 'audio') &&
-                (!options.run || !options.materializeListeningRecording)
-            ) {
-                throw new ConversationError(
-                    'generation_scope_change',
-                    'New recordings require a durable listening lesson.',
-                );
-            }
-
             const initialRequirements = learningContentRequirements(
                 parsed.data,
             );
@@ -156,6 +146,17 @@ export function createLearningContentAuthoring(
             const requirements = learningContentRequirements(brief);
             if (requirements) {
                 return requirements;
+            }
+
+            // Unresolved plans may ask for clarification before requesting recording authority.
+            if (
+                brief.tasks.some((task) => task.kind === 'audio') &&
+                (!options.run || !options.materializeListeningRecording)
+            ) {
+                throw new ConversationError(
+                    'generation_scope_change',
+                    'New recordings require a durable listening lesson.',
+                );
             }
 
             const plan = remainingLearningBatches(

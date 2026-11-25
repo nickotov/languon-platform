@@ -294,6 +294,64 @@ it('requires a fresh explicit budget after expiry and never confirms an expired 
     expect(confirm).not.toHaveBeenCalled();
 });
 
+it('refreshes and confirms a free recording quote for an existing allowance pause', async () => {
+    const issued = { ...quote, maximumCredits: '0', scope: 'listening-lesson' };
+    const expired = {
+        ...issued,
+        id: '33333333-3333-4333-8333-333333333333',
+        expiresAt: '2020-01-01T00:00:00.000Z',
+    };
+    const commands: Array<{ requestId: string; confirmedQuoteId?: string }> =
+        [];
+    const { Harness, refresh } = capacityHarness((init) => {
+        const command = JSON.parse(String(init.body));
+        commands.push(command);
+        if (command.confirmedQuoteId === issued.id) {
+            return Response.json({ turn: lessonTurn });
+        }
+
+        return Response.json(
+            {
+                error: {
+                    code: 'action_confirmation_required',
+                    message: 'Review budget.',
+                    details: {
+                        quote: commands.length === 1 ? expired : issued,
+                    },
+                },
+            },
+            { status: 409 },
+        );
+    });
+    const run: GenerationRunSummary = {
+        ...lessonRun,
+        pauseReason: 'technical-failure',
+        failure: {
+            code: 'admission-blocked',
+            admissionReason: 'allowance-required',
+        },
+    };
+
+    render(<Harness run={run} />, { wrapper });
+    fireEvent.click(screen.getByRole('button', { name: 'Review budget' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('0')).toBeVisible();
+    expect(within(dialog).getByText(/speech synthesis/)).toBeVisible();
+    fireEvent.click(
+        within(dialog).getByRole('button', { name: 'Refresh budget' }),
+    );
+
+    const renewed = await screen.findByRole('button', { name: 'Continue' });
+    fireEvent.click(renewed);
+    await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+    expect(commands).toHaveLength(3);
+    expect(commands[1]).toEqual(commands[0]);
+    expect(commands[2]).toEqual({
+        ...commands[0],
+        confirmedQuoteId: issued.id,
+    });
+});
+
 it('does not dispatch on mount; confirms exactly one quoted stage with the same request identity', async () => {
     const fetch = vi
         .fn()

@@ -10,6 +10,9 @@ const en = {
     discarded: 'Lesson discarded',
     details: 'Plan and details',
     continue: 'Continue',
+    reviewBudget: 'Review budget',
+    allowanceRequired:
+        'Review the budget for the remaining work before continuing.',
     retryRemaining: 'Retry remaining part',
     retryExercise: (index: number) => `Resume from exercise ${index}`,
     failedExercise: (index: number, total: number) =>
@@ -172,6 +175,9 @@ const ru: typeof en = {
     discarded: 'Урок удалён',
     details: 'План и подробности',
     continue: 'Продолжить',
+    reviewBudget: 'Проверить бюджет',
+    allowanceRequired:
+        'Перед продолжением проверьте бюджет для оставшейся части урока.',
     retryRemaining: 'Повторить оставшуюся часть',
     retryExercise: (index) => `Продолжить с упражнения №${index}`,
     failedExercise: (index, total) =>

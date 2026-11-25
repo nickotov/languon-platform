@@ -207,6 +207,34 @@ export const PartialVocabulary: Story = {
 export const Stopping: Story = {
     args: { ...Running.args, stopping: true, busy: true },
 };
+export const RecordingBudgetReview: Story = {
+    args: {
+        run: {
+            ...run,
+            tasks: [
+                {
+                    id: 'dialogue',
+                    label: 'Dialogue',
+                    kind: 'audio',
+                    status: 'pending',
+                },
+                {
+                    id: 'listening',
+                    label: 'Listening questions',
+                    kind: 'exercises',
+                    status: 'pending',
+                },
+            ],
+            completedTaskCount: 0,
+            totalTaskCount: 2,
+            pauseReason: 'technical-failure',
+            failure: {
+                code: 'admission-blocked',
+                admissionReason: 'allowance-required',
+            },
+        },
+    },
+};
 export const TechnicalFailure: Story = {
     args: { run: { ...run, pauseReason: 'technical-failure' } },
 };

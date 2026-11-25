@@ -9,13 +9,13 @@ import styles from './contextual-assistant.module.css';
 /** Render only stable product guidance, never arbitrary backend/provider messages. */
 export function ConversationErrorNotice({
     error,
-    code,
+    failedTurnCode,
     onRetry,
     retryLabel,
     disabled = false,
 }: {
     error?: unknown;
-    code?: string | null;
+    failedTurnCode?: string | null;
     onRetry(): void;
     retryLabel?: string | undefined;
     disabled?: boolean;
@@ -23,18 +23,24 @@ export function ConversationErrorNotice({
     const { locale, href } = useI18n();
     const copy = conversationCopy(locale);
     const failureCode =
-        code ??
+        failedTurnCode ??
         (error instanceof ConversationApiError ? error.detail.code : null);
     const actionLabel = retryLabel ?? copy.retry;
-    let message = copy.error;
+    const generationFailed =
+        failedTurnCode !== undefined || failureCode?.startsWith('generation_');
+    let message = generationFailed ? copy.generationFailed : copy.error;
     let action = (
         <Button variant='secondary' onClick={onRetry} disabled={disabled}>
             {actionLabel}
         </Button>
     );
 
-    if (failureCode === 'generation_failed') {
-        message = copy.generationFailed;
+    if (failureCode === 'generation_scope_change') {
+        message = copy.generationScopeChanged;
+    }
+
+    if (failureCode === 'generation_provider_outcome_unknown') {
+        message = copy.generationOutcomeUnknown;
     }
 
     if (failureCode === 'model_unavailable') {

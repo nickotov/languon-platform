@@ -306,7 +306,7 @@ export function TutorMessage({
                         <span className={styles.notice}>{copy.incomplete}</span>
                         {turn.status === 'failed' ? (
                             <ConversationErrorNotice
-                                code={turn.failureCode}
+                                failedTurnCode={turn.failureCode}
                                 onRetry={retry}
                                 disabled={active}
                             />

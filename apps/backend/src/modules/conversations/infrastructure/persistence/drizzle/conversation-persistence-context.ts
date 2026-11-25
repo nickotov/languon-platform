@@ -1,3 +1,4 @@
+import type { prospectiveLessonCalls } from '../../ai/generation-admission-input';
 import type { GenerationAutomaticAdmission } from '../../../application/ports/generation-run';
 import {
     ChatPreferencesSchema,
@@ -144,7 +145,7 @@ export interface ConversationPersistenceDependencies {
             renewRecording?: boolean;
             forceConfirmation?: boolean;
             mayGenerateLesson?: boolean;
-            includeListeningSpeech?: boolean;
+            listeningTextCalls?: ReturnType<typeof prospectiveLessonCalls>;
             minimumOutputTokens?: number;
         },
     ) => Promise<Record<string, unknown>>) & {

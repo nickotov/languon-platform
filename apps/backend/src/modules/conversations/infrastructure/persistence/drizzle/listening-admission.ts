@@ -1,3 +1,4 @@
+import { prospectiveLessonCalls } from '../../ai/generation-admission-input';
 import { and, eq, isNotNull } from 'drizzle-orm';
 import { z } from 'zod';
 import type { ConversationSource } from '@languon/contracts';
@@ -51,7 +52,9 @@ export function lessonAdmissionOptions(
     return {
         ...(renewRecording ? { renewRecording: true } : {}),
         ...(recordingPlanAuthorization ? { recordingPlanAuthorization } : {}),
-        includeListeningSpeech: includeListeningSpeech(generation, context),
+        ...(context && includeListeningSpeech(generation, context)
+            ? { listeningTextCalls: prospectiveLessonCalls(context) }
+            : {}),
         mayGenerateLesson:
             generation?.kind === 'generation' ||
             (!generation &&

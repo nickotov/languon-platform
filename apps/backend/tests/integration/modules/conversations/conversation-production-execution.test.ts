@@ -1,3 +1,7 @@
+import {
+    nativeGeminiFixture,
+    seedNativeGeminiPrice,
+} from '../../../support/native-provider-price-fixture';
 import { readTutorPlannerState } from '../../../../src/modules/conversations/application/tutor-planner-prompt';
 import { createHash, randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -270,6 +274,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         async function readyLessonRoute(
             funding: 'operator' | 'customer' = 'operator',
             expensivePlanner = false,
+            routeModel = model,
         ) {
             const now = new Date();
             await db.insert(capabilityPolicyRevisionsTable).values({
@@ -282,7 +287,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
 
             await seedTextAiRoutingFixture(db, {
-                routeId: 'openrouter/openai/gpt-6-luna',
+                routeId: `${routeModel.providerId}/${routeModel.id}`,
                 replace: true,
                 seedProbes: false,
                 ...(funding === 'operator'
@@ -323,8 +328,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     .from(providerPrices)
                     .where(
                         and(
-                            eq(providerPrices.providerId, model.providerId),
-                            eq(providerPrices.modelId, model.id),
+                            eq(
+                                providerPrices.providerId,
+                                routeModel.providerId,
+                            ),
+                            eq(providerPrices.modelId, routeModel.id),
                         ),
                     )
                     .orderBy(desc(providerPrices.version))
@@ -348,13 +356,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await db.insert(dictionaryAiWorkerObservationsTable).values({
                 id: conversationExecutionObservationId(
                     'production-conversation-regression',
-                    model.providerId,
-                    model.id,
+                    routeModel.providerId,
+                    routeModel.id,
                 ),
                 workerId: 'production-conversation-regression',
-                providerId: model.providerId,
-                modelId: model.id,
-                adapterRevision: model.adapterRevision,
+                providerId: routeModel.providerId,
+                modelId: routeModel.id,
+                adapterRevision: routeModel.adapterRevision,
                 checkedAt: now,
                 expiresAt: new Date(now.getTime() + 120_000),
                 status: 'available',
@@ -653,14 +661,20 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         });
 
         it.each([
-            { finish: 'stop', repair: 'valid' },
-            { finish: 'stop', repair: 'invalid' },
-            { finish: 'tool_calls', repair: 'valid' },
-            { finish: 'content_filter', repair: 'filtered' },
+            { finish: 'stop', repair: 'valid', native: false },
+            { finish: 'stop', repair: 'valid', native: true },
+            { finish: 'stop', repair: 'invalid', native: false },
+            { finish: 'tool_calls', repair: 'valid', native: false },
+            { finish: 'content_filter', repair: 'filtered', native: false },
         ] as const)(
-            'bounds repair of the first measured prose response and grounds its dependent exercise ($finish, repair $repair)',
-            async ({ finish, repair }) => {
-                await readyLessonRoute();
+            'bounds repair of the first measured prose response and grounds its dependent exercise ($finish, repair $repair, native $native)',
+            async ({ finish, repair, native }) => {
+                const routeModel = native ? nativeGeminiFixture : model;
+                if (native) {
+                    await seedNativeGeminiPrice(db);
+                }
+
+                await readyLessonRoute('operator', false, routeModel);
                 const note = await knowledge.create(ownerId, {
                     operationId: randomUUID(),
                     content,
@@ -695,8 +709,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                             id: `reading-${index}`,
                             object: 'chat.completion',
                             created: 1,
-                            model: model.id,
-                            provider: 'OpenAI',
+                            model: routeModel.id,
+                            provider: native ? 'Google' : 'OpenAI',
                             choices: [
                                 {
                                     index: 0,
@@ -784,6 +798,23 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     held_milli: '0',
                     charged_milli: '0',
                 });
+
+                if (native) {
+                    const nativeCalls = await client`
+                        select c.input_limit, a.input_limit as admitted_input, c.observed_at
+                        from ai_credit_native_call_dispatches c
+                        join ai_credit_action_attempts a on a.id=c.attempt_id
+                        where a.action_id=${submitted.id}::uuid`;
+
+                    expect(nativeCalls.length).toBeGreaterThan(0);
+                    for (const call of nativeCalls) {
+                        expect(call.input_limit).toBeLessThanOrEqual(
+                            call.admitted_input,
+                        );
+
+                        expect(call.observed_at).toBeTruthy();
+                    }
+                }
 
                 if (repair === 'valid') {
                     expect(run).toMatchObject({

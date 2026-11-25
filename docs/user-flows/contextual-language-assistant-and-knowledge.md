@@ -369,9 +369,14 @@ accounting behavior have separate real composed HTTP/integration coverage.
   Learners never see or choose a model. Exhausted routes show a neutral error
   with explicit Retry; questions remain. Capacity/credit failures never silently charge
   an unissued provider call; incurred dispatched work remains accounted.
-- Technical generation failures show **AI could not complete this response. Your
-  message is saved. You can retry.**, rather than a conversation-loading error.
-  A successfully queued turn is admission, not proof of completed generation.
+- When generation fails, the turn keeps the learner’s message and offers **Retry**.
+  If the provider outcome is unknown, the notice explains that completion could
+  not be confirmed. Other saved generation failures also display a turn-specific
+  notice. For example, a scope change explains that the request could not be
+  completed under its allowance. Retry sends the original request again.
+- When a plan names several listening activities without quantities, the tutor
+  can use one question per uncounted activity. It preserves explicit quantities
+  and asks for clarification when those quantities conflict with the total.
 - Technical provider failures keep the learner question and incomplete assistant
   output, release the credit hold, and charge the learner nothing. Canonical
   API detail retains released billing and zero charged credits; the tutor shows

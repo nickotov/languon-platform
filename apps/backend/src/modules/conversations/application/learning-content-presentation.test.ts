@@ -201,6 +201,44 @@ describe('host learning content presentation', () => {
         expect(text).not.toContain('Exercises: 5');
     });
 
+    it('fills omitted named listening counts without changing explicit quantities or order', () => {
+        const brief = exercises();
+        const task = brief.tasks[0]!;
+        task.activities = [
+            { activityId: 'L04' },
+            { activityId: 'L01', count: 2 },
+        ];
+
+        const normalized = normalizeLearningContentDefaults(brief);
+        expect(normalized.brief.tasks[0]).toMatchObject({
+            count: 3,
+            activities: [
+                { activityId: 'L04', count: 1 },
+                { activityId: 'L01', count: 2 },
+            ],
+        });
+
+        expect(normalized.appliedDefaults).toEqual([
+            { taskId: 'practice', kind: 'exercises', count: 3 },
+        ]);
+
+        expect(task.activities[0]?.count).toBeUndefined();
+    });
+
+    it('retains a conflicting upper limit for validation', () => {
+        const brief = exercises();
+        Object.assign(brief.tasks[0]!, {
+            maxCount: 1,
+            activities: [{ activityId: 'L01' }, { activityId: 'L04' }],
+        });
+
+        const normalized =
+            normalizeLearningContentDefaults(brief).brief.tasks[0]!;
+
+        expect(normalized.count).toBe(1);
+        expect(normalized.activities).toEqual(brief.tasks[0]!.activities);
+    });
+
     it('preserves explicitly requested per-activity totals without relabeling them as defaults', () => {
         const brief = exercises();
         brief.tasks[0]!.activities = [

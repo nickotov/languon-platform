@@ -26,7 +26,7 @@ export function lessonRunNotice(
     if (run.failure?.code === 'admission-blocked') {
         const reasons = {
             'context-too-large': copy.inputTooLarge,
-            'allowance-required': copy.budget,
+            'allowance-required': copy.allowanceRequired,
             'authority-expired': copy.authorityExpired,
             'stage-limit': copy.stageLimit,
             balance: copy.balance,

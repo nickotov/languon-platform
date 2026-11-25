@@ -112,10 +112,8 @@ describe('prepared generation input admission', () => {
 
         expect(provider.requests).toHaveLength(1);
         const { prompt, tools } = provider.requests[0]!;
-        const actual = Buffer.byteLength(
-            JSON.stringify({ prompt, tools }),
-            'utf8',
-        );
+        const actual =
+            Buffer.byteLength(JSON.stringify({ prompt, tools }), 'utf8') + 256;
 
         expect(bound.minimumInputBound).toBeGreaterThanOrEqual(actual);
         expect(bound.minimumInputBound - actual).toBeLessThan(16);

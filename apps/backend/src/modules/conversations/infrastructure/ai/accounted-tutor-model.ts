@@ -1,3 +1,4 @@
+import { textCallInputTokenBound } from '../../../text-ai/application/text-call-input-bound';
 import { learningContentActionOutputLimit } from '../../application/learning-content-batches';
 import {
     structuredFinishReason,
@@ -68,7 +69,6 @@ export function createTutorModelGate(options: {
     maxCalls?: number;
     maxMemoryCalls?: number;
     deadline?: number;
-    estimateInputTokens?: (options: CallOptions) => number;
 }) {
     const controller = new AbortController();
     const deadline = options.deadline ?? Date.now() + tutorStageTimeLimitMs;
@@ -99,15 +99,7 @@ export function createTutorModelGate(options: {
     ): Model => {
         const prepare = async (input: CallOptions) => {
             signal.throwIfAborted();
-            const inputTokenEstimate =
-                options.estimateInputTokens?.(input) ??
-                Buffer.byteLength(
-                    JSON.stringify({
-                        prompt: input.prompt,
-                        tools: input.tools,
-                    }),
-                    'utf8',
-                );
+            const inputTokenEstimate = textCallInputTokenBound(input);
 
             if (inputTokenEstimate > options.maxInputTokens) {
                 contextExceeded = true;

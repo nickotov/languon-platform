@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { assertLessonEnvelopeFits } from './generation-lesson-envelope';
+import {
+    assertLessonEnvelopeFits,
+    forecastLessonEnvelope,
+} from './generation-lesson-envelope';
 
 const lesson = {
     budget: {
@@ -24,6 +27,23 @@ const lesson = {
 };
 
 describe('lesson financial preflight', () => {
+    it('forecasts operator exposure across all attempts and customer charges for one accepted candidate per unit', () => {
+        expect(forecastLessonEnvelope(lesson)).toEqual({
+            providerCostMicros: 60n,
+            customerCreditsMilli: 3n,
+        });
+    });
+
+    it('needs no allowance or pricing when only local assembly remains', () => {
+        const complete = { ...lesson, calls: [], budget: undefined };
+        expect(forecastLessonEnvelope(complete)).toEqual({
+            providerCostMicros: 0n,
+            customerCreditsMilli: 0n,
+        });
+
+        expect(() => assertLessonEnvelopeFits(complete)).not.toThrow();
+    });
+
     it('allows a finite two-unit envelope plus two rejected calls per unit within the operator limit', () => {
         expect(() => assertLessonEnvelopeFits(lesson)).not.toThrow();
         expect(() =>

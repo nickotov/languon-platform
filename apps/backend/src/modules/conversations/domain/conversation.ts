@@ -49,7 +49,9 @@ export class ConversationActionConfirmationRequired extends ConversationError {
     constructor(public readonly quote: ConversationActionQuote) {
         super(
             'action_confirmation_required',
-            'The available budget permits a smaller response. Confirm the refreshed allowance to send.',
+            quote.scope === 'listening-lesson'
+                ? 'Confirm the allowance for the remaining lesson text and recording.'
+                : 'The available budget permits a smaller response. Confirm the refreshed allowance to send.',
         );
     }
 }

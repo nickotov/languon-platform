@@ -12,6 +12,10 @@ const en = {
 
     generationFailed:
         'AI could not complete this response. Your message is saved. You can retry.',
+    generationScopeChanged:
+        'The assistant couldn’t complete the full request within the available limits. You can ask for one part at a time.',
+    generationOutcomeUnknown:
+        'We couldn’t confirm that the AI finished this response. Your message is saved. You can retry.',
     modelUnavailable:
         'AI is unavailable right now. Your messages are kept. Try again later.',
     chooseModel: 'Change AI model',
@@ -118,6 +122,10 @@ const ru: Copy = {
 
     generationFailed:
         'ИИ не смог завершить ответ. Ваше сообщение сохранено. Можно повторить попытку.',
+    generationScopeChanged:
+        'Ассистент не смог выполнить весь запрос в пределах доступных лимитов. Можно попросить подготовить одну часть за раз.',
+    generationOutcomeUnknown:
+        'Не удалось подтвердить, что ИИ завершил ответ. Ваше сообщение сохранено. Можно повторить попытку.',
     modelUnavailable:
         'ИИ сейчас недоступен. Сообщения сохранены. Повторите позже.',
     chooseModel: 'Изменить модель ИИ',
@@ -221,6 +229,10 @@ const es: Copy = {
 
     generationFailed:
         'La IA no pudo completar esta respuesta. Tu mensaje está guardado. Puedes volver a intentarlo.',
+    generationScopeChanged:
+        'El asistente no pudo completar toda la solicitud dentro de los límites disponibles. Puedes pedir una parte a la vez.',
+    generationOutcomeUnknown:
+        'No pudimos confirmar que la IA terminara la respuesta. Tu mensaje está guardado. Puedes volver a intentarlo.',
     modelUnavailable:
         'La IA no está disponible. Tus mensajes se conservan. Reinténtalo más tarde.',
     chooseModel: 'Cambiar modelo de IA',
@@ -326,6 +338,10 @@ const fr: Copy = {
 
     generationFailed:
         'L’IA n’a pas pu terminer cette réponse. Votre message est conservé. Vous pouvez réessayer.',
+    generationScopeChanged:
+        'L’assistant n’a pas pu traiter toute la demande dans les limites disponibles. Vous pouvez demander une partie à la fois.',
+    generationOutcomeUnknown:
+        'Nous n’avons pas pu confirmer que l’IA avait terminé sa réponse. Votre message est conservé. Vous pouvez réessayer.',
     modelUnavailable:
         'L’IA est indisponible. Vos messages sont conservés. Réessayez plus tard.',
     chooseModel: 'Changer de modèle IA',

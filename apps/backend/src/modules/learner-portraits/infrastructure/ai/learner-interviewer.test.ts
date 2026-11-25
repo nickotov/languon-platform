@@ -341,13 +341,14 @@ describe('learner interviewer runner', () => {
             ).toBeLessThanOrEqual(limit);
 
             expect(limit).toBeLessThan(64000);
-            const actual = Buffer.byteLength(
-                JSON.stringify({
-                    prompt: provider.requests[0]!.prompt,
-                    tools: provider.requests[0]!.tools,
-                }),
-                'utf8',
-            );
+            const actual =
+                Buffer.byteLength(
+                    JSON.stringify({
+                        prompt: provider.requests[0]!.prompt,
+                        tools: provider.requests[0]!.tools,
+                    }),
+                    'utf8',
+                ) + 256;
 
             expect(accounting.admit.mock.calls[0]![0].inputTokenEstimate).toBe(
                 actual,
@@ -372,7 +373,8 @@ describe('learner interviewer runner', () => {
             );
 
             if (kind === 'small') {
-                expect(limit).toBeLessThan(5900);
+                expect(limit - actual).toBeLessThan(16);
+                expect(limit).toBeLessThan(6000);
             }
         },
     );

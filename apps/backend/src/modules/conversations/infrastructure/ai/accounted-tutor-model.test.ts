@@ -16,6 +16,30 @@ const input = {
 };
 
 describe('accounted tutor model', () => {
+    it('reserves the native response format and SDK framing before dispatch', async () => {
+        const accounting = tutorAccountingFixture();
+        const gate = createTutorModelGate({
+            accounting,
+            signal: new AbortController().signal,
+            maxInputTokens: 64000,
+        });
+        const request = {
+            ...input,
+            responseFormat: {
+                type: 'json' as const,
+                schema: { type: 'string' as const, description: 'Réponse' },
+            },
+        };
+
+        await gate
+            .wrap(scriptedTutorModel(['ok']).model, 'answer')
+            .doGenerate(request);
+
+        expect(accounting.admit.mock.calls[0]?.[0].inputTokenEstimate).toBe(
+            Buffer.byteLength(JSON.stringify(request), 'utf8') + 256,
+        );
+    });
+
     it('requires exactly one settled response for the current validation', async () => {
         const gate = createTutorModelGate({
             accounting: tutorAccountingFixture(),

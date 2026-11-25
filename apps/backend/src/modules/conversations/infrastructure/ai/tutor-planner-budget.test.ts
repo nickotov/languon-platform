@@ -164,13 +164,14 @@ describe('planner admission versus the real pinned SDK native boundary', () => {
             });
 
             const request = provider.requests[0]!;
-            const actualBytes = Buffer.byteLength(
-                JSON.stringify({
-                    prompt: request.prompt,
-                    tools: request.tools,
-                }),
-                'utf8',
-            );
+            const actualBytes =
+                Buffer.byteLength(
+                    JSON.stringify({
+                        prompt: request.prompt,
+                        tools: request.tools,
+                    }),
+                    'utf8',
+                ) + 256;
             const projectedBytes = tutorPlannerInputBytes(input, state);
             const admittedBytes =
                 accounting.admit.mock.calls[0]?.[0].inputTokenEstimate;

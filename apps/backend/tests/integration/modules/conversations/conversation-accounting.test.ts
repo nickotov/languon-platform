@@ -1,3 +1,8 @@
+import type { prospectiveLessonCalls } from '../../../../src/modules/conversations/infrastructure/ai/generation-admission-input';
+import {
+    nativeGeminiFixture,
+    seedNativeGeminiPrice,
+} from '../../../support/native-provider-price-fixture';
 import type { GenerationAutomaticAdmission } from '../../../../src/modules/conversations/application/ports/generation-run';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -70,9 +75,16 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             );
         });
 
-        async function ready(funding: 'customer' | 'operator' = 'customer') {
+        async function ready(
+            funding: 'customer' | 'operator' = 'customer',
+            routeModel = model,
+        ) {
             const now = new Date();
-            await seedTextAiRoutingFixture(db);
+            await seedTextAiRoutingFixture(db, {
+                routeId: `${routeModel.providerId}/${routeModel.id}`,
+                replace: routeModel !== model,
+            });
+
             await db.insert(capabilityPolicyRevisionsTable).values({
                 id: randomUUID(),
                 capability: 'conversation',
@@ -87,13 +99,13 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 .values({
                     id: conversationExecutionObservationId(
                         'current-admission',
-                        model.providerId,
-                        model.id,
+                        routeModel.providerId,
+                        routeModel.id,
                     ),
                     workerId: 'current-admission',
-                    providerId: model.providerId,
-                    modelId: model.id,
-                    adapterRevision: model.adapterRevision,
+                    providerId: routeModel.providerId,
+                    modelId: routeModel.id,
+                    adapterRevision: routeModel.adapterRevision,
                     checkedAt: now,
                     expiresAt: new Date(now.getTime() + 120_000),
                     status: 'available',
@@ -122,7 +134,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 reserveToolContinuation: boolean;
                 minimumOutputTokens: number;
                 forceConfirmation: boolean;
-                includeListeningSpeech: boolean;
+                listeningTextCalls: ReturnType<typeof prospectiveLessonCalls>;
                 generationAuthorization: GenerationAutomaticAdmission;
             }> = {},
         ) =>
@@ -156,8 +168,8 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                   input.generationAuthorization,
                           }
                         : {}),
-                    ...(input.includeListeningSpeech
-                        ? { includeListeningSpeech: true }
+                    ...(input.listeningTextCalls
+                        ? { listeningTextCalls: input.listeningTextCalls }
                         : {}),
                     ...(input.minimumOutputTokens !== undefined
                         ? { minimumOutputTokens: input.minimumOutputTokens }
@@ -239,7 +251,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 reason: 'Synthetic delegated speech',
             });
 
-            const root = await admit({ includeListeningSpeech: true });
+            const root = await admit({ listeningTextCalls: [] });
             expect(root).toMatchObject({
                 permitsListeningRecording: true,
                 listeningSpeechBudget: expect.any(Object),
@@ -280,7 +292,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             );
             const deadline = new Date(Date.now() + 30_000);
             const stage = await admit({
-                includeListeningSpeech: true,
+                listeningTextCalls: [],
                 forceConfirmation: true,
                 recordingPlanAuthorization: {
                     expiresAt: deadline.toISOString(),
@@ -308,6 +320,118 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
             expect(holds?.count).toBe(1);
         });
+
+        it.each([
+            'automatic',
+            'manual',
+            'expired-manual',
+            'repriced-manual',
+        ] as const)(
+            'fits the recording plan under a native provider limit after %s handoff',
+            async (mode) => {
+                await seedNativeGeminiPrice(db, '1');
+                await ready('operator', nativeGeminiFixture);
+                await db.insert(capabilityPolicyRevisionsTable).values({
+                    id: randomUUID(),
+                    capability: 'speech',
+                    version: 1,
+                    funding: 'operator',
+                    createdAt: new Date(),
+                    reason: 'Synthetic listening lesson',
+                });
+
+                const planner = await admit();
+                const maximum = Number(
+                    planner.generationMaximumProviderCostMicros,
+                );
+                // Each request costs one microdollar per input/output token. Model three
+                // bounded units whose combined text forecast is 60% of the parent cap.
+                const outputTokens = 1000;
+                const inputTokens = Math.floor(maximum / 5) - outputTokens;
+                const listeningTextCalls = Array.from({ length: 3 }, () => ({
+                    requestBytes: [inputTokens * 4],
+                    futureSourceTokens: 0,
+                    outputTokens,
+                }));
+                const request = {
+                    requestId: randomUUID(),
+                    conversationId: randomUUID(),
+                    fingerprint: randomUUID(),
+                    listeningTextCalls,
+                };
+                const authority = {
+                    expiresAt: new Date(Date.now() + 60000).toISOString(),
+                    maximumCreditsMilli: '0',
+                    maximumProviderCostMicros: maximum,
+                    authorizationFingerprint: String(
+                        planner.generationAuthorizationFingerprint,
+                    ),
+                };
+                const first = await admit(
+                    mode === 'automatic'
+                        ? { ...request, recordingPlanAuthorization: authority }
+                        : { ...request, forceConfirmation: true },
+                );
+                let stage = first;
+                if (mode !== 'automatic') {
+                    expect(first).toMatchObject({
+                        confirmationRequired: true,
+                        quote: {
+                            scope: 'listening-lesson',
+                            maximumCredits: '0',
+                        },
+                    });
+
+                    let quote = first.quote as { id: string };
+                    if (
+                        mode === 'expired-manual' ||
+                        mode === 'repriced-manual'
+                    ) {
+                        if (mode === 'expired-manual') {
+                            await client`update ai_credit_action_quotes set expires_at = now() - interval '1 second' where id = ${quote.id}`;
+                        } else {
+                            await seedNativeGeminiPrice(db, '1.1');
+                        }
+
+                        const refreshed = await admit({
+                            ...request,
+                            forceConfirmation: true,
+                            confirmedQuoteId: quote.id,
+                        });
+
+                        expect(refreshed.confirmationRequired).toBe(true);
+                        expect((refreshed.quote as { id: string }).id).not.toBe(
+                            quote.id,
+                        );
+
+                        quote = refreshed.quote as { id: string };
+                    }
+
+                    stage = await admit({
+                        ...request,
+                        forceConfirmation: true,
+                        confirmedQuoteId: quote.id,
+                    });
+                }
+
+                const textMaximum = Number(
+                    stage.generationMaximumProviderCostMicros,
+                );
+                const speechBudget = stage.listeningSpeechBudget as {
+                    maximumProviderMicros: number;
+                };
+
+                expect(stage.confirmationRequired).toBeUndefined();
+                expect(textMaximum).toBeGreaterThanOrEqual(
+                    3 * (inputTokens + outputTokens),
+                );
+
+                expect(speechBudget.maximumProviderMicros).toBeGreaterThan(0);
+                expect(textMaximum + speechBudget.maximumProviderMicros).toBe(
+                    maximum,
+                );
+            },
+        );
 
         it('carries a confirmed workspace quote through recording intent and never exceeds the remaining customer ceiling', async () => {
             await ready('customer');
@@ -351,7 +475,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ),
             };
             const upgrade = {
-                includeListeningSpeech: true,
+                listeningTextCalls: [],
                 forceConfirmation: true,
                 recordingPlanAuthorization: remaining,
             };
@@ -392,7 +516,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             });
 
             const result = await admit({
-                includeListeningSpeech: true,
+                listeningTextCalls: [],
                 forceConfirmation: true,
             });
 

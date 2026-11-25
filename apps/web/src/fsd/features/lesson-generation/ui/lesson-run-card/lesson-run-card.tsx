@@ -93,13 +93,18 @@ export function LessonRunCard({
     const uncertain =
         Boolean(run.uncertainTurnId) ||
         run.failure?.code === 'provider-outcome-unknown';
+    const needsBudgetReview =
+        run.failure?.code === 'admission-blocked' &&
+        run.failure.admissionReason === 'allowance-required';
     const continueLabel = uncertain
         ? copy.authorizeAttempt
-        : retrying
-          ? failedExercise
-              ? copy.retryExercise(failedExercise.index)
-              : copy.retryRemaining
-          : copy.continue;
+        : needsBudgetReview
+          ? copy.reviewBudget
+          : retrying
+            ? failedExercise
+                ? copy.retryExercise(failedExercise.index)
+                : copy.retryRemaining
+            : copy.continue;
     let title = copy.title;
     if (awaitingRecording) {
         title = recordingApprovalCopy(locale).title;

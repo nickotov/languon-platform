@@ -1,3 +1,4 @@
+import { textCallInputTokenBound } from '../../application/text-call-input-bound';
 import {
     currentTextAiProviderAttemptWitness,
     withTextAiProviderAttemptWitness,
@@ -469,15 +470,7 @@ class RestrictedGatewayModel extends ModelRouterLanguageModel {
         }
 
         assertTextOnlyNativePrompt(options.prompt, options.tools);
-        const inputTokens =
-            Buffer.byteLength(
-                JSON.stringify({
-                    prompt: options.prompt,
-                    tools: options.tools,
-                    responseFormat: options.responseFormat,
-                }),
-                'utf8',
-            ) + 256;
+        const inputTokens = textCallInputTokenBound(options);
         const outputTokens = options.maxOutputTokens ?? this.native.outputLimit;
         if (
             inputTokens > this.native.inputLimit ||

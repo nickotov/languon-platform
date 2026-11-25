@@ -136,6 +136,44 @@ it('offers retry for temporary capacity exhaustion and keeps unknown failures ge
     expect(screen.queryByText(providerMessage)).not.toBeInTheDocument();
 });
 
+it.each([
+    'generation_invalid_output',
+    'generation_transport_failure',
+    'generation_output_limit',
+    'generation_publication_failed',
+    'unexpected_saved_turn_failure',
+    null,
+])(
+    'keeps a failed saved turn distinct from a conversation read error (%s)',
+    (code) => {
+        render(
+            <ConversationErrorNotice failedTurnCode={code} onRetry={vi.fn()} />,
+        );
+
+        expect(screen.getByRole('alert')).toHaveTextContent(
+            'AI could not complete this response',
+        );
+    },
+);
+
+it('explains a generation scope failure in Russian and preserves explicit retry', () => {
+    const retry = vi.fn();
+    render(
+        <ConversationErrorNotice
+            failedTurnCode='generation_scope_change'
+            onRetry={retry}
+        />,
+        { locale: 'ru' },
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+        'Ассистент не смог выполнить весь запрос в пределах доступных лимитов.',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить ответ' }));
+    expect(retry).toHaveBeenCalledOnce();
+});
+
 it('associates each failed/cancelled Retry with its original learner question', () => {
     const conversationId = '00000000-0000-4000-8000-000000000001';
     const firstId = '00000000-0000-4000-8000-000000000002';
@@ -193,7 +231,7 @@ it('associates each failed/cancelled Retry with its original learner question', 
                 ...turn,
                 id: secondId,
                 status: 'failed',
-                failureCode: 'generation_failed',
+                failureCode: 'generation_provider_outcome_unknown',
             },
         ],
         drafts: [],
@@ -214,7 +252,7 @@ it('associates each failed/cancelled Retry with its original learner question', 
     });
 
     expect(within(failed).getByRole('alert')).toHaveTextContent(
-        'AI could not complete this response. Your message is saved.',
+        'We couldn’t confirm that the AI finished this response. Your message is saved.',
     );
 
     expect(within(failed).getByRole('alert')).not.toHaveTextContent(

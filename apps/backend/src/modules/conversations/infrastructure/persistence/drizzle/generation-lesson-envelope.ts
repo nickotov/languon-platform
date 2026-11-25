@@ -35,32 +35,32 @@ export interface LessonPlanningReceipt {
     successful: number;
 }
 
-/** A preflight for known work, not a replacement for admission. Actual future input,
- * provider latency and billing are only known when each saved unit is dispatched. */
-export function assertLessonEnvelopeFits(input: {
+interface LessonEnvelopeInput {
     budget: unknown;
     calls: readonly {
         requestBytes: readonly number[];
         futureSourceTokens: number;
         outputTokens: number;
     }[];
-    maximumProviderCostMicros: number;
-    maximumCreditsMilli: string;
     tariff: ActionTariff;
-    funding: 'customer' | 'operator' | 'unlimited';
     receipts: readonly LessonPlanningReceipt[];
     now: Date;
-}) {
+}
+
+function unavailable() {
+    return new ConversationError(
+        'generation_scope_change',
+        'The planned lesson exceeds its available allowance. Request fewer units or a smaller lesson.',
+    );
+}
+
+/** Estimate the complete text stage before splitting its finite operator allowance with speech. */
+export function forecastLessonEnvelope(input: LessonEnvelopeInput) {
     if (!input.calls.length) {
-        return;
+        return { providerCostMicros: 0n, customerCreditsMilli: 0n };
     }
 
     const budget = lessonPricing.parse(input.budget);
-    const unavailable = () =>
-        new ConversationError(
-            'generation_scope_change',
-            'The planned lesson exceeds its available allowance. Request fewer units or a smaller lesson.',
-        );
     let customerNumerator = 0n;
     let provider = 0n;
     let callCount = input.receipts.length;
@@ -158,7 +158,6 @@ export function assertLessonEnvelopeFits(input: {
     }
 
     if (
-        provider > BigInt(input.maximumProviderCostMicros) ||
         callCount >
             maximumAutomaticGenerationStages *
                 learningContentAuthoringCallLimit ||
@@ -168,12 +167,30 @@ export function assertLessonEnvelopeFits(input: {
         throw unavailable();
     }
 
-    if (input.funding === 'customer') {
-        if (
-            roundActionChargeMilli(customerNumerator) >
-            BigInt(input.maximumCreditsMilli)
-        ) {
-            throw unavailable();
-        }
+    return {
+        providerCostMicros: provider,
+        customerCreditsMilli: roundActionChargeMilli(customerNumerator),
+    };
+}
+
+/** This preflight supplements the exact limits checked when each unit is dispatched. */
+export function assertLessonEnvelopeFits(
+    input: LessonEnvelopeInput & {
+        maximumProviderCostMicros: number;
+        maximumCreditsMilli: string;
+        funding: 'customer' | 'operator' | 'unlimited';
+    },
+) {
+    if (!input.calls.length) {
+        return;
+    }
+
+    const forecast = forecastLessonEnvelope(input);
+    if (
+        forecast.providerCostMicros > BigInt(input.maximumProviderCostMicros) ||
+        (input.funding === 'customer' &&
+            forecast.customerCreditsMilli > BigInt(input.maximumCreditsMilli))
+    ) {
+        throw unavailable();
     }
 }

@@ -1,3 +1,6 @@
+import type { TextAiProviderBudgetPolicy } from '../../text-ai/application/text-ai-provider-catalog';
+import { forecastLessonEnvelope } from './persistence/drizzle/generation-lesson-envelope';
+import type { prospectiveLessonCalls } from './ai/generation-admission-input';
 import { learningContentActionOutputLimit } from '../application/learning-content-batches';
 import { prepareAdminTextAiRouting } from '../../text-ai/infrastructure/persistence/drizzle/routing-admission';
 import { defaultTextAiAvailabilityPolicy } from '../../text-ai/infrastructure/persistence/drizzle/text-ai-catalog-query';
@@ -54,6 +57,25 @@ import type { GenerationAutomaticAdmission } from '../application/ports/generati
 
 type Database = PostgresJsDatabase<typeof databaseSchema>;
 type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
+// A quote binds reviewed rates, limits and execution options. Each admission
+// evaluates those rates again; its clock reading is not a new configuration.
+function quoteBudgetIdentity(budget: TextAiProviderBudgetPolicy) {
+    if (!budget.nativeExecutionFacts) {return budget;}
+
+    const { dispatchedAt: _evaluatedAt, ...facts } =
+        budget.nativeExecutionFacts;
+
+    return { ...budget, nativeExecutionFacts: facts };
+}
+
+/** Keep half available for recording when possible, while funding every planned text unit. */
+function speechShare(total: bigint, requiredText: bigint): bigint {
+    const remaining = total - requiredText;
+    const half = total / 2n;
+
+    return remaining < half ? remaining : half;
+}
+
 export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
     const availability = policy ?? defaultTextAiAvailabilityPolicy();
     const admit = async (
@@ -67,7 +89,7 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             confirmedQuoteId?: string;
             forceConfirmation?: boolean;
             mayGenerateLesson?: boolean;
-            includeListeningSpeech?: boolean;
+            listeningTextCalls?: ReturnType<typeof prospectiveLessonCalls>;
             minimumOutputTokens?: number;
             inputTokenBound?: number;
             minimumInputBound: number;
@@ -287,9 +309,24 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             );
         }
 
-        const combined = input.includeListeningSpeech === true && !automatic;
+        const textForecast =
+            input.listeningTextCalls && !automatic
+                ? forecastLessonEnvelope({
+                      calls: input.listeningTextCalls,
+                      budget: execution.budget,
+                      tariff,
+                      receipts: [],
+                      now,
+                  })
+                : undefined;
+        const combined = textForecast !== undefined;
         const speechMaximumProviderMicros = combined
-            ? Math.floor(execution.budget.maxCostMicrosPerAttempt / 2)
+            ? Number(
+                  speechShare(
+                      BigInt(execution.budget.maxCostMicrosPerAttempt),
+                      textForecast.providerCostMicros,
+                  ),
+              )
             : 0;
 
         if (combined && speechMaximumProviderMicros < 1) {
@@ -333,11 +370,14 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
                 : totalAuthorizedBudgetMilli;
         const speechMaximumMilli = speechCustomerPays
             ? textCustomerPays
-                ? availableCombined / 2n
+                ? speechShare(
+                      availableCombined,
+                      textForecast!.customerCreditsMilli,
+                  )
                 : availableCombined
             : 0n;
 
-        if (speechCustomerPays && speechMaximumMilli === 0n) {
+        if (speechCustomerPays && speechMaximumMilli <= 0n) {
             throw new ConversationError(
                 budget ? 'credits_exhausted' : 'action_budget_unconfigured',
                 'A positive speech allowance is required to prepare a new recording.',
@@ -557,7 +597,10 @@ export function conversationAdmission(policy?: TextAiAvailabilityPolicy) {
             const authorizationFingerprint = createHash('sha256')
                 .update(
                     JSON.stringify({
-                        execution,
+                        execution: {
+                            ...execution,
+                            budget: quoteBudgetIdentity(execution.budget),
+                        },
                         charging,
                         budget,
                         providerPrice,

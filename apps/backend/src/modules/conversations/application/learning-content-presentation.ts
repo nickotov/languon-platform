@@ -6,6 +6,7 @@ import {
     LearningContentBriefSchema,
     learningContentCapabilities,
     type LearningContentBrief,
+    type LearningContentTask,
     type LearningContentLimitationCode,
 } from './learning-content-contract';
 import { learningContentLimitationCopy } from './learning-content-limitations';
@@ -16,6 +17,34 @@ export interface LearningContentAppliedDefault {
     count?: number;
 }
 
+/** One item per uncounted selection preserves every named activity and its order. */
+function completeActivityCounts(
+    task: LearningContentTask,
+): LearningContentTask {
+    if (
+        task.kind !== 'exercises' ||
+        !task.activities ||
+        task.activities.length < 2 ||
+        task.activities.every((activity) => activity.count !== undefined)
+    ) {
+        return task;
+    }
+
+    const activities = task.activities.map((activity) => ({
+        ...activity,
+        count: activity.count ?? 1,
+    }));
+    const total = activities.reduce((sum, activity) => sum + activity.count, 0);
+    if (
+        (task.count !== undefined && task.count !== total) ||
+        (task.maxCount !== undefined && total > task.maxCount)
+    ) {
+        return task;
+    }
+
+    return { ...task, activities };
+}
+
 /** Normalize once at the host boundary while retaining which choices were omitted. */
 export function normalizeLearningContentDefaults(
     candidate: LearningContentBrief,
@@ -24,7 +53,8 @@ export function normalizeLearningContentDefaults(
     const original = LearningContentBriefSchema.parse(candidate);
     const brief = LearningContentBriefSchema.parse({
         ...original,
-        tasks: original.tasks.map((task) => {
+        tasks: original.tasks.map((originalTask) => {
+            const task = completeActivityCounts(originalTask);
             const capability = learningContentCapabilities.find(
                 (item) => item.kind === task.kind,
             )!;
@@ -52,7 +82,8 @@ export function normalizeLearningContentDefaults(
                     : capability.defaultCount);
             const defaultCount =
                 task.count === undefined &&
-                explicitActivityCount === undefined &&
+                (explicitActivityCount === undefined ||
+                    originalTask !== task) &&
                 !(task.kind === 'vocabulary' && task.words);
 
             if (defaultCount) {
