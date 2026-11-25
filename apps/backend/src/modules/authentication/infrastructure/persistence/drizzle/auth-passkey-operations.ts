@@ -38,7 +38,6 @@ export function registerPasskey(
 
     return persistence.database.transaction(async (transaction) => {
         const session = await findRecentSession(
-            persistence,
             transaction,
             input.now,
             input.sessionId,
@@ -91,10 +90,16 @@ export function commitPasskeyAuthentication(
     assertInitialSession(input.session, 'passkey', input.now);
 
     return persistence.database.transaction(async (transaction) => {
+        await lockUser(transaction, input.session.userId);
         const rows = await transaction
             .select()
             .from(authPasskeysTable)
-            .where(eq(authPasskeysTable.id, input.passkeyId))
+            .where(
+                and(
+                    eq(authPasskeysTable.id, input.passkeyId),
+                    eq(authPasskeysTable.userId, input.session.userId),
+                ),
+            )
             .limit(1)
             .for('update');
         const passkey = rows[0];
@@ -106,7 +111,6 @@ export function commitPasskeyAuthentication(
             return { kind: 'counter_conflict' };
         }
 
-        await lockUser(transaction, passkey.userId);
         const account = await findAccount(
             transaction,
             eq(usersTable.id, passkey.userId),
@@ -190,7 +194,6 @@ export function revokePasskey(
 ): Promise<boolean> {
     return persistence.database.transaction(async (transaction) => {
         const session = await findRecentSession(
-            persistence,
             transaction,
             input.now,
             input.sessionId,

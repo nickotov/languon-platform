@@ -263,7 +263,6 @@ export function commitEmailVerification(
 
         assertInitialSession(input.session, 'email_verification', input.now);
 
-        await lockUser(transaction, challenge.userId);
         const account = await findAccount(
             transaction,
             eq(usersTable.id, challenge.userId),
@@ -352,7 +351,6 @@ export function commitPasswordReset(
             return 'incorrect';
         }
 
-        await lockUser(transaction, challenge.userId);
         await lockPasswordCredential(transaction, challenge.userId);
         const account = await findAccount(
             transaction,

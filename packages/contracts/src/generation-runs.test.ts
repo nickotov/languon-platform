@@ -51,15 +51,18 @@ describe('safe resumable generation public contracts', () => {
             pauseReason: 'recording-confirmation',
             recordingApproval,
         };
+
         expect(GenerationRunSummarySchema.safeParse(waiting).success).toBe(
             true,
         );
+
         expect(
             GenerationRunSummarySchema.safeParse({
                 ...summary,
                 recordingApproval,
             }).success,
         ).toBe(false);
+
         expect(
             GenerationRunSummarySchema.safeParse({
                 ...waiting,
@@ -437,6 +440,13 @@ describe('safe resumable generation public contracts', () => {
                 data: { ...summary, artifacts: [{ text: 'private' }] },
             }),
         ).toEqual(event);
+
+        expect(
+            ConversationEventSchema.safeParse({
+                ...event,
+                data: { ...summary, completedTaskCount: 2 },
+            }).success,
+        ).toBe(false);
     });
 
     it('rejects contradictory action, publication and progress states', () => {

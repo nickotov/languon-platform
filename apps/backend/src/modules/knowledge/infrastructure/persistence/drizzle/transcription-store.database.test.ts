@@ -10,7 +10,7 @@ import {
     KnowledgeNoteContentSchema,
     type ProviderNativePricingRules,
 } from '@languon/contracts';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import {
     afterAll,
     beforeAll,
@@ -333,66 +333,148 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             await store.cancel(owner, noteId, input.operationId);
         });
 
-        it('runs production admission, worker and actual adapter through fake HTTP to usable transcript and exact settlement', async () => {
-            const { input } = await enqueue();
-            const transport = http(() =>
-                Response.json({
-                    text: 'The cat sleeps.',
-                    languages: [{ code: 'en' }],
-                    usage: { type: 'duration', seconds: 1 },
-                }),
-            );
-            const worker = createKnowledgeTranscriptionWorker({
-                database: db,
-                apiKey: 'synthetic-only',
-                workerId,
-                fetch: transport,
-            });
+        it.each([
+            'normal',
+            'rollback',
+            'lost acknowledgement',
+            'repeated rollback',
+        ] as const)(
+            'publishes a usable transcript and settles once after %s',
+            async (delivery) => {
+                const { input } = await enqueue();
+                const transport = http(() =>
+                    Response.json({
+                        text: 'The cat sleeps.',
+                        languages: [{ code: 'en' }],
+                        usage: { type: 'duration', seconds: 1 },
+                    }),
+                );
+                const worker = createKnowledgeTranscriptionWorker({
+                    database: db,
+                    apiKey: 'synthetic-only',
+                    workerId,
+                    fetch: transport,
+                });
 
-            expect(await worker.processNext(new AbortController().signal)).toBe(
-                true,
-            );
+                const realFinish =
+                    DrizzleKnowledgeTranscriptionStore.prototype.finish;
+                const finish = vi.spyOn(
+                    DrizzleKnowledgeTranscriptionStore.prototype,
+                    'finish',
+                );
+                let firstWriteCompleted = false;
+                if (delivery !== 'normal') {
+                    const fault: typeof realFinish = async function (
+                        this: DrizzleKnowledgeTranscriptionStore,
+                        ...args
+                    ) {
+                        const realTransaction = db.transaction.bind(db);
+                        const boundary = vi
+                            .spyOn(db, 'transaction')
+                            .mockImplementationOnce(async (write, config) => {
+                                await realTransaction(async (tx) => {
+                                    const finished = await write(tx);
+                                    firstWriteCompleted = finished === true;
+                                    if (delivery !== 'lost acknowledgement') {
+                                        await tx.execute(
+                                            sql`do $$ begin raise exception 'synthetic rollback' using errcode='40001'; end $$`,
+                                        );
+                                    }
 
-            const saved = await store.read(owner, noteId, input.operationId);
-            expect(saved).toMatchObject({
-                state: 'completed',
-                result: { text: 'The cat sleeps.', languages: ['en'] },
-            });
+                                    return finished;
+                                }, config);
 
-            expect(transport).toHaveBeenCalledTimes(1);
-            const [action] = await db
-                .select()
-                .from(aiCreditActionsTable)
-                .where(eq(aiCreditActionsTable.id, input.operationId));
+                                throw Object.assign(
+                                    new Error('Synthetic lost acknowledgement'),
+                                    { code: 'ECONNRESET' },
+                                );
+                            });
 
-            expect(action).toMatchObject({
-                state: 'settled',
-                chargedMilli: 17n,
-                outcome: 'success',
-            });
+                        try {
+                            return await realFinish.call(this, ...args);
+                        } finally {
+                            boundary.mockRestore();
+                        }
+                    };
 
-            const [expense] = await db
-                .select()
-                .from(aiProviderExpenseRecordsTable)
-                .where(
-                    eq(
-                        aiProviderExpenseRecordsTable.actionId,
-                        input.operationId,
-                    ),
+                    finish.mockImplementationOnce(fault);
+                    if (delivery === 'repeated rollback') {
+                        finish
+                            .mockImplementationOnce(fault)
+                            .mockImplementationOnce(fault);
+                    }
+                }
+
+                try {
+                    expect(
+                        await worker.processNext(new AbortController().signal),
+                    ).toBe(true);
+
+                    expect(finish).toHaveBeenCalledTimes(
+                        delivery === 'normal'
+                            ? 1
+                            : delivery === 'repeated rollback'
+                              ? 4
+                              : 2,
+                    );
+
+                    if (delivery !== 'normal') {
+                        expect(firstWriteCompleted).toBe(true);
+                        for (const attempt of finish.mock.calls.slice(1)) {
+                            expect(attempt).toEqual(finish.mock.calls[0]);
+                        }
+                    }
+                } finally {
+                    finish.mockRestore();
+                }
+
+                const saved = await store.read(
+                    owner,
+                    noteId,
+                    input.operationId,
                 );
 
-            expect(expense).toMatchObject({
-                sourceKind: 'transcription-attempt',
-                measurement: 'measured',
-                amountUsdMicros: 75n,
-            });
+                expect(saved).toMatchObject({
+                    state: 'completed',
+                    result: { text: 'The cat sleeps.', languages: ['en'] },
+                });
 
-            expect(await worker.processNext(new AbortController().signal)).toBe(
-                false,
-            );
+                expect(transport).toHaveBeenCalledTimes(1);
+                const [action] = await db
+                    .select()
+                    .from(aiCreditActionsTable)
+                    .where(eq(aiCreditActionsTable.id, input.operationId));
 
-            expect(transport).toHaveBeenCalledTimes(1);
-        });
+                expect(action).toMatchObject({
+                    state: 'settled',
+                    chargedMilli: 17n,
+                    outcome: 'success',
+                });
+
+                const expenses = await db
+                    .select()
+                    .from(aiProviderExpenseRecordsTable)
+                    .where(
+                        eq(
+                            aiProviderExpenseRecordsTable.actionId,
+                            input.operationId,
+                        ),
+                    );
+
+                expect(expenses).toHaveLength(1);
+                expect(expenses[0]).toMatchObject({
+                    sourceKind: 'transcription-attempt',
+                    measurement: 'measured',
+                    amountUsdMicros: 75n,
+                });
+
+                expect(
+                    await worker.processNext(new AbortController().signal),
+                ).toBe(false);
+
+                expect(transport).toHaveBeenCalledTimes(1);
+            },
+        );
 
         it('releases customer holds on controlled provider failure and never retries ambiguous work', async () => {
             const { input } = await enqueue();
@@ -444,38 +526,52 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             expect(transport).toHaveBeenCalledTimes(1);
         });
 
-        it('preserves unknown provider cost when a usable response omits duration', async () => {
-            const { input } = await enqueue();
-            const transport = http(() =>
-                Response.json({ text: 'Speech', languages: [{ code: 'en' }] }),
-            );
-
-            await createKnowledgeTranscriptionWorker({
-                database: db,
-                apiKey: 'synthetic-only',
-                workerId,
-                fetch: transport,
-            }).processNext(new AbortController().signal);
-
-            expect(
-                (await store.read(owner, noteId, input.operationId)).state,
-            ).toBe('completed');
-
-            const [expense] = await db
-                .select()
-                .from(aiProviderExpenseRecordsTable)
-                .where(
-                    eq(
-                        aiProviderExpenseRecordsTable.actionId,
-                        input.operationId,
-                    ),
+        it.each([
+            ['omitted duration', undefined],
+            ['sub-millisecond duration', 0.0001],
+            ['fractional milliseconds', 1.0001],
+            ['duration outside the safe integer range', 9007199254741],
+        ] as const)(
+            'publishes a usable response with unknown cost for %s',
+            async (_label, seconds) => {
+                const { input } = await enqueue();
+                const transport = http(() =>
+                    Response.json({
+                        text: 'Speech',
+                        languages: [{ code: 'en' }],
+                        ...(seconds === undefined
+                            ? {}
+                            : { usage: { type: 'duration', seconds } }),
+                    }),
                 );
 
-            expect(expense).toMatchObject({
-                measurement: 'unknown',
-                amountUsdMicros: null,
-            });
-        });
+                await createKnowledgeTranscriptionWorker({
+                    database: db,
+                    apiKey: 'synthetic-only',
+                    workerId,
+                    fetch: transport,
+                }).processNext(new AbortController().signal);
+
+                expect(
+                    (await store.read(owner, noteId, input.operationId)).state,
+                ).toBe('completed');
+
+                const [expense] = await db
+                    .select()
+                    .from(aiProviderExpenseRecordsTable)
+                    .where(
+                        eq(
+                            aiProviderExpenseRecordsTable.actionId,
+                            input.operationId,
+                        ),
+                    );
+
+                expect(expense).toMatchObject({
+                    measurement: 'unknown',
+                    amountUsdMicros: null,
+                });
+            },
+        );
 
         it('retains late financial observations after cancellation without publishing a transcript', async () => {
             const { input } = await enqueue();
@@ -814,16 +910,19 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                     credentialFingerprint,
                 });
 
-                expect(await workerStore.heartbeat(lease!)).toBe(true);
+                expect(await workerStore.heartbeat(lease!)).toBeInstanceOf(
+                    Date,
+                );
+
                 expect(
                     await workerStore.heartbeat({
                         ...lease!,
                         leaseToken: randomUUID(),
                     }),
-                ).toBe(false);
+                ).toBeNull();
 
                 await store.cancel(owner, noteId, input.operationId);
-                expect(await workerStore.heartbeat(lease!)).toBe(false);
+                expect(await workerStore.heartbeat(lease!)).toBeNull();
             });
         });
 

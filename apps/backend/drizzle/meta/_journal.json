@@ -1303,6 +1303,20 @@
       "when": 1795515558107,
       "tag": "0185_recording-plan-authorization",
       "breakpoints": true
+    },
+    {
+      "idx": 186,
+      "version": "7",
+      "when": 1795634151398,
+      "tag": "0186_transcription-meter-settlement",
+      "breakpoints": true
+    },
+    {
+      "idx": 187,
+      "version": "7",
+      "when": 1795635175749,
+      "tag": "0187_workbook-live-pagination",
+      "breakpoints": true
     }
   ]
 }

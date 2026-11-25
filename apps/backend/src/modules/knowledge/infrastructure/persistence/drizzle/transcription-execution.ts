@@ -142,7 +142,7 @@ export async function heartbeatTranscription(
             const job = await lockTranscriptionLease(tx, lease);
             const now = context.clock.now();
             if (job.deadlineAt <= now || job.cancellationRequestedAt) {
-                return false;
+                return null;
             }
 
             // Keep audio inside PostgreSQL. Only dispatch needs the media bytes.
@@ -161,10 +161,21 @@ export async function heartbeatTranscription(
                 ) else false end as renewed
             `);
 
-            return renewed[0]?.renewed === true;
+            if (renewed[0]?.renewed !== true) {
+                return null;
+            }
+
+            // The renewal function owns the TTL. Read its exact committed deadline
+            // so the worker can bound retries even if a later heartbeat disconnects.
+            const [current] = await tx
+                .select({ deadline: jobs.leaseDeadline })
+                .from(jobs)
+                .where(eq(jobs.id, job.id));
+
+            return current?.deadline ?? null;
         } catch (error) {
             if (error instanceof KnowledgeDomainError) {
-                return false;
+                return null;
             }
 
             throw error;

@@ -1,3 +1,8 @@
+---
+type: reference
+title: Deployment security operations
+---
+
 # Deployment security operations
 
 The deployment platform crosses registry, CI, SSH, proxy, database, cache,
@@ -109,3 +114,9 @@ restore drill before revocation.
 Production enrollment/email remains unavailable until its separate capability
 is implemented. Deployment must not enable development fixed verification codes
 or expose local authentication defaults to create users.
+
+## Authentication audit retention
+
+Each running backend API replica schedules a retention pass every minute after startup. The job uses the single-connection maintenance pool under the application database role configured by `DATABASE_URL`. Its timer retries independently of accounting maintenance. A transaction-scoped advisory lock allows one active prune across replicas. Each pass uses the expiry index to select up to 500 due authentication security events, with a 100 ms lock timeout and a one-second statement timeout. The stored expiry timestamp governs removal. New rows default to 180 days. Admin audit and admin MCP audit retain their separate operator-owned pruning command.
+
+When provisioning a separate application database role, verify schema usage, DELETE on `public.auth_security_events` and SELECT on its `id` and `expires_at` columns. The application role also needs its existing event-insert privileges. The API logs an expiry failure when database permissions, timeouts or availability prevent cleanup. A remaining backlog logs only the oldest overdue age in seconds. A sustained increase means the incoming expiry volume exceeds successful batch capacity. Restarting the API resumes processing from the stored timestamps.

@@ -1,3 +1,5 @@
+import { waitForBlockedWriters } from '../../../support/wait-for-blocked-writers';
+import { DrizzleAuthStore } from '../../../../../src/modules/authentication/infrastructure/persistence/drizzle/drizzle-auth-store';
 import { randomUUID } from 'node:crypto';
 import { KnowledgeNoteContentSchema } from '@languon/contracts';
 
@@ -125,6 +127,72 @@ describe.runIf(isDatabaseIntegrationEnabled())(
         afterAll(async () => {
             await client.end();
         });
+
+        it('revokes the session before a concurrent refresh can rotate it', async () => {
+            const input = await seed();
+            const auth = new DrizzleAuthStore(database);
+            const [session] = await database
+                .select()
+                .from(authSessionsTable)
+                .where(eq(authSessionsTable.id, input.sessionId));
+
+            if (!session) {
+                throw new Error('Expected the seeded refresh session');
+            }
+
+            let deletion: ReturnType<typeof store.schedule> | undefined;
+            let rotation:
+                ReturnType<typeof auth.rotateRefreshSession> | undefined;
+
+            // Scheduling and refresh both wait before either can finish. The
+            // deletion must release the owner only after it has revoked the family.
+            await client.begin(async (barrier) => {
+                await barrier`select id from auth_sessions where id=${input.sessionId} for update`;
+                deletion = store.schedule({
+                    ...input,
+                    beforeCommit: async () => {},
+                });
+
+                await waitForBlockedWriters(client, 1);
+                rotation = auth.rotateRefreshSession({
+                    digest: session.refreshTokenDigest,
+                    now: input.now,
+                    successor: {
+                        id: randomUUID(),
+                        userId: input.userId,
+                        familyId: session.familyId,
+                        predecessorSessionId: input.sessionId,
+                        refreshDigest: 'B'.repeat(43),
+                        absoluteExpiresAt: session.absoluteExpiresAt,
+                        authenticatedAt: session.authenticatedAt,
+                        authenticationMethod: 'password',
+                        createdAt: input.now,
+                        revocationReason: null,
+                        consumedAt: null,
+                        revokedAt: null,
+                        clientLabel: null,
+                        successorId: null,
+                    },
+                });
+
+                await waitForBlockedWriters(client, 2);
+            });
+
+            const [, result] = await Promise.all([deletion, rotation]);
+            expect(result).toEqual({ kind: 'unavailable' });
+            const family = await database
+                .select()
+                .from(authSessionsTable)
+                .where(eq(authSessionsTable.familyId, session.familyId));
+
+            expect(family).toMatchObject([
+                {
+                    id: input.sessionId,
+                    revocationReason: 'account_deletion',
+                    rotatedAt: null,
+                },
+            ]);
+        }, 20_000);
 
         it('commits the journal marker, immediate session and share revocation, and 30-day request', async () => {
             const input = await seed();

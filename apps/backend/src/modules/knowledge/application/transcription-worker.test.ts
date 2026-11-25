@@ -3,12 +3,20 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { KnowledgeTranscriptionProvider } from './transcription-provider';
 import type { KnowledgeTranscriptionResult } from '@languon/contracts';
 import { KnowledgeTranscriptionWorker } from './transcription-worker';
-import type {
-    KnowledgeTranscriptionJobStore,
-    KnowledgeTranscriptionLease,
+import {
+    TransientTranscriptionStoreError,
+    type KnowledgeTranscriptionJobStore,
+    type KnowledgeTranscriptionLease,
 } from './transcription-job-store';
 
-function fixture() {
+function fixture(
+    options: {
+        now?: () => number;
+        wait?: (ms: number, signal: AbortSignal) => Promise<void>;
+        timeoutMs?: number;
+        heartbeatMs?: number;
+    } = {},
+) {
     const lease: KnowledgeTranscriptionLease = {
         operationId: randomUUID(),
         noteId: randomUUID(),
@@ -32,7 +40,9 @@ function fixture() {
         read: vi.fn(),
         cancel: vi.fn(),
         claim: vi.fn(async () => lease),
-        heartbeat: vi.fn(async () => true),
+        heartbeat: vi.fn<KnowledgeTranscriptionJobStore['heartbeat']>(
+            async () => lease.leaseDeadline,
+        ),
         audio: vi.fn(async () => ({
             bytes: new Uint8Array([1]),
             mimeType: 'audio/wav' as const,
@@ -50,6 +60,7 @@ function fixture() {
         store,
         workerId: 'worker',
         createProvider,
+        ...options,
     });
 
     return { store, lease, result, transcribe, createProvider, worker };
@@ -65,7 +76,137 @@ describe('Knowledge transcription worker bounds and failure semantics', () => {
 
         expect(store.claim).toHaveBeenCalledWith('worker');
         expect(transcribe).toHaveBeenCalledTimes(1);
-        expect(store.finish).toHaveBeenCalledWith(lease, result);
+        expect(store.finish).toHaveBeenCalledWith(lease, result, undefined);
+    });
+
+    it('backs off across multiple transient writes and replays the same fenced result', async () => {
+        const wait = vi.fn<(ms: number, signal: AbortSignal) => Promise<void>>(
+            async () => undefined,
+        );
+        const { store, lease, result, transcribe, worker } = fixture({ wait });
+        for (let i = 0; i < 7; i++) {
+            store.finish.mockRejectedValueOnce(
+                new TransientTranscriptionStoreError(),
+            );
+        }
+
+        await worker.processNext(new AbortController().signal);
+        expect(transcribe).toHaveBeenCalledOnce();
+        expect(wait.mock.calls.map(([ms]) => ms)).toEqual([
+            100, 200, 400, 800, 1600, 2000, 2000,
+        ]);
+
+        expect(store.finish.mock.calls).toEqual(
+            Array(8).fill([lease, result, undefined]),
+        );
+    });
+
+    it('propagates a permanent settlement failure immediately', async () => {
+        const wait = vi.fn();
+        const { store, worker, transcribe } = fixture({ wait });
+        store.finish.mockRejectedValue(new Error('Invalid receipt'));
+        await expect(
+            worker.processNext(new AbortController().signal),
+        ).rejects.toThrow('Invalid receipt');
+
+        expect(transcribe).toHaveBeenCalledOnce();
+        expect(store.finish).toHaveBeenCalledOnce();
+        expect(wait).not.toHaveBeenCalled();
+    });
+
+    it.each(['execution', 'lease', 'job'] as const)(
+        'stops retries at the confirmed %s deadline',
+        async (bound) => {
+            let now = Date.now();
+            const wait = vi.fn(async (ms: number) => {
+                now += ms;
+            });
+            const { store, lease, transcribe, worker } = fixture({
+                now: () => now,
+                wait,
+                timeoutMs: bound === 'execution' ? 250 : 1000,
+            });
+
+            if (bound === 'lease') {
+                lease.leaseDeadline = new Date(now + 250);
+            } else if (bound === 'job') {
+                lease.deadlineAt = new Date(now + 250);
+            }
+
+            store.finish.mockRejectedValue(
+                new TransientTranscriptionStoreError(),
+            );
+
+            await expect(
+                worker.processNext(new AbortController().signal),
+            ).rejects.toThrow(TransientTranscriptionStoreError);
+
+            expect(wait.mock.calls.map(([ms]) => ms)).toEqual([100, 150]);
+            expect(transcribe).toHaveBeenCalledOnce();
+            expect(store.finish).toHaveBeenCalledTimes(2);
+        },
+    );
+
+    it('keeps the last confirmed renewal through a temporary heartbeat outage during settlement', async () => {
+        vi.useFakeTimers();
+        const wait = async (ms: number) => {
+            await vi.advanceTimersByTimeAsync(ms);
+        };
+        const { store, lease, transcribe, worker } = fixture({
+            wait,
+            heartbeatMs: 25,
+        });
+
+        lease.leaseDeadline = new Date(Date.now() + 50);
+        store.heartbeat
+            .mockResolvedValueOnce(new Date(Date.now() + 1_000))
+            .mockRejectedValue(new TransientTranscriptionStoreError());
+
+        store.finish
+            .mockRejectedValueOnce(new TransientTranscriptionStoreError())
+            .mockRejectedValueOnce(new TransientTranscriptionStoreError());
+
+        await worker.processNext(new AbortController().signal);
+        expect(store.heartbeat).toHaveBeenCalled();
+        expect(store.finish).toHaveBeenCalledTimes(3);
+        expect(transcribe).toHaveBeenCalledOnce();
+    });
+
+    it('stops settlement replay when a renewal reports a lost fence', async () => {
+        vi.useFakeTimers();
+        const wait = async (ms: number) => {
+            await vi.advanceTimersByTimeAsync(ms);
+        };
+        const { store, transcribe, worker } = fixture({
+            wait,
+            heartbeatMs: 25,
+        });
+
+        store.heartbeat.mockResolvedValue(null);
+        store.finish.mockRejectedValue(new TransientTranscriptionStoreError());
+
+        await expect(
+            worker.processNext(new AbortController().signal),
+        ).rejects.toThrow(TransientTranscriptionStoreError);
+
+        expect(store.finish).toHaveBeenCalledOnce();
+        expect(transcribe).toHaveBeenCalledOnce();
+    });
+
+    it('interrupts an in-flight backoff immediately on cancellation', async () => {
+        const controller = new AbortController();
+        const wait = vi.fn(async (_ms: number, signal: AbortSignal) => {
+            controller.abort();
+            signal.throwIfAborted();
+        });
+        const { store, transcribe, worker } = fixture({ wait });
+        store.finish.mockRejectedValue(new TransientTranscriptionStoreError());
+        await expect(
+            worker.processNext(controller.signal),
+        ).rejects.toMatchObject({ name: 'AbortError' });
+
+        expect(transcribe).toHaveBeenCalledOnce();
+        expect(store.finish).toHaveBeenCalledOnce();
     });
 
     it('settles technical failure without automatically retrying external work', async () => {
@@ -115,7 +256,7 @@ describe('Knowledge transcription worker bounds and failure semantics', () => {
     it('interrupts a slow provider when its lease heartbeat loses authority', async () => {
         vi.useFakeTimers();
         const { store, transcribe, lease, worker } = fixture();
-        store.heartbeat.mockResolvedValueOnce(false);
+        store.heartbeat.mockResolvedValueOnce(null);
         transcribe.mockImplementationOnce(
             (input) =>
                 new Promise((_resolve, reject) =>

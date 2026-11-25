@@ -136,9 +136,42 @@ export function revokeAllSessions(
         userId: string;
     },
 ): Promise<void> {
-    return persistence.database.transaction((transaction) =>
-        revokeUserSessions(transaction, input),
-    );
+    return persistence.database.transaction(async (transaction) => {
+        await lockUser(transaction, input.userId);
+        await revokeUserSessions(transaction, input);
+    });
+}
+
+async function lockSessionByDigest(
+    transaction: AuthenticationTransaction,
+    digest: string,
+) {
+    // Discover the owner first. Reading the session again after the owner lock
+    // observes any rotation or revocation that completed while we were waiting.
+    const [owner] = await transaction
+        .select({ id: authSessionsTable.userId })
+        .from(authSessionsTable)
+        .where(eq(authSessionsTable.refreshTokenDigest, digest))
+        .limit(1);
+
+    if (!owner) {
+        return null;
+    }
+
+    await lockUser(transaction, owner.id);
+    const [session] = await transaction
+        .select()
+        .from(authSessionsTable)
+        .where(
+            and(
+                eq(authSessionsTable.refreshTokenDigest, digest),
+                eq(authSessionsTable.userId, owner.id),
+            ),
+        )
+        .limit(1)
+        .for('update');
+
+    return session ?? null;
 }
 
 export async function revokeSessionFamilyByDigest(
@@ -150,16 +183,7 @@ export async function revokeSessionFamilyByDigest(
     },
 ): Promise<void> {
     await persistence.database.transaction(async (transaction) => {
-        const rows = await transaction
-            .select({
-                familyId: authSessionsTable.familyId,
-                userId: authSessionsTable.userId,
-            })
-            .from(authSessionsTable)
-            .where(eq(authSessionsTable.refreshTokenDigest, input.digest))
-            .limit(1)
-            .for('update');
-        const session = rows[0];
+        const session = await lockSessionByDigest(transaction, input.digest);
         if (!session) {
             return;
         }
@@ -182,13 +206,7 @@ export function rotateRefreshSession(
     },
 ): Promise<RefreshRotationCommitResult> {
     return persistence.database.transaction(async (transaction) => {
-        const rows = await transaction
-            .select()
-            .from(authSessionsTable)
-            .where(eq(authSessionsTable.refreshTokenDigest, input.digest))
-            .limit(1)
-            .for('update');
-        const current = rows[0];
+        const current = await lockSessionByDigest(transaction, input.digest);
         if (!current) {
             return { kind: 'unavailable' };
         }
@@ -213,7 +231,6 @@ export function rotateRefreshSession(
             return { kind: 'unavailable' };
         }
 
-        await lockUser(transaction, current.userId);
         const account = await findAccount(
             transaction,
             eq(usersTable.id, current.userId),
@@ -258,24 +275,25 @@ export function rotateRefreshSession(
 }
 
 export async function findRecentSession(
-    persistence: AuthStoreContext,
     transaction: AuthenticationTransaction,
     now: Date,
     sessionId: string,
     userId: string,
 ): Promise<typeof authSessionsTable.$inferSelect | null> {
+    if ((await lockUser(transaction, userId)) !== 'active') {
+        return null;
+    }
+
     const recentAfter = new Date(
         now.getTime() - recentAuthenticationMilliseconds,
     );
     const rows = await transaction
         .select({ session: authSessionsTable })
         .from(authSessionsTable)
-        .innerJoin(usersTable, eq(usersTable.id, authSessionsTable.userId))
         .where(
             and(
                 eq(authSessionsTable.id, sessionId),
                 eq(authSessionsTable.userId, userId),
-                eq(usersTable.status, 'active'),
                 isNull(authSessionsTable.revokedAt),
                 isNull(authSessionsTable.rotatedAt),
                 gt(authSessionsTable.absoluteExpiresAt, now),
@@ -284,12 +302,6 @@ export async function findRecentSession(
         )
         .limit(1)
         .for('update', { of: authSessionsTable });
-    const session = rows[0]?.session ?? null;
-    if (!session) {
-        return null;
-    }
 
-    return (await lockUser(transaction, session.userId)) === 'active'
-        ? session
-        : null;
+    return rows[0]?.session ?? null;
 }

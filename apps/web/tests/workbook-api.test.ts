@@ -30,6 +30,26 @@ function mockResponse(payload: unknown, status = 200) {
 
 afterEach(() => vi.unstubAllGlobals());
 describe('workbook API boundaries', () => {
+    it('preserves the server continuation and request signal on the next page', async () => {
+        const cursor = `2026-10-28T00:00:00.123456Z~${id}`;
+        mockResponse({ workbooks: [workbook], nextCursor: cursor });
+        const first = await workbookApi.list('session');
+        const fetch = mockResponse({ workbooks: [], nextCursor: null });
+        const signal = new AbortController().signal;
+        const next = await workbookApi.list(
+            'session',
+            first.nextCursor!,
+            signal,
+        );
+        const [url, options] = fetch.mock.calls[0]!;
+        expect(
+            new URL(url, 'http://localhost').searchParams.get('cursor'),
+        ).toBe(cursor);
+
+        expect(options.signal).toBe(signal);
+        expect(next.nextCursor).toBeNull();
+    });
+
     it('sends versioned ordered membership and explicit sharing acknowledgement', async () => {
         const fetch = mockResponse({ workbook });
         await workbookApi.setNotes('session', id, {

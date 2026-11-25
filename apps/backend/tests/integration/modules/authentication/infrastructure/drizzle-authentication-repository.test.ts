@@ -1,3 +1,4 @@
+import { waitForBlockedWriters } from '../../../support/wait-for-blocked-writers';
 import { randomUUID } from 'node:crypto';
 
 import { and, count, eq, isNull } from 'drizzle-orm';
@@ -986,6 +987,89 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 ]),
             );
         });
+
+        it.each(['logout_all', 'password_change'] as const)(
+            'serializes concurrent rotation before %s and revokes the successor',
+            async (reason) => {
+                const { userId, session } =
+                    await createVerifiedAuthStoreAccount('overlap@example.com');
+                const successor = {
+                    ...session,
+                    id: randomUUID(),
+                    predecessorSessionId: session.id,
+                    refreshDigest: 'x'.repeat(43),
+                };
+                const replacement = createAuthStoreSession({
+                    userId,
+                    digest: 'r'.repeat(43),
+                });
+                let rotation:
+                    | ReturnType<typeof authStore.rotateRefreshSession>
+                    | undefined;
+                let revocation: Promise<unknown> | undefined;
+                // A third connection holds the predecessor so both real transactions
+                // are in flight before either writer can complete.
+                await client.begin(async (barrier) => {
+                    await barrier`select id from auth_sessions where id = ${session.id} for update`;
+                    rotation = authStore.rotateRefreshSession({
+                        digest: session.refreshDigest,
+                        now: session.createdAt,
+                        successor,
+                    });
+
+                    await waitForBlockedWriters(client, 1);
+                    revocation =
+                        reason === 'logout_all'
+                            ? authStore.revokeAllSessions({
+                                  userId,
+                                  reason,
+                                  revokedAt: session.createdAt,
+                              })
+                            : authStore.changePasswordAndReplaceSessions({
+                                  userId,
+                                  revokedAt: session.createdAt,
+                                  newCredential:
+                                      createAuthStorePasswordCredential(
+                                          userId,
+                                          'b',
+                                      ),
+                                  expectedPasswordHash:
+                                      createAuthStorePasswordCredential(userId)
+                                          .encoded,
+                                  replacementSession: replacement,
+                              });
+
+                    await waitForBlockedWriters(client, 2);
+                });
+
+                const [rotated, changed] = await Promise.all([
+                    rotation,
+                    revocation,
+                ]);
+
+                expect(rotated?.kind).toBe('rotated');
+                if (reason === 'password_change') {
+                    expect(changed).toMatchObject({ kind: 'issued' });
+                }
+
+                const rows = await database
+                    .select()
+                    .from(authSessionsTable)
+                    .where(eq(authSessionsTable.userId, userId));
+
+                expect(
+                    rows
+                        .filter((row) => row.revokedAt === null)
+                        .map((row) => row.id),
+                ).toEqual(reason === 'password_change' ? [replacement.id] : []);
+
+                expect(
+                    rows.find((row) => row.id === successor.id)
+                        ?.revocationReason,
+                ).toBe(reason);
+            },
+            20_000,
+        );
 
         it('serializes stale-token logout with refresh rotation', async () => {
             const { session, userId } = await createVerifiedAuthStoreAccount(

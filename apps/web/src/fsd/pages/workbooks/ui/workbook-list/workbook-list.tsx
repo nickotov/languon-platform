@@ -1,6 +1,6 @@
 'use client';
 import { useRef, useState, type FormEvent, type ChangeEvent } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/fsd/features/auth';
@@ -8,6 +8,7 @@ import { useSessionStore } from '@/fsd/entities/session';
 import { workbookApi, workbookLabels } from '@/fsd/features/workbooks';
 import { useI18n } from '@/fsd/shared/i18n';
 import { Button, Input, InlineAlert, LoadingState } from '@/fsd/shared/ui';
+import { WorkbookResults } from './workbook-results';
 import styles from '../styles/workbook-layout-common.module.css';
 
 export function WorkbookList() {
@@ -20,13 +21,19 @@ export function WorkbookList() {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState(false);
     const operation = useRef(crypto.randomUUID());
-    const query = useQuery({
+    const query = useInfiniteQuery({
         queryKey: ['workbooks', actorId],
-        queryFn: ({ signal }) =>
-            requestWithSession((token) => workbookApi.list(token, signal)),
+        initialPageParam: undefined as string | undefined,
+        queryFn: ({ signal, pageParam }) =>
+            requestWithSession((token) =>
+                workbookApi.list(token, pageParam, signal),
+            ),
+        getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
         retry: false,
         gcTime: 0,
     });
+
+    const workbooks = query.data?.pages.flatMap((page) => page.workbooks);
 
     function change(event: ChangeEvent<HTMLInputElement>) {
         setTitle(event.target.value);
@@ -80,7 +87,7 @@ export function WorkbookList() {
             </form>
             {error && <InlineAlert tone='error'>{labels.error}</InlineAlert>}
             {query.isPending && <LoadingState>{labels.loading}</LoadingState>}
-            {query.isError && (
+            {query.isError && !query.isFetchNextPageError && (
                 <InlineAlert
                     tone='error'
                     actions={<Button onClick={reload}>{labels.reload}</Button>}
@@ -88,22 +95,15 @@ export function WorkbookList() {
                     {labels.error}
                 </InlineAlert>
             )}
-            {query.data?.workbooks.length === 0 && <p>{labels.empty}</p>}
-            <ul className={styles.list}>
-                {query.data?.workbooks.map((book) => (
-                    <li key={book.id} className={styles.panel}>
-                        <Link
-                            className={styles.link}
-                            href={href(`/workbooks/${book.id}`)}
-                        >
-                            {book.title}
-                        </Link>
-                        <span>
-                            {labels.notes}: {book.notes.length}
-                        </span>
-                    </li>
-                ))}
-            </ul>
+            {workbooks && (
+                <WorkbookResults
+                    workbooks={workbooks}
+                    failed={query.isFetchNextPageError}
+                    hasMore={query.hasNextPage}
+                    loading={query.isFetchingNextPage}
+                    onMore={() => void query.fetchNextPage()}
+                />
+            )}
         </main>
     );
 }

@@ -93,10 +93,26 @@ export async function findChallengeForUpdate(
     transaction: AuthenticationTransaction,
     flowId: string,
 ): Promise<typeof authVerificationChallengesTable.$inferSelect | null> {
+    const [owner] = await transaction
+        .select({ id: authVerificationChallengesTable.userId })
+        .from(authVerificationChallengesTable)
+        .where(eq(authVerificationChallengesTable.flowId, flowId))
+        .limit(1);
+
+    if (!owner) {
+        return null;
+    }
+
+    await lockUser(transaction, owner.id);
     const rows = await transaction
         .select()
         .from(authVerificationChallengesTable)
-        .where(eq(authVerificationChallengesTable.flowId, flowId))
+        .where(
+            and(
+                eq(authVerificationChallengesTable.flowId, flowId),
+                eq(authVerificationChallengesTable.userId, owner.id),
+            ),
+        )
         .limit(1)
         .for('update');
 

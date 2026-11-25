@@ -71,10 +71,10 @@ async function request<T>(
 }
 
 export const workbookApi = {
-    list: (token: string, signal?: AbortSignal) =>
+    list: (token: string, cursor?: string, signal?: AbortSignal) =>
         request(
-            base,
-            z.object({ workbooks: z.array(c.WorkbookSchema) }),
+            cursor ? `${base}?${new URLSearchParams({ cursor })}` : base,
+            c.WorkbookListPageSchema,
             token,
             'GET',
             undefined,

@@ -18,7 +18,7 @@ import {
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
     createDrizzleDatabase,
@@ -185,7 +185,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
             const retryNow = new Date();
             await database
                 .update(accountDeletionRequestsTable)
-                .set({ nextAttemptAt: new Date(retryNow.getTime() - 1) })
+                .set({
+                    // Both the injected worker clock and the independent SQL
+                    // trigger must see the simulated retry as already due.
+                    nextAttemptAt: sql`least(clock_timestamp(), ${retryNow.toISOString()}::timestamptz) - interval '1 millisecond'`,
+                })
                 .where(eq(accountDeletionRequestsTable.userId, userId));
 
             const next = await store.claimDue({

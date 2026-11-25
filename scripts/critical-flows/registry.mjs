@@ -259,7 +259,10 @@ export const requiredBackendScenarios = Object.freeze([
     {
         file: 'src/modules/knowledge/infrastructure/persistence/drizzle/transcription-store.database.test.ts',
         titles: [
-            'runs production admission, worker and actual adapter through fake HTTP to usable transcript and exact settlement',
+            'publishes a usable transcript and settles once after normal',
+            'publishes a usable transcript and settles once after rollback',
+            'publishes a usable transcript and settles once after lost acknowledgement',
+            'publishes a usable transcript and settles once after repeated rollback',
             'blocks dispatch without code-owned processing approval despite valid billing and credentials',
             'retains issued receipt identity and rejects foreign observations or changed replay',
             'runs the real worker with deployed restricted grants and refuses raw media and forged receipts',

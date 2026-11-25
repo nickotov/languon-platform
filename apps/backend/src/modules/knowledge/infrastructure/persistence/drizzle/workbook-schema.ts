@@ -25,7 +25,11 @@ export const knowledgeWorkbooksTable = pgTable(
         updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
     },
     (t) => [
+        // Account erasure also looks up deleted workbooks by owner.
         index('knowledge_workbooks_owner_idx').on(t.ownerId, t.updatedAt),
+        index('knowledge_workbooks_live_page_idx')
+            .on(t.ownerId, t.updatedAt.desc(), t.id.desc())
+            .where(sql`${t.deletedAt} is null`),
         check('knowledge_workbooks_version', sql`${t.version}>0`),
         check(
             'knowledge_workbooks_title',

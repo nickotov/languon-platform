@@ -7,6 +7,7 @@ import {
     WorkbookShareKeySchema,
     WorkbookShareLocatorSchema,
     WorkbookVersionSchema,
+    WorkbookListQuerySchema,
 } from '@languon/contracts';
 import type { RateLimiter } from '../../authentication/application/ports/rate-limiter';
 import { KnowledgeDomainError } from '../domain/knowledge';
@@ -57,8 +58,15 @@ export class WorkbookService {
         return WorkbookIdParamsSchema.parse({ workbookId }).workbookId;
     }
 
-    async list(token: string, context: KnowledgeRequestContext) {
-        return this.dependencies.store.list(await this.owner(token, context));
+    async list(
+        token: string,
+        context: KnowledgeRequestContext,
+        query: unknown,
+    ) {
+        return this.dependencies.store.list(
+            await this.owner(token, context),
+            WorkbookListQuerySchema.parse(query),
+        );
     }
 
     async create(

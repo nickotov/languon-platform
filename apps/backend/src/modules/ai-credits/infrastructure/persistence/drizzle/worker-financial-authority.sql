@@ -304,13 +304,15 @@ DECLARE count_calls integer;
 DECLARE output_used bigint;
 BEGIN
   SELECT * INTO action_row FROM public.ai_credit_actions WHERE id=NEW.action_id FOR UPDATE;
-  IF TG_OP='UPDATE' AND OLD.state='settled' AND NEW.actual_cost_micros IS NOT DISTINCT FROM (public.languon_text_provider_expense_identity(OLD.id)->>'amountUsdMicros')::bigint
+  IF TG_OP='UPDATE' AND OLD.state='settled' AND NEW.actual_cost_micros IS NOT DISTINCT FROM ((CASE WHEN OLD.usage_meter='audio-duration' THEN public.languon_transcription_provider_expense_identity(OLD.id) ELSE public.languon_text_provider_expense_identity(OLD.id) END)->>'amountUsdMicros')::bigint
      AND (to_jsonb(NEW)-'actual_cost_micros')=(to_jsonb(OLD)-'actual_cost_micros') THEN RETURN NEW; END IF;
   IF NOT FOUND OR action_row.state<>'active' THEN RAISE EXCEPTION 'Provider dispatch requires active action authorization'; END IF;
+  IF NEW.usage_meter IS DISTINCT FROM action_row.usage_meter OR NEW.audio_input_limit_milliseconds IS DISTINCT FROM action_row.audio_input_limit_milliseconds THEN RAISE EXCEPTION 'Attempt dimensions must match the parent action'; END IF;
+  IF NEW.usage_meter='audio-duration' AND (NEW.input_tokens IS NOT NULL OR NEW.output_tokens IS NOT NULL OR NEW.input_limit<>0 OR NEW.output_limit<>0) THEN RAISE EXCEPTION 'Duration observations cannot be interpreted as tokens'; END IF;
   IF TG_OP='UPDATE' THEN
     IF OLD.state<>'dispatched' OR NEW.state<>'settled' OR
       NEW.id<>OLD.id OR NEW.action_id<>OLD.action_id OR NEW.execution_job_id IS DISTINCT FROM OLD.execution_job_id OR NEW.ordinal<>OLD.ordinal OR NEW.purpose<>OLD.purpose
-      OR NEW.input_limit<>OLD.input_limit OR NEW.output_limit<>OLD.output_limit OR NEW.budget<>OLD.budget
+      OR NEW.usage_meter IS DISTINCT FROM OLD.usage_meter OR NEW.audio_input_limit_milliseconds IS DISTINCT FROM OLD.audio_input_limit_milliseconds OR NEW.input_limit<>OLD.input_limit OR NEW.output_limit<>OLD.output_limit OR NEW.budget<>OLD.budget
       OR NEW.reserved_cost_micros<>OLD.reserved_cost_micros OR NEW.created_at<>OLD.created_at OR NEW.provider_dispatch_witness IS DISTINCT FROM OLD.provider_dispatch_witness THEN
       RAISE EXCEPTION 'Provider attempt identity and final usage are immutable';
     END IF;

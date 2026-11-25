@@ -2,7 +2,7 @@
 
 Status: Escalated
 
-The improvement implementation and its focused verification are finished. The full audit remains open at the feature boundary and the transcription financial gate is red.
+The improvement implementation and its focused verification are finished. At handoff the transcription financial gate was red. The user subsequently authorized [feature 075](../features/075-backend-audit-remediation/FEATURE.md) for the remaining issues. Its [evidence](../features/075-backend-audit-remediation/EVIDENCE.md) records subsequent verification.
 
 ## Scope and acceptance
 

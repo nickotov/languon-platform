@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { createDrizzleDatabase, type PostgresClient } from '@languon/database';
-import { KnowledgeNoteContentSchema } from '@languon/contracts';
+import {
+    KnowledgeNoteContentSchema,
+    WorkbookListPageSchema,
+} from '@languon/contracts';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -148,7 +151,11 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 title: 'Other owner',
             });
 
-            expect(await observedStore.list(owner)).toEqual([]);
+            expect(await observedStore.list(owner, { limit: 500 })).toEqual({
+                workbooks: [],
+                nextCursor: null,
+            });
+
             expect(selects).toBe(2);
 
             const workbook = await store.create(owner, {
@@ -184,7 +191,10 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                 }
 
                 selects = 0;
-                const result = await observedStore.list(owner);
+                const { workbooks: result, nextCursor } =
+                    await observedStore.list(owner, { limit: 500 });
+
+                expect(nextCursor).toBeNull();
 
                 expect(selects).toBe(4);
                 expect(result).toHaveLength(count);
@@ -205,6 +215,111 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
                 existingCount = count;
             }
+        });
+
+        it('traverses all owner workbooks across a 500-item boundary and timestamp ties', async () => {
+            const ids = Array.from({ length: 503 }, () => randomUUID())
+                .sort()
+                .reverse();
+            const date = new Date('2026-02-01T00:00:00Z');
+            await db.insert(knowledgeWorkbooksTable).values(
+                ids.map((id) => ({
+                    id,
+                    ownerId: owner,
+                    title: 'Workbook',
+                    updatedAt: date,
+                    createdAt: date,
+                })),
+            );
+
+            // Imported timestamps can distinguish microseconds within one JS millisecond.
+            await client`update knowledge_workbooks set updated_at = '2026-02-01T00:00:00.000123Z' where owner_id = ${owner}`;
+            const first = WorkbookListPageSchema.parse(
+                await store.list(owner, { limit: 500 }),
+            );
+
+            expect(first.workbooks.map((book) => book.id)).toEqual(
+                ids.slice(0, 500),
+            );
+
+            expect(first.nextCursor).toContain('.000123Z');
+
+            const last = WorkbookListPageSchema.parse(
+                await store.list(owner, {
+                    limit: 500,
+                    cursor: first.nextCursor!,
+                }),
+            );
+
+            expect(last.workbooks.map((book) => book.id)).toEqual(
+                ids.slice(500),
+            );
+
+            expect(last.nextCursor).toBeNull();
+
+            const foreign = await store.list(reader, {
+                limit: 500,
+                cursor: first.nextCursor!,
+            });
+
+            expect(foreign).toEqual({ workbooks: [], nextCursor: null });
+        });
+
+        it('seeks an indexed continuation inside a large tied owner library', async () => {
+            await client`insert into knowledge_workbooks (id, owner_id, title, created_at, updated_at)
+                select gen_random_uuid(), ${owner}::uuid, 'Plan fixture', '2020-01-01', '2020-01-01'
+                from generate_series(1, 12000) i`;
+
+            await client`analyze knowledge_workbooks`;
+            const [boundary] =
+                await client`select id from knowledge_workbooks where owner_id=${owner}::uuid order by id desc offset 8000 limit 1`;
+            let statement = '';
+            let parameters: (string | number)[] = [];
+            const measuredStore = new DrizzleWorkbookStore(
+                drizzle(client, {
+                    schema: databaseSchema,
+                    logger: {
+                        logQuery(query, params) {
+                            if (query.includes('to_char(')) {
+                                statement = query;
+                                parameters = params.map((value: unknown) => {
+                                    if (
+                                        typeof value === 'string' ||
+                                        typeof value === 'number'
+                                    ) {
+                                        return value;
+                                    }
+
+                                    throw new Error(
+                                        'Unexpected workbook keyset query parameter',
+                                    );
+                                });
+                            }
+                        },
+                    },
+                }),
+                crypto,
+            );
+            const page = await measuredStore.list(owner, {
+                limit: 50,
+                cursor: `2020-01-01T00:00:00.000000Z~${boundary!.id}`,
+            });
+
+            expect(page.workbooks).toHaveLength(50);
+
+            // Replay the captured parameterized production SELECT with the real PostgreSQL planner.
+            const plan = await client.unsafe(
+                `explain (analyze, buffers, format json) ${statement}`,
+                parameters,
+            );
+            const scan = plan[0]!['QUERY PLAN'][0].Plan.Plans[0];
+            expect(scan).toMatchObject({
+                'Node Type': 'Index Scan',
+                'Index Name': 'knowledge_workbooks_live_page_idx',
+                'Actual Rows': 51,
+            });
+
+            expect(scan['Index Cond']).toContain('ROW(updated_at, id)');
         });
 
         it('rejects owner workbook copies with draft members atomically while shared copies expose only saved material', async () => {

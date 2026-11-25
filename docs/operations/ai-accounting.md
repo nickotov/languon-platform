@@ -53,6 +53,13 @@ Check fractional credit precision against intended credit-pack values and the
 cheapest tariff before enabling real paid generation. Test fixture rates are
 synthetic and must not become production economic defaults.
 
+For Knowledge transcription, a provider duration counts as measured usage only
+when its decimal seconds convert exactly to a nonnegative safe integer number of
+milliseconds. A missing duration, fractional millisecond or out-of-range value
+leaves provider expense unknown. The worker can still publish a usable
+transcript. The learner tariff uses the prepared source duration.
+[Transcription accounting decision](../adr/0051-duration-based-transcription-accounting.md)
+
 Interviews initially use the Free capability policy. The removed
 `AI_INTERVIEW_CREDITS_BYPASS` environment variable no longer controls charging.
 Free work requires provider/operator configuration and obeys execution, rate,

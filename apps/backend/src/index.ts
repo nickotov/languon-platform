@@ -1,3 +1,4 @@
+import { pruneExpiredSecurityEvents } from './modules/authentication/infrastructure/persistence/drizzle/prune-expired-security-events';
 import { KnowledgeBlockFieldService } from './modules/knowledge/application/block-field-service';
 import { DrizzleKnowledgeBlockFieldStore } from './modules/knowledge/infrastructure/persistence/drizzle/block-field-store';
 import { createKnowledgeBlockFieldRoutes } from './modules/knowledge/interface/http/block-field-routes';
@@ -723,6 +724,23 @@ const accountingMaintenance = startAccountingMaintenance({
     },
 });
 
+const authEventRetention = startAccountingMaintenance({
+    intervalMs: 60_000,
+    maintain: async () => {
+        const oldestOverdueSeconds = await pruneExpiredSecurityEvents(
+            accountingMaintenanceDatabase,
+        );
+
+        if (oldestOverdueSeconds !== undefined) {
+            console.warn('Authentication audit expiry backlog.', {
+                oldestOverdueSeconds,
+            });
+        }
+    },
+    onError: () =>
+        console.error('Authentication audit expiry failed; retry scheduled.'),
+});
+
 const listeningShutdown = new AbortController();
 let lastListeningMaintenanceWarning = 0;
 function reportListeningMaintenanceFailure() {
@@ -757,6 +775,7 @@ const performShutdown = createGracefulShutdown({
         () => listeningAdmissionMaintenance.stop(),
         () => accountingReportWorker.stop(),
         () => accountingMaintenance.stop(),
+        () => authEventRetention.stop(),
     ],
     closeResources: [
         () => accountingMaintenanceClient.end(),

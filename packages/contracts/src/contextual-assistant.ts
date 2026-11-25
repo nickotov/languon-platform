@@ -1041,7 +1041,8 @@ export const ConversationEventSchema = z
             z.object({ type: z.literal('draft'), data: KnowledgeDraftSchema }),
             z.object({
                 type: z.literal('generation-run'),
-                data: GenerationRunSummarySchema,
+                // Publish only summary fields when a persisted event carries private run data.
+                data: GenerationRunSummarySchema.strip(),
             }),
             z.object({
                 type: z.literal('snapshot'),

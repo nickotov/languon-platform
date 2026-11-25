@@ -6,7 +6,7 @@ import {
     type TestInfo,
 } from '@playwright/test';
 
-// @user-flow-revision user-authentication sha256:c83f9080a60d3713
+// @user-flow-revision user-authentication sha256:d04bf8a336fce66c
 
 const initialPassword = 'E2e!Initial-password-2026';
 const replacementPassword = 'E2e!Replacement-password-2026';
@@ -112,6 +112,18 @@ async function addVirtualAuthenticator(page: Page): Promise<{
 }
 
 test.describe('authentication journeys', () => {
+    test.beforeAll(async ({ request }) => {
+        // Compile the Next dev routes before timing the browser's auth transitions.
+        for (const route of [
+            '/signup',
+            '/verify-email',
+            '/profile?tab=security',
+        ]) {
+            const response = await request.get(route);
+            expect(response.ok()).toBe(true);
+        }
+    });
+
     // @user-flow user-authentication/signup-verification-refresh-logout
     test('signup, verification, refresh bootstrap, and logout', async ({
         page,

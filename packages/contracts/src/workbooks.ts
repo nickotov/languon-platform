@@ -55,6 +55,34 @@ export const WorkbookSchema = z
         updatedAt: z.iso.datetime(),
     })
     .strict();
+// Preserve PostgreSQL microseconds so a continuation cannot skip tied rows.
+const workbookCursor = z
+    .string()
+    .length(64)
+    .refine((value) => {
+        const [timestamp, id] = value.split('~');
+
+        return (
+            z.iso.datetime({ precision: 6 }).safeParse(timestamp).success &&
+            z.uuid().safeParse(id).success
+        );
+    });
+
+export const WorkbookListQuerySchema = z
+    .object({
+        cursor: workbookCursor.optional(),
+        limit: z.coerce.number().int().min(1).max(500).default(50),
+    })
+    .strict();
+export const WorkbookListPageSchema = z
+    .object({
+        workbooks: z.array(WorkbookSchema).max(500),
+        nextCursor: workbookCursor.nullable(),
+    })
+    .strict();
+export type WorkbookListQuery = z.infer<typeof WorkbookListQuerySchema>;
+export type WorkbookListPage = z.infer<typeof WorkbookListPageSchema>;
+
 export const SharedWorkbookSchema = WorkbookSchema.omit({
     shared: true,
     notes: true,

@@ -5,10 +5,19 @@ import { copyWorkbookBody } from './workbook-copy';
 import { prepareMediaCopy } from './media-grants';
 import { knowledgeBodyPlainText } from '../../../domain/knowledge';
 import { knowledgeNoteRevisionsTable } from './schema';
-import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
+import {
+    and,
+    asc,
+    eq,
+    getTableColumns,
+    inArray,
+    isNull,
+    sql,
+} from 'drizzle-orm';
 import {
     SharedWorkbookSchema,
     type CopyWorkbookRequest,
+    type WorkbookListQuery,
     type KnowledgeNote,
     type CreateWorkbookRequest,
     type SetWorkbookNotesRequest,
@@ -79,22 +88,42 @@ export class DrizzleWorkbookStore implements WorkbookStore {
         private readonly crypto: KnowledgeShareCrypto,
     ) {}
 
-    list(ownerId: string) {
+    list(ownerId: string, { limit, cursor }: WorkbookListQuery) {
+        const after = cursor?.split('~');
+
         return this.database.transaction(async (tx) => {
             await lockKnowledgeOwner(tx, ownerId);
             const rows = await tx
-                .select()
+                .select({
+                    ...getTableColumns(workbooks),
+                    cursorTime: sql<string>`to_char(${workbooks.updatedAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
+                })
                 .from(workbooks)
                 .where(
                     and(
                         eq(workbooks.ownerId, ownerId),
                         isNull(workbooks.deletedAt),
+                        after
+                            ? sql`(${workbooks.updatedAt}, ${workbooks.id}) < (${after[0]}::timestamptz, ${after[1]}::uuid)`
+                            : undefined,
                     ),
                 )
-                .orderBy(desc(workbooks.updatedAt))
-                .limit(500);
+                .orderBy(
+                    sql`${workbooks.updatedAt} desc nulls last`,
+                    sql`${workbooks.id} desc nulls last`,
+                )
+                .limit(limit + 1);
 
-            return readWorkbooks(tx, ownerId, rows);
+            const page = rows.slice(0, limit);
+            const last = page.at(-1);
+
+            return {
+                workbooks: await readWorkbooks(tx, ownerId, page),
+                nextCursor:
+                    rows.length > limit && last
+                        ? `${last.cursorTime}~${last.id}`
+                        : null,
+            };
         });
     }
 

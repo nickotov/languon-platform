@@ -12,7 +12,7 @@ import type {
     WorkbookLearningState,
 } from '@languon/contracts';
 
-// @user-flow-revision interactive-workbooks sha256:03cf53ca04178a72
+// @user-flow-revision interactive-workbooks sha256:df4c986b3ac02102
 const origin = 'http://localhost:3336';
 const tokens = new WeakMap<Page, string>();
 async function signup(page: Page, info: TestInfo, suffix: string) {
@@ -44,6 +44,11 @@ async function signup(page: Page, info: TestInfo, suffix: string) {
     await page
         .getByRole('button', { name: 'Create account', exact: true })
         .click();
+
+    // A cold development server compiles the verification route after signup succeeds.
+    await expect(page).toHaveURL(/\/verify-email(?:[?#].*)?$/u, {
+        timeout: 45_000,
+    });
 
     await page.getByLabel('Verification code').fill('0000');
     const verified = page.waitForResponse(
@@ -1668,7 +1673,36 @@ test('ordered workbook shares saved content, isolates reader progress, copies in
         },
     ]);
 
+    // Seed through the owner API so the visible continuation uses real SQL keysets.
+    for (let index = 0; index < 51; index++) {
+        await api(
+            page,
+            '/knowledge/workbooks',
+            {
+                id: randomUUID(),
+                title: `Library pagination ${index}`,
+            },
+            'POST',
+        );
+    }
+
     await page.goto(`${origin}/workbooks`);
+    const oldestWorkbook = page.getByRole('link', {
+        name: 'Library pagination 0',
+        exact: true,
+    });
+
+    await expect(
+        page.getByRole('link', { name: 'Library pagination 50', exact: true }),
+    ).toBeVisible();
+
+    await expect(oldestWorkbook).toHaveCount(0);
+    await page.getByRole('button', { name: 'Load more', exact: true }).click();
+    await expect(oldestWorkbook).toBeVisible();
+    await expect(
+        page.getByRole('button', { name: 'Load more', exact: true }),
+    ).toHaveCount(0);
+
     await page.getByLabel('Workbook title').fill('Ordered course foundation');
     await page
         .getByRole('button', { name: 'Create workbook', exact: true })

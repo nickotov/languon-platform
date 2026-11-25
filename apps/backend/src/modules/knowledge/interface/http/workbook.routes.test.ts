@@ -21,7 +21,7 @@ function fixture() {
         updatedAt: now,
     };
     const store = {
-        list: vi.fn(async () => [workbook]),
+        list: vi.fn(async () => ({ workbooks: [workbook], nextCursor: null })),
         create: vi.fn(async () => workbook),
         get: vi.fn(async () => workbook),
         update: vi.fn(async () => workbook),
@@ -122,8 +122,19 @@ describe('Workbook routes and service boundaries', () => {
         expect((await app.request('/knowledge/workbooks')).status).toBe(401);
         const response = await app.request('/knowledge/workbooks', { headers });
         expect(response.status).toBe(200);
-        expect(store.list).toHaveBeenCalledWith(owner);
+        expect(store.list).toHaveBeenCalledWith(owner, { limit: 50 });
         expect(response.headers.get('cache-control')).toBe('private, no-store');
+    });
+
+    it('rejects malformed continuations before the owner query', async () => {
+        const { app, store } = fixture();
+        const response = await app.request(
+            '/knowledge/workbooks?cursor=invalid',
+            { headers: { Authorization: 'Bearer token' } },
+        );
+
+        expect(response.status).toBe(400);
+        expect(store.list).not.toHaveBeenCalled();
     });
 
     it('rejects unsafe origin, malformed identities and duplicate membership without persistence', async () => {

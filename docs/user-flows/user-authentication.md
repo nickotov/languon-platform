@@ -2,12 +2,13 @@
 feature: user-authentication
 title: User Authentication
 status: current
-last_verified: 2026-10-14
+last_verified: 2026-11-25
 surfaces:
     - browser
     - api
 source_paths:
     - .agent/features/001-user-authentication/**
+    - .agent/features/075-backend-audit-remediation/**
     - .agent/features/023-magic-patterns-ui-kit-auth-redesign/**
     - .agent/features/024-magic-patterns-ui-kit-auth-fidelity/**
     - .agents/skills/user-flow-e2e/**
@@ -237,6 +238,11 @@ Do not infer account existence from the response.
 4. Create a second session by signing in from an isolated browser context.
 5. From the first context, select **Sign out everywhere**.
 6. Expect both contexts to require login after navigation/reload.
+
+If another tab refreshes its existing session while either operation runs, the
+replacement from that refresh is also revoked. A successful password change
+leaves only its newly issued session active. Signing in again after logout
+creates a new session normally.
 
 ### Passkey enrollment, login, rename, and removal
 

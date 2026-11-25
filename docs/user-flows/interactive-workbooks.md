@@ -250,7 +250,7 @@ access. Cancelling insertion/preview leaves the draft editable.
    **Bilingual** and see the prepared translation without changing its source.
    Use **Save to Texts** in the heading settings menu, preview the prepared aligned text, and explicitly save
    an independent Text copy. This action does not call AI or mutate the block.
-3. Open **Workbooks**, create a workbook and add a saved note. Share it, then add
+3. Open **Workbooks**. The owner list starts with the 50 most recently updated workbooks. Choose **Load more** to append the next page until every workbook is visible. Create a workbook and add a saved note. Share it, then add
    another note: explicit acknowledgement explains that workbook readers gain
    access. Move notes and verify the reader starts with the first saved note and
    can use previous/next navigation.

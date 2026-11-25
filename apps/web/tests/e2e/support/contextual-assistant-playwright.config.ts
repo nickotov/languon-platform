@@ -50,7 +50,12 @@ export default defineConfig({
                 NEXT_PUBLIC_API_URL: '/api',
                 WEB_API_PROXY_TARGET: 'http://127.0.0.1:4006',
             },
-            url: 'http://localhost:3336',
+            // A targeted workbook run can warm its first route without compiling the landing page.
+            url: process.argv.some((arg) =>
+                arg.endsWith('interactive-workbooks.journeys.spec.ts'),
+            )
+                ? 'http://localhost:3336/signup'
+                : 'http://localhost:3336',
             timeout: 120_000,
             reuseExistingServer: false,
         },

@@ -10,6 +10,8 @@ import {
     UpdateWorkbookRequestSchema,
     WorkbookIdParamsSchema,
     WorkbookSchema,
+    WorkbookListQuerySchema,
+    WorkbookListPageSchema,
     WorkbookShareKeySchema,
     WorkbookShareLocatorSchema,
     WorkbookShareSchema,
@@ -203,12 +205,14 @@ export function createWorkbookRoutes({
             method: 'get',
             path: '/knowledge/workbooks',
             security,
+            request: { query: WorkbookListQuerySchema },
             responses: {
-                200: json(z.object({ workbooks: z.array(WorkbookSchema) })),
+                200: json(WorkbookListPageSchema),
                 ...errors,
             },
         }),
-        async (c) => c.json({ workbooks: await service.list(...auth(c)) }, 200),
+        async (c) =>
+            c.json(await service.list(...auth(c), c.req.valid('query')), 200),
     );
 
     app.openapi(

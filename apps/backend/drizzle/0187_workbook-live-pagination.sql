@@ -1,0 +1,1 @@
+CREATE INDEX "knowledge_workbooks_live_page_idx" ON "knowledge_workbooks" USING btree ("owner_id","updated_at" DESC NULLS LAST,"id" DESC NULLS LAST) WHERE "knowledge_workbooks"."deleted_at" is null;

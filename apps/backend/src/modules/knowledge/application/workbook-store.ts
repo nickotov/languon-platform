@@ -6,10 +6,12 @@ import type {
     UpdateWorkbookRequest,
     Workbook,
     WorkbookShare,
+    WorkbookListQuery,
+    WorkbookListPage,
 } from '@languon/contracts';
 
 export interface WorkbookStore {
-    list(ownerId: string): Promise<Workbook[]>;
+    list(ownerId: string, query: WorkbookListQuery): Promise<WorkbookListPage>;
     create(ownerId: string, input: CreateWorkbookRequest): Promise<Workbook>;
     get(ownerId: string, workbookId: string): Promise<Workbook>;
     update(

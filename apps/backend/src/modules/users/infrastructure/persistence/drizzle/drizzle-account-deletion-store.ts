@@ -66,7 +66,17 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
                 throw new AccountDeletionConflictError();
             }
 
-            // Match authentication's session-before-user row lock order.
+            // A refresh, credential change or revocation locks the same user before its sessions.
+            const [user] = await transaction
+                .select({
+                    status: usersTable.status,
+                    version: usersTable.version,
+                })
+                .from(usersTable)
+                .where(eq(usersTable.id, input.userId))
+                .limit(1)
+                .for('update');
+
             const [session] = await transaction
                 .select({
                     id: authSessionsTable.id,
@@ -88,16 +98,6 @@ export class DrizzleAccountDeletionStore implements AccountDeletionStore {
             if (!session) {
                 throw new RecentAuthenticationRequiredError();
             }
-
-            const [user] = await transaction
-                .select({
-                    status: usersTable.status,
-                    version: usersTable.version,
-                })
-                .from(usersTable)
-                .where(eq(usersTable.id, input.userId))
-                .limit(1)
-                .for('update');
 
             if (!user || user.status !== 'active') {
                 throw new AccountDeletionConflictError();
