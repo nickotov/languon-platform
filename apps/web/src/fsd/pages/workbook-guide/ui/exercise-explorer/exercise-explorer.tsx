@@ -71,9 +71,13 @@ export function ExerciseExplorer({
                 <span className={styles.code}>{selected}</span>
                 <div>
                     <span className={styles.category}>{categoryLabel}</span>
-                    <h2>{metadata.name}</h2>
-                    <p>{metadata.description}</p>
-                    {isTranslation && <p>{copy.translationTarget}</p>}
+                    <h2 className={styles.activityTitle}>{metadata.name}</h2>
+                    <p className={styles.description}>{metadata.description}</p>
+                    {isTranslation && (
+                        <p className={styles.description}>
+                            {copy.translationTarget}
+                        </p>
+                    )}
                 </div>
             </section>
             <section className={styles.source}>
@@ -97,6 +101,8 @@ export function ExerciseExplorer({
             <section className={styles.demo} data-testid='workbook-demo'>
                 <LearningBlockView
                     key={demoKey}
+                    hideHeading
+                    preserveFrame
                     block={current.block}
                     audioUrl={current.recording?.url}
                     hintTranscript={current.recording?.excerpt}
@@ -105,13 +111,18 @@ export function ExerciseExplorer({
                     expandAll={expansion}
                     checkingLabelOverride={checkingLabel}
                 />
-                <Button type='button' variant='ghost' onClick={handleReset}>
+                <Button
+                    className={styles.reset}
+                    type='button'
+                    variant='ghost'
+                    onClick={handleReset}
+                >
                     {copy.reset}
                 </Button>
             </section>
             <section className={styles.explanation}>
-                <h3>{copy.why}</h3>
-                <p>{current.useCaseGuidance}</p>
+                <h3 className={styles.explanationTitle}>{copy.why}</h3>
+                <p className={styles.description}>{current.useCaseGuidance}</p>
             </section>
             <SampleFeedback
                 key={demoKey}
@@ -120,9 +131,11 @@ export function ExerciseExplorer({
                 labels={labels}
             />
             <section className={styles.recipes} aria-label={copy.recipes}>
-                <h2>{copy.recipes}</h2>
-                <p>{listening?.prerequisite ?? copy.prerequisite}</p>
-                <div id='recipe-specific'>
+                <h2 className={styles.recipesTitle}>{copy.recipes}</h2>
+                <p className={styles.description}>
+                    {listening?.prerequisite ?? copy.prerequisite}
+                </p>
+                <div className={styles.recipe} id='recipe-specific'>
                     <PromptRecipe
                         key={demoKey}
                         title={content.recipes[0]!.title}
@@ -133,6 +146,7 @@ export function ExerciseExplorer({
                 </div>
                 {otherRecipes.map((recipe) => (
                     <div
+                        className={styles.recipe}
                         id={`recipe-${recipe.id}`}
                         key={`${demoKey}-${recipe.id}`}
                     >
@@ -150,7 +164,7 @@ export function ExerciseExplorer({
                         />
                     </div>
                 ))}
-                <p>{copy.expected}</p>
+                <p className={styles.description}>{copy.expected}</p>
             </section>
         </div>
     );

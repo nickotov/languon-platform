@@ -86,25 +86,9 @@ export function LessonRunCard({
     const prepared = run.completedTaskCount > 0 || Boolean(partial);
     const automatic = run.automation?.enabled === true;
     const autoWaiting = paused && automatic;
-    const retrying =
-        run.pauseReason === 'technical-failure' ||
-        run.pauseReason === 'interrupted';
-    const failedExercise = failedLessonExercise(run);
     const uncertain =
         Boolean(run.uncertainTurnId) ||
         run.failure?.code === 'provider-outcome-unknown';
-    const needsBudgetReview =
-        run.failure?.code === 'admission-blocked' &&
-        run.failure.admissionReason === 'allowance-required';
-    const continueLabel = uncertain
-        ? copy.authorizeAttempt
-        : needsBudgetReview
-          ? copy.reviewBudget
-          : retrying
-            ? failedExercise
-                ? copy.retryExercise(failedExercise.index)
-                : copy.retryRemaining
-            : copy.continue;
     let title = copy.title;
     if (awaitingRecording) {
         title = recordingApprovalCopy(locale).title;
@@ -212,7 +196,7 @@ export function LessonRunCard({
                                     (uncertain && !run.uncertainTurnId)
                                 }
                             >
-                                {continueLabel}
+                                {continueActionLabel(run, copy, uncertain)}
                             </Button>
                         )}
                     {prepared && onPreview && (
@@ -267,4 +251,34 @@ export function LessonRunCard({
             {result && <div className={styles.result}>{result}</div>}
         </article>
     );
+}
+
+function continueActionLabel(
+    run: GenerationRunSummary,
+    copy: ReturnType<typeof lessonRunCopy>,
+    uncertain: boolean,
+) {
+    if (uncertain) {
+        return copy.authorizeAttempt;
+    }
+
+    if (
+        run.failure?.code === 'admission-blocked' &&
+        run.failure.admissionReason === 'allowance-required'
+    ) {
+        return copy.reviewBudget;
+    }
+
+    if (
+        run.pauseReason === 'technical-failure' ||
+        run.pauseReason === 'interrupted'
+    ) {
+        const exercise = failedLessonExercise(run);
+
+        return exercise
+            ? copy.retryExercise(exercise.index)
+            : copy.retryRemaining;
+    }
+
+    return copy.continue;
 }

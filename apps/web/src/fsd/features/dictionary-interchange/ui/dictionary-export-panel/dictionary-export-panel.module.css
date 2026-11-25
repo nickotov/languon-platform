@@ -1,13 +1,22 @@
-.section,
+.section {
+    display: grid;
+    gap: var(--space-20);
+}
+
 .formats {
+    display: grid;
+    gap: var(--space-12);
+}
+
+.copyGroup {
     display: grid;
     gap: var(--space-4);
 }
 
 .eyebrow {
-    color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary);
+    font-size: var(--size-14);
+    font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
@@ -15,7 +24,7 @@
 .format {
     align-items: center;
     display: flex;
-    gap: var(--space-4);
+    gap: var(--space-12);
     justify-content: space-between;
 }
 

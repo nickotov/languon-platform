@@ -348,7 +348,7 @@ export function WorkspaceProposal({
     );
 
     return (
-        <div className={styles.proposal}>
+        <div>
             <WorkspaceSuggestionCard
                 formattedContent={formattedContent}
                 original={anchor?.originalText}

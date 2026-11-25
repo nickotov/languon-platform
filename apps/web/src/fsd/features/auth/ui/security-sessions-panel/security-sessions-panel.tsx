@@ -21,7 +21,7 @@ export function SecuritySessionsPanel({
     return (
         <Card
             aria-labelledby='sessions-heading'
-            className={embedded ? profileStyles.panel : styles.panel}
+            className={embedded ? profileStyles.panel : undefined}
             padding={embedded ? 'none' : 'md'}
             variant={embedded ? 'outlined' : 'elevated'}
         >
@@ -32,9 +32,7 @@ export function SecuritySessionsPanel({
                 {t('security.sessions')}
             </h2>
             {embedded ? (
-                <dl
-                    className={`${styles.metadata ?? ''} ${profileStyles.panelSection}`}
-                >
+                <dl className={profileStyles.panelSection}>
                     <div>
                         <dt>{t('security.sessionExpires')}</dt>
                         <dd>{expiresAt ? formatDate(expiresAt) : '—'}</dd>

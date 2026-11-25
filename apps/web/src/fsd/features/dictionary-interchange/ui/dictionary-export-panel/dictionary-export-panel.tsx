@@ -41,12 +41,11 @@ export function DictionaryExportPanel({
     ];
 
     return (
-        <section className={styles.section}>
-            <div>
+        <div className={styles.section}>
+            <div className={styles.copyGroup}>
                 <p className={styles.eyebrow}>
                     {t('dictionary.interchange.exportEyebrow')}
                 </p>
-                <h3>{t('dictionary.interchange.exportTitle')}</h3>
                 <p>{t('dictionary.interchange.exportHelp')}</p>
             </div>
             {error ? <InlineAlert tone='danger'>{error}</InlineAlert> : null}
@@ -60,7 +59,7 @@ export function DictionaryExportPanel({
                     />
                 ))}
             </div>
-        </section>
+        </div>
     );
 }
 
@@ -79,8 +78,8 @@ function ExportFormatRow({
 
     return (
         <Card className={styles.format}>
-            <div>
-                <h4>{item.label}</h4>
+            <div className={styles.copyGroup}>
+                <h3>{item.label}</h3>
                 <p>{item.help}</p>
             </div>
             <Button

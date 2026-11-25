@@ -26,6 +26,7 @@ export function TextShareCapability({
         <div className={styles.stack}>
             <div className={styles.url}>
                 <Input
+                    wrapperClassName={styles.urlField}
                     label={t('texts.manage.unlistedLink')}
                     ref={fieldRef}
                     value={url}
@@ -63,7 +64,7 @@ export function TextShareCapability({
                 className={styles.preview}
                 referrerPolicy='no-referrer'
             >
-                <ExternalLinkIcon aria-hidden />
+                <ExternalLinkIcon className={styles.previewIcon} aria-hidden />
                 {t('texts.manage.preview')}
             </Link>
         </div>

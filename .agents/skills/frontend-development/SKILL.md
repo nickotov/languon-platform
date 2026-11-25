@@ -64,7 +64,11 @@ feature-name/
   Convert prototype utilities into meaningful element/variant classes; do not ship
   Tailwind or recreate global utilities. Static styles belong in CSS, genuine runtime
   geometry may remain inline. Use low specificity and zero-specificity contextual
-  conditions. For Magic Patterns integration, read
+  conditions. Give app-owned JSX elements that need styling their own class.
+  Reserve descendant tag selectors for markup the component cannot annotate,
+  such as editor-generated prose. Check that static class references exist in the
+  imported module and that theme variables resolve in the active theme.
+  For Magic Patterns integration, read
   [the repository integration skill](../magic-patterns-css-integration/SKILL.md).
   Legacy `--sys-*` variables remain compatibility aliases.
   Admin uses Ant Design theme mappings and existing app-local styling conventions.
@@ -108,10 +112,10 @@ remove useful spacing, or move the same monolith into a controller hook to pass.
   row component or a cohesive hook; do not put arrow callbacks, `.bind`, or
   handler-factory calls in event props. JSX collection rendering is allowed;
   the rendered child still receives named event handlers.
-- Compute normalized values, fallback strings, nontrivial render conditions,
-  derived children, class names, and formatted labels before JSX. Pass a named
-  value or direct property to props: `value={customLabel}` and
-  `onChange={handleCustomLabelChange}`. Name compound state checks such as
+- Name nontrivial render conditions, derived values and formatted labels when
+  the name explains a decision. Keep direct properties and short, clear
+  expressions at their use site. Reuse a handler for identical actions and
+  let TypeScript infer ordinary local values. Name compound state checks such as
   `const isActiveJob = active && job !== null && job !== undefined` and render
   with that boolean.
   Do not use truthy objects as JSX conditions (`active && job`) or nest ternary
@@ -138,7 +142,10 @@ remove useful spacing, or move the same monolith into a controller hook to pass.
   return with blank lines. Keep tightly related declarations together; do not
   insert a blank line mechanically between every declaration. Run the formatter
   after organizing the code; formatting alone does not establish logical groups.
-- Keep callbacks and derived prop values outside markup. Use `useCallback` when
+- For a suspected render bottleneck, trace the interaction from the state
+  owner through its subscriptions to the consumers that repeat work. For a
+  performance claim, compare render counts or timings on the same representative
+  interaction and data size. Use `useCallback` when
   stable identity matters to a memoized consumer or a
   subscription/effect contract. Use `useMemo` for an expensive calculation or
   required stable derived reference. State that reason in the implementation
@@ -222,6 +229,8 @@ of truth, or hide required request/response flows behind the bus.
 ## Verify the change
 
 - Run `pnpm lint` so the FSD boundary rules validate real and aliased imports.
+- For web styling or component structure, run `pnpm styles:check`. Verify
+  visual grouping through the rendered checks in `$ui-ux-composition`.
 - Run the affected workspace tests and typecheck.
 - Add focused tests for extracted hooks, state, helpers, and API mapping at the
   lowest reliable layer.

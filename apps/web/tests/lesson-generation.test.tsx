@@ -28,7 +28,7 @@ const quote = {
     expiresAt: '2099-01-01T00:00:00.000Z',
 };
 
-function wrapper({ children }: PropsWithChildren) {
+function QueryWrapper({ children }: PropsWithChildren) {
     const [client] = useState(
         () =>
             new QueryClient({
@@ -99,7 +99,7 @@ function capacityHarness(postResponse?: (init: RequestInit) => Response) {
 
 it('blocks Continue for a capacity failure while keeping Adjust available, and Refresh clears that failure', async () => {
     const { Harness, refresh, adjust, fetch } = capacityHarness();
-    render(<Harness run={lessonRun} />, { wrapper });
+    render(<Harness run={lessonRun} />, { wrapper: QueryWrapper });
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     await waitFor(() =>
         expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled(),
@@ -168,7 +168,7 @@ it.each([
                   );
         });
 
-        render(<Harness run={lessonRun} />, { wrapper });
+        render(<Harness run={lessonRun} />, { wrapper: QueryWrapper });
         fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
         const dialog = await screen.findByRole('dialog');
         fireEvent.click(
@@ -209,7 +209,7 @@ it.each([
                     failure: { code: 'admission-blocked', admissionReason },
                 }}
             />,
-            { wrapper, locale: 'ru' },
+            { wrapper: QueryWrapper, locale: 'ru' },
         );
 
         expect(screen.getByText(message, { exact: false })).toBeVisible();
@@ -233,7 +233,7 @@ it('does not keep a changed plan revision blocked by the previous revision’s c
         return <Harness run={{ ...lessonRun, revision }} />;
     }
 
-    render(<RevisedLesson />, { wrapper });
+    render(<RevisedLesson />, { wrapper: QueryWrapper });
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     await screen.findByText('generation_scope_change');
     await waitFor(() =>
@@ -332,7 +332,7 @@ it('refreshes and confirms a free recording quote for an existing allowance paus
         },
     };
 
-    render(<Harness run={run} />, { wrapper });
+    render(<Harness run={run} />, { wrapper: QueryWrapper });
     fireEvent.click(screen.getByRole('button', { name: 'Review budget' }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('0')).toBeVisible();
@@ -379,7 +379,7 @@ it('does not dispatch on mount; confirms exactly one quoted stage with the same 
                 'owner:conversation',
                 lessonRun.conversationId,
             ),
-        { wrapper },
+        { wrapper: QueryWrapper },
     );
 
     expect(fetch).not.toHaveBeenCalled();
@@ -412,7 +412,7 @@ it('applies a revision while staying paused without dispatching Continue', async
                 'owner:conversation',
                 lessonRun.conversationId,
             ),
-        { wrapper },
+        { wrapper: QueryWrapper },
     );
 
     act(() =>
@@ -456,7 +456,7 @@ it('sends an explicitly captured selection with the source refresh and keeps the
                 'owner:conversation',
                 lessonRun.conversationId,
             ),
-        { wrapper },
+        { wrapper: QueryWrapper },
     );
 
     act(() =>
@@ -508,7 +508,7 @@ it('does not carry a prior conversation’s quote into the next conversation', a
                 scope,
                 lessonRun.conversationId,
             ),
-        { wrapper, initialProps: { scope: 'first' } },
+        { wrapper: QueryWrapper, initialProps: { scope: 'first' } },
     );
 
     act(() => result.current.execute({ kind: 'continue', run: lessonRun }));
@@ -600,7 +600,10 @@ it('fences a stale conversation callback even when both lessons belong to one no
                 'actor:' + conversationId,
                 conversationId,
             ),
-        { wrapper, initialProps: { conversationId: lessonRun.conversationId } },
+        {
+            wrapper: QueryWrapper,
+            initialProps: { conversationId: lessonRun.conversationId },
+        },
     );
     const stale = hook.result.current.execute;
     hook.rerender({ conversationId: other });
@@ -638,7 +641,7 @@ it('reuses an uncertain command after remount despite a newer run timestamp', as
                     'retry-owner',
                     lessonRun.conversationId,
                 ),
-            { wrapper },
+            { wrapper: QueryWrapper },
         );
     const first = mount();
     act(() =>
@@ -698,7 +701,7 @@ it.each(['provider-outcome-unknown', 'content-invalid'] as const)(
             },
         };
         const { Harness, fetch } = capacityHarness();
-        render(<Harness run={uncertain} />, { wrapper });
+        render(<Harness run={uncertain} />, { wrapper: QueryWrapper });
         expect(
             screen.getByRole('button', { name: 'Authorize a plan adjustment' }),
         ).toBeEnabled();
@@ -747,7 +750,7 @@ it('restores oversized input guidance from the server and keeps Adjust available
         },
     };
 
-    render(<Harness run={serverRun} />, { wrapper });
+    render(<Harness run={serverRun} />, { wrapper: QueryWrapper });
     expect(
         screen.getByText(/source material for this step exceeds/i),
     ).toBeVisible();
@@ -792,7 +795,7 @@ it('binds plan-adjustment consent to the reviewed uncertainty before sending a r
                 send,
                 refresh: async () => {},
             }),
-        { wrapper },
+        { wrapper: QueryWrapper },
     );
 
     await waitFor(() => expect(hook.result.current.state.runs).toHaveLength(1));
@@ -843,7 +846,7 @@ it('shows the actual recording ceiling inline and submits the server-issued rece
         Response.json({ run: listeningRun, turn: lessonTurn }),
     );
 
-    render(<Harness run={listeningRun} />, { wrapper });
+    render(<Harness run={listeningRun} />, { wrapper: QueryWrapper });
     const confirm = screen.getByRole('button', { name: 'Generate recording' });
     expect(screen.getByText('Up to 2.5 credits')).toBeVisible();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -903,7 +906,7 @@ it('refreshes an expired recording estimate inline and requires a fresh click on
         ),
     );
 
-    render(<Harness run={listeningRun} />, { wrapper });
+    render(<Harness run={listeningRun} />, { wrapper: QueryWrapper });
     fireEvent.click(screen.getByRole('button', { name: 'Refresh estimate' }));
     await screen.findByText('Up to 1.25 credits');
     expect(
@@ -952,7 +955,7 @@ it('keeps a capacity error on a pending recording but clears it when another tab
         return <Harness run={run} />;
     }
 
-    render(<TwoTabs />, { wrapper });
+    render(<TwoTabs />, { wrapper: QueryWrapper });
     fireEvent.click(screen.getByRole('button', { name: 'Generate recording' }));
     await screen.findByText('capacity_unavailable');
     act(() => reconcile({ ...awaiting, updatedAt: new Date().toISOString() }));

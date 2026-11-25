@@ -31,7 +31,11 @@ Run this after rendering. Record concrete failures, not generic approval.
 ## Rhythm and density
 
 - Is edge padding free of doubled space or compensating first-child offsets?
-- Does sibling rhythm visibly match the project's established spacing scale?
+- For a reported crowding issue, name the adjacent elements, their immediate
+  layout parent, and the comparison screen or primitive. Check the gap within
+  that group and the gap to the next group at narrow and desktop widths with
+  representative text. A wrapper can absorb the outer grid gap while leaving
+  its own heading, help, or controls flush together.
 - Are repeated patterns spaced consistently?
 - Is content width intentional?
 - Is density appropriate for the task rather than merely compact?

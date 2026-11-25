@@ -1,5 +1,6 @@
 import { basename, dirname, relative, resolve, sep } from 'node:path';
 
+import postcss from 'postcss';
 import ts from 'typescript';
 
 function hasExportModifier(node: ts.Node): boolean {
@@ -96,6 +97,52 @@ function exportedComponents(source: ts.SourceFile): string[] {
     return [...definitions].filter((name) => exports.has(name));
 }
 
+function missingClassNames(
+    source: ts.SourceFile,
+    binding: string,
+    css: string,
+) {
+    const classes = new Set<string>();
+    postcss.parse(css).walkRules((rule) => {
+        // Attribute values and explicitly global classes aren't module exports.
+        const selector = rule.selector.replace(
+            /:global\([^)]*\)|\[[^\]]*\]/g,
+            '',
+        );
+
+        for (const match of selector.matchAll(/\.([_a-zA-Z][\w-]*)/g)) {
+            classes.add(match[1]!);
+        }
+    });
+
+    const missing = new Set<string>();
+    function visit(node: ts.Node) {
+        if (
+            (ts.isPropertyAccessExpression(node) ||
+                ts.isElementAccessExpression(node)) &&
+            ts.isIdentifier(node.expression) &&
+            node.expression.text === binding
+        ) {
+            let key: string | undefined;
+            if (ts.isPropertyAccessExpression(node)) {
+                key = node.name.text;
+            } else if (ts.isStringLiteralLike(node.argumentExpression)) {
+                key = node.argumentExpression.text;
+            }
+
+            if (key && !classes.has(key)) {
+                missing.add(key);
+            }
+        }
+
+        ts.forEachChild(node, visit);
+    }
+
+    visit(source);
+
+    return missing;
+}
+
 function inspectStyleImports(
     source: ts.SourceFile,
     files: ReadonlyMap<string, string>,
@@ -127,6 +174,19 @@ function inspectStyleImports(
         if (!files.has(target)) {
             errors.push(`CSS module does not exist: ${specifier}`);
             continue;
+        }
+
+        const binding = statement.importClause?.name?.text;
+        if (binding) {
+            for (const name of missingClassNames(
+                source,
+                binding,
+                files.get(target)!,
+            )) {
+                errors.push(
+                    `Undefined CSS module class: ${specifier} (${name})`,
+                );
+            }
         }
 
         const shared =

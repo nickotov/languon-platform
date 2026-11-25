@@ -27,7 +27,7 @@ export function PasskeyRow({
     }
 
     return (
-        <li className={embedded ? profileStyles.dataRow : styles.listItem}>
+        <li className={embedded ? profileStyles.dataRow : undefined}>
             {embedded ? (
                 <span aria-hidden='true' className={profileStyles.rowIcon}>
                     <Fingerprint size={18} />

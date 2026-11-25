@@ -238,7 +238,14 @@ async function createDictionary(
         .getByLabel('Translate to')
         .selectOption(vocabulary.targetLanguage);
 
-    await page.getByRole('button', { name: 'Create dictionary' }).click();
+    await page
+        .getByRole('dialog')
+        .filter({
+            has: page.getByRole('heading', { name: 'Create a dictionary' }),
+        })
+        .getByRole('button', { name: 'Create', exact: true })
+        .click();
+
     await expect(page.getByRole('heading', { name })).toBeVisible();
     await page.getByRole('button', { name: 'Add card' }).click();
     await page.getByLabel(/^Source word or phrase/).fill(vocabulary.source);
@@ -609,7 +616,10 @@ test.describe('sentence practice and model preferences', () => {
         });
 
         await expect(dirtyChoice).toBeVisible();
-        await dirtyChoice.getByRole('button', { name: 'Keep editing' }).click();
+        await dirtyChoice
+            .getByRole('button', { name: 'Continue', exact: true })
+            .click();
+
         await expect(
             preferences.getByRole('heading', {
                 name: 'AI settings',
@@ -623,7 +633,7 @@ test.describe('sentence practice and model preferences', () => {
             .click();
 
         await dirtyChoice
-            .getByRole('button', { name: 'Discard changes' })
+            .getByRole('button', { name: 'Discard', exact: true })
             .click();
 
         await expect(draft).toBeVisible();
@@ -638,7 +648,10 @@ test.describe('sentence practice and model preferences', () => {
             .click();
 
         await expect(dirtyChoice).toBeVisible();
-        await dirtyChoice.getByRole('button', { name: 'Keep editing' }).click();
+        await dirtyChoice
+            .getByRole('button', { name: 'Continue', exact: true })
+            .click();
+
         await expect(
             preferences.getByRole('button', { name: 'Back to practice' }),
         ).toBeInViewport();
@@ -648,7 +661,7 @@ test.describe('sentence practice and model preferences', () => {
             .click();
 
         await dirtyChoice
-            .getByRole('button', { name: 'Discard changes' })
+            .getByRole('button', { name: 'Discard', exact: true })
             .click();
 
         const closeGuard = page.getByRole('dialog', {
@@ -2529,25 +2542,6 @@ test('reconnects to background preparation and practises the saved batch without
     const { SentencePreparationResponseSchema } =
         await import('@languon/contracts');
     const assertErrors = observeErrors(page);
-    let completedSnapshot: unknown;
-    page.on('response', async (response) => {
-        if (
-            !/\/sentences\/preparations\/[^/]+$/.test(response.url()) ||
-            response.request().method() !== 'GET' ||
-            response.status() !== 200
-        ) {
-            return;
-        }
-
-        const parsed = SentencePreparationResponseSchema.parse(
-            await response.json(),
-        );
-
-        if (parsed.preparation.state === 'completed') {
-            completedSnapshot = parsed;
-        }
-    });
-
     await signup(page, email(info, 'preparation-owner'));
     const dictionaryId = await createDictionary(
         page,
@@ -2592,7 +2586,7 @@ test('reconnects to background preparation and practises the saved batch without
     ).toBeVisible();
 
     await capture(page, info, 'sentence-preparation-started');
-    await page.goto(`/dictionaries/${dictionaryId}`);
+    await page.goto(`/dictionaries/${dictionaryId}/sentences`);
     await page.reload();
     await page.getByRole('button', { name: /\. View progress$/ }).click();
     await expect(
@@ -2642,6 +2636,7 @@ test('reconnects to background preparation and practises the saved batch without
     });
 
     await ready.click();
+    await expect(page).toHaveURL(/practice=prepared/);
     const practice = page.getByRole('dialog', {
         name: 'Sentence practice',
         exact: true,
@@ -2666,6 +2661,19 @@ test('reconnects to background preparation and practises the saved batch without
         .getByRole('button', { name: 'Close practice', exact: true })
         .click();
 
+    const statusUrl = new URL(
+        `/api/learning/dictionaries/${dictionaryId}/sentences/preparations/${payload.preparation.id}`,
+        page.url(),
+    ).href;
+    const completedSnapshot = page
+        .waitForResponse(
+            (response) =>
+                response.url() === statusUrl &&
+                response.status() === 200 &&
+                response.request().method() === 'GET',
+        )
+        .then((response) => response.json());
+
     await page.goto(`/dictionaries/${dictionaryId}/sentences`);
     const preparationChip = page.getByRole('button', {
         name: 'Preparation complete. View progress',
@@ -2686,11 +2694,11 @@ test('reconnects to background preparation and practises the saved batch without
     // response exercise rare UI states without changing saved data or sending commands.
     // The real preparation, reconnect and prepared practice above prove the business flow;
     // backend integration coverage proves the actual pause/stop/expiration transitions.
-    const baseline = SentencePreparationResponseSchema.parse(completedSnapshot);
-    const statusUrl = new URL(
-        `/api/learning/dictionaries/${dictionaryId}/sentences/preparations/${baseline.preparation.id}`,
-        page.url(),
-    ).href;
+    const baseline = SentencePreparationResponseSchema.parse(
+        await completedSnapshot,
+    );
+
+    expect(baseline.preparation.state).toBe('completed');
     const states = [
         {
             key: 'credits',

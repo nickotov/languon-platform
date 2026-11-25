@@ -20,7 +20,7 @@
     white-space: nowrap;
 }
 .chip:where([data-missing='true']) {
-    color: var(--text-error);
+    color: var(--danger-default);
 }
 
 .removeTooltipTrigger {

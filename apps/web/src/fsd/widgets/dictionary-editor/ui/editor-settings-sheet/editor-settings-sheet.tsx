@@ -4,7 +4,6 @@ import {
 } from '@/fsd/entities/dictionary';
 import { DictionarySettingsForm } from '@/fsd/features/dictionary-settings';
 import { BottomSheet } from '@/fsd/shared/ui';
-import type { ComponentProps } from 'react';
 import type { EditorViewFields } from '../../lib/editor-workspace';
 import styles from '../styles/dictionary-editor-common.module.css';
 
@@ -32,24 +31,13 @@ export function EditorSettingsSheet({
         catalog,
     } = model;
 
-    const handleClose: ComponentProps<typeof BottomSheet>['onClose'] = () =>
+    function closeSettings() {
         setSettingsOpen(false);
+    }
 
-    const classNameValue: ComponentProps<typeof BottomSheet>['className'] =
-        styles.settingsSheet ?? '';
-
-    const handleCancel: ComponentProps<
-        typeof DictionarySettingsForm
-    >['onCancel'] = () => setSettingsOpen(false);
-
-    const errorValue: ComponentProps<typeof DictionarySettingsForm>['error'] =
-        updateSettings.error
-            ? dictionaryErrorMessage(updateSettings.error, t)
-            : null;
-
-    const handleSave: ComponentProps<
-        typeof DictionarySettingsForm
-    >['onSave'] = async (values) => updateSettings.mutateAsync(values);
+    const error = updateSettings.error
+        ? dictionaryErrorMessage(updateSettings.error, t)
+        : null;
 
     const sourceLanguage = languageLabel(
         catalog,
@@ -76,17 +64,17 @@ export function EditorSettingsSheet({
             size='large'
             description={description}
             dismissible={dismissible}
-            onClose={handleClose}
+            onClose={closeSettings}
             title={t('dictionary.settings.title')}
             closeLabel={t('common.cancel')}
-            className={classNameValue}
+            className={styles.settingsSheet ?? ''}
         >
             <DictionarySettingsForm
-                onCancel={handleCancel}
+                onCancel={closeSettings}
                 dictionary={current}
-                error={errorValue}
+                error={error}
                 languages={catalog}
-                onSave={handleSave}
+                onSave={updateSettings.mutateAsync}
                 pending={updateSettings.isPending}
             />
         </BottomSheet>

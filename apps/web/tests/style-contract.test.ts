@@ -9,6 +9,43 @@ import {
 } from '../scripts/style-contract';
 
 describe('CSS-only styling contract', () => {
+    it('checks owned list rows and permits low-specificity renderer conditions', () => {
+        expect(
+            inspectCss('.steps li, .warnings > li:hover { color: inherit; }'),
+        ).toEqual([
+            'Use an explicit list item class: .steps li',
+            'Use an explicit list item class: .warnings > li:hover',
+        ]);
+
+        expect(
+            inspectCss('.step, .prose :where(li) { color: inherit; }'),
+        ).toEqual([]);
+    });
+
+    it('resolves semantic variables and permits optional or measured values', () => {
+        expect(
+            inspectCss(
+                '.error { color: var(--text-error); background: var(--optional, transparent); width: var(--popover-anchor-width); }',
+                'field.module.css',
+                new Set(),
+            ),
+        ).toEqual(['Undefined CSS variable: --text-error']);
+    });
+
+    it('allows provider finish reasons in comparisons and fixtures while checking their class uses', () => {
+        expect(
+            inspectMarkup(
+                'const blocked = run.finishReason === "content-filter"; const fixture = { finishReason: "content-filter" };',
+            ),
+        ).toEqual([]);
+
+        expect(
+            inspectMarkup(
+                'const name = "content-filter"; <div className={name} />',
+            ),
+        ).toEqual(['Tailwind utility: content-filter']);
+    });
+
     it('permits the validated generation failure code outside class names and still checks class contexts', () => {
         expect(
             inspectMarkup(

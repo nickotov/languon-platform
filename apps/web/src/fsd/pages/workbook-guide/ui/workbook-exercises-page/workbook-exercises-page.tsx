@@ -32,15 +32,15 @@ export function WorkbookExercisesPage({
                             <Sparkles size={16} aria-hidden='true' />
                             {copy.formats}
                         </span>
-                        <h1>{copy.chapter}</h1>
+                        <h1 className={styles.pageTitle}>{copy.chapter}</h1>
                         <p className={styles.lead}>{copy.chapterIntro}</p>
                         <p className={styles.notice}>{copy.notice}</p>
                     </header>
                 }
                 footer={
                     <section className={styles.section} key='chapter-footer'>
-                        <h2>{copy.next}</h2>
-                        <p>{copy.handoff}</p>
+                        <h2 className={styles.sectionTitle}>{copy.next}</h2>
+                        <p className={styles.description}>{copy.handoff}</p>
                         <ButtonLink href='/knowledge'>
                             {copy.openKnowledge}
                         </ButtonLink>

@@ -21,7 +21,7 @@ export function SecurityPasswordPanel({
     return (
         <Card
             aria-labelledby='password-heading'
-            className={embedded ? profileStyles.panel : styles.panel}
+            className={embedded ? profileStyles.panel : undefined}
             padding={embedded ? 'none' : 'md'}
             variant={embedded ? 'outlined' : 'elevated'}
         >

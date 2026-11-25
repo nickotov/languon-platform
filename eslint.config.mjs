@@ -1,6 +1,7 @@
 import js from '@eslint/js';
 import eslintConfigPrettier from 'eslint-config-prettier';
 import boundaries from 'eslint-plugin-boundaries';
+import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import { persistenceReadabilityConfig } from './scripts/eslint-persistence-readability.mjs';
@@ -26,6 +27,15 @@ export default tseslint.config(
     },
     js.configs.recommended,
     ...tseslint.configs.recommended,
+    {
+        files: ['apps/web/{src,tests}/**/*.{ts,tsx}'],
+        plugins: { 'react-hooks': reactHooks },
+        rules: {
+            'react-hooks/rules-of-hooks': 'error',
+            // Surface existing closure risks for review before changing effect lifecycles.
+            'react-hooks/exhaustive-deps': 'warn',
+        },
+    },
     {
         files: ['**/*.{js,mjs,cjs,ts,tsx}'],
         languageOptions: {

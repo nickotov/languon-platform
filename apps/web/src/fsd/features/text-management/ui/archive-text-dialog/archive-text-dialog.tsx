@@ -92,8 +92,11 @@ export function ArchiveTextDialog({
             <div className={styles.stack}>
                 <ul className={styles.consequences}>
                     {consequences.map((text) => (
-                        <li key={text}>
-                            <CheckIcon aria-hidden />
+                        <li key={text} className={styles.consequence}>
+                            <CheckIcon
+                                className={styles.consequenceIcon}
+                                aria-hidden
+                            />
                             <span>{text}</span>
                         </li>
                     ))}

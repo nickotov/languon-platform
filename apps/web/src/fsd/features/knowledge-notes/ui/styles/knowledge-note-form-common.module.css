@@ -39,7 +39,7 @@
 }
 
 .error {
-    color: var(--error-default);
+    color: var(--danger-default);
     margin: 0;
     font-size: var(--size-14);
 }

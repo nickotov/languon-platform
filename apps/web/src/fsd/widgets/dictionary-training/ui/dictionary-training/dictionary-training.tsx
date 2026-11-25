@@ -4,12 +4,8 @@ import { createTrainingAudio } from './ui/training-audio/training-audio';
 
 import { MessageSquareText, RefreshCw } from 'lucide-react';
 import componentStyles from './dictionary-training.module.css';
-import {
-    DictionaryLanguageTagSchema,
-    SentenceDirectionSchema,
-    SentenceModeSchema,
-    SentencePreparationBatchSchema,
-} from '@languon/contracts';
+import { DictionaryLanguageTagSchema } from '@languon/contracts';
+import { usePreparedPracticeLaunch } from '../../hooks/use-prepared-practice-launch';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -67,42 +63,28 @@ function TrainingComposition(props: TrainingLauncherProps) {
         props.target.kind === 'shared' ? props.target.shareId : undefined;
     const shareKey =
         props.target.kind === 'shared' ? props.target.shareKey : undefined;
-    const api = useMemo(
-        () =>
-            createSentenceApi({
-                target: dictionaryId
-                    ? { kind: 'owner', dictionaryId }
-                    : {
-                          kind: 'shared',
-                          shareId: shareId!,
-                          shareKey: shareKey!,
-                      },
-                signedIn: props.signedIn,
-                requestWithSession: props.requestWithSession,
-            }),
-        [
-            dictionaryId,
-            shareId,
-            shareKey,
-            props.signedIn,
-            props.requestWithSession,
-        ],
-    );
-    const learningApi = useMemo(
-        () =>
-            createLearningApi({
-                target: props.target,
-                signedIn: props.signedIn,
-                requestWithSession: props.requestWithSession,
-            }),
-        [
-            dictionaryId,
-            shareId,
-            shareKey,
-            props.signedIn,
-            props.requestWithSession,
-        ],
-    );
+    const { api, learningApi } = useMemo(() => {
+        const target: TrainingLauncherProps['target'] = dictionaryId
+            ? { kind: 'owner', dictionaryId }
+            : { kind: 'shared', shareId: shareId!, shareKey: shareKey! };
+        const options = {
+            target,
+            signedIn: props.signedIn,
+            requestWithSession: props.requestWithSession,
+        };
+
+        return {
+            api: createSentenceApi(options),
+            learningApi: createLearningApi(options),
+        };
+    }, [
+        dictionaryId,
+        shareId,
+        shareKey,
+        props.signedIn,
+        props.requestWithSession,
+    ]);
+
     const [capability, setCapability] = useState<
         'loading' | 'enabled' | 'disabled' | 'error'
     >('loading');
@@ -111,7 +93,6 @@ function TrainingComposition(props: TrainingLauncherProps) {
     const [restartPreparation, setRestartPreparation] = useState(false);
     const [preparationOpen, setPreparationOpen] = useState(false);
     const consumedLaunch = useRef<string | null>(null);
-    const [preparedLaunchError, setPreparedLaunchError] = useState(false);
     const [running, setRunning] = useState(false);
     const [fullscreen, setFullscreen] = useState<
         Promise<boolean> | undefined
@@ -154,6 +135,19 @@ function TrainingComposition(props: TrainingLauncherProps) {
         exerciseHistory.error,
     ].find((error) => error && isSentenceAccessLoss(error));
     const blocked = accessLost || !!accessError;
+    const preparedLaunchError = usePreparedPracticeLaunch({
+        search,
+        enabled: props.signedIn && capability === 'enabled' && !blocked,
+        load: api.preparedBatch,
+        start: (configuration) =>
+            start({
+                ...configuration,
+                ...(preparation.explanationLanguage
+                    ? { explanationLanguage: preparation.explanationLanguage }
+                    : {}),
+            }),
+    });
+
     useEffect(() => {
         const launch = search.get('practice');
         if (!launch) {
@@ -204,61 +198,21 @@ function TrainingComposition(props: TrainingLauncherProps) {
             setSetupOpen(true);
         } else if (launch === 'progress') {
             setPreparationOpen(true);
-        } else if (launch === 'prepared' && api.preparedBatch) {
-            const batchId = SentencePreparationBatchSchema.shape.id.safeParse(
-                search.get('batch'),
-            );
-            const direction = SentenceDirectionSchema.safeParse(
-                search.get('direction'),
-            );
-            const mode = SentenceModeSchema.safeParse(search.get('mode'));
-            if (!batchId.success || !direction.success || !mode.success) {
-                setPreparedLaunchError(true);
-
-                return;
-            }
-
-            setPreparedLaunchError(false);
-            let cancelled = false;
-            void api
-                .preparedBatch(batchId.data)
-                .then((batch) => {
-                    if (cancelled) {
-                        return;
-                    }
-
-                    if (!batch.preparedEntryIds.length) {
-                        throw new Error('Prepared batch unavailable');
-                    }
-
-                    start({
-                        direction: direction.data,
-                        mode: mode.data,
-                        scope: {
-                            type: 'manual',
-                            entryIds: batch.preparedEntryIds,
-                        },
-                        preparedBatchId: batch.id,
-                        ...(preparation.explanationLanguage
-                            ? {
-                                  explanationLanguage:
-                                      preparation.explanationLanguage,
-                              }
-                            : {}),
-                    });
-                })
-                .catch(() => {
-                    if (!cancelled) {
-                        setPreparedLaunchError(true);
-                    }
-                });
-
-            return () => {
-                cancelled = true;
-            };
         }
-    }, [search, capability, blocked, props.signedIn]);
+    }, [
+        search,
+        capability,
+        blocked,
+        props.signedIn,
+        shareKey,
+        router,
+        href,
+        pathname,
+    ]);
 
+    const resetSession = session.reset;
+    const invalidateSetup = setup.invalidate;
+    const invalidateHistory = exerciseHistory.invalidate;
     useEffect(() => {
         if (!accessError) {
             return;
@@ -270,15 +224,10 @@ function TrainingComposition(props: TrainingLauncherProps) {
         setRunning(false);
         setPreferencesOpen(false);
         setConfirmPreferenceClose(false);
-        session.reset();
-        setup.invalidate();
-        exerciseHistory.invalidate();
-    }, [
-        accessError,
-        session.reset,
-        setup.invalidate,
-        exerciseHistory.invalidate,
-    ]);
+        resetSession();
+        invalidateSetup();
+        invalidateHistory();
+    }, [accessError, resetSession, invalidateSetup, invalidateHistory]);
 
     useEffect(() => {
         if (session.attempt?.id) {

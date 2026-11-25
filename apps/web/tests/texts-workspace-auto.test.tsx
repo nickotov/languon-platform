@@ -11,7 +11,7 @@ const id = '123e4567-e89b-42d3-a456-426614174000';
 const request = <T,>(operation: (token: string) => Promise<T>) =>
     operation('test');
 
-function wrapper({ children }: PropsWithChildren) {
+function QueryWrapper({ children }: PropsWithChildren) {
     const [client] = useState(
         () =>
             new QueryClient({ defaultOptions: { queries: { retry: false } } }),
@@ -64,7 +64,10 @@ describe('automatic workspace language orchestration', () => {
             .spyOn(textsApi, 'translateText')
             .mockResolvedValue({ job: { ...detected('en'), result: null } });
         const create = vi.spyOn(textsApi, 'createText');
-        const { result } = renderHook(() => useFlow(), { wrapper });
+        const { result } = renderHook(() => useFlow(), {
+            wrapper: QueryWrapper,
+        });
+
         expect(detect).not.toHaveBeenCalled();
         await act(() => result.current.start());
         await waitFor(() => expect(translate).toHaveBeenCalled());
@@ -87,7 +90,10 @@ describe('automatic workspace language orchestration', () => {
             .mockResolvedValueOnce({
                 job: { ...detected('en'), result: null },
             });
-        const { result } = renderHook(() => useFlow(), { wrapper });
+        const { result } = renderHook(() => useFlow(), {
+            wrapper: QueryWrapper,
+        });
+
         await act(() => result.current.start());
         await waitFor(() => expect(translate).toHaveBeenCalledTimes(1));
         await act(() => result.current.start());
@@ -106,7 +112,10 @@ describe('automatic workspace language orchestration', () => {
             });
 
             const translate = vi.spyOn(textsApi, 'translateText');
-            const { result } = renderHook(() => useFlow(), { wrapper });
+            const { result } = renderHook(() => useFlow(), {
+                wrapper: QueryWrapper,
+            });
+
             await act(() => result.current.start());
             await waitFor(() =>
                 expect(result.current.error).toBe(
@@ -130,7 +139,9 @@ describe('automatic workspace language orchestration', () => {
             .spyOn(textsApi, 'cancelAiJob')
             .mockResolvedValue({ job: detected('en') });
         const translate = vi.spyOn(textsApi, 'translateText');
-        const { result } = renderHook(() => useFlow(), { wrapper });
+        const { result } = renderHook(() => useFlow(), {
+            wrapper: QueryWrapper,
+        });
         let pending!: Promise<void>;
         act(() => {
             pending = result.current.start();
@@ -167,7 +178,7 @@ describe('automatic workspace language orchestration', () => {
             let current = true;
             const { result, rerender } = renderHook(
                 ({ value }) => useFlow(value, () => current),
-                { wrapper, initialProps: { value: input } },
+                { wrapper: QueryWrapper, initialProps: { value: input } },
             );
             let pending!: Promise<void>;
             act(() => {
@@ -196,7 +207,7 @@ describe('automatic workspace language orchestration', () => {
             .mockResolvedValue({ job: { ...detected('en'), result: null } });
         const { result } = renderHook(
             () => useFlow({ ...input, sourceLanguage: 'en' }),
-            { wrapper },
+            { wrapper: QueryWrapper },
         );
 
         await act(() => result.current.start());

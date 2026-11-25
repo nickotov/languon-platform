@@ -23,6 +23,7 @@ import {
 } from '@/fsd/entities/conversation';
 import { useI18n } from '@/fsd/shared/i18n';
 import { useMessageScroll } from '../../../../hooks/use-message-scroll';
+import { useCommittedCallback } from '../../../../hooks/use-committed-callback';
 import { messagesCopy } from '../../../../lib/messages-copy';
 import { messageScrollSignature } from '../../../../lib/message-scroll-signature';
 import { TutorMessage } from '../tutor-message/tutor-message';
@@ -99,6 +100,15 @@ export function ConversationMessages({
     );
     const [previewRunId, selectPreviewRun] = useState<string | null>(null);
     const previewSelection = { runId: previewRunId, select: selectPreviewRun };
+    const retryMessage = useCommittedCallback(onRetry);
+    const stableContinue = useCommittedCallback(onContinue);
+    const stablePropose = useCommittedCallback(onPropose);
+    const stableChooseReading = useCommittedCallback(onChooseReading);
+    const stableAcceptWorkspaceProposal = useCommittedCallback(
+        onAcceptWorkspaceProposal,
+    );
+    const stableReviewProposal = useCommittedCallback(onReviewProposal);
+
     const proposals = useListedContentProposals();
     const { byTurn, remaining } = groupLessonResults(
         lessons?.state.runs ?? [],
@@ -271,14 +281,14 @@ export function ConversationMessages({
                                     questions.get(message.metadata!.turnId) ??
                                     ''
                                 }
-                                onRetry={onRetry}
+                                onRetry={retryMessage}
                                 onChooseReading={
                                     index === messages.length - 1
-                                        ? onChooseReading
+                                        ? stableChooseReading
                                         : undefined
                                 }
-                                onContinue={onContinue}
-                                onPropose={onPropose}
+                                onContinue={stableContinue}
+                                onPropose={stablePropose}
                                 workspaceTargetId={
                                     message.metadata?.turnId
                                         ? workspaceTargets?.get(
@@ -288,10 +298,10 @@ export function ConversationMessages({
                                 }
                                 workspaceAnchor={message.metadata?.editorTarget}
                                 onAcceptWorkspaceProposal={
-                                    onAcceptWorkspaceProposal
+                                    stableAcceptWorkspaceProposal
                                 }
                                 proposalRootId={proposalRootId}
-                                onReviewProposal={onReviewProposal}
+                                onReviewProposal={stableReviewProposal}
                                 workspace={workspace}
                                 reviewingProposalId={reviewingProposalId}
                                 onReviewingProposal={setReviewingProposalId}

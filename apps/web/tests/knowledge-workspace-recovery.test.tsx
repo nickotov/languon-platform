@@ -452,7 +452,7 @@ function loadingFixture(branches = true): KnowledgeWorkspace {
     };
 }
 
-function loadingWrapper({ children }: { children: ReactNode }) {
+function LoadingWrapper({ children }: { children: ReactNode }) {
     const [client] = useState(
         () =>
             new QueryClient({ defaultOptions: { queries: { retry: false } } }),
@@ -481,7 +481,7 @@ it('keeps every successful initial-query render loading until the working branch
 
             return state;
         },
-        { wrapper: loadingWrapper },
+        { wrapper: LoadingWrapper },
     );
 
     await waitFor(() => expect(result.current.edit?.branchId).toBe('initial'));
@@ -497,7 +497,7 @@ it('keeps every successful initial-query render loading until the working branch
 it('does not mask a genuine initial request error as loading', async () => {
     mocks.workspace.mockReset().mockRejectedValue(new Error('Unavailable'));
     const { result } = renderHook(() => useKnowledgeWorkspace('note'), {
-        wrapper: loadingWrapper,
+        wrapper: LoadingWrapper,
     });
 
     await waitFor(() => expect(result.current.query.isError).toBe(true));
@@ -507,7 +507,7 @@ it('does not mask a genuine initial request error as loading', async () => {
 it('does not leave a branchless successful response loading forever', async () => {
     mocks.workspace.mockReset().mockResolvedValue(loadingFixture(false));
     const { result } = renderHook(() => useKnowledgeWorkspace('note'), {
-        wrapper: loadingWrapper,
+        wrapper: LoadingWrapper,
     });
 
     await waitFor(() => expect(result.current.query.isSuccess).toBe(true));

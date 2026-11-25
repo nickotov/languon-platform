@@ -18,6 +18,27 @@ function inspect(files: Record<string, string>): string[] {
 }
 
 describe('FSD component ownership', () => {
+    it('checks static reads against the exact imported module, including bracket keys', () => {
+        expect(
+            inspect({
+                'shared/ui/card/card.tsx': `
+                import classes from './card.module.css';
+                const view = [classes.root, classes['label'], classes.missing, classes['foreign'], classes[variant]];
+            `,
+                'shared/ui/card/card.module.css':
+                    '.root:hover, .label :global(.foreign) { color: inherit; }',
+                'shared/ui/card/other.module.css': '.missing {}',
+            }),
+        ).toEqual([
+            expect.stringContaining(
+                'Undefined CSS module class: ./card.module.css (missing)',
+            ),
+            expect.stringContaining(
+                'Undefined CSS module class: ./card.module.css (foreign)',
+            ),
+        ]);
+    });
+
     it('allows nested private parts, helpers, barrels and colocated styles', () => {
         expect(
             inspect({

@@ -36,8 +36,13 @@ export function findUtilityClasses(
 
     return value.split(/\s+/).filter((token) => {
         const base = utilityBase(token);
-        if (!classContext && isNonClassLiteral(base)) {
-            return false;
+        if (!classContext) {
+            // Cross-file variant tables may have no local JSX consumer. Flag
+            // unmistakable numeric spacing utilities there; domain discriminants
+            // such as "content-filter" are only meaningful inside class props.
+            return /^(?:p[trblxyse]?|m[trblxyse]?|gap(?:-[xy])?|space-[xy])-(?:\d+(?:\.\d+)?|px)$/.test(
+                base,
+            );
         }
 
         return (
@@ -73,50 +78,4 @@ function utilityBase(token: string): string {
     }
 
     return token.slice(variantEnd + 1).replace(/^(?:!|-)/, '');
-}
-
-function isNonClassLiteral(base: string): boolean {
-    // Validated generation failure codes may occur in copy maps and fixtures.
-    // Class contexts still reject the same spelling as a utility class.
-    if (base === 'content-invalid') {
-        return true;
-    }
-
-    // HTTP headers, placement-library values and query keys aren't classes.
-    if (/^content-(?:type|disposition|length)$/.test(base)) {
-        return true;
-    }
-
-    if (
-        /^(?:top|bottom|left|right)-(?:start|end|left|right|top|bottom)$/.test(
-            base,
-        )
-    ) {
-        return true;
-    }
-
-    // Domain resource and copied-material discriminators are not color utilities.
-    if (
-        base === 'text-folders' ||
-        base === 'text-reference' ||
-        base === 'text-selection'
-    ) {
-        return true;
-    }
-
-    // Exercise formats are domain values, not SVG fill classes.
-    if (base === 'fill-in-the-blank') {
-        return true;
-    }
-
-    // AI SDK protocol discriminants are not class names. JSX class contexts stay checked.
-    if (/^text-(?:start|delta|end)$/.test(base)) {
-        return true;
-    }
-
-    if (/^text-ai-(?:request|preference|catalog)$/.test(base)) {
-        return true;
-    }
-
-    return false;
 }

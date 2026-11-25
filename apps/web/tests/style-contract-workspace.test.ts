@@ -33,6 +33,28 @@ afterEach(() => {
 });
 
 describe('workspace styling contract regressions', () => {
+    it('checks a class variant table imported by a different component', () => {
+        const directory = fixture();
+        mkdirSync(join(directory, 'src'), { recursive: true });
+        writeFileSync(
+            join(directory, 'src/variants.ts'),
+            'export const variants = {compact: "flex items-center", default: "grid hidden"} as const;',
+        );
+
+        writeFileSync(
+            join(directory, 'src/card.tsx'),
+            'import { variants } from "./variants"; export const Card = () => <div className={variants.compact} />;',
+        );
+
+        expect(checkStyles(directory)).toEqual(
+            expect.arrayContaining(
+                ['flex', 'items-center', 'grid', 'hidden'].map(
+                    (token) => `src/variants.ts: Tailwind utility: ${token}`,
+                ),
+            ),
+        );
+    });
+
     it('checks catalog markup and CSS alongside application source', () => {
         const directory = fixture();
         const catalog = join(directory, '.storybook');

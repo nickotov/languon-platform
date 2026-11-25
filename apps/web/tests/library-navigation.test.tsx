@@ -21,7 +21,7 @@ const owner = '10000000-0000-4000-8000-000000000001';
 const request = <T,>(operation: (token: string) => Promise<T>) =>
     operation('token');
 
-function wrapper({ children }: { children: ReactNode }) {
+function QueryWrapper({ children }: { children: ReactNode }) {
     const [client] = useState(
         () =>
             new QueryClient({ defaultOptions: { queries: { retry: false } } }),
@@ -55,7 +55,7 @@ describe('navigation domain client effects', () => {
         const { rerender } = renderHook(
             ({ loaded }) =>
                 useRecordResourceOpen('text', resource.id, loaded, request),
-            { initialProps: { loaded: false }, wrapper },
+            { initialProps: { loaded: false }, wrapper: QueryWrapper },
         );
 
         expect(navigationApi.opened).not.toHaveBeenCalled();
@@ -79,7 +79,7 @@ describe('navigation domain client effects', () => {
         useSessionStore.setState({ status: 'signed-out', user: null });
         renderHook(
             () => useRecordResourceOpen('text', resource.id, true, request),
-            { wrapper },
+            { wrapper: QueryWrapper },
         );
 
         await act(async () => {});
@@ -98,7 +98,7 @@ describe('navigation domain client effects', () => {
                     },
                     request,
                 ),
-            { wrapper },
+            { wrapper: QueryWrapper },
         );
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -118,7 +118,7 @@ describe('navigation domain client effects', () => {
                     { enabled: true, kind: 'text', limit: 4 },
                     request,
                 ),
-            { wrapper },
+            { wrapper: QueryWrapper },
         );
 
         await waitFor(() =>

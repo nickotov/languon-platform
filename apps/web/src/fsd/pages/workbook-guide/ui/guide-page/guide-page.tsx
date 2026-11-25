@@ -15,31 +15,31 @@ export function WorkbookGuidePage({ locale }: { locale: Locale }) {
                 <span className={styles.eyebrow}>
                     <BookOpen size={18} aria-hidden='true' /> LANGUON
                 </span>
-                <h1>{copy.title}</h1>
+                <h1 className={styles.pageTitle}>{copy.title}</h1>
                 <p className={styles.lead}>{copy.intro}</p>
             </header>
             <section className={styles.section}>
-                <h2>{copy.workflow}</h2>
+                <h2 className={styles.sectionTitle}>{copy.workflow}</h2>
                 <ol className={styles.steps}>
                     {content.steps.map((step, index) => (
-                        <li key={step}>
+                        <li className={styles.step} key={step}>
                             <span className={styles.stepNumber}>
                                 {index + 1}
                             </span>
-                            <p>{step}</p>
+                            <p className={styles.description}>{step}</p>
                         </li>
                     ))}
                 </ol>
             </section>
             <section className={styles.chapter}>
-                <div>
+                <div className={styles.chapterCopy}>
                     <span className={styles.eyebrow}>
                         <Sparkles size={18} aria-hidden='true' />
                         {copy.chapter}
                     </span>
-                    <h2>{copy.explore}</h2>
-                    <p>{copy.formats}</p>
-                    <p>{copy.chapterIntro}</p>
+                    <h2 className={styles.sectionTitle}>{copy.explore}</h2>
+                    <p className={styles.description}>{copy.formats}</p>
+                    <p className={styles.description}>{copy.chapterIntro}</p>
                 </div>
                 <ButtonLink href='/workbook/exercises'>
                     {copy.explore}
@@ -47,10 +47,11 @@ export function WorkbookGuidePage({ locale }: { locale: Locale }) {
                 </ButtonLink>
             </section>
             <section className={styles.section}>
-                <h2>{copy.recipes}</h2>
+                <h2 className={styles.sectionTitle}>{copy.recipes}</h2>
                 <div className={styles.recipeLinks}>
                     {content.recipes.map((recipe) => (
                         <TextLink
+                            className={styles.recipeLink}
                             key={recipe.id}
                             href={`/workbook/exercises#recipe-${recipe.id}`}
                         >

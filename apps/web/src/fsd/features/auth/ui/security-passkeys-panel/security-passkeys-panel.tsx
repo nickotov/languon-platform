@@ -9,7 +9,6 @@ import { Button, Card, InlineAlert } from '@/fsd/shared/ui';
 import { localizedAuthError } from '../../lib/auth-error-message';
 import { FormMessage } from '../auth-shell';
 import { PasskeyRow } from '../passkey-row/passkey-row';
-import styles from '../styles/auth-ui-common.module.css';
 import profileStyles from '../styles/security-settings-common.module.css';
 
 export function SecurityPasskeysPanel({
@@ -63,7 +62,7 @@ export function SecurityPasskeysPanel({
     return (
         <Card
             aria-labelledby='passkeys-heading'
-            className={embedded ? profileStyles.panel : styles.panel}
+            className={embedded ? profileStyles.panel : undefined}
             padding={embedded ? 'none' : 'md'}
             variant={embedded ? 'outlined' : 'elevated'}
         >
@@ -213,9 +212,7 @@ export function SecurityPasskeysPanel({
                     </div>
                 ) : null}
                 <ul
-                    className={
-                        embedded ? profileStyles.passkeyList : styles.list
-                    }
+                    className={embedded ? profileStyles.passkeyList : undefined}
                 >
                     {passkeys.map((passkey) => (
                         <PasskeyRow

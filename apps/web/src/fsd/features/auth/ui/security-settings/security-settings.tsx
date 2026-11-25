@@ -462,12 +462,9 @@ export function SecuritySettings({
             ) : null}
 
             {!embedded ? (
-                <Card
-                    className={styles.panel}
-                    aria-labelledby='account-heading'
-                >
+                <Card aria-labelledby='account-heading'>
                     <h2 id='account-heading'>{t('security.account')}</h2>
-                    <dl className={styles.metadata}>
+                    <dl>
                         <div>
                             <dt>{t('common.email')}</dt>
                             <dd>{user?.primaryEmail}</dd>

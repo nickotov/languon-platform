@@ -255,6 +255,33 @@ export function inspectMarkup(
         ts.forEachChild(node, (child) => inspect(child, classContext, seen));
     };
     const inspectAttributes = (node: ts.Node) => {
+        // Variant tables are often exported from a module without any JSX.
+        // Only their values represent classes; table keys name the variants.
+        if (
+            ts.isVariableDeclaration(node) &&
+            ts.isIdentifier(node.name) &&
+            /(?:^variants?$|(?:ClassNames?|Classes|Variants)$)/.test(
+                node.name.text,
+            ) &&
+            node.initializer
+        ) {
+            let value = node.initializer;
+            while (
+                ts.isAsExpression(value) ||
+                ts.isSatisfiesExpression(value)
+            ) {
+                value = value.expression;
+            }
+
+            if (ts.isObjectLiteralExpression(value)) {
+                for (const property of value.properties) {
+                    if (ts.isPropertyAssignment(property)) {
+                        inspect(property.initializer, true);
+                    }
+                }
+            }
+        }
+
         if (ts.isJsxAttribute(node) && node.initializer) {
             const name = node.name.getText(file);
             if (/(?:^className$|ClassName$)/.test(name)) {
@@ -315,6 +342,20 @@ export function inspectCss(
         }
     });
 
+    if (filename.endsWith('.module.css')) {
+        root.walkRules((rule) => {
+            for (const selector of rule.selectors) {
+                if (
+                    /^\.[\w-]+\s*(?:>\s*|\s+)li(?:$|:{1,2}[\w-]+)/.test(
+                        selector,
+                    )
+                ) {
+                    errors.push(`Use an explicit list item class: ${selector}`);
+                }
+            }
+        });
+    }
+
     root.walkDecls((declaration) => {
         if (
             declaration.prop.startsWith('--tw-') ||
@@ -325,10 +366,21 @@ export function inspectCss(
 
         if (declaredTokens) {
             for (const match of declaration.value.matchAll(
-                /var\((--(?:size|space|radius)-[\w-]+)/g,
+                /var\(\s*(--[\w-]+)\s*([,)])/g,
             )) {
-                if (!declaredTokens.has(match[1]!)) {
-                    errors.push(`Undefined geometry token: ${match[1]}`);
+                const token = match[1]!;
+                if (declaredTokens.has(token)) {
+                    continue;
+                }
+
+                if (/^--(?:space|size|radius)-/.test(token)) {
+                    errors.push(`Undefined geometry token: ${token}`);
+                } else if (
+                    match[2] !== ',' &&
+                    token !== '--popover-anchor-width'
+                ) {
+                    // The popover measures its anchor and assigns this variable at runtime.
+                    errors.push(`Undefined CSS variable: ${token}`);
                 }
             }
         }

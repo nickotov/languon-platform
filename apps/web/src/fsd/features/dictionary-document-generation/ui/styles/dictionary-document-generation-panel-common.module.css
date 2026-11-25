@@ -21,7 +21,7 @@
 
 .eyebrow {
     color: var(--sys-color-text-secondary);
-    font-size: var(--sys-font-size-label);
+    font-size: var(--size-12);
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;

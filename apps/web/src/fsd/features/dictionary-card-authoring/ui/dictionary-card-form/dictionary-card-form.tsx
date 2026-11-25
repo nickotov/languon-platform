@@ -149,7 +149,7 @@ export function DictionaryCardForm(props: DictionaryCardFormProps) {
     return (
         <Card className={className}>
             {showHeading ? (
-                <header className={styles.header}>
+                <header>
                     <h2 className={styles.title}>{title}</h2>
                 </header>
             ) : null}

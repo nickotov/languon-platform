@@ -20,6 +20,33 @@ function boundaryErrors(messages) {
     return messages.filter(({ ruleId }) => ruleId?.startsWith('boundaries/'));
 }
 
+test('web source and test fixtures report unsafe hook calls and stale effects', async () => {
+    const source = `
+        import { useEffect, useState } from 'react';
+
+        export function View({ value, enabled }) {
+            useEffect(() => { document.title = value; }, []);
+            if (enabled) { useState(false); }
+            return null;
+        }
+    `;
+
+    for (const path of [
+        'apps/web/src/fsd/shared/ui/hook-probe.tsx',
+        'apps/web/tests/hook-probe.test.tsx',
+    ]) {
+        const messages = await lintSource(path, source);
+        const hooks = messages
+            .filter(({ ruleId }) => ruleId?.startsWith('react-hooks/'))
+            .map(({ ruleId, severity }) => [ruleId, severity]);
+
+        assert.deepEqual(hooks, [
+            ['react-hooks/exhaustive-deps', 1],
+            ['react-hooks/rules-of-hooks', 2],
+        ]);
+    }
+});
+
 test('allows imports toward lower FSD layers through TypeScript aliases', async () => {
     const messages = await lintSource(
         'apps/web/src/fsd/features/auth/lib/boundary-probe.ts',
@@ -45,7 +72,7 @@ test('rejects imports toward higher FSD layers through TypeScript aliases', asyn
 test('rejects imports across slices in the same FSD layer', async () => {
     const messages = await lintSource(
         'apps/web/src/fsd/pages/login/ui/boundary-probe.ts',
-        "import { SignupPage } from '@/fsd/pages/signup/ui/signup-page';\nvoid SignupPage;\n",
+        "import { SignupPage } from '@/fsd/pages/signup/ui/signup-page/signup-page';\nvoid SignupPage;\n",
     );
 
     assert.equal(boundaryErrors(messages).length, 1);

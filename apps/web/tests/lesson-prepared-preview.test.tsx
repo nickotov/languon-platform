@@ -81,7 +81,7 @@ function advancedRun(
 const request = <T,>(operation: (token: string) => Promise<T>) =>
     operation('synthetic-token');
 
-function wrapper({ children }: PropsWithChildren) {
+function QueryWrapper({ children }: PropsWithChildren) {
     const [client] = useState(
         () =>
             new QueryClient({ defaultOptions: { queries: { retry: false } } }),
@@ -367,7 +367,10 @@ it('keeps the real document preview open across run updates and only makes read 
         onAdjust: vi.fn(),
         renderPreparedBody: renderBody,
     };
-    const view = render(<LessonRun run={running} {...props} />, { wrapper });
+    const view = render(<LessonRun run={running} {...props} />, {
+        wrapper: QueryWrapper,
+    });
+
     expect(fetch).not.toHaveBeenCalled();
     fireEvent.click(
         screen.getByRole('button', { name: 'View prepared content' }),
@@ -435,7 +438,7 @@ it('retries a failed preview fetch without submitting a generation action', asyn
             onAdjust={vi.fn()}
             renderPreparedBody={renderBody}
         />,
-        { wrapper },
+        { wrapper: QueryWrapper },
     );
 
     fireEvent.click(
@@ -488,7 +491,7 @@ it('stops a run between automatic stages using the run-level fence', async () =>
         return <button onClick={stop}>Stop run</button>;
     }
 
-    render(<Harness />, { wrapper });
+    render(<Harness />, { wrapper: QueryWrapper });
     fireEvent.click(screen.getByRole('button', { name: 'Stop run' }));
     await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
     expect(fetch.mock.calls[0]?.[0]).toContain('/generation-runs/');
@@ -742,7 +745,10 @@ it('preserves prepared preview during a transient server failure and offers only
         onAdjust: vi.fn(),
         renderPreparedBody: renderBody,
     };
-    const view = render(<LessonRun run={running} {...props} />, { wrapper });
+    const view = render(<LessonRun run={running} {...props} />, {
+        wrapper: QueryWrapper,
+    });
+
     fireEvent.click(
         screen.getByRole('button', { name: 'View prepared content' }),
     );
@@ -920,7 +926,10 @@ it('does not refetch prepared bodies for timestamp-only run changes', async () =
         onAdjust: vi.fn(),
         renderPreparedBody: renderBody,
     };
-    const view = render(<LessonRun run={running} {...props} />, { wrapper });
+    const view = render(<LessonRun run={running} {...props} />, {
+        wrapper: QueryWrapper,
+    });
+
     fireEvent.click(
         screen.getByRole('button', { name: 'View prepared content' }),
     );
@@ -1156,7 +1165,7 @@ it('opens the final proposal directly from a completed run without fetching read
             renderPreparedBody={renderBody}
             renderCompletedLesson={final}
         />,
-        { wrapper },
+        { wrapper: QueryWrapper },
     );
 
     fireEvent.click(

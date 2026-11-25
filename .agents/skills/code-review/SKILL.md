@@ -1,14 +1,21 @@
 ---
 name: code-review
-description: Independently review Languon changes for functional correctness, acceptance-criteria gaps, regressions, race conditions, error handling, DDD/FSD and package-boundary violations, security, material performance issues, and missing tests. Use after implementation, before handoff, or when explicitly asked to review a diff. Do not use for style-only review already covered by formatters and linters.
+description: Independently review Languon changes for functional correctness, acceptance-criteria gaps, regressions, race conditions, error handling, DDD/FSD and package-boundary violations, security, material performance issues, and missing tests. Use after implementation, before handoff, or when explicitly asked to review a diff or audit a current codebase. Do not use for style-only review already covered by formatters and linters.
 ---
 
 # Code review
 
 ## Establish review scope
 
-Choose and record the review mode and exact diff boundary before reading code:
+Choose a review mode before reading code. For patch reviews, record the exact
+diff boundary. For current-state audits, record the application snapshot.
 
+- **Current-state audit:** when asked to assess an existing app or its skills,
+  identify the revision, working tree, and included surfaces. Trace representative
+  findings through normal entry points and compare the skills with their actual
+  checks. State which files were scanned mechanically, inspected by hand, or
+  exercised at runtime. Use targeted evidence to distinguish defects, risks,
+  and conventions. Return feedback in the requested format.
 - **Initial:** read applicable `AGENTS.md`, the active specification/record,
   current plan, relevant evidence/ADRs, the complete scoped diff, and surrounding
   execution paths. Audit acceptance and test coverage independently.
@@ -48,6 +55,9 @@ Trace changed execution paths and verify:
   rendering, external calls, and model tools are safe when applicable.
 - Tests exercise the material regression surface at the correct layer.
 - Database and cache changes preserve transactions, invariants, and lifecycle.
+- For React performance findings, identify the triggering interaction, state
+  owner, repeated work, and affected data size. Label an unmeasured cost as a
+  profiling candidate. Hook counts alone cannot establish an interaction delay.
 - Performance or resource use has no material unbounded behavior.
 - For handwritten changes, apply the
   [readability reviewer checks](../../../docs/code-readability.md#author-and-reviewer-checks).
@@ -76,6 +86,7 @@ Do not invent issues to populate a report and do not report formatter concerns.
 If no material findings exist, say so and list residual risks or verification
 gaps. Report which surface was actually reviewed and which was reused from prior
 review. Separate defects from optional improvements; do not keep reopening a
-resolved finding without new evidence. Record findings, disposition, and verdict
-in the single correction/improvement record or feature `REVIEW.md`. Link to
+resolved finding without new evidence. For delivery reviews, record findings,
+disposition, and verdict in the single correction/improvement record or feature
+`REVIEW.md`. For a standalone audit, use the requested feedback destination. Link to
 evidence rather than copying command logs or acceptance text.

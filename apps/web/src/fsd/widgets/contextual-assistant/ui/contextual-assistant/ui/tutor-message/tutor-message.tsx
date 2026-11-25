@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import { canUseResponseInDocument } from '../../../../lib/response-document-use';
 import { MessageBlockReferences } from '../block-reference-controls';
 import type { KnowledgeBlockReference } from '@/fsd/features/knowledge-notes';
@@ -34,7 +34,7 @@ import {
 } from '../workspace-message-materials';
 import styles from '../../../styles/contextual-assistant-conversation-messages-common.module.css';
 
-export function TutorMessage({
+export const TutorMessage = memo(function TutorMessage({
     blocks = [],
     message,
     lesson,
@@ -363,4 +363,4 @@ export function TutorMessage({
             </div>
         </article>
     );
-}
+});
