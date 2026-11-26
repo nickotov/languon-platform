@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// @user-flow-revision workbook-guide sha256:19562c507c4c0983
+// @user-flow-revision workbook-guide sha256:372f05ef85129d8e
 const writes = new WeakMap<Page, string[]>();
 const errors = new WeakMap<Page, string[]>();
 
@@ -69,6 +69,22 @@ test('guests discover the guide and use real prepared checks without saved attem
 
     await page.evaluate(() => window.scrollTo(0, 0));
     await captureViewport(page, 'guide-overview-desktop');
+    await expect(
+        page.getByRole('heading', { name: 'Add media to a Knowledge note' }),
+    ).toBeVisible();
+
+    await page
+        .getByRole('link', {
+            name: 'Try a listening example and copy a prompt',
+        })
+        .click();
+
+    await expect(activityButton(page, 'L01')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+    );
+
+    await page.goBack();
 
     await page.locator('main a[href="/workbook/exercises"]').first().click();
     await expect(page).toHaveURL(/\/workbook\/exercises$/u);

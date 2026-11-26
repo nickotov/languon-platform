@@ -31,6 +31,15 @@ export function WorkbookGuidePage({ locale }: { locale: Locale }) {
                     ))}
                 </ol>
             </section>
+            <section className={styles.section}>
+                <h2 className={styles.sectionTitle}>{content.media.title}</h2>
+                <p className={styles.description}>{content.media.embeds}</p>
+                <p className={styles.description}>{content.media.video}</p>
+                <p className={styles.description}>{content.media.listening}</p>
+                <TextLink href='/workbook/exercises?activity=L01'>
+                    {content.media.example}
+                </TextLink>
+            </section>
             <section className={styles.chapter}>
                 <div className={styles.chapterCopy}>
                     <span className={styles.eyebrow}>

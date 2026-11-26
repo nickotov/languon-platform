@@ -35,6 +35,8 @@ practice. Guests and signed-in learners can visit `/workbook` and
 `/workbook/exercises` without creating a note, starting a model request or spending
 credits. This is separate from the saved collections at `/workbooks`.
 
+The overview explains how to add an image, website or YouTube video to a Knowledge note. It links directly to a listening example with prompts for reusing a transcribed recording or generating a new recording and exercises.
+
 The exercises chapter offers all 22 named activities in five categories, with one
 synthetic English A2 example mounted at a time. Prepared answers use the same local
 checking behavior as real exercises. Preset AI feedback illustrates a response to

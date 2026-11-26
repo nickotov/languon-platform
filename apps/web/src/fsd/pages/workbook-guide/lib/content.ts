@@ -5,6 +5,14 @@ import {
 export type GuideLocale = 'en' | 'ru' | 'fr' | 'es';
 const copy = {
     en: {
+        media: {
+            title: 'Add media to a Knowledge note',
+            embeds: 'Choose Add block → Basic blocks → Image or Website. Paste a direct HTTPS image link or an HTTPS page URL. Select Load preview to see it in the note, then Expand for a larger view. If a website blocks previews, choose Open in new tab.',
+            video: 'For YouTube, choose Add block → Learning blocks → Video and paste the video link.',
+            listening:
+                'To generate listening exercises, select an Audio block with a transcript and ask the assistant to create a dictation or comprehension question from it. For a new recording, describe the dialogue, language and level, and ask for both the recording and the exercises. Review the proposal, insert it and save the note.',
+            example: 'Try a listening example and copy a prompt',
+        },
         translationDirection:
             'Source language: English. Target language: French. Explanation language: English.',
         steps: [
@@ -24,6 +32,14 @@ const copy = {
         mixed: 'Using the selected content, propose three different named exercises for an A2 English learner. Combine recall, understanding and language use where supported. Include answers or assessment rubrics and brief explanations. Do not invent missing source material.',
     },
     ru: {
+        media: {
+            title: 'Медиа в заметке «Знаний»',
+            embeds: 'Выберите «Добавить блок» → «Основные блоки» → «Изображение» или «Сайт». Вставьте прямую HTTPS-ссылку на изображение или HTTPS-адрес страницы. Нажмите «Загрузить предпросмотр», а затем «Развернуть». Если сайт блокирует просмотр, выберите «Открыть в новой вкладке».',
+            video: 'Для YouTube выберите «Добавить блок» → «Учебные блоки» → «Видео» и вставьте ссылку на ролик.',
+            listening:
+                'Чтобы создать упражнения на аудирование, выберите блок «Аудио» с расшифровкой и попросите ассистента составить по записи диктант или вопрос на понимание. Если нужна новая запись, опишите диалог, язык и уровень и попросите создать и запись, и упражнения. Проверьте предложение, вставьте его и сохраните заметку.',
+            example: 'Открыть пример аудирования и скопировать запрос',
+        },
         translationDirection:
             'Язык источника: английский. Язык перевода: французский. Язык объяснений: русский.',
         steps: [
@@ -43,6 +59,14 @@ const copy = {
         mixed: 'На основе выделенного материала предложи три разных именованных упражнения для английского A2. Сочетай запоминание, понимание и использование языка, если источник позволяет. Добавь ответы или критерии проверки и краткие объяснения. Не выдумывай отсутствующий материал.',
     },
     fr: {
+        media: {
+            title: 'Ajouter des médias à une note de connaissances',
+            embeds: 'Choisissez « Ajouter un bloc » → « Blocs de base » → « Image » ou « Site web ». Collez le lien HTTPS direct de l’image ou l’adresse HTTPS de la page. Choisissez « Charger l’aperçu », puis « Agrandir ». Si le site bloque l’aperçu, choisissez « Ouvrir dans un nouvel onglet ».',
+            video: 'Pour YouTube, choisissez « Ajouter un bloc » → « Blocs pédagogiques » → « Vidéo » et collez le lien de la vidéo.',
+            listening:
+                'Pour créer un exercice d’écoute, sélectionnez un bloc Audio avec sa transcription et demandez à l’assistant une dictée ou une question de compréhension sur cet enregistrement. Pour un nouvel enregistrement, précisez le dialogue, la langue et le niveau souhaités, puis demandez l’enregistrement et les exercices. Vérifiez la proposition, insérez-la et enregistrez la note.',
+            example: 'Essayer un exercice d’écoute et copier une demande',
+        },
         translationDirection:
             'Langue source : anglais. Langue cible : français. Langue des explications : français.',
         steps: [
@@ -62,6 +86,14 @@ const copy = {
         mixed: 'À partir du contenu sélectionné, propose trois activités nommées différentes pour l’anglais A2. Combine mémorisation, compréhension et utilisation selon la source. Ajoute les réponses ou critères et de brèves explications. N’invente pas de contenu source manquant.',
     },
     es: {
+        media: {
+            title: 'Añadir contenido multimedia a una nota de Conocimientos',
+            embeds: 'Elige «Añadir bloque» → «Bloques básicos» → «Imagen» o «Sitio web». Pega el enlace HTTPS directo de la imagen o la dirección HTTPS de la página. Elige «Cargar vista previa» y luego «Ampliar». Si el sitio bloquea la vista previa, elige «Abrir en otra pestaña».',
+            video: 'Para YouTube, elige «Añadir bloque» → «Bloques de aprendizaje» → «Vídeo» y pega el enlace al vídeo.',
+            listening:
+                'Para generar un ejercicio de escucha, selecciona un bloque de Audio con transcripción y pide al asistente un dictado o una pregunta de comprensión sobre la grabación. Para crear una grabación nueva, describe el diálogo, el idioma y el nivel, y pide tanto la grabación como los ejercicios. Revisa la propuesta, insértala y guarda la nota.',
+            example: 'Probar un ejercicio de escucha y copiar una petición',
+        },
         translationDirection:
             'Idioma de origen: inglés. Idioma de destino: francés. Idioma de las explicaciones: español.',
         steps: [
@@ -150,6 +182,7 @@ export function guideCopy(locale: string) {
 
     return {
         steps: localized.steps,
+        media: localized.media,
         recipes: [
             {
                 id: 'specific',
