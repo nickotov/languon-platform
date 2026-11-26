@@ -27,6 +27,8 @@ evidence with a repeatable manual/browser/API/device recipe.
 - [Sidebar navigation](./sidebar-navigation.md) — whole-library title search,
   synced recents/pins, contextual flyouts and responsive navigation.
 
+- [Knowledge document previews](./knowledge-document-embeds.md) — insert, save and expand website and image links in a document.
+
 - [Knowledge workspace](./knowledge-workspace.md) — private research drafts,
   editor-aware tutor, explicit publication, conflict recovery and saved-only sharing.
 

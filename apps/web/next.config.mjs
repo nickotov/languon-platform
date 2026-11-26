@@ -46,11 +46,23 @@ const nextConfig = {
                 headers: [
                     {
                         key: 'Content-Security-Policy',
-                        value: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; frame-src https://www.youtube-nocookie.com; media-src 'self' blob: https:",
+                        value: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; frame-src 'self' https://www.youtube-nocookie.com; media-src 'self' blob: https:",
                     },
                     { key: 'X-Frame-Options', value: 'DENY' },
                 ],
                 source: '/:path*',
+            },
+            {
+                source: '/knowledge-website-preview.html',
+                headers: [
+                    {
+                        key: 'Content-Security-Policy',
+                        value: "default-src 'none'; frame-ancestors 'self'; frame-src https:; script-src 'sha256-9vDtA+jlGOt0AU61Ap9txGTGHCYbvgFWiSCOQFIVexI='; style-src 'sha256-x/PtjwBZbMQwVsIBDzHMdxSipzriDcFPJoi5PKt8gYM='; sandbox allow-scripts; base-uri 'none'; form-action 'none'",
+                    },
+                    { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+                    { key: 'Referrer-Policy', value: 'no-referrer' },
+                    { key: 'X-Content-Type-Options', value: 'nosniff' },
+                ],
             },
         ];
     },

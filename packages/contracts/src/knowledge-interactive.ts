@@ -1,8 +1,39 @@
 import { z } from 'zod';
 import { LessonPartIdSchema } from './lesson-part-identity';
-import { LearningBlockSchema, type LearningBlock } from './learning-blocks';
+import {
+    LearningBlockSchema,
+    LearningMediaUrlSchema,
+    type LearningBlock,
+} from './learning-blocks';
 import type { NamedExerciseSource } from './named-exercises';
 import type { KnowledgeNode } from './contextual-assistant';
+
+// URL parsing can normalize a missing authority or silently drop empty userinfo.
+export const KnowledgeEmbedUrlSchema = LearningMediaUrlSchema.refine(
+    (value) => {
+        if (
+            !/^https:\/\/[^/?#@%]+(?:[/?#]|$)/iu.test(value) ||
+            !URL.canParse(value)
+        ) {
+            return false;
+        }
+
+        // The preview policy embeds this normalized hostname as a CSP source.
+        const { hostname } = new URL(value);
+
+        return (
+            /^[a-z0-9.-]+$/iu.test(hostname) ||
+            /^\[[0-9a-f:]+\]$/iu.test(hostname)
+        );
+    },
+    'An embed requires an absolute HTTPS URL with a valid host and no credentials.',
+);
+export const KnowledgeEmbedNodeSchema = z
+    .object({
+        type: z.enum(['websiteEmbed', 'imageEmbed']),
+        attrs: z.object({ src: KnowledgeEmbedUrlSchema }).strict(),
+    })
+    .strict();
 
 export const KnowledgeLearningBlockNodeSchema = z
     .object({
@@ -146,6 +177,30 @@ export function createInteractiveKnowledgeBodySchema(
             const blocks = new Map<string, LearningBlock>();
             const prose: unknown[] = [];
             for (const [index, child] of root.data.content.entries()) {
+                // Author-inserted embeds are root leaves. Model-generated fragments
+                // retain the prose/learning-block allowlist.
+                if (
+                    referenceValidation === 'document' &&
+                    child &&
+                    typeof child === 'object' &&
+                    'type' in child &&
+                    (child.type === 'websiteEmbed' ||
+                        child.type === 'imageEmbed')
+                ) {
+                    const embed = KnowledgeEmbedNodeSchema.safeParse(child);
+                    if (!embed.success) {
+                        for (const issue of embed.error.issues) {
+                            ctx.addIssue({
+                                ...issue,
+                                path: ['content', index, ...issue.path],
+                            });
+                        }
+                    }
+
+                    prose.push({ type: 'paragraph' });
+                    continue;
+                }
+
                 if (
                     child &&
                     typeof child === 'object' &&

@@ -45,6 +45,10 @@ export function EditorCommandResults({
     } = actions;
     const { normalized, basicMatches, learningMatches, activityMatches } =
         editorCommandResults({ query, locale, basic, basicLabel, labels });
+    const embedMatches = (['websiteEmbed', 'imageEmbed'] as const).filter(
+        (kind) => matches(copy[kind]),
+    );
+    const hasBasicMatches = basicMatches.length > 0 || embedMatches.length > 0;
     const globalSearch = level === 'root' && Boolean(normalized);
     const rootCategories = level === 'root' && !globalSearch;
     const basicsVisible = level === 'basic' || globalSearch;
@@ -52,7 +56,7 @@ export function EditorCommandResults({
     const exercisesVisible = level === 'exercises' || globalSearch;
     const libraryMatches = hasLibrary && matches(copy.library);
     const hasMatches =
-        basicMatches.length > 0 ||
+        hasBasicMatches ||
         learningMatches.length > 0 ||
         activityMatches ||
         matches(copy.custom) ||
@@ -61,7 +65,7 @@ export function EditorCommandResults({
     const libraryAction = hasLibrary ? openLibrary : undefined;
     const emptyResults =
         (globalSearch && !hasMatches) ||
-        (level === 'basic' && !basicMatches.length) ||
+        (level === 'basic' && !hasBasicMatches) ||
         (level === 'learning' && !learningMatches.length) ||
         (level === 'exercises' &&
             !activityMatches &&
@@ -80,7 +84,7 @@ export function EditorCommandResults({
                     onLibrary={libraryAction}
                 />
             )}
-            {basicsVisible && basicMatches.length > 0 && (
+            {basicsVisible && hasBasicMatches && (
                 <section className={styles.group}>
                     {globalSearch && <h3>{copy.basic}</h3>}
                     {basicMatches.map((kind) => (
@@ -89,6 +93,14 @@ export function EditorCommandResults({
                             value={kind}
                             label={basicLabel(kind)}
                             onSelect={applyBasic}
+                        />
+                    ))}
+                    {embedMatches.map((kind) => (
+                        <CommandRow
+                            key={kind}
+                            value={kind}
+                            label={copy[kind]}
+                            onSelect={actions.openEmbed}
                         />
                     ))}
                 </section>

@@ -1,0 +1,99 @@
+.card {
+    min-width: 0;
+    margin: var(--space-12) 0;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-12);
+    background: var(--background-surface);
+    color: var(--text-primary);
+}
+
+.caption {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-12);
+    padding: var(--space-12);
+}
+
+.name {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-8);
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: var(--size-14);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    color: var(--primary-default);
+    font-size: var(--size-14);
+    text-underline-offset: 0.15em;
+}
+
+.inline,
+.dialogBody {
+    display: grid;
+    place-items: center;
+    background: var(--background-subtle);
+    min-width: 0;
+}
+
+.inline {
+    overflow: hidden;
+    border-top: 1px solid var(--border-default);
+    border-radius: 0 0 var(--radius-12) var(--radius-12);
+}
+
+.frame,
+.image {
+    display: block;
+    width: 100%;
+    border: 0;
+}
+
+.inline .frame {
+    aspect-ratio: 16 / 9;
+    max-height: 60dvh;
+}
+
+.inline .image {
+    max-height: 60dvh;
+    object-fit: contain;
+    width: auto;
+    max-width: 100%;
+}
+
+.expanded[open] {
+    width: 90dvw;
+    height: 90dvh;
+    max-width: 90dvw;
+    max-height: 90dvh;
+    margin: auto;
+}
+
+.dialogTitle {
+    overflow-wrap: anywhere;
+}
+
+.expanded .dialogBody {
+    overflow: hidden;
+    padding: 0;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+    margin-top: var(--space-16);
+}
+
+.dialogBody .image,
+.dialogBody .frame {
+    height: 100%;
+    object-fit: contain;
+}
+
+.failure {
+    padding: var(--space-16);
+    color: var(--text-secondary);
+}

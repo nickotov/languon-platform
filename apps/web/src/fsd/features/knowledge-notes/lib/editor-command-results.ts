@@ -29,9 +29,11 @@ export function editorCommandResults({
     const matches = (value: string) =>
         value.toLocaleLowerCase(locale).includes(normalized);
     const basicMatches = basic.filter((kind) => matches(basicLabel(kind)));
-    const learningMatches = learningKinds.filter((kind) =>
-        matches(labels.view.kinds[kind]),
-    );
+    const learningMatches = learningKinds.filter((kind) => {
+        const label = labels.view.kinds[kind];
+
+        return matches(kind === 'video' ? `${label} YouTube` : label);
+    });
     const activityMatches = exerciseActivityCatalog.some((activity) => {
         const display = activity.locales[locale];
 

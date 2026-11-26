@@ -1,6 +1,8 @@
 import {
     BookOpen,
     FileText,
+    Globe,
+    Image,
     Heading1,
     Heading2,
     Heading3,
@@ -26,6 +28,8 @@ export const editorCommandIcons = {
     blockquote: Quote,
     horizontalRule: Minus,
     table: Table2,
+    imageEmbed: Image,
+    websiteEmbed: Globe,
     'bilingual-text': FileText,
     vocabulary: Languages,
     grammar: BookOpen,

@@ -6,6 +6,10 @@ export function hasKnowledgeText(node: KnowledgeNode): boolean {
         return true;
     }
 
+    if (node.type === 'websiteEmbed' || node.type === 'imageEmbed') {
+        return true;
+    }
+
     if (node.text?.trim()) {
         return true;
     }
@@ -23,7 +27,12 @@ export function knowledgePlainText(node: KnowledgeNode): string {
         return node.text;
     }
 
-    if (node.type === 'hardBreak' || node.type === 'horizontalRule') {
+    if (
+        node.type === 'hardBreak' ||
+        node.type === 'horizontalRule' ||
+        node.type === 'websiteEmbed' ||
+        node.type === 'imageEmbed'
+    ) {
         return '\n';
     }
 

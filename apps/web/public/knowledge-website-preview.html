@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="referrer" content="no-referrer" />
+        <title>Website preview</title>
+        <style>
+            html,
+            body,
+            iframe {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                border: 0;
+                display: block;
+            }
+        </style>
+    </head>
+    <body>
+        <script>
+            // The fragment keeps the document's external URL out of server requests.
+            function mountWebsite() {
+                const source = decodeURIComponent(location.hash.slice(1));
+                if (
+                    source.length > 2048 ||
+                    !/^https:\/\/[^/?#@%]+(?:[/?#]|$)/iu.test(source) ||
+                    /[\s\\\x00-\x1f\x7f]/u.test(source)
+                )
+                    return;
+                const url = new URL(source);
+                if (
+                    url.username ||
+                    url.password ||
+                    !/^(?:[a-z0-9.-]+|\[[a-f0-9:]+\])$/iu.test(url.hostname)
+                )
+                    return;
+
+                const policy = document.createElement('meta');
+                policy.httpEquiv = 'Content-Security-Policy';
+                policy.content = 'frame-src ' + url.origin;
+                document.head.append(policy);
+
+                const frame = document.createElement('iframe');
+                frame.setAttribute('sandbox', '');
+                frame.setAttribute('credentialless', '');
+                frame.referrerPolicy = 'no-referrer';
+                frame.title = url.hostname;
+                frame.src = url.href;
+                document.body.append(frame);
+            }
+
+            try {
+                mountWebsite();
+            } catch {
+                // Invalid or malformed fragments leave the wrapper empty.
+            }
+        </script>
+    </body>
+</html>

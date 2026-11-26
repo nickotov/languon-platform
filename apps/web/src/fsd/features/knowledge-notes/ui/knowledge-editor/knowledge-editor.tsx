@@ -1,4 +1,10 @@
 'use client';
+import {
+    KnowledgeEditorDocument,
+    WebsiteEmbedNode,
+    ImageEmbedNode,
+} from '../editor-embed-node/editor-embed-node';
+import { editorInsertCopy } from '../../lib/editor-insert-copy';
 import { LessonPartProvenance } from '../../lib/lesson-part-provenance';
 import type { BlockInsertionBookmark } from '../../lib/block-insertion-bookmark';
 import { MessageSquarePlus } from 'lucide-react';
@@ -130,7 +136,11 @@ export const KnowledgeEditor = forwardRef<
     const targets = useRef(new Map<string, KnowledgeEditorTarget>());
     const extensions = useMemo(() => {
         const documentExtensions = [
+            KnowledgeEditorDocument,
+            WebsiteEmbedNode,
+            ImageEmbedNode,
             StarterKit.configure({
+                document: false,
                 heading: { levels: [1, 2, 3] },
                 codeBlock: false,
                 link: {
@@ -177,6 +187,8 @@ export const KnowledgeEditor = forwardRef<
                     }
 
                     const names: Record<string, string> = {
+                        websiteEmbed: editorInsertCopy(locale).websiteEmbed,
+                        imageEmbed: editorInsertCopy(locale).imageEmbed,
                         paragraph: t('knowledge.paragraph'),
                         horizontalRule: t('knowledge.horizontalRule'),
                         heading: t(headingKey),
@@ -193,7 +205,7 @@ export const KnowledgeEditor = forwardRef<
                 label: blockLabels.field('Write here…'),
             }),
         ];
-    }, [blockLabels, t, isPreview]);
+    }, [blockLabels, t, isPreview, locale]);
     const editor = useEditor({
         extensions,
         content: toEditorDocument(value.document),

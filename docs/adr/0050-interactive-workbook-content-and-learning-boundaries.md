@@ -5,6 +5,7 @@ title: 'Interactive workbook content and learning boundaries'
 status: accepted
 date: 2026-10-28
 supersedes: 'Partial extension of ADR-0037 restricted document content and ADR-0042 media and shared-reader conversation boundaries'
+superseded_in_part_by: 'ADR-0067 extends supported media with typed, scriptless website and image previews'
 ---
 
 # ADR-0050: Interactive workbook content and learning boundaries

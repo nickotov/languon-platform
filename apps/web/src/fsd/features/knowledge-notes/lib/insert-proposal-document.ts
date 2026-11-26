@@ -12,7 +12,11 @@ export function prepareProposalDocument(
 ): Transaction | null {
     let touchesBlock = false;
     editor.state.doc.nodesBetween(range.from, range.to, (node) => {
-        if (node.type.name === 'learningBlock') {
+        if (
+            node.type.name === 'learningBlock' ||
+            node.type.name === 'websiteEmbed' ||
+            node.type.name === 'imageEmbed'
+        ) {
             touchesBlock = true;
         }
     });

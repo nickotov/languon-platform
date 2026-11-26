@@ -62,6 +62,7 @@ e2e_scenarios:
     - workspace-intent-content-generation
     - workspace-large-vocabulary-generation
 related_features:
+    - knowledge-document-embeds
     - listening-exercises
     - lesson-review-insertion
     - reliable-lesson-runs
@@ -74,6 +75,8 @@ related_features:
 ---
 
 # Knowledge workspace
+
+For website and image previews inside the document, follow [Knowledge document previews](./knowledge-document-embeds.md).
 
 ## What this verifies
 

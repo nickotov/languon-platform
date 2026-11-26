@@ -89,6 +89,7 @@ constraints, while feature-local decisions belong in the feature's
 | [ADR-0064](./0064-logical-lesson-parts-in-the-workspace.md) | Logical lesson parts in the Knowledge workspace | Accepted |
 | [ADR-0065](./0065-generated-listening-sets.md) | Generate and publish listening sets under bounded speech authority | Accepted |
 | [ADR-0066](./0066-recording-admission-after-planning.md) | Authorize requested recordings against the saved lesson plan | Accepted |
+| [ADR-0067](./0067-knowledge-document-external-previews.md) | Isolate external website and image previews in Knowledge documents | Accepted |
 
 Add each new ADR here. Scan this index and search the directory for relevant
 keywords instead of reading every record by default.

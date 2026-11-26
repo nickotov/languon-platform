@@ -6,6 +6,7 @@ import {
     type KnowledgeNode,
     type LearningBlock,
 } from '@languon/contracts';
+import { KnowledgeEmbed } from '../knowledge-embed/knowledge-embed';
 import styles from './knowledge-body.module.css';
 import { validateKnowledgeFragment } from '../../lib/validate-knowledge-fragment';
 
@@ -79,6 +80,12 @@ const documentMappings: DocumentMappings = {
             ),
         hardBreak: () => <br />,
         horizontalRule: () => <hr />,
+        imageEmbed: ({ node }) => (
+            <KnowledgeEmbed type='imageEmbed' src={node.attrs?.src ?? ''} />
+        ),
+        websiteEmbed: ({ node }) => (
+            <KnowledgeEmbed type='websiteEmbed' src={node.attrs?.src ?? ''} />
+        ),
         bulletList: ({ children }) => <ul>{children}</ul>,
         orderedList: ({ node, children }) => (
             <ol start={node.attrs?.start ?? 1}>{children}</ol>

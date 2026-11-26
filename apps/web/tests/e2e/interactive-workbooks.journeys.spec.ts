@@ -1,3 +1,4 @@
+import { verifyKnowledgeEmbeds } from './knowledge-embed-fixture';
 import { randomUUID } from 'node:crypto';
 import {
     expect,
@@ -12,6 +13,7 @@ import type {
     WorkbookLearningState,
 } from '@languon/contracts';
 
+// @user-flow-revision knowledge-document-embeds sha256:f4f136686e5c530f
 // @user-flow-revision interactive-workbooks sha256:df4c986b3ac02102
 const origin = 'http://localhost:3336';
 const tokens = new WeakMap<Page, string>();
@@ -105,12 +107,17 @@ async function verifyAuthorizedWav(page: Page, url: string) {
     expect(bytes.subarray(8, 12).toString('ascii')).toBe('WAVE');
 }
 
-function runtime(page: Page, expectedFailures = new Set<string>()) {
+function runtime(
+    page: Page,
+    expectedFailures = new Set<string>(),
+    expectedConsoleErrors = new Set<string>(),
+) {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('console', (message) => {
         if (
             message.type() === 'error' &&
+            !expectedConsoleErrors.has(message.text()) &&
             !message.text().startsWith('Failed to load resource:')
         ) {
             errors.push(message.text());
@@ -3909,5 +3916,22 @@ test('reviews typed updates, accepts atomic field suggestions in side editors an
     await page.setViewportSize({ width: 390, height: 844 });
     await answer.locator('xpath=ancestor::form').scrollIntoViewIfNeeded();
     await capture(page, info, 'inline-exercise-feedback-mobile');
+    healthy();
+});
+
+// @user-flow knowledge-document-embeds/publish-reopen-and-expand-embeds
+test('publishes website and image embeds and expands their saved previews', async ({
+    page,
+}, info) => {
+    const healthy = runtime(
+        page,
+        new Set(),
+        new Set([
+            "Blocked script execution in 'https://lessons.example.test/reading' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.",
+        ]),
+    );
+
+    await signup(page, info, 'external-previews');
+    await verifyKnowledgeEmbeds(page, info);
     healthy();
 });

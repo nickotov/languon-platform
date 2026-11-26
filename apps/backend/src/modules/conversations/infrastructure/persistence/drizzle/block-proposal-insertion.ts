@@ -11,16 +11,22 @@ const invalid = () =>
         'The insertion cursor is unavailable or inside an atomic block or exercise group. Select a prose position and try again.',
     );
 
+function isAtomicNode(node: KnowledgeNode): boolean {
+    return [
+        'learningBlock',
+        'hardBreak',
+        'horizontalRule',
+        'websiteEmbed',
+        'imageEmbed',
+    ].includes(node.type);
+}
+
 function nodeSize(node: KnowledgeNode): number {
     if (node.type === 'text') {
         return node.text?.length ?? 0;
     }
 
-    if (
-        node.type === 'learningBlock' ||
-        node.type === 'hardBreak' ||
-        node.type === 'horizontalRule'
-    ) {
+    if (isAtomicNode(node)) {
         return 1;
     }
 
@@ -43,13 +49,7 @@ function splitNode(
         return [node, null];
     }
 
-    if (
-        offset < 0 ||
-        offset > size ||
-        node.type === 'learningBlock' ||
-        node.type === 'hardBreak' ||
-        node.type === 'horizontalRule'
-    ) {
+    if (offset < 0 || offset > size || isAtomicNode(node)) {
         throw invalid();
     }
 

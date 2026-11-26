@@ -40,6 +40,28 @@ describe('Proposal insertion positions', () => {
         ).toBe('learningBlock');
     });
 
+    it('inserts at the exact position between consecutive external embeds', () => {
+        const first: KnowledgeNode = {
+            type: 'websiteEmbed',
+            attrs: { src: 'https://example.org/' },
+        };
+        const second: KnowledgeNode = {
+            type: 'imageEmbed',
+            attrs: { src: 'https://example.org/picture' },
+        };
+        const result = insertProposalBlocks(
+            { type: 'doc', content: [first, second] },
+            [grammar],
+            1,
+        );
+
+        expect(result.content).toEqual([
+            first,
+            { type: 'learningBlock', attrs: { block: grammar } },
+            second,
+        ]);
+    });
+
     it('splits prose at the exact PM offset while preserving marks and surrounding nodes', () => {
         const original: KnowledgeNode = {
             type: 'doc',

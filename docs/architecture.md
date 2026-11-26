@@ -722,6 +722,12 @@ frozen owner draft, retaining the existing speech providers and accounting.
 [ADR-0052](adr/0052-source-bound-knowledge-ai-actions.md) records these boundaries;
 the active feature evidence owns implementation and verification status.
 
+User-authored Knowledge documents can also store website and image URL nodes.
+The editor and reader load the source on demand. Website previews use a static
+same-origin wrapper and an inner scriptless iframe. The reader can enlarge
+either preview or open the source directly. The server never retrieves these
+resources. [ADR-0067](adr/0067-knowledge-document-external-previews.md)
+
 Only validated YouTube identifiers and direct playable HTTPS URLs become video
 players. Remote video playback does not imply transcript access. Uploaded audio
 is bounded and parsed before storage; shared playback requires both a live grant

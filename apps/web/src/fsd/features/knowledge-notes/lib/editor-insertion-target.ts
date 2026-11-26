@@ -1,4 +1,4 @@
-import type { Editor } from '@tiptap/react';
+import type { Editor, JSONContent } from '@tiptap/core';
 import type { Transaction } from '@tiptap/pm/state';
 import { closeHistory } from '@tiptap/pm/history';
 import type { LearningBlock } from '@languon/contracts';
@@ -46,6 +46,21 @@ export function insertBlocksAtTarget(
     target: EditorInsertionTarget,
     blocks: LearningBlock[],
 ) {
+    return insertNodesAtTarget(
+        editor,
+        target,
+        blocks.map((block) => ({
+            type: 'learningBlock',
+            attrs: { block },
+        })),
+    );
+}
+
+export function insertNodesAtTarget(
+    editor: Editor,
+    target: EditorInsertionTarget,
+    nodes: JSONContent[],
+) {
     const range = target.resolve();
     if (!range) {
         return false;
@@ -59,12 +74,6 @@ export function insertBlocksAtTarget(
 
             return true;
         })
-        .insertContentAt(
-            range,
-            blocks.map((block) => ({
-                type: 'learningBlock',
-                attrs: { block },
-            })),
-        )
+        .insertContentAt(range, nodes)
         .run();
 }

@@ -7,6 +7,10 @@ import {
 } from '@languon/contracts';
 import { useI18n } from '@/fsd/shared/i18n';
 import { useEditorInsertNavigation } from './use-editor-insert-navigation';
+import {
+    useEditorEmbedInsertion,
+    type EditorEmbedKind,
+} from './use-editor-embed-insertion';
 import { useEditorInsertPicker } from './use-editor-insert-picker';
 import { editorInsertCopy } from '../lib/editor-insert-copy';
 import type { BlockKind } from '../lib/learning-block-form';
@@ -21,6 +25,7 @@ export function useEditorInsertActions(
     const { locale } = useI18n();
     const copy = editorInsertCopy(locale);
     const picker = useEditorInsertPicker(editor, disabled);
+    const embed = useEditorEmbedInsertion(editor);
     const authoring = useBlockAuthoring()!;
     const navigation = useEditorInsertNavigation(picker.panelRef);
     const { level, query, setQuery, enter, back, reset } = navigation;
@@ -34,7 +39,7 @@ export function useEditorInsertActions(
             reset();
             setError(false);
         }
-    }, [picker.open]);
+    }, [picker.open, reset]);
 
     function changeOpen(next: boolean) {
         if (next) {
@@ -98,6 +103,16 @@ export function useEditorInsertActions(
                 ? { initialFormat: getExerciseActivity(selected).format }
                 : {}),
         });
+    }
+
+    function openEmbed(kind: EditorEmbedKind) {
+        if (!picker.target.current?.resolve()) {
+            setError(true);
+
+            return;
+        }
+
+        embed.open(kind, picker.detach()!);
     }
 
     function customSet() {
@@ -198,6 +213,8 @@ export function useEditorInsertActions(
 
     return {
         locale,
+        embed,
+        openEmbed,
         copy,
         picker,
         level,

@@ -91,6 +91,8 @@ export type KnowledgeMark = z.infer<typeof KnowledgeMarkSchema>;
 export interface KnowledgeNode {
     type:
         | 'learningBlock'
+        | 'websiteEmbed'
+        | 'imageEmbed'
         | 'doc'
         | 'paragraph'
         | 'heading'
@@ -108,6 +110,7 @@ export interface KnowledgeNode {
     text?: string | undefined;
     attrs?:
         | {
+              src?: string | undefined;
               block?: LearningBlock | undefined;
               lessonBlockId?: string | undefined;
               lessonPartId?: string | undefined;

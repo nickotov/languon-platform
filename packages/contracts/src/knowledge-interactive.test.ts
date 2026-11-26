@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     InteractiveKnowledgeBodySchema,
     KnowledgeBodySchema,
+    KnowledgeContentFragmentSchema,
     ProseKnowledgeBodySchema,
     ProseKnowledgeNoteContentSchema,
 } from './contextual-assistant';
@@ -38,6 +39,55 @@ const paragraph = {
 };
 
 describe('interactive knowledge document contract and safety', () => {
+    it.each(['websiteEmbed', 'imageEmbed'])(
+        'accepts %s only as an author-supplied top-level HTTPS leaf',
+        (type) => {
+            const attrs = { src: 'https://example.org/material?id=3#figure' };
+            const embed = { type, attrs };
+            const input = body([paragraph, embed, node(audio)]);
+            expect(KnowledgeBodySchema.parse(input)).toEqual(input);
+            expect(
+                KnowledgeContentFragmentSchema.safeParse(input).success,
+            ).toBe(false);
+
+            for (const invalid of [
+                { type },
+                { ...embed, content: [] },
+                { ...embed, marks: [] },
+                { ...embed, text: 'hidden' },
+                { type, attrs: { ...attrs, sandbox: 'allow-scripts' } },
+                { type: 'blockquote', content: [embed] },
+                { type: 'paragraph', content: [embed] },
+            ]) {
+                expect(
+                    KnowledgeBodySchema.safeParse(body([invalid])).success,
+                ).toBe(false);
+            }
+
+            for (const src of [
+                'http://example.org',
+                '//example.org',
+                'data:image/png;base64,AA',
+                'https://user@example.org',
+                'https://@example.org',
+                'https://*.example.org',
+                'https://%65xample.org',
+                'https://a;b.example.org',
+                'https://a,b.example.org',
+                'https:///example.org',
+                ' https://example.org',
+                'https://example.org/\n',
+                'https://example.org/' + 'a'.repeat(2048),
+            ]) {
+                expect(
+                    KnowledgeBodySchema.safeParse(
+                        body([{ type, attrs: { src } }]),
+                    ).success,
+                ).toBe(false);
+            }
+        },
+    );
+
     it.each([2])(
         'round trips H1/H2/H3 and leaf rules in body version %i',
         (schemaVersion) => {

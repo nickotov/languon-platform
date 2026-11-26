@@ -1,0 +1,38 @@
+export const embedLabels = {
+    en: {
+        website: 'Website',
+        image: 'Image',
+        load: 'Load preview',
+        expand: 'Expand',
+        source: 'Open in new tab',
+        close: 'Close preview',
+        failed: 'The image could not be loaded.',
+    },
+    ru: {
+        website: 'Сайт',
+        image: 'Изображение',
+        load: 'Загрузить предпросмотр',
+        expand: 'Развернуть',
+        source: 'Открыть в новой вкладке',
+        close: 'Закрыть предпросмотр',
+        failed: 'Не удалось загрузить изображение.',
+    },
+    es: {
+        website: 'Sitio web',
+        image: 'Imagen',
+        load: 'Cargar vista previa',
+        expand: 'Ampliar',
+        source: 'Abrir en otra pestaña',
+        close: 'Cerrar vista previa',
+        failed: 'No se pudo cargar la imagen.',
+    },
+    fr: {
+        website: 'Site web',
+        image: 'Image',
+        load: 'Charger l’aperçu',
+        expand: 'Agrandir',
+        source: 'Ouvrir dans un nouvel onglet',
+        close: 'Fermer l’aperçu',
+        failed: 'Impossible de charger l’image.',
+    },
+};

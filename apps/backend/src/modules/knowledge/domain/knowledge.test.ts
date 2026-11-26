@@ -175,3 +175,18 @@ it('projects author descriptions, exercise hints and group titles from saved mat
     expect(text).not.toContain(groupId);
     expect(text).not.toContain(videoId);
 });
+
+it('indexes embed-only notes without exposing URL parameters or fetching remote material', () => {
+    const body = KnowledgeBodySchema.parse({
+        schemaVersion: 2,
+        document: {
+            type: 'doc',
+            content: ['websiteEmbed', 'imageEmbed'].map((type) => ({
+                type,
+                attrs: { src: 'https://example.org/material?private=1' },
+            })),
+        },
+    });
+
+    expect(knowledgeBodyPlainText(body)).toBe('Website Image');
+});

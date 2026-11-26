@@ -19,6 +19,15 @@ export function knowledgeBodyPlainText(body: KnowledgeBody): string {
             parts.push('\n', learningBlockPlainText(node.attrs.block), '\n');
         }
 
+        if (node.type === 'websiteEmbed' || node.type === 'imageEmbed') {
+            // Keep embed-only notes publishable without indexing private URL parameters.
+            parts.push(
+                '\n',
+                node.type === 'websiteEmbed' ? 'Website' : 'Image',
+                '\n',
+            );
+        }
+
         if (node.text) {
             parts.push(node.text);
         }

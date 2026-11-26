@@ -519,6 +519,14 @@ export const flows = [
         prerequisite: 'deterministic-assistant',
     },
     {
+        id: 'knowledge-document-embeds',
+        minimumTests: 1,
+        app: 'assistant',
+        file: 'interactive-workbooks.journeys.spec.ts',
+        grep: 'publishes website and image embeds and expands their saved previews',
+        prerequisite: 'deterministic-assistant',
+    },
+    {
         id: 'interactive-workbooks',
         minimumTests: 5,
         app: 'assistant',

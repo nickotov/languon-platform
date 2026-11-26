@@ -99,7 +99,7 @@ describe.runIf(isDatabaseIntegrationEnabled())(
 
         afterAll(async () => client?.end(), 120_000);
         it.each([2])(
-            'round trips H1/H2/H3 and horizontal rules through saved/shared/copied version %i documents',
+            'round trips headings, rules and external embeds through saved/shared/copied version %i documents',
             async (schemaVersion) => {
                 const formatted = KnowledgeNoteContentSchema.parse({
                     ...content,
@@ -119,6 +119,18 @@ describe.runIf(isDatabaseIntegrationEnabled())(
                                     ],
                                 })),
                                 { type: 'horizontalRule' },
+                                {
+                                    type: 'websiteEmbed',
+                                    attrs: {
+                                        src: 'https://example.org/material',
+                                    },
+                                },
+                                {
+                                    type: 'imageEmbed',
+                                    attrs: {
+                                        src: 'https://example.org/figure.png',
+                                    },
+                                },
                                 {
                                     type: 'paragraph',
                                     content: [

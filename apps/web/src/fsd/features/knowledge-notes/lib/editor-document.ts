@@ -25,6 +25,11 @@ export function normalizeEditorDocument(document: unknown): KnowledgeBody {
                 ? (input.attrs as Record<string, unknown>)
                 : {};
 
+        if (input.type === 'imageEmbed' || input.type === 'websiteEmbed') {
+            // These atoms have no editor-only attributes to normalize.
+            return input;
+        }
+
         if (input.type === 'learningBlock') {
             if (
                 Object.keys(input).some(

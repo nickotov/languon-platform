@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import nextConfig from '../next.config.mjs';
@@ -59,5 +61,37 @@ test('development proxies /api without changing backend route paths', async () =
         } else {
             process.env.WEB_API_PROXY_TARGET = oldTarget;
         }
+    }
+});
+
+test('only the isolated website wrapper can frame external HTTPS origins', async () => {
+    const rules = await nextConfig.headers();
+    const policyFor = (source) =>
+        rules
+            .find((rule) => rule.source === source)
+            ?.headers.find((header) => header.key === 'Content-Security-Policy')
+            ?.value;
+    const appPolicy = policyFor('/:path*');
+    assert.match(appPolicy, /frame-ancestors 'none'/);
+    assert.match(
+        appPolicy,
+        /frame-src 'self' https:\/\/www\.youtube-nocookie\.com;/,
+    );
+
+    const wrapperPolicy = policyFor('/knowledge-website-preview.html');
+    assert.match(wrapperPolicy, /default-src 'none'/);
+    assert.match(wrapperPolicy, /frame-ancestors 'self'/);
+    assert.match(wrapperPolicy, /sandbox allow-scripts;/);
+    const markup = await readFile(
+        new URL('../public/knowledge-website-preview.html', import.meta.url),
+        'utf8',
+    );
+
+    for (const tag of ['script', 'style']) {
+        const content = markup.match(
+            new RegExp(`<${tag}>([\\s\\S]+?)</${tag}>`),
+        )[1];
+        const hash = createHash('sha256').update(content).digest('base64');
+        assert.ok(wrapperPolicy.includes(`${tag}-src 'sha256-${hash}'`));
     }
 });

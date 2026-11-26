@@ -20,6 +20,7 @@ import type { KnowledgeLibraryContext } from '../../api/library-copy-api';
 import { InsertDialog } from '../library-copy/insert-library-dialog/insert-library-dialog';
 import { libraryLabels } from '../library-copy/library-labels';
 import type { BlockAuthoringLabels } from '../learning-block-authoring/block-labels';
+import { InsertEmbedDialog } from '../insert-embed-dialog/insert-embed-dialog';
 import { EditorCommandResults } from './ui/editor-command-results/editor-command-results';
 import styles from './editor-insert-picker.module.css';
 
@@ -135,6 +136,14 @@ export function EditorInsertPicker({
                     {contents}
                 </PopoverContent>
             </Popover>
+            {actions.embed.kind && (
+                <InsertEmbedDialog
+                    kind={actions.embed.kind}
+                    copy={copy}
+                    onClose={actions.embed.close}
+                    onInsert={actions.embed.insert}
+                />
+            )}
             {preview && (
                 <ExerciseActivityPreview
                     activityId={preview}
